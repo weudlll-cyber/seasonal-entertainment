@@ -13,10 +13,7 @@ const isWindows = process.platform === 'win32';
 // On Linux each side gets its own process group, so the whole group can be signalled.
 const start = (command) => spawn(command, { stdio: 'inherit', shell: true, detached: !isWindows });
 
-const children = [
-  start('npm run dev --workspace server'),
-  start('npm run dev --workspace client'),
-];
+const children = [start('npm run dev --workspace server'), start('npm run dev --workspace client')];
 
 // Killing only the shell would leave node/vite running and holding the ports, so the whole
 // process tree is stopped: taskkill /T on Windows, the process group elsewhere.
