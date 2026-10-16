@@ -28,6 +28,9 @@ These rules apply to every change in this repository, by people and by agents.
 - One branch per topic. Merge into `master` only when all checks are green and the owner has
   approved.
 - Always push the working branch, even when it is not being merged.
+- After a branch is merged and the CI run on `master` for the merge commit is green, delete
+  the branch on origin and locally without asking (decided 2026-10-17). `master` is never
+  deleted; `.claude/settings.json` denies it.
 - No force push, no history rewriting.
 
 ## Decisions
