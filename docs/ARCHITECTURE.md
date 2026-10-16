@@ -98,25 +98,19 @@ Font weights: Book 400 (body), Regular 500, Bold 700, Heavy 900 (headings), Ital
 Light Italic 300 italic. Book and Regular both carry weight 400 inside the files; Regular is
 mapped to 500 so both remain usable.
 
-### Season marks are corrected to be round
+### Season marks and their ring
 
-The original artwork is not round: the drawn ring of each mark (bounding box of its non-white
-pixels at native size) measures width/height spring 1.020, summer 1.000, autumn 0.911,
-winter 0.885. Every variant in the source folder has the same distortion. The repo copies are
-corrected on the root `<svg>` only, paths untouched (2026-10-17): `viewBox` = original
-width/height, `preserveAspectRatio="none"`, and `width` = original width ÷ measured ratio, so
-the drawn ring becomes 1:1. Summer needs no correction and is unchanged.
+The season SVGs draw only the motif (flower, sun, leaf, snowflake); they contain no ring. The
+motifs are shipped unchanged: their width/height (spring 1.020, summer 1.000, autumn 0.911,
+winter 0.885, bounding box of drawn pixels at native size) is their natural shape, for
+example a six-armed snowflake is cos 30° ≈ 0.87 as wide as it is tall. They must not be
+stretched to 1:1.
 
-| Mark   | Original width × height | Corrected width × height | Drawn ratio after |
-| ------ | ----------------------- | ------------------------ | ----------------- |
-| spring | 2614 × 2550             | 2563 × 2550              | 1.000             |
-| summer | 2584 × 2550             | unchanged                | 1.000             |
-| autumn | 2476 × 2550             | 2719 × 2550              | 1.000             |
-| winter | 2244 × 2550             | 2535 × 2550              | 1.000             |
-
-The ring belongs to the artwork; the page draws no ring of its own. A new or replaced mark
-must be measured and corrected the same way; `client/e2e/seasonMarks.spec.js` fails when a
-mark on the page is not round within 2 %.
+The round ring around each mark is page CSS (`.landing__season` in `LandingPage.css`), in the
+season colour. It needs an explicit width and height: with `aspect-ratio` alone, the tall
+autumn and winter motifs stretched their box and the ring turned oval (winter 96 × 107 px),
+fixed 2026-10-17. `client/e2e/seasonMarks.spec.js` fails when a visible mark (ring included)
+is not round within 2 %, at phone and desktop width.
 
 ## Planned areas
 

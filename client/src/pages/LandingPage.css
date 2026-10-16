@@ -40,15 +40,36 @@
   list-style: none;
 }
 
-/* The ring is part of each mark's artwork; the page draws no ring of its own. Each mark gets
-   a square box and keeps its own (corrected, 1:1) aspect ratio inside it. */
+/* Each mark sits on a thin ring in its own season colour. The ring is drawn here; the
+   artwork has none. The motifs keep their natural proportions (a snowflake is taller than
+   wide), so the ring gets an explicit width AND height: with aspect-ratio alone, a tall
+   motif stretched the box and the ring turned oval. The motif is fitted inside. */
 .landing__season {
   width: var(--season-mark-size);
-  aspect-ratio: 1;
+  height: var(--season-mark-size);
+  padding: 4px;
+  border: var(--season-ring-width) solid var(--season-color);
+  border-radius: 50%;
 }
 
 .landing__season img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.landing__season--spring {
+  --season-color: var(--color-spring);
+}
+
+.landing__season--summer {
+  --season-color: var(--color-summer);
+}
+
+.landing__season--autumn {
+  --season-color: var(--color-autumn);
+}
+
+.landing__season--winter {
+  --season-color: var(--color-winter);
 }

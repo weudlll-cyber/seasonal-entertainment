@@ -32,6 +32,7 @@
   --space-3: 1.5rem;
   --space-4: 2.5rem;
 
-  /* Season marks: size range (the ring is drawn inside each mark's artwork) */
+  /* Season marks: size range and the ring drawn in each season colour */
   --season-mark-size: clamp(56px, 18vw, 96px);
+  --season-ring-width: 3px;
 }
