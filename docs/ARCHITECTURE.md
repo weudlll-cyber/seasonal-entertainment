@@ -109,8 +109,22 @@ stretched to 1:1.
 The round ring around each mark is page CSS (`.landing__season` in `LandingPage.css`), in the
 season colour. It needs an explicit width and height: with `aspect-ratio` alone, the tall
 autumn and winter motifs stretched their box and the ring turned oval (winter 96 × 107 px),
-fixed 2026-10-17. `client/e2e/seasonMarks.spec.js` fails when a visible mark (ring included)
-is not round within 2 %, at phone and desktop width.
+fixed 2026-10-17.
+
+Each motif is centred optically, not by its bounding box (2026-10-17). The optical centre is:
+spring the filled star (#C1CA55), summer the inner circle (#E8956B), autumn the centroid of
+the leaf's drawn pixels, winter the snowflake hub (= centroid, six-fold symmetric). Spring and
+autumn sat 5.1 and 6.4 px low in a 96 px ring and are moved up by `--motif-shift-y` (−6 %,
+−7.4 % of the motif box, so it scales with the ring); summer and winter were within 0.5 px
+and are not moved. Moved up, the tall leaf's tip crossed the ring, so autumn is also scaled
+to 0.93 (`--motif-scale`). All values sit in the per-season rules at the end of
+`LandingPage.css`, with how each was measured.
+
+`client/e2e/seasonMarks.spec.js` checks, at 360 px and 1280 px: each visible mark (ring
+included) is round within 2 %; each optical centre is within 1 px of the ring centre; each
+motif stays at least 1 px inside the ring. A new or replaced mark needs its own optical centre
+in that test and, if the test fails, its own values in the CSS. The SVG files themselves stay
+byte-identical to the source; every fix is CSS.
 
 ## Planned areas
 
