@@ -4,9 +4,6 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART ONE — open
 
-- **SE-FOUNDATION-1** — in review (PR #1). Repository, license, Express server with
-  `/api/health`, React landing page, design tokens, fonts, round season marks, tests,
-  `npm run verify`, CI. Branch `feat/se-foundation-1`.
 - Info pages with admin editor
 - Accounts with Discord/Telegram login and 2FA for organisers/admins
 - Bots and group roles
@@ -18,4 +15,6 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
-Nothing closed yet.
+- **SE-FOUNDATION-1** — closed by PR #1 (`feat/se-foundation-1`), merged 2026-10-17.
+  Repository, license, server with `/api/health`, landing page, design tokens, fonts,
+  web-ready season marks with build script, tests, `npm run verify`, CI.
