@@ -3,19 +3,39 @@
 // Path:        scripts/dev.mjs
 // Project:     Seasonal Entertainment
 // Description: `npm run dev`: starts the API server (port 3800, restarts on change) and the
-//              Vite dev server (port 5380, proxies /api) together; Ctrl+C stops both.
+//              Vite dev server (port 5380, proxies /api) together; stopping it stops both.
 // ============================================================
 
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+
+const isWindows = process.platform === 'win32';
+
+// On Linux each side gets its own process group, so the whole group can be signalled.
+const start = (command) => spawn(command, { stdio: 'inherit', shell: true, detached: !isWindows });
 
 const children = [
-  spawn('npm run dev --workspace server', { stdio: 'inherit', shell: true }),
-  spawn('npm run dev --workspace client', { stdio: 'inherit', shell: true }),
+  start('npm run dev --workspace server'),
+  start('npm run dev --workspace client'),
 ];
+
+// Killing only the shell would leave node/vite running and holding the ports, so the whole
+// process tree is stopped: taskkill /T on Windows, the process group elsewhere.
+function stopTree(child) {
+  if (child.exitCode !== null) return;
+  if (isWindows) {
+    spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+  } else {
+    try {
+      process.kill(-child.pid, 'SIGTERM');
+    } catch {
+      // The group is already gone.
+    }
+  }
+}
 
 // If either side exits, take the other down too, so nothing is left half-running.
 function stopAll(code) {
-  for (const child of children) if (child.exitCode === null) child.kill();
+  children.forEach(stopTree);
   process.exit(code ?? 0);
 }
 
