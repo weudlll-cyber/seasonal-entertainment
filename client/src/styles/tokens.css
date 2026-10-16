@@ -1,0 +1,38 @@
+/* ============================================================
+   File:        tokens.css
+   Path:        client/src/styles/tokens.css
+   Project:     Seasonal Entertainment
+   Description: The single source of design tokens (colours, type, spacing). Components use
+                these custom properties and never hard-code their own values.
+   ============================================================ */
+
+:root {
+  /* Season colours */
+  --color-spring: #afb84e;
+  --color-summer: #e06e22;
+  --color-autumn: #f9a825;
+  --color-winter: #04aaf7;
+
+  /* Neutrals: white matches the logo's own background */
+  --color-background: #ffffff;
+  --color-text: #1f2328;
+  --color-text-muted: #59606b;
+
+  /* Typography: Heavy for headings, Book for body (faces declared in fonts.css) */
+  --font-family: 'Luxora Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-weight-body: 400;
+  --font-weight-heading: 900;
+  --font-size-body: 1rem;
+  --font-size-lead: clamp(1.05rem, 0.95rem + 0.5vw, 1.25rem);
+  --font-size-title: clamp(2rem, 1.4rem + 3vw, 3.5rem);
+
+  /* Spacing */
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 1.5rem;
+  --space-4: 2.5rem;
+
+  /* Season marks: size range and the ring drawn in each season colour */
+  --season-mark-size: clamp(56px, 18vw, 96px);
+  --season-ring-width: 3px;
+}

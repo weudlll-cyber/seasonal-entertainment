@@ -1,0 +1,65 @@
+/* ============================================================
+   File:        LandingPage.css
+   Path:        client/src/pages/LandingPage.css
+   Project:     Seasonal Entertainment
+   Description: Layout of the landing page; one centred column that fits phone width upward.
+   ============================================================ */
+
+.landing {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-2);
+  text-align: center;
+}
+
+.landing__logo {
+  width: min(100%, 320px);
+}
+
+.landing__title {
+  margin: 0;
+  font-size: var(--font-size-title);
+}
+
+.landing__lead {
+  margin: 0;
+  max-width: 32rem;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lead);
+}
+
+.landing__seasons {
+  display: flex;
+  gap: clamp(var(--space-1), 3vw, var(--space-3));
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Each mark sits on a thin ring in its own season colour. */
+.landing__season {
+  width: var(--season-mark-size);
+  padding: 4px;
+  border: var(--season-ring-width) solid var(--season-color);
+  border-radius: 50%;
+}
+
+.landing__season--spring {
+  --season-color: var(--color-spring);
+}
+
+.landing__season--summer {
+  --season-color: var(--color-summer);
+}
+
+.landing__season--autumn {
+  --season-color: var(--color-autumn);
+}
+
+.landing__season--winter {
+  --season-color: var(--color-winter);
+}

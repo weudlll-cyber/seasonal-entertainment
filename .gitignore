@@ -1,0 +1,11 @@
+# Dependencies and build output
+node_modules/
+client/dist/
+coverage/
+# Playwright output
+test-results/
+playwright-report/
+# Local configuration and secrets
+.env
+.env.*
+.claude/settings.local.json
