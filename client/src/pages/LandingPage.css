@@ -40,10 +40,10 @@
   list-style: none;
 }
 
-/* Each mark sits on a thin ring in its own season colour. The ring is drawn here; the
-   artwork has none. The motifs keep their natural proportions (a snowflake is taller than
-   wide), so the ring gets an explicit width AND height: with aspect-ratio alone, a tall
-   motif stretched the box and the ring turned oval. The motif is fitted inside. */
+/* Each mark sits on a thin ring in its own season colour. The ring is drawn here; the mark
+   files have none. They are square, optically centred and share one margin
+   (scripts/build-season-marks.mjs), so the motif simply fills the ring's inner area and
+   nothing here corrects it. Explicit width AND height keep the ring round. */
 .landing__season {
   width: var(--season-mark-size);
   height: var(--season-mark-size);
@@ -55,25 +55,10 @@
 .landing__season img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  translate: 0 var(--motif-shift-y, 0);
-  scale: var(--motif-scale, 1);
 }
 
-/* Per season: ring colour and optical centring. A motif's bounding box is centred in the
-   ring, but its optical centre need not be. `--motif-shift-y` moves the motif so its optical
-   centre lands on the ring centre; a percentage of the motif's own box, so it scales with it.
-   Measured 2026-10-17 in Chromium, ring hidden, 3x pixels, at 96 px and 64.8 px rings:
-   - spring: centre of the filled star (#C1CA55), 5.07 px / 2.85 px below → -6 %
-   - summer: centre of the inner circle (#E8956B), within 0.5 px → no shift
-   - autumn: centroid of the leaf's drawn pixels, 6.35 px / 3.49 px below → -7.4 %; shifted
-     up, the tall leaf's tip crossed the ring (1.34 px at 96 px), so `--motif-scale` 0.93
-     keeps it at least 1 px inside
-   - winter: snowflake hub = centroid (six-fold symmetric), within 0.5 px → no shift
-   client/e2e/seasonMarks.spec.js measures the same: centre within 1 px, gap at least 1 px. */
 .landing__season--spring {
   --season-color: var(--color-spring);
-  --motif-shift-y: -6%;
 }
 
 .landing__season--summer {
@@ -82,8 +67,6 @@
 
 .landing__season--autumn {
   --season-color: var(--color-autumn);
-  --motif-shift-y: -7.4%;
-  --motif-scale: 0.93;
 }
 
 .landing__season--winter {

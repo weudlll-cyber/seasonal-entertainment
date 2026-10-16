@@ -35,7 +35,7 @@ export default function LandingPage() {
       <ul className="landing__seasons" aria-label="The four seasons">
         {SEASONS.map((season) => (
           <li key={season.id} className={`landing__season landing__season--${season.id}`}>
-            <img src={season.mark} alt={`${season.name} season mark`} width="96" height="94" />
+            <img src={season.mark} alt={`${season.name} season mark`} width="96" height="96" />
           </li>
         ))}
       </ul>

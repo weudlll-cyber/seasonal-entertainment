@@ -7,11 +7,12 @@
 //                tall within 2 %;
 //              - centred: each motif's optical centre is within 1 px of the ring centre;
 //              - inside: each motif stays at least 1 px clear of the ring's inner edge.
-//              The ring is page CSS; the motif keeps its natural shape.
+//              The ring is page CSS; the mark files carry the centring (no CSS correction).
 // ============================================================
 
 import { expect, test } from '@playwright/test';
 import { drawnBox } from './drawnBox.js';
+import { SEASON_MARKS } from './opticalCentres.js';
 
 // 3x device pixels give 170-290 px per mark, so one pixel is well under both tolerances.
 test.use({ deviceScaleFactor: 3 });
@@ -20,16 +21,6 @@ test.use({ deviceScaleFactor: 3 });
 const VIEWPORTS = [
   { name: 'phone', width: 360, height: 780 },
   { name: 'desktop', width: 1280, height: 900 },
-];
-
-// How each motif's optical centre is found (drawnBox options). Spring and summer have a
-// part in its own colour; autumn's leaf and winter's six-fold snowflake (whose centroid is
-// its hub) use the centroid of all drawn pixels.
-const SEASONS = [
-  { name: 'Spring', centre: 'filled star', options: { colour: '#C1CA55' } },
-  { name: 'Summer', centre: 'inner circle', options: { colour: '#E8956B' } },
-  { name: 'Autumn', centre: 'leaf centroid', options: {} },
-  { name: 'Winter', centre: 'snowflake hub', options: {} },
 ];
 
 // The list item holds the ring and the motif together: that is the visible mark.
@@ -48,7 +39,7 @@ async function hideRing(page) {
 }
 
 for (const viewport of VIEWPORTS) {
-  for (const season of SEASONS) {
+  for (const season of SEASON_MARKS) {
     test(`${season.name} mark is drawn round (${viewport.name})`, async ({ page }) => {
       const mark = await openMark(page, viewport, season.name);
 

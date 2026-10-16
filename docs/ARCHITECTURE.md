@@ -62,11 +62,13 @@ The client only ever calls relative URLs (`/api/...`), so the same build works o
 .claude/settings.json      agent permissions for this repository
 client/                    React + Vite client
   index.html               HTML shell
-  e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels
+  e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels,
+                           opticalCentres.js defines each season motif's optical centre
   src/main.jsx             entry point
   src/pages/               one folder entry per page (component, CSS, test side by side)
   src/styles/              tokens.css (all design tokens), fonts.css, base.css
   src/assets/              logo, season marks, fonts (woff2)
+  src/assets/seasons/source/  original season marks, input of build-season-marks.mjs
   src/test/setup.js        Vitest setup
 server/
   src/index.js             entry point: config, app, listen
@@ -76,6 +78,7 @@ server/
   test/                    Vitest tests
 scripts/
   dev.mjs                  npm run dev
+  build-season-marks.mjs   npm run marks:build (web-ready season marks)
   verify.mjs               npm run verify
 docs/                      this file and the backlog
 ```
@@ -88,43 +91,51 @@ Copied from the owner's Seasonal Token folder and renamed to lowercase:
 | -------------------------------------- | ---------------------------------------------- |
 | `assets/seasonal-entertainment.jpg`    | `seasonal_entertainment.jpg`                   |
 | `assets/seasonal-tokens.svg` (favicon) | `Seasonal_Tokens-02.svg`                       |
-| `assets/seasons/spring.svg`            | `Spring_Season-02.svg`                         |
-| `assets/seasons/summer.svg`            | `Summer_Season-02.svg`                         |
-| `assets/seasons/autumn.svg`            | `Autumn.svg`                                   |
-| `assets/seasons/winter.svg`            | `Winter_Season-02.svg`                         |
+| `assets/seasons/source/spring.svg`     | `Spring_Season-02.svg`                         |
+| `assets/seasons/source/summer.svg`     | `Summer_Season-02.svg`                         |
+| `assets/seasons/source/autumn.svg`     | `Autumn.svg`                                   |
+| `assets/seasons/source/winter.svg`     | `Winter_Season-02.svg`                         |
 | `assets/fonts/luxora-grotesk-*.woff2`  | the six `.otf` files, converted with fontTools |
 
 Font weights: Book 400 (body), Regular 500, Bold 700, Heavy 900 (headings), Italic 400 italic,
 Light Italic 300 italic. Book and Regular both carry weight 400 inside the files; Regular is
 mapped to 500 so both remain usable.
 
-### Season marks and their ring
+### Season marks
 
-The season SVGs draw only the motif (flower, sun, leaf, snowflake); they contain no ring. The
-motifs are shipped unchanged: their width/height (spring 1.020, summer 1.000, autumn 0.911,
-winter 0.885, bounding box of drawn pixels at native size) is their natural shape, for
-example a six-armed snowflake is cos 30° ≈ 0.87 as wide as it is tall. They must not be
-stretched to 1:1.
+**Rule (decided 2026-10-17):** the originals live, unchanged, in
+`client/src/assets/seasons/source/`. The web-ready marks next to it
+(`client/src/assets/seasons/{spring,summer,autumn,winter}.svg`) are generated from them by
+`npm run marks:build` (`scripts/build-season-marks.mjs`) and never edited by hand. They are
+square, optically centred and share one margin. Nothing on the page corrects them.
+
+The originals draw only the motif (flower, sun, leaf, snowflake), no ring, and their natural
+shape is not square (snowflake ≈ cos 30° as wide as tall). Their bounding box is centred on
+the canvas, their optical centre is not: spring's star sat about 5 px and autumn's leaf about
+6 px low in a 96 px ring. The optical centre of each motif is defined once, in
+`client/e2e/opticalCentres.js`: spring the filled star (#C1CA55), summer the inner circle
+(#E8956B), autumn the centroid of the leaf's drawn pixels, winter the snowflake hub (=
+centroid, six-fold symmetric).
+
+The script renders each original in Chromium and measures it with `client/e2e/drawnBox.js`
+(the same code as the browser tests): its optical centre, and its farthest drawn point from
+that centre. The largest motif sets one shared radius; each mark is then wrapped, paths
+untouched, in one `<g transform="translate(..) scale(..)">` that puts its optical centre at
+the centre of a square viewBox and scales it uniformly so its farthest point lies on that
+radius. All four motifs therefore have the same size relative to the square. Finally SVGO
+optimises the file with settings that keep the group and its transform and never replace
+curves; the script prints the offsets and scales it applied and re-measures its own output.
 
 The round ring around each mark is page CSS (`.landing__season` in `LandingPage.css`), in the
-season colour. It needs an explicit width and height: with `aspect-ratio` alone, the tall
-autumn and winter motifs stretched their box and the ring turned oval (winter 96 × 107 px),
-fixed 2026-10-17.
+season colour, with explicit width and height (with `aspect-ratio` alone a tall motif once
+stretched it oval). The mark simply fills the ring's inner area.
 
-Each motif is centred optically, not by its bounding box (2026-10-17). The optical centre is:
-spring the filled star (#C1CA55), summer the inner circle (#E8956B), autumn the centroid of
-the leaf's drawn pixels, winter the snowflake hub (= centroid, six-fold symmetric). Spring and
-autumn sat 5.1 and 6.4 px low in a 96 px ring and are moved up by `--motif-shift-y` (−6 %,
-−7.4 % of the motif box, so it scales with the ring); summer and winter were within 0.5 px
-and are not moved. Moved up, the tall leaf's tip crossed the ring, so autumn is also scaled
-to 0.93 (`--motif-scale`). All values sit in the per-season rules at the end of
-`LandingPage.css`, with how each was measured.
-
-`client/e2e/seasonMarks.spec.js` checks, at 360 px and 1280 px: each visible mark (ring
+Checks: `client/src/assets/seasons/seasonMarks.test.js` (fast) verifies each web-ready file has
+a square viewBox, one shared size and one translate + scale group.
+`client/e2e/seasonMarks.spec.js` verifies on the page, at 360 px and 1280 px: each mark (ring
 included) is round within 2 %; each optical centre is within 1 px of the ring centre; each
-motif stays at least 1 px inside the ring. A new or replaced mark needs its own optical centre
-in that test and, if the test fails, its own values in the CSS. The SVG files themselves stay
-byte-identical to the source; every fix is CSS.
+motif stays at least 1 px inside the ring. A new mark gets its original in `source/`, its
+optical centre in `opticalCentres.js`, and a run of `npm run marks:build`.
 
 ## Planned areas
 

@@ -22,7 +22,8 @@
     "test:server": "npm test --workspace server",
     "test:client": "npm test --workspace client",
     "test:e2e": "playwright test",
-    "verify": "node scripts/verify.mjs"
+    "verify": "node scripts/verify.mjs",
+    "marks:build": "node scripts/build-season-marks.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -31,6 +32,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
-    "prettier": "^3.9.10"
+    "prettier": "^3.9.10",
+    "svgo": "^4.1.0"
   }
 }
