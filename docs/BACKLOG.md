@@ -15,4 +15,4 @@
 
 - **SE-FOUNDATION-1** — repository, license, Express server with `/api/health`, React landing
   page, design tokens, fonts, tests, `npm run verify`, CI. Closed by branch
-  `feat/se-foundation-1` (2026-10-17).
+  `feat/se-foundation-1`, pull request #1 (2026-10-17).
