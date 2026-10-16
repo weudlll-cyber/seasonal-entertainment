@@ -62,7 +62,7 @@ The client only ever calls relative URLs (`/api/...`), so the same build works o
 .claude/settings.json      agent permissions for this repository
 client/                    React + Vite client
   index.html               HTML shell
-  e2e/                     Playwright browser tests
+  e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels
   src/main.jsx             entry point
   src/pages/               one folder entry per page (component, CSS, test side by side)
   src/styles/              tokens.css (all design tokens), fonts.css, base.css
@@ -97,6 +97,26 @@ Copied from the owner's Seasonal Token folder and renamed to lowercase:
 Font weights: Book 400 (body), Regular 500, Bold 700, Heavy 900 (headings), Italic 400 italic,
 Light Italic 300 italic. Book and Regular both carry weight 400 inside the files; Regular is
 mapped to 500 so both remain usable.
+
+### Season marks are corrected to be round
+
+The original artwork is not round: the drawn ring of each mark (bounding box of its non-white
+pixels at native size) measures width/height spring 1.020, summer 1.000, autumn 0.911,
+winter 0.885. Every variant in the source folder has the same distortion. The repo copies are
+corrected on the root `<svg>` only, paths untouched (2026-10-17): `viewBox` = original
+width/height, `preserveAspectRatio="none"`, and `width` = original width ÷ measured ratio, so
+the drawn ring becomes 1:1. Summer needs no correction and is unchanged.
+
+| Mark   | Original width × height | Corrected width × height | Drawn ratio after |
+| ------ | ----------------------- | ------------------------ | ----------------- |
+| spring | 2614 × 2550             | 2563 × 2550              | 1.000             |
+| summer | 2584 × 2550             | unchanged                | 1.000             |
+| autumn | 2476 × 2550             | 2719 × 2550              | 1.000             |
+| winter | 2244 × 2550             | 2535 × 2550              | 1.000             |
+
+The ring belongs to the artwork; the page draws no ring of its own. A new or replaced mark
+must be measured and corrected the same way; `client/e2e/seasonMarks.spec.js` fails when a
+mark on the page is not round within 2 %.
 
 ## Planned areas
 

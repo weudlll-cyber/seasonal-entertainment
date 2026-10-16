@@ -1,7 +1,12 @@
 # Backlog
 
+An entry moves from part one to part two only when its branch is merged into `master`.
+
 ## PART ONE — open
 
+- **SE-FOUNDATION-1** — in review (PR #1). Repository, license, Express server with
+  `/api/health`, React landing page, design tokens, fonts, round season marks, tests,
+  `npm run verify`, CI. Branch `feat/se-foundation-1`.
 - Info pages with admin editor
 - Accounts with Discord/Telegram login and 2FA for organisers/admins
 - Bots and group roles
@@ -13,6 +18,4 @@
 
 ## PART TWO — closed
 
-- **SE-FOUNDATION-1** — repository, license, Express server with `/api/health`, React landing
-  page, design tokens, fonts, tests, `npm run verify`, CI. Closed by branch
-  `feat/se-foundation-1`, pull request #1 (2026-10-17).
+Nothing closed yet.

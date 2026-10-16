@@ -12,7 +12,7 @@ import autumnMark from '../assets/seasons/autumn.svg';
 import winterMark from '../assets/seasons/winter.svg';
 import './LandingPage.css';
 
-// Calendar order; `id` picks the season colour token in LandingPage.css.
+// Calendar order. The mark files are corrected to draw a round ring (docs/ARCHITECTURE.md).
 const SEASONS = [
   { id: 'spring', name: 'Spring', mark: springMark },
   { id: 'summer', name: 'Summer', mark: summerMark },
@@ -34,8 +34,8 @@ export default function LandingPage() {
       <p className="landing__lead">Games, community and everything around Seasonal Tokens.</p>
       <ul className="landing__seasons" aria-label="The four seasons">
         {SEASONS.map((season) => (
-          <li key={season.id} className={`landing__season landing__season--${season.id}`}>
-            <img src={season.mark} alt={`${season.name} season mark`} width="96" height="94" />
+          <li key={season.id} className="landing__season">
+            <img src={season.mark} alt={`${season.name} season mark`} width="96" height="96" />
           </li>
         ))}
       </ul>

@@ -15,7 +15,7 @@ const STEPS = [
   { name: 'client tests', script: 'test:client' },
   { name: 'build', script: 'build' },
   // The browser test needs the build from the step before.
-  { name: 'browser smoke test', script: 'test:e2e', needs: 'build' },
+  { name: 'browser tests', script: 'test:e2e', needs: 'build' },
 ];
 
 const results = new Map();

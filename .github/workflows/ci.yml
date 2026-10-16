@@ -3,7 +3,7 @@
 # Path:        .github/workflows/ci.yml
 # Project:     Seasonal Entertainment
 # Description: CI: runs `npm run verify` (lint, format check, server and client tests, build,
-#              browser smoke test) on pushes to master and on pull requests against master.
+#              browser tests) on pushes to master and on pull requests against master.
 #              It calls the same script as local work, so both always run the same checks.
 # ============================================================
 

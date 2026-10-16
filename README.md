@@ -21,8 +21,8 @@ npm start          # http://127.0.0.1:3800 — set HOST and PORT to change
 ## Check it
 
 ```sh
-npx playwright install chromium   # once, for the browser test
-npm run verify                    # lint, format, tests, build, browser smoke test
+npx playwright install chromium   # once, for the browser tests
+npm run verify                    # lint, format, tests, build, browser tests
 ```
 
 More: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/BACKLOG.md](docs/BACKLOG.md),

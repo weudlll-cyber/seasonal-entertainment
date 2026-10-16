@@ -34,44 +34,21 @@
 
 .landing__seasons {
   display: flex;
-  /* Without this the row stretches every ring to the tallest mark. */
-  align-items: center;
   gap: clamp(var(--space-1), 3vw, var(--space-3));
   margin: var(--space-2) 0 0;
   padding: 0;
   list-style: none;
 }
 
-/* Each mark sits on a thin ring in its own season colour. The source SVGs are not quite
-   square, so the ring is fixed at 1:1 and the mark is fitted inside it. */
+/* The ring is part of each mark's artwork; the page draws no ring of its own. Each mark gets
+   a square box and keeps its own (corrected, 1:1) aspect ratio inside it. */
 .landing__season {
   width: var(--season-mark-size);
   aspect-ratio: 1;
-  display: grid;
-  place-items: center;
-  padding: 4px;
-  border: var(--season-ring-width) solid var(--season-color);
-  border-radius: 50%;
 }
 
 .landing__season img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-}
-
-.landing__season--spring {
-  --season-color: var(--color-spring);
-}
-
-.landing__season--summer {
-  --season-color: var(--color-summer);
-}
-
-.landing__season--autumn {
-  --season-color: var(--color-autumn);
-}
-
-.landing__season--winter {
-  --season-color: var(--color-winter);
 }
