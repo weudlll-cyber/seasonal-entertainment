@@ -8,11 +8,10 @@
 //              and "Media removed" for an item that is gone.
 // ============================================================
 
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import App from '../app/App.jsx';
 import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
+import { renderApp } from '../test/renderApp.jsx';
 
 class FakeSocket {
   send() {}
@@ -46,7 +45,7 @@ const message = (id, kind, media) => ({
   hiddenAt: null,
 });
 
-function chat(session, messages = []) {
+async function chat(session, messages = []) {
   const calls = mockApi({
     ...session,
     'GET /chat/rooms': {
@@ -63,17 +62,13 @@ function chat(session, messages = []) {
       body: { ok: true, message: message(99, 'sticker', item(11, 'Spring badge')) },
     },
   });
-  render(
-    <MemoryRouter initialEntries={['/chat']}>
-      <App />
-    </MemoryRouter>
-  );
+  await renderApp('/chat');
   return calls;
 }
 
 describe('picker', () => {
   it('guests get only the Emoji tab and a hint', async () => {
-    const calls = chat(GUEST);
+    const calls = await chat(GUEST);
     fireEvent.click(await screen.findByRole('button', { name: 'Emoji' }));
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Emoji']);
     expect(screen.getByText('Log in to send stickers and GIFs.')).toBeInTheDocument();
@@ -81,7 +76,7 @@ describe('picker', () => {
   });
 
   it('members get Stickers and GIFs, packs in order, and send an item by id', async () => {
-    const calls = chat(signedIn({ id: 1, username: 'mia', role: 'member' }));
+    const calls = await chat(signedIn({ id: 1, username: 'mia', role: 'member' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Emoji, stickers, GIFs' }));
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
       'Emoji',
@@ -110,7 +105,7 @@ describe('picker', () => {
 
 describe('messages', () => {
   it('shows stickers and GIFs with alt text, credits on demand, and removed media', async () => {
-    chat(GUEST, [
+    await chat(GUEST, [
       message(1, 'sticker', item(12, 'Silver coin', 'Foxeane')),
       message(2, 'gif', item(13, 'Spin')),
       message(3, 'gif', null),

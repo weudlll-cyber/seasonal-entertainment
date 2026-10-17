@@ -20,8 +20,8 @@ export const CHAT_SOCKET_PATH = '/ws/chat';
 // site's. Browsers always send Origin on a WebSocket upgrade, so a missing one is refused.
 const originAllowed = (req, config) => req.headers.origin === selfOrigin(req, config);
 
-export function attachChatSocket(server, { app, db, config }) {
-  const { chatHub: hub, sessionParser } = app.locals;
+// Called through the chat handle (mount.js): attach(server).
+export function attachChatSocket(server, { hub, sessionParser, db, config }) {
   const wss = new WebSocketServer({ noServer: true, maxPayload: 4096 });
 
   server.on('upgrade', (req, socket, head) => {

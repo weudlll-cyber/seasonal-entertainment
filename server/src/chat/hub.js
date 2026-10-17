@@ -53,7 +53,8 @@ export class ChatHub {
   broadcast(roomId, event) {
     const room = findRoom(this.db, roomId);
     const sockets = this.rooms.get(roomId) ?? new Set();
-    const text = JSON.stringify(event);
+    // The room's slug on every event: a page's one connection serves panels of many rooms.
+    const text = JSON.stringify({ ...event, room: room?.slug });
     for (const socket of sockets) {
       if (socket.readyState !== WebSocket.OPEN) continue;
       const viewer = this.viewerOf(socket);

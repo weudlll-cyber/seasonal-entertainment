@@ -49,7 +49,8 @@ export function beginSecondFactor(req, user) {
   return new Promise((resolve, reject) => req.session.save((e) => (e ? reject(e) : resolve())));
 }
 
-export function twoFactorRoutes(db, config, hub) {
+// chatSessions: the chat handle's sessions interface (chat/mount.js).
+export function twoFactorRoutes(db, config, chatSessions) {
   const router = express.Router();
   const limit = config.rateLimits.twoFactor;
   const perUser = makeLimiter(limit, {
@@ -63,7 +64,7 @@ export function twoFactorRoutes(db, config, hub) {
   // own password change).
   async function endOtherSessions(req) {
     await restampSession(req, bumpSessionEpoch(db, req.user.id));
-    hub.disconnectUser(req.user.id, req.sessionID);
+    chatSessions.accountChanged(req.user.id, req.sessionID);
   }
 
   // Starting (or restarting) the setup reveals a new secret: only with the current password,

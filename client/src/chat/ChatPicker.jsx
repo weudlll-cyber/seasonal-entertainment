@@ -10,9 +10,8 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '../api/http.js';
-import { FormMessage } from '../components/FormField.jsx';
+import ChatNotice from './ChatNotice.jsx';
 import { EMOJI_GROUPS } from './emojis.js';
-import './ChatPicker.css';
 
 const TABS = [
   ['emoji', 'Emoji'],
@@ -90,7 +89,7 @@ export default function ChatPicker({ member, onEmoji, onMedia }) {
     <div className="chat-picker">
       <button
         type="button"
-        className="button button--secondary"
+        className="chat-button chat-button--secondary"
         aria-expanded={open}
         aria-controls="chat-picker-panel"
         onClick={() => setOpen((o) => !o)}
@@ -115,7 +114,7 @@ export default function ChatPicker({ member, onEmoji, onMedia }) {
           </div>
           {!member && <p className="chat-note">Log in to send stickers and GIFs.</p>}
           <div role="tabpanel" aria-label={tabs.find(([key]) => key === tab)[1]}>
-            <FormMessage error={error} />
+            <ChatNotice error={error} />
             {tab === 'emoji' ? (
               <EmojiTab onEmoji={onEmoji} />
             ) : (

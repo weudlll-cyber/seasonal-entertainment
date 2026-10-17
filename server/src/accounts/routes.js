@@ -4,7 +4,7 @@
 // Project:     Seasonal Entertainment
 // Description: /api/auth: current session, registration, login, logout, own password
 //              change. Wrong username and wrong password answer the same 401 (race game rule).
-//              Logout and password change also close the affected chat sockets (chat/hub.js).
+//              Logout and password change also close the affected chat sockets (chat/mount.js).
 //              Accounts with 2FA finish logging in at POST /api/2fa/login.
 // ============================================================
 
@@ -33,7 +33,8 @@ import {
   setPasswordHash,
 } from './userStore.js';
 
-export function accountRoutes(db, config, hub) {
+// chatSessions: the chat handle's sessions interface (chat/mount.js).
+export function accountRoutes(db, config, chatSessions) {
   const router = express.Router();
   const limits = config.rateLimits;
   // What the client sees about the signed-in account, including its 2FA state.
@@ -103,7 +104,7 @@ export function accountRoutes(db, config, hub) {
   });
 
   router.post('/logout', allow('member'), async (req, res) => {
-    hub.disconnectSession(req.sessionID);
+    chatSessions.ended(req.sessionID);
     await endSession(req);
     res.clearCookie(cookieName(config), { path: '/' });
     res.json({ ok: true });
@@ -123,7 +124,7 @@ export function accountRoutes(db, config, hub) {
     const newHash = await hashPassword(input.newPassword, config.bcryptCost);
     // Every other session of this account ends; this one is re-stamped and stays.
     await restampSession(req, setPasswordHash(db, req.user.id, newHash));
-    hub.disconnectUser(req.user.id, req.sessionID);
+    chatSessions.accountChanged(req.user.id, req.sessionID);
     res.json({ ok: true });
   });
 

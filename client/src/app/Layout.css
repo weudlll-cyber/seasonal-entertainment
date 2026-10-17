@@ -74,3 +74,10 @@
   background: var(--color-warning-surface);
   border-bottom: 1px solid var(--color-border);
 }
+
+/* Test-only page (/test/chat-panels): panels side by side when there is room. */
+.dev-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: var(--space-3);
+}

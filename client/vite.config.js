@@ -33,6 +33,9 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.js'],
+    // Above findBy*'s 5 s wait (test/setup.js), so a slow screen fails as a missing element
+    // with a clear message, not as a test that ran out of time.
+    testTimeout: 15_000,
     include: ['src/**/*.test.{js,jsx}'],
   },
 });

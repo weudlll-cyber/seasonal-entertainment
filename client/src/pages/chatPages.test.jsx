@@ -7,11 +7,10 @@
 //              moderator actions only for moderators, and the admin page lifts a sanction.
 // ============================================================
 
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import App from '../app/App.jsx';
 import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
+import { renderApp } from '../test/renderApp.jsx';
 
 class FakeSocket {
   static last = null;
@@ -32,12 +31,7 @@ class FakeSocket {
 
 beforeEach(() => vi.stubGlobal('WebSocket', FakeSocket));
 
-const renderAt = (path) =>
-  render(
-    <MemoryRouter initialEntries={[path]}>
-      <App />
-    </MemoryRouter>
-  );
+const renderAt = (path) => renderApp(path);
 
 const msg = (id, author, body, isGuest = false) => ({
   id,
@@ -74,7 +68,7 @@ describe('chat page', () => {
         body: { ok: true, message: msg(3, 'Guest-cd34', 'hello', true) },
       },
     });
-    renderAt('/chat');
+    await renderAt('/chat');
     expect(
       await screen.findByRole('link', { name: 'https://seasonaltokens.org/' })
     ).toHaveAttribute('rel', 'nofollow noopener noreferrer ugc');
@@ -98,14 +92,18 @@ describe('chat page', () => {
         body: { ok: true, messages: [msg(1, 'bert', 'first')] },
       },
     });
-    renderAt('/chat');
+    await renderAt('/chat');
     await screen.findByText('first');
     await vi.waitFor(() =>
       expect(FakeSocket.last.sent).toEqual([{ type: 'subscribe', room: 'general' }])
     );
-    FakeSocket.last.push({ type: 'message', message: msg(5, 'carla', 'live one') });
+    FakeSocket.last.push({
+      type: 'message',
+      message: msg(5, 'carla', 'live one'),
+      room: 'general',
+    });
     expect(await screen.findByText('live one')).toBeInTheDocument();
-    FakeSocket.last.push({ type: 'hidden', id: 1 });
+    FakeSocket.last.push({ type: 'hidden', id: 1, room: 'general' });
     await vi.waitFor(() => expect(screen.queryByText('first')).toBeNull());
     expect(screen.queryByRole('button', { name: 'Hide' })).toBeNull();
   });
@@ -119,7 +117,7 @@ describe('chat page', () => {
       },
       'POST /chat/messages/1/mute': { body: { ok: true } },
     });
-    renderAt('/chat');
+    await renderAt('/chat');
     const item = (await screen.findByText('spam')).closest('li');
     expect(within(item).getByRole('button', { name: 'Hide' })).toBeInTheDocument();
     expect(within(item).getByRole('button', { name: 'Ban' })).toBeInTheDocument();
@@ -144,7 +142,7 @@ describe('admin chat page', () => {
       'GET /chat/sanctions': { body: { ok: true, sanctions: [] } },
       'PUT /admin/chat/rooms/1': { body: { ok: true } },
     });
-    renderAt('/admin/chat');
+    await renderAt('/admin/chat');
     const flag = await screen.findByRole('checkbox', { name: 'Guests write in General' });
     expect(flag).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Guests write in new room' })).not.toBeChecked();
@@ -172,7 +170,7 @@ describe('admin chat page', () => {
       },
       'POST /chat/sanctions/7/lift': { body: { ok: true } },
     });
-    renderAt('/admin/chat');
+    await renderAt('/admin/chat');
     const entry = (await screen.findByText('Guest-ab12')).closest('li');
     expect(entry).toHaveTextContent('(no end)');
     fireEvent.click(within(entry).getByRole('button', { name: 'Lift' }));

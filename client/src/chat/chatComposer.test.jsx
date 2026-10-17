@@ -6,11 +6,10 @@
 //              emoji goes into the text at the cursor, and the message is sent as plain text.
 // ============================================================
 
-import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import App from '../app/App.jsx';
 import { GUEST, mockApi } from '../test/mockApi.js';
+import { renderApp } from '../test/renderApp.jsx';
 
 class FakeSocket {
   send() {}
@@ -34,7 +33,7 @@ const sent = (body) => ({
   },
 });
 
-function guestChat() {
+async function guestChat() {
   const calls = mockApi({
     ...GUEST,
     'GET /chat/rooms': {
@@ -47,17 +46,13 @@ function guestChat() {
     'GET /chat/rooms/general/messages': { body: { ok: true, messages: [] } },
     'POST /chat/rooms/general/messages': (request) => sent(request.body),
   });
-  render(
-    <MemoryRouter initialEntries={['/chat']}>
-      <App />
-    </MemoryRouter>
-  );
+  await renderApp('/chat');
   return calls;
 }
 
 describe('emoji picker', () => {
   it('a guest puts an emoji at the cursor and sends it as text', async () => {
-    const calls = guestChat();
+    const calls = await guestChat();
     const field = await screen.findByLabelText('Message');
     fireEvent.change(field, { target: { value: 'Hi all' } });
     field.setSelectionRange(3, 3); // after "Hi "
@@ -72,7 +67,7 @@ describe('emoji picker', () => {
   });
 
   it('shows the emoji groups only when opened', async () => {
-    guestChat();
+    await guestChat();
     const toggle = await screen.findByRole('button', { name: 'Emoji' });
     expect(screen.queryByRole('region', { name: 'Seasons and nature' })).toBeNull();
     fireEvent.click(toggle);

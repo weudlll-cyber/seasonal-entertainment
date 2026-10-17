@@ -20,6 +20,11 @@ An entry moves from part one to part two only when its branch is merged into `ma
   visibility, admin editor, "Seasonal Race" (coming soon). The race-game connection stays open.
 - **SE-NIGHT-1 piece 8 — Chat** — in review (PR #3). Live chat over WebSocket, rooms, guests
   with guest names, moderation (hide, mute, ban), reports, retention.
+- **SE-CHAT-COMPOSER-1 — Chat as a reusable module; attachments, file uploads, scrolling** — in
+  review (PR #3). Part A: the chat is one client module (`<ChatPanel>`, one connection per page)
+  and one server area (`mountChat`), docs/CHAT.md.
+- **Chat embedding in other applications** — open. An embed route, allowed embedding origins
+  (`frame-ancestors`), login inside an embedded frame; see docs/CHAT.md, last section.
 - **SE-CHAT-MEDIA-1 — Chat emojis, stickers, GIFs and link previews** — in review (PR #3).
   Part A: emoji picker for everyone. Part B: own sticker and GIF library (admin page, starter
   pack), members send stickers and GIFs. Part C: server-side link previews with SSRF

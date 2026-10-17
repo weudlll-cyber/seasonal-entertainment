@@ -74,7 +74,12 @@ describe('chat WebSocket', () => {
       await t.client().post('/api/chat/rooms/general/messages').send({ body: 'x' })
     ).body;
     await organiser.post(`/api/chat/messages/${message.id}/hide`);
-    expect(await reader.next('hidden')).toEqual({ type: 'hidden', id: message.id });
+    // Every pushed event names its room: one page connection serves panels of several rooms.
+    expect(await reader.next('hidden')).toEqual({
+      type: 'hidden',
+      id: message.id,
+      room: 'general',
+    });
     reader.ws.close();
   });
 });

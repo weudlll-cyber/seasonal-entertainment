@@ -2,8 +2,8 @@
 // File:        setup.js
 // Path:        client/src/test/setup.js
 // Project:     Seasonal Entertainment
-// Description: Vitest setup for client tests: DOM matchers, and a clean DOM and real
-//              globals (fetch) between tests.
+// Description: Vitest setup for client tests: DOM matchers, and a clean DOM, no leftover
+//              chat connection and real globals (fetch) between tests.
 // ============================================================
 
 import '@testing-library/jest-dom/vitest';
@@ -14,7 +14,10 @@ import { afterEach, vi } from 'vitest';
 // not turn a correct screen into a failure. A real failure still fails, just later.
 configure({ asyncUtilTimeout: 5000 });
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
+  // Let timers started by unmounting run now: the chat module closes its shared socket on a
+  // 0 ms timer, and that socket must not carry over into the next test.
+  await new Promise((resolve) => setTimeout(resolve, 0));
   vi.unstubAllGlobals();
 });

@@ -7,11 +7,10 @@
 //              live, held back for non-moderators after a report, removed by a moderator.
 // ============================================================
 
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import App from '../app/App.jsx';
 import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
+import { renderApp } from '../test/renderApp.jsx';
 
 class FakeSocket {
   static last = null;
@@ -46,7 +45,7 @@ const message = (id, preview) => ({
   hiddenAt: null,
 });
 
-function chat(session, messages, moderator = false) {
+async function chat(session, messages, moderator = false) {
   const calls = mockApi({
     ...session,
     'GET /chat/rooms': {
@@ -59,17 +58,13 @@ function chat(session, messages, moderator = false) {
     'GET /chat/rooms/general/messages': { body: { ok: true, messages } },
     'POST /chat/messages/1/preview/remove': { body: { ok: true } },
   });
-  render(
-    <MemoryRouter initialEntries={['/chat']}>
-      <App />
-    </MemoryRouter>
-  );
+  await renderApp('/chat');
   return calls;
 }
 
 describe('preview cards', () => {
   it('shows title (as a safe link), description, site and the image from this site', async () => {
-    chat(GUEST, [message(1, PREVIEW)]);
+    await chat(GUEST, [message(1, PREVIEW)]);
     const card = await screen.findByRole('complementary', {
       name: 'Link preview: Seasonal Tokens',
     });
@@ -85,7 +80,7 @@ describe('preview cards', () => {
   });
 
   it('works without an image', async () => {
-    chat(GUEST, [message(1, { ...PREVIEW, image: null, siteName: null })]);
+    await chat(GUEST, [message(1, { ...PREVIEW, image: null, siteName: null })]);
     const card = await screen.findByRole('complementary', {
       name: 'Link preview: Seasonal Tokens',
     });
@@ -94,18 +89,18 @@ describe('preview cards', () => {
   });
 
   it('arrives live and is held back after a report (non-moderators)', async () => {
-    chat(GUEST, [message(1, null)]);
+    await chat(GUEST, [message(1, null)]);
     await screen.findByText(/look/);
-    FakeSocket.last.push({ type: 'preview', id: 1, preview: PREVIEW });
+    FakeSocket.last.push({ type: 'preview', id: 1, preview: PREVIEW, room: 'general' });
     expect(
       screen.getByRole('complementary', { name: 'Link preview: Seasonal Tokens' })
     ).toBeInTheDocument();
-    FakeSocket.last.push({ type: 'previewHidden', id: 1 });
+    FakeSocket.last.push({ type: 'previewHidden', id: 1, room: 'general' });
     expect(screen.queryByRole('complementary')).toBeNull();
   });
 
   it('a moderator removes a preview', async () => {
-    const calls = chat(
+    const calls = await chat(
       signedIn({ id: 2, username: 'olga', role: 'organiser' }),
       [message(1, PREVIEW)],
       true

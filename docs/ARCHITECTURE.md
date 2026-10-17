@@ -147,6 +147,12 @@ yet.
 
 ## Chat
 
+**One module on each side** (docs/CHAT.md): the client's `<ChatPanel>` (`client/src/chat/`, one
+public entry `index.js`, styles under `.se-chat`, one shared WebSocket per page) can be placed on
+any page; the server's chat area is mounted with one call, `mountChat()` (`server/src/chat/
+mount.js`). The `/chat` page is a heading and one full panel with room tabs. Tests enforce both
+boundaries.
+
 **Actions over HTTP, live updates over WebSocket.** Sending, reporting and moderating are
 ordinary `/api/chat` routes, so CSRF, access declarations, validation, rate limits and the
 audit log apply unchanged. The WebSocket `/ws/chat` only pushes: a client subscribes to rooms it
@@ -269,6 +275,9 @@ client/                    React + Vite client
   src/api/http.js          the one fetch wrapper (JSON, ApiError)
   src/session/             session context (who is signed in), RequireUser guard
   src/components/          shared UI pieces (form fields, forms)
+  src/chat/                the chat module: <ChatPanel> (index.js is its only entry), live
+                           connection, composer, picker, messages, styles (docs/CHAT.md)
+  src/devPages/            test-only pages, routed by the Vite dev server only
   src/admin/               admin area (/admin): layout, users, audit log, info editor; one section each
   src/components/Markdown.jsx  the one safe Markdown renderer
   e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels,
@@ -292,7 +301,8 @@ server/
   src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md)
   src/events/              events: schema, store, public and admin routes, seed
   src/games/               games hub: schema, store, public and admin routes, seed
-  src/chat/                chat: schema, store, messages and what may be sent, viewer rules,
+  src/chat/                chat area, mounted by mount.js (the only entry for the rest of the
+                           server): schema, store, messages and what may be sent, viewer rules,
                            routes, moderation, WebSocket endpoint (socket.js) and hub, sender
                            rate limit, retention, seed
   src/media/               chat media library: schema, store, image validator, files on disk,

@@ -12,6 +12,7 @@
 import { useState } from 'react';
 import { splitLinks } from '@seasonal-entertainment/shared/chatRules.js';
 import PreviewCard from './PreviewCard.jsx';
+import './ChatMessage.css';
 
 function MessageText({ body, linkify }) {
   if (!linkify) return body;
@@ -81,30 +82,42 @@ export default function ChatMessage({ message, moderator, onAction }) {
         <p className="chat-note">Preview hidden from others until the reports are reviewed.</p>
       )}
       <div className="chat-message__actions">
-        <button className="link-button" type="button" onClick={() => onAction('report', message)}>
+        <button
+          className="chat-link-button"
+          type="button"
+          onClick={() => onAction('report', message)}
+        >
           Report
         </button>
         {moderator && !message.hiddenAt && (
           <>
-            <button className="link-button" type="button" onClick={() => onAction('hide', message)}>
+            <button
+              className="chat-link-button"
+              type="button"
+              onClick={() => onAction('hide', message)}
+            >
               Hide
             </button>
             {[10, 60, 1440].map((minutes) => (
               <button
                 key={minutes}
-                className="link-button"
+                className="chat-link-button"
                 type="button"
                 onClick={() => onAction('mute', message, minutes)}
               >
                 Mute {minutes < 60 ? `${minutes} min` : `${minutes / 60} h`}
               </button>
             ))}
-            <button className="link-button" type="button" onClick={() => onAction('ban', message)}>
+            <button
+              className="chat-link-button"
+              type="button"
+              onClick={() => onAction('ban', message)}
+            >
               Ban
             </button>
             {message.preview && (
               <button
-                className="link-button"
+                className="chat-link-button"
                 type="button"
                 onClick={() => onAction('preview/remove', message)}
               >

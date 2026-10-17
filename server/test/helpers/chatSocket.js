@@ -7,7 +7,7 @@
 // ============================================================
 
 import { WebSocket } from 'ws';
-import { attachChatSocket, CHAT_SOCKET_PATH } from '../../src/chat/socket.js';
+import { CHAT_SOCKET_PATH } from '../../src/chat/socket.js';
 import { chatApp } from './chat.js';
 import { ORIGIN } from './testApp.js';
 
@@ -16,7 +16,7 @@ export async function listeningChat(overrides) {
   const t = chatApp(overrides);
   const server = t.app.listen(0, '127.0.0.1');
   await new Promise((resolve) => server.once('listening', resolve));
-  attachChatSocket(server, { app: t.app, db: t.db, config: t.config });
+  t.app.locals.chat.attach(server);
   return { t, server, url: `ws://127.0.0.1:${server.address().port}${CHAT_SOCKET_PATH}` };
 }
 

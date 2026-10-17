@@ -3,19 +3,17 @@
 // Path:        server/src/app.js
 // Project:     Seasonal Entertainment
 // Description: Builds the Express app: security headers, CSRF origin check, sessions, the
-//              JSON API under /api and, when a built client exists, the static client with a
-//              fallback to index.html for client routes. No listen(), so tests drive it directly;
-//              app.locals carries the chat hub and session parser for the WebSocket (index.js).
+//              JSON API under /api (the chat area through mountChat) and, when a built client
+//              exists, the static client with a fallback to index.html for client routes. No
+//              listen(), so tests drive it directly; app.locals.chat is the chat's handle.
 // ============================================================
 
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import express from 'express';
 import { bootstrapRoutes } from './accounts/bootstrap.js';
-import { ChatHub } from './chat/hub.js';
-import { adminChatRoomRoutes, chatModerationRoutes } from './chat/moderationRoutes.js';
-import { chatRoutes } from './chat/routes.js';
 import { adminAuditRoutes } from './admin/auditRoutes.js';
+import { mountChat } from './chat/mount.js';
 import { adminUserRoutes } from './admin/userRoutes.js';
 import { accountRoutes } from './accounts/routes.js';
 import { adminEventRoutes } from './events/adminRoutes.js';
@@ -25,11 +23,6 @@ import { gameRoutes } from './games/routes.js';
 import { allow } from './http/access.js';
 import { adminInfoRoutes } from './info/adminRoutes.js';
 import { infoRoutes } from './info/routes.js';
-import { adminMediaRoutes } from './media/adminRoutes.js';
-import { MEDIA_URL_PREFIX } from './media/files.js';
-import { mediaRoutes } from './media/routes.js';
-import { previewModerationRoutes } from './previews/routes.js';
-import { createPreviewService } from './previews/service.js';
 import { csrfGuard } from './http/csrf.js';
 import { errorHandler, sendError } from './http/errors.js';
 import { securityHeaders } from './http/securityHeaders.js';
@@ -50,21 +43,22 @@ export function createApp({ buildInfo, config, db, previewNetwork }) {
   api.use(csrfGuard(config));
   // One session middleware for HTTP and the chat WebSocket upgrade.
   const sessions = sessionMiddleware(db, config);
-  app.locals.sessionParser = sessions;
-  // Routes that end sessions or change an account close that account's chat sockets.
-  const hub = new ChatHub(db, config);
-  app.locals.chatHub = hub;
   api.use(sessions);
   api.use(currentUser(db));
   api.use(staffTwoFactorGate(db, config));
 
+  // The whole chat area (docs/CHAT.md). Its handle: index.js attaches the socket and starts
+  // it; account routes tell it about ended sessions and changed accounts.
+  const chat = mountChat({ app, api, db, config, sessionParser: sessions, previewNetwork });
+  app.locals.chat = chat;
+
   api.get('/health', allow('public'), (_req, res) => {
     res.json({ ok: true, version: buildInfo.version, commit: buildInfo.commit });
   });
-  api.use('/auth', accountRoutes(db, config, hub));
+  api.use('/auth', accountRoutes(db, config, chat.sessions));
   api.use('/auth', bootstrapRoutes(db, config));
-  api.use('/2fa', twoFactorRoutes(db, config, hub));
-  api.use('/admin/users', adminUserRoutes(db, config, hub));
+  api.use('/2fa', twoFactorRoutes(db, config, chat.sessions));
+  api.use('/admin/users', adminUserRoutes(db, config, chat.sessions));
   api.use('/admin/audit', adminAuditRoutes(db));
   api.use('/info', infoRoutes(db));
   api.use('/admin/info', adminInfoRoutes(db));
@@ -72,26 +66,10 @@ export function createApp({ buildInfo, config, db, previewNetwork }) {
   api.use('/admin/events', adminEventRoutes(db));
   api.use('/games', gameRoutes(db));
   api.use('/admin/games', adminGameRoutes(db));
-  const previews = createPreviewService(db, config, hub, previewNetwork);
-  api.use('/chat', chatRoutes(db, config, hub, previews));
-  api.use('/chat', previewModerationRoutes(db, hub));
-  api.use('/chat', chatModerationRoutes(db, hub));
-  api.use('/admin/chat/rooms', adminChatRoomRoutes(db));
-  api.use('/chat', mediaRoutes(db));
-  api.use('/admin/chat/media', adminMediaRoutes(db, config));
 
   // Unknown API paths answer JSON, never the HTML page.
   api.use((_req, res) => sendError(res, 404, 'not_found', 'No such API endpoint.'));
   app.use('/api', api);
-
-  // Chat media from this origin. File names are generated and never reused (immutable cache);
-  // the type follows the checked extension, helmet adds nosniff. Missing files answer 404,
-  // never the client page.
-  app.use(
-    MEDIA_URL_PREFIX,
-    express.static(config.mediaDir, { immutable: true, maxAge: '365d', index: false }),
-    (_req, res) => res.status(404).end()
-  );
 
   // One process in production: the same server hands out the built client.
   if (existsSync(config.clientDist)) {

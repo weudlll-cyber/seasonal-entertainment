@@ -7,6 +7,7 @@
 //              by main.jsx (or a test).
 // ============================================================
 
+import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import AdminAuditPage from '../admin/AdminAuditPage.jsx';
 import AdminChatMediaPage from '../admin/AdminChatMediaPage.jsx';
@@ -30,6 +31,12 @@ import RegisterPage from '../pages/RegisterPage.jsx';
 import RequireUser from '../session/RequireUser.jsx';
 import { SessionProvider } from '../session/SessionContext.jsx';
 import Layout from './Layout.jsx';
+
+// Test-only pages: routed by the Vite dev server only. In a production build DEV is false, so
+// this and the page's code are left out entirely.
+const ChatPanelsTestPage = import.meta.env.DEV
+  ? lazy(() => import('../devPages/ChatPanelsTestPage.jsx'))
+  : null;
 
 export default function App() {
   return (
@@ -70,6 +77,16 @@ export default function App() {
             <Route path="chat-media" element={<AdminChatMediaPage />} />
             <Route path="audit" element={<AdminAuditPage />} />
           </Route>
+          {ChatPanelsTestPage && (
+            <Route
+              path="test/chat-panels"
+              element={
+                <Suspense>
+                  <ChatPanelsTestPage />
+                </Suspense>
+              }
+            />
+          )}
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

@@ -45,7 +45,7 @@ export default function ChatComposer({ user, guestName, onSend }) {
         </p>
       )}
       <label>
-        <span className="form-field__label">Message</span>
+        <span className="chat-label">Message</span>
         <textarea
           ref={field}
           rows={2}
@@ -60,7 +60,7 @@ export default function ChatComposer({ user, guestName, onSend }) {
           onEmoji={insertEmoji}
           onMedia={(kind, item) => onSend({ kind, itemId: item.id })}
         />
-        <button className="button" type="submit" disabled={!draft.trim()}>
+        <button className="chat-button" type="submit" disabled={!draft.trim()}>
           Send
         </button>
       </div>
