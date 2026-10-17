@@ -19,7 +19,8 @@ export default async function globalSetup(config) {
     data: ADMIN,
   });
   if (boot.status() !== 201) throw new Error(`e2e bootstrap failed: ${boot.status()}`);
-  const { secret } = await (await api.post('/api/2fa/setup')).json();
+  const setup = await api.post('/api/2fa/setup', { data: { password: ADMIN.password } });
+  const { secret } = await setup.json();
   const enable = await api.post('/api/2fa/enable', {
     data: { code: codeForStep(secret, stepAt(Date.now())) },
   });

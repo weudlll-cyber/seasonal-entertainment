@@ -57,7 +57,7 @@ export function createApp({ buildInfo, config, db }) {
   });
   api.use('/auth', accountRoutes(db, config, hub));
   api.use('/auth', bootstrapRoutes(db, config));
-  api.use('/2fa', twoFactorRoutes(db, config));
+  api.use('/2fa', twoFactorRoutes(db, config, hub));
   api.use('/admin/users', adminUserRoutes(db, config, hub));
   api.use('/admin/audit', adminAuditRoutes(db));
   api.use('/info', infoRoutes(db));

@@ -2,8 +2,9 @@
 // File:        TwoFactorSetup.jsx
 // Path:        client/src/components/TwoFactorSetup.jsx
 // Project:     Seasonal Entertainment
-// Description: Turning 2FA on: show the QR code and secret, confirm with a first code, then
-//              show the recovery codes once (they are stored hashed and never shown again).
+// Description: Turning 2FA on: the current password starts it (the server asks for it), then
+//              show the QR code and secret, confirm with a first code, then show the recovery
+//              codes once (they are stored hashed and never shown again).
 // ============================================================
 
 import { useState } from 'react';
@@ -15,10 +16,12 @@ export default function TwoFactorSetup({ onEnabled }) {
   const [recoveryCodes, setRecoveryCodes] = useState(null);
   const [error, setError] = useState(null);
 
-  async function start() {
+  async function start(event) {
+    event.preventDefault();
+    const password = new FormData(event.currentTarget).get('password');
     setError(null);
     try {
-      setSetup(await api('/2fa/setup', { method: 'POST' }));
+      setSetup(await api('/2fa/setup', { method: 'POST', body: { password } }));
     } catch (err) {
       setError(err.message);
     }
@@ -59,12 +62,19 @@ export default function TwoFactorSetup({ onEnabled }) {
 
   if (!setup) {
     return (
-      <div>
+      <form className="form" onSubmit={start}>
+        <FormField
+          label="Password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          required
+        />
         <FormMessage error={error} />
-        <button className="button" type="button" onClick={start}>
+        <button className="button" type="submit">
           Set up two-factor authentication
         </button>
-      </div>
+      </form>
     );
   }
 

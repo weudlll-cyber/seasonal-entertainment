@@ -5,13 +5,15 @@
 // Description: Guards staff rights in the chat over HTTP and WebSocket: an organiser without
 //              the required 2FA counts as a member (no Organisers room, no Announcements, no
 //              hidden messages), and an open socket loses its rights as soon as the account
-//              does (demoted, locked, password reset, logged out), checked on every push.
+//              does (demoted, locked, password reset, logged out, 2FA turned off elsewhere),
+//              checked on every push.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
+import { codeForStep, stepAt } from '../src/twofa/totp.js';
 import { bodies, post } from './helpers/chat.js';
 import { connect, cookieOf, listeningChat, stopServer } from './helpers/chatSocket.js';
-import { makeStaff, registerUser, setRole } from './helpers/testApp.js';
+import { STAFF_TOTP_SECRET, makeStaff, registerUser, setRole } from './helpers/testApp.js';
 
 let t;
 let server;
@@ -99,6 +101,18 @@ describe('an open socket follows the account', () => {
 
   it('logged out: the socket of that session is closed', async () => {
     const { socket } = await afterChange(({ olga }) => olga.post('/api/auth/logout'));
+    await socket.closed;
+  });
+
+  it('2FA turned off in another session: the socket is closed', async () => {
+    const code = (offset) => codeForStep(STAFF_TOTP_SECRET, stepAt(Date.now()) + offset);
+    const { socket } = await afterChange(async ({ olga }) => {
+      const other = t.client();
+      await other.post('/api/auth/login').send({ username: 'olga', password: 'correct-horse-1' });
+      await other.post('/api/2fa/login').send({ code: code(0) });
+      await other.post('/api/2fa/disable').send({ password: 'correct-horse-1', code: code(1) });
+      expect((await olga.get('/api/auth/session')).body.user).toBeNull();
+    });
     await socket.closed;
   });
 

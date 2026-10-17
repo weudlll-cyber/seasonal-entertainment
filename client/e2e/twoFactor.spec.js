@@ -19,6 +19,8 @@ test('turn on 2FA and log in with a code', async ({ page }) => {
   await page.getByLabel(/at least 14 years old/).check();
   await page.getByRole('button', { name: 'Create account' }).click();
 
+  // Exact: the account page also has "Current password" and "New password".
+  await page.getByLabel('Password', { exact: true }).fill('correct-horse-1');
   await page.getByRole('button', { name: 'Set up two-factor authentication' }).click();
   const qr = page.getByAltText('QR code for your authenticator app');
   await expect

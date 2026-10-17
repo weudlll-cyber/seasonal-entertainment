@@ -55,8 +55,10 @@ async function call(route, body, headers = {}) {
 
 try {
   // 1. The admin account. loggedIn: a full session exists (not just a pending 2FA login).
+  // currentPassword: the account's password, needed again to start the 2FA setup.
   let loggedIn = false;
   const password = random(18);
+  let currentPassword = password;
   const created = await call(
     '/auth/bootstrap',
     { username: USERNAME, email: 'devadmin@example.org', password },
@@ -79,6 +81,7 @@ try {
   } else if (created.status === 409) {
     if (!existsSync(file)) throw new Error(`an admin exists but ${file} is missing`);
     const known = readFileSync(file, 'utf8').match(/^Password: (.+)$/m)?.[1];
+    currentPassword = known;
     const login = await call('/auth/login', { username: USERNAME, password: known });
     if (login.status !== 200) throw new Error(`login as ${USERNAME} failed: ${login.status}`);
     if (login.body.twoFactorRequired) console.log('The dev admin already has 2FA; nothing to do.');
@@ -89,7 +92,7 @@ try {
 
   // 2. Its 2FA (skipped when the login above already asked for a code).
   if (loggedIn) {
-    const setup = await call('/2fa/setup');
+    const setup = await call('/2fa/setup', { password: currentPassword });
     if (setup.status !== 200) throw new Error(`2FA setup failed: ${setup.status}`);
     const code = codeForStep(setup.body.secret, stepAt(Date.now()));
     const enable = await call('/2fa/enable', { code });

@@ -24,7 +24,7 @@ const PASSWORD = 'correct-horse-1';
 const codeNow = (secret, offset = 0) => codeForStep(secret, stepAt(Date.now()) + offset);
 
 async function enableTwoFactor(agent) {
-  const setup = await agent.post('/api/2fa/setup');
+  const setup = await agent.post('/api/2fa/setup').send({ password: PASSWORD });
   expect(setup.status).toBe(200);
   expect(setup.body.qrCode).toMatch(/^data:image\/png;base64,/);
   const enable = await agent.post('/api/2fa/enable').send({ code: codeNow(setup.body.secret) });
@@ -58,7 +58,7 @@ describe('setup', () => {
   it('refuses an invalid code and stays off', async () => {
     t = makeTestApp();
     const { agent } = await registerUser(t, 'anna', PASSWORD);
-    const setup = await agent.post('/api/2fa/setup');
+    const setup = await agent.post('/api/2fa/setup').send({ password: PASSWORD });
     const wrong = String((Number(codeNow(setup.body.secret)) + 1) % 1e6).padStart(6, '0');
     const res = await agent.post('/api/2fa/enable').send({ code: wrong });
     expect(res.status).toBe(400);

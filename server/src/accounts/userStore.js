@@ -64,6 +64,16 @@ export function setPasswordHash(db, id, passwordHash) {
     .get(passwordHash, id).e;
 }
 
+// Ends every session of the account without touching the password (2FA turned on or off).
+// Returns the new epoch.
+export function bumpSessionEpoch(db, id) {
+  return db
+    .prepare(
+      'UPDATE users SET session_epoch = session_epoch + 1 WHERE id = ? RETURNING session_epoch AS e'
+    )
+    .get(id).e;
+}
+
 export function countAdmins(db) {
   return db.prepare("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'").get().n;
 }

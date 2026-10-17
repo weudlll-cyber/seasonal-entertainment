@@ -71,14 +71,18 @@ describe('2FA setup on the account page', () => {
       'POST /2fa/enable': { body: { ok: true, recoveryCodes: ['aaaa-bbbb', 'cccc-dddd'] } },
     });
     renderAt('/account');
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'Set up two-factor authentication' })
-    );
+    const start = await screen.findByRole('button', { name: 'Set up two-factor authentication' });
+    type('Password', 'correct-horse-1');
+    fireEvent.click(start);
     expect(await screen.findByAltText('QR code for your authenticator app')).toHaveAttribute(
       'src',
       'data:image/png;base64,AAAA'
     );
     expect(screen.getByText('JBSWY3DPEHPK3PXP')).toBeInTheDocument();
+    // The setup is started with the current password.
+    expect(calls.find((c) => c.key === 'POST /2fa/setup').body).toEqual({
+      password: 'correct-horse-1',
+    });
     type('Code from the app', '654321');
     fireEvent.click(screen.getByRole('button', { name: 'Turn on' }));
     expect(await screen.findByText('aaaa-bbbb')).toBeInTheDocument();

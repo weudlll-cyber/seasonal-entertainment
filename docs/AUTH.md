@@ -43,16 +43,23 @@ from the race game's `docs/AUTH.md` are marked _(race game)_.
 
 - **TOTP** (RFC 6238: HMAC-SHA1, 30-second steps, 6 digits), readable by every authenticator
   app; implemented in `server/src/twofa/totp.js` and tested against the RFC's own vectors.
-- **Setup** (`/account`): `POST /api/2fa/setup` returns a new secret, its `otpauth://` link
-  and a QR code (PNG data URL). `POST /api/2fa/enable` with a first valid code turns 2FA on and
-  returns **ten recovery codes, shown once**; only their SHA-256 hashes are stored.
+- **Setup** (`/account`): `POST /api/2fa/setup` needs the **current password** again (so a
+  taken-over session cannot enrol its own authenticator; failed attempts count towards the
+  per-account 2FA limit) and returns a new secret, its `otpauth://` link and a QR code (PNG
+  data URL); calling it again replaces a pending secret, with the password again.
+  `POST /api/2fa/enable` with a first valid code turns 2FA on and returns **ten recovery codes,
+  shown once**; only their SHA-256 hashes are stored.
 - **Login** for an account with 2FA has two steps: the password answers
   `{ twoFactorRequired: true }` and marks the session as half-way (not logged in; valid
-  5 minutes); `POST /api/2fa/login` with `code` or `recoveryCode` finishes it with a fresh
-  session id.
+  5 minutes, and only while the account's session epoch is unchanged, so a password reset in
+  between voids it); `POST /api/2fa/login` with `code` or `recoveryCode` finishes it with a
+  fresh session id.
 - **No reuse:** each accepted 30-second step is remembered, and that code or an earlier one is
   refused afterwards. A recovery code is marked used in the same statement that accepts it.
 - **Off:** `POST /api/2fa/disable` needs the password and a valid code or recovery code.
+- **Turning 2FA on or off ends every other session** of the account (the same session-epoch
+  bump as a password change, `bumpSessionEpoch` in `server/src/accounts/userStore.js`) and
+  closes its other chat sockets; the session making the change is re-stamped and stays.
 - **Staff must use it:** an organiser or admin without 2FA can log in, but every organiser/admin
   route answers `403 two_factor_required` until 2FA is on (`server/src/twofa/gate.js`, checked
   in `allow()`). In the chat, over HTTP and WebSocket alike, such an account counts as a member
