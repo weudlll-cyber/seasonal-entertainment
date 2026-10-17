@@ -28,6 +28,8 @@ import { infoRoutes } from './info/routes.js';
 import { adminMediaRoutes } from './media/adminRoutes.js';
 import { MEDIA_URL_PREFIX } from './media/files.js';
 import { mediaRoutes } from './media/routes.js';
+import { previewModerationRoutes } from './previews/routes.js';
+import { createPreviewService } from './previews/service.js';
 import { csrfGuard } from './http/csrf.js';
 import { errorHandler, sendError } from './http/errors.js';
 import { securityHeaders } from './http/securityHeaders.js';
@@ -35,7 +37,8 @@ import { currentUser, sessionMiddleware } from './http/session.js';
 import { staffTwoFactorGate } from './twofa/gate.js';
 import { twoFactorRoutes } from './twofa/routes.js';
 
-export function createApp({ buildInfo, config, db }) {
+// previewNetwork: how link previews reach the internet (tests replace it).
+export function createApp({ buildInfo, config, db, previewNetwork }) {
   const app = express();
   app.disable('x-powered-by');
   // Behind a reverse proxy, req.ip and req.protocol come from its X-Forwarded-* headers.
@@ -69,7 +72,9 @@ export function createApp({ buildInfo, config, db }) {
   api.use('/admin/events', adminEventRoutes(db));
   api.use('/games', gameRoutes(db));
   api.use('/admin/games', adminGameRoutes(db));
-  api.use('/chat', chatRoutes(db, config, hub));
+  const previews = createPreviewService(db, config, hub, previewNetwork);
+  api.use('/chat', chatRoutes(db, config, hub, previews));
+  api.use('/chat', previewModerationRoutes(db, hub));
   api.use('/chat', chatModerationRoutes(db, hub));
   api.use('/admin/chat/rooms', adminChatRoomRoutes(db));
   api.use('/chat', mediaRoutes(db));

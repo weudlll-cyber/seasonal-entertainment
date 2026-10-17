@@ -5,7 +5,8 @@
 // Description: Chat rules shared by server and client: message length, room access levels,
 //              guest names, and link detection. The server refuses links from guests with the
 //              same detector the client uses to auto-link members' links, so the two can never
-//              disagree about what counts as a link.
+//              disagree about what counts as a link. Links are https only (members' plain
+//              http:// links are refused); the first https link gets a preview.
 // ============================================================
 
 export const MESSAGE_MAX = 500;
@@ -24,11 +25,23 @@ export function containsLink(text) {
   return LINK.test(text);
 }
 
-// Splits text into plain parts and http(s) links, for auto-linking members' messages.
-// Only explicit http(s):// URLs become links; nothing is ever treated as HTML.
+// Links in the chat are https only: a plain http:// link is refused when sent.
+const HTTPS_LINK = /https:\/\/[^\s<>"]+/gi;
+
+export function containsPlainHttpLink(text) {
+  return /\bhttp:\/\//i.test(text);
+}
+
+// The link a preview is made for: the first https link, if any.
+export function firstHttpsLink(text) {
+  return text.match(HTTPS_LINK)?.[0] ?? null;
+}
+
+// Splits text into plain parts and https links, for auto-linking members' messages.
+// Only explicit https:// URLs become links; nothing is ever treated as HTML.
 export function splitLinks(text) {
   const parts = [];
-  const pattern = /https?:\/\/[^\s<>"]+/gi;
+  const pattern = new RegExp(HTTPS_LINK);
   let last = 0;
   for (const match of text.matchAll(pattern)) {
     if (match.index > last) parts.push({ text: text.slice(last, match.index) });

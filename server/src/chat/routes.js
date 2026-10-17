@@ -4,9 +4,11 @@
 // Project:     Seasonal Entertainment
 // Description: /api/chat for everyone (guests included): the rooms this viewer may read,
 //              a room's recent messages, sending (room write access, what may be sent:
-//              messageInput.js; mute/ban, per-sender rate limit, per-IP limits for guests; a guest gets
-//              a unique guest name on the first message or report), and reporting a message.
-//              New messages are pushed live.
+//              messageInput.js; mute/ban, per-sender rate limit, per-IP limits for guests; a
+//              guest gets a unique guest name on the first message or report), and reporting
+//              a message (its preview then shows to moderators only until reviewed).
+//              New messages are pushed live; a member's first https link gets a preview
+//              card (previews/).
 // ============================================================
 
 import express from 'express';
@@ -58,7 +60,8 @@ const forGuests =
     return counted ? limiter(req, res, next) : next();
   };
 
-export function chatRoutes(db, config, hub) {
+// previews: the link-preview service (previews/service.js).
+export function chatRoutes(db, config, hub, previews) {
   const router = express.Router();
   const allowMessage = makeSenderLimit(config.chat.rate);
   const guestPostsPerIp = forGuests(makeLimiter(config.rateLimits.chatGuestPost));
@@ -89,8 +92,8 @@ export function chatRoutes(db, config, hub) {
   });
 
   router.get('/rooms/:slug/messages', allow('public'), loadRoom, (req, res) => {
-    const includeHidden = isModerator(chatViewer(req));
-    res.json({ ok: true, messages: listMessages(db, req.room, { includeHidden }) });
+    const moderator = isModerator(chatViewer(req));
+    res.json({ ok: true, messages: listMessages(db, req.room, { moderator }) });
   });
 
   router.post(
@@ -129,6 +132,7 @@ export function chatRoutes(db, config, hub) {
       const { roomId, authorUserId, authorGuest, ...visible } = message;
       hub.broadcast(req.room.id, { type: 'message', message: visible });
       res.status(201).json({ ok: true, message: visible });
+      previews.attach(message, viewer); // in the background; pushed when ready
     }
   );
 
@@ -148,6 +152,8 @@ export function chatRoutes(db, config, hub) {
       if (!(await ensureGuest(req, res, viewer, db))) return;
       const reporter = viewer.user ? `user:${viewer.user.id}` : `guest:${viewer.guest.id}`;
       reportMessage(db, message.id, reporter);
+      // Until a moderator reviews it, only moderators see its preview.
+      if (message.preview) hub.broadcast(room.id, { type: 'previewHidden', id: message.id });
       res.json({ ok: true });
     }
   );

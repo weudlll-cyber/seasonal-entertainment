@@ -4,12 +4,14 @@
 // Project:     Seasonal Entertainment
 // Description: One chat message: author (with a Guest badge), local time, then the text as
 //              plain text (members' http(s) links become links; guests' never) or a sticker /
-//              GIF from the site's library ("Media removed" once it is gone), Report, and for
-//              moderators Hide / Mute / Ban.
+//              GIF from the site's library ("Media removed" once it is gone), a link preview
+//              card (PreviewCard), Report, and for moderators Hide / Mute / Ban / Remove
+//              preview.
 // ============================================================
 
 import { useState } from 'react';
 import { splitLinks } from '@seasonal-entertainment/shared/chatRules.js';
+import PreviewCard from './PreviewCard.jsx';
 
 function MessageText({ body, linkify }) {
   if (!linkify) return body;
@@ -74,6 +76,10 @@ export default function ChatMessage({ message, moderator, onAction }) {
           <MessageText body={message.body} linkify={!message.isGuest} />
         </p>
       )}
+      {message.preview && <PreviewCard preview={message.preview} />}
+      {message.previewHeld && (
+        <p className="chat-note">Preview hidden from others until the reports are reviewed.</p>
+      )}
       <div className="chat-message__actions">
         <button className="link-button" type="button" onClick={() => onAction('report', message)}>
           Report
@@ -96,6 +102,15 @@ export default function ChatMessage({ message, moderator, onAction }) {
             <button className="link-button" type="button" onClick={() => onAction('ban', message)}>
               Ban
             </button>
+            {message.preview && (
+              <button
+                className="link-button"
+                type="button"
+                onClick={() => onAction('preview/remove', message)}
+              >
+                Remove preview
+              </button>
+            )}
           </>
         )}
       </div>

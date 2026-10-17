@@ -7,6 +7,9 @@
 //              session lifetime) are released. Runs at start and then every six hours.
 // ============================================================
 
+import { deleteMediaFile } from '../media/files.js';
+import { deleteUnusedPreviews } from '../previews/store.js';
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 const GUEST_NAME_DAYS = 30;
 
@@ -23,8 +26,17 @@ export function deleteExpiredChat(db, retentionDays, now = Date.now()) {
   })();
 }
 
+// Link previews no message uses and older than the cache: rows and image files go.
+export function deleteUnusedPreviewFiles(db, config, now = Date.now()) {
+  const before = new Date(now - config.linkPreviews.cacheHours * 60 * 60 * 1000).toISOString();
+  const files = deleteUnusedPreviews(db, before);
+  for (const file of files) deleteMediaFile(config, file);
+  return files.length;
+}
+
 export function startChatRetention(db, config, log = console.log) {
   const run = () => {
+    deleteUnusedPreviewFiles(db, config);
     const deleted = deleteExpiredChat(db, config.chat.retentionDays);
     if (deleted)
       log(

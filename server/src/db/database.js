@@ -17,6 +17,7 @@ import { EVENTS_SCHEMA } from '../events/schema.js';
 import { GAMES_SCHEMA } from '../games/schema.js';
 import { INFO_SCHEMA } from '../info/schema.js';
 import { MEDIA_SCHEMA } from '../media/schema.js';
+import { PREVIEW_SCHEMA } from '../previews/schema.js';
 import { TWO_FACTOR_SCHEMA } from '../twofa/schema.js';
 
 // Order matters only for foreign keys: an area's tables come after those it references.
@@ -28,6 +29,7 @@ const SCHEMAS = [
   EVENTS_SCHEMA,
   GAMES_SCHEMA,
   MEDIA_SCHEMA,
+  PREVIEW_SCHEMA,
   CHAT_SCHEMA,
 ];
 

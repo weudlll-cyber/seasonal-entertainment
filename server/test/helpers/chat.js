@@ -9,8 +9,8 @@
 import { seedChatRooms } from '../../src/chat/seed.js';
 import { makeTestApp } from './testApp.js';
 
-export function chatApp(overrides) {
-  const t = makeTestApp(overrides);
+export function chatApp(overrides, options) {
+  const t = makeTestApp(overrides, options);
   seedChatRooms(t.db);
   return t;
 }

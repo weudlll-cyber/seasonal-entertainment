@@ -103,6 +103,23 @@ export function readConfig(env = process.env) {
         guest: { windowMs: 10_000, max: 2 },
       },
     },
+    // Link previews in the chat (decided 2026-10-17). Only LINK_PREVIEWS is an env key.
+    linkPreviews: {
+      enabled: readBool(env, 'LINK_PREVIEWS', true),
+      timeoutMs: 5000, // page and image together
+      maxRedirects: 3,
+      maxHtmlBytes: 1024 * 1024,
+      maxImageBytes: 1024 * 1024,
+      imageMaxWidth: 480,
+      cacheHours: 24,
+      perUser: { windowMs: 60 * 60_000, max: 30 }, // fetches per member
+      overall: { windowMs: 60_000, max: 60 }, // fetches for the whole site
+      userAgent:
+        'SeasonalEntertainmentPreview/1.0 (link previews for the Seasonal Entertainment chat)',
+      titleMax: 120,
+      descriptionMax: 300,
+      siteNameMax: 60,
+    },
     // Timers (session sweep, chat retention). Tests switch them off; not an env key.
     backgroundJobs: true,
     rateLimits: {

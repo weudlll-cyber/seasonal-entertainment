@@ -113,6 +113,13 @@ export function addSanction(db, { kind, message, minutes, moderator }) {
   return Number(lastInsertRowid);
 }
 
+// A moderator looked at the reports and kept the message: they stop counting.
+export function markReportsReviewed(db, messageId) {
+  return db
+    .prepare('UPDATE chat_reports SET reviewed_at = ? WHERE message_id = ? AND reviewed_at IS NULL')
+    .run(now(), messageId).changes;
+}
+
 export function listActiveSanctions(db) {
   return db
     .prepare(

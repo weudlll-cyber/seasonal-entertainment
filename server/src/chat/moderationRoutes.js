@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: Chat moderation (organisers and admins, with 2FA): hide a message (gone for
 //              everyone else at once), mute its author for a time, ban its author, list
-//              reported messages and active sanctions, lift a sanction. Staff cannot be muted
+//              reported messages and active sanctions, mark reports reviewed (the message
+//              stays), lift a sanction. Staff cannot be muted
 //              or banned. Every action writes one audit entry. Also the admin room editor.
 // ============================================================
 
@@ -23,6 +24,7 @@ import {
   findRoom,
   liftSanction,
   listActiveSanctions,
+  markReportsReviewed,
   listRooms,
   saveRoom,
 } from './store.js';
@@ -91,6 +93,18 @@ export function chatModerationRoutes(db, hub) {
   };
   router.post('/messages/:id/mute', allow('organiser'), loadMessage, sanction('mute'));
   router.post('/messages/:id/ban', allow('organiser'), loadMessage, sanction('ban'));
+
+  // Reports looked at, message kept: off the list, and its preview shows to everyone again.
+  router.post('/messages/:id/reviewed', allow('organiser'), loadMessage, (req, res) => {
+    const reviewed = markReportsReviewed(db, req.message.id);
+    if (reviewed === 0)
+      return sendError(res, 404, 'not_found', 'No open reports for this message.');
+    audit(req, 'chat.report_review', 'chat_message', req.message.id, { reports: reviewed }, null);
+    const { preview } = findMessage(db, req.message.id);
+    if (preview)
+      hub.broadcast(req.message.roomId, { type: 'preview', id: req.message.id, preview });
+    res.json({ ok: true });
+  });
 
   router.get('/reports', allow('organiser'), (_req, res) => {
     res.json({ ok: true, messages: listReported(db) });

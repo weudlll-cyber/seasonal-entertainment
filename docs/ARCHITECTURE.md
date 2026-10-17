@@ -68,6 +68,7 @@ Read from the environment when the process starts, never baked into a build:
 | `REQUIRE_STAFF_2FA`   | `true`                                        | organisers/admins must use 2FA; `false` only outside production |
 | `CHAT_RETENTION_DAYS` | `90`                                          | chat messages older than this are deleted                       |
 | `MEDIA_DIR`           | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`      |
+| `LINK_PREVIEWS`       | `true`                                        | `false` switches chat link previews off                         |
 
 The server loads `.env` from the repository root if present; real environment variables win.
 `.env.example` lists every key by name.
@@ -181,8 +182,10 @@ password change and turning 2FA on or off close the account's other sockets at o
   (no IP is stored): 20 guest messages per minute (`rateLimits.chatGuestPost`) and 20 new guest
   names per hour (`rateLimits.chatNewGuest`). Registered usernames may not start
   with "Guest-".
-- **Messages** are plain text, at most 500 characters; only members' explicit http(s) links
-  become links, with `rel="nofollow noopener noreferrer ugc"`.
+- **Messages** are plain text, at most 500 characters; only members' explicit https links
+  become links, with `rel="nofollow noopener noreferrer ugc"`. Links are **https only**: a
+  member's message with a plain `http://` link is refused (`400 https_only`, enforced
+  2026-10-17 to match the stated rule; until then such links were accepted).
 - **Emojis** (everyone, guests too) are plain Unicode text in the message. The picker next to the
   message field (`client/src/chat/ChatPicker.jsx`) uses a compact built-in list of about 150
   emojis with English names (`client/src/chat/emojis.js`), chosen 2026-10-17 over a picker
@@ -211,6 +214,32 @@ password change and turning 2FA on or off close the account's other sockets at o
   `server/seeds/chat-media/` (made from the owner's own files; sources and credits in its README)
   into four packs: Stickers "Seasons", "Coins" (the silver coins credited to Foxeane),
   "Seasonal Tokens", and GIFs "Seasonal Tokens".
+- **Link previews** (decided 2026-10-17, `server/src/previews/`): when a member's text message
+  contains an https link, the **server** previews the first one in the background and pushes a
+  card (`{ type: "preview" }`) to the room; the message itself is never delayed, and a failed
+  fetch just means no card. Title, description and site name come from Open Graph, then
+  Twitter-card tags, then `<title>`/description, as **plain text** with capped lengths (120 /
+  300 / 60). The image is downloaded by the server, checked by the library's validator (JPEG,
+  PNG, WebP or GIF by content, at most 1 MB), scaled down to at most 480 px wide, stored as
+  WebP under `MEDIA_DIR/previews/` and served from this origin, so **viewers' browsers never
+  contact the linked site** and the CSP stays unchanged. Results are cached per URL for 24 h
+  (failures too), one fetch per URL at a time; at most 30 fetches per member per hour and 60
+  per minute overall (`config.linkPreviews`). `LINK_PREVIEWS=false` switches previews off.
+  Previews nobody uses any more are deleted with their image by the retention job.
+- **Fetch safety** (`server/src/previews/safeFetch.js`, `ipPolicy.js`), against server-side
+  request forgery: https and port 443 only, no credentials in the URL; the server resolves the
+  name itself and **every** answer must be a public address — private, loopback, link-local
+  (cloud metadata), carrier-grade NAT, multicast, reserved and documentation ranges, IPv6
+  unique-local, link-local, IPv4-mapped, NAT64, 6to4 and Teredo are refused (address literals
+  too); it then connects to exactly that address (no second lookup) with the TLS certificate
+  checked against the host name; at most 3 redirects, each checked the same way; one 5 s
+  deadline for page and image together (DNS included); HTML capped at 1 MB and only `text/html`
+  parsed; a fixed User-Agent, no cookies, no credentials. Tests run on a pretend internet
+  (`server/test/helpers/previewNet.js`), never the real one.
+- **Previews and moderation**: organisers and admins can remove a message's preview for
+  everyone (audited, `chat.preview_remove`). A reported message shows its preview to
+  moderators only until a moderator marks the reports reviewed ("Keep (reviewed)" on the admin
+  chat page, audited `chat.report_review`).
 - **Moderation** (organisers and admins, with 2FA): hide a message (gone for everyone else at
   once, still visible to moderators), mute its author for 10 minutes, 1 hour or 1 day, ban
   them from writing, lift a mute or ban, see reported messages. Staff cannot be muted or banned.
@@ -267,6 +296,8 @@ server/
                            rate limit, retention, seed
   src/media/               chat media library: schema, store, image validator, files on disk,
                            picker and admin routes, first-start seed
+  src/previews/            chat link previews: safe fetching (SSRF rules), meta parsing, cache,
+                           the preview service, moderators' removal route
   seeds/chat-media/        the starter stickers and GIFs (owner's own files, README credits)
   test/helpers/testApp.js  app on a temporary database for tests (chat.js: chat helpers,
                            chatSocket.js: a listening server and WebSocket clients)

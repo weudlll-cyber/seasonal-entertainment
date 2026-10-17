@@ -33,6 +33,12 @@ This list describes what the website's software actually stores.
 - **Chat reports**: when someone reports a message, the site stores which account or guest name
   reported it, so each person counts once. No IP address is stored.
 - **Chat mutes and bans**: who was muted or banned, by whom, and until when.
+- **Stickers and GIFs in the chat** come from this site's own library, managed by its admins. No
+  outside GIF or sticker service is contacted.
+- **Link previews in the chat**: when a member posts an https link, this site's server fetches
+  that page once and stores its title, description, site name and a scaled-down copy of its
+  image, which are shown with the message. Your browser loads nothing from the linked site for
+  this; it only goes there if you click the link.
 - **Protection against abuse**: to limit repeated login attempts and similar, the server keeps
   your IP address in its memory for up to one hour. It is not written to the database.
 
@@ -40,8 +46,9 @@ This list describes what the website's software actually stores.
 
 - No tracking, no analytics, no advertising.
 - No cookies other than the session cookie described above.
-- No content from other websites is loaded: fonts and images come from this site. Links to
-  other sites (such as Discord or Telegram) are only followed when you click them.
+- No content from other websites is loaded: fonts and images, including chat stickers, GIFs
+  and link-preview images, come from this site. Links to other sites (such as Discord or
+  Telegram) are only followed when you click them.
 
 ## Your rights
 

@@ -3,11 +3,19 @@
 // Path:        shared/chatRules.test.js
 // Project:     Seasonal Entertainment
 // Description: Guards the shared chat rules: link detection (what guests may not post),
-//              splitting members' text into plain parts and links, and message length.
+//              splitting members' text into plain parts and https links (plain http never),
+//              the first https link (previews), and message length.
 // ============================================================
 
 import { describe, expect, it } from 'vitest';
-import { MESSAGE_MAX, containsLink, splitLinks, validateMessage } from './chatRules.js';
+import {
+  MESSAGE_MAX,
+  containsLink,
+  containsPlainHttpLink,
+  firstHttpsLink,
+  splitLinks,
+  validateMessage,
+} from './chatRules.js';
 
 describe('containsLink', () => {
   it.each([
@@ -29,7 +37,7 @@ describe('containsLink', () => {
 });
 
 describe('splitLinks', () => {
-  it('cuts out http(s) links and keeps the rest as text', () => {
+  it('cuts out https links and keeps the rest as text', () => {
     expect(splitLinks('see https://seasonaltokens.org/ and more')).toEqual([
       { text: 'see ' },
       { link: 'https://seasonaltokens.org/' },
@@ -37,10 +45,28 @@ describe('splitLinks', () => {
     ]);
   });
 
+  it('never makes a link of plain http', () => {
+    expect(splitLinks('old http://example.com/')).toEqual([{ text: 'old http://example.com/' }]);
+  });
+
   it('never makes a link of javascript: or bare domains', () => {
     expect(splitLinks('javascript:alert(1) example.com')).toEqual([
       { text: 'javascript:alert(1) example.com' },
     ]);
+  });
+});
+
+describe('https-only links', () => {
+  it('finds the first https link, the one a preview is made for', () => {
+    expect(firstHttpsLink('a https://one.example/x b https://two.example/')).toBe(
+      'https://one.example/x'
+    );
+    expect(firstHttpsLink('http://one.example/ only')).toBeNull();
+  });
+
+  it('spots plain http links, which are refused', () => {
+    expect(containsPlainHttpLink('see HTTP://example.com')).toBe(true);
+    expect(containsPlainHttpLink('see https://example.com')).toBe(false);
   });
 });
 

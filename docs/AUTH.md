@@ -158,8 +158,9 @@ once they write or report. Registered usernames may not start with "Guest-", so 
 never look like a guest. Chat moderation (hide, mute, ban) is an organiser/admin action and
 therefore needs 2FA like every staff route. Stickers and GIFs are for members only (guests
 write text and emojis); `GET /api/chat/media` (the picker's library) is a member route, and the
-library itself is managed by admins (with 2FA) at `/api/admin/chat/media`. Details:
-ARCHITECTURE.md, "Chat".
+library itself is managed by admins (with 2FA) at `/api/admin/chat/media`. Removing a link
+preview and marking a message's reports reviewed are organiser/admin routes (with 2FA), like
+the rest of chat moderation. Details: ARCHITECTURE.md, "Chat".
 
 ## Tests
 

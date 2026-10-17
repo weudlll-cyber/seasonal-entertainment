@@ -6,8 +6,9 @@
 //              is set), messages (author is an account or a guest; hidden by moderators),
 //              reports, sanctions (mute with an end, ban without) and guest names (unique while
 //              held; released by the retention job). A message is text, or a sticker / GIF
-//              from the media library (media/schema.js). migrateChat() brings older databases
-//              up.
+//              from the media library (media/schema.js), optionally with a link preview
+//              (previews/schema.js); a report counts until a moderator marks it reviewed.
+//              migrateChat() brings older databases up.
 // ============================================================
 
 export const CHAT_SCHEMA = `
@@ -34,6 +35,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   kind           TEXT    NOT NULL DEFAULT 'text' CHECK (kind IN ('text', 'sticker', 'gif')),
   body           TEXT    NOT NULL,
   media_item_id  INTEGER REFERENCES media_items(id) ON DELETE SET NULL,
+  preview_id     INTEGER REFERENCES link_previews(id) ON DELETE SET NULL,
   created_at     TEXT    NOT NULL,
   hidden_at      TEXT,
   hidden_by      TEXT
@@ -45,6 +47,7 @@ CREATE TABLE IF NOT EXISTS chat_reports (
   message_id INTEGER NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE,
   reporter   TEXT    NOT NULL,
   created_at TEXT    NOT NULL,
+  reviewed_at TEXT,
   UNIQUE (message_id, reporter)
 );
 CREATE TABLE IF NOT EXISTS chat_sanctions (
@@ -76,6 +79,8 @@ const ADDED_COLUMNS = [
     "TEXT NOT NULL DEFAULT 'text' CHECK (kind IN ('text', 'sticker', 'gif'))",
   ],
   ['chat_messages', 'media_item_id', 'INTEGER REFERENCES media_items(id) ON DELETE SET NULL'],
+  ['chat_messages', 'preview_id', 'INTEGER REFERENCES link_previews(id) ON DELETE SET NULL'],
+  ['chat_reports', 'reviewed_at', 'TEXT'],
 ];
 
 export function migrateChat(db) {

@@ -140,3 +140,42 @@
   margin: 0;
   color: var(--color-text-muted);
 }
+
+/* Link preview card: compact, image left when there is room. */
+.chat-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  max-width: 32rem;
+  margin: 0.25rem 0;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius);
+}
+
+.chat-preview__image {
+  width: 6rem;
+  height: auto;
+  max-height: 6rem;
+  object-fit: cover;
+  border-radius: var(--radius);
+}
+
+.chat-preview__text {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.chat-preview__site,
+.chat-preview__description {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.chat-preview__title {
+  font-weight: var(--font-weight-strong);
+  overflow-wrap: anywhere;
+}

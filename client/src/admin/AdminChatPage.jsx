@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: Admin chat page: rooms (add, edit who may read and write, and whether guests
 //              may write: only where explicitly ticked; off for new rooms), reported messages
-//              (hide them), and active mutes and bans (lift them).
+//              (hide them, or keep them: marked reviewed, their preview shows again), and
+//              active mutes and bans (lift them).
 // ============================================================
 
 import { useEffect, useState } from 'react';
@@ -151,6 +152,13 @@ export default function AdminChatPage() {
               onClick={() => run(() => api(`/chat/messages/${m.id}/hide`, { method: 'POST' }))}
             >
               Hide
+            </button>{' '}
+            <button
+              className="link-button"
+              type="button"
+              onClick={() => run(() => api(`/chat/messages/${m.id}/reviewed`, { method: 'POST' }))}
+            >
+              Keep (reviewed)
             </button>
           </li>
         ))}

@@ -21,7 +21,18 @@ const ACTION_DONE = {
   hide: 'Message hidden.',
   mute: 'Author muted.',
   ban: 'Author banned from the chat.',
+  'preview/remove': 'Preview removed.',
 };
+
+// Live preview events: a new card, a card removed for everyone, a card held back for
+// non-moderators while the message's reports wait for review.
+function applyPreviewEvent(list, event, moderator) {
+  const set = (preview) => list.map((m) => (m.id === event.id ? { ...m, preview } : m));
+  if (event.type === 'preview') return set(event.preview);
+  if (event.type === 'previewRemoved') return set(null);
+  if (event.type === 'previewHidden' && !moderator) return set(null);
+  return list;
+}
 
 export default function ChatPage() {
   const { user } = useSession();
@@ -56,6 +67,8 @@ export default function ChatPage() {
       );
     } else if (event.type === 'hidden' && !info?.me.moderator) {
       setMessages((list) => list.filter((m) => m.id !== event.id));
+    } else {
+      setMessages((list) => applyPreviewEvent(list, event, info?.me.moderator));
     }
   });
 
@@ -83,6 +96,9 @@ export default function ChatPage() {
       const body = action === 'mute' ? { minutes } : {};
       await api(`/chat/messages/${message.id}/${action}`, { method: 'POST', body });
       setNotice(ACTION_DONE[action]);
+      if (action === 'preview/remove') {
+        setMessages((list) => applyPreviewEvent(list, { type: 'previewRemoved', id: message.id }));
+      }
       if (action === 'hide') {
         setMessages((list) =>
           list.map((m) =>

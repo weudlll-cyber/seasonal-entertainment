@@ -2,12 +2,17 @@
 // File:        messageInput.js
 // Path:        server/src/chat/messageInput.js
 // Project:     Seasonal Entertainment
-// Description: What a send request may contain. Text: length rules, and no links from guests.
+// Description: What a send request may contain. Text: length rules, no links from guests,
+//              and links only as https://.
 //              Sticker or GIF (decided 2026-10-17): members only, and only a library item by
 //              id that is active, in an active pack of that kind; never a URL.
 // ============================================================
 
-import { containsLink, validateMessage } from '@seasonal-entertainment/shared/chatRules.js';
+import {
+  containsLink,
+  containsPlainHttpLink,
+  validateMessage,
+} from '@seasonal-entertainment/shared/chatRules.js';
 import { sendError } from '../http/errors.js';
 import { findSendableItem } from '../media/store.js';
 
@@ -24,6 +29,9 @@ export function readMessageInput(req, res, db, viewer) {
     if (problem) return refuse(400, 'invalid_input', problem);
     if (!viewer.user && containsLink(body)) {
       return refuse(400, 'links_not_allowed', 'Guests cannot post links. Register to share links.');
+    }
+    if (containsPlainHttpLink(body)) {
+      return refuse(400, 'https_only', 'Links must start with https://.');
     }
     return { kind, body };
   }
