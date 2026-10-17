@@ -71,8 +71,31 @@
   }
 }
 
+.chat-drawer__rooms {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .room-picker {
   position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.room-picker__options {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.room-picker__group-title {
+  display: block;
+  padding: 0.25rem var(--space-1) 0;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .room-picker__button {

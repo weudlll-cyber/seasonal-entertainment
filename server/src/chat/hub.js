@@ -71,6 +71,15 @@ export class ChatHub {
     }
   }
 
+  // Accounts with an open chat socket right now: the "online" mark beside favourite members.
+  onlineUserIds() {
+    const ids = new Set();
+    for (const session of this.sessions.values()) {
+      if (session.data.userId !== undefined) ids.add(session.data.userId);
+    }
+    return ids;
+  }
+
   disconnectSession(sessionId) {
     for (const [socket, session] of this.sessions) {
       if (session.id === sessionId) this.close(socket);

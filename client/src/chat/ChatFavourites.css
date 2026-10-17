@@ -1,0 +1,96 @@
+/* ============================================================
+   File:        ChatFavourites.css
+   Path:        client/src/chat/ChatFavourites.css
+   Project:     Seasonal Entertainment
+   Description: Favourites in the chat module: the room star, the room list's group headings
+                ("Favourites", "Rooms"), and a member's name as a button with its small menu.
+                Under the .se-chat root like every module style, except the star, which a
+                host's room picker shows too.
+   ============================================================ */
+
+.chat-star {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-text-muted, #59606b);
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.chat-star--on {
+  color: var(--color-autumn, #f9a825);
+}
+
+.se-chat .chat-rooms-nav {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.se-chat .chat-rooms__heading {
+  margin: 0 0 0.25rem;
+  color: var(--chat-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.se-chat .chat-rooms__item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* A member's name: looks like the plain name, acts as a menu button. */
+.se-chat .chat-name-menu {
+  position: relative;
+}
+
+.se-chat .chat-name {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: var(--chat-strong);
+  cursor: pointer;
+}
+
+.se-chat .chat-name-menu__list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 3;
+  min-width: 13rem;
+  margin: 0.25rem 0 0;
+  padding: 0.25rem;
+  border: 1px solid var(--chat-border);
+  border-radius: var(--chat-radius);
+  background: var(--chat-bg);
+  box-shadow: var(--chat-shadow);
+  list-style: none;
+}
+
+.se-chat .chat-name-menu__list button {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--chat-space-1);
+  border: 0;
+  border-radius: var(--chat-radius);
+  background: none;
+  color: var(--chat-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.se-chat .chat-name-menu__list button:hover,
+.se-chat .chat-name-menu__list button:focus-visible {
+  background: var(--color-active-bg, #eaf6fe);
+}

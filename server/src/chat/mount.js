@@ -2,9 +2,9 @@
 // File:        mount.js
 // Path:        server/src/chat/mount.js
 // Project:     Seasonal Entertainment
-// Description: The whole chat area behind one call: rooms and messages, moderation, the
-//              sticker/GIF library, link previews, members' file uploads, the live WebSocket
-//              and the retention job.
+// Description: The whole chat area behind one call: rooms and messages, favourites,
+//              moderation, the sticker/GIF library, link previews, members' file uploads, the
+//              live WebSocket and the retention job.
 //              The rest of the server knows only mountChat() and the handle it returns
 //              (docs/CHAT.md, "Server interface").
 // ============================================================
@@ -17,6 +17,7 @@ import { seedChatMedia } from '../media/seed.js';
 import { previewModerationRoutes } from '../previews/routes.js';
 import { createPreviewService } from '../previews/service.js';
 import { uploadRoutes } from '../uploads/routes.js';
+import { favouriteRoutes } from './favouriteRoutes.js';
 import { ChatHub } from './hub.js';
 import { adminChatRoomRoutes, chatModerationRoutes } from './moderationRoutes.js';
 import { startChatRetention } from './retention.js';
@@ -36,6 +37,7 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork 
   const previews = createPreviewService(db, config, hub, previewNetwork);
 
   api.use('/chat', chatRoutes(db, config, hub, previews));
+  api.use('/chat/favourites', favouriteRoutes(db, hub));
   api.use('/chat', previewModerationRoutes(db, hub));
   api.use('/chat', chatModerationRoutes(db, hub));
   api.use('/chat', mediaRoutes(db));

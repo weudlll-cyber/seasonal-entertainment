@@ -279,6 +279,8 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
   `Content-Security-Policy: default-src 'none'; sandbox`; the site never shows them itself.
   Moderators' **Remove file** deletes the files from disk and leaves "File removed" (audited,
   `chat.file_remove`). Reported messages keep their file.
+- **Favourites** (docs/CHAT.md, "Favourites"): members' favourite rooms and members,
+  `/api/chat/favourites`, keyed on the session's account only; rows cascade with the account.
 - **Retention**: messages older than `CHAT_RETENTION_DAYS` (default 90) are deleted with their
   uploaded files, files whose message was removed in any other way and uploads never sent
   within an hour go too (no orphans), unused link previews after the cache time, and guest

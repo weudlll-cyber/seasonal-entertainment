@@ -33,6 +33,10 @@ This list describes what the website's software actually stores.
 - **Chat reports**: when someone reports a message, the site stores which account or guest name
   reported it, so each person counts once. No IP address is stored.
 - **Chat mutes and bans**: who was muted or banned, by whom, and until when.
+- **Favourites in the chat** (members only): the rooms and other members you marked as
+  favourites. Only you see them; they are deleted with your account. A member you marked does
+  not learn about it. Next to your favourite members the chat shows whether they are online
+  right now (have the chat open); this is not stored.
 - **Stickers and GIFs in the chat** come from this site's own library, managed by its admins. No
   outside GIF or sticker service is contacted.
 - **Files in the chat**: members (not guests) can send images (JPG, PNG, WebP, GIF) and PDF

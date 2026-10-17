@@ -26,7 +26,11 @@ import { ChatPanel } from '../chat/index.js';
 
 `index.js` also exports **`useChatRooms()`**: the rooms the current reader may read and who they
 are in the chat (`{ info: { rooms, me }, error, reload }`), for a host's own room picker (the
-site's chat drawer, docs/DESIGN.md). The panel itself uses the same hook.
+site's chat drawer, docs/DESIGN.md). The panel itself uses the same hook. For the same picker
+it exports the member's favourites: **`useFavourites()`** (`{ member, rooms, users,
+isFavouriteUser, setRoom, setUser }`; one shared copy per page, so every place agrees),
+**`groupRooms(rooms, favouriteSlugs)`** (favourites first, both groups in the rooms' own order)
+and **`<RoomStar room>`** (the star; renders nothing for guests).
 
 The module uses nothing else from the page around it. From outside its folder it imports only
 React, the shared chat rules (`@seasonal-entertainment/shared/chatRules.js`), the account context
@@ -68,6 +72,28 @@ of the module other than `index.js`.
   the page's own origin (`/api/chat/...`, `/ws/chat`, `/media/...`) and fits the width it is given.
 - **Test-only page** `/test/chat-panels` (two compact panels side by side) is routed by the Vite
   dev server only; production builds leave it out (`import.meta.env.DEV`).
+
+## Favourites
+
+Members (never guests) keep favourite **rooms** and favourite **members**, stored on the server
+per account (`chat_favourite_rooms`, `chat_favourite_users`; deleted with either account).
+
+- **Rooms**: a star beside each room in the full chat's room list and beside the drawer's room
+  picker (`aria-pressed`, label "Favourite: <room>"). Favourite rooms come first under a
+  "Favourites" heading (in the picker: a "Favourites" group of the listbox), then the rest; the
+  keyboard moves through both as one list. Rooms keep their colour mark by their place among all
+  rooms. Only rooms the member may read can be favourites, and a favourite the member can no
+  longer read (role or room change) is left out.
+- **Members**: in every message, another member's name is a button opening a small menu ("Add
+  to favourites" / "Remove from favourites"; Enter, Space or ArrowDown open it on the first item,
+  arrows move, Escape closes and returns to the name). Guests' names and one's own name stay
+  plain text, and guests see no menus or stars. Messages carry the author's account id
+  (`authorId`, `null` for guests) for this.
+- **API** (`server/src/chat/favouriteRoutes.js`, members only): `GET /api/chat/favourites` →
+  `{ rooms: [slug], users: [{ id, username, online }] }` (online: an open chat socket right now);
+  `PUT`/`DELETE /api/chat/favourites/rooms/<slug>` and `/users/<id>`. The account always comes
+  from the session, so nobody can read or change another member's favourites. A guest is not an
+  account and so cannot be a favourite; neither can oneself.
 
 ## Server: `mountChat()`
 

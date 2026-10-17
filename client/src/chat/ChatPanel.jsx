@@ -12,13 +12,16 @@ import { useSession } from '../session/SessionContext.jsx';
 import ChatComposer from './ChatComposer.jsx';
 import ChatNotice from './ChatNotice.jsx';
 import MessageList from './MessageList.jsx';
+import RoomTabs from './RoomTabs.jsx';
 import { useChatRoom } from './useChatRoom.js';
 import './ChatPanel.css';
 import './ChatPanelVariants.css';
 import './ChatPicker.css';
+import './ChatFavourites.css';
 
-// room: slug of the room shown; when it changes the panel follows (a host's room picker). variant: 'full' (a page of its own) or 'compact' (a
-// box beside other content). showRoomTabs: let the reader switch between their rooms.
+// room: slug of the room shown; when it changes the panel follows (a host's room picker).
+// variant: 'full' (a page of its own) or 'compact' (a box beside other content).
+// showRoomTabs: let the reader switch between their rooms (favourites first, RoomTabs).
 export default function ChatPanel({ room: roomInput, variant = 'full', showRoomTabs = false }) {
   const { user } = useSession();
   const chat = useChatRoom(roomInput, user);
@@ -31,22 +34,7 @@ export default function ChatPanel({ room: roomInput, variant = 'full', showRoomT
       aria-label={`Chat: ${roomName}`}
     >
       {showRoomTabs ? (
-        <nav aria-label="Rooms">
-          <ul className="chat-rooms">
-            {info?.rooms.map((r) => (
-              <li key={r.slug}>
-                <button
-                  type="button"
-                  className={`chat-room${r.slug === room ? ' chat-room--current' : ''}`}
-                  aria-current={r.slug === room ? 'page' : undefined}
-                  onClick={() => chat.setRoom(r.slug)}
-                >
-                  {r.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <RoomTabs rooms={info?.rooms ?? []} current={room} onPick={chat.setRoom} />
       ) : (
         <p className="chat-panel__title">{roomName}</p>
       )}

@@ -2,7 +2,8 @@
 // File:        ChatMessage.jsx
 // Path:        client/src/chat/ChatMessage.jsx
 // Project:     Seasonal Entertainment
-// Description: One chat message: author (with a Guest badge), local time, then its text as
+// Description: One chat message: author (with a Guest badge; a member's name opens the name
+//              menu, NameMenu), local time, then its text as
 //              plain text (members' https links become links; guests' never) and its sticker /
 //              GIF from the site's library ("Media removed" once it is gone), a link preview
 //              card (PreviewCard), an uploaded file (MessageFile), Report, and for
@@ -12,6 +13,7 @@
 import { useState } from 'react';
 import { splitLinks } from '@seasonal-entertainment/shared/chatRules.js';
 import MessageFile from './MessageFile.jsx';
+import NameMenu from './NameMenu.jsx';
 import PreviewCard from './PreviewCard.jsx';
 import './ChatMessage.css';
 
@@ -66,7 +68,7 @@ export default function ChatMessage({ message, moderator, onAction }) {
   return (
     <li className={`chat-message${message.hiddenAt ? ' chat-message--hidden' : ''}`}>
       <div className="chat-message__meta">
-        <strong>{message.author}</strong>
+        <NameMenu name={message.author} authorId={message.authorId} />
         {message.isGuest && <span className="chat-badge">Guest</span>}
         <time dateTime={message.createdAt}>{time(message.createdAt)}</time>
         {message.hiddenAt && <em>hidden by {message.hiddenBy}</em>}

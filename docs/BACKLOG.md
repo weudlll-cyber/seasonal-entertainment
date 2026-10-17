@@ -35,6 +35,10 @@ An entry moves from part one to part two only when its branch is merged into `ma
   logout or an account switch the chat module's shared connection reconnects as the new reader
   and the rooms and messages reload (docs/CHAT.md). Part E: the leftover check message removed
   from the development database and a stale `npm run dev:admin` process ended (2026-10-17).
+- **SE-DM-1 — favourites, end-to-end encrypted direct messages, report with consent** — in
+  progress (PR to come; built on PR #4, which carries PR #3). Piece 1: favourite rooms (star in
+  the drawer's picker and the full chat's room list, favourites first) and favourite members
+  (name menu in every message), members only.
 - **Unread count for the chat button** — open. The drawer's chat button shows no badge: the chat
   module cannot tell how many messages are new for this reader yet.
 - **Chat embedding in other applications** — open. An embed route, allowed embedding origins

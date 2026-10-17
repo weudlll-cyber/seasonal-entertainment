@@ -8,6 +8,7 @@
 //              held; released by the retention job). A message is text, or a sticker / GIF
 //              from the media library (media/schema.js), optionally with a link preview
 //              (previews/schema.js); a report counts until a moderator marks it reviewed.
+//              Members' favourite rooms and favourite members (gone with the account).
 //              migrateChat() brings older databases up.
 // ============================================================
 
@@ -60,6 +61,19 @@ CREATE TABLE IF NOT EXISTS chat_sanctions (
   created_by TEXT    NOT NULL,
   created_at TEXT    NOT NULL,
   lifted_at  TEXT
+);
+CREATE TABLE IF NOT EXISTS chat_favourite_rooms (
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  room_id    INTEGER NOT NULL REFERENCES chat_rooms(id) ON DELETE CASCADE,
+  created_at TEXT    NOT NULL,
+  PRIMARY KEY (user_id, room_id)
+);
+CREATE TABLE IF NOT EXISTS chat_favourite_users (
+  user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  favourite_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at   TEXT    NOT NULL,
+  PRIMARY KEY (user_id, favourite_id),
+  CHECK (user_id <> favourite_id)
 );
 `;
 

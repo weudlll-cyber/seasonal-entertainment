@@ -29,7 +29,7 @@ test('live chat between a guest and a member, and moderation', async ({ browser,
   await api.dispose();
   const memberPage = await memberContext.newPage();
   await memberPage.goto('/chat');
-  await expect(memberPage.getByRole('button', { name: 'General' })).toBeVisible();
+  await expect(memberPage.getByRole('button', { name: 'General', exact: true })).toBeVisible();
 
   const guestContext = await browser.newContext();
   const guestPage = await guestContext.newPage();
