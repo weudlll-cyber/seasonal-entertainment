@@ -5,7 +5,8 @@
 // Description: Who is using the chat (an account, or a guest held in the session) and what
 //              that viewer may do in a room. One rule set for HTTP routes and the WebSocket:
 //              an organiser or admin who still has to set up the required 2FA counts as a
-//              member for reading, writing and moderation alike.
+//              member for reading, writing and moderation alike. Guests write only in rooms
+//              marked guest-writable.
 // ============================================================
 
 import { roleAtLeast } from '@seasonal-entertainment/shared/accountRules.js';
@@ -42,5 +43,7 @@ function passes(level, viewer) {
 }
 
 export const canRead = (room, viewer) => passes(room.readAccess, viewer);
-export const canWrite = (room, viewer) => passes(room.writeAccess, viewer);
+// Guests write only in rooms explicitly marked guest-writable, whatever the write level says.
+export const canWrite = (room, viewer) =>
+  passes(room.writeAccess, viewer) && (Boolean(viewer.user) || room.guestWritable);
 export const isModerator = (viewer) => viewer.staff;

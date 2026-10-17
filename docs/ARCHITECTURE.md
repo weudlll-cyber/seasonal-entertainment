@@ -165,8 +165,12 @@ password change and turning 2FA on or off close the account's other sockets at o
 - **Rooms** (`chat_rooms`) say who may read and who may write: `everyone` (guests too),
   `members` or `organisers`. First start: General (guests read and write), Seasonal Race
   (members), Organisers (organisers and admins), Announcements (everyone reads, organisers
-  write). Admins edit rooms at `/admin/chat`; audited.
-- **Guests** (decided 2026-10-17) write only where everyone may write (General). Their first
+  write). Admins edit rooms at `/admin/chat`; audited. A separate **guest-writable** flag
+  decides whether guests may write; only General has it, new rooms start without it, and it can
+  be set only where everyone may read and write (enforced in `server/src/chat/viewer.js`, not
+  just by the seed). Databases from before the flag get it on start (`migrateChat`): rooms
+  everyone could write in keep guest writing.
+- **Guests** (decided 2026-10-17) write only in guest-writable rooms (General). Their first
   message (or report) gives them a name like `Guest-7k2f` that nobody else holds at the same
   time (UNIQUE in `chat_guests`, retried on collision), kept in their session and shown with a
   Guest badge. Guests cannot post links (`containsLink`, `shared/chatRules.js`) and have a

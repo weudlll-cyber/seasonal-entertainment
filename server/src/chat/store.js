@@ -10,39 +10,51 @@ import { randomBytes } from 'node:crypto';
 import { GUEST_PREFIX } from '@seasonal-entertainment/shared/chatRules.js';
 
 const now = () => new Date().toISOString();
-const ROOM_COLUMNS = `id, slug, name, read_access AS readAccess, write_access AS writeAccess, position`;
+const ROOM_COLUMNS = `id, slug, name, read_access AS readAccess, write_access AS writeAccess,
+  guest_writable AS guestWritable, position`;
 const MESSAGE_COLUMNS = `m.id, r.slug AS room, m.author_name AS author,
   (m.author_guest IS NOT NULL) AS isGuest, m.body, m.created_at AS createdAt,
   m.hidden_at AS hiddenAt, m.hidden_by AS hiddenBy`;
 
 const toMessage = (row) => row && { ...row, isGuest: row.isGuest === 1 };
+const toRoom = (row) => row && { ...row, guestWritable: row.guestWritable === 1 };
 
 // --- rooms ---------------------------------------------------------------------------
 export function listRooms(db) {
-  return db.prepare(`SELECT ${ROOM_COLUMNS} FROM chat_rooms ORDER BY position, id`).all();
+  return db
+    .prepare(`SELECT ${ROOM_COLUMNS} FROM chat_rooms ORDER BY position, id`)
+    .all()
+    .map(toRoom);
 }
 
 export function findRoomBySlug(db, slug) {
-  return db.prepare(`SELECT ${ROOM_COLUMNS} FROM chat_rooms WHERE slug = ?`).get(slug);
+  return toRoom(db.prepare(`SELECT ${ROOM_COLUMNS} FROM chat_rooms WHERE slug = ?`).get(slug));
 }
 
 export function findRoom(db, id) {
-  return db.prepare(`SELECT ${ROOM_COLUMNS} FROM chat_rooms WHERE id = ?`).get(id);
+  return toRoom(db.prepare(`SELECT ${ROOM_COLUMNS} FROM chat_rooms WHERE id = ?`).get(id));
 }
 
 export function saveRoom(db, room, id) {
-  const values = [room.slug, room.name, room.readAccess, room.writeAccess];
+  const values = [
+    room.slug,
+    room.name,
+    room.readAccess,
+    room.writeAccess,
+    room.guestWritable ? 1 : 0,
+  ];
   if (id === undefined) {
     const { lastInsertRowid } = db
       .prepare(
-        `INSERT INTO chat_rooms (slug, name, read_access, write_access, position)
-         VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM chat_rooms))`
+        `INSERT INTO chat_rooms (slug, name, read_access, write_access, guest_writable, position)
+         VALUES (?, ?, ?, ?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM chat_rooms))`
       )
       .run(...values);
     return findRoom(db, Number(lastInsertRowid));
   }
   db.prepare(
-    'UPDATE chat_rooms SET slug = ?, name = ?, read_access = ?, write_access = ? WHERE id = ?'
+    `UPDATE chat_rooms SET slug = ?, name = ?, read_access = ?, write_access = ?, guest_writable = ?
+     WHERE id = ?`
   ).run(...values, id);
   return findRoom(db, id);
 }

@@ -12,7 +12,7 @@ import path from 'node:path';
 import Database from 'better-sqlite3';
 import { ACCOUNTS_SCHEMA } from '../accounts/schema.js';
 import { AUDIT_SCHEMA } from '../audit/schema.js';
-import { CHAT_SCHEMA } from '../chat/schema.js';
+import { CHAT_SCHEMA, migrateChat } from '../chat/schema.js';
 import { EVENTS_SCHEMA } from '../events/schema.js';
 import { GAMES_SCHEMA } from '../games/schema.js';
 import { INFO_SCHEMA } from '../info/schema.js';
@@ -36,5 +36,7 @@ export function openDatabase(databasePath) {
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   for (const schema of SCHEMAS) db.exec(schema);
+  // Columns added after a table was first created (CREATE IF NOT EXISTS skips them).
+  migrateChat(db);
   return db;
 }

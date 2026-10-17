@@ -130,6 +130,35 @@ describe('chat page', () => {
 });
 
 describe('admin chat page', () => {
+  it('shows and saves whether guests may write in a room', async () => {
+    const general = { slug: 'general', name: 'General', readAccess: 'everyone' };
+    const calls = mockApi({
+      ...signedIn({ id: 1, username: 'ada', role: 'admin' }),
+      'GET /admin/chat/rooms': {
+        body: {
+          ok: true,
+          rooms: [{ id: 1, ...general, writeAccess: 'everyone', guestWritable: true }],
+        },
+      },
+      'GET /chat/reports': { body: { ok: true, messages: [] } },
+      'GET /chat/sanctions': { body: { ok: true, sanctions: [] } },
+      'PUT /admin/chat/rooms/1': { body: { ok: true } },
+    });
+    renderAt('/admin/chat');
+    const flag = await screen.findByRole('checkbox', { name: 'Guests write in General' });
+    expect(flag).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Guests write in new room' })).not.toBeChecked();
+    fireEvent.click(flag);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Save' })[0]);
+    await vi.waitFor(() =>
+      expect(calls.find((c) => c.key === 'PUT /admin/chat/rooms/1')?.body).toEqual({
+        ...general,
+        writeAccess: 'everyone',
+        guestWritable: false,
+      })
+    );
+  });
+
   it('lists active sanctions and lifts one', async () => {
     const calls = mockApi({
       ...signedIn({ id: 1, username: 'ada', role: 'admin' }),

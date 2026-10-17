@@ -117,7 +117,7 @@ export function chatModerationRoutes(db, hub) {
   return router;
 }
 
-// /api/admin/chat/rooms (admins only): list, add and edit rooms.
+// /api/admin/chat/rooms (admins only): list, add and edit rooms, including guest-writable.
 const ROOM_FIELDS = {
   slug: (v) =>
     typeof v === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(v) && v.length <= 40
@@ -128,6 +128,9 @@ const ROOM_FIELDS = {
     ROOM_ACCESS.includes(v) ? null : `Read access must be one of: ${ROOM_ACCESS.join(', ')}.`,
   writeAccess: (v) =>
     ROOM_ACCESS.includes(v) ? null : `Write access must be one of: ${ROOM_ACCESS.join(', ')}.`,
+  // Optional; a room is not guest-writable unless this says so.
+  guestWritable: (v) =>
+    v === undefined || typeof v === 'boolean' ? null : 'Guests may write must be true or false.',
 };
 
 export function adminChatRoomRoutes(db) {
@@ -137,6 +140,19 @@ export function adminChatRoomRoutes(db) {
   const save = (req, res, id) => {
     const input = validBody(req, res, ROOM_FIELDS);
     if (!input) return;
+    input.guestWritable = input.guestWritable === true;
+    // Guests can only write where everyone may read and write.
+    if (
+      input.guestWritable &&
+      (input.readAccess !== 'everyone' || input.writeAccess !== 'everyone')
+    ) {
+      return sendError(
+        res,
+        400,
+        'invalid_input',
+        'Guests may write only in a room everyone may read and write.'
+      );
+    }
     try {
       const before = id === undefined ? null : findRoom(db, id);
       const room = saveRoom(db, input, id);

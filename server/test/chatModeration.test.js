@@ -3,7 +3,8 @@
 // Path:        server/test/chatModeration.test.js
 // Project:     Seasonal Entertainment
 // Description: Guards chat moderation and upkeep: hide, mute, ban and lift (moderators only,
-//              with 2FA, audited; staff exempt), reports, the retention job and the room editor.
+//              with 2FA, audited; staff exempt), reports and the retention job. Rooms:
+//              chatRooms.test.js.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -107,24 +108,5 @@ describe('retention', () => {
     t.db.prepare('UPDATE chat_messages SET created_at = ? WHERE id = ?').run(longAgo, old.id);
     expect(deleteExpiredChat(t.db, 90)).toBe(1);
     expect(await bodies(member, 'general')).toEqual(['new']);
-  });
-});
-
-describe('room editor', () => {
-  it('admins add and edit rooms (audited); others cannot', async () => {
-    t = chatApp();
-    const { agent: organiser } = await makeStaff(t, 'olga', 'organiser');
-    const { agent: admin } = await makeStaff(t, 'ada', 'admin');
-    const room = { slug: 'quiz', name: 'Quiz', readAccess: 'members', writeAccess: 'members' };
-    expect((await organiser.post('/api/admin/chat/rooms').send(room)).status).toBe(403);
-    const created = await admin.post('/api/admin/chat/rooms').send(room);
-    expect(created.status).toBe(201);
-    await admin
-      .put(`/api/admin/chat/rooms/${created.body.room.id}`)
-      .send({ ...room, readAccess: 'everyone' });
-    expect(auditActions(t)).toEqual(['chat.room_create', 'chat.room_edit']);
-    expect((await t.client().get('/api/chat/rooms')).body.rooms.map((r) => r.slug)).toContain(
-      'quiz'
-    );
   });
 });

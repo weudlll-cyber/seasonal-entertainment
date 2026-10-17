@@ -10,7 +10,8 @@
 
 export const MESSAGE_MAX = 500;
 
-// Who may read / write a room. "everyone" includes guests (not signed in).
+// Who may read / write a room. "everyone" includes guests (not signed in) for reading; guests
+// write only in rooms that are also marked guest-writable (server/src/chat/viewer.js).
 export const ROOM_ACCESS = ['everyone', 'members', 'organisers'];
 
 // Guest names look like "Guest-7k2f". Registered usernames may not start with "guest-".

@@ -2,7 +2,8 @@
 // File:        AdminChatPage.jsx
 // Path:        client/src/admin/AdminChatPage.jsx
 // Project:     Seasonal Entertainment
-// Description: Admin chat page: rooms (add, edit who may read and write), reported messages
+// Description: Admin chat page: rooms (add, edit who may read and write, and whether guests
+//              may write: only where explicitly ticked; off for new rooms), reported messages
 //              (hide them), and active mutes and bans (lift them).
 // ============================================================
 
@@ -11,7 +12,13 @@ import { ROOM_ACCESS } from '@seasonal-entertainment/shared/chatRules.js';
 import { api } from '../api/http.js';
 import { FormMessage } from '../components/FormField.jsx';
 
-const NEW_ROOM = { slug: '', name: '', readAccess: 'members', writeAccess: 'members' };
+const NEW_ROOM = {
+  slug: '',
+  name: '',
+  readAccess: 'members',
+  writeAccess: 'members',
+  guestWritable: false,
+};
 
 function AccessSelect({ label, value, onChange }) {
   return (
@@ -60,6 +67,14 @@ function RoomRow({ room, onSave }) {
         />
       </td>
       <td>
+        <input
+          type="checkbox"
+          aria-label={`Guests write in ${label}`}
+          checked={draft.guestWritable}
+          onChange={(e) => set('guestWritable')(e.target.checked)}
+        />
+      </td>
+      <td>
         <button className="button" type="button" onClick={() => onSave(draft)}>
           {room.id ? 'Save' : 'Add room'}
         </button>
@@ -91,11 +106,11 @@ export default function AdminChatPage() {
     }
   }
 
-  const saveRoom = ({ id, slug, name, readAccess, writeAccess }) =>
+  const saveRoom = ({ id, slug, name, readAccess, writeAccess, guestWritable }) =>
     run(() =>
       api(id ? `/admin/chat/rooms/${id}` : '/admin/chat/rooms', {
         method: id ? 'PUT' : 'POST',
-        body: { slug, name, readAccess, writeAccess },
+        body: { slug, name, readAccess, writeAccess, guestWritable },
       })
     );
 
@@ -112,6 +127,7 @@ export default function AdminChatPage() {
               <th>Slug</th>
               <th>Who reads</th>
               <th>Who writes</th>
+              <th>Guests write</th>
               <th />
             </tr>
           </thead>
