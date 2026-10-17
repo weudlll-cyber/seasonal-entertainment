@@ -40,20 +40,24 @@ export function sessionMiddleware(db, config) {
   });
 }
 
+// The account a session belongs to, or null when there is none or it no longer qualifies:
+// deleted, locked, or the session carries an older epoch. Also used by the chat WebSocket.
+export function sessionUser(db, session) {
+  const id = session?.userId;
+  if (id === undefined) return null;
+  const user = findUserById(db, id);
+  return user && !user.locked && user.sessionEpoch === session.sessionEpoch ? user : null;
+}
+
 // Sets req.user (or null). A session whose account no longer qualifies is logged out here,
 // on its very next request.
 export function currentUser(db) {
   return (req, _res, next) => {
-    req.user = null;
-    const id = req.session?.userId;
-    if (id === undefined) return next();
-    const user = findUserById(db, id);
-    if (!user || user.locked || user.sessionEpoch !== req.session.sessionEpoch) {
+    req.user = sessionUser(db, req.session);
+    if (!req.user && req.session?.userId !== undefined) {
       delete req.session.userId;
       delete req.session.sessionEpoch;
-      return next();
     }
-    req.user = user;
     next();
   };
 }

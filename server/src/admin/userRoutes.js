@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: /api/admin/users (admins only): list/search, change role, grant/revoke "can
 //              start games", lock/unlock, reset password. Each change writes exactly one audit
-//              entry; a password reset ends all of that user's sessions (epoch bump).
+//              entry; a password reset ends all of that user's sessions (epoch bump). Role,
+//              lock and password changes close that user's chat sockets (chat/hub.js).
 // ============================================================
 
 import express from 'express';
@@ -26,7 +27,7 @@ import { validBody } from '../http/validate.js';
 const isBoolean = (label) => (value) =>
   typeof value === 'boolean' ? null : `${label} must be true or false.`;
 
-export function adminUserRoutes(db, config) {
+export function adminUserRoutes(db, config, hub) {
   const router = express.Router();
 
   // Loads the target account or answers 404; also refuses non-numeric ids.
@@ -70,6 +71,7 @@ export function adminUserRoutes(db, config) {
     if (!input) return;
     const before = { role: req.target.role };
     if (!guarded(res, () => setRole(db, req.target, input.role))) return;
+    hub.disconnectUser(req.target.id);
     audit(req, 'user.role', before, { role: input.role });
     res.json({ ok: true });
   });
@@ -94,6 +96,7 @@ export function adminUserRoutes(db, config) {
       return sendError(res, 409, 'self_lock', 'You cannot lock your own account.');
     }
     if (!guarded(res, () => setLocked(db, req.target, input.locked))) return;
+    hub.disconnectUser(req.target.id);
     audit(
       req,
       input.locked ? 'user.lock' : 'user.unlock',
@@ -110,6 +113,7 @@ export function adminUserRoutes(db, config) {
     const input = validBody(req, res, { newPassword: validatePassword });
     if (!input) return;
     setPasswordHash(db, req.target.id, await hashPassword(input.newPassword, config.bcryptCost));
+    hub.disconnectUser(req.target.id);
     audit(req, 'user.password_reset', null, { sessionsEnded: true });
     res.json({ ok: true });
   });

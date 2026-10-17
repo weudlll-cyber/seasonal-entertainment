@@ -35,6 +35,9 @@ from the race game's `docs/AUTH.md` are marked _(race game)_.
   hash: every **other** session of that account ends; the session making the change is
   re-stamped and stays signed in _(race game)_. An admin password reset bumps the epoch too and ends all of that user's sessions.
 - **Logout** destroys the server-side session and clears the cookie.
+- **Open chat sockets follow the account:** logout closes that session's chat WebSocket; a role,
+  lock or password change closes the account's sockets (except the session making its own
+  change); and every push re-checks the account (`server/src/chat/hub.js`).
 
 ## Two-factor authentication (2FA)
 
@@ -52,7 +55,8 @@ from the race game's `docs/AUTH.md` are marked _(race game)_.
 - **Off:** `POST /api/2fa/disable` needs the password and a valid code or recovery code.
 - **Staff must use it:** an organiser or admin without 2FA can log in, but every organiser/admin
   route answers `403 two_factor_required` until 2FA is on (`server/src/twofa/gate.js`, checked
-  in `allow()`). The session answer carries `twoFactorRequired`, and the site shows a banner
+  in `allow()`). In the chat, over HTTP and WebSocket alike, such an account counts as a member
+  (`server/src/chat/viewer.js`). The session answer carries `twoFactorRequired`, and the site shows a banner
   leading to the setup. Members may turn it on voluntarily.
 - **`REQUIRE_STAFF_2FA`** (default `true`) may be set to `false` for local development only;
   the server refuses to start with `false` in production.

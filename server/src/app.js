@@ -45,7 +45,9 @@ export function createApp({ buildInfo, config, db }) {
   // One session middleware for HTTP and the chat WebSocket upgrade.
   const sessions = sessionMiddleware(db, config);
   app.locals.sessionParser = sessions;
-  app.locals.chatHub = new ChatHub();
+  // Routes that end sessions or change an account close that account's chat sockets.
+  const hub = new ChatHub(db, config);
+  app.locals.chatHub = hub;
   api.use(sessions);
   api.use(currentUser(db));
   api.use(staffTwoFactorGate(db, config));
@@ -53,10 +55,10 @@ export function createApp({ buildInfo, config, db }) {
   api.get('/health', allow('public'), (_req, res) => {
     res.json({ ok: true, version: buildInfo.version, commit: buildInfo.commit });
   });
-  api.use('/auth', accountRoutes(db, config));
+  api.use('/auth', accountRoutes(db, config, hub));
   api.use('/auth', bootstrapRoutes(db, config));
   api.use('/2fa', twoFactorRoutes(db, config));
-  api.use('/admin/users', adminUserRoutes(db, config));
+  api.use('/admin/users', adminUserRoutes(db, config, hub));
   api.use('/admin/audit', adminAuditRoutes(db));
   api.use('/info', infoRoutes(db));
   api.use('/admin/info', adminInfoRoutes(db));
@@ -64,8 +66,8 @@ export function createApp({ buildInfo, config, db }) {
   api.use('/admin/events', adminEventRoutes(db));
   api.use('/games', gameRoutes(db));
   api.use('/admin/games', adminGameRoutes(db));
-  api.use('/chat', chatRoutes(db, config, app.locals.chatHub));
-  api.use('/chat', chatModerationRoutes(db, app.locals.chatHub));
+  api.use('/chat', chatRoutes(db, config, hub));
+  api.use('/chat', chatModerationRoutes(db, hub));
   api.use('/admin/chat/rooms', adminChatRoomRoutes(db));
 
   // Unknown API paths answer JSON, never the HTML page.

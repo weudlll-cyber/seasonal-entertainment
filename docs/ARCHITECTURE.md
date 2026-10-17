@@ -154,6 +154,14 @@ is refused unless the Origin is exactly this site's origin, scheme included — 
 It reuses the session middleware to know who connects; `server/src/chat/hub.js` holds the
 subscriptions and pushes. In development Vite forwards `/ws` to the server.
 
+**One rule for HTTP and WebSocket** (`server/src/chat/viewer.js`): an organiser or admin who
+still has to set up the required 2FA counts as a member in the chat — no Organisers room, no
+writing in Announcements, no hidden messages, no moderation. A socket's rights are never cached:
+every subscribe and every push re-checks the account as it is now (deleted, locked, older
+session epoch, role, 2FA), and a socket that may no longer read a room stops receiving it.
+Logout closes that session's sockets; a role, lock or password change by an admin, an own
+password change and turning 2FA on or off close the account's other sockets at once.
+
 - **Rooms** (`chat_rooms`) say who may read and who may write: `everyone` (guests too),
   `members` or `organisers`. First start: General (guests read and write), Seasonal Race
   (members), Organisers (organisers and admins), Announcements (everyone reads, organisers
