@@ -60,10 +60,6 @@
   cursor: pointer;
 }
 
-.se-chat .chat-label {
-  font-weight: var(--chat-strong);
-}
-
 .se-chat .chat-notice {
   margin: 0;
   padding: var(--chat-space-1);
@@ -112,30 +108,6 @@
   font-weight: var(--chat-strong);
 }
 
-.se-chat .chat-composer {
-  display: grid;
-  gap: var(--chat-space-1);
-}
-
-.se-chat .chat-composer__actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: var(--chat-space-1);
-  align-items: start;
-}
-
-.se-chat .chat-composer label {
-  display: grid;
-  gap: 0.25rem;
-}
-
-.se-chat .chat-composer textarea {
-  font: inherit;
-  padding: var(--chat-space-1);
-  border: 1px solid var(--chat-border-strong);
-  border-radius: var(--chat-radius);
-}
-
 .se-chat .chat-note {
   margin: 0;
   color: var(--chat-muted);
@@ -155,44 +127,23 @@
   max-height: 18rem;
 }
 
-/* The message being written: its one attachment, small, with an × to remove it. */
-.se-chat .chat-attachment {
+/* The list's frame holds the "New messages" button over the bottom of the list. */
+.se-chat .chat-messages-frame {
   position: relative;
-  justify-self: start;
-  padding: 0.25rem;
-  border: 1px solid var(--chat-border-strong);
-  border-radius: var(--chat-radius);
 }
 
-.se-chat .chat-attachment__image {
-  display: block;
-  max-width: 6rem;
-  max-height: 6rem;
-  object-fit: contain;
-}
-
-.se-chat .chat-attachment__remove {
+.se-chat .chat-new-messages {
   position: absolute;
-  top: -0.6rem;
-  right: -0.6rem;
-  width: 1.5rem;
-  height: 1.5rem;
-  border: 1px solid var(--chat-border-strong);
-  border-radius: 50%;
+  bottom: var(--chat-space-1);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.25rem var(--chat-space-2);
+  border: 1px solid var(--chat-accent);
+  border-radius: 999px;
   background: var(--chat-bg);
   color: var(--chat-text);
   font: inherit;
-  line-height: 1;
+  font-weight: var(--chat-strong);
   cursor: pointer;
-}
-
-.se-chat .chat-attachment__file {
-  margin: 0;
-  max-width: 16rem;
-  overflow-wrap: anywhere;
-}
-
-.se-chat .chat-upload {
-  display: grid;
-  gap: 0.25rem;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 15%);
 }

@@ -47,6 +47,7 @@ export default function ChatPanel({ room: initialRoom, variant = 'full', showRoo
         <p className="chat-panel__title">{roomName}</p>
       )}
       <MessageList
+        room={room}
         roomName={roomName}
         messages={chat.messages}
         moderator={info?.me.moderator}

@@ -14,6 +14,7 @@ import { MESSAGE_MAX } from '@seasonal-entertainment/shared/chatRules.js';
 import ChatPicker from './ChatPicker.jsx';
 import ComposerAttachment from './ComposerAttachment.jsx';
 import ComposerUpload from './ComposerUpload.jsx';
+import './ChatComposer.css';
 
 // onSend(payload) resolves true when the message went out (then text and attachment clear).
 // payload: { body, attachment?: { type: 'sticker' | 'gif', itemId } | { type: 'file', uploadId } }.

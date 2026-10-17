@@ -43,6 +43,11 @@ of the module other than `index.js`.
   get **Attach file** (images and PDFs): the file is uploaded first (`POST /api/chat/uploads`)
   and then sent like any attachment; uploaded files are fetched only through the access-checked
   `/api/chat/files/...` (ARCHITECTURE.md, "Chat").
+- **The message list** (`MessageList.jsx`, `useScrollPin.js`) opens at the newest message and
+  stays pinned to it while the reader is at or near the bottom (48 px), also when an image or a
+  preview card makes the newest message grow; a reader who scrolled up is not moved and gets a
+  "New messages" button that scrolls down. A room switch starts at the newest message again.
+  The same in both variants.
 - **No page paths or layout assumptions** inside the module: it calls the API and the WebSocket on
   the page's own origin (`/api/chat/...`, `/ws/chat`, `/media/...`) and fits the width it is given.
 - **Test-only page** `/test/chat-panels` (two compact panels side by side) is routed by the Vite
