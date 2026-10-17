@@ -7,9 +7,10 @@
 //              A real browser picks a random salt per account; tests use one fixed salt (and
 //              another for password resets), so a whole run needs one Argon2id derivation
 //              per password, not one per account: each costs about 64 MiB and noticeable time.
+//              Also a member's key pair as the browser makes it (keys/, docs/CHAT.md).
 // ============================================================
 
-import { deriveAccountKeys } from '@seasonal-entertainment/shared/crypto.js';
+import { deriveAccountKeys, newKeyPair, sealBytes } from '@seasonal-entertainment/shared/crypto.js';
 
 export const TEST_SALT = 'dGVzdC1zYWx0LTE2Ynl0ZQ==';
 const RESET_SALT = 'cmVzZXQtc2FsdC0xNmJ5dA==';
@@ -53,4 +54,12 @@ export async function proof(password) {
 export async function newPasswordBody(password) {
   const { salt, authKey } = await keysFor(password, RESET_SALT);
   return { salt, authKey };
+}
+
+// A key pair as the browser makes it: the private key sealed with the password's wrapping key.
+// Returns { publicKey, privateKey, sealedPrivateKey } plus the authKey the keys routes ask for.
+export async function browserKeyPair(password, salt = TEST_SALT) {
+  const { authKey, wrapKey } = await keysFor(password, salt);
+  const { publicKey, privateKey } = await newKeyPair();
+  return { publicKey, privateKey, sealedPrivateKey: await sealBytes(privateKey, wrapKey), authKey };
 }

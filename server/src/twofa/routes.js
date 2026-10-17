@@ -12,13 +12,8 @@
 import express from 'express';
 import QRCode from 'qrcode';
 import { authKeyField } from '../accounts/credentials.js';
-import { verifyPassword } from '../accounts/passwords.js';
-import {
-  bumpSessionEpoch,
-  findPasswordHash,
-  findUserById,
-  publicUser,
-} from '../accounts/userStore.js';
+import { provesPassword } from '../accounts/passwordProof.js';
+import { bumpSessionEpoch, findUserById, publicUser } from '../accounts/userStore.js';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
@@ -59,8 +54,7 @@ export function twoFactorRoutes(db, config, chatSessions) {
     keyGenerator: (req) => `user:${req.user.id}`,
   });
   // The current password, as the auth key the browser derived from it (never the password).
-  const passwordMatches = (req, authKey) =>
-    verifyPassword(authKey, findPasswordHash(db, req.user.id), config.bcryptCost);
+  const passwordMatches = (req, authKey) => provesPassword(db, config, req.user.id, authKey);
   const passwordInput = { authKey: authKeyField('Password') };
 
   // Every other session of the account ends; this one is re-stamped and stays (as after an

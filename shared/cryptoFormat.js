@@ -11,8 +11,9 @@
 export const SALT_BYTES = 16; // crypto_pwhash_SALTBYTES
 export const KEY_BYTES = 32; // auth key, public key
 export const NONCE_BYTES = 24; // crypto_box / crypto_secretbox nonces
-// Upper bound for a sealed private key or a direct message ciphertext (base64 characters).
-export const SEALED_MAX = 200;
+// A sealed private key: nonce (24) + key (32) + authentication tag (16).
+export const SEALED_KEY_BYTES = 72;
+// Upper bound for a direct message's ciphertext (base64 characters).
 export const CIPHERTEXT_MAX = 16_000;
 
 const BASE64 = /^[A-Za-z0-9+/]*={0,2}$/;

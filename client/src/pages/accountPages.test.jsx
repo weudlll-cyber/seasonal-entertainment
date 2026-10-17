@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest';
 import { base64Length } from '@seasonal-entertainment/shared/cryptoFormat.js';
 import { deriveAccountKeys } from '@seasonal-entertainment/shared/crypto.js';
 import App from '../app/App.jsx';
-import { GUEST, PRELOGIN, PRELOGIN_SALT, mockApi, signedIn } from '../test/mockApi.js';
+import { GUEST, NO_KEY, PRELOGIN, PRELOGIN_SALT, mockApi, signedIn } from '../test/mockApi.js';
 
 const anna = { id: 1, username: 'anna', email: 'anna@example.org', role: 'member' };
 
@@ -135,6 +135,7 @@ describe('Account page', () => {
     const calls = mockApi({
       ...signedIn(anna),
       ...PRELOGIN,
+      ...NO_KEY,
       'POST /auth/password': { body: { ok: true } },
     });
     renderAt('/account');

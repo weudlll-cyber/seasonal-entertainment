@@ -4,12 +4,15 @@
 // Project:     Seasonal Entertainment
 // Description: Own password change (current + new). Neither password leaves the browser: the
 //              current one is proven by its auth key, the new one sent as a new salt and auth
-//              key (session/credentials.js). The server ends all other sessions.
+//              key (session/credentials.js). The private key for private messages goes along,
+//              sealed again for the new password (keys/), so the messages stay readable. The
+//              server ends all other sessions.
 // ============================================================
 
 import { useState } from 'react';
 import { PASSWORD_MIN, validatePassword } from '@seasonal-entertainment/shared/accountRules.js';
 import { api } from '../api/http.js';
+import { resealForNewPassword } from '../keys/keyActions.js';
 import { keysForNewPassword, keysForPassword } from '../session/credentials.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { FormField, FormMessage } from './FormField.jsx';
@@ -37,6 +40,7 @@ export default function ChangePasswordForm() {
         currentAuthKey: current.authKey,
         newSalt: next.salt,
         newAuthKey: next.authKey,
+        sealedPrivateKey: await resealForNewPassword(current.wrapKey, next.wrapKey),
       };
       await api('/auth/password', { method: 'POST', body });
       formElement.reset();

@@ -95,6 +95,48 @@ per account (`chat_favourite_rooms`, `chat_favourite_users`; deleted with either
   from the session, so nobody can read or change another member's favourites. A guest is not an
   account and so cannot be a favourite; neither can oneself.
 
+## Keys and the recovery code
+
+Direct messages between members are end-to-end encrypted; every member has an **X25519 key pair**
+(`crypto_box_keypair`), made **in the browser** at registration or at the first login after keys
+were introduced (`client/src/keys/`, server `server/src/keys/`, `/api/keys`).
+
+- **Stored on the server**: the public key with a key id and its creation time (`user_keys`, a
+  history: a new pair gets a new id, old ones stay so old messages still name their key), and the
+  private key **only sealed** (`user_secret_keys`): `crypto_secretbox_easy` with the wrapping key
+  derived from the password (docs/AUTH.md, "Login key split"), fresh random nonce. The server can
+  open nothing; it checks only the shapes (a sealed key is always 72 bytes).
+- **Proof of the password**: creating the first pair (`POST /api/keys`), replacing it
+  (`POST /api/keys/replace`) and re-sealing it (`PUT /api/keys/sealed`) need the current
+  password's auth key, so a taken-over session alone cannot swap the keys others encrypt to.
+  `POST /api/keys/check` answers whether a password is right at all: when the sealed key does not
+  open, the browser asks it first, so a typo is never mistaken for a lost key.
+- **Recovery code — optional** (decided 2026-10-17). Right after a key pair is made, a dialog
+  offers it: **Create recovery code** — 30 characters in 6 groups of 5 from an alphabet without
+  look-alikes (150 bits), shown once with **Copy** and the required checkbox "I have saved my
+  recovery code"; the private key is additionally sealed with `crypto_pwhash(code, its own
+salt)` and that seal stored (`PUT /api/keys/recovery`) — the code itself never leaves the
+  browser. Or **Skip**, with the warning "Without a recovery code, your private messages are lost
+  if you forget your password."; nothing is stored and it is not asked again automatically. The
+  account page ("Private messages") offers **Create recovery code** when there is none, **Create a
+  new recovery code** (the old one stops working) and **Remove recovery code**; all of them need
+  the key unlocked on that device (the server cannot check this; it stores only what the browser
+  sealed).
+- **Unlocked on a device**: a non-extractable Web Crypto AES-GCM key in IndexedDB wraps a local
+  copy of the private key (`client/src/keys/deviceKey.js`), so the device stays unlocked across
+  reloads and tabs until **logout, which deletes the copy and that key**. Nothing goes to
+  `localStorage`. Without it (new device, after logout) the account page — and the Direct tab —
+  shows **Unlock private messages** (the password, its keys derived with the pre-login salt).
+  Rooms never need unlocking.
+- **Password change**: the browser re-seals the same private key for the new password and sends
+  it in the same request as the new verifier; the server stores both in one transaction.
+- **When the sealed key no longer opens** (an admin reset the password; a forgotten password was
+  reset): with a recovery seal, the recovery code opens it and it is sealed again for the current
+  password (`PUT /api/keys/sealed`). Always offered too, and the only way without a recovery seal:
+  **Start over without my old messages** — a new key pair (new key id), the recovery seal gone,
+  old direct messages unreadable for this member, the recovery-code dialog offered again; the
+  conversation partners see that the key changed.
+
 ## Server: `mountChat()`
 
 `server/src/chat/mount.js` mounts the whole chat area — rooms and messages, moderation, the

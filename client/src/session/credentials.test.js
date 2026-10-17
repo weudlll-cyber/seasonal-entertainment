@@ -5,7 +5,7 @@
 // Description: Guards the browser half of the login key split: a normal login sends only the
 //              auth key derived with the account's salt; a legacy account sends its password
 //              this one time, with a new salt and auth key; a new password gets a fresh salt
-//              each time; the wrapping key never travels.
+//              each time; the wrapping key never travels (it is handed to the keys code).
 // ============================================================
 
 import { describe, expect, it } from 'vitest';
@@ -19,11 +19,12 @@ const sent = (calls) => JSON.stringify(calls.map((c) => c.body));
 describe('logIn', () => {
   it('sends the auth key derived with the account salt, never the password', async () => {
     const calls = mockApi({ ...PRELOGIN, 'POST /auth/login': { body: { ok: true } } });
-    const { wrapKey } = await logIn('anna', PASSWORD);
+    const { passwordKeys } = await logIn('anna', PASSWORD);
+    const { wrapKey } = passwordKeys;
     const expected = await deriveAccountKeys(PASSWORD, PRELOGIN_SALT);
     expect(calls.map((c) => c.key)).toEqual(['POST /auth/prelogin', 'POST /auth/login']);
     expect(calls[1].body).toEqual({ username: 'anna', authKey: expected.authKey });
-    expect(wrapKey).toEqual(expected.wrapKey);
+    expect(passwordKeys).toEqual(expected);
     expect(sent(calls)).not.toContain(PASSWORD);
     expect(sent(calls)).not.toContain(btoa(String.fromCharCode(...wrapKey)));
   });

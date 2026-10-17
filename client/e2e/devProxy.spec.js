@@ -29,6 +29,11 @@ test('through the Vite dev proxy: guest chat post, register and login work', asy
   await page.getByLabel('Password').fill('correct-horse-1');
   await page.getByLabel(/at least 14 years old/).check();
   await page.getByRole('button', { name: 'Create account' }).click();
+  // The new key pair's recovery-code offer (keys.spec.js covers it).
+  await page
+    .getByRole('dialog', { name: 'Protect your private messages' })
+    .getByRole('button', { name: 'Skip' })
+    .click();
   await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Log out' }).click();

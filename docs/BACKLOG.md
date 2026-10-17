@@ -40,7 +40,15 @@ An entry moves from part one to part two only when its branch is merged into `ma
   the drawer's picker and the full chat's room list, favourites first) and favourite members
   (name menu in every message), members only. Piece 2: the password never leaves the browser
   (Argon2id in the browser, only a derived auth key is sent; pre-login salt; one-time legacy
-  upgrade; docs/AUTH.md).
+  upgrade; docs/AUTH.md). Piece 3: every member's key pair, made in the browser, the private key
+  only sealed on the server; optional recovery code; unlock, recovery and start over (docs/CHAT.md,
+  "Keys and the recovery code").
+- **Telegram-login recovery code handling** — open (decided direction 2026-10-17). Recovery codes
+  are to apply to future Telegram logins too: such an account has no password to derive a
+  wrapping key from (docs/AUTH.md).
+- **Unlock a new device by confirming it on an already logged-in device** — unconfirmed proposal,
+  not decided: instead of the password or the recovery code, a device that is already unlocked
+  hands the private key over to the new one.
 - **Unread count for the chat button** — open. The drawer's chat button shows no badge: the chat
   module cannot tell how many messages are new for this reader yet.
 - **Chat embedding in other applications** — open. An embed route, allowed embedding origins

@@ -21,6 +21,11 @@ test('turn on 2FA and log in with a code', async ({ page }) => {
   await page.getByLabel('Password').fill('correct-horse-1');
   await page.getByLabel(/at least 14 years old/).check();
   await page.getByRole('button', { name: 'Create account' }).click();
+  // The new key pair's recovery-code offer (keys.spec.js covers it).
+  await page
+    .getByRole('dialog', { name: 'Protect your private messages' })
+    .getByRole('button', { name: 'Skip' })
+    .click();
 
   // Wait for the account page: the register page has a "Password" field too. Exact: the
   // account page also has "Current password" and "New password".

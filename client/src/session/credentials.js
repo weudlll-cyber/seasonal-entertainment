@@ -30,7 +30,8 @@ export async function keysForPassword(username, password) {
 
 // Logs in. A legacy account (from before the key split) sends its password this once,
 // together with a new salt and auth key, which replace the old hash on the server.
-// Returns the server's answer and the wrapping key (it opens the private key, keys/).
+// Returns the server's answer and the password's keys { authKey, wrapKey }: the wrapping key
+// opens the private key, the auth key proves the password to the keys routes (keys/).
 export async function logIn(username, password) {
   const { deriveAccountKeys, newSalt } = await crypto();
   const pre = await api('/auth/prelogin', { method: 'POST', body: { username } });
@@ -38,9 +39,10 @@ export async function logIn(username, password) {
     const salt = await newSalt();
     const { authKey, wrapKey } = await deriveAccountKeys(password, salt);
     const body = { username, password, salt, authKey };
-    return { answer: await api('/auth/legacy-login', { method: 'POST', body }), wrapKey };
+    const answer = await api('/auth/legacy-login', { method: 'POST', body });
+    return { answer, passwordKeys: { authKey, wrapKey } };
   }
   const { authKey, wrapKey } = await deriveAccountKeys(password, pre.salt);
   const answer = await api('/auth/login', { method: 'POST', body: { username, authKey } });
-  return { answer, wrapKey };
+  return { answer, passwordKeys: { authKey, wrapKey } };
 }

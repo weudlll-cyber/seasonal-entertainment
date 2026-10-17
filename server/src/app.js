@@ -23,6 +23,7 @@ import { gameRoutes } from './games/routes.js';
 import { allow } from './http/access.js';
 import { adminInfoRoutes } from './info/adminRoutes.js';
 import { infoRoutes } from './info/routes.js';
+import { keyRoutes } from './keys/routes.js';
 import { csrfGuard } from './http/csrf.js';
 import { errorHandler, sendError } from './http/errors.js';
 import { securityHeaders } from './http/securityHeaders.js';
@@ -58,6 +59,7 @@ export function createApp({ buildInfo, config, db, previewNetwork }) {
   api.use('/auth', accountRoutes(db, config, chat.sessions));
   api.use('/auth', bootstrapRoutes(db, config));
   api.use('/2fa', twoFactorRoutes(db, config, chat.sessions));
+  api.use('/keys', keyRoutes(db, config));
   api.use('/admin/users', adminUserRoutes(db, config, chat.sessions));
   api.use('/admin/audit', adminAuditRoutes(db));
   api.use('/info', infoRoutes(db));

@@ -34,6 +34,11 @@ This list describes what the website's software actually stores.
 - **Chat reports**: when someone reports a message, the site stores which account or guest name
   reported it, so each person counts once. No IP address is stored.
 - **Chat mutes and bans**: who was muted or banned, by whom, and until when.
+- **Your key for private messages** (members): your public key, and your private key only in
+  locked form — locked with a key your browser derives from your password, and, if you chose to
+  create one, also with your recovery code. This site cannot unlock either; your recovery code
+  itself is never sent here. Your browser keeps an unlocked copy, itself encrypted, until you
+  log out. Deleted with your account.
 - **Favourites in the chat** (members only): the rooms and other members you marked as
   favourites. Only you see them; they are deleted with your account. A member you marked does
   not learn about it. Next to your favourite members the chat shows whether they are online

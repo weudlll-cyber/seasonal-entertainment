@@ -16,6 +16,7 @@ import { CHAT_SCHEMA, migrateChat } from '../chat/schema.js';
 import { EVENTS_SCHEMA } from '../events/schema.js';
 import { GAMES_SCHEMA } from '../games/schema.js';
 import { INFO_SCHEMA } from '../info/schema.js';
+import { KEYS_SCHEMA } from '../keys/schema.js';
 import { MEDIA_SCHEMA } from '../media/schema.js';
 import { PREVIEW_SCHEMA } from '../previews/schema.js';
 import { UPLOAD_SCHEMA } from '../uploads/schema.js';
@@ -25,6 +26,7 @@ import { TWO_FACTOR_SCHEMA } from '../twofa/schema.js';
 const SCHEMAS = [
   ACCOUNTS_SCHEMA,
   TWO_FACTOR_SCHEMA,
+  KEYS_SCHEMA,
   AUDIT_SCHEMA,
   INFO_SCHEMA,
   EVENTS_SCHEMA,

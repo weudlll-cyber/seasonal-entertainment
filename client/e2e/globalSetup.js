@@ -4,13 +4,16 @@
 // Project:     Seasonal Entertainment
 // Description: Playwright global setup (runs once, after the test server is up): creates the
 //              run's admin through the real bootstrap route, turns on its 2FA, and saves its
-//              logged-in browser state for the specs that act as admin (adminState.js).
+//              logged-in browser state for the specs that act as admin (adminState.js); and
+//              the members some specs log in as (members.js).
 // ============================================================
 
+import path from 'node:path';
 import { request } from '@playwright/test';
 import { codeForStep, stepAt } from '../../server/src/twofa/totp.js';
 import { authKeyFor, newAccountData } from './accountKeys.js';
 import { ADMIN, ADMIN_STATE } from './adminState.js';
+import { seedMembers } from './members.js';
 
 export default async function globalSetup(config) {
   const { baseURL } = config.projects[0].use;
@@ -29,4 +32,6 @@ export default async function globalSetup(config) {
   if (enable.status() !== 200) throw new Error(`e2e 2FA setup failed: ${enable.status()}`);
   await api.storageState({ path: ADMIN_STATE });
   await api.dispose();
+  // The server runs on this run's database (playwright.config.js); WAL lets both write.
+  await seedMembers(path.join(process.env.SE_E2E_DIR, 'e2e.db'));
 }

@@ -282,6 +282,10 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
   `Content-Security-Policy: default-src 'none'; sandbox`; the site never shows them itself.
   Moderators' **Remove file** deletes the files from disk and leaves "File removed" (audited,
   `chat.file_remove`). Reported messages keep their file.
+- **Keys** (docs/CHAT.md, "Keys and the recovery code"): `server/src/keys/` (`/api/keys`) holds
+  members' public keys and their private keys sealed in the browser, with the optional recovery
+  seal; the client side is `client/src/keys/` (KeyProvider, the unlocked copy in IndexedDB, the
+  recovery-code dialog, the account page's "Private messages").
 - **Favourites** (docs/CHAT.md, "Favourites"): members' favourite rooms and members,
   `/api/chat/favourites`, keyed on the session's account only; rows cascade with the account.
 - **Retention**: messages older than `CHAT_RETENTION_DAYS` (default 90) are deleted with their
@@ -326,6 +330,8 @@ client/                    React + Vite client
   src/pages/               one folder entry per page (component, CSS, test side by side)
   src/styles/              tokens.css (all design tokens, light and dark), fonts.css, base.css
   src/theme/               light/dark theme: rule, provider, toggle (docs/DESIGN.md)
+  src/keys/                a member's key pair in the browser: provider, device copy
+                           (IndexedDB), unlock, recovery code (docs/CHAT.md)
   public/theme-init.js     sets the theme before the first paint (external: strict CSP)
   src/assets/              logo, season marks, fonts (woff2)
   src/assets/seasons/source/  original season marks, input of build-season-marks.mjs
@@ -342,6 +348,7 @@ server/
   src/accounts/            accounts area: schema, user store, passwords, routes (login:
                            loginRoutes.js, pre-login and legacy route), credentials, bootstrap
   src/twofa/               two-factor area: TOTP, schema, store, routes, staff gate
+  src/keys/                members' keys: public keys, sealed private keys, recovery seal
   src/audit/               audit log: schema and the one recordAudit helper
   src/admin/               /api/admin routes (users, audit); areas add their own editors
   src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md)

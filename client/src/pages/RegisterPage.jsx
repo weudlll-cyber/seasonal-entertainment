@@ -5,7 +5,8 @@
 // Description: Registration: username, email, password and the required age confirmation.
 //              Checks the shared rules before sending; the server checks them again, except the
 //              password rules: the password never leaves the browser, only a salt and the auth
-//              key derived from it are sent (session/credentials.js).
+//              key derived from it are sent (session/credentials.js). The new member's key pair
+//              for private messages is made right away (keys/), and the recovery code offered.
 // ============================================================
 
 import { useState } from 'react';
@@ -20,11 +21,13 @@ import {
 } from '@seasonal-entertainment/shared/accountRules.js';
 import { api } from '../api/http.js';
 import { FormField, FormMessage } from '../components/FormField.jsx';
+import { useKeys } from '../keys/KeyContext.jsx';
 import { keysForNewPassword } from '../session/credentials.js';
 import { useSession } from '../session/SessionContext.jsx';
 
 export default function RegisterPage() {
   const { setUser } = useSession();
+  const keys = useKeys();
   const navigate = useNavigate();
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -47,9 +50,11 @@ export default function RegisterPage() {
     setBusy(true);
     setError(null);
     try {
-      const { salt, authKey } = await keysForNewPassword(password);
+      const { salt, authKey, wrapKey } = await keysForNewPassword(password);
       const body = { ...input, salt, authKey };
       const { user } = await api('/auth/register', { method: 'POST', body });
+      // A key problem must not block the new account: the account page offers it again.
+      await keys.openWithPassword({ authKey, wrapKey }, user.id).catch(() => {});
       setUser(user);
       navigate('/account', { replace: true });
     } catch (err) {

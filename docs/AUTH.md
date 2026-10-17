@@ -63,6 +63,16 @@ password, salt, authKey }` with a **new** salt: the password is checked one last
   and shares the login's rate limits. **It can be removed once no legacy account remains.**
 - **Unchanged**: lockout and rate limits, the session epoch, 2FA, the audit log, the same
   `401 invalid_credentials` for a wrong name or secret.
+- **Wrapping key and recovery code**: the wrapping key seals the member's private key for direct
+  messages; an **optional** recovery code (decided 2026-10-17: offered, can be skipped, can be
+  made later) seals it a second time, for when the password is forgotten or reset — details in
+  docs/CHAT.md, "Keys and the recovery code". A password change carries the re-sealed key; an
+  admin's password reset cannot (the admin has no access to it): afterwards the member uses the
+  recovery code or starts over with a new key pair.
+- **Telegram logins (decided direction, 2026-10-17; not built)**: recovery codes are to apply to
+  future Telegram logins too — an account that logs in through Telegram has no password to derive
+  a wrapping key from, so its private key needs the recovery code (or a start-over) to open on a
+  device. Open in docs/BACKLOG.md.
 
 **Server-side checks lost** (they need the password): minimum length (10 characters) and maximum
 length (72 bytes) of a new password — on registration, own password change, admin reset and
