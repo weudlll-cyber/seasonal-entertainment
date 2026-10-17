@@ -33,3 +33,15 @@ img {
   max-width: 100%;
   height: auto;
 }
+
+a {
+  color: var(--color-text);
+}
+
+/* Standard content page: readable column with side gutters. */
+.page {
+  width: 100%;
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-2);
+}

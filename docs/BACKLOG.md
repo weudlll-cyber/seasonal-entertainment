@@ -4,6 +4,9 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART ONE — open
 
+- **SE-NIGHT-1 piece 1 — App shell** — in review (PR #3). Client routing, layout with header
+  and footer, 404 page, security headers.
+
 - Info pages with admin editor
 - Accounts with Discord/Telegram login and 2FA for organisers/admins
 - Bots and group roles

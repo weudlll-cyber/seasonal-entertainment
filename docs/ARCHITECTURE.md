@@ -12,7 +12,7 @@
 
 | Part    | Technology                                           |
 | ------- | ---------------------------------------------------- |
-| Client  | React 19 + Vite                                      |
+| Client  | React 19 + Vite, react-router (declarative routes)   |
 | Server  | Node 24 LTS + Express 5                              |
 | Storage | SQLite, added with the first feature that needs it   |
 | Tests   | Vitest (server and client), Playwright (browser)     |
@@ -53,7 +53,28 @@ The client only ever calls relative URLs (`/api/...`), so the same build works o
 - **Development** (`npm run dev`): Vite on 5380 serves the client with hot reload and forwards
   `/api` to the server on 3800, which restarts on file changes.
 - **Production** (`npm run build`, then `npm start`): one Node process. Express answers `/api`
-  and serves `client/dist` as static files.
+  and serves `client/dist` as static files; any other GET returns `index.html`, so deep links
+  such as `/events` reach the client router. Unknown `/api` paths stay JSON 404s.
+
+## Client routing
+
+`react-router` in declarative mode (chosen 2026-10-17): the site needs nested layouts (one
+header and footer around every page), active navigation links, route parameters
+(`/info/<slug>`), guarded pages for accounts and admin, and a 404 page. A home-made router
+would have to rebuild all of that; react-router is the maintained standard for React.
+
+- `client/src/app/App.jsx` is the one route table; every route renders inside `Layout`
+  (header, page, footer). Unknown paths render `NotFoundPage`.
+- `client/src/app/navigation.js` is the one list of header and footer links.
+- `main.jsx` supplies `BrowserRouter`; tests supply `MemoryRouter`.
+
+## Security headers
+
+`server/src/http/securityHeaders.js` (helmet) sends a strict Content-Security-Policy on every
+response: scripts, styles, fonts and connections only from this origin, images from this origin
+or `data:` URLs, no plugins, no framing (`frame-ancestors 'none'`), no inline script or style.
+Plus `nosniff`, `Referrer-Policy: same-origin` and helmet's other defaults. The browser smoke
+test fails on any console error, which is where a CSP violation shows up.
 
 ## Folder layout
 
@@ -62,6 +83,7 @@ The client only ever calls relative URLs (`/api/...`), so the same build works o
 .claude/settings.json      agent permissions for this repository
 client/                    React + Vite client
   index.html               HTML shell
+  src/app/                 route table, layout, header, footer, navigation list
   e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels,
                            opticalCentres.js defines each season motif's optical centre
   src/main.jsx             entry point
@@ -73,6 +95,7 @@ client/                    React + Vite client
 server/
   src/index.js             entry point: config, app, listen
   src/app.js               Express app (routes); no listen, so tests drive it directly
+  src/http/                cross-cutting HTTP middleware (security headers)
   src/config.js            environment configuration
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests
@@ -155,7 +178,8 @@ None of these exist yet. Each gets its own branch and backlog entry.
 2. Server: add a router file per area (for example `server/src/routes/games.js`) mounted under
    `/api/<area>` in `app.js`, with its tests in `server/test/`.
 3. Client: add the page(s) under `client/src/pages/`, styled only with tokens from
-   `tokens.css`; add client-side routing when the second page arrives.
+   `tokens.css`, and their routes in `client/src/app/App.jsx` (plus a link in
+   `navigation.js` if it belongs in the header).
 4. A game that lives in its own repository (like the race game) is connected from the games
    hub by link or embed; it keeps its own server and ports.
 5. Extend tests (unit and, where a page is visible to users, the browser test), update this

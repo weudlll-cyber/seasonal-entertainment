@@ -17,6 +17,9 @@
   --color-background: #ffffff;
   --color-text: #1f2328;
   --color-text-muted: #59606b;
+  --color-border: #e3e6ea;
+  /* Accent for active/focus marks; text links stay dark for contrast */
+  --color-accent: var(--color-winter);
 
   /* Typography: Heavy for headings, Book for body (faces declared in fonts.css) */
   --font-family: 'Luxora Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
