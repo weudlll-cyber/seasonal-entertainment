@@ -11,6 +11,8 @@
 //              Members' favourite rooms and favourite members (gone with the account).
 //              Direct messages between members: only ciphertext, nonce and who/which keys
 //              (end-to-end encrypted, docs/CHAT.md), and how far each member has read.
+//              Reports of a private conversation: the reason, and only when the reporter chose
+//              to share them, copies of the selected messages as the reporter provided them.
 //              migrateChat() brings older databases up.
 // ============================================================
 
@@ -98,6 +100,25 @@ CREATE TABLE IF NOT EXISTS direct_reads (
   partner_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   last_read_id INTEGER NOT NULL,
   PRIMARY KEY (user_id, partner_id)
+);
+CREATE TABLE IF NOT EXISTS direct_reports (
+  id                  INTEGER PRIMARY KEY,
+  reporter_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  partner_id          INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reported_message_id INTEGER NOT NULL,
+  reason              TEXT    NOT NULL,
+  created_at          TEXT    NOT NULL,
+  reviewed_at         TEXT,
+  reviewed_by         TEXT
+);
+CREATE TABLE IF NOT EXISTS direct_report_copies (
+  id            INTEGER PRIMARY KEY,
+  report_id     INTEGER NOT NULL REFERENCES direct_reports(id) ON DELETE CASCADE,
+  message_id    INTEGER NOT NULL,
+  author_name   TEXT    NOT NULL,
+  text          TEXT    NOT NULL,
+  media_item_id INTEGER,
+  sent_at       TEXT    NOT NULL
 );
 `;
 

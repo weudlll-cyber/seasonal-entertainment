@@ -4,14 +4,16 @@
 // Project:     Seasonal Entertainment
 // Description: Admin chat page: rooms (add, edit who may read and write, and whether guests
 //              may write: only where explicitly ticked; off for new rooms), reported messages
-//              (hide them, or keep them: marked reviewed, their preview shows again), and
-//              active mutes and bans (lift them).
+//              (hide them, or keep them: marked reviewed, their preview shows again), reported
+//              private conversations (AdminDirectReports), and active mutes and bans (lift
+//              them).
 // ============================================================
 
 import { useEffect, useState } from 'react';
 import { ROOM_ACCESS } from '@seasonal-entertainment/shared/chatRules.js';
 import { api } from '../api/http.js';
 import { FormMessage } from '../components/FormField.jsx';
+import AdminDirectReports from './AdminDirectReports.jsx';
 
 const NEW_ROOM = {
   slug: '',
@@ -163,6 +165,7 @@ export default function AdminChatPage() {
           </li>
         ))}
       </ul>
+      <AdminDirectReports />
       <h3>Mutes and bans</h3>
       {data.sanctions.length === 0 && <p>None active.</p>}
       <ul className="link-list">

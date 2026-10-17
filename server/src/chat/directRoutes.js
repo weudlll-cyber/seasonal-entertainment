@@ -19,20 +19,16 @@ import {
   boundedBase64,
   exactBytes,
 } from '@seasonal-entertainment/shared/cryptoFormat.js';
-import { findUserById } from '../accounts/userStore.js';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
-import { loadById } from '../http/loadById.js';
-import { validBody } from '../http/validate.js';
+import { positiveInteger, validBody } from '../http/validate.js';
 import { currentKeyId, publicKeysById } from '../keys/store.js';
+import { partnerHandlers } from './directPartner.js';
 import { addDirect, directConversations, listDirect, markDirectRead } from './directStore.js';
 import { favouriteUsers } from './favouriteStore.js';
 import { refuseSanctioned } from './sanctionRefusal.js';
 import { activeSanction } from './store.js';
 import { chatViewer } from './viewer.js';
-
-const keyIdField = (label) => (value) =>
-  Number.isInteger(value) && value > 0 ? null : `${label} is required.`;
 
 // The partner's current key for encrypting to them: { keyId, publicKey } or null.
 function partnerKey(db, partnerId) {
@@ -43,11 +39,7 @@ function partnerKey(db, partnerId) {
 // allowMessage: the per-sender rate limit shared with the rooms (mount.js).
 export function directRoutes(db, hub, allowMessage) {
   const router = express.Router();
-  const loadPartner = loadById((id) => findUserById(db, id), 'partner', 'member');
-  const notSelf = (req, res, next) =>
-    req.partner.id === req.user.id
-      ? sendError(res, 400, 'invalid_input', 'You cannot write to yourself.')
-      : next();
+  const partner = partnerHandlers(db);
 
   // The conversation list: favourite members (even without messages yet) and everyone written
   // with; the client puts favourites first, then the most recent.
@@ -73,7 +65,7 @@ export function directRoutes(db, hub, allowMessage) {
     res.json({ ok: true, conversations });
   });
 
-  router.get('/:id', allow('member'), loadPartner, notSelf, (req, res) => {
+  router.get('/:id', allow('member'), ...partner, (req, res) => {
     const messages = listDirect(db, req.user.id, req.partner.id);
     const ids = messages.flatMap((m) => [m.senderKeyId, m.recipientKeyId]);
     const { id, username } = req.partner;
@@ -86,12 +78,12 @@ export function directRoutes(db, hub, allowMessage) {
     });
   });
 
-  router.post('/:id', allow('member'), loadPartner, notSelf, (req, res) => {
+  router.post('/:id', allow('member'), ...partner, (req, res) => {
     const input = validBody(req, res, {
       nonce: exactBytes('Nonce', NONCE_BYTES),
       ciphertext: boundedBase64('Message', CIPHERTEXT_MAX),
-      senderKeyId: keyIdField('Your key'),
-      recipientKeyId: keyIdField("The partner's key"),
+      senderKeyId: positiveInteger('Your key'),
+      recipientKeyId: positiveInteger("The partner's key"),
     });
     if (!input) return;
     const sanction = activeSanction(db, chatViewer(req));
@@ -127,8 +119,8 @@ export function directRoutes(db, hub, allowMessage) {
     res.status(201).json({ ok: true, message });
   });
 
-  router.post('/:id/read', allow('member'), loadPartner, notSelf, (req, res) => {
-    const input = validBody(req, res, { lastId: keyIdField('lastId') });
+  router.post('/:id/read', allow('member'), ...partner, (req, res) => {
+    const input = validBody(req, res, { lastId: positiveInteger('lastId') });
     if (!input) return;
     markDirectRead(db, req.user.id, req.partner.id, input.lastId);
     res.json({ ok: true });

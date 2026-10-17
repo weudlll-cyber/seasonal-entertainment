@@ -6,13 +6,15 @@
 //              favourite members first, then the most recent, with unread dots; a conversation
 //              is decrypted in the browser (with a notice where the partner's key changed, and
 //              messages for an earlier own key marked unreadable) and marked read; sending puts
-//              only ciphertext on the wire, and a changed partner key is encrypted for again.
+//              only ciphertext on the wire, and a changed partner key is encrypted for again;
+//              there is nothing to write into before the partner's key is known.
 // ============================================================
 
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { decryptDirect, encryptDirect, newKeyPair } from '@seasonal-entertainment/shared/crypto.js';
+import { decryptDirect, newKeyPair } from '@seasonal-entertainment/shared/crypto.js';
 import { SessionProvider } from '../session/SessionContext.jsx';
+import { storedDirect } from '../test/directFixtures.js';
 import { FakeSocket } from '../test/fakeSocket.js';
 import { mockApi, signedIn } from '../test/mockApi.js';
 import { DirectPanel } from './index.js';
@@ -37,19 +39,6 @@ const conversation = (partner, extra) => ({
   unread: false,
   ...extra,
 });
-
-// A message as the server holds it: made by `from` (keys { publicKey, privateKey }) for `to`.
-async function stored(id, fromId, toId, payload, fromPair, toPublicKey, keyIds) {
-  const box = await encryptDirect(payload, toPublicKey, fromPair.privateKey);
-  return {
-    id,
-    senderId: fromId,
-    recipientId: toId,
-    ...keyIds,
-    ...box,
-    createdAt: '2026-10-18T09:00:00.000Z',
-  };
-}
 
 const show = () =>
   render(
@@ -89,18 +78,24 @@ describe('a conversation', () => {
   async function open(extraAnswers = {}) {
     const zoeOld = await newKeyPair();
     const messages = [
-      await stored(10, 8, 1, { text: 'hello from zoe' }, zoeOld, mia.publicKey, {
-        senderKeyId: 7,
-        recipientKeyId: 1,
-      }),
-      await stored(11, 8, 1, { text: 'new key here https://x.example' }, zoe, mia.publicKey, {
-        senderKeyId: 9,
-        recipientKeyId: 1,
-      }),
-      await stored(12, 1, 8, { text: 'for my old key' }, mia, zoe.publicKey, {
-        senderKeyId: 5,
-        recipientKeyId: 9,
-      }),
+      await storedDirect(
+        10,
+        { id: 8, pair: zoeOld, keyId: 7 },
+        { id: 1, publicKey: mia.publicKey, keyId: 1 },
+        { text: 'hello from zoe' }
+      ),
+      await storedDirect(
+        11,
+        { id: 8, pair: zoe, keyId: 9 },
+        { id: 1, publicKey: mia.publicKey, keyId: 1 },
+        { text: 'new key here https://x.example' }
+      ),
+      await storedDirect(
+        12,
+        { id: 1, pair: mia, keyId: 5 },
+        { id: 8, publicKey: zoe.publicKey, keyId: 9 },
+        { text: 'for my old key' }
+      ),
     ];
     const calls = mockApi({
       ...signedIn(MIA),
@@ -176,4 +171,15 @@ describe('a conversation', () => {
       text: 'again',
     });
   });
+});
+
+it('offers no message field before the conversation (and its key) is loaded', async () => {
+  mockApi({
+    ...signedIn(MIA),
+    'GET /chat/direct/8': { status: 500, body: { ok: false, message: 'Request failed.' } },
+  });
+  act(() => showDirect(ZOE));
+  show();
+  expect(await screen.findByRole('alert')).toHaveTextContent('Request failed.');
+  expect(screen.queryByLabelText('Message')).toBeNull();
 });

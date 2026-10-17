@@ -3,8 +3,8 @@
    Path:        client/src/chat/ChatDirect.css
    Project:     Seasonal Entertainment
    Description: Direct messages in the chat module: the conversation list (online mark,
-                unread dot) and a conversation's header and key-change notices. Under the
-                .se-chat root like every module style.
+                unread dot), a conversation's header and key-change notices, and the report
+                dialog. Under the .se-chat root like every module style.
    ============================================================ */
 
 .se-chat .chat-direct-list {
@@ -66,4 +66,51 @@
 .se-chat .chat-key-notice {
   padding: 0.25rem var(--chat-space-1);
   text-align: center;
+}
+
+/* The report dialog: a modal over the page, inside the module's own styles. */
+.se-chat .chat-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: var(--chat-space-2);
+  background: var(--color-scrim, rgb(0 0 0 / 40%));
+}
+
+.se-chat .chat-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--chat-space-1);
+  width: min(30rem, 100%);
+  max-height: 100%;
+  overflow: auto;
+  padding: var(--chat-space-2);
+  border-radius: var(--chat-radius);
+  background: var(--chat-bg);
+  box-shadow: var(--chat-shadow);
+}
+
+.se-chat .chat-dialog__messages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 12rem;
+  overflow: auto;
+  margin: 0;
+  border: 1px solid var(--chat-border);
+  border-radius: var(--chat-radius);
+}
+
+.se-chat .chat-dialog__message,
+.se-chat .chat-dialog__share {
+  display: flex;
+  gap: var(--chat-space-1);
+  align-items: flex-start;
+}
+
+.se-chat .chat-dialog__actions {
+  display: flex;
+  gap: var(--chat-space-1);
 }

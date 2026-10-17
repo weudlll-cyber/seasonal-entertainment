@@ -177,6 +177,30 @@ mediaItemId? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh random no
   safety-number check between two members, to compare keys outside the site, is an open backlog
   item.
 
+## Reporting a direct message
+
+Moderators and admins may see direct messages **only when the affected member releases them**
+(decided 2026-10-17).
+
+- **Report** on a message of the partner opens a dialog: a reason, the messages of the
+  conversation up to the reported one (it is selected; earlier ones can be added), and the
+  checkbox **"Share the selected messages with the moderators"**. Only when it is ticked does the
+  reporter's browser send the selected messages — as it decrypted them — as copies with the
+  report. Without the tick, moderators get only the reason and the fact that a private
+  conversation was reported (`direct_reports`).
+- **The server checks the ids**: the reported message and every shared one must be a message the
+  reporter sent or received in that conversation; anything else refuses the whole report
+  (`400 not_in_conversation`), nothing stored. The author and time of each copy come from the
+  server, the text from the reporter (`direct_report_copies`).
+- **Moderators** (organisers and admins with 2FA) find them in Admin → Chat, "Reported private
+  conversations" (`GET /api/chat/direct-reports`). Shared copies are loaded only on request and
+  labelled "Shared by the reporter from a private conversation — content as provided by the
+  reporter"; every such view writes an audit entry (`chat.direct_report_view`), as do the report
+  (`chat.direct_report`, with the number of copies, never their text) and the review
+  (`chat.direct_report_review`).
+- **Deletion**: shared copies are deleted 90 days after the report was marked reviewed (decided
+  2026-10-18; the retention job, `server/src/chat/retention.js`).
+
 ## Server: `mountChat()`
 
 `server/src/chat/mount.js` mounts the whole chat area — rooms and messages, moderation, the

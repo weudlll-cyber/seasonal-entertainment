@@ -6,21 +6,20 @@
 //              decrypted in this browser (text with clickable links, a sticker or GIF from the
 //              site's library; no file uploads and no link previews in v1), a notice wherever
 //              the partner's security key changed, and the composer. A message made for an
-//              earlier key cannot be read and says so.
+//              earlier key cannot be read and says so. The partner's messages can be reported
+//              (ReportDirectDialog: shared only with consent).
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/http.js';
 import ChatComposer from './ChatComposer.jsx';
 import ChatNotice from './ChatNotice.jsx';
-import { MessageMedia, MessageText } from './MessageParts.jsx';
+import DirectMessage from './DirectMessage.jsx';
+import ReportDirectDialog from './ReportDirectDialog.jsx';
 import { showDirect } from './directView.js';
 import { useDirectConversation } from './useDirect.js';
 import { useScrollPin } from './useScrollPin.js';
 import './ChatMessage.css';
-
-const time = (iso) =>
-  new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 
 // The site's sticker/GIF library by item id, loaded once a message uses one.
 function useLibraryItems(messages) {
@@ -56,29 +55,6 @@ function withKeyNotices(messages, currentKeyId) {
   return rows;
 }
 
-function DirectMessage({ message, partnerName, ownName, library }) {
-  const item = message.payload?.mediaItemId && library?.get(message.payload.mediaItemId);
-  return (
-    <li className="chat-message">
-      <div className="chat-message__meta">
-        <strong>{message.fromPartner ? partnerName : ownName}</strong>
-        <time dateTime={message.createdAt}>{time(message.createdAt)}</time>
-      </div>
-      {!message.payload && (
-        <p className="chat-note">This message was made for an earlier key and cannot be read.</p>
-      )}
-      {message.payload?.text && (
-        <p className="chat-message__text">
-          <MessageText body={message.payload.text} linkify />
-        </p>
-      )}
-      {message.payload?.mediaItemId && library && (
-        <MessageMedia kind={item?.kind} media={item ?? null} />
-      )}
-    </li>
-  );
-}
-
 // partner: { id, username }; me: the signed-in account; keyId, privateKey: their key.
 export default function DirectConversation({ partner, me, keyId, privateKey }) {
   const conversation = useDirectConversation(partner.id, keyId, privateKey);
@@ -86,6 +62,14 @@ export default function DirectConversation({ partner, me, keyId, privateKey }) {
   const list = useRef(null);
   const { onScroll, unseen, showNewest } = useScrollPin(list, `direct:${partner.id}`, messages);
   const library = useLibraryItems(messages);
+  const [reporting, setReporting] = useState(null); // the message being reported
+  const [notice, setNotice] = useState(null);
+
+  async function sendReport(body) {
+    const sent = await conversation.report(body);
+    if (sent) setNotice('Report sent. Thank you.');
+    return sent;
+  }
   const name = data?.partner.username ?? partner.username;
 
   return (
@@ -121,6 +105,7 @@ export default function DirectConversation({ partner, me, keyId, privateKey }) {
                 partnerName={name}
                 ownName={me.username}
                 library={library}
+                onReport={setReporting}
               />
             )
           )}
@@ -131,10 +116,21 @@ export default function DirectConversation({ partner, me, keyId, privateKey }) {
           </button>
         )}
       </div>
-      <ChatNotice error={conversation.error} />
-      {data && !data.partnerKey ? (
+      <ChatNotice error={conversation.error} notice={notice} />
+      {reporting && (
+        <ReportDirectDialog
+          messages={messages}
+          reported={reporting}
+          partnerName={name}
+          onSend={sendReport}
+          onClose={() => setReporting(null)}
+        />
+      )}
+      {/* Writing starts once the partner's key is known: it is what the message is made for. */}
+      {data && !data.partnerKey && (
         <p className="chat-note">{name} cannot receive private messages yet.</p>
-      ) : (
+      )}
+      {data?.partnerKey && (
         <ChatComposer
           user={me}
           files={false}

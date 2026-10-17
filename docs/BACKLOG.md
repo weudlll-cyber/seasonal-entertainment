@@ -44,7 +44,8 @@ An entry moves from part one to part two only when its branch is merged into `ma
   only sealed on the server; optional recovery code; unlock, recovery and start over (docs/CHAT.md,
   "Keys and the recovery code"). Piece 4: end-to-end encrypted direct messages between members
   (drawer and /chat Direct tab, name menu, unread dot, key-change notice; docs/CHAT.md, "Direct
-  messages").
+  messages"). Piece 5: reporting a direct message with consent (copies only when the reporter
+  ticks to share them; moderators' views audited; copies deleted 90 days after review).
 - **File uploads in direct messages** — open. Left out of v1 (decided 2026-10-18): an uploaded
   file would have to be encrypted in the browser too.
 - **Link previews in direct messages** — open. Left out of v1: the server would have to see the

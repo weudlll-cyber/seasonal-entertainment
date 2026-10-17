@@ -17,6 +17,7 @@ import { seedChatMedia } from '../media/seed.js';
 import { previewModerationRoutes } from '../previews/routes.js';
 import { createPreviewService } from '../previews/service.js';
 import { uploadRoutes } from '../uploads/routes.js';
+import { directReportRoutes } from './directReportRoutes.js';
 import { directRoutes } from './directRoutes.js';
 import { favouriteRoutes } from './favouriteRoutes.js';
 import { ChatHub } from './hub.js';
@@ -44,6 +45,9 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork 
   api.use('/chat', chatRoutes(db, config, hub, previews, allowMessage));
   api.use('/chat/favourites', favouriteRoutes(db, hub));
   api.use('/chat/direct', directRoutes(db, hub, allowMessage));
+  const reports = directReportRoutes(db, config);
+  api.use('/chat/direct', reports.member);
+  api.use('/chat/direct-reports', reports.moderator);
   api.use('/chat', previewModerationRoutes(db, hub));
   api.use('/chat', chatModerationRoutes(db, hub));
   api.use('/chat', mediaRoutes(db));

@@ -36,6 +36,11 @@ This list describes what the website's software actually stores.
   used, and when, and cannot read the content; moderators and admins cannot read it either. It
   also stores how far each of you has read a conversation (for the unread mark). Deleted after the
   chat retention period (90 days), like room messages.
+- **Reports of a private message**: the reason, who reported whom, and when. Only if you tick
+  "Share the selected messages with the moderators" are copies of the messages you selected sent
+  along — as your browser shows them — so the moderators can judge the report. Every time a
+  moderator looks at such copies, this is recorded in the moderation log. The copies are deleted
+  90 days after the report was dealt with.
 - **Chat reports**: when someone reports a message, the site stores which account or guest name
   reported it, so each person counts once. No IP address is stored.
 - **Chat mutes and bans**: who was muted or banned, by whom, and until when.

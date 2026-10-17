@@ -286,6 +286,9 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
   `server/src/chat/directRoutes.js` (`/api/chat/direct`) stores and relays ciphertext only, pushed
   to both members' sockets (`hub.sendToUser`); the client's `DirectPanel` (chat module) shows them
   in the drawer's and the `/chat` page's Direct tab.
+- **Reporting a direct message** (docs/CHAT.md): `server/src/chat/directReportRoutes.js`; copies
+  of private messages reach moderators only when the reporter ticks to share them; every view of
+  them is audited.
 - **Keys** (docs/CHAT.md, "Keys and the recovery code"): `server/src/keys/` (`/api/keys`) holds
   members' public keys and their private keys sealed in the browser, with the optional recovery
   seal; the client side is `client/src/keys/` (KeyProvider, the unlocked copy in IndexedDB, the

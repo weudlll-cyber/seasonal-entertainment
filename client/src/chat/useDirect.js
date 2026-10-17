@@ -74,7 +74,7 @@ async function decryptAll(data, partnerId, key) {
 }
 
 // keyId, privateKey: the signed-in member's current key (keys/). Returns { data, messages,
-// error, send }.
+// error, send, report }.
 export function useDirectConversation(partnerId, keyId, privateKey) {
   const [state, setState] = useState({ data: null, messages: [] });
   const [error, setError] = useState(null);
@@ -123,5 +123,15 @@ export function useDirectConversation(partnerId, keyId, privateKey) {
     }
   }
 
-  return { data: state.data, messages: state.messages, error, send };
+  // A report of one of the partner's messages (ReportDirectDialog). true when sent.
+  async function report(body) {
+    try {
+      await api(`/chat/direct/${partnerId}/report`, { method: 'POST', body });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  return { data: state.data, messages: state.messages, error, send, report };
 }

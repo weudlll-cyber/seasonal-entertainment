@@ -13,24 +13,7 @@ import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 import { expect, test } from '@playwright/test';
-import { MEMBER_PASSWORD } from './members.js';
-import { recordRequests } from './requestLog.js';
-
-async function memberPage(browser, username) {
-  const page = await (await browser.newContext()).newPage();
-  const requests = recordRequests(page);
-  await page.goto('/login');
-  const main = page.getByRole('main');
-  await main.getByLabel('Username').fill(username);
-  await main.getByLabel('Password').fill(MEMBER_PASSWORD);
-  await main.getByRole('button', { name: 'Log in' }).click();
-  // First login: the key pair is made; the recovery code is not part of this test.
-  await page
-    .getByRole('dialog', { name: 'Protect your private messages' })
-    .getByRole('button', { name: 'Skip' })
-    .click();
-  return { page, requests };
-}
+import { memberPage } from './members.js';
 
 const databaseText = () => {
   const db = new Database(path.join(process.env.SE_E2E_DIR, 'e2e.db'), { readonly: true });
