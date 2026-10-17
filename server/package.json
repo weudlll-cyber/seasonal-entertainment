@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@seasonal-entertainment/shared": "0.1.0",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^13.0.3",
     "better-sqlite3-session-store": "^0.1.0",
@@ -19,7 +20,7 @@
     "express-rate-limit": "^8.7.1",
     "express-session": "^1.19.0",
     "helmet": "^8.3.0",
-    "@seasonal-entertainment/shared": "0.1.0"
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "supertest": "^7.3.1",

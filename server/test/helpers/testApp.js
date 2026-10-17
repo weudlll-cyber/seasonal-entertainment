@@ -29,11 +29,9 @@ export function makeTestApp(overrides = {}) {
     publicOrigin: ORIGIN,
     backgroundJobs: false,
     ...overrides,
+    // Every limiter roomy (derived from the real list, so new ones are covered too).
     rateLimits: {
-      login: ROOMY,
-      register: ROOMY,
-      passwordChange: ROOMY,
-      bootstrap: ROOMY,
+      ...Object.fromEntries(Object.keys(base.rateLimits).map((name) => [name, ROOMY])),
       ...overrides.rateLimits,
     },
   };
@@ -62,4 +60,9 @@ export async function registerUser(t, name = 'anna', password = 'correct-horse-1
   });
   if (res.status !== 201) throw new Error(`register ${name} failed: ${res.status} ${res.text}`);
   return { agent, user: res.body.user, password };
+}
+
+// Gives an existing account a role directly in the database.
+export function setRole(t, userId, role) {
+  t.db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, userId);
 }

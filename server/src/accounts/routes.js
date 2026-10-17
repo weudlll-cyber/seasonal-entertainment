@@ -4,6 +4,7 @@
 // Project:     Seasonal Entertainment
 // Description: /api/auth: current session, registration, login, logout, own password
 //              change. Wrong username and wrong password answer the same 401 (race game rule).
+//              Accounts with 2FA finish logging in at POST /api/2fa/login.
 // ============================================================
 
 import express from 'express';
@@ -18,6 +19,9 @@ import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { cookieName, endSession, restampSession, startSession } from '../http/session.js';
 import { mustBeTrue, required, validBody } from '../http/validate.js';
+import { twoFactorStatus } from '../twofa/gate.js';
+import { beginSecondFactor } from '../twofa/routes.js';
+import { isTwoFactorEnabled } from '../twofa/store.js';
 import { hashPassword, verifyPassword } from './passwords.js';
 import {
   DuplicateAccountError,
@@ -31,6 +35,8 @@ import {
 export function accountRoutes(db, config) {
   const router = express.Router();
   const limits = config.rateLimits;
+  // What the client sees about the signed-in account, including its 2FA state.
+  const view = (user) => ({ ...publicUser(user), ...twoFactorStatus(db, config, user) });
   const loginLimiter = makeLimiter(limits.login, { failedOnly: true });
   const registerLimiter = makeLimiter(limits.register);
   // Keyed on the account, not the IP (see rateLimit.js).
@@ -40,7 +46,7 @@ export function accountRoutes(db, config) {
   });
 
   router.get('/session', allow('public'), (req, res) => {
-    res.json({ ok: true, user: req.user ? publicUser(req.user) : null });
+    res.json({ ok: true, user: req.user ? view(req.user) : null });
   });
 
   router.post('/register', allow('public'), registerLimiter, async (req, res) => {
@@ -58,7 +64,7 @@ export function accountRoutes(db, config) {
         passwordHash: await hashPassword(input.password, config.bcryptCost),
       });
       await startSession(req, user);
-      res.status(201).json({ ok: true, user: publicUser(user) });
+      res.status(201).json({ ok: true, user: view(user) });
     } catch (err) {
       if (!(err instanceof DuplicateAccountError)) throw err;
       sendError(res, 409, `${err.field}_taken`, `This ${err.field} is already registered.`);
@@ -78,8 +84,12 @@ export function accountRoutes(db, config) {
     if (found.user.locked) {
       return sendError(res, 403, 'account_locked', 'This account is locked.');
     }
+    if (isTwoFactorEnabled(db, found.user.id)) {
+      await beginSecondFactor(req, found.user);
+      return res.json({ ok: true, twoFactorRequired: true });
+    }
     await startSession(req, found.user);
-    res.json({ ok: true, user: publicUser(found.user) });
+    res.json({ ok: true, user: view(found.user) });
   });
 
   router.post('/logout', allow('member'), async (req, res) => {

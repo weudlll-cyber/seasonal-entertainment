@@ -73,3 +73,28 @@
   border-color: var(--color-success);
   color: var(--color-success);
 }
+
+/* A button that looks like a link (secondary choices inside a form). */
+.link-button {
+  font: inherit;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  text-decoration: underline;
+  cursor: pointer;
+  justify-self: start;
+}
+
+.qr-code {
+  width: 200px;
+  height: 200px;
+}
+
+.recovery-codes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: var(--space-1);
+  padding: 0;
+  list-style: none;
+}

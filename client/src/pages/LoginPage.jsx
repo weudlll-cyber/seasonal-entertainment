@@ -2,14 +2,16 @@
 // File:        LoginPage.jsx
 // Path:        client/src/pages/LoginPage.jsx
 // Project:     Seasonal Entertainment
-// Description: Login form. After success it returns to the page that sent the visitor here
-//              (?next=, same-site paths only) or to the account page.
+// Description: Login form, with a second step (code or recovery code) for accounts with 2FA.
+//              After success it returns to the page that sent the visitor here (?next=,
+//              same-site paths only) or to the account page.
 // ============================================================
 
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { api } from '../api/http.js';
 import { FormField, FormMessage } from '../components/FormField.jsx';
+import SecondFactorForm from '../components/SecondFactorForm.jsx';
 import { useSession } from '../session/SessionContext.jsx';
 
 // Only local paths: "//evil.example" or "https://..." would be an open redirect.
@@ -23,6 +25,12 @@ export default function LoginPage() {
   const [params] = useSearchParams();
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [needsCode, setNeedsCode] = useState(false);
+
+  function finish(user) {
+    setUser(user);
+    navigate(safeNext(params.get('next')), { replace: true });
+  }
 
   async function onSubmit(event) {
     event.preventDefault();
@@ -30,16 +38,26 @@ export default function LoginPage() {
     setBusy(true);
     setError(null);
     try {
-      const { user } = await api('/auth/login', {
+      const answer = await api('/auth/login', {
         method: 'POST',
         body: { username: form.get('username'), password: form.get('password') },
       });
-      setUser(user);
-      navigate(safeNext(params.get('next')), { replace: true });
+      if (answer.twoFactorRequired) return setNeedsCode(true);
+      finish(answer.user);
     } catch (err) {
       setError(err.message);
       setBusy(false);
     }
+  }
+
+  if (needsCode) {
+    return (
+      <section className="page">
+        <h1>Login</h1>
+        <p>This account uses two-factor authentication.</p>
+        <SecondFactorForm onDone={finish} />
+      </section>
+    );
   }
 
   return (

@@ -21,6 +21,7 @@
   --color-border-strong: #b8bec7;
   --color-danger: #b42318;
   --color-success: #1d7a46;
+  --color-warning-surface: #fff4d6;
   /* Accent for active/focus marks; text links stay dark for contrast */
   --color-accent: var(--color-winter);
 

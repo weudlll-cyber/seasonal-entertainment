@@ -18,13 +18,6 @@ const ACCESS = Symbol('access');
 // 'admin'     admin only
 export const ACCESS_LEVELS = ['public', 'member', 'organiser', 'admin'];
 
-// Extra checks for staff routes (organiser/admin), e.g. the 2FA requirement; registered by
-// the area that owns the rule so this module stays generic.
-const staffChecks = [];
-export function addStaffCheck(check) {
-  staffChecks.push(check);
-}
-
 export function allow(level) {
   if (!ACCESS_LEVELS.includes(level)) throw new Error(`unknown access level "${level}"`);
   const guard = (req, res, next) => {
@@ -34,10 +27,9 @@ export function allow(level) {
       if (!roleAtLeast(req.user.role, level)) {
         return sendError(res, 403, 'forbidden', 'You are not allowed to do this.');
       }
-      for (const check of staffChecks) {
-        const refusal = check(req);
-        if (refusal) return sendError(res, 403, refusal.code, refusal.message);
-      }
+      // Set by the 2FA gate (twofa/gate.js) when a staff account still lacks 2FA.
+      const refusal = req.staffRefusal;
+      if (refusal) return sendError(res, 403, refusal.code, refusal.message);
     }
     next();
   };

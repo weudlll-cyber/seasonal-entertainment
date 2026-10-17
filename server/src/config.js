@@ -38,6 +38,14 @@ function readSessionSecret(env, isProduction) {
   return randomBytes(32).toString('hex');
 }
 
+// Organisers and admins must use 2FA. Switching that off is for local development only.
+function readStaff2fa(env, isProduction) {
+  const required = readBool(env, 'REQUIRE_STAFF_2FA', true);
+  if (!required && isProduction)
+    throw new Error('REQUIRE_STAFF_2FA=false is not allowed in production');
+  return required;
+}
+
 export function readConfig(env = process.env) {
   const isProduction = env.NODE_ENV === 'production';
   return {
@@ -58,6 +66,7 @@ export function readConfig(env = process.env) {
     csrfStrict: readBool(env, 'CSRF_STRICT', true),
     bootstrapToken: env.BOOTSTRAP_TOKEN || null,
     bcryptCost: readInt(env, 'BCRYPT_COST', 12, 4, 15),
+    requireStaff2fa: readStaff2fa(env, isProduction),
     // Timers (session sweep, chat retention). Tests switch them off; not an env key.
     backgroundJobs: true,
     rateLimits: {
@@ -65,6 +74,7 @@ export function readConfig(env = process.env) {
       register: { windowMs: 60 * 60_000, max: 5 }, // registrations per IP
       passwordChange: { windowMs: 15 * 60_000, max: 5 }, // failed attempts per user
       bootstrap: { windowMs: 60 * 60_000, max: 10 }, // attempts per IP
+      twoFactor: { windowMs: 15 * 60_000, max: 5 }, // failed codes per user / per IP at login
     },
   };
 }

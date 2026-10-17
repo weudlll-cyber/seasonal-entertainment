@@ -8,6 +8,8 @@ An entry moves from part one to part two only when its branch is merged into `ma
   and footer, 404 page, security headers.
 - **SE-NIGHT-1 piece 2 — Database and accounts** — in review (PR #3). SQLite, registration,
   login, logout, password change, roles, bootstrap of the first admin, CSRF, rate limits.
+- **SE-NIGHT-1 piece 3 — Two-factor authentication** — in review (PR #3). TOTP with QR code,
+  recovery codes, required for organisers and admins.
 
 - Info pages with admin editor
 - Accounts with Discord/Telegram login and 2FA for organisers/admins

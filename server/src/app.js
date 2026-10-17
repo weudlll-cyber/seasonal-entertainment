@@ -17,6 +17,8 @@ import { csrfGuard } from './http/csrf.js';
 import { errorHandler, sendError } from './http/errors.js';
 import { securityHeaders } from './http/securityHeaders.js';
 import { currentUser, sessionMiddleware } from './http/session.js';
+import { staffTwoFactorGate } from './twofa/gate.js';
+import { twoFactorRoutes } from './twofa/routes.js';
 
 export function createApp({ buildInfo, config, db }) {
   const app = express();
@@ -30,12 +32,14 @@ export function createApp({ buildInfo, config, db }) {
   api.use(csrfGuard(config));
   api.use(sessionMiddleware(db, config));
   api.use(currentUser(db));
+  api.use(staffTwoFactorGate(db, config));
 
   api.get('/health', allow('public'), (_req, res) => {
     res.json({ ok: true, version: buildInfo.version, commit: buildInfo.commit });
   });
   api.use('/auth', accountRoutes(db, config));
   api.use('/auth', bootstrapRoutes(db, config));
+  api.use('/2fa', twoFactorRoutes(db, config));
 
   // Unknown API paths answer JSON, never the HTML page.
   api.use((_req, res) => sendError(res, 404, 'not_found', 'No such API endpoint.'));

@@ -37,6 +37,31 @@ from the race game's `docs/AUTH.md` are marked _(race game)_.
   too and ends all of that user's sessions.
 - **Logout** destroys the server-side session and clears the cookie.
 
+## Two-factor authentication (2FA)
+
+- **TOTP** (RFC 6238: HMAC-SHA1, 30-second steps, 6 digits), readable by every authenticator
+  app; implemented in `server/src/twofa/totp.js` and tested against the RFC's own vectors.
+- **Setup** (`/account`): `POST /api/2fa/setup` returns a new secret, its `otpauth://` link
+  and a QR code (PNG data URL). `POST /api/2fa/enable` with a first valid code turns 2FA on and
+  returns **ten recovery codes, shown once**; only their SHA-256 hashes are stored.
+- **Login** for an account with 2FA has two steps: the password answers
+  `{ twoFactorRequired: true }` and marks the session as half-way (not logged in; valid
+  5 minutes); `POST /api/2fa/login` with `code` or `recoveryCode` finishes it with a fresh
+  session id.
+- **No reuse:** each accepted 30-second step is remembered, and that code or an earlier one is
+  refused afterwards. A recovery code is marked used in the same statement that accepts it.
+- **Off:** `POST /api/2fa/disable` needs the password and a valid code or recovery code.
+- **Staff must use it:** an organiser or admin without 2FA can log in, but every organiser/admin
+  route answers `403 two_factor_required` until 2FA is on (`server/src/twofa/gate.js`, checked
+  in `allow()`). The session answer carries `twoFactorRequired`, and the site shows a banner
+  leading to the setup. Members may turn it on voluntarily.
+- **`REQUIRE_STAFF_2FA`** (default `true`) may be set to `false` for local development only;
+  the server refuses to start with `false` in production.
+- Failed codes are rate-limited (`rateLimits.twoFactor`: 5 per 15 minutes, per account for
+  enable/disable, per IP for the login step).
+- TOTP secrets are stored unencrypted in the database; encrypting them needs a key-management
+  decision (night report).
+
 ## Authorisation: deny by default
 
 Every route's first handler is `allow(level)` with level `public`, `member`, `organiser` or
@@ -87,8 +112,10 @@ After the first admin exists, unset `BOOTSTRAP_TOKEN`; the route stays closed an
 
 `npm run dev:admin` runs the real app in-process on a random port with a one-time token held only
 in memory, calls the bootstrap route with it, and writes the username and a random password to
-`data/DEV-ADMIN.txt` (gitignored). It also adds a `SESSION_SECRET` to `.env` if missing, so dev
-logins survive restarts. If an admin exists it changes nothing.
+`data/DEV-ADMIN.txt` (gitignored). Admins need 2FA, so it then turns 2FA on for that account
+through the real API and adds the TOTP secret, its `otpauth://` link and the recovery codes to
+the same file. It also adds a `SESSION_SECRET` to `.env` if missing, so dev logins survive
+restarts. Running it again changes nothing.
 
 ## Tests
 
