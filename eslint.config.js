@@ -35,13 +35,18 @@ export default [
     languageOptions: { globals: globals['shared-node-browser'] },
   },
 
-  // Browser: the React client and its Playwright specs.
+  // Browser: the React client.
   {
-    files: ['client/src/**/*.{js,jsx}', 'client/e2e/**/*.js'],
+    files: ['client/src/**/*.{js,jsx}'],
     languageOptions: {
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+  },
+  // Playwright specs run in Node; their page.evaluate callbacks run in the browser.
+  {
+    files: ['client/e2e/**/*.js'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },
   {
     files: ['client/src/**/*.jsx'],

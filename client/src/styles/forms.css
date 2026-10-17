@@ -29,7 +29,8 @@
 .form input[type='text'],
 .form input[type='email'],
 .form input[type='password'],
-.form input[type='search'] {
+.form input[type='search'],
+.form textarea {
   font: inherit;
   padding: var(--space-1);
   border: 1px solid var(--color-border-strong);

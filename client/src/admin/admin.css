@@ -37,3 +37,25 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* Info editor: form and preview side by side on wide screens, stacked on phones. */
+.editor {
+  display: grid;
+  gap: var(--space-3);
+}
+
+@media (min-width: 64rem) {
+  .editor {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.editor__form {
+  max-width: none;
+}
+
+.editor__preview {
+  padding: var(--space-2);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius);
+}

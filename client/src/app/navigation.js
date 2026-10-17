@@ -23,5 +23,6 @@ export const FOOTER_NAV = [
 // Sections of the admin area (/admin); each later area adds its editor here.
 export const ADMIN_NAV = [
   { to: '/admin/users', label: 'Users' },
+  { to: '/admin/info', label: 'Info pages' },
   { to: '/admin/audit', label: 'Audit log' },
 ];

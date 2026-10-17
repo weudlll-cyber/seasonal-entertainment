@@ -9,9 +9,13 @@
 
 import { Navigate, Route, Routes } from 'react-router';
 import AdminAuditPage from '../admin/AdminAuditPage.jsx';
+import AdminInfoListPage from '../admin/AdminInfoListPage.jsx';
 import AdminLayout from '../admin/AdminLayout.jsx';
 import AdminUsersPage from '../admin/AdminUsersPage.jsx';
+import InfoEditorPage from '../admin/InfoEditorPage.jsx';
 import AccountPage from '../pages/AccountPage.jsx';
+import InfoIndexPage from '../pages/InfoIndexPage.jsx';
+import InfoPage from '../pages/InfoPage.jsx';
 import LandingPage from '../pages/LandingPage.jsx';
 import LoginPage from '../pages/LoginPage.jsx';
 import NotFoundPage from '../pages/NotFoundPage.jsx';
@@ -26,6 +30,8 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<LandingPage />} />
+          <Route path="info" element={<InfoIndexPage />} />
+          <Route path="info/:slug" element={<InfoPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route
@@ -46,6 +52,8 @@ export default function App() {
           >
             <Route index element={<Navigate to="users" replace />} />
             <Route path="users" element={<AdminUsersPage />} />
+            <Route path="info" element={<AdminInfoListPage />} />
+            <Route path="info/:id" element={<InfoEditorPage />} />
             <Route path="audit" element={<AdminAuditPage />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />

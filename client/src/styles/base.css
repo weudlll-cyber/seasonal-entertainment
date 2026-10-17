@@ -83,3 +83,18 @@ a {
   text-align: left;
   vertical-align: top;
 }
+
+/* Plain list of links (e.g. the Info index). */
+.link-list {
+  padding-left: var(--space-3);
+  line-height: 2;
+}
+
+/* Rendered Markdown (info pages, previews). */
+.markdown {
+  overflow-wrap: anywhere;
+}
+
+.markdown h2 {
+  margin-top: var(--space-4);
+}

@@ -15,6 +15,8 @@ import { adminAuditRoutes } from './admin/auditRoutes.js';
 import { adminUserRoutes } from './admin/userRoutes.js';
 import { accountRoutes } from './accounts/routes.js';
 import { allow } from './http/access.js';
+import { adminInfoRoutes } from './info/adminRoutes.js';
+import { infoRoutes } from './info/routes.js';
 import { csrfGuard } from './http/csrf.js';
 import { errorHandler, sendError } from './http/errors.js';
 import { securityHeaders } from './http/securityHeaders.js';
@@ -44,6 +46,8 @@ export function createApp({ buildInfo, config, db }) {
   api.use('/2fa', twoFactorRoutes(db, config));
   api.use('/admin/users', adminUserRoutes(db, config));
   api.use('/admin/audit', adminAuditRoutes(db));
+  api.use('/info', infoRoutes(db));
+  api.use('/admin/info', adminInfoRoutes(db));
 
   // Unknown API paths answer JSON, never the HTML page.
   api.use((_req, res) => sendError(res, 404, 'not_found', 'No such API endpoint.'));

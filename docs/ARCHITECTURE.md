@@ -91,6 +91,25 @@ would have to rebuild all of that; react-router is the maintained standard for R
 - `client/src/app/navigation.js` is the one list of header and footer links.
 - `main.jsx` supplies `BrowserRouter`; tests supply `MemoryRouter`.
 
+## Info pages and user-written content
+
+Info pages live in the database (`info_pages`: slug, title, Markdown body, draft/published,
+order, last editor). The public sees only published pages (`/info`, `/info/<slug>`); a draft
+answers 404 exactly like a missing page. Admins edit them at `/admin/info` (create, edit with
+live preview, publish/unpublish, reorder); every change is audited.
+
+**User-written text is never injected as HTML.** `client/src/components/Markdown.jsx` renders
+Markdown with react-markdown, which builds React elements and drops raw HTML (`skipHtml`);
+`javascript:` link targets are removed; external links open with `rel="noopener noreferrer"`.
+The public page and the editor preview use the same component.
+
+**First-start content:** when the table is empty, `server/src/info/seed.js` inserts the pages in
+`server/src/info/seed/*.md` as **drafts**, for an admin to review and publish. The texts were
+drafted only from the official Seasonal Tokens website, both whitepapers and the owner's info
+sheet and farming guide, and each ends with its Sources list (2026-10-17). No contract address
+is retyped anywhere (the pages link to the official site); `server/test/infoSeed.test.js` guards
+these rules. Imprint and Privacy are drafts with `[TO BE FILLED BY OWNER]` placeholders.
+
 ## Security headers
 
 `server/src/http/securityHeaders.js` (helmet) sends a strict Content-Security-Policy on every
@@ -110,7 +129,8 @@ client/                    React + Vite client
   src/api/http.js          the one fetch wrapper (JSON, ApiError)
   src/session/             session context (who is signed in), RequireUser guard
   src/components/          shared UI pieces (form fields, forms)
-  src/admin/               admin area (/admin): layout, users, audit log; one section each
+  src/admin/               admin area (/admin): layout, users, audit log, info editor; one section each
+  src/components/Markdown.jsx  the one safe Markdown renderer
   e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels,
                            opticalCentres.js defines each season motif's optical centre
   src/main.jsx             entry point
@@ -129,6 +149,7 @@ server/
   src/twofa/               two-factor area: TOTP, schema, store, routes, staff gate
   src/audit/               audit log: schema and the one recordAudit helper
   src/admin/               /api/admin routes (users, audit); areas add their own editors
+  src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md)
   test/helpers/testApp.js  app on a temporary database for tests
   src/config.js            environment configuration
   src/buildInfo.js         version and commit for /api/health

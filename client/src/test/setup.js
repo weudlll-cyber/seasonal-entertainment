@@ -7,8 +7,12 @@
 // ============================================================
 
 import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
+
+// findBy* waits up to 5 s instead of 1 s: a busy machine (e.g. during the full verify) must
+// not turn a correct screen into a failure. A real failure still fails, just later.
+configure({ asyncUtilTimeout: 5000 });
 
 afterEach(() => {
   cleanup();

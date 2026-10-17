@@ -12,6 +12,8 @@ An entry moves from part one to part two only when its branch is merged into `ma
   recovery codes, required for organisers and admins.
 - **SE-NIGHT-1 piece 4 — Admin: users, roles and audit log** — in review (PR #3). /admin with
   user search, role, can-start-games, lock, password reset; audit log for every admin action.
+- **SE-NIGHT-1 piece 5 — Info pages with editor** — in review (PR #3). Public /info, admin
+  editor with preview, draft pages from the official sources, Imprint and Privacy drafts.
 
 - Info pages with admin editor
 - Accounts with Discord/Telegram login and 2FA for organisers/admins
