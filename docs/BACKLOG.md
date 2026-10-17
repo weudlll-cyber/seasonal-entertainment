@@ -33,7 +33,8 @@ An entry moves from part one to part two only when its branch is merged into `ma
   chat page. Part C: chat button and drawer with a room picker on every page except /chat and
   /admin. docs/DESIGN.md. Part D closes "ChatPanel keeps guest level after login": on login,
   logout or an account switch the chat module's shared connection reconnects as the new reader
-  and the rooms and messages reload (docs/CHAT.md).
+  and the rooms and messages reload (docs/CHAT.md). Part E: the leftover check message removed
+  from the development database and a stale `npm run dev:admin` process ended (2026-10-17).
 - **Unread count for the chat button** — open. The drawer's chat button shows no badge: the chat
   module cannot tell how many messages are new for this reader yet.
 - **Chat embedding in other applications** — open. An embed route, allowed embedding origins
