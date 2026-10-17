@@ -11,6 +11,8 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import express from 'express';
 import { bootstrapRoutes } from './accounts/bootstrap.js';
+import { adminAuditRoutes } from './admin/auditRoutes.js';
+import { adminUserRoutes } from './admin/userRoutes.js';
 import { accountRoutes } from './accounts/routes.js';
 import { allow } from './http/access.js';
 import { csrfGuard } from './http/csrf.js';
@@ -40,6 +42,8 @@ export function createApp({ buildInfo, config, db }) {
   api.use('/auth', accountRoutes(db, config));
   api.use('/auth', bootstrapRoutes(db, config));
   api.use('/2fa', twoFactorRoutes(db, config));
+  api.use('/admin/users', adminUserRoutes(db, config));
+  api.use('/admin/audit', adminAuditRoutes(db));
 
   // Unknown API paths answer JSON, never the HTML page.
   api.use((_req, res) => sendError(res, 404, 'not_found', 'No such API endpoint.'));

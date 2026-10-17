@@ -41,7 +41,9 @@ export default defineConfig({
       PORT: String(port),
       DATABASE_PATH: path.join(process.env.SE_E2E_DIR, 'e2e.db'),
       SESSION_SECRET: 'e2e-session-secret',
-      BOOTSTRAP_TOKEN: '',
+      // A token only test runs know: the admin spec creates its admin through the real
+      // bootstrap route. Not a secret: it only ever unlocks this throw-away database.
+      BOOTSTRAP_TOKEN: 'e2e-bootstrap-token',
       BCRYPT_COST: '4',
       COOKIE_SECURE: 'false',
       PUBLIC_ORIGIN: '',

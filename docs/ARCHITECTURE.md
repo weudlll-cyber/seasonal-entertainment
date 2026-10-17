@@ -110,6 +110,7 @@ client/                    React + Vite client
   src/api/http.js          the one fetch wrapper (JSON, ApiError)
   src/session/             session context (who is signed in), RequireUser guard
   src/components/          shared UI pieces (form fields, forms)
+  src/admin/               admin area (/admin): layout, users, audit log; one section each
   e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels,
                            opticalCentres.js defines each season motif's optical centre
   src/main.jsx             entry point
@@ -126,6 +127,8 @@ server/
   src/db/database.js       opens the database, applies every area's schema
   src/accounts/            accounts area: schema, user store, passwords, routes, bootstrap
   src/twofa/               two-factor area: TOTP, schema, store, routes, staff gate
+  src/audit/               audit log: schema and the one recordAudit helper
+  src/admin/               /api/admin routes (users, audit); areas add their own editors
   test/helpers/testApp.js  app on a temporary database for tests
   src/config.js            environment configuration
   src/buildInfo.js         version and commit for /api/health

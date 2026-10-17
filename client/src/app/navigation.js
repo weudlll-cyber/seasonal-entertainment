@@ -2,8 +2,8 @@
 // File:        navigation.js
 // Path:        client/src/app/navigation.js
 // Project:     Seasonal Entertainment
-// Description: The one list of header navigation targets and footer links, used by the
-//              header, the footer and their tests.
+// Description: The one list of header navigation targets, footer links and admin area
+//              sections, used by the header, footer, admin layout and their tests.
 // ============================================================
 
 export const MAIN_NAV = [
@@ -18,4 +18,10 @@ export const MAIN_NAV = [
 export const FOOTER_NAV = [
   { to: '/info/imprint', label: 'Imprint' },
   { to: '/info/privacy', label: 'Privacy' },
+];
+
+// Sections of the admin area (/admin); each later area adds its editor here.
+export const ADMIN_NAV = [
+  { to: '/admin/users', label: 'Users' },
+  { to: '/admin/audit', label: 'Audit log' },
 ];

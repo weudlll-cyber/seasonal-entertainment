@@ -33,8 +33,7 @@ from the race game's `docs/AUTH.md` are marked _(race game)_.
 - **Own password change** (`POST /api/auth/password`, current + new password; the account comes
   from the session, never the body) bumps the epoch in the same statement that stores the new
   hash: every **other** session of that account ends; the session making the change is
-  re-stamped and stays signed in _(race game)_. An admin password reset (piece 4) bumps the epoch
-  too and ends all of that user's sessions.
+  re-stamped and stays signed in _(race game)_. An admin password reset bumps the epoch too and ends all of that user's sessions.
 - **Logout** destroys the server-side session and clears the cookie.
 
 ## Two-factor authentication (2FA)
@@ -116,6 +115,19 @@ in memory, calls the bootstrap route with it, and writes the username and a rand
 through the real API and adds the TOTP secret, its `otpauth://` link and the recovery codes to
 the same file. It also adds a `SESSION_SECRET` to `.env` if missing, so dev logins survive
 restarts. Running it again changes nothing.
+
+## Admin: users and the audit log
+
+`/admin` (admins only, with 2FA) manages accounts through `/api/admin/users`: list and search,
+change role, grant or revoke "can start games", lock or unlock, and reset a password (the admin
+sets the new one; all of that user's sessions end). **The last active admin can be neither
+demoted nor locked** — refused in the data layer itself (`server/src/accounts/userAdmin.js`), so
+no route can bypass it _(race game)_; an admin cannot lock their own account either.
+
+Every admin action writes **exactly one** entry to the audit log (who, when, what, target, before
+and after, never a password) through the one helper `recordAudit`
+(`server/src/audit/auditLog.js`); the Audit page lists it newest first. Every later admin or
+moderation action uses the same helper.
 
 ## Tests
 

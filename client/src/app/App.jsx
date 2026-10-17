@@ -7,7 +7,10 @@
 //              by main.jsx (or a test).
 // ============================================================
 
-import { Route, Routes } from 'react-router';
+import { Navigate, Route, Routes } from 'react-router';
+import AdminAuditPage from '../admin/AdminAuditPage.jsx';
+import AdminLayout from '../admin/AdminLayout.jsx';
+import AdminUsersPage from '../admin/AdminUsersPage.jsx';
 import AccountPage from '../pages/AccountPage.jsx';
 import LandingPage from '../pages/LandingPage.jsx';
 import LoginPage from '../pages/LoginPage.jsx';
@@ -33,6 +36,18 @@ export default function App() {
               </RequireUser>
             }
           />
+          <Route
+            path="admin"
+            element={
+              <RequireUser role="admin">
+                <AdminLayout />
+              </RequireUser>
+            }
+          >
+            <Route index element={<Navigate to="users" replace />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="audit" element={<AdminAuditPage />} />
+          </Route>
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

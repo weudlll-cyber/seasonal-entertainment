@@ -66,3 +66,15 @@ export async function registerUser(t, name = 'anna', password = 'correct-horse-1
 export function setRole(t, userId, role) {
   t.db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, userId);
 }
+
+// A staff account that passes the 2FA gate: registered, given the role, 2FA marked enabled.
+export async function makeStaff(t, name, role) {
+  const account = await registerUser(t, name);
+  setRole(t, account.user.id, role);
+  t.db
+    .prepare(
+      "INSERT INTO two_factor (user_id, secret, enabled_at) VALUES (?, 'JBSWY3DPEHPK3PXP', 'now')"
+    )
+    .run(account.user.id);
+  return account;
+}

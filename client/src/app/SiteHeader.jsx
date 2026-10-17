@@ -4,6 +4,7 @@
 // Project:     Seasonal Entertainment
 // Description: Site header: logo linking home and the main navigation, with the account
 //              link last: "Login" for guests, the username (to /account) when signed in.
+//              Admins also get an "Admin" link.
 // ============================================================
 
 import { Link, NavLink } from 'react-router';
@@ -29,6 +30,11 @@ export default function SiteHeader() {
               </NavLink>
             </li>
           ))}
+          {user?.role === 'admin' && (
+            <li>
+              <NavLink to="/admin">Admin</NavLink>
+            </li>
+          )}
           <li>
             {user ? (
               <NavLink to="/account">{user.username}</NavLink>

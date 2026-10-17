@@ -10,6 +10,8 @@ An entry moves from part one to part two only when its branch is merged into `ma
   login, logout, password change, roles, bootstrap of the first admin, CSRF, rate limits.
 - **SE-NIGHT-1 piece 3 — Two-factor authentication** — in review (PR #3). TOTP with QR code,
   recovery codes, required for organisers and admins.
+- **SE-NIGHT-1 piece 4 — Admin: users, roles and audit log** — in review (PR #3). /admin with
+  user search, role, can-start-games, lock, password reset; audit log for every admin action.
 
 - Info pages with admin editor
 - Accounts with Discord/Telegram login and 2FA for organisers/admins
