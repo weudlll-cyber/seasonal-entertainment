@@ -2,9 +2,9 @@
 // File:        mount.js
 // Path:        server/src/chat/mount.js
 // Project:     Seasonal Entertainment
-// Description: The whole chat area behind one call: rooms and messages, favourites,
-//              moderation, the sticker/GIF library, link previews, members' file uploads, the
-//              live WebSocket and the retention job.
+// Description: The whole chat area behind one call: rooms and messages, favourites, direct
+//              messages, moderation, the sticker/GIF library, link previews, members' file
+//              uploads, the live WebSocket and the retention job.
 //              The rest of the server knows only mountChat() and the handle it returns
 //              (docs/CHAT.md, "Server interface").
 // ============================================================
@@ -17,12 +17,14 @@ import { seedChatMedia } from '../media/seed.js';
 import { previewModerationRoutes } from '../previews/routes.js';
 import { createPreviewService } from '../previews/service.js';
 import { uploadRoutes } from '../uploads/routes.js';
+import { directRoutes } from './directRoutes.js';
 import { favouriteRoutes } from './favouriteRoutes.js';
 import { ChatHub } from './hub.js';
 import { adminChatRoomRoutes, chatModerationRoutes } from './moderationRoutes.js';
 import { startChatRetention } from './retention.js';
 import { chatRoutes } from './routes.js';
 import { seedChatRooms } from './seed.js';
+import { makeSenderLimit } from './senderLimit.js';
 import { attachChatSocket } from './socket.js';
 
 // Public media file names: <32 hex>.<ext> at the top (library) or in previews/.
@@ -36,8 +38,12 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork 
   const hub = new ChatHub(db, config);
   const previews = createPreviewService(db, config, hub, previewNetwork);
 
-  api.use('/chat', chatRoutes(db, config, hub, previews));
+  // One per-sender rate limit for room and direct messages alike.
+  const allowMessage = makeSenderLimit(config.chat.rate);
+
+  api.use('/chat', chatRoutes(db, config, hub, previews, allowMessage));
   api.use('/chat/favourites', favouriteRoutes(db, hub));
+  api.use('/chat/direct', directRoutes(db, hub, allowMessage));
   api.use('/chat', previewModerationRoutes(db, hub));
   api.use('/chat', chatModerationRoutes(db, hub));
   api.use('/chat', mediaRoutes(db));

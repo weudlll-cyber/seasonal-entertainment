@@ -71,6 +71,16 @@ export class ChatHub {
     }
   }
 
+  // To every open socket of one account (direct messages need no subscription). Rights are
+  // checked as for room pushes: a socket whose account no longer qualifies is closed.
+  sendToUser(userId, event) {
+    const text = JSON.stringify(event);
+    for (const [socket, session] of this.sessions) {
+      if (session.data.userId !== userId || socket.readyState !== WebSocket.OPEN) continue;
+      if (this.viewerOf(socket)?.user?.id === userId) socket.send(text);
+    }
+  }
+
   // Accounts with an open chat socket right now: the "online" mark beside favourite members.
   onlineUserIds() {
     const ids = new Set();

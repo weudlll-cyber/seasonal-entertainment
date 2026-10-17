@@ -15,7 +15,7 @@ import { hashPassword } from '../../server/src/accounts/passwords.js';
 
 export const MEMBER_PASSWORD = 'member-horse-1';
 // One account per spec that needs its own, so specs running in parallel never share one.
-export const MEMBERS = ['keyskip', 'keycode'];
+export const MEMBERS = ['keyskip', 'keycode', 'dmsender', 'dmrecip'];
 
 export async function seedMembers(databasePath) {
   const db = new Database(databasePath);

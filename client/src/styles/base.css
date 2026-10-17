@@ -143,6 +143,14 @@ a {
   margin: 0;
 }
 
+/* The tab's content (rooms or direct messages) takes the rest of the page's height. */
+.chat-page__panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .chat-page .se-chat {
   flex: 1;
   min-height: 0;

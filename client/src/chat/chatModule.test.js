@@ -20,6 +20,9 @@ const srcDir = path.dirname(moduleDir);
 const ALLOWED_OUTSIDE = new Set([
   'react',
   '@seasonal-entertainment/shared/chatRules.js',
+  // Direct messages are encrypted and decrypted in the browser (docs/CHAT.md).
+  '@seasonal-entertainment/shared/crypto.js',
+  '@seasonal-entertainment/shared/cryptoFormat.js',
   path.join(srcDir, 'session', 'SessionContext.jsx'),
   path.join(srcDir, 'api', 'http.js'),
 ]);

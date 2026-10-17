@@ -46,6 +46,25 @@ export function storeNewKey(db, userId, publicKey, sealedPrivateKey) {
 }
 
 // The same private key, sealed again with a new wrapping key. false without a key.
+// The id of the member's current key, or null without one.
+export function currentKeyId(db, userId) {
+  return (
+    db.prepare('SELECT key_id AS k FROM user_secret_keys WHERE user_id = ?').get(userId)?.k ?? null
+  );
+}
+
+// Public keys by key id, for the ids given: { [keyId]: publicKey }.
+export function publicKeysById(db, ids) {
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) return {};
+  const rows = db
+    .prepare(
+      `SELECT id, public_key AS publicKey FROM user_keys WHERE id IN (${unique.map(() => '?').join(',')})`
+    )
+    .all(...unique);
+  return Object.fromEntries(rows.map((r) => [r.id, r.publicKey]));
+}
+
 export function resealKey(db, userId, sealedPrivateKey) {
   return (
     db

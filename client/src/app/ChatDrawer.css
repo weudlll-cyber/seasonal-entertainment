@@ -42,6 +42,15 @@
   box-shadow: var(--shadow-raised);
 }
 
+/* The tab's content fills the drawer below the header and tabs. */
+.chat-drawer__panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: 0;
+}
+
 /* The panel fills the drawer below its header and room picker; its list takes the rest. */
 .chat-drawer .se-chat {
   --chat-list-max-height: none;

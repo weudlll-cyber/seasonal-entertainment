@@ -3,14 +3,16 @@
 // Path:        client/src/chat/NameMenu.jsx
 // Project:     Seasonal Entertainment
 // Description: A message author's name. For a signed-in member looking at another member's
-//              message it is a button opening a small menu: "Add to favourites" or "Remove
-//              from favourites". Keyboard: Enter, Space or ArrowDown open it with the first
+//              message it is a button opening a small menu: "Send private message" (opens the
+//              direct conversation, directView.js) and "Add to favourites" or "Remove from
+//              favourites". Keyboard: Enter, Space or ArrowDown open it with the first
 //              item focused; arrows move, Escape closes and returns to the name, Tab closes.
 //              Guests' names, one's own name and everything a guest sees stay plain text.
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
 import { useSession } from '../session/SessionContext.jsx';
+import { requestDirect } from './directView.js';
 import { useFavourites } from './favourites.js';
 
 export default function NameMenu({ name, authorId }) {
@@ -27,6 +29,10 @@ export default function NameMenu({ name, authorId }) {
   if (!favourites.member || !authorId || authorId === user?.id) return <strong>{name}</strong>;
   const favourite = favourites.isFavouriteUser(authorId);
   const items = [
+    {
+      label: 'Send private message',
+      run: async () => requestDirect({ id: authorId, username: name }),
+    },
     {
       label: favourite ? 'Remove from favourites' : 'Add to favourites',
       run: () => favourites.setUser(authorId, !favourite),

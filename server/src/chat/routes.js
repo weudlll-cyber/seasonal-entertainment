@@ -17,7 +17,7 @@ import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { addMessage, findMessage, listMessages } from './messages.js';
 import { readMessageInput } from './messageInput.js';
-import { makeSenderLimit } from './senderLimit.js';
+import { refuseSanctioned } from './sanctionRefusal.js';
 import {
   activeSanction,
   assignGuestName,
@@ -60,10 +60,10 @@ const forGuests =
     return counted ? limiter(req, res, next) : next();
   };
 
-// previews: the link-preview service (previews/service.js).
-export function chatRoutes(db, config, hub, previews) {
+// previews: the link-preview service (previews/service.js); allowMessage: the per-sender
+// rate limit, shared with direct messages (senderLimit.js, mount.js).
+export function chatRoutes(db, config, hub, previews, allowMessage) {
   const router = express.Router();
-  const allowMessage = makeSenderLimit(config.chat.rate);
   const guestPostsPerIp = forGuests(makeLimiter(config.rateLimits.chatGuestPost));
   const newGuestsPerIp = forGuests(makeLimiter(config.rateLimits.chatNewGuest), {
     newGuestsOnly: true,
@@ -110,17 +110,7 @@ export function chatRoutes(db, config, hub, previews) {
       const input = readMessageInput(req, res, db, viewer);
       if (!input) return;
       const sanction = activeSanction(db, viewer);
-      if (sanction) {
-        const until = sanction.until
-          ? ` until ${sanction.until.slice(0, 16).replace('T', ' ')} UTC`
-          : '';
-        return sendError(
-          res,
-          403,
-          sanction.kind === 'ban' ? 'banned' : 'muted',
-          `You are ${sanction.kind === 'ban' ? 'banned from' : 'muted in'} the chat${until}.`
-        );
-      }
+      if (sanction) return refuseSanctioned(res, sanction);
       if (!(await ensureGuest(req, res, viewer, db))) return;
       const senderKey = viewer.user ? `user:${viewer.user.id}` : `guest:${viewer.guest.id}`;
       if (!allowMessage(senderKey, !viewer.user)) {

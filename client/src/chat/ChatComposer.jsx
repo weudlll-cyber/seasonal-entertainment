@@ -18,7 +18,8 @@ import './ChatComposer.css';
 
 // onSend(payload) resolves true when the message went out (then text and attachment clear).
 // payload: { body, attachment?: { type: 'sticker' | 'gif', itemId } | { type: 'file', uploadId } }.
-export default function ChatComposer({ user, guestName, onSend }) {
+// files: offer "Attach file" to members (false in direct messages: no uploads there, v1).
+export default function ChatComposer({ user, guestName, onSend, files = true }) {
   const [draft, setDraft] = useState('');
   const [attachment, setAttachment] = useState(null); // { type, item } or { type: 'file', upload }
   const field = useRef(null);
@@ -76,7 +77,7 @@ export default function ChatComposer({ user, guestName, onSend }) {
           onEmoji={insertEmoji}
           onMedia={(type, item) => setAttachment({ type, item })}
         />
-        {user && (
+        {user && files && (
           <ComposerUpload onUploaded={(upload) => setAttachment({ type: 'file', upload })} />
         )}
         <button className="chat-button" type="submit" disabled={!draft.trim() && !attachment}>

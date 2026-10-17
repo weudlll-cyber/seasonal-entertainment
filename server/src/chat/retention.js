@@ -3,7 +3,7 @@
 // Path:        server/src/chat/retention.js
 // Project:     Seasonal Entertainment
 // Description: Chat retention: messages older than CHAT_RETENTION_DAYS (default 90) are
-//              deleted (their reports with them), files uploaded with any message that no
+//              deleted (their reports with them), direct messages too (the same setting), files uploaded with any message that no
 //              longer exists go with it (rows and files on disk), uploads never sent are
 //              deleted after an hour, unused link previews after the cache time, and guest
 //              names unused for 30 days (the session lifetime) are released. Runs at start and
@@ -17,7 +17,7 @@ import { deleteOrphanUploads } from '../uploads/store.js';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const GUEST_NAME_DAYS = 30;
 
-// Returns how many messages were deleted.
+// Returns how many messages (room and direct) were deleted.
 export function deleteExpiredChat(db, retentionDays, now = Date.now()) {
   const messagesBefore = new Date(now - retentionDays * DAY_MS).toISOString();
   const guestsBefore = new Date(now - GUEST_NAME_DAYS * DAY_MS).toISOString();
@@ -25,8 +25,11 @@ export function deleteExpiredChat(db, retentionDays, now = Date.now()) {
     const { changes } = db
       .prepare('DELETE FROM chat_messages WHERE created_at < ?')
       .run(messagesBefore);
+    const direct = db
+      .prepare('DELETE FROM direct_messages WHERE created_at < ?')
+      .run(messagesBefore).changes;
     db.prepare('DELETE FROM chat_guests WHERE last_seen < ?').run(guestsBefore);
-    return changes;
+    return changes + direct;
   })();
 }
 

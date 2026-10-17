@@ -42,7 +42,16 @@ An entry moves from part one to part two only when its branch is merged into `ma
   (Argon2id in the browser, only a derived auth key is sent; pre-login salt; one-time legacy
   upgrade; docs/AUTH.md). Piece 3: every member's key pair, made in the browser, the private key
   only sealed on the server; optional recovery code; unlock, recovery and start over (docs/CHAT.md,
-  "Keys and the recovery code").
+  "Keys and the recovery code"). Piece 4: end-to-end encrypted direct messages between members
+  (drawer and /chat Direct tab, name menu, unread dot, key-change notice; docs/CHAT.md, "Direct
+  messages").
+- **File uploads in direct messages** — open. Left out of v1 (decided 2026-10-18): an uploaded
+  file would have to be encrypted in the browser too.
+- **Link previews in direct messages** — open. Left out of v1: the server would have to see the
+  link to fetch it; links are plain clickable links.
+- **Safety-number verification** — open. The server hands out public keys, so a compromised server
+  could substitute one (docs/CHAT.md, "Known limit"); two members comparing a safety number
+  outside the site would detect it.
 - **Telegram-login recovery code handling** — open (decided direction 2026-10-17). Recovery codes
   are to apply to future Telegram logins too: such an account has no password to derive a
   wrapping key from (docs/AUTH.md).

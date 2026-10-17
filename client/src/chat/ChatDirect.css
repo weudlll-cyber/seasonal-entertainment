@@ -1,0 +1,69 @@
+/* ============================================================
+   File:        ChatDirect.css
+   Path:        client/src/chat/ChatDirect.css
+   Project:     Seasonal Entertainment
+   Description: Direct messages in the chat module: the conversation list (online mark,
+                unread dot) and a conversation's header and key-change notices. Under the
+                .se-chat root like every module style.
+   ============================================================ */
+
+.se-chat .chat-direct-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.se-chat .chat-direct-list__item {
+  display: flex;
+  align-items: center;
+  gap: var(--chat-space-1);
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--chat-space-1);
+  border: 1px solid var(--chat-border);
+  border-radius: var(--chat-radius);
+  background: var(--chat-bg);
+  color: var(--chat-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.se-chat .chat-direct-list__name {
+  flex: 1;
+  font-weight: var(--chat-strong);
+}
+
+.se-chat .chat-online {
+  color: var(--color-success, #1d7a46);
+  font-size: 0.8125rem;
+}
+
+.se-chat .chat-unread-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-autumn, #f9a825);
+}
+
+.se-chat .chat-direct__header {
+  display: flex;
+  align-items: center;
+  gap: var(--chat-space-1);
+  min-height: 44px;
+}
+
+.se-chat .chat-direct__header .chat-link-button {
+  min-width: 44px;
+  min-height: 44px;
+  text-decoration: none;
+  font-size: 1.25rem;
+}
+
+.se-chat .chat-key-notice {
+  padding: 0.25rem var(--chat-space-1);
+  text-align: center;
+}

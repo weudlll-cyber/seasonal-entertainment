@@ -1,0 +1,32 @@
+/* ============================================================
+   File:        ChatTabs.css
+   Path:        client/src/app/ChatTabs.css
+   Project:     Seasonal Entertainment
+   Description: The "Rooms" / "Direct" tabs above the chat (drawer and full chat page).
+   ============================================================ */
+
+.chat-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: var(--radius);
+  background: var(--color-surface-2);
+}
+
+.chat-tabs__tab {
+  flex: 1;
+  min-height: var(--hit-target);
+  border: 0;
+  border-radius: calc(var(--radius) - 4px);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-weight: var(--font-weight-strong);
+  cursor: pointer;
+}
+
+.chat-tabs__tab[aria-selected='true'] {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
+}

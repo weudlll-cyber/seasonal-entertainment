@@ -282,6 +282,10 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
   `Content-Security-Policy: default-src 'none'; sandbox`; the site never shows them itself.
   Moderators' **Remove file** deletes the files from disk and leaves "File removed" (audited,
   `chat.file_remove`). Reported messages keep their file.
+- **Direct messages** (docs/CHAT.md, "Direct messages"): end-to-end encrypted between members;
+  `server/src/chat/directRoutes.js` (`/api/chat/direct`) stores and relays ciphertext only, pushed
+  to both members' sockets (`hub.sendToUser`); the client's `DirectPanel` (chat module) shows them
+  in the drawer's and the `/chat` page's Direct tab.
 - **Keys** (docs/CHAT.md, "Keys and the recovery code"): `server/src/keys/` (`/api/keys`) holds
   members' public keys and their private keys sealed in the browser, with the optional recovery
   seal; the client side is `client/src/keys/` (KeyProvider, the unlocked copy in IndexedDB, the

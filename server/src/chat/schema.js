@@ -9,6 +9,8 @@
 //              from the media library (media/schema.js), optionally with a link preview
 //              (previews/schema.js); a report counts until a moderator marks it reviewed.
 //              Members' favourite rooms and favourite members (gone with the account).
+//              Direct messages between members: only ciphertext, nonce and who/which keys
+//              (end-to-end encrypted, docs/CHAT.md), and how far each member has read.
 //              migrateChat() brings older databases up.
 // ============================================================
 
@@ -76,6 +78,26 @@ CREATE TABLE IF NOT EXISTS chat_favourite_users (
   created_at   TEXT    NOT NULL,
   PRIMARY KEY (user_id, favourite_id),
   CHECK (user_id <> favourite_id)
+);
+CREATE TABLE IF NOT EXISTS direct_messages (
+  id               INTEGER PRIMARY KEY,
+  sender_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  recipient_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  sender_key_id    INTEGER NOT NULL REFERENCES user_keys(id) ON DELETE CASCADE,
+  recipient_key_id INTEGER NOT NULL REFERENCES user_keys(id) ON DELETE CASCADE,
+  nonce            TEXT    NOT NULL,
+  ciphertext       TEXT    NOT NULL,
+  created_at       TEXT    NOT NULL,
+  CHECK (sender_id <> recipient_id)
+);
+CREATE INDEX IF NOT EXISTS direct_by_sender ON direct_messages (sender_id, recipient_id, id);
+CREATE INDEX IF NOT EXISTS direct_by_recipient ON direct_messages (recipient_id, sender_id, id);
+CREATE INDEX IF NOT EXISTS direct_by_age ON direct_messages (created_at);
+CREATE TABLE IF NOT EXISTS direct_reads (
+  user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  partner_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  last_read_id INTEGER NOT NULL,
+  PRIMARY KEY (user_id, partner_id)
 );
 `;
 

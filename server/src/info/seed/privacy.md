@@ -31,6 +31,11 @@ This list describes what the website's software actually stores.
 - **Guest names in the chat**: a guest who writes or reports a message gets a random name such
   as "Guest-k7m2qa", kept with that guest's session. The name is released 30 days after it was
   last used.
+- **Private messages between members**: end-to-end encrypted in the senders' and recipients'
+  browsers. This site stores only the encrypted message, who sent it to whom, which keys were
+  used, and when, and cannot read the content; moderators and admins cannot read it either. It
+  also stores how far each of you has read a conversation (for the unread mark). Deleted after the
+  chat retention period (90 days), like room messages.
 - **Chat reports**: when someone reports a message, the site stores which account or guest name
   reported it, so each person counts once. No IP address is stored.
 - **Chat mutes and bans**: who was muted or banned, by whom, and until when.

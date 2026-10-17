@@ -30,7 +30,12 @@ site's chat drawer, docs/DESIGN.md). The panel itself uses the same hook. For th
 it exports the member's favourites: **`useFavourites()`** (`{ member, rooms, users,
 isFavouriteUser, setRoom, setUser }`; one shared copy per page, so every place agrees),
 **`groupRooms(rooms, favouriteSlugs)`** (favourites first, both groups in the rooms' own order)
-and **`<RoomStar room>`** (the star; renders nothing for guests).
+and **`<RoomStar room>`** (the star; renders nothing for guests). For direct messages it exports
+**`<DirectPanel keyId privateKey variant>`** (the conversation list or one conversation; the host
+passes the member's unlocked key and shows the unlock step while there is none) and
+**`onDirectRequest(callback)`** (a name menu asked for a conversation: the host brings its Direct
+tab forward). The module encrypts and decrypts with `shared/crypto.js`, the only other outside
+import it is allowed.
 
 The module uses nothing else from the page around it. From outside its folder it imports only
 React, the shared chat rules (`@seasonal-entertainment/shared/chatRules.js`), the account context
@@ -136,6 +141,41 @@ salt)` and that seal stored (`PUT /api/keys/recovery`) — the code itself never
   **Start over without my old messages** — a new key pair (new key id), the recovery seal gone,
   old direct messages unreadable for this member, the recovery-code dialog offered again; the
   conversation partners see that the key changed.
+
+## Direct messages
+
+End-to-end encrypted messages between **members only** (decided 2026-10-17); guests can neither
+open nor send them. Any member can write to any member.
+
+- **Where**: "Send private message" in the name menu of another member's message; the chat
+  drawer's **Direct** tab and the **Direct** tab of the full `/chat` page (members only). The
+  conversation list shows favourite members first (with an online mark), then the most recent
+  conversations, each with an **unread dot** (a server-side read marker per member and partner,
+  `direct_reads`, moved forward when the conversation is shown). Without an unlocked key on the
+  device, the Direct tab shows "Unlock private messages" (see "Keys and the recovery code").
+- **Encryption** (in the browser, `shared/crypto.js`): message = `crypto_box_easy(JSON { text,
+mediaItemId? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh random nonce each time.
+  Either side opens it with the other's public key and its own private key. The server stores
+  ciphertext, nonce, sender and recipient ids, both key ids and the time (`direct_messages`) and
+  pushes each new message over the existing WebSocket to both members' open sockets (no
+  subscription needed). It never sees the text.
+- **What a message can hold (v1, decided 2026-10-18)**: text, emoji, and stickers/GIFs from the
+  site's library (the library id travels inside the ciphertext; the browser loads the public
+  library file). **No file uploads and no link previews** in direct messages; links are plain
+  clickable links. Both are open backlog items.
+- **Rules** (`server/src/chat/directRoutes.js`): the same mute/ban and the same per-sender rate
+  limit as room messages (one shared limiter); a locked account has no session. The partner must
+  have a key; both key ids must be the current ones, else `409 key_changed` with the partner's
+  current key, and the browser encrypts once more. A member reaches only their own conversations;
+  moderators and admins have no access (see "Reporting a direct message").
+- **Key changes**: when the partner's key id changes (they started over), the conversation shows
+  "<name>'s security key changed" at that point; messages made for an earlier key of one's own
+  say they cannot be read.
+- **Retention**: direct messages follow the same `CHAT_RETENTION_DAYS` as room messages.
+- **Known limit**: the server hands out the public keys. A compromised server could give a member
+  a key of its own instead of the partner's and read what is then sent (an active attack). A
+  safety-number check between two members, to compare keys outside the site, is an open backlog
+  item.
 
 ## Server: `mountChat()`
 
