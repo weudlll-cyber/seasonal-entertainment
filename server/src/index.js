@@ -2,16 +2,23 @@
 // File:        index.js
 // Path:        server/src/index.js
 // Project:     Seasonal Entertainment
-// Description: Server entry point: reads configuration, builds the app and starts listening.
+// Description: Server entry point: loads .env (if present), reads configuration, opens the
+//              database, builds the app and starts listening.
 // ============================================================
 
+import { existsSync } from 'node:fs';
 import { createApp } from './app.js';
 import { readBuildInfo } from './buildInfo.js';
-import { readConfig } from './config.js';
+import { ENV_FILE, readConfig } from './config.js';
+import { openDatabase } from './db/database.js';
+
+// Variables already set in the real environment win over the file.
+if (existsSync(ENV_FILE)) process.loadEnvFile(ENV_FILE);
 
 const config = readConfig();
 const buildInfo = readBuildInfo();
-const app = createApp({ buildInfo, clientDist: config.clientDist });
+const db = openDatabase(config.databasePath);
+const app = createApp({ buildInfo, config, db });
 
 app.listen(config.port, config.host, () => {
   console.log(

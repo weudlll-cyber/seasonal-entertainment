@@ -6,6 +6,8 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 - **SE-NIGHT-1 piece 1 — App shell** — in review (PR #3). Client routing, layout with header
   and footer, 404 page, security headers.
+- **SE-NIGHT-1 piece 2 — Database and accounts** — in review (PR #3). SQLite, registration,
+  login, logout, password change, roles, bootstrap of the first admin, CSRF, rate limits.
 
 - Info pages with admin editor
 - Accounts with Discord/Telegram login and 2FA for organisers/admins

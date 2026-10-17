@@ -11,6 +11,7 @@ import { spawnSync } from 'node:child_process';
 const STEPS = [
   { name: 'lint', script: 'lint' },
   { name: 'format check', script: 'format:check' },
+  { name: 'shared tests', script: 'test:shared' },
   { name: 'server tests', script: 'test:server' },
   { name: 'client tests', script: 'test:client' },
   { name: 'build', script: 'build' },

@@ -45,3 +45,18 @@ a {
   margin: 0 auto;
   padding: var(--space-3) var(--space-2);
 }
+
+/* Term/value list, e.g. account details. */
+.details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-2);
+}
+
+.details dt {
+  font-weight: var(--font-weight-strong);
+}
+
+.details dd {
+  margin: 0;
+}

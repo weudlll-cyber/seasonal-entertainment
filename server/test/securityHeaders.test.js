@@ -9,18 +9,24 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import request from 'supertest';
-import { afterAll, describe, expect, it } from 'vitest';
-import { createApp } from '../src/app.js';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { makeTestApp } from './helpers/testApp.js';
 
-const buildInfo = { version: '0.0.0', commit: 'test' };
-const clientDist = mkdtempSync(path.join(tmpdir(), 'se-dist-'));
-writeFileSync(path.join(clientDist, 'index.html'), '<!doctype html><title>shell</title>');
-afterAll(() => rmSync(clientDist, { recursive: true, force: true }));
+let t;
+let clientDist;
+beforeEach(() => {
+  clientDist = mkdtempSync(path.join(tmpdir(), 'se-dist-'));
+  writeFileSync(path.join(clientDist, 'index.html'), '<!doctype html><title>shell</title>');
+  t = makeTestApp({ clientDist });
+});
+afterEach(() => {
+  t.close();
+  rmSync(clientDist, { recursive: true, force: true });
+});
 
 describe('security headers', () => {
   it('sends a strict Content-Security-Policy and the usual hardening headers', async () => {
-    const res = await request(createApp({ buildInfo })).get('/api/health');
+    const res = await t.client().get('/api/health');
     const csp = res.headers['content-security-policy'];
     expect(csp).toContain("default-src 'self'");
     expect(csp).toContain("script-src 'self'");
@@ -33,21 +39,21 @@ describe('security headers', () => {
   });
 
   it('sends them on page responses too', async () => {
-    const res = await request(createApp({ buildInfo, clientDist })).get('/events');
+    const res = await t.client().get('/events');
     expect(res.headers['content-security-policy']).toContain("default-src 'self'");
   });
 });
 
 describe('client-route fallback', () => {
   it('serves index.html for a client route', async () => {
-    const res = await request(createApp({ buildInfo, clientDist })).get('/info/faq');
+    const res = await t.client().get('/info/faq');
     expect(res.status).toBe(200);
     expect(res.text).toContain('<title>shell</title>');
   });
 
   it('never serves the page for an unknown API path', async () => {
-    const res = await request(createApp({ buildInfo, clientDist })).get('/api/nope');
+    const res = await t.client().get('/api/nope');
     expect(res.status).toBe(404);
-    expect(res.body).toEqual({ ok: false, error: 'not_found' });
+    expect(res.body).toMatchObject({ ok: false, error: 'not_found' });
   });
 });

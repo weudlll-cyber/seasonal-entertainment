@@ -29,6 +29,12 @@ export default [
     languageOptions: { globals: globals.node },
   },
 
+  // Shared rules: run in both, so only globals both have.
+  {
+    files: ['shared/**/*.js'],
+    languageOptions: { globals: globals['shared-node-browser'] },
+  },
+
   // Browser: the React client and its Playwright specs.
   {
     files: ['client/src/**/*.{js,jsx}', 'client/e2e/**/*.js'],

@@ -5,6 +5,8 @@ coverage/
 # Playwright output
 test-results/
 playwright-report/
+# Local data: the SQLite database and the dev admin's credentials file
+data/
 # Local configuration and secrets
 .env
 .env.*

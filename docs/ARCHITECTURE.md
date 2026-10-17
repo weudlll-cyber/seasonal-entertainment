@@ -14,14 +14,24 @@
 | ------- | ---------------------------------------------------- |
 | Client  | React 19 + Vite, react-router (declarative routes)   |
 | Server  | Node 24 LTS + Express 5                              |
-| Storage | SQLite, added with the first feature that needs it   |
+| Storage | SQLite (better-sqlite3), one file, path from config  |
 | Tests   | Vitest (server and client), Playwright (browser)     |
 | Quality | ESLint (flat config), Prettier                       |
 | CI      | GitHub Actions, runs `npm run verify` (see `ci.yml`) |
 
-The repository is one npm workspace root with two packages, `server` and `client`, and one
-lockfile. There is no `shared/` package yet: nothing is shared between the two sides. Create it
-only when real code is needed by both.
+The repository is one npm workspace root with three packages, `shared`, `server` and
+`client`, and one lockfile. `shared/` holds only rules both sides must apply identically
+(account rules: username format, password length, minimum age, role order); it exists since
+2026-10-17 because a registration form must never accept what the server refuses.
+
+## Data
+
+One SQLite file (`DATABASE_PATH`, default `data/seasonal.db`; `data/` is gitignored),
+opened by `server/src/db/database.js`. Each area owns one schema module of
+`CREATE TABLE IF NOT EXISTS` statements (e.g. `server/src/accounts/schema.js`), applied at every
+start, and one small data module (e.g. `userStore.js`). No ORM. Sessions live in the same file
+(table `sessions`). Tests use a temporary database each and delete it. Accounts, sessions,
+roles and the bootstrap are described in [AUTH.md](AUTH.md).
 
 ## Ports
 
@@ -37,14 +47,26 @@ The race game uses 5173 and 4173; this project stays clear of them.
 
 Read from the environment when the process starts, never baked into a build:
 
-| Variable      | Default                   | Used by                                      |
-| ------------- | ------------------------- | -------------------------------------------- |
-| `HOST`        | `127.0.0.1`               | server listen address                        |
-| `PORT`        | `3800`                    | server listen port                           |
-| `CLIENT_DIST` | `client/dist`             | folder of the built client the server serves |
-| `COMMIT_SHA`  | output of `git rev-parse` | commit reported by `/api/health`             |
-| `CLIENT_PORT` | `5380`                    | Vite dev server port                         |
-| `API_ORIGIN`  | `http://127.0.0.1:3800`   | where the Vite dev server forwards `/api`    |
+| Variable          | Default                   | Used by                                       |
+| ----------------- | ------------------------- | --------------------------------------------- |
+| `HOST`            | `127.0.0.1`               | server listen address                         |
+| `PORT`            | `3800`                    | server listen port                            |
+| `CLIENT_DIST`     | `client/dist`             | folder of the built client the server serves  |
+| `COMMIT_SHA`      | output of `git rev-parse` | commit reported by `/api/health`              |
+| `CLIENT_PORT`     | `5380`                    | Vite dev server port                          |
+| `API_ORIGIN`      | `http://127.0.0.1:3800`   | where the Vite dev server forwards `/api`     |
+| `NODE_ENV`        | (unset)                   | `production`: Secure cookies, secret required |
+| `DATABASE_PATH`   | `data/seasonal.db`        | SQLite file                                   |
+| `SESSION_SECRET`  | random per start (dev)    | signs session cookies; required in production |
+| `BOOTSTRAP_TOKEN` | (unset)                   | one-time first-admin creation (AUTH.md)       |
+| `PUBLIC_ORIGIN`   | from the Host header      | own origin for CSRF/WebSocket origin checks   |
+| `TRUST_PROXY`     | `0`                       | number of reverse proxies in front            |
+| `COOKIE_SECURE`   | `true` in production      | Secure session cookie                         |
+| `CSRF_STRICT`     | `true`                    | refuse state changes without Origin/Referer   |
+| `BCRYPT_COST`     | `12`                      | password hashing cost (4–15)                  |
+
+The server loads `.env` from the repository root if present; real environment variables win.
+`.env.example` lists every key by name.
 
 The client only ever calls relative URLs (`/api/...`), so the same build works on any host.
 
@@ -84,6 +106,9 @@ test fails on any console error, which is where a CSP violation shows up.
 client/                    React + Vite client
   index.html               HTML shell
   src/app/                 route table, layout, header, footer, navigation list
+  src/api/http.js          the one fetch wrapper (JSON, ApiError)
+  src/session/             session context (who is signed in), RequireUser guard
+  src/components/          shared UI pieces (form fields, forms)
   e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels,
                            opticalCentres.js defines each season motif's optical centre
   src/main.jsx             entry point
@@ -95,12 +120,19 @@ client/                    React + Vite client
 server/
   src/index.js             entry point: config, app, listen
   src/app.js               Express app (routes); no listen, so tests drive it directly
-  src/http/                cross-cutting HTTP middleware (security headers)
+  src/http/                cross-cutting HTTP: security headers, access (allow), CSRF,
+                           sessions, rate limits, validation, error shape
+  src/db/database.js       opens the database, applies every area's schema
+  src/accounts/            accounts area: schema, user store, passwords, routes, bootstrap
+  test/helpers/testApp.js  app on a temporary database for tests
   src/config.js            environment configuration
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests
+shared/                    rules used by server and client (accountRules.js)
 scripts/
   dev.mjs                  npm run dev
+  e2e.mjs                  npm run test:e2e (temporary database per run)
+  create-dev-admin.mjs     npm run dev:admin (local admin via the bootstrap flow)
   build-season-marks.mjs   npm run marks:build (web-ready season marks)
   verify.mjs               npm run verify
 docs/                      this file and the backlog

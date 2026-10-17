@@ -12,6 +12,7 @@ import { BrowserRouter } from 'react-router';
 import './styles/fonts.css';
 import './styles/tokens.css';
 import './styles/base.css';
+import './styles/forms.css';
 import App from './app/App.jsx';
 
 createRoot(document.getElementById('root')).render(

@@ -8,8 +8,11 @@
 
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { GUEST, mockApi } from '../test/mockApi.js';
 import App from './App.jsx';
+
+beforeEach(() => mockApi(GUEST));
 
 function renderAt(path) {
   return render(

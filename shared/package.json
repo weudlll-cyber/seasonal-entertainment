@@ -1,0 +1,14 @@
+{
+  "name": "@seasonal-entertainment/shared",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "description": "Rules both server and client must apply identically (accounts, roles).",
+  "type": "module",
+  "exports": {
+    "./accountRules.js": "./accountRules.js"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
+}

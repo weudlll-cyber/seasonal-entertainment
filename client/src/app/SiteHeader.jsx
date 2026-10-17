@@ -3,14 +3,16 @@
 // Path:        client/src/app/SiteHeader.jsx
 // Project:     Seasonal Entertainment
 // Description: Site header: logo linking home and the main navigation, with the account
-//              link last (Login for guests).
+//              link last: "Login" for guests, the username (to /account) when signed in.
 // ============================================================
 
 import { Link, NavLink } from 'react-router';
 import logo from '../assets/seasonal-entertainment.jpg';
+import { useSession } from '../session/SessionContext.jsx';
 import { MAIN_NAV } from './navigation.js';
 
 export default function SiteHeader() {
+  const { user } = useSession();
   return (
     <header className="site-header">
       <Link to="/" className="site-header__brand">
@@ -28,7 +30,11 @@ export default function SiteHeader() {
             </li>
           ))}
           <li>
-            <NavLink to="/login">Login</NavLink>
+            {user ? (
+              <NavLink to="/account">{user.username}</NavLink>
+            ) : (
+              <NavLink to="/login">Login</NavLink>
+            )}
           </li>
         </ul>
       </nav>
