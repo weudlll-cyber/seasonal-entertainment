@@ -2,43 +2,50 @@
 // File:        LandingPage.jsx
 // Path:        client/src/pages/LandingPage.jsx
 // Project:     Seasonal Entertainment
-// Description: The landing page: logo, title, one sentence and the four season marks.
+// Description: Home: a greeting (with the username when signed in) and a bento grid that
+//              fits the main column at 1280 x 720 without scrolling: the featured game, the
+//              next two events, Seasonal Tokens (homeCards.jsx). Real data only.
 // ============================================================
 
-import logo from '../assets/seasonal-entertainment.jpg';
-import springMark from '../assets/seasons/spring.svg';
-import summerMark from '../assets/seasons/summer.svg';
-import autumnMark from '../assets/seasons/autumn.svg';
-import winterMark from '../assets/seasons/winter.svg';
+import { useEffect, useState } from 'react';
+import { upcomingOccurrences } from '@seasonal-entertainment/shared/eventSchedule.js';
+import { api } from '../api/http.js';
+import { useSession } from '../session/SessionContext.jsx';
+import { FeaturedGameCard, TokensCard, UpNextCard } from './homeCards.jsx';
 import './LandingPage.css';
 
-// Calendar order; `id` picks the season colour token in LandingPage.css.
-const SEASONS = [
-  { id: 'spring', name: 'Spring', mark: springMark },
-  { id: 'summer', name: 'Summer', mark: summerMark },
-  { id: 'autumn', name: 'Autumn', mark: autumnMark },
-  { id: 'winter', name: 'Winter', mark: winterMark },
-];
+const deviceZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-export default function LandingPage() {
+export default function LandingPage({ timeZone = deviceZone() }) {
+  const { user } = useSession();
+  const [game, setGame] = useState(undefined); // undefined: loading; null: no games
+  const [next, setNext] = useState(null);
+  const userId = user?.id;
+
+  // Visible games depend on who is signed in (members-only cards).
+  useEffect(() => {
+    api('/games')
+      .then((data) => setGame(data.games[0] ?? null))
+      .catch(() => setGame(null));
+  }, [userId]);
+
+  useEffect(() => {
+    api('/events')
+      .then((data) => setNext(upcomingOccurrences(data.events, Date.now(), timeZone, 2)))
+      .catch(() => setNext([]));
+  }, [timeZone]);
+
   return (
-    <main className="landing">
-      <img
-        className="landing__logo"
-        src={logo}
-        alt="Seasonal Entertainment logo"
-        width="1024"
-        height="1024"
-      />
-      <h1 className="landing__title">Seasonal Entertainment</h1>
-      <p className="landing__lead">Games, community and everything around Seasonal Tokens.</p>
-      <ul className="landing__seasons" aria-label="The four seasons">
-        {SEASONS.map((season) => (
-          <li key={season.id} className={`landing__season landing__season--${season.id}`}>
-            <img src={season.mark} alt={`${season.name} season mark`} width="96" height="96" />
-          </li>
-        ))}
-      </ul>
-    </main>
+    <div className="home">
+      <div className="home__header">
+        <h1>{user ? `Welcome back, ${user.username}` : 'Welcome to Seasonal Entertainment'}</h1>
+        <p className="home__text">Games, community and everything around Seasonal Tokens.</p>
+      </div>
+      <div className="home__grid">
+        <FeaturedGameCard game={game} />
+        <UpNextCard next={next} timeZone={timeZone} />
+        <TokensCard />
+      </div>
+    </div>
   );
 }

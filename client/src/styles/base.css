@@ -11,6 +11,15 @@
   box-sizing: border-box;
 }
 
+/* The window never scrolls: the shell is exactly the viewport and its main column scrolls
+   instead (docs/DESIGN.md). */
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
   background: var(--color-background);
@@ -32,4 +41,109 @@ img {
   display: block;
   max-width: 100%;
   height: auto;
+}
+
+a {
+  color: var(--color-text);
+}
+
+/* Standard content page inside the main column: readable width with side gutters. */
+.page {
+  width: 100%;
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-2);
+}
+
+/* A card on the page background (game cards, event days, account sections). */
+.card {
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+/* Keyboard focus is always visible, in both themes. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Wider column for tables (admin area). */
+.page--wide {
+  max-width: 72rem;
+}
+
+/* Term/value list, e.g. account details. */
+.details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-2);
+}
+
+.details dt {
+  font-weight: var(--font-weight-strong);
+}
+
+.details dd {
+  margin: 0;
+}
+
+/* Data tables (admin lists), on a card. Wide tables scroll inside their wrapper, not the
+   page. */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+/* Plain list of links (e.g. the Info index). */
+.link-list {
+  padding-left: var(--space-3);
+  line-height: 2;
+}
+
+/* Rendered Markdown (info pages, previews), on a card. */
+.markdown {
+  overflow-wrap: anywhere;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.markdown h2 {
+  margin-top: var(--space-4);
+}
+
+/* The /chat page fills the main column; the chat panel takes the height below its title. */
+.chat-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+  padding: var(--space-3);
+}
+
+.chat-page__title {
+  margin: 0;
+}
+
+.chat-page .se-chat {
+  flex: 1;
+  min-height: 0;
 }

@@ -12,7 +12,18 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "express": "^5.3.0"
+    "@seasonal-entertainment/shared": "0.1.0",
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^13.0.3",
+    "better-sqlite3-session-store": "^0.1.0",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "express-session": "^1.19.0",
+    "helmet": "^8.3.0",
+    "htmlparser2": "^12.0.0",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.35.5",
+    "ws": "^8.22.0"
   },
   "devDependencies": {
     "supertest": "^7.3.1",

@@ -1,0 +1,79 @@
+/* ============================================================
+   File:        ChatComposer.css
+   Path:        client/src/chat/ChatComposer.css
+   Project:     Seasonal Entertainment
+   Description: The composer inside the chat module (under .se-chat): message field, actions,
+                the message's one attachment with its ×, and the upload button.
+   ============================================================ */
+
+.se-chat .chat-label {
+  font-weight: var(--chat-strong);
+}
+
+.se-chat .chat-composer {
+  display: grid;
+  gap: var(--chat-space-1);
+}
+
+.se-chat .chat-composer label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.se-chat .chat-composer textarea {
+  background: var(--chat-bg);
+  color: var(--chat-text);
+  font: inherit;
+  padding: var(--chat-space-1);
+  border: 1px solid var(--chat-border-strong);
+  border-radius: var(--chat-radius);
+}
+
+/* The message being written: its one attachment, small, with an × to remove it. */
+.se-chat .chat-attachment {
+  position: relative;
+  justify-self: start;
+  padding: 0.25rem;
+  border: 1px solid var(--chat-border-strong);
+  border-radius: var(--chat-radius);
+}
+
+.se-chat .chat-upload {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.se-chat .chat-composer__actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--chat-space-1);
+  align-items: start;
+}
+
+.se-chat .chat-attachment__image {
+  display: block;
+  max-width: 6rem;
+  max-height: 6rem;
+  object-fit: contain;
+}
+
+.se-chat .chat-attachment__remove {
+  position: absolute;
+  top: -0.6rem;
+  right: -0.6rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--chat-border-strong);
+  border-radius: 50%;
+  background: var(--chat-bg);
+  color: var(--chat-text);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.se-chat .chat-attachment__file {
+  margin: 0;
+  max-width: 16rem;
+  overflow-wrap: anywhere;
+}

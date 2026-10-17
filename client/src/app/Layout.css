@@ -1,0 +1,41 @@
+/* ============================================================
+   File:        Layout.css
+   Path:        client/src/app/Layout.css
+   Project:     Seasonal Entertainment
+   Description: The app shell: exactly the viewport's height (100dvh), sidebar and main column
+                side by side from 760px, top bar above the main column below. Only the main
+                column scrolls (docs/DESIGN.md).
+   ============================================================ */
+
+.shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  height: 100dvh;
+}
+
+.shell__main {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+@media (max-width: 759.98px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+}
+
+.banner {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-warning-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Test-only page (/test/chat-panels): panels side by side when there is room. */
+.dev-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: var(--space-3);
+}

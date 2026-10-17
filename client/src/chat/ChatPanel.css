@@ -1,0 +1,161 @@
+/* ============================================================
+   File:        ChatPanel.css
+   Path:        client/src/chat/ChatPanel.css
+   Project:     Seasonal Entertainment
+   Description: The chat module's styles, all under the .se-chat root class, so a panel looks
+                the same on any page and nothing leaks out. Colours and spacing come from the
+                site's tokens when present, with built-in fallbacks for other hosts. The compact
+                and full variants are in ChatPanelVariants.css.
+   ============================================================ */
+
+.se-chat {
+  --chat-text: var(--color-text, #1f2328);
+  --chat-muted: var(--color-text-muted, #59606b);
+  --chat-border: var(--color-border, #e3e6ea);
+  --chat-border-strong: var(--color-border-strong, #b8bec7);
+  --chat-bg: var(--color-surface, var(--color-background, #ffffff));
+  --chat-shadow: var(--shadow-raised, 0 2px 6px rgb(0 0 0 / 15%));
+  --chat-accent: var(--color-accent, #04aaf7);
+  --chat-danger: var(--color-danger, #b42318);
+  --chat-success: var(--color-success, #1d7a46);
+  --chat-strong: var(--font-weight-strong, 700);
+  --chat-radius: var(--radius, 6px);
+  --chat-space-1: var(--space-1, 0.5rem);
+  --chat-space-2: var(--space-2, 1rem);
+  --chat-space-3: var(--space-3, 1.5rem);
+  /* A column that fills whatever height its container gives it. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--chat-space-1);
+  min-height: 0;
+  color: var(--chat-text);
+  background: var(--chat-bg);
+}
+
+/* The module's own controls: they do not rely on the host page's button styles. */
+.se-chat .chat-button {
+  font: inherit;
+  font-weight: var(--chat-strong);
+  padding: var(--chat-space-1) var(--chat-space-2);
+  border: 1px solid var(--chat-text);
+  border-radius: var(--chat-radius);
+  background: var(--chat-text);
+  color: var(--chat-bg);
+  cursor: pointer;
+  justify-self: start;
+}
+
+.se-chat .chat-button--secondary {
+  background: transparent;
+  color: var(--chat-text);
+}
+
+.se-chat .chat-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.se-chat .chat-link-button {
+  font: inherit;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--chat-text);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.se-chat .chat-notice {
+  margin: 0;
+  padding: var(--chat-space-1);
+  border-left: 4px solid;
+}
+
+.se-chat .chat-notice--error {
+  color: var(--chat-danger);
+}
+
+.se-chat .chat-notice--done {
+  color: var(--chat-success);
+}
+
+.se-chat .chat-panel__title {
+  margin: 0;
+  font-weight: var(--chat-strong);
+}
+
+/* Messages, notices and the composer: the list takes the room left, the composer stays at
+   the bottom. */
+.se-chat .chat-conversation {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--chat-space-1);
+  min-height: 0;
+}
+
+.se-chat .chat-rooms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--chat-space-1);
+  margin: 0 0 var(--chat-space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.se-chat .chat-room {
+  font: inherit;
+  padding: 0.25rem var(--chat-space-1);
+  border: 1px solid var(--chat-border-strong);
+  border-radius: var(--chat-radius);
+  background: var(--chat-bg);
+  color: var(--chat-text);
+  cursor: pointer;
+}
+
+.se-chat .chat-room--current {
+  border-color: var(--chat-accent);
+  font-weight: var(--chat-strong);
+}
+
+.se-chat .chat-note {
+  margin: 0;
+  color: var(--chat-muted);
+}
+
+.se-chat .chat-messages {
+  flex: 1;
+  min-height: 0;
+  max-height: var(--chat-list-max-height, 60vh);
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--chat-border);
+  border-radius: var(--chat-radius);
+}
+
+/* The list's frame holds the "New messages" button over the bottom of the list. */
+.se-chat .chat-messages-frame {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.se-chat .chat-new-messages {
+  position: absolute;
+  bottom: var(--chat-space-1);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.25rem var(--chat-space-2);
+  border: 1px solid var(--chat-accent);
+  border-radius: 999px;
+  background: var(--chat-bg);
+  color: var(--chat-text);
+  font: inherit;
+  font-weight: var(--chat-strong);
+  cursor: pointer;
+  box-shadow: var(--chat-shadow);
+}
