@@ -110,6 +110,23 @@ sheet and farming guide, and each ends with its Sources list (2026-10-17). No co
 is retyped anywhere (the pages link to the official site); `server/test/infoSeed.test.js` guards
 these rules. Imprint and Privacy are drafts with `[TO BE FILLED BY OWNER]` placeholders.
 
+## Events calendar
+
+Events are rows in the database (`events`), editable at `/admin/events` without code changes
+(decided 2026-10-16); every change is audited. Each has a rule — `weekly`, or `monthly_first`
+(the first <weekday> of each month) — an ISO weekday (1 = Monday) and a start time **in UTC**,
+plus optional duration, a channel text, an optional https link and an active flag. The public
+`/api/events` returns only active events.
+
+`shared/eventSchedule.js` turns the rules into the occurrences of one week, Monday to Sunday
+**in the viewer's time zone**, and formats them in that zone (`/events` shows the local time,
+the zone's name and the UTC time). Weeks that contain a daylight-saving change are 167 or 169
+hours long; the module handles that and `shared/eventSchedule.test.js` pins it with the
+European change of 25 October 2026.
+
+First start: `server/src/events/seed.js` inserts the owner's weekly schedule (14 events, UTC,
+checked against "ST Schedule.pdf" on 2026-10-17) when the table is empty.
+
 ## Security headers
 
 `server/src/http/securityHeaders.js` (helmet) sends a strict Content-Security-Policy on every
@@ -150,11 +167,12 @@ server/
   src/audit/               audit log: schema and the one recordAudit helper
   src/admin/               /api/admin routes (users, audit); areas add their own editors
   src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md)
+  src/events/              events: schema, store, public and admin routes, seed
   test/helpers/testApp.js  app on a temporary database for tests
   src/config.js            environment configuration
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests
-shared/                    rules used by server and client (accountRules.js)
+shared/                    rules used by server and client (accountRules.js, eventSchedule.js)
 scripts/
   dev.mjs                  npm run dev
   e2e.mjs                  npm run test:e2e (temporary database per run)

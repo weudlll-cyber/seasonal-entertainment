@@ -14,6 +14,8 @@ An entry moves from part one to part two only when its branch is merged into `ma
   user search, role, can-start-games, lock, password reset; audit log for every admin action.
 - **SE-NIGHT-1 piece 5 — Info pages with editor** — in review (PR #3). Public /info, admin
   editor with preview, draft pages from the official sources, Imprint and Privacy drafts.
+- **SE-NIGHT-1 piece 6 — Events calendar** — in review (PR #3). /events week in local time,
+  admin editor, the weekly schedule seeded.
 
 - Info pages with admin editor
 - Accounts with Discord/Telegram login and 2FA for organisers/admins

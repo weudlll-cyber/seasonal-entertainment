@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "license": "AGPL-3.0-or-later",
-  "description": "Rules both server and client must apply identically (accounts, roles).",
+  "description": "Rules both server and client must apply identically (accounts, roles, event schedule).",
   "type": "module",
   "exports": {
-    "./accountRules.js": "./accountRules.js"
+    "./accountRules.js": "./accountRules.js",
+    "./eventSchedule.js": "./eventSchedule.js"
   },
   "scripts": {
     "test": "vitest run"

@@ -24,5 +24,6 @@ export const FOOTER_NAV = [
 export const ADMIN_NAV = [
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/info', label: 'Info pages' },
+  { to: '/admin/events', label: 'Events' },
   { to: '/admin/audit', label: 'Audit log' },
 ];

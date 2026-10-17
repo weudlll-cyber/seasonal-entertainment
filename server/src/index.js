@@ -11,6 +11,7 @@ import { createApp } from './app.js';
 import { readBuildInfo } from './buildInfo.js';
 import { ENV_FILE, readConfig } from './config.js';
 import { openDatabase } from './db/database.js';
+import { seedEvents } from './events/seed.js';
 import { seedInfoPages } from './info/seed.js';
 
 // Variables already set in the real environment win over the file.
@@ -21,6 +22,8 @@ const buildInfo = readBuildInfo();
 const db = openDatabase(config.databasePath);
 const seeded = seedInfoPages(db);
 if (seeded) console.log(`Added ${seeded} draft info pages (first start)`);
+const seededEvents = seedEvents(db);
+if (seededEvents) console.log(`Added ${seededEvents} events from the schedule (first start)`);
 const app = createApp({ buildInfo, config, db });
 
 app.listen(config.port, config.host, () => {

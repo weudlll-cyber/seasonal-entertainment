@@ -14,6 +14,8 @@ import { bootstrapRoutes } from './accounts/bootstrap.js';
 import { adminAuditRoutes } from './admin/auditRoutes.js';
 import { adminUserRoutes } from './admin/userRoutes.js';
 import { accountRoutes } from './accounts/routes.js';
+import { adminEventRoutes } from './events/adminRoutes.js';
+import { eventRoutes } from './events/routes.js';
 import { allow } from './http/access.js';
 import { adminInfoRoutes } from './info/adminRoutes.js';
 import { infoRoutes } from './info/routes.js';
@@ -48,6 +50,8 @@ export function createApp({ buildInfo, config, db }) {
   api.use('/admin/audit', adminAuditRoutes(db));
   api.use('/info', infoRoutes(db));
   api.use('/admin/info', adminInfoRoutes(db));
+  api.use('/events', eventRoutes(db));
+  api.use('/admin/events', adminEventRoutes(db));
 
   // Unknown API paths answer JSON, never the HTML page.
   api.use((_req, res) => sendError(res, 404, 'not_found', 'No such API endpoint.'));
