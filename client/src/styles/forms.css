@@ -87,6 +87,20 @@
 }
 
 /* A button that looks like a link (secondary choices inside a form). */
+/* A square button holding one icon (theme toggle, menu, close): a full hit target. */
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: var(--hit-target);
+  height: var(--hit-target);
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
 .link-button {
   font: inherit;
   padding: 0;

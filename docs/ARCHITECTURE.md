@@ -312,7 +312,9 @@ client/                    React + Vite client
                            opticalCentres.js defines each season motif's optical centre
   src/main.jsx             entry point
   src/pages/               one folder entry per page (component, CSS, test side by side)
-  src/styles/              tokens.css (all design tokens), fonts.css, base.css
+  src/styles/              tokens.css (all design tokens, light and dark), fonts.css, base.css
+  src/theme/               light/dark theme: rule, provider, toggle (docs/DESIGN.md)
+  public/theme-init.js     sets the theme before the first paint (external: strict CSP)
   src/assets/              logo, season marks, fonts (woff2)
   src/assets/seasons/source/  original season marks, input of build-season-marks.mjs
   src/test/setup.js        Vitest setup

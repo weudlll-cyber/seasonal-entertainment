@@ -10,6 +10,7 @@
 import { Link, NavLink } from 'react-router';
 import logo from '../assets/seasonal-entertainment.jpg';
 import { useSession } from '../session/SessionContext.jsx';
+import ThemeToggle from '../theme/ThemeToggle.jsx';
 import { MAIN_NAV } from './navigation.js';
 
 export default function SiteHeader() {
@@ -44,6 +45,7 @@ export default function SiteHeader() {
           </li>
         </ul>
       </nav>
+      <ThemeToggle />
     </header>
   );
 }

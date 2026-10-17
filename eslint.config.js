@@ -44,6 +44,11 @@ export default [
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
+  // Classic scripts the client serves as they are (public/theme-init.js runs before React).
+  {
+    files: ['client/public/**/*.js'],
+    languageOptions: { globals: globals.browser, sourceType: 'script' },
+  },
   // Playwright specs run in Node; their page.evaluate callbacks run in the browser.
   {
     files: ['client/e2e/**/*.js'],

@@ -12,7 +12,8 @@
   --chat-muted: var(--color-text-muted, #59606b);
   --chat-border: var(--color-border, #e3e6ea);
   --chat-border-strong: var(--color-border-strong, #b8bec7);
-  --chat-bg: var(--color-background, #ffffff);
+  --chat-bg: var(--color-surface, var(--color-background, #ffffff));
+  --chat-shadow: var(--shadow-raised, 0 2px 6px rgb(0 0 0 / 15%));
   --chat-accent: var(--color-accent, #04aaf7);
   --chat-danger: var(--color-danger, #b42318);
   --chat-success: var(--color-success, #1d7a46);
@@ -145,5 +146,5 @@
   font: inherit;
   font-weight: var(--chat-strong);
   cursor: pointer;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 15%);
+  box-shadow: var(--chat-shadow);
 }
