@@ -3,7 +3,8 @@
 // Path:        client/src/chat/ChatPicker.jsx
 // Project:     Seasonal Entertainment
 // Description: The picker next to the chat message field: tabs Emoji | Stickers | GIFs. Emojis
-//              go into the text at the cursor; a sticker or GIF is sent at once. Stickers and
+//              go into the text at the cursor; a sticker or GIF becomes the message's one
+//              attachment (sent with the text). Stickers and
 //              GIFs are for members only (decided 2026-10-17): guests see only Emoji and a hint.
 //              The library (active packs in order) loads the first time a media tab opens.
 // ============================================================
@@ -65,7 +66,7 @@ function MediaTab({ packs, kind, onMedia }) {
   ));
 }
 
-// member: signed in (may send stickers and GIFs). onMedia(kind, item) sends one.
+// member: signed in (may send stickers and GIFs). onMedia(kind, item) attaches one.
 export default function ChatPicker({ member, onEmoji, onMedia }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState('emoji');

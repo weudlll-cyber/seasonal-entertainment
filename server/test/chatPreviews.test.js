@@ -15,7 +15,7 @@ import sharp from 'sharp';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { deleteUnusedPreviewFiles } from '../src/chat/retention.js';
 import { auditActions, chatApp } from './helpers/chat.js';
-import { makeImage } from './helpers/media.js';
+import { addLibraryItem, makeImage } from './helpers/media.js';
 import { PUBLIC_IP, html, previewInternet } from './helpers/previewNet.js';
 import { makeStaff, registerUser } from './helpers/testApp.js';
 
@@ -71,6 +71,18 @@ describe('previews', () => {
     const served = await t.client().get(preview.image.url);
     expect(served.headers['content-type']).toBe('image/webp');
     expect((await sharp(served.body).metadata()).width).toBe(480);
+  });
+
+  it('text sent together with a sticker gets its preview as well', async () => {
+    const mia = await start();
+    const { item } = await addLibraryItem(t, 'sticker');
+    const { message } = (
+      await mia
+        .post('/api/chat/rooms/general/messages')
+        .send({ body: 'https://site.test/', attachment: { type: 'sticker', itemId: item.id } })
+    ).body;
+    await waitForPreview(mia, message.id);
+    expect(await previewOf(mia, message.id)).toMatchObject({ title: 'Seasonal Tokens' });
   });
 
   it('plain http links are refused and never fetched', async () => {

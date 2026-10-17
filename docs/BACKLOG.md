@@ -22,7 +22,8 @@ An entry moves from part one to part two only when its branch is merged into `ma
   with guest names, moderation (hide, mute, ban), reports, retention.
 - **SE-CHAT-COMPOSER-1 — Chat as a reusable module; attachments, file uploads, scrolling** — in
   review (PR #3). Part A: the chat is one client module (`<ChatPanel>`, one connection per page)
-  and one server area (`mountChat`), docs/CHAT.md.
+  and one server area (`mountChat`), docs/CHAT.md. Part B: a message is optional text plus one
+  attachment; stickers and GIFs are attached, not sent on click.
 - **Chat embedding in other applications** — open. An embed route, allowed embedding origins
   (`frame-ancestors`), login inside an embedded frame; see docs/CHAT.md, last section.
 - **SE-CHAT-MEDIA-1 — Chat emojis, stickers, GIFs and link previews** — in review (PR #3).

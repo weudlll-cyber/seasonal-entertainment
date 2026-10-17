@@ -37,6 +37,9 @@ of the module other than `index.js`.
   WebSocket; each room is subscribed once, and every pushed event names its room, so each panel
   receives only its own. The socket reconnects after a drop and closes a second after the last
   panel leaves (a panel that comes straight back reuses it).
+- **The composer** writes one message at a time: optional text plus at most one attachment. A
+  sticker or GIF from the picker is shown small above the field with an ×; Send sends both
+  together (`{ body, attachment }` to `POST /api/chat/rooms/<room>/messages`).
 - **No page paths or layout assumptions** inside the module: it calls the API and the WebSocket on
   the page's own origin (`/api/chat/...`, `/ws/chat`, `/media/...`) and fits the width it is given.
 - **Test-only page** `/test/chat-panels` (two compact panels side by side) is routed by the Vite

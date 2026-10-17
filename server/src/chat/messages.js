@@ -67,7 +67,7 @@ function toMessage(row, moderator) {
   };
 }
 
-// input: { kind: 'text', body } or { kind: 'sticker' | 'gif', itemId }.
+// input: { kind: 'text' | 'sticker' | 'gif', body (may be empty with an attachment), itemId }.
 export function addMessage(db, room, { user, guest }, { kind, body = '', itemId = null }) {
   const { lastInsertRowid } = db
     .prepare(

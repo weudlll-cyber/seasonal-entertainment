@@ -154,3 +154,34 @@
 .se-chat--compact .chat-messages {
   max-height: 18rem;
 }
+
+/* The message being written: its one attachment, small, with an × to remove it. */
+.se-chat .chat-attachment {
+  position: relative;
+  justify-self: start;
+  padding: 0.25rem;
+  border: 1px solid var(--chat-border-strong);
+  border-radius: var(--chat-radius);
+}
+
+.se-chat .chat-attachment__image {
+  display: block;
+  max-width: 6rem;
+  max-height: 6rem;
+  object-fit: contain;
+}
+
+.se-chat .chat-attachment__remove {
+  position: absolute;
+  top: -0.6rem;
+  right: -0.6rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--chat-border-strong);
+  border-radius: 50%;
+  background: var(--chat-bg);
+  color: var(--chat-text);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}

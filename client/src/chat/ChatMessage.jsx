@@ -2,8 +2,8 @@
 // File:        ChatMessage.jsx
 // Path:        client/src/chat/ChatMessage.jsx
 // Project:     Seasonal Entertainment
-// Description: One chat message: author (with a Guest badge), local time, then the text as
-//              plain text (members' http(s) links become links; guests' never) or a sticker /
+// Description: One chat message: author (with a Guest badge), local time, then its text as
+//              plain text (members' https links become links; guests' never) and its sticker /
 //              GIF from the site's library ("Media removed" once it is gone), a link preview
 //              card (PreviewCard), Report, and for moderators Hide / Mute / Ban / Remove
 //              preview.
@@ -70,12 +70,13 @@ export default function ChatMessage({ message, moderator, onAction }) {
         <time dateTime={message.createdAt}>{time(message.createdAt)}</time>
         {message.hiddenAt && <em>hidden by {message.hiddenBy}</em>}
       </div>
-      {message.kind === 'sticker' || message.kind === 'gif' ? (
-        <MessageMedia kind={message.kind} media={message.media} />
-      ) : (
+      {message.body && (
         <p className="chat-message__text">
           <MessageText body={message.body} linkify={!message.isGuest} />
         </p>
+      )}
+      {(message.kind === 'sticker' || message.kind === 'gif') && (
+        <MessageMedia kind={message.kind} media={message.media} />
       )}
       {message.preview && <PreviewCard preview={message.preview} />}
       {message.previewHeld && (

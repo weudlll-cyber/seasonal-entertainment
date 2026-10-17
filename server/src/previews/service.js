@@ -2,7 +2,7 @@
 // File:        service.js
 // Path:        server/src/previews/service.js
 // Project:     Seasonal Entertainment
-// Description: Link previews for the chat (decided 2026-10-17): after a member's text message
+// Description: Link previews for the chat (decided 2026-10-17): after a member's message text
 //              is stored, the server previews its first https link and pushes the card to the
 //              room. Cached per URL (config: cacheHours), one fetch per URL at a time, limited
 //              per user and overall; can be switched off (LINK_PREVIEWS=false). Failures are
@@ -48,7 +48,7 @@ export function createPreviewService(db, config, hub, network = realNetwork) {
 
   // Never throws and is not awaited by the route: the message is already posted.
   async function attach(message, viewer) {
-    if (!settings.enabled || !viewer.user || message.kind !== 'text') return;
+    if (!settings.enabled || !viewer.user || !message.body) return;
     const url = firstHttpsLink(message.body);
     if (!url) return;
     try {

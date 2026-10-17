@@ -200,9 +200,13 @@ password change and turning 2FA on or off close the account's other sockets at o
 - **Stickers and GIFs** (decided 2026-10-17) come only from the site's **own library**, managed
   by admins at `/admin/chat-media`; no outside GIF service. **Members only**: guests write text
   and emojis, and their picker shows just an Emoji tab with "Log in to send stickers and GIFs".
-  A sticker/GIF message names a library item **by id**, never a URL; the server accepts it only
-  from a member, for an active item in an active pack of that kind, where the room allows
-  writing, and it counts towards the sender's rate limit (`server/src/chat/messageInput.js`).
+  **A message is optional text plus at most one attachment** (decided 2026-10-17): choosing a
+  sticker or GIF puts it small above the message field with an ×; Send sends text and
+  attachment together (request `{ body, attachment: { type, itemId } }`). The attachment names a
+  library item **by id**, never a URL; the server accepts it only from a member, for an active
+  item in an active pack of that kind, where the room allows writing; the text keeps every text
+  rule (https only, link preview), and the message counts once towards the sender's rate limit
+  (`server/src/chat/messageInput.js`).
   If the item or its pack is later deactivated or deleted, old messages show "Media removed".
   Stickers show at 128 px, GIFs at most 240 px wide; every image has alt text, and a credit shows
   on hover or a tap.
