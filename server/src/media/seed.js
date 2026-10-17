@@ -5,7 +5,8 @@
 // Description: First-start chat media: when the library has no packs, the starter pack in
 //              server/seeds/chat-media/ (made from the owner's own files; sources and credits
 //              in its README) becomes four packs. Each file passes the same check as an upload
-//              and is copied into the media folder under a generated name.
+///              and is copied into the media folder under a generated name. Safe when two
+//              starts run at once: only one of them seeds.
 // ============================================================
 
 import { readFileSync } from 'node:fs';
@@ -75,7 +76,7 @@ const EXTENSION = { stickers: 'webp', gifs: 'gif' };
 
 // Returns the number of items added (0 when the library already has packs).
 export async function seedChatMedia(db, config, sourceDir = SEED_DIR) {
-  if (countPacks(db) > 0) return 0;
+  if (countPacks(db) > 0) return 0; // the usual case: nothing to check or copy
   // Check and copy every file first, so a bad file leaves no half-made library behind.
   const prepared = [];
   for (const [packName, kind, folder, items] of SEED_PACKS) {
@@ -85,7 +86,10 @@ export async function seedChatMedia(db, config, sourceDir = SEED_DIR) {
       prepared.push({ packName, kind, text: { name, alt, credit }, image, buffer });
     }
   }
-  db.transaction(() => {
+  // Checked again inside the write: the image checks above take time, and another start
+  // (a restarting dev server) may have seeded meanwhile. SQLite runs writes one at a time.
+  return db.transaction(() => {
+    if (countPacks(db) > 0) return 0;
     const packs = new Map();
     for (const { packName, kind, text, image, buffer } of prepared) {
       const key = `${kind}:${packName}`;
@@ -93,6 +97,6 @@ export async function seedChatMedia(db, config, sourceDir = SEED_DIR) {
       const file = saveMediaFile(config, buffer, image.ext);
       addItem(db, packs.get(key), text, image, file, buffer.length);
     }
+    return prepared.length;
   })();
-  return prepared.length;
 }

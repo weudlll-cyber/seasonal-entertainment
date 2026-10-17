@@ -213,7 +213,8 @@ password change and turning 2FA on or off close the account's other sockets at o
 - **Starter pack**: on first start (empty library) `server/src/media/seed.js` turns
   `server/seeds/chat-media/` (made from the owner's own files; sources and credits in its README)
   into four packs: Stickers "Seasons", "Coins" (the silver coins credited to Foxeane),
-  "Seasonal Tokens", and GIFs "Seasonal Tokens".
+  "Seasonal Tokens", and GIFs "Seasonal Tokens". The "library empty" check is repeated inside the
+  write, so two starts at once (a restarting dev server) cannot seed twice.
 - **Link previews** (decided 2026-10-17, `server/src/previews/`): when a member's text message
   contains an https link, the **server** previews the first one in the background and pushes a
   card (`{ type: "preview" }`) to the room; the message itself is never delayed, and a failed

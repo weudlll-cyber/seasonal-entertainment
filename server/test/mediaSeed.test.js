@@ -47,3 +47,12 @@ it('fills an empty library once, with the starter packs', { timeout: 30_000 }, a
   expect(listLibrary(t.db).flatMap((p) => p.items)).toHaveLength(22);
   expect(readdirSync(t.config.mediaDir)).toHaveLength(22);
 });
+
+// Two server starts at once (as a restarting dev server can do) must not seed twice.
+it('seeds once even when two starts run at the same time', { timeout: 30_000 }, async () => {
+  t = makeTestApp();
+  const added = await Promise.all([seedChatMedia(t.db, t.config), seedChatMedia(t.db, t.config)]);
+  expect(added.sort()).toEqual([0, 22]);
+  expect(listLibrary(t.db)).toHaveLength(4);
+  expect(readdirSync(t.config.mediaDir)).toHaveLength(22);
+});
