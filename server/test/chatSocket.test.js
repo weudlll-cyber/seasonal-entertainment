@@ -2,52 +2,26 @@
 // File:        chatSocket.test.js
 // Path:        server/test/chatSocket.test.js
 // Project:     Seasonal Entertainment
-// Description: Guards the live chat WebSocket on a real listening server: a foreign Origin is
-//              refused, a subscriber receives new messages and hidden-message notices, and
-//              nobody can subscribe to a room they may not read.
+// Description: Guards the live chat WebSocket on a real listening server: a foreign Origin
+//              (other host or other scheme) is refused, a subscriber receives new messages and
+//              hidden-message notices, and nobody can subscribe to a room they may not read.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { WebSocket } from 'ws';
-import { CHAT_SOCKET_PATH, attachChatSocket } from '../src/chat/hub.js';
-import { seedChatRooms } from '../src/chat/seed.js';
-import { ORIGIN, makeStaff, makeTestApp } from './helpers/testApp.js';
+import { connect, listeningChat, stopServer } from './helpers/chatSocket.js';
+import { makeStaff } from './helpers/testApp.js';
 
 let t;
 let server;
 afterEach(async () => {
-  await new Promise((resolve) => (server ? server.close(resolve) : resolve()));
+  await stopServer(server);
   t?.close();
 });
 
-async function listening() {
-  t = makeTestApp();
-  seedChatRooms(t.db);
-  server = t.app.listen(0, '127.0.0.1');
-  await new Promise((resolve) => server.once('listening', resolve));
-  attachChatSocket(server, { app: t.app, db: t.db, config: t.config });
-  return `ws://127.0.0.1:${server.address().port}${CHAT_SOCKET_PATH}`;
-}
-
-// Opens a socket and collects every event it receives.
-function connect(url, { origin = ORIGIN, cookie } = {}) {
-  const ws = new WebSocket(url, { headers: { Origin: origin, ...(cookie && { Cookie: cookie }) } });
-  const events = [];
-  ws.on('message', (data) => events.push(JSON.parse(String(data))));
-  const opened = new Promise((resolve, reject) => {
-    ws.once('open', resolve);
-    ws.once('error', reject);
-    ws.once('unexpected-response', (_req, res) => reject(new Error(`HTTP ${res.statusCode}`)));
-  });
-  const next = (type) =>
-    new Promise((resolve) => {
-      const check = () => {
-        const found = events.find((e) => e.type === type);
-        return found ? resolve(found) : setTimeout(check, 10);
-      };
-      check();
-    });
-  return { ws, opened, next };
+async function listening(overrides) {
+  const started = await listeningChat(overrides);
+  ({ t, server } = started);
+  return started.url;
 }
 
 describe('chat WebSocket', () => {
@@ -58,12 +32,23 @@ describe('chat WebSocket', () => {
     ws.terminate();
   });
 
+  // Without PUBLIC_ORIGIN the same rule as the CSRF guard: scheme and host must both match.
+  it('without PUBLIC_ORIGIN, refuses the right host with the wrong scheme', async () => {
+    const url = await listening({ publicOrigin: null });
+    const host = new URL(url).host;
+    const wrongScheme = connect(url, { origin: `https://${host}` });
+    await expect(wrongScheme.opened).rejects.toThrow(/403/);
+    wrongScheme.ws.terminate();
+    const same = connect(url, { origin: `http://${host}` });
+    await same.opened;
+    same.ws.close();
+  });
+
   it('pushes new messages to subscribers of the room', async () => {
     const url = await listening();
     const reader = connect(url);
     await reader.opened;
-    reader.ws.send(JSON.stringify({ type: 'subscribe', room: 'general' }));
-    await reader.next('subscribed');
+    await reader.subscribe('general');
     await t.client().post('/api/chat/rooms/general/messages').send({ body: 'live!' });
     const event = await reader.next('message');
     expect(event.message).toMatchObject({ body: 'live!', room: 'general', isGuest: true });
@@ -75,8 +60,7 @@ describe('chat WebSocket', () => {
     const url = await listening();
     const guest = connect(url);
     await guest.opened;
-    guest.ws.send(JSON.stringify({ type: 'subscribe', room: 'seasonal-race' }));
-    expect(await guest.next('error')).toEqual({ type: 'error', error: 'not_allowed' });
+    expect(await guest.subscribe('seasonal-race')).toEqual({ type: 'error', error: 'not_allowed' });
     guest.ws.close();
   });
 
@@ -85,8 +69,7 @@ describe('chat WebSocket', () => {
     const { agent: organiser } = await makeStaff(t, 'olga', 'organiser');
     const reader = connect(url);
     await reader.opened;
-    reader.ws.send(JSON.stringify({ type: 'subscribe', room: 'general' }));
-    await reader.next('subscribed');
+    await reader.subscribe('general');
     const { message } = (
       await t.client().post('/api/chat/rooms/general/messages').send({ body: 'x' })
     ).body;

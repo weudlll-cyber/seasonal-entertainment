@@ -5,6 +5,7 @@
 // Description: CSRF protection for state-changing API requests: the Origin (or Referer)
 //              must be this site's own origin. Together with SameSite=Lax session cookies
 //              this blocks cross-site form posts and fetches (pattern from the race game).
+//              selfOrigin() is also the rule for the chat WebSocket's Origin check.
 // ============================================================
 
 import { sendError } from './errors.js';
@@ -12,8 +13,12 @@ import { sendError } from './errors.js';
 const STATE_CHANGING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 // The site's own origin: configured, or derived from the request (correct without a proxy).
+// Works on an Express request and on a bare WebSocket upgrade request, which has no
+// req.protocol: there the connection itself tells whether it is TLS.
 export function selfOrigin(req, config) {
-  return config.publicOrigin ?? `${req.protocol}://${req.get('host')}`;
+  if (config.publicOrigin) return config.publicOrigin;
+  const protocol = req.protocol ?? (req.socket.encrypted ? 'https' : 'http');
+  return `${protocol}://${req.headers.host}`;
 }
 
 function requestOrigin(req) {

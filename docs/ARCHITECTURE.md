@@ -148,9 +148,11 @@ yet.
 **Actions over HTTP, live updates over WebSocket.** Sending, reporting and moderating are
 ordinary `/api/chat` routes, so CSRF, access declarations, validation, rate limits and the
 audit log apply unchanged. The WebSocket `/ws/chat` only pushes: a client subscribes to rooms it
-may read and receives new messages and "hidden" notices. The upgrade is refused unless the
-Origin is this site (`PUBLIC_ORIGIN`, or the request's own host), and it reuses the session
-middleware to know who connects. In development Vite forwards `/ws` to the server.
+may read and receives new messages and "hidden" notices. The upgrade (`server/src/chat/socket.js`)
+is refused unless the Origin is exactly this site's origin, scheme included — the same
+`selfOrigin()` rule as the CSRF guard (`PUBLIC_ORIGIN`, or the request's own scheme and host).
+It reuses the session middleware to know who connects; `server/src/chat/hub.js` holds the
+subscriptions and pushes. In development Vite forwards `/ws` to the server.
 
 - **Rooms** (`chat_rooms`) say who may read and who may write: `everyone` (guests too),
   `members` or `organisers`. First start: General (guests read and write), Seasonal Race
@@ -215,9 +217,10 @@ server/
   src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md)
   src/events/              events: schema, store, public and admin routes, seed
   src/games/               games hub: schema, store, public and admin routes, seed
-  src/chat/                chat: schema, store, viewer rules, routes, moderation, WebSocket hub,
-                           sender rate limit, retention, seed
-  test/helpers/testApp.js  app on a temporary database for tests (chat.js: chat helpers)
+  src/chat/                chat: schema, store, viewer rules, routes, moderation, WebSocket
+                           endpoint (socket.js) and hub, sender rate limit, retention, seed
+  test/helpers/testApp.js  app on a temporary database for tests (chat.js: chat helpers,
+                           chatSocket.js: a listening server and WebSocket clients)
   src/config.js            environment configuration
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests

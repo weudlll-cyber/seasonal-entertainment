@@ -9,7 +9,7 @@
 
 import { existsSync } from 'node:fs';
 import { createApp } from './app.js';
-import { attachChatSocket } from './chat/hub.js';
+import { attachChatSocket } from './chat/socket.js';
 import { startChatRetention } from './chat/retention.js';
 import { seedChatRooms } from './chat/seed.js';
 import { readBuildInfo } from './buildInfo.js';
