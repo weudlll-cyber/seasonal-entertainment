@@ -9,6 +9,7 @@
 import { Link } from 'react-router';
 import { useSession } from '../session/SessionContext.jsx';
 import ThemeToggle from '../theme/ThemeToggle.jsx';
+import './AccountCard.css';
 
 const ROLE_NAMES = { member: 'Member', organiser: 'Organiser', admin: 'Admin' };
 

@@ -14,6 +14,7 @@ import ChatNotice from './ChatNotice.jsx';
 import MessageList from './MessageList.jsx';
 import { useChatRoom } from './useChatRoom.js';
 import './ChatPanel.css';
+import './ChatPanelVariants.css';
 import './ChatPicker.css';
 
 // room: slug of the room shown; when it changes the panel follows (a host's room picker). variant: 'full' (a page of its own) or 'compact' (a

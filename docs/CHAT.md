@@ -34,8 +34,8 @@ React, the shared chat rules (`@seasonal-entertainment/shared/chatRules.js`), th
 `client/src/chat/chatModule.test.js` fails on any other import, and on any page importing a file
 of the module other than `index.js`.
 
-- **Styles** sit under one root class, `.se-chat` (`ChatPanel.css`, `ChatMessage.css`,
-  `ChatPicker.css`), with the module's own buttons and notices. Colours and spacing come from the
+- **Styles** sit under one root class, `.se-chat` (`ChatPanel.css`, `ChatPanelVariants.css`,
+  `ChatMessage.css`, `ChatPicker.css`), with the module's own buttons and notices. Colours and spacing come from the
   site's tokens when they exist (`--color-text`, `--space-1`, …) with built-in fallbacks, so a
   panel looks the same on any page and on a host without those tokens.
 - **One connection per page** (`connection.js`): however many panels a page shows, they share one

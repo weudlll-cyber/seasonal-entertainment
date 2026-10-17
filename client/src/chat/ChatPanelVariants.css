@@ -1,0 +1,64 @@
+/* ============================================================
+   File:        ChatPanelVariants.css
+   Path:        client/src/chat/ChatPanelVariants.css
+   Project:     Seasonal Entertainment
+   Description: The chat panel's two variants: compact (a box beside other content, or the
+                chat drawer) and full (fills its container; with room tabs the rooms stand in
+                a column on the left). Loaded after ChatPanel.css, so these rules win over the
+                base rules of the same weight.
+   ============================================================ */
+
+/* Compact: a box beside other content; full: a page of its own. */
+.se-chat--compact {
+  font-size: 0.9375rem;
+}
+
+/* Full: fills its container (e.g. the /chat page's main column); with room tabs the rooms
+   stand in a column on the left. */
+.se-chat--full {
+  height: 100%;
+}
+
+.se-chat--full.se-chat--rooms {
+  display: grid;
+  grid-template-columns: 12rem minmax(0, 1fr);
+  gap: var(--chat-space-2);
+}
+
+.se-chat--rooms .chat-rooms {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  margin: 0;
+}
+
+.se-chat--rooms .chat-room {
+  width: 100%;
+  min-height: 44px;
+  text-align: left;
+}
+
+@media (max-width: 599.98px) {
+  .se-chat--full.se-chat--rooms {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .se-chat--rooms .chat-rooms {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .se-chat--rooms .chat-room {
+    width: auto;
+  }
+}
+
+/* A host that gives the panel a fixed height (the chat drawer) sets --chat-list-max-height:
+   none, and the list then fills it. */
+.se-chat--compact .chat-messages {
+  max-height: var(--chat-list-max-height, 18rem);
+}
+
+.se-chat--full .chat-messages {
+  max-height: none;
+}
