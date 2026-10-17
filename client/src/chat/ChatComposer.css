@@ -21,6 +21,8 @@
 }
 
 .se-chat .chat-composer textarea {
+  background: var(--chat-bg);
+  color: var(--chat-text);
   font: inherit;
   padding: var(--chat-space-1);
   border: 1px solid var(--chat-border-strong);

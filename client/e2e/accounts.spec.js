@@ -18,13 +18,14 @@ test('register, log out and log in again', async ({ page }) => {
   await page.getByRole('button', { name: 'Create account' }).click();
 
   await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible();
-  const nav = page.getByRole('navigation', { name: 'Main' });
-  await expect(nav.getByRole('link', { name })).toBeVisible();
+  // The sidebar's account card shows the new account.
+  const shell = page.getByRole('banner');
+  await expect(shell.getByRole('link', { name: `${name} (Member), your account` })).toBeVisible();
 
   await page.getByRole('button', { name: 'Log out' }).click();
-  await expect(nav.getByRole('link', { name: 'Login' })).toBeVisible();
+  await expect(shell.getByRole('link', { name: 'Log in' })).toBeVisible();
 
-  await nav.getByRole('link', { name: 'Login' }).click();
+  await shell.getByRole('link', { name: 'Log in' }).click();
   await page.getByLabel('Username').fill(name);
   await page.getByLabel('Password').fill('correct-horse-1');
   await page.getByRole('button', { name: 'Log in' }).click();

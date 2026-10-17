@@ -8,7 +8,12 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest';
-import { formatLocal, occurrencesInWeek, startOfWeek } from './eventSchedule.js';
+import {
+  formatLocal,
+  occurrencesInWeek,
+  startOfWeek,
+  upcomingOccurrences,
+} from './eventSchedule.js';
 
 const BERLIN = 'Europe/Berlin';
 const at = (iso) => Date.parse(iso);
@@ -90,5 +95,31 @@ describe('first <weekday> of the month', () => {
     expect(inWeekOf('2026-10-08T12:00Z')).toEqual([]);
     expect(inWeekOf('2026-10-29T12:00Z')).toEqual([]);
     expect(inWeekOf('2026-11-05T12:00Z')).toEqual(['2026-11-05T19:00:00.000Z']);
+  });
+});
+
+describe('upcomingOccurrences', () => {
+  const ev = (id, weekday, timeUtc, rule = 'weekly') => ({ id, weekday, timeUtc, rule, title: id });
+  // Wednesday 2026-10-14, 12:00 UTC.
+  const wednesdayNoon = Date.UTC(2026, 9, 14, 12, 0);
+
+  it('the next ones from now, across the week boundary, in time order', () => {
+    const events = [ev('monday', 1, '20:00'), ev('thursday', 4, '18:00'), ev('wed', 3, '11:00')];
+    const next = upcomingOccurrences(events, wednesdayNoon, 'UTC', 2);
+    expect(next.map((o) => [o.event.id, new Date(o.start).toISOString()])).toEqual([
+      ['thursday', '2026-10-15T18:00:00.000Z'],
+      ['monday', '2026-10-19T20:00:00.000Z'],
+    ]);
+  });
+
+  it('reaches a first-of-the-month event weeks ahead; nothing when there are no events', () => {
+    const next = upcomingOccurrences(
+      [ev('first-thu', 4, '20:00', 'monthly_first')],
+      wednesdayNoon,
+      'UTC',
+      1
+    );
+    expect(new Date(next[0].start).toISOString()).toBe('2026-11-05T20:00:00.000Z');
+    expect(upcomingOccurrences([], wednesdayNoon, 'UTC', 2)).toEqual([]);
   });
 });

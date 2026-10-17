@@ -25,7 +25,10 @@ export default function ChatPanel({ room: initialRoom, variant = 'full', showRoo
   const roomName = current?.name ?? room;
 
   return (
-    <section className={`se-chat se-chat--${variant}`} aria-label={`Chat: ${roomName}`}>
+    <section
+      className={`se-chat se-chat--${variant}${showRoomTabs ? ' se-chat--rooms' : ''}`}
+      aria-label={`Chat: ${roomName}`}
+    >
       {showRoomTabs ? (
         <nav aria-label="Rooms">
           <ul className="chat-rooms">
@@ -46,19 +49,21 @@ export default function ChatPanel({ room: initialRoom, variant = 'full', showRoo
       ) : (
         <p className="chat-panel__title">{roomName}</p>
       )}
-      <MessageList
-        room={room}
-        roomName={roomName}
-        messages={chat.messages}
-        moderator={info?.me.moderator}
-        onAction={chat.act}
-      />
-      <ChatNotice error={chat.error} notice={chat.notice} />
-      {current?.canWrite ? (
-        <ChatComposer user={user} guestName={info.me.guestName} onSend={chat.send} />
-      ) : (
-        current && <p className="chat-note">You can read this room, but not write in it.</p>
-      )}
+      <div className="chat-conversation">
+        <MessageList
+          room={room}
+          roomName={roomName}
+          messages={chat.messages}
+          moderator={info?.me.moderator}
+          onAction={chat.act}
+        />
+        <ChatNotice error={chat.error} notice={chat.notice} />
+        {current?.canWrite ? (
+          <ChatComposer user={user} guestName={info.me.guestName} onSend={chat.send} />
+        ) : (
+          current && <p className="chat-note">You can read this room, but not write in it.</p>
+        )}
+      </div>
     </section>
   );
 }

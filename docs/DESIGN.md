@@ -49,3 +49,37 @@ strict). It sets `data-theme` on `<html>` before the first paint; `color-scheme`
 makes form controls and scrollbars match. React then takes over (`client/src/theme/`): one
 `ThemeProvider` keeps `<html data-theme>` in step for every toggle. `theme.test.jsx` checks
 that the early script and the module resolve the same theme in every case.
+
+## Shell
+
+`client/src/app/Layout.jsx`: the shell is exactly the viewport (`height: 100dvh`); `html`, `body`
+and `#root` never scroll. Only the **main column** scrolls (`overflow: auto`) when its page is
+taller. `client/e2e/layout.spec.js` checks this on every main page at 1440 x 900, 1280 x 720 and
+1920 x 1080: nothing overflows the window, including content that would be clipped.
+
+**From 760px wide** (the shell's one breakpoint): two columns.
+
+1. **Sidebar**, 232px (`--sidebar-width`): logo with the "SEASONAL / ENTERTAINMENT" wordmark; nav
+   items with stroke icons (Home, Games, Events, Chat, Seasonal Tokens = the info section); a
+   divider and Admin for admins only (as before; `staffNavFor` in `navigation.js`); at the bottom
+   the account card (initial, name, role, linking to /account) or, for guests, "Log in" and
+   "Register", with the theme toggle; then the legal links (Imprint, Privacy). The active item
+   has the active background, bold text and `aria-current="page"`.
+2. **Main column**: the routed page.
+
+**Below 760px**: the sidebar becomes a top bar (logo, theme toggle, menu button). The menu opens
+the same navigation as a drawer from the left, over a scrim: closed by its close button, Escape,
+the scrim, or following a link; focus moves into it and back to the menu button.
+
+**Pages** sit on the background; their content blocks are cards (`--color-surface`, 20px radius):
+forms, admin tables, info text, game cards, event days. Controls have a 12px radius and at least
+the 44px hit target; keyboard focus always shows a ring in the accent colour.
+
+**Home** is a bento grid that fits the main column at 1280 x 720 without scrolling: the greeting
+(with the username when signed in), the featured game (the first game of the games data, a
+"Coming soon" badge only when its status says so), "Up next" with the next two events
+(`upcomingOccurrences`, shared), and Seasonal Tokens with the four season marks linking to the
+info section. Real data only. Below 1000px the cards stack and the main column scrolls.
+
+**Chat page**: the full chat fills the main column, rooms on its left; only the message list
+scrolls and the composer stays at the bottom.

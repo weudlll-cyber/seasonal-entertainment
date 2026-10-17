@@ -92,13 +92,14 @@ The client only ever calls relative URLs (`/api/...`), so the same build works o
 ## Client routing
 
 `react-router` in declarative mode (chosen 2026-10-17): the site needs nested layouts (one
-header and footer around every page), active navigation links, route parameters
+app shell around every page), active navigation links, route parameters
 (`/info/<slug>`), guarded pages for accounts and admin, and a 404 page. A home-made router
 would have to rebuild all of that; react-router is the maintained standard for React.
 
-- `client/src/app/App.jsx` is the one route table; every route renders inside `Layout`
-  (header, page, footer). Unknown paths render `NotFoundPage`.
-- `client/src/app/navigation.js` is the one list of header and footer links.
+- `client/src/app/App.jsx` is the one route table; every route renders inside `Layout`, the
+  app shell (sidebar and main column, docs/DESIGN.md). Unknown paths render `NotFoundPage`.
+- `client/src/app/navigation.js` is the one definition of the navigation: sidebar items,
+  who sees the Admin item, legal links, admin sections.
 - `main.jsx` supplies `BrowserRouter`; tests supply `MemoryRouter`.
 
 ## Info pages and user-written content
@@ -299,7 +300,8 @@ test fails on any console error, which is where a CSP violation shows up.
 .claude/settings.json      agent permissions for this repository
 client/                    React + Vite client
   index.html               HTML shell
-  src/app/                 route table, layout, header, footer, navigation list
+  src/app/                 route table, app shell (Layout, Sidebar, AccountCard), icons,
+                           navigation list, never-throwing browser storage
   src/api/http.js          the one fetch wrapper (JSON, ApiError)
   src/session/             session context (who is signed in), RequireUser guard
   src/components/          shared UI pieces (form fields, forms)
@@ -401,7 +403,8 @@ radius. All four motifs therefore have the same size relative to the square. Fin
 optimises the file with settings that keep the group and its transform and never replace
 curves; the script prints the offsets and scales it applied and re-measures its own output.
 
-The round ring around each mark is page CSS (`.landing__season` in `LandingPage.css`), in the
+The round ring around each mark is page CSS (`.landing__season` in `LandingPage.css`, on the
+home page's Seasonal Tokens card), in the
 season colour, with explicit width and height (with `aspect-ratio` alone a tall motif once
 stretched it oval). The mark simply fills the ring's inner area.
 
@@ -431,7 +434,7 @@ None of these exist yet. Each gets its own branch and backlog entry.
    `/api/<area>` in `app.js`, with its tests in `server/test/`.
 3. Client: add the page(s) under `client/src/pages/`, styled only with tokens from
    `tokens.css`, and their routes in `client/src/app/App.jsx` (plus a link in
-   `navigation.js` if it belongs in the header).
+   `navigation.js` if it belongs in the sidebar).
 4. A game that lives in its own repository (like the race game) is connected from the games
    hub by link or embed; it keeps its own server and ports.
 5. Extend tests (unit and, where a page is visible to users, the browser test), update this

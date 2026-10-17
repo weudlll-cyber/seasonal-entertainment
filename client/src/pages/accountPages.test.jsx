@@ -113,7 +113,10 @@ describe('Account page', () => {
     const calls = mockApi({ ...signedIn(anna), 'POST /auth/password': { body: { ok: true } } });
     renderAt('/account');
     expect(await screen.findByText('anna@example.org')).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: 'Main' })).toHaveTextContent('anna');
+    expect(screen.getByRole('link', { name: 'anna (Member), your account' })).toHaveAttribute(
+      'href',
+      '/account'
+    );
     type('Current password', 'correct-horse-1');
     type('New password', 'battery-staple-2');
     fireEvent.click(screen.getByRole('button', { name: 'Change password' }));

@@ -102,7 +102,7 @@ describe('staff banner', () => {
   it('is not shown to members', async () => {
     mockApi(signedIn(anna));
     renderAt('/');
-    await screen.findByRole('link', { name: 'anna' });
+    await screen.findByRole('link', { name: /^anna/ });
     expect(screen.queryByText(/Your role requires/)).toBeNull();
   });
 });
