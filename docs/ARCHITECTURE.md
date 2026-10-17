@@ -48,25 +48,25 @@ The race game uses 5173 and 4173; this project stays clear of them.
 
 Read from the environment when the process starts, never baked into a build:
 
-| Variable              | Default                   | Used by                                                         |
-| --------------------- | ------------------------- | --------------------------------------------------------------- |
-| `HOST`                | `127.0.0.1`               | server listen address                                           |
-| `PORT`                | `3800`                    | server listen port                                              |
-| `CLIENT_DIST`         | `client/dist`             | folder of the built client the server serves                    |
-| `COMMIT_SHA`          | output of `git rev-parse` | commit reported by `/api/health`                                |
-| `CLIENT_PORT`         | `5380`                    | Vite dev server port                                            |
-| `API_ORIGIN`          | `http://127.0.0.1:3800`   | where the Vite dev server forwards `/api` and `/ws`             |
-| `NODE_ENV`            | (unset)                   | `production`: Secure cookies, secret required                   |
-| `DATABASE_PATH`       | `data/seasonal.db`        | SQLite file                                                     |
-| `SESSION_SECRET`      | random per start (dev)    | signs session cookies; required in production                   |
-| `BOOTSTRAP_TOKEN`     | (unset)                   | one-time first-admin creation (AUTH.md)                         |
-| `PUBLIC_ORIGIN`       | from the Host header      | own origin for CSRF/WebSocket origin checks                     |
-| `TRUST_PROXY`         | `0`                       | number of reverse proxies in front                              |
-| `COOKIE_SECURE`       | `true` in production      | Secure session cookie                                           |
-| `CSRF_STRICT`         | `true`                    | refuse state changes without Origin/Referer                     |
-| `BCRYPT_COST`         | `12`                      | password hashing cost (4–15)                                    |
-| `REQUIRE_STAFF_2FA`   | `true`                    | organisers/admins must use 2FA; `false` only outside production |
-| `CHAT_RETENTION_DAYS` | `90`                      | chat messages older than this are deleted                       |
+| Variable              | Default                                       | Used by                                                         |
+| --------------------- | --------------------------------------------- | --------------------------------------------------------------- |
+| `HOST`                | `127.0.0.1`                                   | server listen address                                           |
+| `PORT`                | `3800`                                        | server listen port                                              |
+| `CLIENT_DIST`         | `client/dist`                                 | folder of the built client the server serves                    |
+| `COMMIT_SHA`          | output of `git rev-parse`                     | commit reported by `/api/health`                                |
+| `CLIENT_PORT`         | `5380`                                        | Vite dev server port                                            |
+| `API_ORIGIN`          | `http://127.0.0.1:3800`                       | where the Vite dev server forwards `/api` and `/ws`             |
+| `NODE_ENV`            | (unset)                                       | `production`: Secure cookies, secret required                   |
+| `DATABASE_PATH`       | `data/seasonal.db`                            | SQLite file                                                     |
+| `SESSION_SECRET`      | random per start (dev)                        | signs session cookies; required in production                   |
+| `BOOTSTRAP_TOKEN`     | (unset)                                       | one-time first-admin creation (AUTH.md)                         |
+| `PUBLIC_ORIGIN`       | from the Host header (required in production) | own origin for CSRF/WebSocket origin checks                     |
+| `TRUST_PROXY`         | `0` (must be set explicitly in production)    | number of reverse proxies in front                              |
+| `COOKIE_SECURE`       | `true` in production                          | Secure session cookie                                           |
+| `CSRF_STRICT`         | `true`                                        | refuse state changes without Origin/Referer                     |
+| `BCRYPT_COST`         | `12`                                          | password hashing cost (4–15)                                    |
+| `REQUIRE_STAFF_2FA`   | `true`                                        | organisers/admins must use 2FA; `false` only outside production |
+| `CHAT_RETENTION_DAYS` | `90`                                          | chat messages older than this are deleted                       |
 
 The server loads `.env` from the repository root if present; real environment variables win.
 `.env.example` lists every key by name.

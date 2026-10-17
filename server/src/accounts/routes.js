@@ -39,6 +39,15 @@ export function accountRoutes(db, config, hub) {
   // What the client sees about the signed-in account, including its 2FA state.
   const view = (user) => ({ ...publicUser(user), ...twoFactorStatus(db, config, user) });
   const loginLimiter = makeLimiter(limits.login, { failedOnly: true });
+  // Also per username, so many addresses cannot keep trying one account. Keyed on the name as
+  // typed (case-insensitive, like usernames), existing or not, so a 429 reveals nothing.
+  const loginAccountLimiter = makeLimiter(limits.loginAccount, {
+    failedOnly: true,
+    keyGenerator: (req) => {
+      const name = req.body?.username;
+      return `login:${typeof name === 'string' ? name.toLowerCase() : ''}`;
+    },
+  });
   const registerLimiter = makeLimiter(limits.register);
   // Keyed on the account, not the IP (see rateLimit.js).
   const passwordLimiter = makeLimiter(limits.passwordChange, {
@@ -72,7 +81,7 @@ export function accountRoutes(db, config, hub) {
     }
   });
 
-  router.post('/login', allow('public'), loginLimiter, async (req, res) => {
+  router.post('/login', allow('public'), loginLimiter, loginAccountLimiter, async (req, res) => {
     const input = validBody(req, res, {
       username: required('Username', 100),
       password: required('Password', 200),

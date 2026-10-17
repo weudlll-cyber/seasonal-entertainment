@@ -96,13 +96,19 @@ All answer `429 too_many_attempts`. Numbers are in `server/src/config.js` (`rate
 | Route                      | Window | Limit | Keyed on | Counts          |
 | -------------------------- | ------ | ----- | -------- | --------------- |
 | `POST /api/auth/login`     | 15 min | 10    | IP       | failed attempts |
+| `POST /api/auth/login`     | 15 min | 10    | username | failed attempts |
 | `POST /api/auth/register`  | 1 h    | 5     | IP       | every attempt   |
 | `POST /api/auth/password`  | 15 min | 5     | account  | failed attempts |
 | `POST /api/auth/bootstrap` | 1 h    | 10    | IP       | every attempt   |
 
 The password-change limit keys on the account, not the IP _(race game)_: people behind one
-address must not lock each other out. Behind a reverse proxy set `TRUST_PROXY` so the client IP
-is the real one.
+address must not lock each other out. Login is limited twice: per IP, and per username as typed
+(case-insensitive), whether that account exists or not, so the 429 reveals nothing. The
+per-username limit means someone failing ten times can block that name's logins for up to 15
+minutes; that is the accepted price of stopping guessing from many addresses. Behind a reverse
+proxy `TRUST_PROXY` makes the client IP the real one; in production the server refuses to start
+unless `TRUST_PROXY` and `PUBLIC_ORIGIN` are both set (`TRUST_PROXY=0` when nothing is in
+front).
 
 ## The first admin: bootstrap
 

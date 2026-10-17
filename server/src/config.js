@@ -46,9 +46,29 @@ function readStaff2fa(env, isProduction) {
   return required;
 }
 
+// Production runs behind a reverse proxy: without TRUST_PROXY every visitor would share the
+// proxy's IP (one login limit for all), and without PUBLIC_ORIGIN the origin checks would
+// trust the Host header. Both must be set explicitly; TRUST_PROXY=0 means "nothing in front".
+function checkProductionDeployment(env, publicOrigin) {
+  if (env.TRUST_PROXY === undefined || env.TRUST_PROXY === '') {
+    throw new Error('TRUST_PROXY is required in production (number of reverse proxies, 0 if none)');
+  }
+  let isOrigin = false;
+  try {
+    isOrigin = new URL(publicOrigin).origin === publicOrigin;
+  } catch {
+    // not a URL at all
+  }
+  if (!isOrigin) {
+    throw new Error(
+      'PUBLIC_ORIGIN is required in production: the site origin, e.g. https://example.org (no path)'
+    );
+  }
+}
+
 export function readConfig(env = process.env) {
   const isProduction = env.NODE_ENV === 'production';
-  return {
+  const config = {
     isProduction,
     host: env.HOST ?? '127.0.0.1',
     port: readInt(env, 'PORT', 3800, 1, 65535),
@@ -80,6 +100,7 @@ export function readConfig(env = process.env) {
     backgroundJobs: true,
     rateLimits: {
       login: { windowMs: 15 * 60_000, max: 10 }, // failed attempts per IP
+      loginAccount: { windowMs: 15 * 60_000, max: 10 }, // failed attempts per username
       register: { windowMs: 60 * 60_000, max: 5 }, // registrations per IP
       passwordChange: { windowMs: 15 * 60_000, max: 5 }, // failed attempts per user
       bootstrap: { windowMs: 60 * 60_000, max: 10 }, // attempts per IP
@@ -90,4 +111,6 @@ export function readConfig(env = process.env) {
       chatNewGuest: { windowMs: 60 * 60_000, max: 20 }, // new guest names per IP
     },
   };
+  if (isProduction) checkProductionDeployment(env, config.publicOrigin);
+  return config;
 }
