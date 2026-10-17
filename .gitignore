@@ -10,4 +10,6 @@ data/
 # Local configuration and secrets
 .env
 .env.*
+# ... except the list of keys (names only, no values), which belongs in the repository.
+!.env.example
 .claude/settings.local.json

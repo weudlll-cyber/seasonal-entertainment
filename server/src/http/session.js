@@ -13,6 +13,18 @@ import { findUserById } from '../accounts/userStore.js';
 
 const SqliteStore = sqliteStoreFactory(session);
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+const SWEEP_MS = 15 * 60_000;
+
+// The store's own sweep timer cannot be switched off (it reads "expired.clear || true") and is
+// never unref'd, so it kept one-off scripts such as `npm run dev:admin` alive. Here the sweep
+// runs only with background jobs, and never keeps the process alive on its own.
+function storeClass(backgroundJobs) {
+  return class SessionStore extends SqliteStore {
+    startInterval() {
+      if (backgroundJobs) setInterval(() => this.clearExpiredSessions(), SWEEP_MS).unref();
+    }
+  };
+}
 
 // "__Host-" makes the browser refuse the cookie unless it is Secure, host-only and path "/".
 export function cookieName(config) {
@@ -23,11 +35,7 @@ export function sessionMiddleware(db, config) {
   return session({
     name: cookieName(config),
     secret: config.sessionSecret,
-    store: new SqliteStore({
-      client: db,
-      // The periodic sweep is a timer; tests switch it off so no timer outlives their DB.
-      expired: { clear: config.backgroundJobs, intervalMs: 15 * 60_000 },
-    }),
+    store: new (storeClass(config.backgroundJobs))({ client: db }),
     resave: false,
     saveUninitialized: false, // guests get no cookie until something is stored for them
     cookie: {

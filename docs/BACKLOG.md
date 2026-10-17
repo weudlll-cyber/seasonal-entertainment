@@ -25,7 +25,8 @@ An entry moves from part one to part two only when its branch is merged into `ma
   and one server area (`mountChat`), docs/CHAT.md. Part B: a message is optional text plus one
   attachment; stickers and GIFs are attached, not sent on click. Part C: members upload images
   and PDFs (metadata removed, access-checked, deleted with their message). Part D: the message
-  list follows new messages, or offers "New messages" when scrolled up.
+  list follows new messages, or offers "New messages" when scrolled up. Part E: `.env.example`
+  complete and in the repository, `npm run dev:admin` exits on its own, check data removed.
 - **Chat embedding in other applications** — open. An embed route, allowed embedding origins
   (`frame-ancestors`), login inside an embedded frame; see docs/CHAT.md, last section.
 - **SE-CHAT-MEDIA-1 — Chat emojis, stickers, GIFs and link previews** — in review (PR #3).

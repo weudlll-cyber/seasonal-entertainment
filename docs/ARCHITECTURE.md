@@ -71,7 +71,10 @@ Read from the environment when the process starts, never baked into a build:
 | `LINK_PREVIEWS`       | `true`                                        | `false` switches chat link previews off                         |
 
 The server loads `.env` from the repository root if present; real environment variables win.
-`.env.example` lists every key by name.
+`.env.example` lists every key the server reads, by name with a comment and no value;
+`server/test/envExample.test.js` fails when one is missing or carries a value. (It is the one
+`.env.*` file in the repository: `.gitignore` excludes the others, and the agent permissions in
+`.claude/settings.json` may read `.env.example` but no other `.env` file.)
 
 The client only ever calls relative URLs (`/api/...`), so the same build works on any host.
 

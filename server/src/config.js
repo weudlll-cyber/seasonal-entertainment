@@ -4,7 +4,7 @@
 // Project:     Seasonal Entertainment
 // Description: Reads the runtime configuration from environment variables at start time.
 //              Nothing is baked into a build, so one build runs on any host. Every key is
-//              listed in .env.example and docs/ARCHITECTURE.md.
+//              listed in .env.example (test/envExample.test.js) and docs/ARCHITECTURE.md.
 // ============================================================
 
 import { randomBytes } from 'node:crypto';
