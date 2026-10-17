@@ -19,7 +19,8 @@ export default [
   // Dead code and dead variables are errors, not warnings (see CLAUDE.md).
   {
     rules: {
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      // ignoreRestSiblings: "const { secret, ...shown } = x" leaves fields out on purpose.
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_', ignoreRestSiblings: true }],
     },
   },
 

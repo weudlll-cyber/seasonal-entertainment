@@ -34,6 +34,7 @@ export function makeTestApp(overrides = {}) {
       ...Object.fromEntries(Object.keys(base.rateLimits).map((name) => [name, ROOMY])),
       ...overrides.rateLimits,
     },
+    chat: { ...base.chat, rate: { member: ROOMY, guest: ROOMY }, ...overrides.chat },
   };
   const db = openDatabase(config.databasePath);
   const app = createApp({ buildInfo: { version: '9.9.9', commit: 'abc123def456' }, config, db });

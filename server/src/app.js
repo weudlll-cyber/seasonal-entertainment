@@ -4,13 +4,17 @@
 // Project:     Seasonal Entertainment
 // Description: Builds the Express app: security headers, CSRF origin check, sessions, the
 //              JSON API under /api and, when a built client exists, the static client with a
-//              fallback to index.html for client routes. No listen(), so tests drive it directly.
+//              fallback to index.html for client routes. No listen(), so tests drive it directly;
+//              app.locals carries the chat hub and session parser for the WebSocket (index.js).
 // ============================================================
 
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import express from 'express';
 import { bootstrapRoutes } from './accounts/bootstrap.js';
+import { ChatHub } from './chat/hub.js';
+import { adminChatRoomRoutes, chatModerationRoutes } from './chat/moderationRoutes.js';
+import { chatRoutes } from './chat/routes.js';
 import { adminAuditRoutes } from './admin/auditRoutes.js';
 import { adminUserRoutes } from './admin/userRoutes.js';
 import { accountRoutes } from './accounts/routes.js';
@@ -38,7 +42,11 @@ export function createApp({ buildInfo, config, db }) {
   const api = express.Router();
   api.use(express.json({ limit: '100kb' }));
   api.use(csrfGuard(config));
-  api.use(sessionMiddleware(db, config));
+  // One session middleware for HTTP and the chat WebSocket upgrade.
+  const sessions = sessionMiddleware(db, config);
+  app.locals.sessionParser = sessions;
+  app.locals.chatHub = new ChatHub();
+  api.use(sessions);
   api.use(currentUser(db));
   api.use(staffTwoFactorGate(db, config));
 
@@ -56,6 +64,9 @@ export function createApp({ buildInfo, config, db }) {
   api.use('/admin/events', adminEventRoutes(db));
   api.use('/games', gameRoutes(db));
   api.use('/admin/games', adminGameRoutes(db));
+  api.use('/chat', chatRoutes(db, config, app.locals.chatHub));
+  api.use('/chat', chatModerationRoutes(db, app.locals.chatHub));
+  api.use('/admin/chat/rooms', adminChatRoomRoutes(db));
 
   // Unknown API paths answer JSON, never the HTML page.
   api.use((_req, res) => sendError(res, 404, 'not_found', 'No such API endpoint.'));

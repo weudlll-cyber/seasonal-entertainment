@@ -1,0 +1,105 @@
+/* ============================================================
+   File:        ChatPage.css
+   Path:        client/src/pages/ChatPage.css
+   Project:     Seasonal Entertainment
+   Description: Chat: room buttons, scrolling message list, message meta and actions,
+                guest badge, composer.
+   ============================================================ */
+
+.chat-rooms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.chat-room {
+  font: inherit;
+  padding: 0.25rem var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-background);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.chat-room--current {
+  border-color: var(--color-accent);
+  font-weight: var(--font-weight-strong);
+}
+
+.chat-messages {
+  max-height: 60vh;
+  overflow-y: auto;
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.chat-message {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.chat-message--hidden {
+  opacity: 0.55;
+}
+
+.chat-message__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: baseline;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.chat-message__meta strong {
+  color: var(--color-text);
+}
+
+.chat-message__text {
+  margin: 0.25rem 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chat-message__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  font-size: 0.8125rem;
+}
+
+.chat-badge {
+  padding: 0 0.375rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+}
+
+.chat-composer {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.chat-composer label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.chat-composer textarea {
+  font: inherit;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+}
+
+.chat-note {
+  margin: 0;
+  color: var(--color-text-muted);
+}

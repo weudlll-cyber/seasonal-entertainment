@@ -67,6 +67,15 @@ export function readConfig(env = process.env) {
     bootstrapToken: env.BOOTSTRAP_TOKEN || null,
     bcryptCost: readInt(env, 'BCRYPT_COST', 12, 4, 15),
     requireStaff2fa: readStaff2fa(env, isProduction),
+    chat: {
+      // Messages older than this are deleted by the retention job.
+      retentionDays: readInt(env, 'CHAT_RETENTION_DAYS', 90, 1, 3650),
+      // Per sender; guests stricter (decided 2026-10-17).
+      rate: {
+        member: { windowMs: 10_000, max: 5 },
+        guest: { windowMs: 10_000, max: 2 },
+      },
+    },
     // Timers (session sweep, chat retention). Tests switch them off; not an env key.
     backgroundJobs: true,
     rateLimits: {
@@ -75,6 +84,7 @@ export function readConfig(env = process.env) {
       passwordChange: { windowMs: 15 * 60_000, max: 5 }, // failed attempts per user
       bootstrap: { windowMs: 60 * 60_000, max: 10 }, // attempts per IP
       twoFactor: { windowMs: 15 * 60_000, max: 5 }, // failed codes per user / per IP at login
+      chatReport: { windowMs: 60_000, max: 10 }, // chat reports per IP
     },
   };
 }

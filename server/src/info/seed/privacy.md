@@ -27,8 +27,12 @@ This list describes what the website's software actually stores.
   when, and what changed. This log is kept without automatic deletion.
 - **Chat messages**: the text, the room, the author's name (account name or guest name) and
   the time. Deleted automatically after 90 days (the configured retention period).
-- **Guest names in the chat**: a guest who writes in the chat gets a random name such as
-  "Guest-7k2f", kept in that guest's session cookie while the session lasts.
+- **Guest names in the chat**: a guest who writes or reports a message gets a random name such
+  as "Guest-7k2f", kept with that guest's session. The name is released 30 days after it was
+  last used.
+- **Chat reports**: when someone reports a message, the site stores which account or guest name
+  reported it, so each person counts once. No IP address is stored.
+- **Chat mutes and bans**: who was muted or banned, by whom, and until when.
 - **Protection against abuse**: to limit repeated login attempts and similar, the server keeps
   your IP address in its memory for up to one hour. It is not written to the database.
 

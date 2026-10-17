@@ -19,7 +19,7 @@ describe('validateUsername', () => {
   it.each(['anna', 'Anna_99', 'a.b-c', 'x1y'])('accepts %s', (name) => {
     expect(validateUsername(name)).toBeNull();
   });
-  it.each(['ab', 'a'.repeat(25), '_anna', 'an na', 'anna!', '<b>', '', undefined])(
+  it.each(['ab', 'a'.repeat(25), '_anna', 'an na', 'anna!', '<b>', '', undefined, 'Guest-7k2f'])(
     'refuses %s',
     (name) => {
       expect(validateUsername(name)).toMatch(/Username/);

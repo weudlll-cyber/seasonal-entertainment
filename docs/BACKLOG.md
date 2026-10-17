@@ -18,6 +18,8 @@ An entry moves from part one to part two only when its branch is merged into `ma
   admin editor, the weekly schedule seeded.
 - **SE-NIGHT-1 piece 7 — Games hub** — in review (PR #3). /games cards by status and
   visibility, admin editor, "Seasonal Race" (coming soon). The race-game connection stays open.
+- **SE-NIGHT-1 piece 8 — Chat** — in review (PR #3). Live chat over WebSocket, rooms, guests
+  with guest names, moderation (hide, mute, ban), reports, retention.
 
 - Info pages with admin editor
 - Accounts with Discord/Telegram login and 2FA for organisers/admins

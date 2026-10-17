@@ -31,6 +31,8 @@ export function validateUsername(name) {
   if (name.length < USERNAME_MIN || name.length > USERNAME_MAX || !USERNAME_PATTERN.test(name)) {
     return `Username must be ${USERNAME_HINT}`;
   }
+  // "Guest-..." names belong to chat guests; an account must never look like one.
+  if (name.toLowerCase().startsWith('guest-')) return 'Usernames may not start with "Guest-".';
   return null;
 }
 

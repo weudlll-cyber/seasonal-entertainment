@@ -129,6 +129,13 @@ and after, never a password) through the one helper `recordAudit`
 (`server/src/audit/auditLog.js`); the Audit page lists it newest first. Every later admin or
 moderation action uses the same helper.
 
+## Chat identities
+
+Chat guests are not accounts: a guest gets a random name (`Guest-xxxx`) held in the session
+once they write or report. Registered usernames may not start with "Guest-", so an account can
+never look like a guest. Chat moderation (hide, mute, ban) is an organiser/admin action and
+therefore needs 2FA like every staff route. Details: ARCHITECTURE.md, "Chat".
+
 ## Tests
 
 Server tests use a temporary database per test file and delete it (`server/test/helpers/testApp.js`).

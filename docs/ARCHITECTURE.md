@@ -47,24 +47,25 @@ The race game uses 5173 and 4173; this project stays clear of them.
 
 Read from the environment when the process starts, never baked into a build:
 
-| Variable            | Default                   | Used by                                                         |
-| ------------------- | ------------------------- | --------------------------------------------------------------- |
-| `HOST`              | `127.0.0.1`               | server listen address                                           |
-| `PORT`              | `3800`                    | server listen port                                              |
-| `CLIENT_DIST`       | `client/dist`             | folder of the built client the server serves                    |
-| `COMMIT_SHA`        | output of `git rev-parse` | commit reported by `/api/health`                                |
-| `CLIENT_PORT`       | `5380`                    | Vite dev server port                                            |
-| `API_ORIGIN`        | `http://127.0.0.1:3800`   | where the Vite dev server forwards `/api`                       |
-| `NODE_ENV`          | (unset)                   | `production`: Secure cookies, secret required                   |
-| `DATABASE_PATH`     | `data/seasonal.db`        | SQLite file                                                     |
-| `SESSION_SECRET`    | random per start (dev)    | signs session cookies; required in production                   |
-| `BOOTSTRAP_TOKEN`   | (unset)                   | one-time first-admin creation (AUTH.md)                         |
-| `PUBLIC_ORIGIN`     | from the Host header      | own origin for CSRF/WebSocket origin checks                     |
-| `TRUST_PROXY`       | `0`                       | number of reverse proxies in front                              |
-| `COOKIE_SECURE`     | `true` in production      | Secure session cookie                                           |
-| `CSRF_STRICT`       | `true`                    | refuse state changes without Origin/Referer                     |
-| `BCRYPT_COST`       | `12`                      | password hashing cost (4–15)                                    |
-| `REQUIRE_STAFF_2FA` | `true`                    | organisers/admins must use 2FA; `false` only outside production |
+| Variable              | Default                   | Used by                                                         |
+| --------------------- | ------------------------- | --------------------------------------------------------------- |
+| `HOST`                | `127.0.0.1`               | server listen address                                           |
+| `PORT`                | `3800`                    | server listen port                                              |
+| `CLIENT_DIST`         | `client/dist`             | folder of the built client the server serves                    |
+| `COMMIT_SHA`          | output of `git rev-parse` | commit reported by `/api/health`                                |
+| `CLIENT_PORT`         | `5380`                    | Vite dev server port                                            |
+| `API_ORIGIN`          | `http://127.0.0.1:3800`   | where the Vite dev server forwards `/api`                       |
+| `NODE_ENV`            | (unset)                   | `production`: Secure cookies, secret required                   |
+| `DATABASE_PATH`       | `data/seasonal.db`        | SQLite file                                                     |
+| `SESSION_SECRET`      | random per start (dev)    | signs session cookies; required in production                   |
+| `BOOTSTRAP_TOKEN`     | (unset)                   | one-time first-admin creation (AUTH.md)                         |
+| `PUBLIC_ORIGIN`       | from the Host header      | own origin for CSRF/WebSocket origin checks                     |
+| `TRUST_PROXY`         | `0`                       | number of reverse proxies in front                              |
+| `COOKIE_SECURE`       | `true` in production      | Secure session cookie                                           |
+| `CSRF_STRICT`         | `true`                    | refuse state changes without Origin/Referer                     |
+| `BCRYPT_COST`         | `12`                      | password hashing cost (4–15)                                    |
+| `REQUIRE_STAFF_2FA`   | `true`                    | organisers/admins must use 2FA; `false` only outside production |
+| `CHAT_RETENTION_DAYS` | `90`                      | chat messages older than this are deleted                       |
 
 The server loads `.env` from the repository root if present; real environment variables win.
 `.env.example` lists every key by name.
@@ -138,6 +139,36 @@ games get a Play link. Images are chosen from a fixed list of the site's own ass
 `/games/race`, everyone); the race game itself stays in its own repository and is not connected
 yet.
 
+## Chat
+
+**Actions over HTTP, live updates over WebSocket.** Sending, reporting and moderating are
+ordinary `/api/chat` routes, so CSRF, access declarations, validation, rate limits and the
+audit log apply unchanged. The WebSocket `/ws/chat` only pushes: a client subscribes to rooms it
+may read and receives new messages and "hidden" notices. The upgrade is refused unless the
+Origin is this site (`PUBLIC_ORIGIN`, or the request's own host), and it reuses the session
+middleware to know who connects. In development Vite forwards `/ws` to the server.
+
+- **Rooms** (`chat_rooms`) say who may read and who may write: `everyone` (guests too),
+  `members` or `organisers`. First start: General (guests read and write), Seasonal Race
+  (members), Organisers (organisers and admins), Announcements (everyone reads, organisers
+  write). Admins edit rooms at `/admin/chat`; audited.
+- **Guests** (decided 2026-10-17) write only where everyone may write (General). Their first
+  message (or report) gives them a name like `Guest-7k2f` that nobody else holds at the same
+  time (UNIQUE in `chat_guests`, retried on collision), kept in their session and shown with a
+  Guest badge. Guests cannot post links (`containsLink`, `shared/chatRules.js`) and have a
+  stricter message rate (2 per 10 s; members 5 per 10 s). Registered usernames may not start
+  with "Guest-".
+- **Messages** are plain text, at most 500 characters; only members' explicit http(s) links
+  become links, with `rel="nofollow noopener noreferrer ugc"`.
+- **Moderation** (organisers and admins, with 2FA): hide a message (gone for everyone else at
+  once, still visible to moderators), mute its author for 10 minutes, 1 hour or 1 day, ban
+  them from writing, lift a mute or ban, see reported messages. Staff cannot be muted or banned.
+  Every action is audited. Anyone may report a message, counted once per account or guest; no
+  IP address is stored.
+- **Retention**: messages older than `CHAT_RETENTION_DAYS` (default 90) are deleted, and guest
+  names unused for 30 days are released, at start and every six hours
+  (`server/src/chat/retention.js`).
+
 ## Security headers
 
 `server/src/http/securityHeaders.js` (helmet) sends a strict Content-Security-Policy on every
@@ -180,12 +211,14 @@ server/
   src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md)
   src/events/              events: schema, store, public and admin routes, seed
   src/games/               games hub: schema, store, public and admin routes, seed
+  src/chat/                chat: schema, store, viewer rules, routes, moderation, WebSocket hub,
+                           sender rate limit, retention, seed
   test/helpers/testApp.js  app on a temporary database for tests
   src/config.js            environment configuration
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests
 shared/                    rules used by server and client (accountRules.js, eventSchedule.js,
-                           gameRules.js)
+                           gameRules.js, chatRules.js)
 scripts/
   dev.mjs                  npm run dev
   e2e.mjs                  npm run test:e2e (temporary database per run)

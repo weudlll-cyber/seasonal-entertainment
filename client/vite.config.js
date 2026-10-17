@@ -18,8 +18,12 @@ export default defineConfig({
   server: {
     port: devPort,
     strictPort: true,
-    // The browser calls /api on its own origin; in dev Vite forwards it to the server.
-    proxy: { '/api': apiOrigin },
+    // The browser calls /api and /ws on its own origin; in dev Vite forwards them.
+    proxy: {
+      '/api': apiOrigin,
+      // The chat WebSocket, forwarded as a WebSocket.
+      '/ws': { target: apiOrigin, ws: true },
+    },
   },
   test: {
     environment: 'jsdom',

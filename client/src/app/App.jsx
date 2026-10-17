@@ -9,6 +9,7 @@
 
 import { Navigate, Route, Routes } from 'react-router';
 import AdminAuditPage from '../admin/AdminAuditPage.jsx';
+import AdminChatPage from '../admin/AdminChatPage.jsx';
 import AdminEventsPage from '../admin/AdminEventsPage.jsx';
 import AdminGamesPage from '../admin/AdminGamesPage.jsx';
 import AdminInfoListPage from '../admin/AdminInfoListPage.jsx';
@@ -16,6 +17,7 @@ import AdminLayout from '../admin/AdminLayout.jsx';
 import AdminUsersPage from '../admin/AdminUsersPage.jsx';
 import InfoEditorPage from '../admin/InfoEditorPage.jsx';
 import AccountPage from '../pages/AccountPage.jsx';
+import ChatPage from '../pages/ChatPage.jsx';
 import EventsPage from '../pages/EventsPage.jsx';
 import GamesPage from '../pages/GamesPage.jsx';
 import InfoIndexPage from '../pages/InfoIndexPage.jsx';
@@ -38,6 +40,7 @@ export default function App() {
           <Route path="info/:slug" element={<InfoPage />} />
           <Route path="events" element={<EventsPage />} />
           <Route path="games" element={<GamesPage />} />
+          <Route path="chat" element={<ChatPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route
@@ -62,6 +65,7 @@ export default function App() {
             <Route path="info/:id" element={<InfoEditorPage />} />
             <Route path="events" element={<AdminEventsPage />} />
             <Route path="games" element={<AdminGamesPage />} />
+            <Route path="chat" element={<AdminChatPage />} />
             <Route path="audit" element={<AdminAuditPage />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />
