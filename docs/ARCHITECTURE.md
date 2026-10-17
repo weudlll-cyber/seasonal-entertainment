@@ -213,7 +213,7 @@ server/
   src/games/               games hub: schema, store, public and admin routes, seed
   src/chat/                chat: schema, store, viewer rules, routes, moderation, WebSocket hub,
                            sender rate limit, retention, seed
-  test/helpers/testApp.js  app on a temporary database for tests
+  test/helpers/testApp.js  app on a temporary database for tests (chat.js: chat helpers)
   src/config.js            environment configuration
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests
