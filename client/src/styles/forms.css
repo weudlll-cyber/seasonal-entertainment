@@ -59,6 +59,12 @@
   justify-self: start;
 }
 
+/* An outlined button for secondary actions next to a main one. */
+.button--secondary {
+  background: transparent;
+  color: var(--color-text);
+}
+
 .button:disabled {
   opacity: 0.6;
   cursor: default;

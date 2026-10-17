@@ -3,13 +3,13 @@
 // Path:        client/src/pages/ChatPage.jsx
 // Project:     Seasonal Entertainment
 // Description: /chat: the rooms this visitor may read, the current room's messages (live via
-//              WebSocket), the composer where they may write, and per-message actions. Guests
-//              get a guest name with their first message.
+//              WebSocket), the composer where they may write (ChatComposer), and per-message
+//              actions. Guests get a guest name with their first message.
 // ============================================================
 
 import { useEffect, useState } from 'react';
-import { MESSAGE_MAX } from '@seasonal-entertainment/shared/chatRules.js';
 import { api } from '../api/http.js';
+import ChatComposer from '../chat/ChatComposer.jsx';
 import ChatMessage from '../chat/ChatMessage.jsx';
 import { useChatSocket } from '../chat/useChatSocket.js';
 import { FormMessage } from '../components/FormField.jsx';
@@ -28,7 +28,6 @@ export default function ChatPage() {
   const [info, setInfo] = useState(null); // { rooms, me }
   const [room, setRoom] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [draft, setDraft] = useState('');
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
   const [version, setVersion] = useState(0); // bumped to reload rooms (e.g. new guest name)
@@ -60,19 +59,20 @@ export default function ChatPage() {
     }
   });
 
-  async function send(event) {
-    event.preventDefault();
+  // true when sent, so the composer clears its field.
+  async function send(body) {
     setError(null);
     try {
       const { message } = await api(`/chat/rooms/${room}/messages`, {
         method: 'POST',
-        body: { body: draft },
+        body: { body },
       });
       setMessages((list) => (list.some((m) => m.id === message.id) ? list : [...list, message]));
-      setDraft('');
       if (!user && !info.me.guestName) setVersion((v) => v + 1);
+      return true;
     } catch (err) {
       setError(err.message);
+      return false;
     }
   }
 
@@ -122,27 +122,7 @@ export default function ChatPage() {
       </ol>
       <FormMessage error={error} notice={notice} />
       {current?.canWrite ? (
-        <form className="chat-composer" onSubmit={send}>
-          {!user && (
-            <p className="chat-note">
-              {info?.me.guestName
-                ? `You are writing as ${info.me.guestName} (guest). Links are for members only.`
-                : 'You are a guest: your first message gets a guest name. Links are for members only.'}
-            </p>
-          )}
-          <label>
-            <span className="form-field__label">Message</span>
-            <textarea
-              rows={2}
-              maxLength={MESSAGE_MAX}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-            />
-          </label>
-          <button className="button" type="submit" disabled={!draft.trim()}>
-            Send
-          </button>
-        </form>
+        <ChatComposer user={user} guestName={info.me.guestName} onSend={send} />
       ) : (
         current && <p className="chat-note">You can read this room, but not write in it.</p>
       )}

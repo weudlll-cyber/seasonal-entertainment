@@ -55,6 +55,13 @@ describe('rooms and guests', () => {
     expect((await post(member, 'general', 'see https://seasonaltokens.org/')).status).toBe(201);
   });
 
+  it('a guest may send emojis: they are plain text', async () => {
+    t = chatApp();
+    const res = await post(t.client(), 'general', 'Hi 🎉🍂 see you ❄️');
+    expect(res.status).toBe(201);
+    expect(res.body.message.body).toBe('Hi 🎉🍂 see you ❄️');
+  });
+
   it('refuses empty and too long messages', async () => {
     t = chatApp();
     expect((await post(t.client(), 'general', '   ')).status).toBe(400);

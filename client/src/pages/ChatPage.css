@@ -87,6 +87,13 @@
   gap: var(--space-1);
 }
 
+.chat-composer__actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1);
+  align-items: start;
+}
+
 .chat-composer label {
   display: grid;
   gap: 0.25rem;

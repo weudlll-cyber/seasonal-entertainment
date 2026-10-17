@@ -20,6 +20,8 @@ An entry moves from part one to part two only when its branch is merged into `ma
   visibility, admin editor, "Seasonal Race" (coming soon). The race-game connection stays open.
 - **SE-NIGHT-1 piece 8 — Chat** — in review (PR #3). Live chat over WebSocket, rooms, guests
   with guest names, moderation (hide, mute, ban), reports, retention.
+- **SE-CHAT-MEDIA-1 — Chat emojis, stickers, GIFs and link previews** — in review (PR #3).
+  Part A: emoji picker for everyone.
 - **SE-SECURITY-FIX-1 — Security review fixes** — in review (PR #3). Dev-proxy "wrong origin",
   staff 2FA in the chat, sockets following account changes, per-IP guest limits, 2FA password and
   session hygiene, production proxy settings and per-username login limit, access before id

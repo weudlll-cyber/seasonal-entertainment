@@ -182,6 +182,11 @@ password change and turning 2FA on or off close the account's other sockets at o
   with "Guest-".
 - **Messages** are plain text, at most 500 characters; only members' explicit http(s) links
   become links, with `rel="nofollow noopener noreferrer ugc"`.
+- **Emojis** (everyone, guests too) are plain Unicode text in the message. The picker next to the
+  message field (`client/src/chat/ChatPicker.jsx`) uses a compact built-in list of about 150
+  emojis with English names (`client/src/chat/emojis.js`), chosen 2026-10-17 over a picker
+  library: no dependency, no emoji data download, nothing from a CDN, so the strict CSP stays.
+  Bundle cost: +4.7 kB JavaScript (+1.9 kB gzip) and +0.8 kB CSS (+0.15 kB gzip).
 - **Moderation** (organisers and admins, with 2FA): hide a message (gone for everyone else at
   once, still visible to moderators), mute its author for 10 minutes, 1 hour or 1 day, ban
   them from writing, lift a mute or ban, see reported messages. Staff cannot be muted or banned.

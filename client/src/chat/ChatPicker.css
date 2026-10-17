@@ -1,0 +1,48 @@
+/* ============================================================
+   File:        ChatPicker.css
+   Path:        client/src/chat/ChatPicker.css
+   Project:     Seasonal Entertainment
+   Description: The chat picker: toggle button, a scrolling panel with tabs and grouped grids.
+   ============================================================ */
+
+.chat-picker {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.chat-picker__panel {
+  max-height: 18rem;
+  overflow-y: auto;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-background);
+}
+
+.chat-picker__heading {
+  margin: var(--space-1) 0 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.chat-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
+  gap: 0.25rem;
+}
+
+.chat-picker__emoji {
+  min-height: 2.5rem;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chat-picker__emoji:hover,
+.chat-picker__emoji:focus-visible {
+  background: var(--color-border);
+}
