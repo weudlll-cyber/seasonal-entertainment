@@ -11,6 +11,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/http.js';
 import { joinRoom } from './connection.js';
+import { useChatRooms } from './useChatRooms.js';
 
 const ACTION_DONE = {
   report: 'Reported. Thank you.',
@@ -43,26 +44,23 @@ export function applyEvent(list, event, moderator) {
   }
 }
 
-export function useChatRoom(initialRoom, user) {
-  const [info, setInfo] = useState(null); // { rooms, me }
-  const [room, setRoom] = useState(initialRoom);
+// roomInput: the panel's `room` input. The reader's tab choice holds while the input stays the
+// same; a new input (the host switched rooms) wins.
+export function useChatRoom(roomInput, user) {
+  const rooms = useChatRooms();
+  const info = rooms.info; // { rooms, me }
+  const [choice, setChoice] = useState({ input: roomInput, room: roomInput });
+  const room = choice.input === roomInput ? choice.room : roomInput;
+  const setRoom = (slug) => setChoice({ input: roomInput, room: slug });
   const [messages, setMessages] = useState([]);
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
-  const [version, setVersion] = useState(0); // bumped to reload rooms (e.g. new guest name)
   const moderator = useRef(false);
   const userId = user?.id;
   // undefined while the account is still loading: wait, so rooms and messages are fetched once
   // for the right reader (a second fetch would replace live updates that arrived meanwhile).
   const known = user !== undefined;
   moderator.current = Boolean(info?.me.moderator);
-
-  useEffect(() => {
-    if (!known) return;
-    api('/chat/rooms')
-      .then(setInfo)
-      .catch((err) => setError(err.message));
-  }, [known, userId, version]);
 
   useEffect(() => {
     if (!known) return;
@@ -87,7 +85,7 @@ export function useChatRoom(initialRoom, user) {
         body: payload,
       });
       setMessages((list) => applyEvent(list, { type: 'message', message }));
-      if (!user && !info?.me.guestName) setVersion((v) => v + 1);
+      if (!user && !info?.me.guestName) rooms.reload(); // the new guest name
       return true;
     } catch (err) {
       setError(err.message);
@@ -121,5 +119,5 @@ export function useChatRoom(initialRoom, user) {
   }
 
   const current = info?.rooms.find((r) => r.slug === room) ?? null;
-  return { info, room, setRoom, current, messages, error, notice, send, act };
+  return { info, room, setRoom, current, messages, error: error ?? rooms.error, notice, send, act };
 }

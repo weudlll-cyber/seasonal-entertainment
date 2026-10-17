@@ -300,8 +300,9 @@ test fails on any console error, which is where a CSP violation shows up.
 .claude/settings.json      agent permissions for this repository
 client/                    React + Vite client
   index.html               HTML shell
-  src/app/                 route table, app shell (Layout, Sidebar, AccountCard), icons,
-                           navigation list, never-throwing browser storage
+  src/app/                 route table, app shell (Layout, Sidebar, AccountCard), chat drawer
+                           (ChatDrawer, RoomPicker, its remembered state), icons, navigation
+                           list, never-throwing browser storage
   src/api/http.js          the one fetch wrapper (JSON, ApiError)
   src/session/             session context (who is signed in), RequireUser guard
   src/components/          shared UI pieces (form fields, forms)

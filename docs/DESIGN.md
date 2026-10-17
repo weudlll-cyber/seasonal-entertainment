@@ -83,3 +83,26 @@ info section. Real data only. Below 1000px the cards stack and the main column s
 
 **Chat page**: the full chat fills the main column, rooms on its left; only the message list
 scrolls and the composer stays at the bottom.
+
+## Chat drawer
+
+On every page except `/chat` and `/admin/*` (`client/src/app/ChatDrawer.jsx`):
+
+- A round **chat button** bottom right: 64px, autumn colour, chat icon (`--color-on-season`). No
+  unread badge: the chat module cannot tell yet (backlog: "Unread count for the chat button").
+- It opens a **drawer over the page**, on the right: 400px wide, 16px from the window's top,
+  right and bottom, rounded, with the raised shadow; the full width below 760px. The page
+  underneath keeps its size and is never resized (`client/e2e/chatDrawer.spec.js` compares the
+  main column's box).
+- Drawer content: "Open full chat" (to `/chat`) and a close button; the **room picker** — a button
+  with the room's colour mark, "# name" and a chevron, opening a listbox of the rooms the reader
+  may read (arrows, Home/End, Enter or Space, Escape or Tab; Escape closes only the list); then
+  `<ChatPanel variant="compact">` for that room, from the chat module's `index.js` (the module's
+  `useChatRooms` gives the picker its rooms; the panel follows its `room` input). Rooms have no
+  colour of their own: each gets a season colour by its place in the list.
+- Closes by its close button or Escape. Focus moves into the drawer when the reader opens it, and
+  back to the chat button when it closes; there is no focus trap (the page stays usable).
+- This browser remembers, with the never-throwing storage helper, whether the drawer was open and
+  the last room (`se.chatDrawer.open`, `se.chatDrawer.room`). A drawer that is open after a reload
+  does not take the focus. A remembered room the reader may no longer read falls back to the
+  first. The live connection is the chat module's one per page, shared with any other panel.

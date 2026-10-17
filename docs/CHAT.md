@@ -18,11 +18,15 @@ import { ChatPanel } from '../chat/index.js';
 
 | Input                    | Type                    | Default          | Meaning                                                                  |
 | ------------------------ | ----------------------- | ---------------- | ------------------------------------------------------------------------ |
-| `room`                   | string (room slug)      | required         | the room shown first                                                     |
+| `room`                   | string (room slug)      | required         | the room shown; the panel follows when it changes                        |
 | `variant`                | `'full'` \| `'compact'` | `'full'`         | a page of its own, or a box beside other content                         |
 | `showRoomTabs`           | boolean                 | `false`          | let the reader switch between the rooms they may read                    |
 | `--chat-list-max-height` | CSS custom property     | `60vh` / `18rem` | cap of the message list; `none` lets it fill a container of fixed height |
 | account                  | from `SessionProvider`  | —                | who is signed in (`client/src/session`); a guest if no                   |
+
+`index.js` also exports **`useChatRooms()`**: the rooms the current reader may read and who they
+are in the chat (`{ info: { rooms, me }, error, reload }`), for a host's own room picker (the
+site's chat drawer, docs/DESIGN.md). The panel itself uses the same hook.
 
 The module uses nothing else from the page around it. From outside its folder it imports only
 React, the shared chat rules (`@seasonal-entertainment/shared/chatRules.js`), the account context

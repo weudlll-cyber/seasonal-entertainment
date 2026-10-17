@@ -1,0 +1,156 @@
+/* ============================================================
+   File:        ChatDrawer.css
+   Path:        client/src/app/ChatDrawer.css
+   Project:     Seasonal Entertainment
+   Description: The floating chat button and the chat drawer over the page (400px wide, 16px
+                from the window's top, right and bottom; the full width below 760px), and the
+                drawer's room picker. The page underneath is never resized.
+   ============================================================ */
+
+.chat-launcher {
+  position: fixed;
+  right: var(--space-3);
+  bottom: var(--space-3);
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-autumn);
+  color: var(--color-on-season);
+  box-shadow: var(--shadow-raised);
+  cursor: pointer;
+}
+
+.chat-drawer {
+  position: fixed;
+  top: var(--space-2);
+  right: var(--space-2);
+  bottom: var(--space-2);
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 400px;
+  max-width: calc(100vw - 2 * var(--space-2));
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
+}
+
+/* The panel fills the drawer below its header and room picker; its list takes the rest. */
+.chat-drawer .se-chat {
+  --chat-list-max-height: none;
+  flex: 1;
+}
+
+.chat-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chat-drawer__full {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit-target);
+  color: var(--color-text);
+  font-weight: var(--font-weight-strong);
+}
+
+@media (max-width: 759.98px) {
+  .chat-drawer {
+    inset: 0;
+    width: auto;
+    max-width: none;
+    border-radius: 0;
+  }
+}
+
+.room-picker {
+  position: relative;
+}
+
+.room-picker__button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  min-height: var(--hit-target);
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: var(--font-weight-strong);
+  cursor: pointer;
+}
+
+.room-picker__name {
+  flex: 1;
+  text-align: left;
+}
+
+.room-mark {
+  display: inline-block;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--room-colour);
+}
+
+.room-mark--spring {
+  --room-colour: var(--color-spring);
+}
+
+.room-mark--summer {
+  --room-colour: var(--color-summer);
+}
+
+.room-mark--autumn {
+  --room-colour: var(--color-autumn);
+}
+
+.room-mark--winter {
+  --room-colour: var(--color-winter);
+}
+
+.room-picker__list {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
+  list-style: none;
+}
+
+.room-picker__option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--hit-target);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.room-picker__option--active,
+.room-picker__option:hover {
+  background: var(--color-active-bg);
+}
+
+.room-picker__option[aria-selected='true'] {
+  font-weight: var(--font-weight-strong);
+}

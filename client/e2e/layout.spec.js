@@ -6,7 +6,9 @@
 //              1920 x 1080 the window never scrolls on any main page and the sidebar is shown;
 //              Home fits its main column without scrolling. At 390 x 844 (phone): no window
 //              scroll, a top bar, and the navigation drawer opens and closes (close button,
-//              Escape, following a link), with focus going in and back.
+//              Escape, following a link), with focus going in and back. The chat button shows
+//              exactly on the pages that have no chat of their own (not /chat, not /admin); at
+//              phone width its drawer opens full width and closes.
 // ============================================================
 
 import { expect, test } from '@playwright/test';
@@ -15,14 +17,15 @@ import { ADMIN_STATE } from './adminState.js';
 // Signed in as the run's admin, so Account and Admin are reachable too.
 test.use({ storageState: ADMIN_STATE });
 
+// [name, path, has the chat button]: everywhere except /chat and the admin area.
 const PAGES = [
-  ['Home', '/'],
-  ['Games', '/games'],
-  ['Events', '/events'],
-  ['Info index', '/info'],
-  ['Chat', '/chat'],
-  ['Account', '/account'],
-  ['Admin users', '/admin/users'],
+  ['Home', '/', true],
+  ['Games', '/games', true],
+  ['Events', '/events', true],
+  ['Info index', '/info', true],
+  ['Chat', '/chat', false],
+  ['Account', '/account', true],
+  ['Admin users', '/admin/users', false],
 ];
 const DESKTOP = [
   [1440, 900],
@@ -48,14 +51,21 @@ for (const [width, height] of DESKTOP) {
   test.describe(`${width} x ${height}`, () => {
     test.use({ viewport: { width, height } });
 
-    for (const [name, path] of PAGES) {
-      test(`${name}: no window scroll, sidebar shown`, async ({ page }) => {
+    for (const [name, path, chatButton] of PAGES) {
+      test(`${name}: no window scroll, sidebar shown, chat button ${chatButton ? 'shown' : 'not shown'}`, async ({
+        page,
+      }) => {
         await page.goto(path);
         await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
         await page.waitForLoadState('networkidle');
         expect(await windowFits(page)).toBe(true);
         await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Open menu' })).toBeHidden();
+        await expect(page.getByRole('button', { name: 'Chat', exact: true })).toHaveCount(
+          chatButton ? 1 : 0
+        );
+        if (chatButton)
+          await expect(page.getByRole('button', { name: 'Chat', exact: true })).toBeVisible();
       });
     }
 
@@ -97,5 +107,18 @@ test.describe('390 x 844 (phone)', () => {
     await nav.getByRole('link', { name: 'Events' }).click();
     await expect(page.getByRole('heading', { name: 'Events', level: 1 })).toBeVisible();
     await expect(nav).toBeHidden();
+  });
+
+  test('the chat drawer opens full width and closes', async ({ page }) => {
+    await page.goto('/games');
+    const button = page.getByRole('button', { name: 'Chat', exact: true });
+    await button.click();
+    const drawer = page.getByRole('dialog', { name: 'Chat' });
+    await expect(drawer).toBeVisible();
+    expect((await drawer.boundingBox()).width).toBe(390);
+    expect(await windowFits(page)).toBe(true);
+    await drawer.getByRole('button', { name: 'Close chat' }).click();
+    await expect(drawer).toBeHidden();
+    await expect(button).toBeFocused();
   });
 });

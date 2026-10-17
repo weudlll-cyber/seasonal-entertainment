@@ -16,11 +16,11 @@ import { useChatRoom } from './useChatRoom.js';
 import './ChatPanel.css';
 import './ChatPicker.css';
 
-// room: slug of the room shown first. variant: 'full' (a page of its own) or 'compact' (a
+// room: slug of the room shown; when it changes the panel follows (a host's room picker). variant: 'full' (a page of its own) or 'compact' (a
 // box beside other content). showRoomTabs: let the reader switch between their rooms.
-export default function ChatPanel({ room: initialRoom, variant = 'full', showRoomTabs = false }) {
+export default function ChatPanel({ room: roomInput, variant = 'full', showRoomTabs = false }) {
   const { user } = useSession();
-  const chat = useChatRoom(initialRoom, user);
+  const chat = useChatRoom(roomInput, user);
   const { info, room, current } = chat;
   const roomName = current?.name ?? room;
 
