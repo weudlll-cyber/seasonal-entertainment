@@ -9,6 +9,7 @@
 import express from 'express';
 import { recordAudit } from '../audit/auditLog.js';
 import { allow } from '../http/access.js';
+import { loadById } from '../http/loadById.js';
 import { sendError } from '../http/errors.js';
 import { required, validBody } from '../http/validate.js';
 import {
@@ -39,12 +40,8 @@ const PAGE_FIELDS = {
 export function adminInfoRoutes(db) {
   const router = express.Router();
 
-  router.param('id', (req, res, next, id) => {
-    const page = /^\d+$/.test(id) ? findById(db, Number(id)) : null;
-    if (!page) return sendError(res, 404, 'not_found', 'No such page.');
-    req.page = page;
-    next();
-  });
+  // Loaded after allow(): who may not use these routes cannot probe which ids exist.
+  const loadPage = loadById((id) => findById(db, id), 'page', 'page');
 
   const audit = (req, action, targetId, before, after) =>
     recordAudit(db, req.user, { action, targetType: 'info_page', targetId, before, after });
@@ -55,7 +52,7 @@ export function adminInfoRoutes(db) {
     res.json({ ok: true, pages: listAll(db) });
   });
 
-  router.get('/:id', allow('admin'), (req, res) => {
+  router.get('/:id', allow('admin'), loadPage, (req, res) => {
     res.json({ ok: true, page: req.page });
   });
 
@@ -72,7 +69,7 @@ export function adminInfoRoutes(db) {
     }
   });
 
-  router.put('/:id', allow('admin'), (req, res) => {
+  router.put('/:id', allow('admin'), loadPage, (req, res) => {
     const input = validBody(req, res, PAGE_FIELDS);
     if (!input) return;
     try {
@@ -98,7 +95,7 @@ export function adminInfoRoutes(db) {
     }
   });
 
-  router.post('/:id/status', allow('admin'), (req, res) => {
+  router.post('/:id/status', allow('admin'), loadPage, (req, res) => {
     const input = validBody(req, res, {
       status: (v) =>
         ['draft', 'published'].includes(v) ? null : 'Status must be draft or published.',

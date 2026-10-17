@@ -11,7 +11,7 @@ import express from 'express';
 import { RULES } from '@seasonal-entertainment/shared/eventSchedule.js';
 import { recordAudit } from '../audit/auditLog.js';
 import { allow } from '../http/access.js';
-import { sendError } from '../http/errors.js';
+import { loadById } from '../http/loadById.js';
 import { required, validBody } from '../http/validate.js';
 import { createEvent, deleteEvent, findEvent, listAllEvents, updateEvent } from './store.js';
 
@@ -61,12 +61,8 @@ function changes(before, after) {
 export function adminEventRoutes(db) {
   const router = express.Router();
 
-  router.param('id', (req, res, next, id) => {
-    const event = /^\d+$/.test(id) ? findEvent(db, Number(id)) : null;
-    if (!event) return sendError(res, 404, 'not_found', 'No such event.');
-    req.event = event;
-    next();
-  });
+  // Loaded after allow(): who may not use these routes cannot probe which ids exist.
+  const loadEvent = loadById((id) => findEvent(db, id), 'event', 'event');
 
   const audit = (req, action, targetId, before, after) =>
     recordAudit(db, req.user, { action, targetType: 'event', targetId, before, after });
@@ -87,7 +83,7 @@ export function adminEventRoutes(db) {
     res.status(201).json({ ok: true, event });
   });
 
-  router.put('/:id', allow('admin'), (req, res) => {
+  router.put('/:id', allow('admin'), loadEvent, (req, res) => {
     const input = validBody(req, res, EVENT_FIELDS);
     if (!input) return;
     const event = updateEvent(db, req.event.id, input);
@@ -96,7 +92,7 @@ export function adminEventRoutes(db) {
     res.json({ ok: true, event });
   });
 
-  router.delete('/:id', allow('admin'), (req, res) => {
+  router.delete('/:id', allow('admin'), loadEvent, (req, res) => {
     deleteEvent(db, req.event.id);
     audit(req, 'event.delete', req.event.id, { title: req.event.title }, null);
     res.json({ ok: true });

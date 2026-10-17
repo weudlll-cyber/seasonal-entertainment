@@ -14,6 +14,7 @@ import { ROOM_ACCESS } from '@seasonal-entertainment/shared/chatRules.js';
 import { findUserById } from '../accounts/userStore.js';
 import { recordAudit } from '../audit/auditLog.js';
 import { allow } from '../http/access.js';
+import { loadById } from '../http/loadById.js';
 import { sendError } from '../http/errors.js';
 import { required, validBody } from '../http/validate.js';
 import {
@@ -35,14 +36,10 @@ export function chatModerationRoutes(db, hub) {
   const audit = (req, action, targetType, targetId, before, after) =>
     recordAudit(db, req.user, { action, targetType, targetId, before, after });
 
-  router.param('id', (req, res, next, id) => {
-    const message = /^\d+$/.test(id) ? findMessage(db, Number(id)) : null;
-    if (!message) return sendError(res, 404, 'not_found', 'No such message.');
-    req.message = message;
-    next();
-  });
+  // Loaded after allow(): who may not use these routes cannot probe which ids exist.
+  const loadMessage = loadById((id) => findMessage(db, id), 'message', 'message');
 
-  router.post('/messages/:id/hide', allow('organiser'), (req, res) => {
+  router.post('/messages/:id/hide', allow('organiser'), loadMessage, (req, res) => {
     if (!req.message.hiddenAt) {
       hideMessage(db, req.message.id, req.user.username);
       audit(
@@ -94,8 +91,8 @@ export function chatModerationRoutes(db, hub) {
     });
     res.json({ ok: true });
   };
-  router.post('/messages/:id/mute', allow('organiser'), sanction('mute'));
-  router.post('/messages/:id/ban', allow('organiser'), sanction('ban'));
+  router.post('/messages/:id/mute', allow('organiser'), loadMessage, sanction('mute'));
+  router.post('/messages/:id/ban', allow('organiser'), loadMessage, sanction('ban'));
 
   router.get('/reports', allow('organiser'), (_req, res) => {
     res.json({ ok: true, messages: listReported(db) });
@@ -166,12 +163,11 @@ export function adminChatRoomRoutes(db) {
 
   router.get('/', allow('admin'), (_req, res) => res.json({ ok: true, rooms: listRooms(db) }));
   router.post('/', allow('admin'), (req, res) => save(req, res));
-  router.put('/:id', allow('admin'), (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || !findRoom(db, id)) {
-      return sendError(res, 404, 'not_found', 'No such room.');
-    }
-    save(req, res, id);
-  });
+  router.put(
+    '/:id',
+    allow('admin'),
+    loadById((id) => findRoom(db, id), 'room', 'room'),
+    (req, res) => save(req, res, req.room.id)
+  );
   return router;
 }

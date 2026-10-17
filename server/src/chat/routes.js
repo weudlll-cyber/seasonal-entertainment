@@ -69,14 +69,14 @@ export function chatRoutes(db, config, hub) {
   });
 
   // Unknown and unreadable rooms answer the same 404: a room's existence is not revealed.
-  router.param('slug', (req, res, next, slug) => {
-    const room = findRoomBySlug(db, slug);
+  const loadRoom = (req, res, next) => {
+    const room = findRoomBySlug(db, req.params.slug);
     if (!room || !canRead(room, chatViewer(req))) {
       return sendError(res, 404, 'not_found', 'No such room.');
     }
     req.room = room;
     next();
-  });
+  };
 
   router.get('/rooms', allow('public'), (req, res) => {
     const viewer = chatViewer(req);
@@ -90,7 +90,7 @@ export function chatRoutes(db, config, hub) {
     });
   });
 
-  router.get('/rooms/:slug/messages', allow('public'), (req, res) => {
+  router.get('/rooms/:slug/messages', allow('public'), loadRoom, (req, res) => {
     const includeHidden = isModerator(chatViewer(req));
     res.json({ ok: true, messages: listMessages(db, req.room, { includeHidden }) });
   });
@@ -98,6 +98,7 @@ export function chatRoutes(db, config, hub) {
   router.post(
     '/rooms/:slug/messages',
     allow('public'),
+    loadRoom,
     guestPostsPerIp,
     newGuestsPerIp,
     async (req, res) => {

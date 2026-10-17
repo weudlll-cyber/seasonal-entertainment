@@ -15,6 +15,7 @@ import {
 } from '@seasonal-entertainment/shared/gameRules.js';
 import { recordAudit } from '../audit/auditLog.js';
 import { allow } from '../http/access.js';
+import { loadById } from '../http/loadById.js';
 import { sendError } from '../http/errors.js';
 import { required, validBody } from '../http/validate.js';
 import {
@@ -47,12 +48,8 @@ const GAME_FIELDS = {
 export function adminGameRoutes(db) {
   const router = express.Router();
 
-  router.param('id', (req, res, next, id) => {
-    const game = /^\d+$/.test(id) ? findGame(db, Number(id)) : null;
-    if (!game) return sendError(res, 404, 'not_found', 'No such game.');
-    req.game = game;
-    next();
-  });
+  // Loaded after allow(): who may not use these routes cannot probe which ids exist.
+  const loadGame = loadById((id) => findGame(db, id), 'game', 'game');
 
   const audit = (req, action, targetId, before, after) =>
     recordAudit(db, req.user, { action, targetType: 'game', targetId, before, after });
@@ -75,7 +72,7 @@ export function adminGameRoutes(db) {
     }
   });
 
-  router.put('/:id', allow('admin'), (req, res) => {
+  router.put('/:id', allow('admin'), loadGame, (req, res) => {
     const input = validBody(req, res, GAME_FIELDS);
     if (!input) return;
     try {
@@ -96,7 +93,7 @@ export function adminGameRoutes(db) {
     }
   });
 
-  router.delete('/:id', allow('admin'), (req, res) => {
+  router.delete('/:id', allow('admin'), loadGame, (req, res) => {
     deleteGame(db, req.game.id);
     audit(req, 'game.delete', req.game.id, { name: req.game.name }, null);
     res.json({ ok: true });

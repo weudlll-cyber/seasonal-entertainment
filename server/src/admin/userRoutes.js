@@ -21,6 +21,7 @@ import {
 import { findUserById, setPasswordHash } from '../accounts/userStore.js';
 import { recordAudit } from '../audit/auditLog.js';
 import { allow } from '../http/access.js';
+import { loadById } from '../http/loadById.js';
 import { sendError } from '../http/errors.js';
 import { validBody } from '../http/validate.js';
 
@@ -30,13 +31,8 @@ const isBoolean = (label) => (value) =>
 export function adminUserRoutes(db, config, hub) {
   const router = express.Router();
 
-  // Loads the target account or answers 404; also refuses non-numeric ids.
-  router.param('id', (req, res, next, id) => {
-    const target = /^\d+$/.test(id) ? findUserById(db, Number(id)) : null;
-    if (!target) return sendError(res, 404, 'not_found', 'No such user.');
-    req.target = target;
-    next();
-  });
+  // Loaded after allow(): who may not use these routes cannot probe which ids exist.
+  const loadTarget = loadById((id) => findUserById(db, id), 'target', 'user');
 
   const audit = (req, action, before, after) =>
     recordAudit(db, req.user, {
@@ -64,7 +60,7 @@ export function adminUserRoutes(db, config, hub) {
     res.json({ ok: true, users: listUsers(db, { search }) });
   });
 
-  router.post('/:id/role', allow('admin'), (req, res) => {
+  router.post('/:id/role', allow('admin'), loadTarget, (req, res) => {
     const input = validBody(req, res, {
       role: (v) => (ROLES.includes(v) ? null : `Role must be one of: ${ROLES.join(', ')}.`),
     });
@@ -76,7 +72,7 @@ export function adminUserRoutes(db, config, hub) {
     res.json({ ok: true });
   });
 
-  router.post('/:id/can-start-games', allow('admin'), (req, res) => {
+  router.post('/:id/can-start-games', allow('admin'), loadTarget, (req, res) => {
     const input = validBody(req, res, { value: isBoolean('value') });
     if (!input) return;
     setCanStartGames(db, req.target, input.value);
@@ -89,7 +85,7 @@ export function adminUserRoutes(db, config, hub) {
     res.json({ ok: true });
   });
 
-  router.post('/:id/lock', allow('admin'), (req, res) => {
+  router.post('/:id/lock', allow('admin'), loadTarget, (req, res) => {
     const input = validBody(req, res, { locked: isBoolean('locked') });
     if (!input) return;
     if (input.locked && req.target.id === req.user.id) {
@@ -109,7 +105,7 @@ export function adminUserRoutes(db, config, hub) {
   });
 
   // The admin chooses the new password and passes it on; it is never logged or audited.
-  router.post('/:id/password', allow('admin'), async (req, res) => {
+  router.post('/:id/password', allow('admin'), loadTarget, async (req, res) => {
     const input = validBody(req, res, { newPassword: validatePassword });
     if (!input) return;
     setPasswordHash(db, req.target.id, await hashPassword(input.newPassword, config.bcryptCost));

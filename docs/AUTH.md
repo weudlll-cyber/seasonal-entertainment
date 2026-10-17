@@ -77,7 +77,11 @@ from the race game's `docs/AUTH.md` are marked _(race game)_.
 Every route's first handler is `allow(level)` with level `public`, `member`, `organiser` or
 `admin` (`server/src/http/access.js`). A guest on a non-public route gets `401`, a too-low role
 `403`. `server/test/access.test.js` walks the real router and **fails if any route lacks the
-declaration** _(race game: route-policy drift test)_. The client hides pages a user cannot use,
+declaration** _(race game: route-policy drift test)_. **Authorisation runs before any lookup:**
+a route's record (`:id`) is loaded by `loadById` (`server/src/http/loadById.js`) as a handler
+after `allow()`, never with `router.param`, so a caller without access gets the same answer for
+an existing and a missing id; `server/test/accessBeforeLookup.test.js` fails on any
+`router.param`. The client hides pages a user cannot use,
 but every decision is made again on the server.
 
 ## CSRF
