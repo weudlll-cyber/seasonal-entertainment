@@ -7,7 +7,7 @@
 //              banner leading staff without 2FA to the setup.
 // ============================================================
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { deriveAccountKeys } from '@seasonal-entertainment/shared/crypto.js';
@@ -78,7 +78,12 @@ describe('2FA setup on the account page', () => {
     });
     renderAt('/account');
     const start = await screen.findByRole('button', { name: 'Set up two-factor authentication' });
-    type('Password', 'correct-horse-1');
+    // The 2FA form's own field: the page's "Private messages" section has a password field too
+    // (shown once the key state is known; waited for, so this never depends on timing).
+    await screen.findByRole('button', { name: 'Unlock private messages' });
+    fireEvent.change(within(start.closest('form')).getByLabelText('Password'), {
+      target: { value: 'correct-horse-1' },
+    });
     fireEvent.click(start);
     expect(await screen.findByAltText('QR code for your authenticator app')).toHaveAttribute(
       'src',
