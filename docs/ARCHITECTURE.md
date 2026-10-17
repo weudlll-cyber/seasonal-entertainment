@@ -37,11 +37,12 @@ roles and the bootstrap are described in [AUTH.md](AUTH.md).
 
 The race game uses 5173 and 4173; this project stays clear of them.
 
-| Port | What                                                     |
-| ---- | -------------------------------------------------------- |
-| 3800 | Server (`npm start`, and the API behind `npm run dev`)   |
-| 5380 | Vite dev server (`npm run dev`), forwards `/api` to 3800 |
-| 3810 | Server started by the Playwright browser tests           |
+| Port | What                                                               |
+| ---- | ------------------------------------------------------------------ |
+| 3800 | Server (`npm start`, and the API behind `npm run dev`)             |
+| 5380 | Vite dev server (`npm run dev`), forwards `/api` and `/ws` to 3800 |
+| 3810 | Server started by the Playwright browser tests                     |
+| 5390 | Vite dev server in front of 3810 during the browser tests          |
 
 ## Runtime configuration
 
@@ -54,7 +55,7 @@ Read from the environment when the process starts, never baked into a build:
 | `CLIENT_DIST`         | `client/dist`             | folder of the built client the server serves                    |
 | `COMMIT_SHA`          | output of `git rev-parse` | commit reported by `/api/health`                                |
 | `CLIENT_PORT`         | `5380`                    | Vite dev server port                                            |
-| `API_ORIGIN`          | `http://127.0.0.1:3800`   | where the Vite dev server forwards `/api`                       |
+| `API_ORIGIN`          | `http://127.0.0.1:3800`   | where the Vite dev server forwards `/api` and `/ws`             |
 | `NODE_ENV`            | (unset)                   | `production`: Secure cookies, secret required                   |
 | `DATABASE_PATH`       | `data/seasonal.db`        | SQLite file                                                     |
 | `SESSION_SECRET`      | random per start (dev)    | signs session cookies; required in production                   |
@@ -75,7 +76,10 @@ The client only ever calls relative URLs (`/api/...`), so the same build works o
 ## How it runs
 
 - **Development** (`npm run dev`): Vite on 5380 serves the client with hot reload and forwards
-  `/api` to the server on 3800, which restarts on file changes.
+  `/api` and `/ws` to the server on 3800, which restarts on file changes. The proxy passes the
+  browser's `Host` header on unchanged (`changeOrigin: false`), so the CSRF and WebSocket origin
+  checks compare against `http://localhost:5380`, the origin the browser really sends; no
+  development exception exists in those checks. `client/e2e/devProxy.spec.js` guards this path.
 - **Production** (`npm run build`, then `npm start`): one Node process. Express answers `/api`
   and serves `client/dist` as static files; any other GET returns `index.html`, so deep links
   such as `/events` reach the client router. Unknown `/api` paths stay JSON 404s.

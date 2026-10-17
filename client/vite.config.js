@@ -18,11 +18,14 @@ export default defineConfig({
   server: {
     port: devPort,
     strictPort: true,
-    // The browser calls /api and /ws on its own origin; in dev Vite forwards them.
+    // The browser calls /api and /ws on its own origin; in dev Vite forwards them. The
+    // browser's Host header is passed on unchanged (changeOrigin: false; the string shorthand
+    // would rewrite it to the API port), so the server's CSRF and WebSocket origin checks see
+    // the same origin the browser sends, exactly as without a proxy.
     proxy: {
-      '/api': apiOrigin,
+      '/api': { target: apiOrigin, changeOrigin: false },
       // The chat WebSocket, forwarded as a WebSocket.
-      '/ws': { target: apiOrigin, ws: true },
+      '/ws': { target: apiOrigin, changeOrigin: false, ws: true },
     },
   },
   test: {
