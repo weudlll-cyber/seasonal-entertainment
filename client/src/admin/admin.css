@@ -59,3 +59,14 @@
   border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius);
 }
+
+.admin-media-pack {
+  margin-top: var(--space-3);
+}
+
+.admin-media-thumb {
+  display: block;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}

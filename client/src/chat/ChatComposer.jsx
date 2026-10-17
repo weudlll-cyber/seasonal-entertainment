@@ -3,14 +3,16 @@
 // Path:        client/src/chat/ChatComposer.jsx
 // Project:     Seasonal Entertainment
 // Description: Where a visitor writes in a room: the guest note, the message field, the picker
-//              (emojis go into the text at the cursor) and Send. The page does the sending.
+//              (emojis go into the text at the cursor; a member's sticker or GIF is sent at
+//              once) and Send. The page does the sending.
 // ============================================================
 
 import { useRef, useState } from 'react';
 import { MESSAGE_MAX } from '@seasonal-entertainment/shared/chatRules.js';
 import ChatPicker from './ChatPicker.jsx';
 
-// onSend(body) resolves true when the message went out (the field is then cleared).
+// onSend(payload) resolves true when the message went out: { body } for text (the field is
+// then cleared), { kind, itemId } for a sticker or GIF.
 export default function ChatComposer({ user, guestName, onSend }) {
   const [draft, setDraft] = useState('');
   const field = useRef(null);
@@ -30,7 +32,7 @@ export default function ChatComposer({ user, guestName, onSend }) {
 
   async function submit(event) {
     event.preventDefault();
-    if (await onSend(draft)) setDraft('');
+    if (await onSend({ body: draft })) setDraft('');
   }
 
   return (
@@ -53,7 +55,11 @@ export default function ChatComposer({ user, guestName, onSend }) {
         />
       </label>
       <div className="chat-composer__actions">
-        <ChatPicker onEmoji={insertEmoji} />
+        <ChatPicker
+          member={Boolean(user)}
+          onEmoji={insertEmoji}
+          onMedia={(kind, item) => onSend({ kind, itemId: item.id })}
+        />
         <button className="button" type="submit" disabled={!draft.trim()}>
           Send
         </button>

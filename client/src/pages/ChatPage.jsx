@@ -59,13 +59,13 @@ export default function ChatPage() {
     }
   });
 
-  // true when sent, so the composer clears its field.
-  async function send(body) {
+  // payload: { body } or { kind, itemId }. true when sent, so the composer clears its field.
+  async function send(payload) {
     setError(null);
     try {
       const { message } = await api(`/chat/rooms/${room}/messages`, {
         method: 'POST',
-        body: { body },
+        body: payload,
       });
       setMessages((list) => (list.some((m) => m.id === message.id) ? list : [...list, message]));
       if (!user && !info.me.guestName) setVersion((v) => v + 1);

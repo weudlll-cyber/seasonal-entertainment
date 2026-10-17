@@ -25,6 +25,7 @@ export function makeTestApp(overrides = {}) {
   const config = {
     ...base,
     databasePath: path.join(dir, 'test.db'),
+    mediaDir: path.join(dir, 'media'),
     clientDist: path.join(dir, 'no-client'),
     publicOrigin: ORIGIN,
     backgroundJobs: false,

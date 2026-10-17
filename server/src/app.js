@@ -25,6 +25,9 @@ import { gameRoutes } from './games/routes.js';
 import { allow } from './http/access.js';
 import { adminInfoRoutes } from './info/adminRoutes.js';
 import { infoRoutes } from './info/routes.js';
+import { adminMediaRoutes } from './media/adminRoutes.js';
+import { MEDIA_URL_PREFIX } from './media/files.js';
+import { mediaRoutes } from './media/routes.js';
 import { csrfGuard } from './http/csrf.js';
 import { errorHandler, sendError } from './http/errors.js';
 import { securityHeaders } from './http/securityHeaders.js';
@@ -69,10 +72,21 @@ export function createApp({ buildInfo, config, db }) {
   api.use('/chat', chatRoutes(db, config, hub));
   api.use('/chat', chatModerationRoutes(db, hub));
   api.use('/admin/chat/rooms', adminChatRoomRoutes(db));
+  api.use('/chat', mediaRoutes(db));
+  api.use('/admin/chat/media', adminMediaRoutes(db, config));
 
   // Unknown API paths answer JSON, never the HTML page.
   api.use((_req, res) => sendError(res, 404, 'not_found', 'No such API endpoint.'));
   app.use('/api', api);
+
+  // Chat media from this origin. File names are generated and never reused (immutable cache);
+  // the type follows the checked extension, helmet adds nosniff. Missing files answer 404,
+  // never the client page.
+  app.use(
+    MEDIA_URL_PREFIX,
+    express.static(config.mediaDir, { immutable: true, maxAge: '365d', index: false }),
+    (_req, res) => res.status(404).end()
+  );
 
   // One process in production: the same server hands out the built client.
   if (existsSync(config.clientDist)) {

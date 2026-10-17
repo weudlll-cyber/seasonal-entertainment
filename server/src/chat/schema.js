@@ -5,7 +5,9 @@
 // Description: Chat tables: rooms (who may read/write; guests write only where guest_writable
 //              is set), messages (author is an account or a guest; hidden by moderators),
 //              reports, sanctions (mute with an end, ban without) and guest names (unique while
-//              held; released by the retention job). migrateChat() brings older databases up.
+//              held; released by the retention job). A message is text, or a sticker / GIF
+//              from the media library (media/schema.js). migrateChat() brings older databases
+//              up.
 // ============================================================
 
 export const CHAT_SCHEMA = `
@@ -29,7 +31,9 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   author_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   author_guest   TEXT,
   author_name    TEXT    NOT NULL,
+  kind           TEXT    NOT NULL DEFAULT 'text' CHECK (kind IN ('text', 'sticker', 'gif')),
   body           TEXT    NOT NULL,
+  media_item_id  INTEGER REFERENCES media_items(id) ON DELETE SET NULL,
   created_at     TEXT    NOT NULL,
   hidden_at      TEXT,
   hidden_by      TEXT
@@ -56,15 +60,31 @@ CREATE TABLE IF NOT EXISTS chat_sanctions (
 );
 `;
 
-// Databases created before the guest_writable column get it here. Rooms everyone could write
-// in until now (General) stay guest-writable, so nothing changes for guests that day.
+// Columns added after a table was first created; CREATE IF NOT EXISTS skips them.
+const ADDED_COLUMNS = [
+  [
+    'chat_rooms',
+    'guest_writable',
+    'INTEGER NOT NULL DEFAULT 0 CHECK (guest_writable IN (0, 1))',
+    // Rooms everyone could write in until then (General) stay guest-writable.
+    `UPDATE chat_rooms SET guest_writable = 1
+     WHERE read_access = 'everyone' AND write_access = 'everyone'`,
+  ],
+  [
+    'chat_messages',
+    'kind',
+    "TEXT NOT NULL DEFAULT 'text' CHECK (kind IN ('text', 'sticker', 'gif'))",
+  ],
+  ['chat_messages', 'media_item_id', 'INTEGER REFERENCES media_items(id) ON DELETE SET NULL'],
+];
+
 export function migrateChat(db) {
-  const columns = db.prepare('PRAGMA table_info(chat_rooms)').all();
-  if (columns.some((c) => c.name === 'guest_writable')) return;
-  db.transaction(() => {
-    db.exec(`ALTER TABLE chat_rooms ADD COLUMN guest_writable INTEGER NOT NULL DEFAULT 0
-             CHECK (guest_writable IN (0, 1))`);
-    db.exec(`UPDATE chat_rooms SET guest_writable = 1
-             WHERE read_access = 'everyone' AND write_access = 'everyone'`);
-  })();
+  for (const [table, column, definition, afterwards] of ADDED_COLUMNS) {
+    const columns = db.prepare(`PRAGMA table_info(${table})`).all();
+    if (columns.some((c) => c.name === column)) continue;
+    db.transaction(() => {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+      if (afterwards) db.exec(afterwards);
+    })();
+  }
 }

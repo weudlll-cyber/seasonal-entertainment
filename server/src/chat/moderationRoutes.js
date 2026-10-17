@@ -17,14 +17,12 @@ import { allow } from '../http/access.js';
 import { loadById } from '../http/loadById.js';
 import { sendError } from '../http/errors.js';
 import { required, validBody } from '../http/validate.js';
+import { findMessage, hideMessage, listReported } from './messages.js';
 import {
   addSanction,
-  findMessage,
   findRoom,
-  hideMessage,
   liftSanction,
   listActiveSanctions,
-  listReported,
   listRooms,
   saveRoom,
 } from './store.js';

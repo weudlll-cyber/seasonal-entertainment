@@ -43,6 +43,8 @@ export default defineConfig({
         HOST: '127.0.0.1',
         PORT: String(port),
         DATABASE_PATH: path.join(process.env.SE_E2E_DIR, 'e2e.db'),
+        // The starter stickers and GIFs are copied here on start (first-start seed).
+        MEDIA_DIR: path.join(process.env.SE_E2E_DIR, 'media'),
         SESSION_SECRET: 'e2e-session-secret',
         // A token only test runs know: the admin spec creates its admin through the real
         // bootstrap route. Not a secret: it only ever unlocks this throw-away database.

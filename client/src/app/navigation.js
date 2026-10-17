@@ -27,5 +27,6 @@ export const ADMIN_NAV = [
   { to: '/admin/events', label: 'Events' },
   { to: '/admin/games', label: 'Games' },
   { to: '/admin/chat', label: 'Chat' },
+  { to: '/admin/chat-media', label: 'Chat media' },
   { to: '/admin/audit', label: 'Audit log' },
 ];

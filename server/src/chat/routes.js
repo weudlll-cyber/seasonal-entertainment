@@ -3,26 +3,24 @@
 // Path:        server/src/chat/routes.js
 // Project:     Seasonal Entertainment
 // Description: /api/chat for everyone (guests included): the rooms this viewer may read,
-//              a room's recent messages, sending (room write access, length, no links from
-//              guests, mute/ban, per-sender rate limit, per-IP limits for guests; a guest gets
+//              a room's recent messages, sending (room write access, what may be sent:
+//              messageInput.js; mute/ban, per-sender rate limit, per-IP limits for guests; a guest gets
 //              a unique guest name on the first message or report), and reporting a message.
 //              New messages are pushed live.
 // ============================================================
 
 import express from 'express';
-import { containsLink, validateMessage } from '@seasonal-entertainment/shared/chatRules.js';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
+import { addMessage, findMessage, listMessages } from './messages.js';
+import { readMessageInput } from './messageInput.js';
 import { makeSenderLimit } from './senderLimit.js';
 import {
   activeSanction,
-  addMessage,
   assignGuestName,
-  findMessage,
   findRoom,
   findRoomBySlug,
-  listMessages,
   listRooms,
   reportMessage,
   touchGuest,
@@ -106,17 +104,8 @@ export function chatRoutes(db, config, hub) {
       if (!canWrite(req.room, viewer)) {
         return sendError(res, 403, 'read_only', 'You cannot write in this room.');
       }
-      const body = typeof req.body?.body === 'string' ? req.body.body.trim() : req.body?.body;
-      const problem = validateMessage(body);
-      if (problem) return sendError(res, 400, 'invalid_input', problem);
-      if (!viewer.user && containsLink(body)) {
-        return sendError(
-          res,
-          400,
-          'links_not_allowed',
-          'Guests cannot post links. Register to share links.'
-        );
-      }
+      const input = readMessageInput(req, res, db, viewer);
+      if (!input) return;
       const sanction = activeSanction(db, viewer);
       if (sanction) {
         const until = sanction.until
@@ -134,7 +123,8 @@ export function chatRoutes(db, config, hub) {
       if (!allowMessage(senderKey, !viewer.user)) {
         return sendError(res, 429, 'too_many_messages', 'You are sending messages too fast.');
       }
-      const message = addMessage(db, req.room, viewer, body);
+      // Stickers and GIFs count like text towards the sender's rate limit.
+      const message = addMessage(db, req.room, viewer, input);
       // Internal ids stay on the server; readers get only what the room shows.
       const { roomId, authorUserId, authorGuest, ...visible } = message;
       hub.broadcast(req.room.id, { type: 'message', message: visible });

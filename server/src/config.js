@@ -75,6 +75,13 @@ export function readConfig(env = process.env) {
     // Built client served in production; missing folder simply means "API only".
     clientDist: path.resolve(env.CLIENT_DIST ?? path.join(repoRoot, 'client', 'dist')),
     databasePath: path.resolve(env.DATABASE_PATH ?? path.join(repoRoot, 'data', 'seasonal.db')),
+    // Chat media files (library and link-preview images), served at /media.
+    mediaDir: path.resolve(env.MEDIA_DIR ?? path.join(repoRoot, 'data', 'media')),
+    // Library upload limits per pack kind (decided 2026-10-17).
+    media: {
+      sticker: { maxBytes: 512 * 1024, maxSide: 1024 },
+      gif: { maxBytes: 3 * 1024 * 1024, maxSide: 640 },
+    },
     // The site's own origin (https://...), used by the CSRF and WebSocket origin checks.
     // Without it, the request's own Host header is taken: right locally, wrong behind a proxy.
     publicOrigin: env.PUBLIC_ORIGIN || null,

@@ -9,6 +9,7 @@
 
 import { Navigate, Route, Routes } from 'react-router';
 import AdminAuditPage from '../admin/AdminAuditPage.jsx';
+import AdminChatMediaPage from '../admin/AdminChatMediaPage.jsx';
 import AdminChatPage from '../admin/AdminChatPage.jsx';
 import AdminEventsPage from '../admin/AdminEventsPage.jsx';
 import AdminGamesPage from '../admin/AdminGamesPage.jsx';
@@ -66,6 +67,7 @@ export default function App() {
             <Route path="events" element={<AdminEventsPage />} />
             <Route path="games" element={<AdminGamesPage />} />
             <Route path="chat" element={<AdminChatPage />} />
+            <Route path="chat-media" element={<AdminChatMediaPage />} />
             <Route path="audit" element={<AdminAuditPage />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />

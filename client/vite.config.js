@@ -24,6 +24,8 @@ export default defineConfig({
     // the same origin the browser sends, exactly as without a proxy.
     proxy: {
       '/api': { target: apiOrigin, changeOrigin: false },
+      // Chat stickers, GIFs and preview images.
+      '/media': { target: apiOrigin, changeOrigin: false },
       // The chat WebSocket, forwarded as a WebSocket.
       '/ws': { target: apiOrigin, changeOrigin: false, ws: true },
     },

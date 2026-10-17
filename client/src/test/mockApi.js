@@ -15,7 +15,8 @@ export function mockApi(answers) {
     'fetch',
     vi.fn(async (url, init = {}) => {
       const key = `${init.method ?? 'GET'} ${url.replace(/^\/api/, '')}`;
-      const sent = init.body ? JSON.parse(init.body) : undefined;
+      // JSON bodies are parsed; a file (upload) is passed through as it is.
+      const sent = typeof init.body === 'string' ? JSON.parse(init.body) : init.body;
       calls.push({ key, body: sent });
       const answer = answers[key];
       if (!answer) throw new Error(`unexpected API call ${key}`);

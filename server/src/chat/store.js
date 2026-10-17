@@ -2,8 +2,8 @@
 // File:        store.js
 // Path:        server/src/chat/store.js
 // Project:     Seasonal Entertainment
-// Description: Data access for the chat: rooms, messages (visible / hidden), guest names
-//              (unique while held), reports and sanctions.
+// Description: Data access for the chat: rooms, guest names (unique while held), reports and
+//              sanctions. Messages: messages.js.
 // ============================================================
 
 import { randomBytes } from 'node:crypto';
@@ -13,11 +13,7 @@ import { base32Encode } from '../twofa/totp.js';
 const now = () => new Date().toISOString();
 const ROOM_COLUMNS = `id, slug, name, read_access AS readAccess, write_access AS writeAccess,
   guest_writable AS guestWritable, position`;
-const MESSAGE_COLUMNS = `m.id, r.slug AS room, m.author_name AS author,
-  (m.author_guest IS NOT NULL) AS isGuest, m.body, m.created_at AS createdAt,
-  m.hidden_at AS hiddenAt, m.hidden_by AS hiddenBy`;
 
-const toMessage = (row) => row && { ...row, isGuest: row.isGuest === 1 };
 const toRoom = (row) => row && { ...row, guestWritable: row.guestWritable === 1 };
 
 // --- rooms ---------------------------------------------------------------------------
@@ -60,50 +56,6 @@ export function saveRoom(db, room, id) {
   return findRoom(db, id);
 }
 
-// --- messages ------------------------------------------------------------------------
-export function addMessage(db, room, { user, guest }, body) {
-  const { lastInsertRowid } = db
-    .prepare(
-      `INSERT INTO chat_messages (room_id, author_user_id, author_guest, author_name, body, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`
-    )
-    .run(room.id, user?.id ?? null, guest?.id ?? null, user?.username ?? guest.name, body, now());
-  return findMessage(db, Number(lastInsertRowid));
-}
-
-export function findMessage(db, id) {
-  return toMessage(
-    db
-      .prepare(
-        `SELECT ${MESSAGE_COLUMNS}, m.room_id AS roomId, m.author_user_id AS authorUserId,
-                m.author_guest AS authorGuest
-         FROM chat_messages m JOIN chat_rooms r ON r.id = m.room_id WHERE m.id = ?`
-      )
-      .get(id)
-  );
-}
-
-// The newest `limit` messages, oldest first. Hidden ones only for moderators.
-export function listMessages(db, room, { includeHidden = false, limit = 100 } = {}) {
-  return db
-    .prepare(
-      `SELECT * FROM (
-         SELECT ${MESSAGE_COLUMNS} FROM chat_messages m JOIN chat_rooms r ON r.id = m.room_id
-         WHERE m.room_id = ? AND (? OR m.hidden_at IS NULL) ORDER BY m.id DESC LIMIT ?
-       ) ORDER BY id`
-    )
-    .all(room.id, includeHidden ? 1 : 0, limit)
-    .map(toMessage);
-}
-
-export function hideMessage(db, id, moderator) {
-  db.prepare('UPDATE chat_messages SET hidden_at = ?, hidden_by = ? WHERE id = ?').run(
-    now(),
-    moderator,
-    id
-  );
-}
-
 // --- guests --------------------------------------------------------------------------
 // Six base32 characters (a-z, 2-7): about a billion names, so running out is impossible in
 // practice while names are released after 30 days unused and new ones are limited per IP.
@@ -133,18 +85,6 @@ export function reportMessage(db, messageId, reporter) {
   db.prepare(
     'INSERT OR IGNORE INTO chat_reports (message_id, reporter, created_at) VALUES (?, ?, ?)'
   ).run(messageId, reporter, now());
-}
-
-export function listReported(db) {
-  return db
-    .prepare(
-      `SELECT ${MESSAGE_COLUMNS}, COUNT(c.id) AS reports
-       FROM chat_reports c JOIN chat_messages m ON m.id = c.message_id
-       JOIN chat_rooms r ON r.id = m.room_id
-       WHERE m.hidden_at IS NULL GROUP BY m.id ORDER BY MAX(c.id) DESC`
-    )
-    .all()
-    .map(toMessage);
 }
 
 // --- sanctions -----------------------------------------------------------------------

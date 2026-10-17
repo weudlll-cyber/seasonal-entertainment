@@ -67,6 +67,7 @@ Read from the environment when the process starts, never baked into a build:
 | `BCRYPT_COST`         | `12`                                          | password hashing cost (4–15)                                    |
 | `REQUIRE_STAFF_2FA`   | `true`                                        | organisers/admins must use 2FA; `false` only outside production |
 | `CHAT_RETENTION_DAYS` | `90`                                          | chat messages older than this are deleted                       |
+| `MEDIA_DIR`           | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`      |
 
 The server loads `.env` from the repository root if present; real environment variables win.
 `.env.example` lists every key by name.
@@ -187,6 +188,29 @@ password change and turning 2FA on or off close the account's other sockets at o
   emojis with English names (`client/src/chat/emojis.js`), chosen 2026-10-17 over a picker
   library: no dependency, no emoji data download, nothing from a CDN, so the strict CSP stays.
   Bundle cost: +4.7 kB JavaScript (+1.9 kB gzip) and +0.8 kB CSS (+0.15 kB gzip).
+- **Stickers and GIFs** (decided 2026-10-17) come only from the site's **own library**, managed
+  by admins at `/admin/chat-media`; no outside GIF service. **Members only**: guests write text
+  and emojis, and their picker shows just an Emoji tab with "Log in to send stickers and GIFs".
+  A sticker/GIF message names a library item **by id**, never a URL; the server accepts it only
+  from a member, for an active item in an active pack of that kind, where the room allows
+  writing, and it counts towards the sender's rate limit (`server/src/chat/messageInput.js`).
+  If the item or its pack is later deactivated or deleted, old messages show "Media removed".
+  Stickers show at 128 px, GIFs at most 240 px wide; every image has alt text, and a credit shows
+  on hover or a tap.
+- **The library** (`server/src/media/`): tables `media_packs` (name, kind sticker|gif, order,
+  active) and `media_items` (pack, name, alt text, credit, file, type, size, active). Uploads are
+  admin-only (with 2FA) and checked by **one validator** (`imageCheck.js`, also used for link
+  preview images): the real type from the first bytes (never the name or the claimed type),
+  the header readable and the first frame fully decodable by sharp, and per-kind limits from
+  `config.media` — stickers WebP or PNG, at most 512 KB and 1024 px per side; GIF packs GIF or
+  animated WebP, at most 3 MB and 640 px per side. Files are stored in `MEDIA_DIR` (default
+  `data/media`, gitignored) under generated names (`<32 hex>.<ext>`) and served from this origin
+  at `/media/...` with their type, `nosniff` and a one-year immutable cache; a missing file is a
+  404, never the client page. Every library change is audited.
+- **Starter pack**: on first start (empty library) `server/src/media/seed.js` turns
+  `server/seeds/chat-media/` (made from the owner's own files; sources and credits in its README)
+  into four packs: Stickers "Seasons", "Coins" (the silver coins credited to Foxeane),
+  "Seasonal Tokens", and GIFs "Seasonal Tokens".
 - **Moderation** (organisers and admins, with 2FA): hide a message (gone for everyone else at
   once, still visible to moderators), mute its author for 10 minutes, 1 hour or 1 day, ban
   them from writing, lift a mute or ban, see reported messages. Staff cannot be muted or banned.
@@ -238,8 +262,12 @@ server/
   src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md)
   src/events/              events: schema, store, public and admin routes, seed
   src/games/               games hub: schema, store, public and admin routes, seed
-  src/chat/                chat: schema, store, viewer rules, routes, moderation, WebSocket
-                           endpoint (socket.js) and hub, sender rate limit, retention, seed
+  src/chat/                chat: schema, store, messages and what may be sent, viewer rules,
+                           routes, moderation, WebSocket endpoint (socket.js) and hub, sender
+                           rate limit, retention, seed
+  src/media/               chat media library: schema, store, image validator, files on disk,
+                           picker and admin routes, first-start seed
+  seeds/chat-media/        the starter stickers and GIFs (owner's own files, README credits)
   test/helpers/testApp.js  app on a temporary database for tests (chat.js: chat helpers,
                            chatSocket.js: a listening server and WebSocket clients)
   src/config.js            environment configuration

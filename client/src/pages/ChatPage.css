@@ -68,6 +68,36 @@
   overflow-wrap: anywhere;
 }
 
+.chat-message__media {
+  margin: 0.25rem 0;
+}
+
+/* Stickers at one fixed size; GIFs at most 240 px wide, never wider than the column. */
+.chat-media--sticker {
+  width: 128px;
+  height: 128px;
+  object-fit: contain;
+}
+
+.chat-media--gif {
+  width: auto;
+  max-width: min(240px, 100%);
+  height: auto;
+}
+
+.chat-media__toggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.chat-message__removed {
+  margin: 0.25rem 0;
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
 .chat-message__actions {
   display: flex;
   flex-wrap: wrap;
