@@ -256,9 +256,30 @@ password change and turning 2FA on or off close the account's other sockets at o
   them from writing, lift a mute or ban, see reported messages. Staff cannot be muted or banned.
   Every action is audited. Anyone may report a message, counted once per account or guest; no
   IP address is stored.
-- **Retention**: messages older than `CHAT_RETENTION_DAYS` (default 90) are deleted, and guest
+- **File uploads** (decided 2026-10-17, `server/src/uploads/`): members (not guests) attach one
+  image (JPG, PNG, WebP, GIF) or PDF to a message with **Attach file**. The file is uploaded
+  first (`POST /api/chat/uploads`, raw body, name in the query) and sent with the message as
+  `{ type: 'file', uploadId }` — only the uploader's own, not yet sent upload. The real type
+  comes from the content (the media validator; PDF by its `%PDF-` signature); at most 10 MB per
+  file and 50 MB per member per 24 hours (`config.uploads`), 10 uploads a minute
+  (`rateLimits.chatUpload`). Images are re-encoded: turned upright by their orientation tag,
+  every metadata block (EXIF with GPS, XMP, comments) dropped, animation kept, plus a
+  thumbnail at most 480 px wide. Files sit in `MEDIA_DIR/uploads/` under generated names; the
+  original name survives only as cleaned-up display text (100 characters).
+- **Uploaded files are not public.** The public `/media` mount serves only exact library and
+  preview names, never `uploads/`. Files come from `GET /api/chat/files/<id>/<thumb|full|
+download>`, which applies the chat's own rule every time: the viewer must be able to read the
+  message's room; a hidden message's file goes to moderators only; a file not yet sent goes to
+  its uploader only; anything else is the same 404 as an unknown file (`Cache-Control: private,
+no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosniff` and
+  `Content-Security-Policy: default-src 'none'; sandbox`; the site never shows them itself.
+  Moderators' **Remove file** deletes the files from disk and leaves "File removed" (audited,
+  `chat.file_remove`). Reported messages keep their file.
+- **Retention**: messages older than `CHAT_RETENTION_DAYS` (default 90) are deleted with their
+  uploaded files, files whose message was removed in any other way and uploads never sent
+  within an hour go too (no orphans), unused link previews after the cache time, and guest
   names unused for 30 days are released, at start and every six hours
-  (`server/src/chat/retention.js`).
+  (`server/src/chat/retention.js`, `runChatRetention`).
 
 ## Security headers
 
@@ -313,6 +334,8 @@ server/
                            picker and admin routes, first-start seed
   src/previews/            chat link previews: safe fetching (SSRF rules), meta parsing, cache,
                            the preview service, moderators' removal route
+  src/uploads/             chat file uploads: schema, store, processing (type, metadata,
+                           thumbnails), access-checked serving, moderators' removal
   seeds/chat-media/        the starter stickers and GIFs (owner's own files, README credits)
   test/helpers/testApp.js  app on a temporary database for tests (chat.js: chat helpers,
                            chatSocket.js: a listening server and WebSocket clients)

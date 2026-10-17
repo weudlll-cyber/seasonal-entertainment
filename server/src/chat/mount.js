@@ -3,7 +3,8 @@
 // Path:        server/src/chat/mount.js
 // Project:     Seasonal Entertainment
 // Description: The whole chat area behind one call: rooms and messages, moderation, the
-//              sticker/GIF library, link previews, the live WebSocket and the retention job.
+//              sticker/GIF library, link previews, members' file uploads, the live WebSocket
+//              and the retention job.
 //              The rest of the server knows only mountChat() and the handle it returns
 //              (docs/CHAT.md, "Server interface").
 // ============================================================
@@ -15,12 +16,16 @@ import { mediaRoutes } from '../media/routes.js';
 import { seedChatMedia } from '../media/seed.js';
 import { previewModerationRoutes } from '../previews/routes.js';
 import { createPreviewService } from '../previews/service.js';
+import { uploadRoutes } from '../uploads/routes.js';
 import { ChatHub } from './hub.js';
 import { adminChatRoomRoutes, chatModerationRoutes } from './moderationRoutes.js';
 import { startChatRetention } from './retention.js';
 import { chatRoutes } from './routes.js';
 import { seedChatRooms } from './seed.js';
 import { attachChatSocket } from './socket.js';
+
+// Public media file names: <32 hex>.<ext> at the top (library) or in previews/.
+const PUBLIC_MEDIA = /^\/(?:previews\/)?[0-9a-f]{32}\.(?:webp|png|gif|jpg)$/;
 
 // app: the Express app (chat media files are served at /media); api: the /api router, after
 // sessions, current user and the 2FA gate; sessionParser: the session middleware, reused on
@@ -34,14 +39,17 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork 
   api.use('/chat', previewModerationRoutes(db, hub));
   api.use('/chat', chatModerationRoutes(db, hub));
   api.use('/chat', mediaRoutes(db));
+  api.use('/chat', uploadRoutes(db, config, hub));
   api.use('/admin/chat/rooms', adminChatRoomRoutes(db));
   api.use('/admin/chat/media', adminMediaRoutes(db, config));
 
-  // The sticker/GIF library is public: generated names, never reused (immutable cache); the
-  // type follows the checked extension, helmet adds nosniff. Missing files answer 404, never
-  // the client page.
+  // The sticker/GIF library and preview images are public: generated names, never reused
+  // (immutable cache); the type follows the checked extension, helmet adds nosniff. Only those
+  // exact names are served: members' uploads share the media folder (uploads/) but are never
+  // public, and anything else (other paths, "..", encodings) answers 404, never the client page.
   app.use(
     MEDIA_URL_PREFIX,
+    (req, res, next) => (PUBLIC_MEDIA.test(req.path) ? next() : res.status(404).end()),
     express.static(config.mediaDir, { immutable: true, maxAge: '365d', index: false }),
     (_req, res) => res.status(404).end()
   );

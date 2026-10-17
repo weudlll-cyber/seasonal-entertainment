@@ -5,12 +5,13 @@
 // Description: One chat message: author (with a Guest badge), local time, then its text as
 //              plain text (members' https links become links; guests' never) and its sticker /
 //              GIF from the site's library ("Media removed" once it is gone), a link preview
-//              card (PreviewCard), Report, and for moderators Hide / Mute / Ban / Remove
-//              preview.
+//              card (PreviewCard), an uploaded file (MessageFile), Report, and for
+//              moderators Hide / Mute / Ban / Remove file / Remove preview.
 // ============================================================
 
 import { useState } from 'react';
 import { splitLinks } from '@seasonal-entertainment/shared/chatRules.js';
+import MessageFile from './MessageFile.jsx';
 import PreviewCard from './PreviewCard.jsx';
 import './ChatMessage.css';
 
@@ -78,6 +79,7 @@ export default function ChatMessage({ message, moderator, onAction }) {
       {(message.kind === 'sticker' || message.kind === 'gif') && (
         <MessageMedia kind={message.kind} media={message.media} />
       )}
+      {message.file && <MessageFile file={message.file} />}
       {message.preview && <PreviewCard preview={message.preview} />}
       {message.previewHeld && (
         <p className="chat-note">Preview hidden from others until the reports are reviewed.</p>
@@ -116,6 +118,15 @@ export default function ChatMessage({ message, moderator, onAction }) {
             >
               Ban
             </button>
+            {message.file && !message.file.removed && (
+              <button
+                className="chat-link-button"
+                type="button"
+                onClick={() => onAction('file/remove', message)}
+              >
+                Remove file
+              </button>
+            )}
             {message.preview && (
               <button
                 className="chat-link-button"

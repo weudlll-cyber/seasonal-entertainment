@@ -116,3 +116,35 @@
   font-weight: var(--chat-strong);
   overflow-wrap: anywhere;
 }
+
+/* An uploaded file: an image thumbnail (click: full image), or a PDF card. */
+.se-chat .chat-file {
+  display: inline-flex;
+  margin: 0.25rem 0;
+}
+
+.se-chat .chat-file--image img {
+  display: block;
+  max-width: min(240px, 100%);
+  height: auto;
+  border-radius: var(--chat-radius);
+}
+
+.se-chat .chat-file--pdf {
+  flex-wrap: wrap;
+  gap: var(--chat-space-1);
+  align-items: baseline;
+  padding: var(--chat-space-1);
+  border: 1px solid var(--chat-border);
+  border-radius: var(--chat-radius);
+}
+
+.se-chat .chat-file__name {
+  font-weight: var(--chat-strong);
+  overflow-wrap: anywhere;
+}
+
+.se-chat .chat-file__size {
+  color: var(--chat-muted);
+  font-size: 0.8125rem;
+}

@@ -35,6 +35,10 @@ This list describes what the website's software actually stores.
 - **Chat mutes and bans**: who was muted or banned, by whom, and until when.
 - **Stickers and GIFs in the chat** come from this site's own library, managed by its admins. No
   outside GIF or sticker service is contacted.
+- **Files in the chat**: members (not guests) can send images (JPG, PNG, WebP, GIF) and PDF
+  files. Images are stored without their hidden metadata, such as camera details and GPS
+  location. A file is deleted together with its message, after the chat retention period
+  (90 days).
 - **Link previews in the chat**: when a member posts an https link, this site's server fetches
   that page once and stores its title, description, site name and a scaled-down copy of its
   image, which are shown with the message. Your browser loads nothing from the linked site for

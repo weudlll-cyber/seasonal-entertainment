@@ -39,7 +39,10 @@ of the module other than `index.js`.
   panel leaves (a panel that comes straight back reuses it).
 - **The composer** writes one message at a time: optional text plus at most one attachment. A
   sticker or GIF from the picker is shown small above the field with an ×; Send sends both
-  together (`{ body, attachment }` to `POST /api/chat/rooms/<room>/messages`).
+  together (`{ body, attachment }` to `POST /api/chat/rooms/<room>/messages`). Members also
+  get **Attach file** (images and PDFs): the file is uploaded first (`POST /api/chat/uploads`)
+  and then sent like any attachment; uploaded files are fetched only through the access-checked
+  `/api/chat/files/...` (ARCHITECTURE.md, "Chat").
 - **No page paths or layout assumptions** inside the module: it calls the API and the WebSocket on
   the page's own origin (`/api/chat/...`, `/ws/chat`, `/media/...`) and fits the width it is given.
 - **Test-only page** `/test/chat-panels` (two compact panels side by side) is routed by the Vite
@@ -48,8 +51,8 @@ of the module other than `index.js`.
 ## Server: `mountChat()`
 
 `server/src/chat/mount.js` mounts the whole chat area — rooms and messages, moderation, the
-sticker/GIF library (`server/src/media/`), link previews (`server/src/previews/`), the WebSocket
-hub and the retention job:
+sticker/GIF library (`server/src/media/`), link previews (`server/src/previews/`), members' file
+uploads (`server/src/uploads/`), the WebSocket hub and the retention job:
 
 ```js
 const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork });

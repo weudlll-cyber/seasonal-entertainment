@@ -3,8 +3,9 @@
 // Path:        client/src/chat/useChatRoom.js
 // Project:     Seasonal Entertainment
 // Description: A chat panel's state: the rooms this viewer may read, the current room's
-//              messages (loaded, then kept live through the shared connection), sending, and
-//              per-message actions (report, moderation). Reloads when the account changes.
+//              messages (loaded once the account is known, then kept live through the shared
+//              connection), sending, and per-message actions (report, moderation). Reloads
+//              when the account changes.
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
@@ -17,6 +18,7 @@ const ACTION_DONE = {
   mute: 'Author muted.',
   ban: 'Author banned from the chat.',
   'preview/remove': 'Preview removed.',
+  'file/remove': 'File removed.',
 };
 
 // A pushed event applied to the message list. moderator: hidden messages and held-back
@@ -34,6 +36,8 @@ export function applyEvent(list, event, moderator) {
       return update({ preview: null });
     case 'previewHidden':
       return moderator ? list : update({ preview: null });
+    case 'fileRemoved':
+      return update({ file: { removed: true } });
     default:
       return list;
   }
@@ -48,20 +52,25 @@ export function useChatRoom(initialRoom, user) {
   const [version, setVersion] = useState(0); // bumped to reload rooms (e.g. new guest name)
   const moderator = useRef(false);
   const userId = user?.id;
+  // undefined while the account is still loading: wait, so rooms and messages are fetched once
+  // for the right reader (a second fetch would replace live updates that arrived meanwhile).
+  const known = user !== undefined;
   moderator.current = Boolean(info?.me.moderator);
 
   useEffect(() => {
+    if (!known) return;
     api('/chat/rooms')
       .then(setInfo)
       .catch((err) => setError(err.message));
-  }, [userId, version]);
+  }, [known, userId, version]);
 
   useEffect(() => {
+    if (!known) return;
     setMessages([]);
     api(`/chat/rooms/${room}/messages`)
       .then((data) => setMessages(data.messages))
       .catch((err) => setError(err.message));
-  }, [room, userId]);
+  }, [known, room, userId]);
 
   useEffect(
     () =>
@@ -95,6 +104,9 @@ export function useChatRoom(initialRoom, user) {
       setNotice(ACTION_DONE[action]);
       if (action === 'preview/remove') {
         setMessages((list) => applyEvent(list, { type: 'previewRemoved', id: message.id }));
+      }
+      if (action === 'file/remove') {
+        setMessages((list) => applyEvent(list, { type: 'fileRemoved', id: message.id }));
       }
       if (action === 'hide') {
         setMessages((list) =>

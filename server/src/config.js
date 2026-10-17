@@ -77,6 +77,14 @@ export function readConfig(env = process.env) {
     databasePath: path.resolve(env.DATABASE_PATH ?? path.join(repoRoot, 'data', 'seasonal.db')),
     // Chat media files (library and link-preview images), served at /media.
     mediaDir: path.resolve(env.MEDIA_DIR ?? path.join(repoRoot, 'data', 'media')),
+    // Chat file uploads by members (decided 2026-10-17): images and PDF.
+    uploads: {
+      maxBytes: 10 * 1024 * 1024, // per file
+      dailyBytes: 50 * 1024 * 1024, // per member in 24 hours
+      thumbWidth: 480,
+      pendingMinutes: 60, // uploaded but never sent: deleted after this
+      nameMax: 100, // the original file name, kept as display text only
+    },
     // Library upload limits per pack kind (decided 2026-10-17).
     media: {
       sticker: { maxBytes: 512 * 1024, maxSide: 1024 },
@@ -133,6 +141,7 @@ export function readConfig(env = process.env) {
       // Guests per IP, so clearing cookies does not reset them. In memory, no IP is stored.
       chatGuestPost: { windowMs: 60_000, max: 20 }, // guest messages per IP
       chatNewGuest: { windowMs: 60 * 60_000, max: 20 }, // new guest names per IP
+      chatUpload: { windowMs: 60_000, max: 10 }, // file uploads per member
     },
   };
   if (isProduction) checkProductionDeployment(env, config.publicOrigin);

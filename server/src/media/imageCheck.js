@@ -2,8 +2,9 @@
 // File:        imageCheck.js
 // Path:        server/src/media/imageCheck.js
 // Project:     Seasonal Entertainment
-// Description: The one image validator, for library uploads (stickers, GIFs) and link-preview
-//              images alike: the real type comes from the file's first bytes (never its name),
+// Description: The one file-type check and image validator, for library uploads (stickers,
+//              GIFs), link-preview images and chat file uploads alike: the real type comes from
+//              the file's first bytes (never its name; PDF by its %PDF- signature),
 //              sharp must read its header and fully decode its first frame (a truncated or
 //              damaged file fails), and size, dimensions and animation are checked against the
 //              caller's rules.
@@ -21,15 +22,19 @@ export const IMAGE_TYPES = {
   jpeg: { mime: 'image/jpeg', ext: 'jpg' },
 };
 
+// Every type a file may have: the images above, and PDF (chat uploads only).
+export const FILE_TYPES = { ...IMAGE_TYPES, pdf: { mime: 'application/pdf', ext: 'pdf' } };
+
 const startsWith = (buffer, bytes, offset = 0) =>
   buffer.length >= offset + bytes.length && bytes.every((b, i) => buffer[offset + i] === b);
 const ascii = (text) => [...text].map((c) => c.charCodeAt(0));
 
-export function sniffImageType(buffer) {
+export function sniffFileType(buffer) {
   if (startsWith(buffer, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return 'png';
   if (startsWith(buffer, ascii('GIF87a')) || startsWith(buffer, ascii('GIF89a'))) return 'gif';
   if (startsWith(buffer, ascii('RIFF')) && startsWith(buffer, ascii('WEBP'), 8)) return 'webp';
   if (startsWith(buffer, [0xff, 0xd8, 0xff])) return 'jpeg';
+  if (startsWith(buffer, ascii('%PDF-'))) return 'pdf';
   return null;
 }
 
@@ -49,7 +54,7 @@ export async function checkImage(buffer, rules) {
   if (buffer.length > rules.maxBytes) {
     throw new ImageRejected(`The file is larger than ${Math.round(rules.maxBytes / 1024)} KB.`);
   }
-  const type = sniffImageType(buffer);
+  const type = sniffFileType(buffer);
   if (!type || !rules.types.includes(type)) {
     throw new ImageRejected(`Allowed file types: ${rules.types.join(', ').toUpperCase()}.`);
   }

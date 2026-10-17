@@ -5,6 +5,7 @@
 // Description: Where a visitor writes in a room: the guest note, the message being written
 //              (optional text plus at most one attachment, shown above the field with an ×),
 //              the picker (emojis go into the text at the cursor; a member's sticker or GIF
+//              becomes the attachment), a member's "Attach file" (an uploaded image or PDF
 //              becomes the attachment) and Send, which sends both as one message.
 // ============================================================
 
@@ -12,12 +13,13 @@ import { useRef, useState } from 'react';
 import { MESSAGE_MAX } from '@seasonal-entertainment/shared/chatRules.js';
 import ChatPicker from './ChatPicker.jsx';
 import ComposerAttachment from './ComposerAttachment.jsx';
+import ComposerUpload from './ComposerUpload.jsx';
 
 // onSend(payload) resolves true when the message went out (then text and attachment clear).
-// payload: { body, attachment?: { type, itemId } }.
+// payload: { body, attachment?: { type: 'sticker' | 'gif', itemId } | { type: 'file', uploadId } }.
 export default function ChatComposer({ user, guestName, onSend }) {
   const [draft, setDraft] = useState('');
-  const [attachment, setAttachment] = useState(null); // { type, item }
+  const [attachment, setAttachment] = useState(null); // { type, item } or { type: 'file', upload }
   const field = useRef(null);
 
   // Inserts at the cursor (or replaces the selection), never beyond the length limit, and
@@ -36,7 +38,9 @@ export default function ChatComposer({ user, guestName, onSend }) {
   async function submit(event) {
     event.preventDefault();
     const payload = { body: draft };
-    if (attachment) payload.attachment = { type: attachment.type, itemId: attachment.item.id };
+    if (attachment?.type === 'file')
+      payload.attachment = { type: 'file', uploadId: attachment.upload.id };
+    else if (attachment) payload.attachment = { type: attachment.type, itemId: attachment.item.id };
     if (await onSend(payload)) {
       setDraft('');
       setAttachment(null);
@@ -71,6 +75,9 @@ export default function ChatComposer({ user, guestName, onSend }) {
           onEmoji={insertEmoji}
           onMedia={(type, item) => setAttachment({ type, item })}
         />
+        {user && (
+          <ComposerUpload onUploaded={(upload) => setAttachment({ type: 'file', upload })} />
+        )}
         <button className="chat-button" type="submit" disabled={!draft.trim() && !attachment}>
           Send
         </button>

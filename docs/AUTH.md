@@ -160,7 +160,14 @@ therefore needs 2FA like every staff route. Stickers and GIFs are for members on
 write text and emojis); `GET /api/chat/media` (the picker's library) is a member route, and the
 library itself is managed by admins (with 2FA) at `/api/admin/chat/media`. Removing a link
 preview and marking a message's reports reviewed are organiser/admin routes (with 2FA), like
-the rest of chat moderation. Details: ARCHITECTURE.md, "Chat".
+the rest of chat moderation.
+
+**Chat file uploads** are a member route (`POST /api/chat/uploads`); guests cannot upload or
+attach. **Every request for an uploaded file applies the chat's read rule** (`GET
+/api/chat/files/...`, `server/src/uploads/routes.js`): the viewer must be able to read the room
+of the file's message; a hidden message's file goes to moderators only; a file not yet sent goes
+to its uploader only; otherwise the answer is the same 404 as for an unknown file. "Remove file"
+is an organiser/admin route (with 2FA). Details: ARCHITECTURE.md, "Chat".
 
 ## Tests
 
