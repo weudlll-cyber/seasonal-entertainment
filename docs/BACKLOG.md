@@ -31,7 +31,9 @@ An entry moves from part one to part two only when its branch is merged into `ma
   which also carries PR #3's commits until #3 is merged). Part A: light/dark tokens, theme rule,
   no flash of the wrong theme. Part B: sidebar shell, no page scroll, home bento, full-height
   chat page. Part C: chat button and drawer with a room picker on every page except /chat and
-  /admin. docs/DESIGN.md.
+  /admin. docs/DESIGN.md. Part D closes "ChatPanel keeps guest level after login": on login,
+  logout or an account switch the chat module's shared connection reconnects as the new reader
+  and the rooms and messages reload (docs/CHAT.md).
 - **Unread count for the chat button** — open. The drawer's chat button shows no badge: the chat
   module cannot tell how many messages are new for this reader yet.
 - **Chat embedding in other applications** — open. An embed route, allowed embedding origins

@@ -43,6 +43,12 @@ of the module other than `index.js`.
   receives only its own. The socket reconnects after a drop and closes right after the render
   in which the last panel left (a panel that comes straight back, as under React's StrictMode,
   reuses it).
+- **Account changes** (login, logout, switching account) while a panel stays on the page: the
+  server knows a socket's reader only from the session cookie at connect time, so the panel
+  tells the connection the new account (`connectAs`), which drops the old socket and opens a
+  new one that subscribes every room again; the rooms and the messages are loaded again for
+  the new reader. Without this, a panel opened as a guest kept a guest's connection after
+  logging in (no live events from members-only rooms).
 - **The composer** writes one message at a time: optional text plus at most one attachment. A
   sticker or GIF from the picker is shown small above the field with an ×; Send sends both
   together (`{ body, attachment }` to `POST /api/chat/rooms/<room>/messages`). Members also

@@ -5,7 +5,9 @@
 // Description: The chat module's one live connection per page: however many chat panels a
 //              page shows, they share one WebSocket to /ws/chat. Each room is subscribed once;
 //              pushed events (which name their room) go to that room's panels only. Reconnects
-//              after a drop and subscribes again; closes once the last panel has left.
+//              after a drop and subscribes again; closes once the last panel has left. The
+//              server knows the reader from the session cookie at connect time only, so a new
+//              account (login, logout, switch) opens a fresh connection (connectAs).
 // ============================================================
 
 const RECONNECT_MS = 3000;
@@ -15,6 +17,9 @@ const listeners = new Map(); // room slug -> Set of event handlers
 let socket = null;
 let retry = null;
 let idle = null;
+// The account the open socket belongs to (a user id, or null for a guest); undefined until a
+// panel has told it. The first value needs no new socket: the cookie was there at connect.
+let account;
 
 const socketUrl = () =>
   `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/chat`;
@@ -48,6 +53,18 @@ function closeWhenUnused() {
   const closing = socket;
   socket = null;
   closing?.close();
+}
+
+// Tells the connection whose page this is. Another account than before: the old socket is
+// dropped and a new one opened (its onopen subscribes every room again).
+export function connectAs(next) {
+  const changed = account !== undefined && next !== account;
+  account = next;
+  if (!changed || !socket) return;
+  const stale = socket;
+  socket = null; // onclose of the stale socket then does nothing
+  stale.close();
+  if (listeners.size > 0) open();
 }
 
 // Starts receiving `room`'s events; returns the function that stops it.

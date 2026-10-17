@@ -12,14 +12,10 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { FakeSocket } from '../test/fakeSocket.js';
 import { GUEST, mockApi } from '../test/mockApi.js';
 import App from './App.jsx';
 import { roomToShow } from './chatDrawerState.js';
-
-class FakeSocket {
-  send() {}
-  close() {}
-}
 
 const ROOMS = [
   { slug: 'general', name: 'General', canWrite: true },

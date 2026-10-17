@@ -4,13 +4,14 @@
 // Project:     Seasonal Entertainment
 // Description: A chat panel's state: the rooms this viewer may read, the current room's
 //              messages (loaded once the account is known, then kept live through the shared
-//              connection), sending, and per-message actions (report, moderation). Reloads
-//              when the account changes.
+//              connection), sending, and per-message actions (report, moderation). When the
+//              account changes (login, logout, switch) it reloads the rooms and messages and
+//              the shared connection reconnects as the new reader.
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/http.js';
-import { joinRoom } from './connection.js';
+import { connectAs, joinRoom } from './connection.js';
 import { useChatRooms } from './useChatRooms.js';
 
 const ACTION_DONE = {
@@ -69,6 +70,11 @@ export function useChatRoom(roomInput, user) {
       .then((data) => setMessages(data.messages))
       .catch((err) => setError(err.message));
   }, [known, room, userId]);
+
+  // Before joinRoom below: on an account change the socket is reopened as the new reader.
+  useEffect(() => {
+    if (known) connectAs(userId ?? null);
+  }, [known, userId]);
 
   useEffect(
     () =>
