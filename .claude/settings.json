@@ -62,7 +62,21 @@
       "Edit(//c/Users/weudl/OneDrive/**)",
       "Write(//c/Users/weudl/OneDrive/**)",
       "Read(**/.env)",
-      "Read(**/.env.*)"
+      "Read(**/.env.)",
+      "Read(**/.env.[a-df-zA-DF-Z0-9._-]*)",
+      "Read(**/.env.e)",
+      "Read(**/.env.e[a-wy-zA-WY-Z0-9._-]*)",
+      "Read(**/.env.ex)",
+      "Read(**/.env.ex[b-zB-Z0-9._-]*)",
+      "Read(**/.env.exa)",
+      "Read(**/.env.exa[a-ln-zA-LN-Z0-9._-]*)",
+      "Read(**/.env.exam)",
+      "Read(**/.env.exam[a-oq-zA-OQ-Z0-9._-]*)",
+      "Read(**/.env.examp)",
+      "Read(**/.env.examp[a-km-zA-KM-Z0-9._-]*)",
+      "Read(**/.env.exampl)",
+      "Read(**/.env.exampl[a-df-zA-DF-Z0-9._-]*)",
+      "Read(**/.env.example?*)"
     ],
     "defaultMode": "default"
   }

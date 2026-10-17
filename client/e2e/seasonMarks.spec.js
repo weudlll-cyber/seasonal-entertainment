@@ -34,8 +34,11 @@ async function openMark(page, viewport, season) {
 
 // Hides the ring (same colour as some motifs) without moving anything: the border keeps its
 // width, so the element centre is still the ring centre and every drawn pixel is motif.
+// Set through the DOM, not an injected <style>: the page's CSP rightly blocks inline styles.
 async function hideRing(page) {
-  await page.addStyleTag({ content: '.landing__season { border-color: transparent !important; }' });
+  await page.$$eval('.landing__season', (marks) =>
+    marks.forEach((li) => li.style.setProperty('border-color', 'transparent', 'important'))
+  );
 }
 
 for (const viewport of VIEWPORTS) {

@@ -1,0 +1,51 @@
+/* ============================================================
+   File:        EventsPage.css
+   Path:        client/src/pages/EventsPage.css
+   Project:     Seasonal Entertainment
+   Description: The events week: navigation row, one block per day, time column + details.
+   ============================================================ */
+
+.week-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+
+.week-nav h2 {
+  margin: 0;
+  font-size: var(--font-size-lead);
+}
+
+.event-day h3 {
+  margin: var(--space-3) 0 var(--space-1);
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.event-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.event {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  gap: var(--space-1);
+  padding: var(--space-1) 0;
+}
+
+.event__time {
+  font-weight: var(--font-weight-strong);
+}
+
+.event__body {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.event__channel {
+  color: var(--color-text-muted);
+}

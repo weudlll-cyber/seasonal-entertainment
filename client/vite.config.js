@@ -18,12 +18,24 @@ export default defineConfig({
   server: {
     port: devPort,
     strictPort: true,
-    // The browser calls /api on its own origin; in dev Vite forwards it to the server.
-    proxy: { '/api': apiOrigin },
+    // The browser calls /api and /ws on its own origin; in dev Vite forwards them. The
+    // browser's Host header is passed on unchanged (changeOrigin: false; the string shorthand
+    // would rewrite it to the API port), so the server's CSRF and WebSocket origin checks see
+    // the same origin the browser sends, exactly as without a proxy.
+    proxy: {
+      '/api': { target: apiOrigin, changeOrigin: false },
+      // Chat stickers, GIFs and preview images.
+      '/media': { target: apiOrigin, changeOrigin: false },
+      // The chat WebSocket, forwarded as a WebSocket.
+      '/ws': { target: apiOrigin, changeOrigin: false, ws: true },
+    },
   },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.js'],
+    // Above findBy*'s 5 s wait (test/setup.js), so a slow screen fails as a missing element
+    // with a clear message, not as a test that ran out of time.
+    testTimeout: 15_000,
     include: ['src/**/*.test.{js,jsx}'],
   },
 });

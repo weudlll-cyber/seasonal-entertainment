@@ -11,8 +11,11 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@seasonal-entertainment/shared": "0.1.0",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "react-markdown": "^10.1.0",
+    "react-router": "^8.4.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",

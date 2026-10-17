@@ -1,0 +1,112 @@
+/* ============================================================
+   File:        forms.css
+   Path:        client/src/styles/forms.css
+   Project:     Seasonal Entertainment
+   Description: Shared form styles (fields, buttons, messages) built on the design tokens.
+   ============================================================ */
+
+.form {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 24rem;
+}
+
+.form-field,
+.form-field label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.form-field__label {
+  font-weight: var(--font-weight-strong);
+}
+
+.form-field__hint {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.form input[type='text'],
+.form input[type='email'],
+.form input[type='password'],
+.form input[type='search'],
+.form input[type='time'],
+.form input[type='number'],
+.form input[type='url'],
+.form textarea,
+.form select {
+  font: inherit;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+}
+
+.form-check {
+  display: flex;
+  gap: var(--space-1);
+  align-items: flex-start;
+}
+
+.button {
+  font: inherit;
+  font-weight: var(--font-weight-strong);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-text);
+  border-radius: var(--radius);
+  background: var(--color-text);
+  color: var(--color-background);
+  cursor: pointer;
+  justify-self: start;
+}
+
+/* An outlined button for secondary actions next to a main one. */
+.button--secondary {
+  background: transparent;
+  color: var(--color-text);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.form-message {
+  margin: 0;
+  padding: var(--space-1);
+  border-left: 4px solid;
+}
+
+.form-message--error {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.form-message--notice {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+/* A button that looks like a link (secondary choices inside a form). */
+.link-button {
+  font: inherit;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  text-decoration: underline;
+  cursor: pointer;
+  justify-self: start;
+}
+
+.qr-code {
+  width: 200px;
+  height: 200px;
+}
+
+.recovery-codes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: var(--space-1);
+  padding: 0;
+  list-style: none;
+}

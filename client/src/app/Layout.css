@@ -1,0 +1,83 @@
+/* ============================================================
+   File:        Layout.css
+   Path:        client/src/app/Layout.css
+   Project:     Seasonal Entertainment
+   Description: Page frame, header and footer. Narrow screens: the navigation wraps under the
+                brand instead of overflowing.
+   ============================================================ */
+
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.site-header__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text);
+  font-weight: var(--font-weight-heading);
+  text-decoration: none;
+}
+
+.site-header__nav,
+.site-footer__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-header__nav a {
+  color: var(--color-text);
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+}
+
+.site-header__nav a.active {
+  border-bottom-color: var(--color-accent);
+}
+
+.site-footer {
+  padding: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.site-footer a {
+  color: var(--color-text-muted);
+}
+
+.banner {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-warning-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Test-only page (/test/chat-panels): panels side by side when there is room. */
+.dev-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: var(--space-3);
+}

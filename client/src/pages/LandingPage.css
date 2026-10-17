@@ -5,8 +5,9 @@
    Description: Layout of the landing page; one centred column that fits phone width upward.
    ============================================================ */
 
+/* Fills the space between header and footer and centres its content there. */
 .landing {
-  min-height: 100vh;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
