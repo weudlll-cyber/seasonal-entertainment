@@ -11,6 +11,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest';
 import { chatApp, post } from './helpers/chat.js';
+import { logIn } from './helpers/accountKeys.js';
 import { registerUser } from './helpers/testApp.js';
 
 let t;
@@ -29,10 +30,7 @@ describe('favourite rooms', () => {
     expect((await favourites(agent)).rooms).toEqual(['general', 'announcements']);
 
     const again = t.client();
-    await again
-      .post('/api/auth/login')
-      .send({ username: 'anna', password: 'correct-horse-1' })
-      .expect(200);
+    expect((await logIn(again, 'anna', 'correct-horse-1')).status).toBe(200);
     expect((await favourites(again)).rooms).toEqual(['general', 'announcements']);
 
     await agent.delete('/api/chat/favourites/rooms/general').expect(200);

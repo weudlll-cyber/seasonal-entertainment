@@ -22,7 +22,10 @@
 The repository is one npm workspace root with three packages, `shared`, `server` and
 `client`, and one lockfile. `shared/` holds only rules both sides must apply identically
 (account rules: username format, password length, minimum age, role order); it exists since
-2026-10-17 because a registration form must never accept what the server refuses.
+2026-10-17 because a registration form must never accept what the server refuses. Since
+2026-10-18 it also holds the project's one cryptography helper, `shared/crypto.js` (libsodium,
+`libsodium-wrappers-sumo` pinned to an exact version), used by the browser, the server tests and
+the scripts, and `shared/cryptoFormat.js`, the shape checks the server applies (docs/AUTH.md).
 
 ## Data
 
@@ -291,7 +294,10 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
 
 `server/src/http/securityHeaders.js` (helmet) sends a strict Content-Security-Policy on every
 response: scripts, styles, fonts and connections only from this origin, images from this origin
-or `data:` URLs, no plugins, no framing (`frame-ancestors 'none'`), no inline script or style.
+or `data:` URLs, no plugins, no framing (`frame-ancestors 'none'`), no inline script or style,
+no JavaScript `eval`. `script-src` also has `'wasm-unsafe-eval'` (added 2026-10-18): it allows
+compiling WebAssembly only, which the browser's cryptography needs (libsodium, `shared/crypto.js`,
+docs/AUTH.md); the module itself is a same-origin file.
 Plus `nosniff`, `Referrer-Policy: same-origin` and helmet's other defaults. The browser smoke
 test fails on any console error, which is where a CSP violation shows up.
 
@@ -306,7 +312,8 @@ client/                    React + Vite client
                            (ChatDrawer, RoomPicker, its remembered state), icons, navigation
                            list, never-throwing browser storage
   src/api/http.js          the one fetch wrapper (JSON, ApiError)
-  src/session/             session context (who is signed in), RequireUser guard
+  src/session/             session context (who is signed in), RequireUser guard, credentials
+                           (password -> auth key and wrapping key, docs/AUTH.md)
   src/components/          shared UI pieces (form fields, forms)
   src/chat/                the chat module: <ChatPanel> (index.js is its only entry), live
                            connection, composer, picker, messages, styles (docs/CHAT.md)
@@ -330,8 +337,10 @@ server/
   src/app.js               Express app (routes); no listen, so tests drive it directly
   src/http/                cross-cutting HTTP: security headers, access (allow), CSRF,
                            sessions, rate limits, validation, error shape
-  src/db/database.js       opens the database, applies every area's schema
-  src/accounts/            accounts area: schema, user store, passwords, routes, bootstrap
+  src/db/database.js       opens the database, applies every area's schema and migrations
+  src/db/addColumns.js     adds columns to older databases (each area's migrate function)
+  src/accounts/            accounts area: schema, user store, passwords, routes (login:
+                           loginRoutes.js, pre-login and legacy route), credentials, bootstrap
   src/twofa/               two-factor area: TOTP, schema, store, routes, staff gate
   src/audit/               audit log: schema and the one recordAudit helper
   src/admin/               /api/admin routes (users, audit); areas add their own editors
@@ -355,7 +364,7 @@ server/
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests
 shared/                    rules used by server and client (accountRules.js, eventSchedule.js,
-                           gameRules.js, chatRules.js)
+                           gameRules.js, chatRules.js), crypto.js and cryptoFormat.js
 scripts/
   dev.mjs                  npm run dev
   e2e.mjs                  npm run test:e2e (temporary database per run)

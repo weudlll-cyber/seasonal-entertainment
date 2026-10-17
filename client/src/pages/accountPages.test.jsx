@@ -4,14 +4,17 @@
 // Project:     Seasonal Entertainment
 // Description: Guards the Register, Login and Account pages: client-side rules (age
 //              checkbox), server errors shown, redirects (including no open redirect), the
-//              guard on /account and the password change.
+//              guard on /account and the password change. No password ever leaves the
+//              browser: requests carry salts and auth keys only (docs/AUTH.md).
 // ============================================================
 
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
+import { base64Length } from '@seasonal-entertainment/shared/cryptoFormat.js';
+import { deriveAccountKeys } from '@seasonal-entertainment/shared/crypto.js';
 import App from '../app/App.jsx';
-import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
+import { GUEST, PRELOGIN, PRELOGIN_SALT, mockApi, signedIn } from '../test/mockApi.js';
 
 const anna = { id: 1, username: 'anna', email: 'anna@example.org', role: 'member' };
 
@@ -25,6 +28,9 @@ function renderAt(path) {
 
 const type = (label, value) =>
   fireEvent.change(screen.getByLabelText(label), { target: { value } });
+// Every request body sent, as one text: a typed password must not appear in it.
+const sentText = (calls) => JSON.stringify(calls.map((c) => c.body));
+const keysOf = (password) => deriveAccountKeys(password, PRELOGIN_SALT);
 
 describe('Register page', () => {
   it('refuses to send without the age confirmation', async () => {
@@ -50,12 +56,17 @@ describe('Register page', () => {
     fireEvent.click(screen.getByLabelText(/at least 14 years old/));
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
     expect(await screen.findByRole('heading', { name: 'Account' })).toBeInTheDocument();
-    expect(calls[1].body).toEqual({
-      username: 'anna',
-      email: 'anna@example.org',
-      password: 'correct-horse-1',
-      ageConfirmed: true,
-    });
+    const { body } = calls.find((c) => c.key === 'POST /auth/register');
+    expect(Object.keys(body).sort()).toEqual([
+      'ageConfirmed',
+      'authKey',
+      'email',
+      'salt',
+      'username',
+    ]);
+    expect(base64Length(body.salt)).toBe(16);
+    expect(body.authKey).toBe((await deriveAccountKeys('correct-horse-1', body.salt)).authKey);
+    expect(sentText(calls)).not.toContain('correct-horse-1');
   });
 
   it('shows the server refusal, e.g. a taken username', async () => {
@@ -81,7 +92,11 @@ describe('Register page', () => {
 });
 
 describe('Login page', () => {
-  const login = (status, body) => ({ ...GUEST, 'POST /auth/login': { status, body } });
+  const login = (status, body) => ({
+    ...GUEST,
+    ...PRELOGIN,
+    'POST /auth/login': { status, body },
+  });
 
   it('shows the error for wrong credentials', async () => {
     mockApi(login(401, { ok: false, message: 'Wrong username or password.' }));
@@ -93,12 +108,19 @@ describe('Login page', () => {
   });
 
   it('goes to ?next= after login, but never to another site', async () => {
-    mockApi(login(200, { ok: true, user: anna }));
+    const calls = mockApi(login(200, { ok: true, user: anna }));
     renderAt('/login?next=%2F%2Fevil.example');
     type('Username', 'anna');
     type('Password', 'correct-horse-1');
     fireEvent.click(screen.getByRole('button', { name: 'Log in' }));
     expect(await screen.findByRole('heading', { name: 'Account' })).toBeInTheDocument();
+    // The salt comes from the pre-login step; only the derived auth key is sent.
+    expect(calls.find((c) => c.key === 'POST /auth/prelogin').body).toEqual({ username: 'anna' });
+    expect(calls.find((c) => c.key === 'POST /auth/login').body).toEqual({
+      username: 'anna',
+      authKey: (await keysOf('correct-horse-1')).authKey,
+    });
+    expect(sentText(calls)).not.toContain('correct-horse-1');
   });
 });
 
@@ -110,7 +132,11 @@ describe('Account page', () => {
   });
 
   it('shows the account and changes the password', async () => {
-    const calls = mockApi({ ...signedIn(anna), 'POST /auth/password': { body: { ok: true } } });
+    const calls = mockApi({
+      ...signedIn(anna),
+      ...PRELOGIN,
+      'POST /auth/password': { body: { ok: true } },
+    });
     renderAt('/account');
     expect(await screen.findByText('anna@example.org')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'anna (Member), your account' })).toHaveAttribute(
@@ -121,9 +147,12 @@ describe('Account page', () => {
     type('New password', 'battery-staple-2');
     fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Password changed');
-    expect(calls.find((c) => c.key === 'POST /auth/password').body).toEqual({
-      currentPassword: 'correct-horse-1',
-      newPassword: 'battery-staple-2',
-    });
+    const { body } = calls.find((c) => c.key === 'POST /auth/password');
+    expect(body.currentAuthKey).toBe((await keysOf('correct-horse-1')).authKey);
+    expect(body.newAuthKey).toBe(
+      (await deriveAccountKeys('battery-staple-2', body.newSalt)).authKey
+    );
+    expect(body.newSalt).not.toBe(PRELOGIN_SALT);
+    expect(sentText(calls)).not.toMatch(/correct-horse-1|battery-staple-2/);
   });
 });

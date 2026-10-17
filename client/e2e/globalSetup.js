@@ -9,6 +9,7 @@
 
 import { request } from '@playwright/test';
 import { codeForStep, stepAt } from '../../server/src/twofa/totp.js';
+import { authKeyFor, newAccountData } from './accountKeys.js';
 import { ADMIN, ADMIN_STATE } from './adminState.js';
 
 export default async function globalSetup(config) {
@@ -16,10 +17,11 @@ export default async function globalSetup(config) {
   const api = await request.newContext({ baseURL, extraHTTPHeaders: { Origin: baseURL } });
   const boot = await api.post('/api/auth/bootstrap', {
     headers: { 'x-bootstrap-token': 'e2e-bootstrap-token' },
-    data: ADMIN,
+    data: await newAccountData(ADMIN.username, ADMIN.password),
   });
   if (boot.status() !== 201) throw new Error(`e2e bootstrap failed: ${boot.status()}`);
-  const setup = await api.post('/api/2fa/setup', { data: { password: ADMIN.password } });
+  const authKey = await authKeyFor(api, ADMIN.username, ADMIN.password);
+  const setup = await api.post('/api/2fa/setup', { data: { authKey } });
   const { secret } = await setup.json();
   const enable = await api.post('/api/2fa/enable', {
     data: { code: codeForStep(secret, stepAt(Date.now())) },

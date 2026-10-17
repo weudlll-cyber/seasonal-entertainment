@@ -3,28 +3,30 @@
 // Path:        server/test/accounts.test.js
 // Project:     Seasonal Entertainment
 // Description: Guards /api/auth: registration rules, login/logout, own password change
-//              (other sessions end), rate limits, CSRF origin check and locked accounts.
+//              (other sessions end), rate limits, CSRF origin check and locked accounts. Every
+//              request carries what a browser sends: salt and auth key, never the password
+//              (helpers/accountKeys.js; the key split itself: loginKeySplit.test.js).
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
+import { keysFor, logIn, registration } from './helpers/accountKeys.js';
 import { ORIGIN, makeTestApp, registerUser } from './helpers/testApp.js';
 
 let t;
 afterEach(() => t?.close());
 
-const newAccount = (overrides = {}) => ({
-  username: 'anna',
-  email: 'anna@example.org',
-  password: 'correct-horse-1',
-  ageConfirmed: true,
-  ...overrides,
-});
+const newAccount = (overrides = {}) => registration('anna', 'correct-horse-1', overrides);
+const register = async (overrides) =>
+  t
+    .client()
+    .post('/api/auth/register')
+    .send(await newAccount(overrides));
 
 describe('registration', () => {
   it('creates a member and logs them in', async () => {
     t = makeTestApp();
     const agent = t.client();
-    const res = await agent.post('/api/auth/register').send(newAccount());
+    const res = await agent.post('/api/auth/register').send(await newAccount());
     expect(res.status).toBe(201);
     expect(res.body.user).toMatchObject({ username: 'anna', role: 'member', canStartGames: false });
     const session = await agent.get('/api/auth/session');
@@ -34,36 +36,23 @@ describe('registration', () => {
   it('refuses a username that differs only in case', async () => {
     t = makeTestApp();
     await registerUser(t, 'anna');
-    const res = await t
-      .client()
-      .post('/api/auth/register')
-      .send(newAccount({ username: 'ANNA', email: 'other@example.org' }));
+    const res = await register({ username: 'ANNA', email: 'other@example.org' });
     expect(res.status).toBe(409);
     expect(res.body.error).toBe('username_taken');
   });
 
   it.each([[undefined], [false], ['yes']])('requires the age checkbox (got %s)', async (value) => {
     t = makeTestApp();
-    const res = await t
-      .client()
-      .post('/api/auth/register')
-      .send(newAccount({ ageConfirmed: value }));
+    const res = await register({ ageConfirmed: value });
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/at least 14/);
   });
 
-  it('refuses usernames outside the shared rules and short passwords', async () => {
+  it('refuses usernames outside the shared rules and malformed keys', async () => {
     t = makeTestApp();
-    const bad = await t
-      .client()
-      .post('/api/auth/register')
-      .send(newAccount({ username: '<script>' }));
-    expect(bad.status).toBe(400);
-    const short = await t
-      .client()
-      .post('/api/auth/register')
-      .send(newAccount({ password: 'short' }));
-    expect(short.status).toBe(400);
+    expect((await register({ username: '<script>' })).status).toBe(400);
+    expect((await register({ authKey: 'short' })).status).toBe(400);
+    expect((await register({ salt: undefined })).status).toBe(400);
   });
 });
 
@@ -71,19 +60,9 @@ describe('login and logout', () => {
   it('logs in, and wrong password and unknown user get the same answer', async () => {
     t = makeTestApp();
     await registerUser(t, 'anna', 'correct-horse-1');
-    const ok = await t
-      .client()
-      .post('/api/auth/login')
-      .send({ username: 'Anna', password: 'correct-horse-1' });
-    expect(ok.status).toBe(200);
-    const wrong = await t
-      .client()
-      .post('/api/auth/login')
-      .send({ username: 'anna', password: 'nope-nope-nope' });
-    const unknown = await t
-      .client()
-      .post('/api/auth/login')
-      .send({ username: 'nobody', password: 'nope-nope-nope' });
+    expect((await logIn(t.client(), 'Anna', 'correct-horse-1')).status).toBe(200);
+    const wrong = await logIn(t.client(), 'anna', 'nope-nope-nope');
+    const unknown = await logIn(t.client(), 'nobody', 'nope-nope-nope');
     expect(wrong.status).toBe(401);
     expect(unknown.body).toEqual(wrong.body);
   });
@@ -99,8 +78,7 @@ describe('login and logout', () => {
   it('rate-limits failed logins, and successful ones do not count', async () => {
     t = makeTestApp({ rateLimits: { login: { windowMs: 60_000, max: 3 } } });
     await registerUser(t, 'anna', 'correct-horse-1');
-    const login = (password) =>
-      t.client().post('/api/auth/login').send({ username: 'anna', password });
+    const login = (password) => logIn(t.client(), 'anna', password);
     await login('correct-horse-1');
     await login('correct-horse-1');
     for (let i = 0; i < 3; i++) expect((await login('wrong-password')).status).toBe(401);
@@ -114,42 +92,49 @@ describe('login and logout', () => {
     const { agent, user } = await registerUser(t, 'anna', 'correct-horse-1');
     t.db.prepare('UPDATE users SET locked = 1 WHERE id = ?').run(user.id);
     expect((await agent.get('/api/auth/session')).body.user).toBeNull();
-    const res = await t
-      .client()
-      .post('/api/auth/login')
-      .send({ username: 'anna', password: 'correct-horse-1' });
+    const res = await logIn(t.client(), 'anna', 'correct-horse-1');
     expect(res.status).toBe(403);
     expect(res.body.error).toBe('account_locked');
   });
 });
+
+// The body of an own password change: the current password proven by its auth key, the new
+// one as a new salt and auth key.
+async function passwordChange(current, next, newSalt = 'bmV3LXNhbHQtLTE2Ynl0ZQ==') {
+  const { authKey: currentAuthKey } = await keysFor(current);
+  const { authKey: newAuthKey } = await keysFor(next, newSalt);
+  return { currentAuthKey, newSalt, newAuthKey };
+}
 
 describe('own password change', () => {
   it('ends every other session of the account and keeps this one', async () => {
     t = makeTestApp();
     const { agent: here } = await registerUser(t, 'anna', 'correct-horse-1');
     const elsewhere = t.client();
-    await elsewhere.post('/api/auth/login').send({ username: 'anna', password: 'correct-horse-1' });
-    const res = await here
-      .post('/api/auth/password')
-      .send({ currentPassword: 'correct-horse-1', newPassword: 'battery-staple-2' });
+    await logIn(elsewhere, 'anna', 'correct-horse-1');
+    const body = await passwordChange('correct-horse-1', 'battery-staple-2');
+    const res = await here.post('/api/auth/password').send(body);
     expect(res.status).toBe(200);
     expect((await here.get('/api/auth/session')).body.user.username).toBe('anna');
     expect((await elsewhere.get('/api/auth/session')).body.user).toBeNull();
+    // The new salt is what the browser gets for its next login.
+    const pre = await t.client().post('/api/auth/prelogin').send({ username: 'anna' });
+    expect(pre.body.salt).toBe(body.newSalt);
     const relogin = await t
       .client()
       .post('/api/auth/login')
-      .send({ username: 'anna', password: 'battery-staple-2' });
+      .send({ username: 'anna', authKey: body.newAuthKey });
     expect(relogin.status).toBe(200);
   });
 
   it('refuses a wrong current password and changes nothing', async () => {
     t = makeTestApp();
     const { agent } = await registerUser(t, 'anna', 'correct-horse-1');
-    const res = await agent
-      .post('/api/auth/password')
-      .send({ currentPassword: 'wrong-wrong-1', newPassword: 'battery-staple-2' });
+    const body = await passwordChange('wrong-wrong-1', 'battery-staple-2');
+    const res = await agent.post('/api/auth/password').send(body);
     expect(res.status).toBe(401);
     expect((await agent.get('/api/auth/session')).body.user).not.toBeNull();
+    expect((await logIn(t.client(), 'anna', 'correct-horse-1')).status).toBe(200);
   });
 });
 

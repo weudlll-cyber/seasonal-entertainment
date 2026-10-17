@@ -11,8 +11,9 @@ this website]
 
 This list describes what the website's software actually stores.
 
-- **Your account** (if you register): username, email address, your password as a one-way
-  hash (never the password itself), your role, whether you may start games, whether the
+- **Your account** (if you register): username, email address, a one-way hash of a key your
+  browser derives from your password (your password itself never reaches this site's server),
+  the random value ("salt") your browser needs for that derivation, your role, whether you may start games, whether the
   account is locked, and when it was created. Kept as long as the account exists. The
   confirmation that you are at least 14 is required to register but is not stored, and no date
   of birth is asked for.

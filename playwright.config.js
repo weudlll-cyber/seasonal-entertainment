@@ -30,6 +30,9 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: 'list',
+  // Every password form derives keys with Argon2id in the browser (about 64 MiB,
+  // docs/AUTH.md); with several browsers busy at once that can pass the default 5 s wait.
+  expect: { timeout: 10_000 },
   // Creates the run's admin (with 2FA) once, after the server is up.
   globalSetup: './client/e2e/globalSetup.js',
   use: { baseURL: `http://127.0.0.1:${port}` },

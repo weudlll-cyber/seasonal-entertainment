@@ -10,6 +10,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest';
 import { codeForStep, stepAt } from '../src/twofa/totp.js';
+import { logIn, newPasswordBody, proof } from './helpers/accountKeys.js';
 import { makeStaff, makeTestApp, registerUser } from './helpers/testApp.js';
 
 let t;
@@ -21,13 +22,13 @@ const signedInAs = async (agent) => (await agent.get('/api/auth/session')).body.
 
 async function login(factor) {
   const agent = t.client();
-  await agent.post('/api/auth/login').send({ username: 'anna', password: PASSWORD });
+  await logIn(agent, 'anna', PASSWORD);
   if (factor) await agent.post('/api/2fa/login').send(factor);
   return agent;
 }
 
 async function turnOn(agent) {
-  const setup = await agent.post('/api/2fa/setup').send({ password: PASSWORD });
+  const setup = await agent.post('/api/2fa/setup').send(await proof(PASSWORD));
   const enable = await agent.post('/api/2fa/enable').send({ code: codeNow(setup.body.secret) });
   return { secret: setup.body.secret, recoveryCodes: enable.body.recoveryCodes };
 }
@@ -37,10 +38,15 @@ describe('setup needs the current password', () => {
     t = makeTestApp();
     const { agent } = await registerUser(t, 'anna', PASSWORD);
     expect((await agent.post('/api/2fa/setup')).status).toBe(400);
-    const wrong = await agent.post('/api/2fa/setup').send({ password: 'not-the-password' });
+    // A password itself is not accepted any more, only the auth key derived from it.
+    const plain = await agent.post('/api/2fa/setup').send({ password: PASSWORD });
+    expect(plain.status).toBe(400);
+    const inKeyField = await agent.post('/api/2fa/setup').send({ authKey: PASSWORD });
+    expect(inKeyField.status).toBe(400);
+    const wrong = await agent.post('/api/2fa/setup').send(await proof('not-the-password'));
     expect(wrong.status).toBe(401);
     expect(wrong.body).not.toHaveProperty('secret');
-    expect((await agent.post('/api/2fa/setup').send({ password: PASSWORD })).status).toBe(200);
+    expect((await agent.post('/api/2fa/setup').send(await proof(PASSWORD))).status).toBe(200);
   });
 });
 
@@ -63,7 +69,7 @@ describe('turning 2FA on or off ends the other sessions', () => {
     expect(await signedInAs(other)).toBe('anna');
     const off = await agent
       .post('/api/2fa/disable')
-      .send({ password: PASSWORD, code: codeNow(secret, 1) });
+      .send({ ...(await proof(PASSWORD)), code: codeNow(secret, 1) });
     expect(off.status).toBe(200);
     expect(await signedInAs(other)).toBeUndefined();
     expect(await signedInAs(agent)).toBe('anna');
@@ -77,8 +83,10 @@ describe('a pending 2FA login', () => {
     const { agent, user } = await registerUser(t, 'anna', PASSWORD);
     const { secret } = await turnOn(agent);
     const half = t.client();
-    await half.post('/api/auth/login').send({ username: 'anna', password: PASSWORD });
-    await admin.post(`/api/admin/users/${user.id}/password`).send({ newPassword: 'new-horse-22' });
+    await logIn(half, 'anna', PASSWORD);
+    await admin
+      .post(`/api/admin/users/${user.id}/password`)
+      .send(await newPasswordBody('new-horse-22'));
     const finish = await half.post('/api/2fa/login').send({ code: codeNow(secret, 1) });
     expect(finish.status).toBe(401);
     expect(finish.body.error).toBe('login_expired');

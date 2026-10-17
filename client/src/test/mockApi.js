@@ -5,6 +5,7 @@
 // Description: Test helper: replaces fetch with fixed API answers keyed "METHOD /path"
 //              (path without /api). An answer is { status, body } or a function of the sent
 //              body returning one. Returns the list of calls made. Unknown calls fail the test.
+//              PRELOGIN answers the login key split's pre-login step with a fixed salt.
 // ============================================================
 
 import { vi } from 'vitest';
@@ -36,3 +37,9 @@ export function signedIn(user) {
     },
   };
 }
+
+// The pre-login answer for any username: a fixed salt (docs/AUTH.md, "Login key split").
+export const PRELOGIN_SALT = 'AAECAwQFBgcICQoLDA0ODw==';
+export const PRELOGIN = {
+  'POST /auth/prelogin': { body: { ok: true, salt: PRELOGIN_SALT, legacy: false } },
+};

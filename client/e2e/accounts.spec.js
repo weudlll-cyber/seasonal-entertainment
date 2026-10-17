@@ -2,8 +2,9 @@
 // File:        accounts.spec.js
 // Path:        client/e2e/accounts.spec.js
 // Project:     Seasonal Entertainment
-// Description: Browser flow through the real server: register, see the account, log out,
-//              log in again. The chat drawer stays open across the login and the logout: its
+// Description: Browser flow through the real server: register, see the account, change the
+//              password, log out, log in again with the new one; neither password appears in
+//              any request (docs/AUTH.md, "Login key split"). The chat drawer stays open across the login and the logout: its
 //              panel writes as the member after logging in and is a guest's again after
 //              logging out, without leaving the page. Runs on the e2e run's own temporary
 //              database; the registration limit per IP is why this spec carries the drawer
@@ -12,11 +13,13 @@
 
 import { expect, test } from '@playwright/test';
 import { SERVER_PORT } from './ports.js';
+import { recordRequests } from './requestLog.js';
 
 const SERVER = `http://127.0.0.1:${SERVER_PORT}`;
 
 test('register, log out and log in again', async ({ page }) => {
   const name = `e2e${Date.now().toString(36)}`;
+  const requests = recordRequests(page);
   await page.goto('/register');
   await page.getByLabel('Username').fill(name);
   await page.getByLabel('Email').fill(`${name}@example.org`);
@@ -29,6 +32,11 @@ test('register, log out and log in again', async ({ page }) => {
   const shell = page.getByRole('banner');
   await expect(shell.getByRole('link', { name: `${name} (Member), your account` })).toBeVisible();
 
+  await page.getByLabel('Current password').fill('correct-horse-1');
+  await page.getByLabel('New password').fill('battery-staple-2');
+  await page.getByRole('button', { name: 'Change password' }).click();
+  await expect(page.getByText('Password changed.')).toBeVisible();
+
   await page.getByRole('button', { name: 'Log out' }).click();
   await expect(shell.getByRole('link', { name: 'Log in' })).toBeVisible();
 
@@ -40,7 +48,7 @@ test('register, log out and log in again', async ({ page }) => {
   await shell.getByRole('link', { name: 'Log in' }).click();
   const main = page.getByRole('main');
   await main.getByLabel('Username').fill(name);
-  await main.getByLabel('Password').fill('correct-horse-1');
+  await main.getByLabel('Password').fill('battery-staple-2');
   await main.getByRole('button', { name: 'Log in' }).click();
   await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible();
 
@@ -67,4 +75,7 @@ test('register, log out and log in again', async ({ page }) => {
 
   await main.getByRole('button', { name: 'Log out' }).click();
   await expect(drawer.getByText(/You are a guest/)).toBeVisible();
+  // Register, password change and login: neither typed password was ever sent.
+  expect(requests.text()).toContain('/api/auth/password');
+  expect(requests.text()).not.toMatch(/correct-horse-1|battery-staple-2/);
 });

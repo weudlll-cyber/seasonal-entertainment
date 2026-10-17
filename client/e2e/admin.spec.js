@@ -7,6 +7,7 @@
 // ============================================================
 
 import { expect, request as newRequest, test } from '@playwright/test';
+import { newAccountData } from './accountKeys.js';
 import { ADMIN, ADMIN_STATE } from './adminState.js';
 
 test.use({ storageState: ADMIN_STATE });
@@ -22,12 +23,7 @@ test('an admin changes a role and finds it in the audit log', async ({ page, bas
   });
   const member = `mem${Date.now().toString(36)}`;
   await other.post('/api/auth/register', {
-    data: {
-      username: member,
-      email: `${member}@example.org`,
-      password: 'correct-horse-1',
-      ageConfirmed: true,
-    },
+    data: await newAccountData(member, 'correct-horse-1'),
   });
   await other.dispose();
 

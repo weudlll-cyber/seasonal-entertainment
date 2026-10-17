@@ -4,14 +4,17 @@
 // Project:     Seasonal Entertainment
 // Description: Browser flow through the real server: turn 2FA on (the QR image must load
 //              under the CSP), log out, and log in again with password plus code. The codes
-//              are computed with the server's own TOTP module from the secret on screen.
+//              are computed with the server's own TOTP module from the secret on screen. The
+//              typed password appears in no request (docs/AUTH.md, "Login key split").
 // ============================================================
 
 import { expect, test } from '@playwright/test';
 import { codeForStep, stepAt } from '../../server/src/twofa/totp.js';
+import { recordRequests } from './requestLog.js';
 
 test('turn on 2FA and log in with a code', async ({ page }) => {
   const name = `tfa${Date.now().toString(36)}`;
+  const requests = recordRequests(page);
   await page.goto('/register');
   await page.getByLabel('Username').fill(name);
   await page.getByLabel('Email').fill(`${name}@example.org`);
@@ -45,4 +48,7 @@ test('turn on 2FA and log in with a code', async ({ page }) => {
   await page.getByLabel('Authentication code').fill(codeForStep(secret, step + 1));
   await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible();
+  // Registration, 2FA setup and login: the password itself was never sent.
+  expect(requests.text()).toContain('/api/2fa/setup');
+  expect(requests.text()).not.toContain('correct-horse-1');
 });

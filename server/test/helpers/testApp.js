@@ -15,6 +15,7 @@ import request from 'supertest';
 import { createApp } from '../../src/app.js';
 import { readConfig } from '../../src/config.js';
 import { openDatabase } from '../../src/db/database.js';
+import { registration } from './accountKeys.js';
 
 export const ORIGIN = 'http://se.test';
 const ROOMY = { windowMs: 60_000, max: 1000 };
@@ -67,15 +68,11 @@ export function makeTestApp(overrides = {}, { previewNetwork } = {}) {
   };
 }
 
-// Registers an account through the real route; returns the logged-in agent and the user.
+// Registers an account through the real route, as a browser does (accountKeys.js); returns the
+// logged-in agent and the user.
 export async function registerUser(t, name = 'anna', password = 'correct-horse-1') {
   const agent = t.client();
-  const res = await agent.post('/api/auth/register').send({
-    username: name,
-    email: `${name}@example.org`,
-    password,
-    ageConfirmed: true,
-  });
+  const res = await agent.post('/api/auth/register').send(await registration(name, password));
   if (res.status !== 201) throw new Error(`register ${name} failed: ${res.status} ${res.text}`);
   return { agent, user: res.body.user, password };
 }

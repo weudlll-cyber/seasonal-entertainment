@@ -10,8 +10,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
+import { deriveAccountKeys } from '@seasonal-entertainment/shared/crypto.js';
 import App from '../app/App.jsx';
-import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
+import { GUEST, PRELOGIN, PRELOGIN_SALT, mockApi, signedIn } from '../test/mockApi.js';
 
 const anna = { id: 1, username: 'anna', role: 'member', twoFactorEnabled: false };
 
@@ -37,6 +38,7 @@ async function passwordStep() {
 describe('login with 2FA', () => {
   const answers = {
     ...GUEST,
+    ...PRELOGIN,
     'POST /auth/login': { body: { ok: true, twoFactorRequired: true } },
     'POST /2fa/login': { body: { ok: true, user: anna } },
   };
@@ -68,6 +70,7 @@ describe('2FA setup on the account page', () => {
   it('shows the QR code, confirms the first code and shows the recovery codes', async () => {
     const calls = mockApi({
       ...signedIn(anna),
+      ...PRELOGIN,
       'POST /2fa/setup': {
         body: { ok: true, secret: 'JBSWY3DPEHPK3PXP', qrCode: 'data:image/png;base64,AAAA' },
       },
@@ -82,10 +85,10 @@ describe('2FA setup on the account page', () => {
       'data:image/png;base64,AAAA'
     );
     expect(screen.getByText('JBSWY3DPEHPK3PXP')).toBeInTheDocument();
-    // The setup is started with the current password.
-    expect(calls.find((c) => c.key === 'POST /2fa/setup').body).toEqual({
-      password: 'correct-horse-1',
-    });
+    // The setup is started with the current password, sent as the auth key derived from it.
+    const { authKey } = await deriveAccountKeys('correct-horse-1', PRELOGIN_SALT);
+    expect(calls.find((c) => c.key === 'POST /2fa/setup').body).toEqual({ authKey });
+    expect(JSON.stringify(calls.map((c) => c.body))).not.toContain('correct-horse-1');
     type('Code from the app', '654321');
     fireEvent.click(screen.getByRole('button', { name: 'Turn on' }));
     expect(await screen.findByText('aaaa-bbbb')).toBeInTheDocument();

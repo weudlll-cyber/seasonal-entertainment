@@ -3,7 +3,9 @@
 // Path:        client/src/pages/RegisterPage.jsx
 // Project:     Seasonal Entertainment
 // Description: Registration: username, email, password and the required age confirmation.
-//              Checks the shared rules before sending; the server checks them again.
+//              Checks the shared rules before sending; the server checks them again, except the
+//              password rules: the password never leaves the browser, only a salt and the auth
+//              key derived from it are sent (session/credentials.js).
 // ============================================================
 
 import { useState } from 'react';
@@ -18,6 +20,7 @@ import {
 } from '@seasonal-entertainment/shared/accountRules.js';
 import { api } from '../api/http.js';
 import { FormField, FormMessage } from '../components/FormField.jsx';
+import { keysForNewPassword } from '../session/credentials.js';
 import { useSession } from '../session/SessionContext.jsx';
 
 export default function RegisterPage() {
@@ -32,19 +35,21 @@ export default function RegisterPage() {
     const input = {
       username: form.get('username'),
       email: form.get('email'),
-      password: form.get('password'),
       ageConfirmed: form.get('ageConfirmed') === 'on',
     };
+    const password = form.get('password');
     const problem =
       validateUsername(input.username) ??
       validateEmail(input.email) ??
-      validatePassword(input.password) ??
+      validatePassword(password) ??
       (input.ageConfirmed ? null : `Please confirm that you are at least ${MINIMUM_AGE}.`);
     if (problem) return setError(problem);
     setBusy(true);
     setError(null);
     try {
-      const { user } = await api('/auth/register', { method: 'POST', body: input });
+      const { salt, authKey } = await keysForNewPassword(password);
+      const body = { ...input, salt, authKey };
+      const { user } = await api('/auth/register', { method: 'POST', body });
       setUser(user);
       navigate('/account', { replace: true });
     } catch (err) {

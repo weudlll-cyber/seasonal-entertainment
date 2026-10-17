@@ -38,7 +38,9 @@ An entry moves from part one to part two only when its branch is merged into `ma
 - **SE-DM-1 — favourites, end-to-end encrypted direct messages, report with consent** — in
   progress (PR to come; built on PR #4, which carries PR #3). Piece 1: favourite rooms (star in
   the drawer's picker and the full chat's room list, favourites first) and favourite members
-  (name menu in every message), members only.
+  (name menu in every message), members only. Piece 2: the password never leaves the browser
+  (Argon2id in the browser, only a derived auth key is sent; pre-login salt; one-time legacy
+  upgrade; docs/AUTH.md).
 - **Unread count for the chat button** — open. The drawer's chat button shows no badge: the chat
   module cannot tell how many messages are new for this reader yet.
 - **Chat embedding in other applications** — open. An embed route, allowed embedding origins

@@ -4,14 +4,15 @@
 // Project:     Seasonal Entertainment
 // Description: Login form, with a second step (code or recovery code) for accounts with 2FA.
 //              After success it returns to the page that sent the visitor here (?next=,
-//              same-site paths only) or to the account page.
+//              same-site paths only) or to the account page. The password itself never leaves
+//              the browser: only the auth key derived from it is sent (session/credentials.js).
 // ============================================================
 
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { api } from '../api/http.js';
 import { FormField, FormMessage } from '../components/FormField.jsx';
 import SecondFactorForm from '../components/SecondFactorForm.jsx';
+import { logIn } from '../session/credentials.js';
 import { useSession } from '../session/SessionContext.jsx';
 
 // Only local paths: "//evil.example" or "https://..." would be an open redirect.
@@ -38,10 +39,7 @@ export default function LoginPage() {
     setBusy(true);
     setError(null);
     try {
-      const answer = await api('/auth/login', {
-        method: 'POST',
-        body: { username: form.get('username'), password: form.get('password') },
-      });
+      const { answer } = await logIn(form.get('username'), form.get('password'));
       if (answer.twoFactorRequired) return setNeedsCode(true);
       finish(answer.user);
     } catch (err) {

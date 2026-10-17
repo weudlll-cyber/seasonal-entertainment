@@ -12,6 +12,8 @@
 //              migrateChat() brings older databases up.
 // ============================================================
 
+import { addMissingColumns } from '../db/addColumns.js';
+
 export const CHAT_SCHEMA = `
 CREATE TABLE IF NOT EXISTS chat_rooms (
   id           INTEGER PRIMARY KEY,
@@ -97,13 +99,4 @@ const ADDED_COLUMNS = [
   ['chat_reports', 'reviewed_at', 'TEXT'],
 ];
 
-export function migrateChat(db) {
-  for (const [table, column, definition, afterwards] of ADDED_COLUMNS) {
-    const columns = db.prepare(`PRAGMA table_info(${table})`).all();
-    if (columns.some((c) => c.name === column)) continue;
-    db.transaction(() => {
-      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
-      if (afterwards) db.exec(afterwards);
-    })();
-  }
-}
+export const migrateChat = (db) => addMissingColumns(db, ADDED_COLUMNS);

@@ -15,6 +15,15 @@ const apiOrigin = process.env.API_ORIGIN ?? 'http://127.0.0.1:3800';
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    // The cryptography chunk (libsodium with its WebAssembly, about 540 kB) is loaded only when
+    // a password or a private key is used (session/credentials.js); every other chunk stays
+    // well below this.
+    chunkSizeWarningLimit: 600,
+  },
+  // Pre-bundled when the dev server starts: found only later (at the first password form),
+  // the dev server would reload the page to add it, and the form with it.
+  optimizeDeps: { include: ['libsodium-wrappers-sumo'] },
   server: {
     port: devPort,
     strictPort: true,

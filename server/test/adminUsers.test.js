@@ -8,6 +8,7 @@
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
+import { logIn, newPasswordBody } from './helpers/accountKeys.js';
 import { makeStaff, makeTestApp, registerUser, setRole } from './helpers/testApp.js';
 
 let t;
@@ -105,18 +106,21 @@ describe('user changes', () => {
     t = makeTestApp();
     const { agent } = await makeStaff(t, 'ada', 'admin');
     const { agent: bertSession, user: bert } = await registerUser(t, 'bert');
-    const res = await agent
-      .post(`/api/admin/users/${bert.id}/password`)
-      .send({ newPassword: 'brand-new-pass-1' });
+    const reset = await newPasswordBody('brand-new-pass-1');
+    const res = await agent.post(`/api/admin/users/${bert.id}/password`).send(reset);
     expect(res.status).toBe(200);
     expect((await bertSession.get('/api/auth/session')).body.user).toBeNull();
     expect(lastAudit().action).toBe('user.password_reset');
     expect(JSON.stringify(lastAudit())).not.toContain('brand-new-pass-1');
+    // The browser now derives with the reset's salt, and the new auth key logs in.
+    const pre = await t.client().post('/api/auth/prelogin').send({ username: 'bert' });
+    expect(pre.body.salt).toBe(reset.salt);
     const relogin = await t
       .client()
       .post('/api/auth/login')
-      .send({ username: 'bert', password: 'brand-new-pass-1' });
+      .send({ username: 'bert', authKey: reset.authKey });
     expect(relogin.status).toBe(200);
+    expect((await logIn(t.client(), 'bert', 'correct-horse-1')).status).toBe(401);
   });
 });
 
