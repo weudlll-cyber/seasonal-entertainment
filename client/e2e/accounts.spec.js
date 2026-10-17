@@ -20,6 +20,11 @@ const SERVER = `http://127.0.0.1:${SERVER_PORT}`;
 test('register, log out and log in again', async ({ page }) => {
   const name = `e2e${Date.now().toString(36)}`;
   const requests = recordRequests(page);
+  // What the chat socket receives: the server's "subscribed" answers.
+  const received = [];
+  page.on('websocket', (socket) =>
+    socket.on('framereceived', (frame) => received.push(String(frame.payload)))
+  );
   await page.goto('/register');
   await page.getByLabel('Username').fill(name);
   await page.getByLabel('Email').fill(`${name}@example.org`);
@@ -70,6 +75,11 @@ test('register, log out and log in again', async ({ page }) => {
   await drawer.getByRole('button', { name: 'Room: General' }).click();
   await page.getByRole('option', { name: /Seasonal Race/ }).click();
   await expect(drawer.getByRole('list', { name: 'Messages in Seasonal Race' })).toBeVisible();
+  // Only once the server accepted the subscription (a guest's socket is refused there) can a
+  // push arrive; posting earlier would race the new connection.
+  await expect
+    .poll(() => received.some((p) => p.includes('"subscribed"') && p.includes('seasonal-race')))
+    .toBe(true);
   const live = `live ${Date.now()}`;
   const posted = await page.request.post('/api/chat/rooms/seasonal-race/messages', {
     data: { body: live },
