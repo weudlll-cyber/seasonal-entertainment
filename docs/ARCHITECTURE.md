@@ -127,6 +127,17 @@ European change of 25 October 2026.
 First start: `server/src/events/seed.js` inserts the owner's weekly schedule (14 events, UTC,
 checked against "ST Schedule.pdf" on 2026-10-17) when the table is empty.
 
+## Games hub
+
+Game cards are rows in `games`: name, short description, image, status (`available`,
+`coming_soon`, `maintenance`), path under `/games/`, visibility (`everyone`, `members`,
+`organisers`) and order. `/api/games` returns only the cards the viewer may see; only available
+games get a Play link. Images are chosen from a fixed list of the site's own assets
+(`shared/gameRules.js`), so no outside image is ever loaded. Admins edit cards at
+`/admin/games`; every change is audited. First start adds "Seasonal Race" (coming soon,
+`/games/race`, everyone); the race game itself stays in its own repository and is not connected
+yet.
+
 ## Security headers
 
 `server/src/http/securityHeaders.js` (helmet) sends a strict Content-Security-Policy on every
@@ -168,11 +179,13 @@ server/
   src/admin/               /api/admin routes (users, audit); areas add their own editors
   src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md)
   src/events/              events: schema, store, public and admin routes, seed
+  src/games/               games hub: schema, store, public and admin routes, seed
   test/helpers/testApp.js  app on a temporary database for tests
   src/config.js            environment configuration
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests
-shared/                    rules used by server and client (accountRules.js, eventSchedule.js)
+shared/                    rules used by server and client (accountRules.js, eventSchedule.js,
+                           gameRules.js)
 scripts/
   dev.mjs                  npm run dev
   e2e.mjs                  npm run test:e2e (temporary database per run)
