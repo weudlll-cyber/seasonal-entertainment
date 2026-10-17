@@ -28,7 +28,7 @@ This list describes what the website's software actually stores.
 - **Chat messages**: the text, the room, the author's name (account name or guest name) and
   the time. Deleted automatically after 90 days (the configured retention period).
 - **Guest names in the chat**: a guest who writes or reports a message gets a random name such
-  as "Guest-7k2f", kept with that guest's session. The name is released 30 days after it was
+  as "Guest-k7m2qa", kept with that guest's session. The name is released 30 days after it was
   last used.
 - **Chat reports**: when someone reports a message, the site stores which account or guest name
   reported it, so each person counts once. No IP address is stored.

@@ -14,7 +14,7 @@ export const MESSAGE_MAX = 500;
 // write only in rooms that are also marked guest-writable (server/src/chat/viewer.js).
 export const ROOM_ACCESS = ['everyone', 'members', 'organisers'];
 
-// Guest names look like "Guest-7k2f". Registered usernames may not start with "guest-".
+// Guest names look like "Guest-k7m2qa". Registered usernames may not start with "guest-".
 export const GUEST_PREFIX = 'Guest-';
 
 // http(s):// and www. links, and bare domains such as "example.com/x".

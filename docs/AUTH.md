@@ -136,7 +136,7 @@ moderation action uses the same helper.
 
 ## Chat identities
 
-Chat guests are not accounts: a guest gets a random name (`Guest-xxxx`) held in the session
+Chat guests are not accounts: a guest gets a random name (`Guest-` and six characters a–z, 2–7) held in the session
 once they write or report. Registered usernames may not start with "Guest-", so an account can
 never look like a guest. Chat moderation (hide, mute, ban) is an organiser/admin action and
 therefore needs 2FA like every staff route. Details: ARCHITECTURE.md, "Chat".

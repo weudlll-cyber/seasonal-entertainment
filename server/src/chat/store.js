@@ -8,6 +8,7 @@
 
 import { randomBytes } from 'node:crypto';
 import { GUEST_PREFIX } from '@seasonal-entertainment/shared/chatRules.js';
+import { base32Encode } from '../twofa/totp.js';
 
 const now = () => new Date().toISOString();
 const ROOM_COLUMNS = `id, slug, name, read_access AS readAccess, write_access AS writeAccess,
@@ -104,8 +105,13 @@ export function hideMessage(db, id, moderator) {
 }
 
 // --- guests --------------------------------------------------------------------------
-// A name nobody holds right now: retried until the UNIQUE constraint accepts it.
-export function assignGuestName(db, random = () => randomBytes(3).toString('hex').slice(0, 4)) {
+// Six base32 characters (a-z, 2-7): about a billion names, so running out is impossible in
+// practice while names are released after 30 days unused and new ones are limited per IP.
+const randomGuestSuffix = () => base32Encode(randomBytes(4)).slice(0, 6).toLowerCase();
+
+// A name nobody holds right now: retried until the UNIQUE constraint accepts it. null if
+// every try collided (the route answers 503, never 500).
+export function assignGuestName(db, random = randomGuestSuffix) {
   const id = randomBytes(16).toString('hex');
   const insert = db.prepare(
     'INSERT OR IGNORE INTO chat_guests (id, name, last_seen) VALUES (?, ?, ?)'
@@ -114,7 +120,7 @@ export function assignGuestName(db, random = () => randomBytes(3).toString('hex'
     const name = `${GUEST_PREFIX}${random()}`;
     if (insert.run(id, name, now()).changes === 1) return { id, name };
   }
-  throw new Error('could not find a free guest name');
+  return null;
 }
 
 export function touchGuest(db, guestId) {

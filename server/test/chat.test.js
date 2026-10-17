@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: Guards the chat API for writers: room access for guests, members and staff;
 //              no links from guests; unique guest names; per-sender rate limits (stricter for
-//              guests). Moderation, retention and rooms: chatModeration.test.js.
+//              guests) and per-IP limits on guest posts and new guest names, which a cleared
+//              cookie does not reset. Moderation and retention: chatModeration.test.js.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -22,7 +23,7 @@ describe('rooms and guests', () => {
     const sent = await post(guest, 'general', 'hello');
     expect(sent.status).toBe(201);
     expect(sent.body.message).toMatchObject({ body: 'hello', isGuest: true });
-    expect(sent.body.message.author).toMatch(/^Guest-[0-9a-f]{4}$/);
+    expect(sent.body.message.author).toMatch(/^Guest-[a-z2-7]{6}$/);
     expect((await post(guest, 'announcements', 'hi')).status).toBe(403);
     expect((await post(guest, 'seasonal-race', 'hi')).status).toBe(404);
     expect((await post(guest, 'organisers', 'hi')).status).toBe(404);
@@ -75,6 +76,12 @@ describe('guest names', () => {
     expect([first.name, second.name]).toEqual(['Guest-aaaa', 'Guest-bbbb']);
   });
 
+  it('answers null instead of throwing when no free name is found', () => {
+    t = chatApp();
+    expect(assignGuestName(t.db, () => 'aaaaaa').name).toBe('Guest-aaaaaa');
+    expect(assignGuestName(t.db, () => 'aaaaaa')).toBeNull();
+  });
+
   it('a guest keeps the same name for the session', async () => {
     t = chatApp();
     const guest = t.client();
@@ -95,5 +102,27 @@ describe('rate limits', () => {
     const { agent: member } = await registerUser(t, 'mia');
     for (const n of ['1', '2', '3']) expect((await post(member, 'general', n)).status).toBe(201);
     expect((await post(member, 'general', '4')).status).toBe(429);
+  });
+});
+
+// Every t.client() is a new cookie jar from the same address: a guest who clears cookies.
+describe('per-IP limits for guests', () => {
+  const tight = (name, max) => ({ rateLimits: { [name]: { windowMs: 60_000, max } } });
+
+  it('guest posts are limited per IP across fresh sessions; members are not', async () => {
+    t = chatApp(tight('chatGuestPost', 3));
+    for (let i = 0; i < 3; i++) expect((await post(t.client(), 'general', 'hi')).status).toBe(201);
+    expect((await post(t.client(), 'general', 'hi')).status).toBe(429);
+    const { agent: member } = await registerUser(t, 'mia');
+    expect((await post(member, 'general', 'hi')).status).toBe(201);
+  });
+
+  it('new guest names are limited per IP; a guest keeps writing under their name', async () => {
+    t = chatApp(tight('chatNewGuest', 2));
+    const first = t.client();
+    expect((await post(first, 'general', 'one')).status).toBe(201);
+    expect((await post(t.client(), 'general', 'two')).status).toBe(201);
+    expect((await post(t.client(), 'general', 'three')).status).toBe(429);
+    expect((await post(first, 'general', 'again')).status).toBe(201);
   });
 });

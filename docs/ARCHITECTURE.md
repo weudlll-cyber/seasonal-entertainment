@@ -171,10 +171,14 @@ password change and turning 2FA on or off close the account's other sockets at o
   just by the seed). Databases from before the flag get it on start (`migrateChat`): rooms
   everyone could write in keep guest writing.
 - **Guests** (decided 2026-10-17) write only in guest-writable rooms (General). Their first
-  message (or report) gives them a name like `Guest-7k2f` that nobody else holds at the same
-  time (UNIQUE in `chat_guests`, retried on collision), kept in their session and shown with a
-  Guest badge. Guests cannot post links (`containsLink`, `shared/chatRules.js`) and have a
-  stricter message rate (2 per 10 s; members 5 per 10 s). Registered usernames may not start
+  message (or report) gives them a name like `Guest-k7m2qa` (six base32 characters, about a
+  billion names) that nobody else holds at the same time (UNIQUE in `chat_guests`, retried on
+  collision; if no name is free the answer is `503 guest_names_exhausted`, never a 500), kept in
+  their session and shown with a Guest badge. Guests cannot post links (`containsLink`,
+  `shared/chatRules.js`) and have a stricter message rate (2 per 10 s; members 5 per 10 s).
+  Because a guest can clear cookies, guests are also limited **per IP address**, in memory only
+  (no IP is stored): 20 guest messages per minute (`rateLimits.chatGuestPost`) and 20 new guest
+  names per hour (`rateLimits.chatNewGuest`). Registered usernames may not start
   with "Guest-".
 - **Messages** are plain text, at most 500 characters; only members' explicit http(s) links
   become links, with `rel="nofollow noopener noreferrer ugc"`.
