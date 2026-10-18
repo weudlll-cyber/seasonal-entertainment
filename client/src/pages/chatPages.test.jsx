@@ -7,29 +7,16 @@
 //              moderator actions only for moderators, and the admin page lifts a sanction.
 // ============================================================
 
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { FakeSocket } from '../test/fakeSocket.js';
 import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
 import { renderApp } from '../test/renderApp.jsx';
 
-class FakeSocket {
-  static last = null;
-  constructor(url) {
-    this.url = url;
-    this.sent = [];
-    FakeSocket.last = this;
-    setTimeout(() => this.onopen?.());
-  }
-  send(data) {
-    this.sent.push(JSON.parse(data));
-  }
-  close() {}
-  push(event) {
-    act(() => this.onmessage?.({ data: JSON.stringify(event) }));
-  }
-}
-
-beforeEach(() => vi.stubGlobal('WebSocket', FakeSocket));
+beforeEach(() => {
+  FakeSocket.reset();
+  vi.stubGlobal('WebSocket', FakeSocket);
+});
 
 const renderAt = (path) => renderApp(path);
 
@@ -95,15 +82,15 @@ describe('chat page', () => {
     await renderAt('/chat');
     await screen.findByText('first');
     await vi.waitFor(() =>
-      expect(FakeSocket.last.sent).toEqual([{ type: 'subscribe', room: 'general' }])
+      expect(FakeSocket.all.at(-1).sent).toEqual([{ type: 'subscribe', room: 'general' }])
     );
-    FakeSocket.last.push({
+    FakeSocket.all.at(-1).push({
       type: 'message',
       message: msg(5, 'carla', 'live one'),
       room: 'general',
     });
     expect(await screen.findByText('live one')).toBeInTheDocument();
-    FakeSocket.last.push({ type: 'hidden', id: 1, room: 'general' });
+    FakeSocket.all.at(-1).push({ type: 'hidden', id: 1, room: 'general' });
     await vi.waitFor(() => expect(screen.queryByText('first')).toBeNull());
     expect(screen.queryByRole('button', { name: 'Hide' })).toBeNull();
   });

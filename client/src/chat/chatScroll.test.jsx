@@ -9,28 +9,17 @@
 //              list's heights are given here.
 // ============================================================
 
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionProvider } from '../session/SessionContext.jsx';
+import { FakeSocket } from '../test/fakeSocket.js';
 import { GUEST, mockApi } from '../test/mockApi.js';
 import { ChatPanel } from './index.js';
-
-class FakeSocket {
-  static last = null;
-  constructor() {
-    FakeSocket.last = this;
-    this.readyState = 1;
-  }
-  send() {}
-  close() {}
-  push(event) {
-    act(() => this.onmessage?.({ data: JSON.stringify(event) }));
-  }
-}
 
 // Every message list: 300 px visible, contentHeight px of content.
 let contentHeight = 1000;
 beforeEach(() => {
+  FakeSocket.reset();
   vi.stubGlobal('WebSocket', FakeSocket);
   contentHeight = 1000;
   Object.defineProperty(HTMLOListElement.prototype, 'scrollHeight', {
@@ -85,7 +74,7 @@ function show(ui) {
 const listOf = (name) => screen.getByRole('list', { name: `Messages in ${name}` });
 const arrive = (id) => {
   contentHeight += 100;
-  FakeSocket.last.push({ type: 'message', message: msg(id), room: 'general' });
+  FakeSocket.all.at(-1).push({ type: 'message', message: msg(id), room: 'general' });
 };
 
 describe.each(['full', 'compact'])('the %s variant', (variant) => {

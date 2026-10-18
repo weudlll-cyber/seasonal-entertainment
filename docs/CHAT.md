@@ -227,7 +227,8 @@ mediaItemId? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh random no
   subscription needed). It never sees the text.
 - **What a message can hold (v1, decided 2026-10-18)**: text, emoji, and stickers/GIFs from the
   site's library (the library id travels inside the ciphertext; the browser loads the public
-  library file). **No file uploads and no link previews** in direct messages; links are plain
+  library file, `GET /api/chat/media`, once per page and shares it with the picker:
+  `client/src/chat/mediaLibrary.js`, SE-NIGHT-2 part 5). **No file uploads and no link previews** in direct messages; links are plain
   clickable links. Both are open backlog items.
 - **Rules** (`server/src/chat/directRoutes.js`): the same mute/ban and the same per-sender rate
   limit as room messages (one shared limiter); a locked account has no session. The partner must

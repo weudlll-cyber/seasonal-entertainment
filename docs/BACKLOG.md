@@ -51,6 +51,9 @@ An entry moves from part one to part two only when its branch is merged into `ma
 - **Password key derivation freezes the page** — closed by SE-NIGHT-2 part 3 (PR #7, not merged
   yet): Argon2id runs in a same-origin Web Worker; password buttons read "Checking…"; no CSP
   change (docs/AUTH.md, "Off the main thread").
+- **Cleanup: one fake WebSocket, one media library load** — closed by SE-NIGHT-2 part 5 (PR #7,
+  not merged yet): the six per-test fake sockets replaced by client/src/test/fakeSocket.js; the
+  sticker/GIF library loaded once per page and shared (client/src/chat/mediaLibrary.js).
 - **Older direct messages** — closed by SE-NIGHT-2 part 4 (PR #7, not merged yet): a
   conversation pages back 100 at a time on reaching the top, keeping the scroll position
   (docs/CHAT.md, "Direct messages").

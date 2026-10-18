@@ -8,14 +8,14 @@
 
 import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { FakeSocket } from '../test/fakeSocket.js';
 import { GUEST, mockApi } from '../test/mockApi.js';
 import { renderApp } from '../test/renderApp.jsx';
 
-class FakeSocket {
-  send() {}
-  close() {}
-}
-beforeEach(() => vi.stubGlobal('WebSocket', FakeSocket));
+beforeEach(() => {
+  FakeSocket.reset();
+  vi.stubGlobal('WebSocket', FakeSocket);
+});
 
 const sent = (body) => ({
   status: 201,

@@ -11,35 +11,23 @@
 //              (ReportDirectDialog: shared only with consent).
 // ============================================================
 
-import { useEffect, useRef, useState } from 'react';
-import { api } from '../api/http.js';
+import { useMemo, useRef, useState } from 'react';
 import ChatComposer from './ChatComposer.jsx';
 import ChatNotice from './ChatNotice.jsx';
 import DirectMessage from './DirectMessage.jsx';
 import ReportDirectDialog from './ReportDirectDialog.jsx';
 import { showDirect } from './directView.js';
+import { itemsById, useMediaLibrary } from './mediaLibrary.js';
 import { useDirectConversation } from './useDirectConversation.js';
 import { useOlderOnTop } from './useOlderOnTop.js';
 import { useScrollPin } from './useScrollPin.js';
 import './ChatMessage.css';
 
-// The site's sticker/GIF library by item id, loaded once a message uses one.
+// The site's sticker/GIF library by item id (mediaLibrary.js, shared with the picker),
+// loaded once a message uses one; when it cannot load, every item shows as unknown.
 function useLibraryItems(messages) {
-  const [items, setItems] = useState(null);
-  const needed = messages.some((m) => m.payload?.mediaItemId);
-  useEffect(() => {
-    if (!needed || items) return;
-    api('/chat/media')
-      .then(({ packs }) => {
-        const byId = new Map();
-        for (const pack of packs) {
-          for (const item of pack.items) byId.set(item.id, { ...item, kind: pack.kind });
-        }
-        setItems(byId);
-      })
-      .catch(() => setItems(new Map()));
-  }, [needed, items]);
-  return items;
+  const { packs, error } = useMediaLibrary(messages.some((m) => m.payload?.mediaItemId));
+  return useMemo(() => (error ? new Map() : packs && itemsById(packs)), [packs, error]);
 }
 
 // Messages with a notice before each change of the partner's key (and at the end when the

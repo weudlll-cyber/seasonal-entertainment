@@ -7,23 +7,16 @@
 //              live, held back for non-moderators after a report, removed by a moderator.
 // ============================================================
 
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { FakeSocket } from '../test/fakeSocket.js';
 import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
 import { renderApp } from '../test/renderApp.jsx';
 
-class FakeSocket {
-  static last = null;
-  constructor() {
-    FakeSocket.last = this;
-  }
-  send() {}
-  close() {}
-  push(event) {
-    act(() => this.onmessage?.({ data: JSON.stringify(event) }));
-  }
-}
-beforeEach(() => vi.stubGlobal('WebSocket', FakeSocket));
+beforeEach(() => {
+  FakeSocket.reset();
+  vi.stubGlobal('WebSocket', FakeSocket);
+});
 
 const PREVIEW = {
   url: 'https://seasonaltokens.org/',
@@ -91,11 +84,11 @@ describe('preview cards', () => {
   it('arrives live and is held back after a report (non-moderators)', async () => {
     await chat(GUEST, [message(1, null)]);
     await screen.findByText(/look/);
-    FakeSocket.last.push({ type: 'preview', id: 1, preview: PREVIEW, room: 'general' });
+    FakeSocket.all.at(-1).push({ type: 'preview', id: 1, preview: PREVIEW, room: 'general' });
     expect(
       screen.getByRole('complementary', { name: 'Link preview: Seasonal Tokens' })
     ).toBeInTheDocument();
-    FakeSocket.last.push({ type: 'previewHidden', id: 1, room: 'general' });
+    FakeSocket.all.at(-1).push({ type: 'previewHidden', id: 1, room: 'general' });
     expect(screen.queryByRole('complementary')).toBeNull();
   });
 

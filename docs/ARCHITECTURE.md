@@ -367,7 +367,7 @@ client/                    React + Vite client
   src/assets/seasons/source/  original season marks, input of build-season-marks.mjs
   src/test/setup.js        Vitest setup
   src/test/                test helpers: mockApi.js (fixed API answers), fakeSocket.js
-                           (stand-in WebSocket), renderApp.jsx
+                           (stand-in WebSocket; the only one, every test uses it), renderApp.jsx
 server/
   src/index.js             entry point: config, app, listen
   src/app.js               Express app (routes); no listen, so tests drive it directly
