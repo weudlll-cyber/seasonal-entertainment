@@ -342,8 +342,9 @@ client/                    React + Vite client
                            list, never-throwing browser storage
   src/api/http.js          the one fetch wrapper (JSON, ApiError)
   src/session/             session context (who is signed in), RequireUser guard, credentials
-                           (password -> auth key and wrapping key, docs/AUTH.md)
-  src/components/          shared UI pieces (form fields, forms)
+                           (password -> auth key and wrapping key, docs/AUTH.md) and the
+                           password-hashing Web Worker that derives them off the main thread
+  src/components/          shared UI pieces (form fields, forms, the busy submit button)
   src/chat/                the chat module: <ChatPanel> (index.js is its only entry), live
                            connection, composer, picker, messages, styles (docs/CHAT.md)
   src/devPages/            test-only pages, routed by the Vite dev server only

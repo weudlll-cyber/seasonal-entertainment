@@ -24,6 +24,7 @@ import { FormField, FormMessage } from '../components/FormField.jsx';
 import { useKeys } from '../keys/KeyContext.jsx';
 import { keysForNewPassword } from '../session/credentials.js';
 import { useSession } from '../session/SessionContext.jsx';
+import { BusyButton } from '../components/BusyButton.jsx';
 
 export default function RegisterPage() {
   const { setUser } = useSession();
@@ -87,9 +88,7 @@ export default function RegisterPage() {
           <span>I am at least {MINIMUM_AGE} years old.</span>
         </label>
         <FormMessage error={error} />
-        <button className="button" type="submit" disabled={busy}>
-          Create account
-        </button>
+        <BusyButton busy={busy}>Create account</BusyButton>
       </form>
       <p>
         Already registered? <Link to="/login">Log in</Link>

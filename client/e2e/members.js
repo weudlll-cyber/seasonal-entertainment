@@ -31,6 +31,7 @@ export const MEMBERS = [
   'calllayout',
   'callfit1',
   'callfit2',
+  'hashworker',
 ];
 
 export async function seedMembers(databasePath) {

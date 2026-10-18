@@ -37,6 +37,16 @@ crypto helper `shared/crypto.js`, libsodium):
 libsodium's KDF context is exactly 8 bytes: the contexts are "se-auth" and "se-wrap" as C strings,
 i.e. with their terminating NUL byte (`'se-auth\0'` in JavaScript).
 
+**Off the main thread** (SE-NIGHT-2 part 3): step 1 takes most of a second and would freeze the
+page, so `deriveAccountKeys` and `deriveRecoveryKey` run in a Web Worker
+(`client/src/session/passwordHashing.worker.js`, which runs the very functions of
+`shared/crypto.js`; `passwordHashing.js` is the page's side, with the same arguments and
+results). One worker per page, started at the first password. Where there is no `Worker` (the
+unit tests) or it fails to load, the same functions run on the main thread; the browser test
+`client/e2e/passwordWorker.spec.js` makes sure a real login does use the worker. While a login,
+registration, password change, unlock or recovery runs, its button reads **Checking…**
+(`client/src/components/BusyButton.jsx`).
+
 - **Pre-login**: `POST /api/auth/prelogin { username }` → `{ salt, legacy }`. An unknown username
   gets a deterministic fake salt — HMAC-SHA-256 of the lower-cased username, keyed with a key
   derived from `SESSION_SECRET` (no new setting) — so the answer has the same shape for every name
@@ -155,6 +165,12 @@ but every decision is made again on the server.
 it permits compiling WebAssembly only, which the browser's cryptography (libsodium,
 `shared/crypto.js`) needs; JavaScript `eval` and inline scripts stay forbidden
 (`server/src/http/securityHeaders.js`).
+
+The password-hashing worker needs **no CSP change**: it is a same-origin module file from
+`/assets` (no inline or `blob:` worker), so the absent `worker-src` falls back to
+`script-src 'self'`, and the worker's own response carries the same policy, whose
+`'wasm-unsafe-eval'` lets it compile libsodium. Checked in a real browser by
+`client/e2e/passwordWorker.spec.js`, which fails on any CSP violation.
 
 ## CSRF
 

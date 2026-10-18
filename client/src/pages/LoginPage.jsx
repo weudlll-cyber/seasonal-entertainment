@@ -17,6 +17,7 @@ import SecondFactorForm from '../components/SecondFactorForm.jsx';
 import { useKeys } from '../keys/KeyContext.jsx';
 import { logIn } from '../session/credentials.js';
 import { useSession } from '../session/SessionContext.jsx';
+import { BusyButton } from '../components/BusyButton.jsx';
 
 // Only local paths: "//evil.example" or "https://..." would be an open redirect.
 function safeNext(value) {
@@ -82,9 +83,7 @@ export default function LoginPage() {
           required
         />
         <FormMessage error={error} />
-        <button className="button" type="submit" disabled={busy}>
-          Log in
-        </button>
+        <BusyButton busy={busy}>Log in</BusyButton>
       </form>
       <p>
         No account yet? <Link to="/register">Register</Link>
