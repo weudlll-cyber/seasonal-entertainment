@@ -12,6 +12,7 @@
 
 import { expect, request as newRequest, test } from '@playwright/test';
 import { ADMIN_STATE } from './adminState.js';
+import { openCall } from './callPage.js';
 import { expectOneRowComposer } from './composer.js';
 
 test.use({
@@ -52,12 +53,12 @@ test('a screen share shows large even when the spotlight update fails', async ({
       }),
     })
   );
-  await presenter.goto(`/calls/${call.id}`);
+  await openCall(presenter, call.id);
   await presenter.getByRole('button', { name: 'Join call' }).click();
   await presenter.getByRole('button', { name: 'Camera' }).click();
 
   const listener = await (await browser.newContext()).newPage();
-  await listener.goto(`/calls/${call.id}`);
+  await openCall(listener, call.id);
   await listener.getByRole('button', { name: 'Join call' }).click();
   await expect(listener.getByLabel("e2eadmin's camera")).toBeVisible();
 

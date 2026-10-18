@@ -14,6 +14,7 @@
 
 import { expect, request as newRequest, test } from '@playwright/test';
 import { ADMIN_STATE } from './adminState.js';
+import { openCall } from './callPage.js';
 import { memberPage } from './members.js';
 
 test.use({
@@ -69,11 +70,11 @@ test('the stage gets the room; rail, chat tab, full screen, raised hands', async
   await api.post(`/api/calls/${call.id}/start`);
 
   const host = await (await browser.newContext({ storageState: ADMIN_STATE })).newPage();
-  await host.goto(`/calls/${call.id}`);
+  await openCall(host, call.id);
   await host.getByRole('button', { name: 'Join call' }).click();
   await host.getByRole('button', { name: 'Camera' }).click();
   const { page: member } = await memberPage(browser, 'calllayout');
-  await member.goto(`/calls/${call.id}`);
+  await openCall(member, call.id);
   await member.getByRole('button', { name: 'Join call' }).click();
   await host.getByRole('button', { name: 'Share screen' }).click();
   await host.getByRole('button', { name: 'Share now' }).click();
@@ -135,7 +136,7 @@ test('the stage gets the room; rail, chat tab, full screen, raised hands', async
 
   // The chat collapsed stays so after a reload.
   await member.getByRole('button', { name: 'Collapse the call chat' }).click();
-  await member.reload();
+  await openCall(member, call.id, { reload: true });
   await expect(member.getByRole('button', { name: /^Show the call chat/ })).toBeVisible();
 
   // Other pages: the normal sidebar.

@@ -13,6 +13,7 @@
 import { expect, request as newRequest, test } from '@playwright/test';
 import { RoomServiceClient } from 'livekit-server-sdk';
 import { ADMIN_STATE } from './adminState.js';
+import { openCall } from './callPage.js';
 import { memberPage } from './members.js';
 import { CALLS_PORT } from './ports.js';
 
@@ -50,13 +51,13 @@ test('organiser, member and guest through one call', async ({ browser, baseURL }
 
   // The organiser (the run's admin) joins on the stage.
   const host = await (await browser.newContext({ storageState: ADMIN_STATE })).newPage();
-  await host.goto(`/calls/${call.id}`);
+  await openCall(host, call.id);
   await host.getByRole('button', { name: 'Join call' }).click();
   await expect(host.getByRole('button', { name: 'End call for everyone' })).toBeVisible();
 
   // A member listens: no publishing controls, and the call server agrees.
   const { page: member } = await memberPage(browser, 'callmember');
-  await member.goto(`/calls/${call.id}`);
+  await openCall(member, call.id);
   await member.getByRole('button', { name: 'Join call' }).click();
   await expect(member.getByRole('button', { name: 'Raise hand' })).toBeVisible();
   await expect(member.getByRole('button', { name: 'Microphone' })).toHaveCount(0);
@@ -78,7 +79,7 @@ test('organiser, member and guest through one call', async ({ browser, baseURL }
 
   // A guest listens: no hand.
   const guest = await (await browser.newContext()).newPage();
-  await guest.goto(`/calls/${call.id}`);
+  await openCall(guest, call.id);
   await guest.getByRole('button', { name: 'Join call' }).click();
   await expect(guest.getByRole('button', { name: 'Leave call' })).toBeVisible();
   await expect(guest.getByRole('button', { name: 'Raise hand' })).toHaveCount(0);

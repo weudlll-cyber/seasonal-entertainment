@@ -224,7 +224,10 @@ LiveKit server (port 7890, the pinned binary; CI fetches it checksum-checked fir
 Chrome's fake camera, microphone and screen: the organiser starts and joins on the stage, a
 member joins as a listener (the call server confirms they cannot publish), raises a hand, is
 invited and publishes audio, a screen share puts them in the spotlight for a guest listener (who
-has no hand button), and ending the call disconnects everyone.
+has no hand button), and ending the call disconnects everyone. The call specs open a call page through
+`client/e2e/callPage.js`, which rests the pointer over the stage: Playwright's pointer starts on
+the sidebar rail, whose hover overlay would otherwise cover the page's left edge for good (it
+did on CI's Linux runner, 2026-10-18).
 
 ## Browser support for screen sharing with sound
 
