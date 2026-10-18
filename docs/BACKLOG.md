@@ -24,11 +24,6 @@ An entry moves from part one to part two only when its branch is merged into `ma
   not decided.
 - **Chat embedding in other applications** — open. An embed route, allowed embedding origins
   (`frame-ancestors`), login inside an embedded frame; see docs/CHAT.md, last section.
-- **SE-CALLS-1 — community calls on LiveKit** — in review (PR #6, not merged yet). Piece 1: the
-  call service's configuration and portability (`deploy/calls/`, `npm run dev:calls`). Piece 2:
-  calls, roles and management, the call chat, admin settings. Piece 3: join tokens and stage
-  permissions (the server decides). Piece 4: the stage page. Piece 5: docs/CALLS.md,
-  docs/SCALING.md, the privacy draft (docs/CALLS.md).
 - **Call recording** — unconfirmed proposal, not decided. Calls are not recorded (privacy draft).
 - **Linking calls to the events calendar** — unconfirmed proposal, not decided: an event could
   carry its call, and a call its event.
@@ -49,6 +44,15 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **SE-CALLS-1 — community calls on LiveKit** — closed by PR #6 (`feat/se-calls-1`), merged
+  2026-10-18. Piece 1: the call service's configuration and portability (`deploy/calls/`,
+  `npm run dev:calls`). Piece 2: calls, roles and management, the call chat, admin settings.
+  Piece 3: join tokens and stage permissions (the server decides). Piece 4: the stage page.
+  Piece 5: docs/CALLS.md, docs/SCALING.md, the privacy draft. Eye-test fixes in the same PR:
+  SE-CALLS-2 (a screen share always shows; the spotlight columns migrated; sound notice; listener
+  chips; the compact chat composer), SE-CALLS-3 (the stage gets the room; icon controls; the
+  sidebar rail; collapsible call chat; full screen; the "…" message menu everywhere), SE-CALLS-4
+  (toggles name their action; cameras uncropped; scrollbars only on overflow).
 - **SE-NIGHT-1 piece 1 — App shell** — closed by PR #3 (`feat/se-night-1`), merged 2026-10-18.
   Client routing, layout with header and footer, 404 page, security headers.
 - **SE-NIGHT-1 piece 2 — Database and accounts** — closed by PR #3 (`feat/se-night-1`), merged
