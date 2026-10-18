@@ -315,7 +315,8 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
 `server/src/http/securityHeaders.js` (helmet) sends a strict Content-Security-Policy on every
 response: scripts, styles, fonts and connections only from this origin, images from this origin
 or `data:` URLs, no plugins, no framing (`frame-ancestors 'none'`), no inline script or style,
-no JavaScript `eval`. `script-src` also has `'wasm-unsafe-eval'` (added 2026-10-18): it allows
+no JavaScript `eval`. `script-src` also has `'wasm-unsafe-eval'` (added and confirmed by the
+owner 2026-10-18): it allows
 compiling WebAssembly only, which the browser's cryptography needs (libsodium, `shared/crypto.js`,
 docs/AUTH.md); the module itself is a same-origin file.
 Plus `nosniff`, `Referrer-Policy: same-origin` and helmet's other defaults. The browser smoke

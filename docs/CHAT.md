@@ -144,9 +144,12 @@ were introduced (`client/src/keys/`, server `server/src/keys/`, `/api/keys`).
   private key **only sealed** (`user_secret_keys`): `crypto_secretbox_easy` with the wrapping key
   derived from the password (docs/AUTH.md, "Login key split"), fresh random nonce. The server can
   open nothing; it checks only the shapes (a sealed key is always 72 bytes).
-- **Proof of the password**: creating the first pair (`POST /api/keys`), replacing it
-  (`POST /api/keys/replace`) and re-sealing it (`PUT /api/keys/sealed`) need the current
-  password's auth key, so a taken-over session alone cannot swap the keys others encrypt to.
+- **Proof of the password**: every change to the keys — creating the first pair (`POST
+/api/keys`), replacing it (`POST /api/keys/replace`), re-sealing it (`PUT /api/keys/sealed`),
+  setting or removing the recovery seal (`PUT`/`DELETE /api/keys/recovery`, since 2026-10-18) —
+  needs the current password's auth key (failed tries limited per account), so a taken-over
+  session alone can neither swap the keys others encrypt to nor take away a member's way back
+  in.
   `POST /api/keys/check` answers whether a password is right at all: when the sealed key does not
   open, the browser asks it first, so a typo is never mistaken for a lost key.
 - **Recovery code — optional** (decided 2026-10-17). Right after a key pair is made, a dialog
@@ -158,8 +161,9 @@ salt)` and that seal stored (`PUT /api/keys/recovery`) — the code itself never
   if you forget your password."; nothing is stored and it is not asked again automatically. The
   account page ("Private messages") offers **Create recovery code** when there is none, **Create a
   new recovery code** (the old one stops working) and **Remove recovery code**; all of them need
-  the key unlocked on that device (the server cannot check this; it stores only what the browser
-  sealed).
+  the key unlocked on that device and the current password (typed there; the offer right after a
+  new key pair reuses the auth key of the flow that made it, kept in memory only until the offer
+  closes).
 - **Unlocked on a device**: a non-extractable Web Crypto AES-GCM key in IndexedDB wraps a local
   copy of the private key (`client/src/keys/deviceKey.js`), so the device stays unlocked across
   reloads and tabs until **logout, which deletes the copy and that key**. Nothing goes to

@@ -14,7 +14,7 @@ import {
   sealBytes,
 } from '@seasonal-entertainment/shared/crypto.js';
 import { expect } from 'vitest';
-import { browserKeyPair } from './accountKeys.js';
+import { browserKeyPair, keysFor } from './accountKeys.js';
 import { registerUser } from './testApp.js';
 
 export const PASSWORD = 'correct-horse-1';
@@ -30,11 +30,13 @@ export async function memberWithKey(t, name = 'anna') {
   return { agent, user, pair, keyId: res.body.keyId };
 }
 
-// Seals the private key with a new recovery code, as the account page does; returns the code.
+// Seals the private key with a new recovery code, as the account page does (with the password's
+// auth key, which the route asks for); returns the code.
 export async function addRecovery(agent, privateKey) {
   const code = await newRecoveryCode();
   const salt = await newSalt();
   const sealed = await sealBytes(privateKey, await deriveRecoveryKey(code, salt));
-  expect((await agent.put('/api/keys/recovery').send({ salt, sealed })).status).toBe(200);
+  const { authKey } = await keysFor(PASSWORD);
+  expect((await agent.put('/api/keys/recovery').send({ salt, sealed, authKey })).status).toBe(200);
   return code;
 }

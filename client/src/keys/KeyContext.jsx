@@ -7,7 +7,8 @@
 //              IndexedDB, deviceKey.js), locked (the password unlocks it), or broken (the
 //              password no longer opens it: recovery code or start over). Logging out deletes
 //              the device copy. Also whether to offer a recovery code right after a new key
-//              pair was made (asked once, never again automatically).
+//              pair was made (asked once, never again automatically), holding that flow's auth
+//              key in memory until the offer closes: the server asks for it.
 // ============================================================
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
@@ -38,7 +39,8 @@ export function KeyProvider({ children }) {
   // undefined while the session is still loading: that is not a logout.
   const guest = user === null;
   const [stored, setStored] = useState({ ...NONE, forUser: null });
-  const [offerFor, setOfferFor] = useState(null);
+  // The recovery-code offer: { forUser, authKey } of the flow that just made a key pair.
+  const [offer, setOffer] = useState(null);
   const set = (forUser, next) => setStored({ ...NONE, ...next, forUser });
 
   useEffect(() => {
@@ -68,7 +70,7 @@ export function KeyProvider({ children }) {
         set(forUser, { status: 'broken', hasRecovery: result.hasRecovery });
       } else {
         await unlocked(forUser, result, result.hasRecovery);
-        if (result.created) setOfferFor(forUser);
+        if (result.created) setOffer({ forUser, authKey: passwordKeys.authKey });
       }
       return result;
     },
@@ -83,8 +85,9 @@ export function KeyProvider({ children }) {
       keyId: state.keyId,
       privateKey: state.privateKey,
       hasRecovery: state.hasRecovery,
-      offerRecovery: userId !== null && offerFor === userId,
-      dismissRecoveryOffer: () => setOfferFor(null),
+      offerRecovery: userId !== null && offer?.forUser === userId,
+      // Closing the offer also forgets the auth key it held.
+      dismissRecoveryOffer: () => setOffer(null),
       openWithPassword,
       async recover(code, passwordKeys) {
         const result = await actions.recoverWithCode(code, passwordKeys);
@@ -93,19 +96,20 @@ export function KeyProvider({ children }) {
       },
       async startOver(passwordKeys) {
         await unlocked(userId, await actions.startOver(passwordKeys), false);
-        setOfferFor(userId);
+        setOffer({ forUser: userId, authKey: passwordKeys.authKey });
       },
-      async createRecoveryCode() {
-        const code = await actions.createRecoveryCode(state.privateKey);
+      // authKey: the current password's; without one, the offer's (the flow that made the key).
+      async createRecoveryCode(authKey = offer?.authKey) {
+        const code = await actions.createRecoveryCode(state.privateKey, authKey);
         setStored((s) => ({ ...s, hasRecovery: true }));
         return code;
       },
-      async removeRecoveryCode() {
-        await actions.removeRecoveryCode();
+      async removeRecoveryCode(authKey) {
+        await actions.removeRecoveryCode(authKey);
         setStored((s) => ({ ...s, hasRecovery: false }));
       },
     };
-  }, [stored, userId, offerFor, openWithPassword, unlocked]);
+  }, [stored, userId, offer, openWithPassword, unlocked]);
   return <KeyContext.Provider value={value}>{children}</KeyContext.Provider>;
 }
 

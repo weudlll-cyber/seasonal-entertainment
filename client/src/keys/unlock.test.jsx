@@ -7,7 +7,7 @@
 //              key, never offering "start over"); when the password no longer opens it, the
 //              recovery code restores it (sealed again for the current password) and "start
 //              over" makes a new key pair and offers a recovery code; an unlocked key can get
-//              a new recovery code or lose it.
+//              a new recovery code or lose it, each only with the current password.
 // ============================================================
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -128,16 +128,25 @@ describe('when the password no longer opens the key', () => {
 });
 
 describe('managing the recovery code', () => {
-  it('create one, replace it, remove it', async () => {
+  // The section's own password field (the page has other password fields).
+  const typePassword = async (value) =>
+    fireEvent.change(within(await section()).getByLabelText('Password for the recovery code'), {
+      target: { value },
+    });
+
+  it('create one, replace it, remove it — each with the password', async () => {
     const { wrapKey } = await deriveAccountKeys(PASSWORD, PRELOGIN_SALT);
     const { key, privateKey } = await browserKey(wrapKey);
     resetDevice({ userId: 1, keyId: key.keyId, privateKey });
     const { server } = await accountPage(key);
-    fireEvent.click(await screen.findByRole('button', { name: 'Create recovery code' }));
+    const create = await screen.findByRole('button', { name: 'Create recovery code' });
+    await typePassword(PASSWORD);
+    fireEvent.click(create);
     const first = (await screen.findByLabelText('Recovery code')).textContent;
     fireEvent.click(screen.getByLabelText('I have saved my recovery code'));
     fireEvent.click(screen.getByRole('button', { name: 'Done' }));
 
+    await typePassword(PASSWORD);
     fireEvent.click(await screen.findByRole('button', { name: 'Create a new recovery code' }));
     const second = (await screen.findByLabelText('Recovery code')).textContent;
     expect(second).not.toBe(first);
@@ -147,9 +156,24 @@ describe('managing the recovery code', () => {
     fireEvent.click(screen.getByLabelText('I have saved my recovery code'));
     fireEvent.click(screen.getByRole('button', { name: 'Done' }));
 
+    await typePassword(PASSWORD);
     fireEvent.click(await screen.findByRole('button', { name: 'Remove recovery code' }));
     expect(await screen.findByText('Recovery code removed.')).toBeInTheDocument();
     expect(server.state.key.recovery).toBeNull();
     expect(screen.getByRole('button', { name: 'Create recovery code' })).toBeInTheDocument();
+  });
+
+  it('without the right password nothing changes', async () => {
+    const { wrapKey } = await deriveAccountKeys(PASSWORD, PRELOGIN_SALT);
+    const { key, privateKey } = await browserKey(wrapKey);
+    resetDevice({ userId: 1, keyId: key.keyId, privateKey });
+    const { server } = await accountPage(key);
+    fireEvent.click(await screen.findByRole('button', { name: 'Create recovery code' }));
+    expect(await screen.findByText('Enter your password first.')).toBeInTheDocument();
+    await typePassword('wrong-horse-1');
+    fireEvent.click(screen.getByRole('button', { name: 'Create recovery code' }));
+    expect(await screen.findByText('The password is wrong.')).toBeInTheDocument();
+    expect(server.state.key.recovery).toBeNull();
+    expect(screen.queryByLabelText('Recovery code')).toBeNull();
   });
 });

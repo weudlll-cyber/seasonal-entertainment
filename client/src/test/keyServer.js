@@ -3,8 +3,9 @@
 // Path:        client/src/test/keyServer.js
 // Project:     Seasonal Entertainment
 // Description: Test helper: the /api/keys routes as mockApi answers, with state, behaving like
-//              the server (keys/routes.js): creating, replacing and re-sealing need the
-//              account's current auth key; /check answers 401 for any other. Also makes a key
+//              the server (keys/routes.js): creating, replacing and re-sealing the key and
+//              setting or removing the recovery seal need the account's current auth key;
+//              /check answers 401 for any other. Also makes a key
 //              the way a browser would, sealed for a given wrapping key.
 // ============================================================
 
@@ -36,14 +37,14 @@ export function keyServer(authKey, key = null) {
         state.key = { ...state.key, sealedPrivateKey: sent.sealedPrivateKey };
         return { body: { ok: true } };
       }),
-      'PUT /keys/recovery': (sent) => {
+      'PUT /keys/recovery': proven((sent) => {
         state.key = { ...state.key, recovery: { salt: sent.salt, sealed: sent.sealed } };
         return { body: { ok: true } };
-      },
-      'DELETE /keys/recovery': () => {
+      }),
+      'DELETE /keys/recovery': proven(() => {
         state.key = { ...state.key, recovery: null };
         return { body: { ok: true } };
-      },
+      }),
       'POST /keys/check': proven(() => ({ body: { ok: true } })),
     },
   };

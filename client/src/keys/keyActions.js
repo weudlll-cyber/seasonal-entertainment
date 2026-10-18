@@ -70,18 +70,19 @@ export async function recoverWithCode(code, passwordKeys) {
 // "Start over without my old messages": a new key pair; old direct messages stay unreadable.
 export const startOver = (passwordKeys) => newPair('replace', passwordKeys);
 
-// A new recovery code for an unlocked private key; replaces any old one. Returns the code,
-// to be shown once.
-export async function createRecoveryCode(privateKey) {
+// A new recovery code for an unlocked private key; replaces any old one. authKey: the current
+// password's, which the server asks for. Returns the code, to be shown once.
+export async function createRecoveryCode(privateKey, authKey) {
   const { deriveRecoveryKey, newRecoveryCode, newSalt, sealBytes } = await crypto();
   const code = await newRecoveryCode();
   const salt = await newSalt();
   const sealed = await sealBytes(privateKey, await deriveRecoveryKey(code, salt));
-  await api('/keys/recovery', { method: 'PUT', body: { salt, sealed } });
+  await api('/keys/recovery', { method: 'PUT', body: { salt, sealed, authKey } });
   return code;
 }
 
-export const removeRecoveryCode = () => api('/keys/recovery', { method: 'DELETE' });
+export const removeRecoveryCode = (authKey) =>
+  api('/keys/recovery', { method: 'DELETE', body: { authKey } });
 
 // For a password change: the private key sealed for the new password, or undefined when the
 // current password does not open it (nothing to carry over).

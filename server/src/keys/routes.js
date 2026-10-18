@@ -6,11 +6,12 @@
 //              (public key, sealed private key, optional recovery seal), creating the first key
 //              pair, starting over with a new one, re-sealing the same private key after a
 //              recovery, and setting or removing the recovery seal. Every value arrives sealed or
-//              public; the server can open none of them. Creating, replacing or re-sealing the
-//              key needs the current password again (its auth key; /check tells the browser
-//              whether a password is right at all), so a taken-over session
-//              alone cannot swap the keys others encrypt to. The recovery seal needs an unlocked
-//              key in the browser, which the server cannot check (docs/CHAT.md).
+//              public; the server can open none of them. Every change — creating, replacing or
+//              re-sealing the key, setting or removing the recovery seal — needs the current
+//              password again (its auth key; failed tries limited per account), so a taken-over
+//              session alone can neither swap the keys others encrypt to nor take away a
+//              member's way back in. /check tells the browser whether a password is right at
+//              all.
 // ============================================================
 
 import express from 'express';
@@ -94,17 +95,20 @@ export function keyRoutes(db, config) {
     res.json({ ok: true });
   });
 
-  // A new recovery seal replaces the old one: the old code stops working.
-  router.put('/recovery', allow('member'), (req, res) => {
-    const input = validBody(req, res, { salt: saltField, sealed: sealedKeyField });
+  // A new recovery seal replaces the old one: the old code stops working. Like every other
+  // change to the keys it needs the password, so a taken-over session cannot replace or
+  // remove a member's way back in.
+  router.put('/recovery', allow('member'), perUser, async (req, res) => {
+    const input = await provenInput(req, res, { salt: saltField, sealed: sealedKeyField });
     if (!input) return;
-    if (!setRecovery(db, req.user.id, input)) {
+    if (!setRecovery(db, req.user.id, { salt: input.salt, sealed: input.sealed })) {
       return sendError(res, 404, 'no_key', 'This account has no key yet.');
     }
     res.json({ ok: true });
   });
 
-  router.delete('/recovery', allow('member'), (req, res) => {
+  router.delete('/recovery', allow('member'), perUser, async (req, res) => {
+    if (!(await provenInput(req, res, {}))) return;
     setRecovery(db, req.user.id, null);
     res.json({ ok: true });
   });

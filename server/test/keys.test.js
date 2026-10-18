@@ -90,17 +90,16 @@ describe('the recovery code', () => {
       pair.privateKey
     );
 
-    expect((await agent.delete('/api/keys/recovery')).status).toBe(200);
+    const { authKey } = await keysFor(PASSWORD);
+    expect((await agent.delete('/api/keys/recovery').send({ authKey })).status).toBe(200);
     expect((await me(agent)).recovery).toBeNull();
   });
 
   it('cannot be set before there is a key', async () => {
     t = makeTestApp();
     const { agent } = await registerUser(t, 'anna', PASSWORD);
-    const body = {
-      salt: await newSalt(),
-      sealed: (await browserKeyPair(PASSWORD)).sealedPrivateKey,
-    };
+    const pair = await browserKeyPair(PASSWORD);
+    const body = { salt: await newSalt(), sealed: pair.sealedPrivateKey, authKey: pair.authKey };
     expect((await agent.put('/api/keys/recovery').send(body)).status).toBe(404);
   });
 });
@@ -144,5 +143,26 @@ describe('checking a password', () => {
     expect((await t.client().post('/api/keys/check').send({ authKey: right.authKey })).status).toBe(
       401
     );
+  });
+});
+
+describe('changing the recovery seal needs the password', () => {
+  it('set or remove without it or with a wrong one: refused, the seal unchanged', async () => {
+    t = makeTestApp();
+    const { agent, pair } = await memberWithKey(t);
+    const code = await addRecovery(agent, pair.privateKey);
+    const before = (await me(agent)).recovery;
+    const wrong = (await keysFor('wrong-horse-1')).authKey;
+    const replacement = { salt: await newSalt(), sealed: pair.sealedPrivateKey };
+    expect((await agent.put('/api/keys/recovery').send(replacement)).status).toBe(400);
+    expect(
+      (await agent.put('/api/keys/recovery').send({ ...replacement, authKey: wrong })).status
+    ).toBe(401);
+    expect((await agent.delete('/api/keys/recovery')).status).toBe(400);
+    expect((await agent.delete('/api/keys/recovery').send({ authKey: wrong })).status).toBe(401);
+    expect((await me(agent)).recovery).toEqual(before);
+    // The code still opens it.
+    const opened = await openSealed(before.sealed, await deriveRecoveryKey(code, before.salt));
+    expect(opened).toEqual(pair.privateKey);
   });
 });

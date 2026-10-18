@@ -68,7 +68,9 @@ password, salt, authKey }` with a **new** salt: the password is checked one last
   made later) seals it a second time, for when the password is forgotten or reset — details in
   docs/CHAT.md, "Keys and the recovery code". A password change carries the re-sealed key; an
   admin's password reset cannot (the admin has no access to it): afterwards the member uses the
-  recovery code or starts over with a new key pair.
+  recovery code or starts over with a new key pair. Setting, replacing or removing the recovery
+  code needs the current password (its auth key), like every other change to the keys
+  (2026-10-18).
 - **Telegram logins (decided direction, 2026-10-17; not built)**: recovery codes are to apply to
   future Telegram logins too — an account that logs in through Telegram has no password to derive
   a wrapping key from, so its private key needs the recovery code (or a start-over) to open on a
@@ -146,6 +148,13 @@ after `allow()`, never with `router.param`, so a caller without access gets the 
 an existing and a missing id; `server/test/accessBeforeLookup.test.js` fails on any
 `router.param`. The client hides pages a user cannot use,
 but every decision is made again on the server.
+
+## Content-Security-Policy and WebAssembly
+
+`script-src` allows `'wasm-unsafe-eval'` besides `'self'` (confirmed by the owner 2026-10-18):
+it permits compiling WebAssembly only, which the browser's cryptography (libsodium,
+`shared/crypto.js`) needs; JavaScript `eval` and inline scripts stay forbidden
+(`server/src/http/securityHeaders.js`).
 
 ## CSRF
 
