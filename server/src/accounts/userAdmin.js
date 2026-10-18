@@ -7,6 +7,8 @@
 //              data layer, so no route can bypass it (as in the race game).
 // ============================================================
 
+import { escapeLike } from '../db/like.js';
+
 export class LastAdminError extends Error {
   constructor() {
     super('The last admin cannot be removed.');
@@ -20,7 +22,7 @@ const LIST_COLUMNS = `id, username, email, role, can_start_games AS canStartGame
 
 // Search matches username or email, case-insensitively; results in username order.
 export function listUsers(db, { search = '', limit = 200 } = {}) {
-  const pattern = `%${search.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+  const pattern = `%${escapeLike(search)}%`;
   return db
     .prepare(
       `SELECT ${LIST_COLUMNS} FROM users

@@ -15,6 +15,7 @@ import { readConfig } from '../src/config.js';
 import { allow } from '../src/http/access.js';
 import { staffTwoFactorGate } from '../src/twofa/gate.js';
 import { codeForStep, stepAt } from '../src/twofa/totp.js';
+import { logIn, proof } from './helpers/accountKeys.js';
 import { makeTestApp, registerUser, setRole } from './helpers/testApp.js';
 
 let t;
@@ -24,7 +25,7 @@ const PASSWORD = 'correct-horse-1';
 const codeNow = (secret, offset = 0) => codeForStep(secret, stepAt(Date.now()) + offset);
 
 async function enableTwoFactor(agent) {
-  const setup = await agent.post('/api/2fa/setup').send({ password: PASSWORD });
+  const setup = await agent.post('/api/2fa/setup').send(await proof(PASSWORD));
   expect(setup.status).toBe(200);
   expect(setup.body.qrCode).toMatch(/^data:image\/png;base64,/);
   const enable = await agent.post('/api/2fa/enable').send({ code: codeNow(setup.body.secret) });
@@ -32,12 +33,11 @@ async function enableTwoFactor(agent) {
   return { secret: setup.body.secret, recoveryCodes: enable.body.recoveryCodes };
 }
 
-const loginStep1 = () =>
-  t.client().post('/api/auth/login').send({ username: 'anna', password: PASSWORD });
+const loginStep1 = () => logIn(t.client(), 'anna', PASSWORD);
 
 async function loginWith(factor) {
   const agent = t.client();
-  await agent.post('/api/auth/login').send({ username: 'anna', password: PASSWORD });
+  await logIn(agent, 'anna', PASSWORD);
   const res = await agent.post('/api/2fa/login').send(factor);
   return { agent, res };
 }
@@ -58,7 +58,7 @@ describe('setup', () => {
   it('refuses an invalid code and stays off', async () => {
     t = makeTestApp();
     const { agent } = await registerUser(t, 'anna', PASSWORD);
-    const setup = await agent.post('/api/2fa/setup').send({ password: PASSWORD });
+    const setup = await agent.post('/api/2fa/setup').send(await proof(PASSWORD));
     const wrong = String((Number(codeNow(setup.body.secret)) + 1) % 1e6).padStart(6, '0');
     const res = await agent.post('/api/2fa/enable').send({ code: wrong });
     expect(res.status).toBe(400);
@@ -72,7 +72,7 @@ describe('login with 2FA', () => {
     const { agent } = await registerUser(t, 'anna', PASSWORD);
     const { secret } = await enableTwoFactor(agent);
     const half = t.client();
-    const step1 = await half.post('/api/auth/login').send({ username: 'anna', password: PASSWORD });
+    const step1 = await logIn(half, 'anna', PASSWORD);
     expect(step1.body).toEqual({ ok: true, twoFactorRequired: true });
     expect((await half.get('/api/auth/session')).body.user).toBeNull();
     const step2 = await half.post('/api/2fa/login').send({ code: codeNow(secret, 1) });
@@ -119,11 +119,11 @@ describe('disable', () => {
     t = makeTestApp();
     const { agent } = await registerUser(t, 'anna', PASSWORD);
     const { secret } = await enableTwoFactor(agent);
-    const noCode = await agent.post('/api/2fa/disable').send({ password: PASSWORD });
+    const noCode = await agent.post('/api/2fa/disable').send(await proof(PASSWORD));
     expect(noCode.status).toBe(401);
     const ok = await agent
       .post('/api/2fa/disable')
-      .send({ password: PASSWORD, code: codeNow(secret, 1) });
+      .send({ ...(await proof(PASSWORD)), code: codeNow(secret, 1) });
     expect(ok.status).toBe(200);
     expect((await agent.get('/api/auth/session')).body.user.twoFactorEnabled).toBe(false);
   });

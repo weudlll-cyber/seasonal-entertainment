@@ -8,8 +8,18 @@
 //              held; released by the retention job). A message is text, or a sticker / GIF
 //              from the media library (media/schema.js), optionally with a link preview
 //              (previews/schema.js); a report counts until a moderator marks it reviewed.
+//              Members' favourite rooms and favourite members (gone with the account).
+//              Direct messages between members: only ciphertext, nonce and who/which keys
+//              (end-to-end encrypted, docs/CHAT.md). How far each member has read, per room
+//              and per direct conversation (chat_reads: the unread counters), and the rooms a
+//              member muted (left out of the room total). @mentions per room message and
+//              mentioned member.
+//              Reports of a private conversation: the reason, and only when the reporter chose
+//              to share them, copies of the selected messages as the reporter provided them.
 //              migrateChat() brings older databases up.
 // ============================================================
+
+import { addMissingColumns } from '../db/addColumns.js';
 
 export const CHAT_SCHEMA = `
 CREATE TABLE IF NOT EXISTS chat_rooms (
@@ -61,6 +71,70 @@ CREATE TABLE IF NOT EXISTS chat_sanctions (
   created_at TEXT    NOT NULL,
   lifted_at  TEXT
 );
+CREATE TABLE IF NOT EXISTS chat_favourite_rooms (
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  room_id    INTEGER NOT NULL REFERENCES chat_rooms(id) ON DELETE CASCADE,
+  created_at TEXT    NOT NULL,
+  PRIMARY KEY (user_id, room_id)
+);
+CREATE TABLE IF NOT EXISTS chat_favourite_users (
+  user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  favourite_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at   TEXT    NOT NULL,
+  PRIMARY KEY (user_id, favourite_id),
+  CHECK (user_id <> favourite_id)
+);
+CREATE TABLE IF NOT EXISTS direct_messages (
+  id               INTEGER PRIMARY KEY,
+  sender_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  recipient_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  sender_key_id    INTEGER NOT NULL REFERENCES user_keys(id) ON DELETE CASCADE,
+  recipient_key_id INTEGER NOT NULL REFERENCES user_keys(id) ON DELETE CASCADE,
+  nonce            TEXT    NOT NULL,
+  ciphertext       TEXT    NOT NULL,
+  created_at       TEXT    NOT NULL,
+  CHECK (sender_id <> recipient_id)
+);
+CREATE INDEX IF NOT EXISTS direct_by_sender ON direct_messages (sender_id, recipient_id, id);
+CREATE INDEX IF NOT EXISTS direct_by_recipient ON direct_messages (recipient_id, sender_id, id);
+CREATE INDEX IF NOT EXISTS direct_by_age ON direct_messages (created_at);
+CREATE TABLE IF NOT EXISTS chat_mentions (
+  message_id INTEGER NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  PRIMARY KEY (message_id, user_id)
+);
+CREATE TABLE IF NOT EXISTS chat_room_mutes (
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  room_id    INTEGER NOT NULL REFERENCES chat_rooms(id) ON DELETE CASCADE,
+  created_at TEXT    NOT NULL,
+  PRIMARY KEY (user_id, room_id)
+);
+CREATE TABLE IF NOT EXISTS chat_reads (
+  user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  scope        TEXT    NOT NULL CHECK (scope IN ('room', 'direct')),
+  target_id    INTEGER NOT NULL,
+  last_read_id INTEGER NOT NULL,
+  PRIMARY KEY (user_id, scope, target_id)
+);
+CREATE TABLE IF NOT EXISTS direct_reports (
+  id                  INTEGER PRIMARY KEY,
+  reporter_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  partner_id          INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reported_message_id INTEGER NOT NULL,
+  reason              TEXT    NOT NULL,
+  created_at          TEXT    NOT NULL,
+  reviewed_at         TEXT,
+  reviewed_by         TEXT
+);
+CREATE TABLE IF NOT EXISTS direct_report_copies (
+  id            INTEGER PRIMARY KEY,
+  report_id     INTEGER NOT NULL REFERENCES direct_reports(id) ON DELETE CASCADE,
+  message_id    INTEGER NOT NULL,
+  author_name   TEXT    NOT NULL,
+  text          TEXT    NOT NULL,
+  media_item_id INTEGER,
+  sent_at       TEXT    NOT NULL
+);
 `;
 
 // Columns added after a table was first created; CREATE IF NOT EXISTS skips them.
@@ -84,12 +158,7 @@ const ADDED_COLUMNS = [
 ];
 
 export function migrateChat(db) {
-  for (const [table, column, definition, afterwards] of ADDED_COLUMNS) {
-    const columns = db.prepare(`PRAGMA table_info(${table})`).all();
-    if (columns.some((c) => c.name === column)) continue;
-    db.transaction(() => {
-      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
-      if (afterwards) db.exec(afterwards);
-    })();
-  }
+  addMissingColumns(db, ADDED_COLUMNS);
+  // Replaced by chat_reads (2026-10-18) before it was ever released; never held real data.
+  db.exec('DROP TABLE IF EXISTS direct_reads');
 }

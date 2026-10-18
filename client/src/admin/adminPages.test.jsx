@@ -3,12 +3,14 @@
 // Path:        client/src/admin/adminPages.test.jsx
 // Project:     Seasonal Entertainment
 // Description: Guards the admin area screens: who can open them, the users list and its
-//              controls (including a refusal shown in the row), and the audit log listing.
+//              controls (including a refusal shown in the row, and a password reset that checks
+//              the password rules and sends only a new salt and auth key), and the audit log.
 // ============================================================
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
+import { deriveAccountKeys } from '@seasonal-entertainment/shared/crypto.js';
 import App from '../app/App.jsx';
 import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
 
@@ -77,6 +79,26 @@ describe('users page', () => {
     fireEvent.click(await screen.findByLabelText('Locked for bert'));
     const row = screen.getByText('bert').closest('tr');
     expect(await within(row).findByText('The last admin cannot be removed.')).toBeInTheDocument();
+  });
+
+  it('resets a password with a new salt and auth key, never the password', async () => {
+    const calls = mockApi(answers({ 'POST /admin/users/2/password': { body: { ok: true } } }));
+    renderAt('/admin/users');
+    fireEvent.click(await screen.findByRole('button', { name: 'Reset password' }));
+    const field = screen.getByLabelText('New password for bert');
+    // The shared password rules are checked here: the server cannot see the password.
+    fireEvent.change(field, { target: { value: 'short' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Set' }));
+    expect(await screen.findByText(/at least 10 characters/)).toBeInTheDocument();
+    expect(calls.some((c) => c.key === 'POST /admin/users/2/password')).toBe(false);
+
+    fireEvent.change(field, { target: { value: 'brand-new-pass-1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Set' }));
+    expect(await screen.findByText(/Password reset/)).toBeInTheDocument();
+    const { body } = calls.find((c) => c.key === 'POST /admin/users/2/password');
+    expect(Object.keys(body).sort()).toEqual(['authKey', 'salt']);
+    expect(body.authKey).toBe((await deriveAccountKeys('brand-new-pass-1', body.salt)).authKey);
+    expect(JSON.stringify(calls.map((c) => c.body))).not.toContain('brand-new-pass-1');
   });
 });
 

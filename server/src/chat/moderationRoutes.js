@@ -51,6 +51,8 @@ export function chatModerationRoutes(db, hub) {
         { hidden: true }
       );
       hub.broadcast(req.message.roomId, { type: 'hidden', id: req.message.id });
+      // A hidden message no longer counts as unread for anyone.
+      hub.notifyReaders(findRoom(db, req.message.roomId), { type: 'activity' });
     }
     res.json({ ok: true });
   });

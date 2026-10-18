@@ -35,8 +35,43 @@ An entry moves from part one to part two only when its branch is merged into `ma
   logout or an account switch the chat module's shared connection reconnects as the new reader
   and the rooms and messages reload (docs/CHAT.md). Part E: the leftover check message removed
   from the development database and a stale `npm run dev:admin` process ended (2026-10-17).
-- **Unread count for the chat button** — open. The drawer's chat button shows no badge: the chat
-  module cannot tell how many messages are new for this reader yet.
+- **SE-DM-1 — favourites, end-to-end encrypted direct messages, report with consent** — in
+  progress (PR to come; built on PR #4, which carries PR #3). Piece 1: favourite rooms (star in
+  the drawer's picker and the full chat's room list, favourites first) and favourite members
+  (name menu in every message), members only. Piece 2: the password never leaves the browser
+  (Argon2id in the browser, only a derived auth key is sent; pre-login salt; one-time legacy
+  upgrade; docs/AUTH.md). Piece 3: every member's key pair, made in the browser, the private key
+  only sealed on the server; optional recovery code; unlock, recovery and start over (docs/CHAT.md,
+  "Keys and the recovery code"). Piece 4: end-to-end encrypted direct messages between members
+  (drawer and /chat Direct tab, name menu, unread dot, key-change notice; docs/CHAT.md, "Direct
+  messages"). Piece 5: reporting a direct message with consent (copies only when the reporter
+  ticks to share them; moderators' views audited; copies deleted 90 days after review).
+- **SE-DM-2 — unread counters, room mute, @mentions, member search, favourites star, presence
+  setting, security fix** — in progress (on PR #5). Part 1: unread counters for rooms (blue) and
+  private messages (orange), live in every tab (docs/CHAT.md, "Unread counters"). Part 2: muting
+  a room (bell; left out of the room total, its count dimmed). Part 4: "Find a member" in the
+  Direct tab. Part 3: @mentions (notify also in muted rooms; name chips; suggestions). Part 5:
+  the favourite star in the Direct list and the search results. Part 6: "Show when I'm online"
+  (account page, Privacy; on by default). Part 7: the recovery-code routes need the password
+  too; docs.
+- **File uploads in direct messages** — open. Left out of v1 (decided 2026-10-18): an uploaded
+  file would have to be encrypted in the browser too.
+- **Link previews in direct messages** — open. Left out of v1: the server would have to see the
+  link to fetch it; links are plain clickable links.
+- **Safety-number verification** — open. The server hands out public keys, so a compromised server
+  could substitute one (docs/CHAT.md, "Known limit"); two members comparing a safety number
+  outside the site would detect it.
+- **Telegram-login recovery code handling** — open (decided direction 2026-10-17). Recovery codes
+  are to apply to future Telegram logins too: such an account has no password to derive a
+  wrapping key from (docs/AUTH.md).
+- **Unlock a new device by confirming it on an already logged-in device** — unconfirmed proposal,
+  not decided: instead of the password or the recovery code, a device that is already unlocked
+  hands the private key over to the new one.
+- **Remove the legacy-login route and the legacy flag in pre-login before go-live** — open. Both
+  exist only for accounts created before the login key split (development data); see
+  docs/AUTH.md, "Login key split".
+- **Operating-system notifications for mentions and direct messages** — unconfirmed proposal,
+  not decided.
 - **Chat embedding in other applications** — open. An embed route, allowed embedding origins
   (`frame-ancestors`), login inside an embedded frame; see docs/CHAT.md, last section.
 - **SE-CHAT-MEDIA-1 — Chat emojis, stickers, GIFs and link previews** — in review (PR #3).
@@ -59,6 +94,9 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **Unread count for the chat button** — closed by SE-DM-2 part 1 (`1bd2f79`, on PR #5, in review,
+  not merged yet): unread counters for rooms and private messages on the chat button, the
+  sidebar, the room lists, the Direct list and the tabs (docs/CHAT.md, "Unread counters").
 - **SE-FOUNDATION-1** — closed by PR #1 (`feat/se-foundation-1`), merged 2026-10-17.
   Repository, license, server with `/api/health`, landing page, design tokens, fonts,
   web-ready season marks with build script, tests, `npm run verify`, CI.

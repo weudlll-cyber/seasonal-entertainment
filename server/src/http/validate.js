@@ -30,3 +30,7 @@ export const required = (label, max) => (value) =>
     : `${label} is required (at most ${max} characters).`;
 
 export const mustBeTrue = (message) => (value) => (value === true ? null : message);
+
+// A record id or similar: a whole number above zero.
+export const positiveInteger = (label) => (value) =>
+  Number.isInteger(value) && value > 0 ? null : `${label} is required.`;

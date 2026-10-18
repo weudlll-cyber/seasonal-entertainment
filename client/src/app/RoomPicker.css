@@ -1,0 +1,139 @@
+/* ============================================================
+   File:        RoomPicker.css
+   Path:        client/src/app/RoomPicker.css
+   Project:     Seasonal Entertainment
+   Description: The chat drawer's room picker (RoomPicker.jsx): its button, the listbox and
+                its options — one row of fixed columns each (mark, name, favourite star,
+                count) — and the rooms' season colour marks. Moved out of ChatDrawer.css
+                (2026-10-18) to keep both files short.
+   ============================================================ */
+
+.room-picker {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.room-picker__options {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.room-picker__group-title {
+  display: block;
+  padding: 0.25rem var(--space-1) 0;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.room-picker__button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  min-height: var(--hit-target);
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: var(--font-weight-strong);
+  cursor: pointer;
+}
+
+.room-picker__name {
+  overflow: hidden;
+  flex: 1;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-mark {
+  display: inline-block;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--room-colour);
+}
+
+.room-mark--spring {
+  --room-colour: var(--color-spring);
+}
+
+.room-mark--summer {
+  --room-colour: var(--color-summer);
+}
+
+.room-mark--autumn {
+  --room-colour: var(--color-autumn);
+}
+
+.room-mark--winter {
+  --room-colour: var(--color-winter);
+}
+
+.room-picker__list {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
+  list-style: none;
+}
+
+/* One option = one row of fixed columns (mark, name, star, count), as in the full chat's
+   room list; named areas keep a column empty when its part is absent. */
+.room-picker__option {
+  display: grid;
+  grid-template-areas: 'mark name star count';
+  grid-template-columns: 12px minmax(0, 1fr) 16px 2.75rem;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--hit-target);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.room-picker__option > .room-mark {
+  grid-area: mark;
+}
+
+.room-picker__option-name {
+  overflow: hidden;
+  grid-area: name;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-picker__option-star {
+  display: grid;
+  grid-area: star;
+  color: var(--color-autumn);
+}
+
+.room-picker__option > .chat-count {
+  grid-area: count;
+  justify-self: center;
+}
+
+.room-picker__option--active,
+.room-picker__option:hover {
+  background: var(--color-active-bg);
+}
+
+.room-picker__option[aria-selected='true'] {
+  font-weight: var(--font-weight-strong);
+}

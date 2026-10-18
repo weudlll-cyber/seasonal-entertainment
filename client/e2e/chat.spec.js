@@ -8,6 +8,7 @@
 // ============================================================
 
 import { expect, request as newRequest, test } from '@playwright/test';
+import { newAccountData } from './accountKeys.js';
 import { ADMIN_STATE } from './adminState.js';
 
 test('live chat between a guest and a member, and moderation', async ({ browser, baseURL }) => {
@@ -18,18 +19,13 @@ test('live chat between a guest and a member, and moderation', async ({ browser,
     storageState: { cookies: [], origins: [] },
   });
   await api.post('/api/auth/register', {
-    data: {
-      username: member,
-      email: `${member}@example.org`,
-      password: 'correct-horse-1',
-      ageConfirmed: true,
-    },
+    data: await newAccountData(member, 'correct-horse-1'),
   });
   const memberContext = await browser.newContext({ storageState: await api.storageState() });
   await api.dispose();
   const memberPage = await memberContext.newPage();
   await memberPage.goto('/chat');
-  await expect(memberPage.getByRole('button', { name: 'General' })).toBeVisible();
+  await expect(memberPage.getByRole('button', { name: 'General', exact: true })).toBeVisible();
 
   const guestContext = await browser.newContext();
   const guestPage = await guestContext.newPage();

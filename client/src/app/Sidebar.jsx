@@ -15,19 +15,31 @@ import logo from '../assets/seasonal-entertainment.jpg';
 import { useSession } from '../session/SessionContext.jsx';
 import ThemeToggle from '../theme/ThemeToggle.jsx';
 import AccountCard from './AccountCard.jsx';
+import { useUnread } from '../chat/index.js';
 import Icon from './icons.jsx';
 import { LEGAL_NAV, MAIN_NAV, staffNavFor } from './navigation.js';
+import UnreadDots, { unreadSummary } from './UnreadDots.jsx';
 import './Sidebar.css';
 
-function NavItem({ item }) {
+// label: the link's accessible name when it says more than its text; extra: shown after it.
+function NavItem({ item, label, extra = null }) {
   return (
     <li>
       {/* React Router marks "/" only on the home page itself, the others on their section. */}
-      <NavLink to={item.to} className="nav-item">
+      <NavLink to={item.to} className="nav-item" aria-label={label}>
         <Icon name={item.icon} />
         <span>{item.label}</span>
+        {extra}
       </NavLink>
     </li>
+  );
+}
+
+// The "Chat" item with the unread counters: shown as dots, spoken in the link's name.
+function ChatNavItem({ item }) {
+  const unread = useUnread();
+  return (
+    <NavItem item={item} label={`${item.label}${unreadSummary(unread)}`} extra={<UnreadDots />} />
   );
 }
 
@@ -91,9 +103,13 @@ export default function Sidebar() {
         </button>
         <nav aria-label="Main" className="sidebar__nav">
           <ul>
-            {MAIN_NAV.map((item) => (
-              <NavItem key={item.to} item={item} />
-            ))}
+            {MAIN_NAV.map((item) =>
+              item.to === '/chat' ? (
+                <ChatNavItem key={item.to} item={item} />
+              ) : (
+                <NavItem key={item.to} item={item} />
+              )
+            )}
           </ul>
           {staffNav.length > 0 && (
             <>

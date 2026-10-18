@@ -16,13 +16,14 @@ import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { addMessage, findMessage, listMessages } from './messages.js';
+import { storeMentions, withMentions } from './mentions.js';
 import { readMessageInput } from './messageInput.js';
-import { makeSenderLimit } from './senderLimit.js';
+import { roomLoader } from './roomLoader.js';
+import { refuseSanctioned } from './sanctionRefusal.js';
 import {
   activeSanction,
   assignGuestName,
   findRoom,
-  findRoomBySlug,
   listRooms,
   reportMessage,
   touchGuest,
@@ -60,24 +61,16 @@ const forGuests =
     return counted ? limiter(req, res, next) : next();
   };
 
-// previews: the link-preview service (previews/service.js).
-export function chatRoutes(db, config, hub, previews) {
+// previews: the link-preview service (previews/service.js); allowMessage: the per-sender
+// rate limit, shared with direct messages (senderLimit.js, mount.js).
+export function chatRoutes(db, config, hub, previews, allowMessage) {
   const router = express.Router();
-  const allowMessage = makeSenderLimit(config.chat.rate);
   const guestPostsPerIp = forGuests(makeLimiter(config.rateLimits.chatGuestPost));
   const newGuestsPerIp = forGuests(makeLimiter(config.rateLimits.chatNewGuest), {
     newGuestsOnly: true,
   });
 
-  // Unknown and unreadable rooms answer the same 404: a room's existence is not revealed.
-  const loadRoom = (req, res, next) => {
-    const room = findRoomBySlug(db, req.params.slug);
-    if (!room || !canRead(room, chatViewer(req))) {
-      return sendError(res, 404, 'not_found', 'No such room.');
-    }
-    req.room = room;
-    next();
-  };
+  const loadRoom = roomLoader(db);
 
   router.get('/rooms', allow('public'), (req, res) => {
     const viewer = chatViewer(req);
@@ -93,7 +86,7 @@ export function chatRoutes(db, config, hub, previews) {
 
   router.get('/rooms/:slug/messages', allow('public'), loadRoom, (req, res) => {
     const moderator = isModerator(chatViewer(req));
-    res.json({ ok: true, messages: listMessages(db, req.room, { moderator }) });
+    res.json({ ok: true, messages: withMentions(db, listMessages(db, req.room, { moderator })) });
   });
 
   router.post(
@@ -110,17 +103,7 @@ export function chatRoutes(db, config, hub, previews) {
       const input = readMessageInput(req, res, db, viewer);
       if (!input) return;
       const sanction = activeSanction(db, viewer);
-      if (sanction) {
-        const until = sanction.until
-          ? ` until ${sanction.until.slice(0, 16).replace('T', ' ')} UTC`
-          : '';
-        return sendError(
-          res,
-          403,
-          sanction.kind === 'ban' ? 'banned' : 'muted',
-          `You are ${sanction.kind === 'ban' ? 'banned from' : 'muted in'} the chat${until}.`
-        );
-      }
+      if (sanction) return refuseSanctioned(res, sanction);
       if (!(await ensureGuest(req, res, viewer, db))) return;
       const senderKey = viewer.user ? `user:${viewer.user.id}` : `guest:${viewer.guest.id}`;
       if (!allowMessage(senderKey, !viewer.user)) {
@@ -128,9 +111,14 @@ export function chatRoutes(db, config, hub, previews) {
       }
       // Stickers and GIFs count like text towards the sender's rate limit.
       const message = addMessage(db, req.room, viewer, input);
+      // Guests may type "@name" too: it notifies only a member who may read the room.
+      storeMentions(db, config, req.room, message, input.body ?? '');
       // Internal ids stay on the server; readers get only what the room shows.
-      const { roomId, authorUserId, authorGuest, ...visible } = message;
+      const { roomId, authorUserId, authorGuest, ...rest } = message;
+      const [visible] = withMentions(db, [rest]);
       hub.broadcast(req.room.id, { type: 'message', message: visible });
+      // Every member who may read the room recounts their unread messages (other tabs too).
+      hub.notifyReaders(req.room, { type: 'activity', room: req.room.slug });
       res.status(201).json({ ok: true, message: visible });
       previews.attach(message, viewer); // in the background; pushed when ready
     }

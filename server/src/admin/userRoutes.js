@@ -3,13 +3,15 @@
 // Path:        server/src/admin/userRoutes.js
 // Project:     Seasonal Entertainment
 // Description: /api/admin/users (admins only): list/search, change role, grant/revoke "can
-//              start games", lock/unlock, reset password. Each change writes exactly one audit
+//              start games", lock/unlock, reset password (a new salt and auth key derived in
+//              the admin's browser, docs/AUTH.md). Each change writes exactly one audit
 //              entry; a password reset ends all of that user's sessions (epoch bump). Role,
 //              lock and password changes close that user's chat sockets (chat/mount.js).
 // ============================================================
 
 import express from 'express';
-import { ROLES, validatePassword } from '@seasonal-entertainment/shared/accountRules.js';
+import { ROLES } from '@seasonal-entertainment/shared/accountRules.js';
+import { authKeyField, saltField } from '../accounts/credentials.js';
 import { hashPassword } from '../accounts/passwords.js';
 import {
   LastAdminError,
@@ -105,11 +107,13 @@ export function adminUserRoutes(db, config, chatSessions) {
     res.json({ ok: true });
   });
 
-  // The admin chooses the new password and passes it on; it is never logged or audited.
+  // The admin chooses the new password and passes it on; their browser derives a fresh salt and
+  // auth key from it, so the password itself never reaches the server (nor any log).
   router.post('/:id/password', allow('admin'), loadTarget, async (req, res) => {
-    const input = validBody(req, res, { newPassword: validatePassword });
+    const input = validBody(req, res, { salt: saltField, authKey: authKeyField('New password') });
     if (!input) return;
-    setPasswordHash(db, req.target.id, await hashPassword(input.newPassword, config.bcryptCost));
+    const verifier = await hashPassword(input.authKey, config.bcryptCost);
+    setPasswordHash(db, req.target.id, verifier, input.salt);
     chatSessions.accountChanged(req.target.id);
     audit(req, 'user.password_reset', null, { sessionsEnded: true });
     res.json({ ok: true });

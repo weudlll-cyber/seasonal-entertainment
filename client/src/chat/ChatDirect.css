@@ -1,0 +1,173 @@
+/* ============================================================
+   File:        ChatDirect.css
+   Path:        client/src/chat/ChatDirect.css
+   Project:     Seasonal Entertainment
+   Description: Direct messages in the chat module: "Find a member", the conversation list
+                (online mark), a conversation's header and key-change notices, and the report
+                dialog. Under the .se-chat root like every module style.
+   ============================================================ */
+
+.se-chat .chat-direct-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.se-chat .chat-direct-list__item {
+  display: flex;
+  align-items: center;
+  gap: var(--chat-space-1);
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--chat-space-1);
+  border: 1px solid var(--chat-border);
+  border-radius: var(--chat-radius);
+  background: var(--chat-bg);
+  color: var(--chat-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.se-chat .chat-direct-list__name {
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  font-weight: var(--chat-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.se-chat .chat-online {
+  color: var(--color-success, #1d7a46);
+  font-size: 0.8125rem;
+}
+
+.se-chat .chat-direct__header {
+  display: flex;
+  align-items: center;
+  gap: var(--chat-space-1);
+  min-height: 44px;
+}
+
+.se-chat .chat-direct__header .chat-link-button {
+  min-width: 44px;
+  min-height: 44px;
+  text-decoration: none;
+  font-size: 1.25rem;
+}
+
+.se-chat .chat-key-notice {
+  padding: 0.25rem var(--chat-space-1);
+  text-align: center;
+}
+
+/* The report dialog: a modal over the page, inside the module's own styles. */
+.se-chat .chat-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: var(--chat-space-2);
+  background: var(--color-scrim, rgb(0 0 0 / 40%));
+}
+
+.se-chat .chat-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--chat-space-1);
+  width: min(30rem, 100%);
+  max-height: 100%;
+  overflow: auto;
+  padding: var(--chat-space-2);
+  border-radius: var(--chat-radius);
+  background: var(--chat-bg);
+  box-shadow: var(--chat-shadow);
+}
+
+.se-chat .chat-dialog__messages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 12rem;
+  overflow: auto;
+  margin: 0;
+  border: 1px solid var(--chat-border);
+  border-radius: var(--chat-radius);
+}
+
+.se-chat .chat-dialog__message,
+.se-chat .chat-dialog__share {
+  display: flex;
+  gap: var(--chat-space-1);
+  align-items: flex-start;
+}
+
+.se-chat .chat-dialog__actions {
+  display: flex;
+  gap: var(--chat-space-1);
+}
+
+/* "Find a member": the field, and its list of up to 10 names below it. */
+.se-chat .chat-member-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--chat-space-1);
+  border: 1px solid var(--chat-border-strong);
+  border-radius: var(--chat-radius);
+  background: var(--chat-bg);
+  color: var(--chat-text);
+  font: inherit;
+}
+
+.se-chat .chat-member-search__list {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.se-chat .chat-member-search__option {
+  display: flex;
+  align-items: center;
+  gap: var(--chat-space-1);
+  min-height: 44px;
+  padding: 0 var(--chat-space-1);
+  border-radius: var(--chat-radius);
+  cursor: pointer;
+}
+
+.se-chat .chat-member-search__option--active {
+  background: var(--color-active-bg, #eaf6fe);
+}
+
+/* Not set up for private messages yet: shown, not choosable. */
+.se-chat .chat-member-search__option[aria-disabled='true'] {
+  cursor: default;
+  opacity: 0.55;
+}
+
+/* A conversation row: the row's button (it takes the free width), then its star, so every
+   row's star stands in the same column. */
+.se-chat .chat-direct-list__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Results and their stars side by side, row for row (every row is 44px high). */
+.se-chat .chat-member-search__results {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.25rem;
+}
+
+.se-chat .chat-member-search__stars {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}

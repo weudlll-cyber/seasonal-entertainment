@@ -18,6 +18,7 @@ import AdminInfoListPage from '../admin/AdminInfoListPage.jsx';
 import AdminLayout from '../admin/AdminLayout.jsx';
 import AdminUsersPage from '../admin/AdminUsersPage.jsx';
 import InfoEditorPage from '../admin/InfoEditorPage.jsx';
+import { KeyProvider } from '../keys/KeyContext.jsx';
 import AccountPage from '../pages/AccountPage.jsx';
 import ChatPage from '../pages/ChatPage.jsx';
 import EventsPage from '../pages/EventsPage.jsx';
@@ -43,55 +44,57 @@ export default function App() {
   return (
     <ThemeProvider>
       <SessionProvider>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route index element={<LandingPage />} />
-            <Route path="info" element={<InfoIndexPage />} />
-            <Route path="info/:slug" element={<InfoPage />} />
-            <Route path="events" element={<EventsPage />} />
-            <Route path="games" element={<GamesPage />} />
-            <Route path="chat" element={<ChatPage />} />
-            <Route path="login" element={<LoginPage />} />
-            <Route path="register" element={<RegisterPage />} />
-            <Route
-              path="account"
-              element={
-                <RequireUser>
-                  <AccountPage />
-                </RequireUser>
-              }
-            />
-            <Route
-              path="admin"
-              element={
-                <RequireUser role="admin">
-                  <AdminLayout />
-                </RequireUser>
-              }
-            >
-              <Route index element={<Navigate to="users" replace />} />
-              <Route path="users" element={<AdminUsersPage />} />
-              <Route path="info" element={<AdminInfoListPage />} />
-              <Route path="info/:id" element={<InfoEditorPage />} />
-              <Route path="events" element={<AdminEventsPage />} />
-              <Route path="games" element={<AdminGamesPage />} />
-              <Route path="chat" element={<AdminChatPage />} />
-              <Route path="chat-media" element={<AdminChatMediaPage />} />
-              <Route path="audit" element={<AdminAuditPage />} />
-            </Route>
-            {ChatPanelsTestPage && (
+        <KeyProvider>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route index element={<LandingPage />} />
+              <Route path="info" element={<InfoIndexPage />} />
+              <Route path="info/:slug" element={<InfoPage />} />
+              <Route path="events" element={<EventsPage />} />
+              <Route path="games" element={<GamesPage />} />
+              <Route path="chat" element={<ChatPage />} />
+              <Route path="login" element={<LoginPage />} />
+              <Route path="register" element={<RegisterPage />} />
               <Route
-                path="test/chat-panels"
+                path="account"
                 element={
-                  <Suspense>
-                    <ChatPanelsTestPage />
-                  </Suspense>
+                  <RequireUser>
+                    <AccountPage />
+                  </RequireUser>
                 }
               />
-            )}
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Routes>
+              <Route
+                path="admin"
+                element={
+                  <RequireUser role="admin">
+                    <AdminLayout />
+                  </RequireUser>
+                }
+              >
+                <Route index element={<Navigate to="users" replace />} />
+                <Route path="users" element={<AdminUsersPage />} />
+                <Route path="info" element={<AdminInfoListPage />} />
+                <Route path="info/:id" element={<InfoEditorPage />} />
+                <Route path="events" element={<AdminEventsPage />} />
+                <Route path="games" element={<AdminGamesPage />} />
+                <Route path="chat" element={<AdminChatPage />} />
+                <Route path="chat-media" element={<AdminChatMediaPage />} />
+                <Route path="audit" element={<AdminAuditPage />} />
+              </Route>
+              {ChatPanelsTestPage && (
+                <Route
+                  path="test/chat-panels"
+                  element={
+                    <Suspense>
+                      <ChatPanelsTestPage />
+                    </Suspense>
+                  }
+                />
+              )}
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
+          </Routes>
+        </KeyProvider>
       </SessionProvider>
     </ThemeProvider>
   );

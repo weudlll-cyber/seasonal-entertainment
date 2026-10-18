@@ -4,7 +4,8 @@
    Project:     Seasonal Entertainment
    Description: The floating chat button and the chat drawer over the page (400px wide, 16px
                 from the window's top, right and bottom; the full width below 760px), and the
-                drawer's room picker. The page underneath is never resized.
+                row holding the room picker (RoomPicker.css) with its star and bell. The page
+                underneath is never resized.
    ============================================================ */
 
 .chat-launcher {
@@ -24,6 +25,13 @@
   cursor: pointer;
 }
 
+/* The unread counters sit on the button's upper edge. */
+.chat-launcher__counts {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+}
+
 .chat-drawer {
   position: fixed;
   top: var(--space-2);
@@ -40,6 +48,15 @@
   border-radius: var(--radius-card);
   background: var(--color-surface);
   box-shadow: var(--shadow-raised);
+}
+
+/* The tab's content fills the drawer below the header and tabs. */
+.chat-drawer__panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: 0;
 }
 
 /* The panel fills the drawer below its header and room picker; its list takes the rest. */
@@ -71,86 +88,8 @@
   }
 }
 
-.room-picker {
-  position: relative;
-}
-
-.room-picker__button {
+.chat-drawer__rooms {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  width: 100%;
-  min-height: var(--hit-target);
-  padding: 0 var(--space-1);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius);
-  background: var(--color-surface-2);
-  color: var(--color-text);
-  font: inherit;
-  font-weight: var(--font-weight-strong);
-  cursor: pointer;
-}
-
-.room-picker__name {
-  flex: 1;
-  text-align: left;
-}
-
-.room-mark {
-  display: inline-block;
-  flex: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--room-colour);
-}
-
-.room-mark--spring {
-  --room-colour: var(--color-spring);
-}
-
-.room-mark--summer {
-  --room-colour: var(--color-summer);
-}
-
-.room-mark--autumn {
-  --room-colour: var(--color-autumn);
-}
-
-.room-mark--winter {
-  --room-colour: var(--color-winter);
-}
-
-.room-picker__list {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  left: 0;
-  z-index: 2;
-  margin: 0;
-  padding: 0.25rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
-  list-style: none;
-}
-
-.room-picker__option {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-height: var(--hit-target);
-  padding: 0 var(--space-1);
-  border-radius: var(--radius);
-  cursor: pointer;
-}
-
-.room-picker__option--active,
-.room-picker__option:hover {
-  background: var(--color-active-bg);
-}
-
-.room-picker__option[aria-selected='true'] {
-  font-weight: var(--font-weight-strong);
+  gap: 0.25rem;
 }

@@ -4,14 +4,18 @@
 // Project:     Seasonal Entertainment
 // Description: Login form, with a second step (code or recovery code) for accounts with 2FA.
 //              After success it returns to the page that sent the visitor here (?next=,
-//              same-site paths only) or to the account page.
+//              same-site paths only) or to the account page. The password itself never leaves
+//              the browser: only the auth key derived from it is sent (session/credentials.js).
+//              Once logged in, the same derived keys open (or first create) the member's key
+//              pair for private messages (keys/), before the page moves on.
 // ============================================================
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { api } from '../api/http.js';
 import { FormField, FormMessage } from '../components/FormField.jsx';
 import SecondFactorForm from '../components/SecondFactorForm.jsx';
+import { useKeys } from '../keys/KeyContext.jsx';
+import { logIn } from '../session/credentials.js';
 import { useSession } from '../session/SessionContext.jsx';
 
 // Only local paths: "//evil.example" or "https://..." would be an open redirect.
@@ -21,13 +25,20 @@ function safeNext(value) {
 
 export default function LoginPage() {
   const { setUser } = useSession();
+  const keys = useKeys();
+  // The password's keys, kept until the login is complete (after the 2FA step too).
+  const passwordKeys = useRef(null);
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [needsCode, setNeedsCode] = useState(false);
 
-  function finish(user) {
+  async function finish(user) {
+    // A key problem must not block the login: the account page and the Direct tab offer
+    // unlocking again.
+    await keys.openWithPassword(passwordKeys.current, user.id).catch(() => {});
+    passwordKeys.current = null;
     setUser(user);
     navigate(safeNext(params.get('next')), { replace: true });
   }
@@ -38,12 +49,10 @@ export default function LoginPage() {
     setBusy(true);
     setError(null);
     try {
-      const answer = await api('/auth/login', {
-        method: 'POST',
-        body: { username: form.get('username'), password: form.get('password') },
-      });
-      if (answer.twoFactorRequired) return setNeedsCode(true);
-      finish(answer.user);
+      const result = await logIn(form.get('username'), form.get('password'));
+      passwordKeys.current = result.passwordKeys;
+      if (result.answer.twoFactorRequired) return setNeedsCode(true);
+      await finish(result.answer.user);
     } catch (err) {
       setError(err.message);
       setBusy(false);

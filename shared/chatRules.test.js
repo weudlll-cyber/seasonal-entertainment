@@ -13,7 +13,9 @@ import {
   containsLink,
   containsPlainHttpLink,
   firstHttpsLink,
+  mentionedNames,
   splitLinks,
+  splitMentions,
   validateMessage,
 } from './chatRules.js';
 
@@ -75,5 +77,28 @@ describe('validateMessage', () => {
     expect(validateMessage('   ')).toMatch(/empty/);
     expect(validateMessage('x'.repeat(MESSAGE_MAX + 1))).toMatch(/longer/);
     expect(validateMessage('hi')).toBeNull();
+  });
+});
+
+describe('mentions', () => {
+  it('finds @names of username shape, once each, not inside words or emails', () => {
+    expect(mentionedNames('hi @Anna and @anna, @bob_1! mail me@example.org or a@b')).toEqual([
+      'anna',
+      'bob_1',
+    ]);
+    expect(mentionedNames('@ab is too short, @' + 'x'.repeat(25) + ' too long')).toEqual([]);
+    // A full stop after the name ends the sentence; a dot inside a name is part of it.
+    expect(mentionedNames('thanks @anna. And @j.doe too')).toEqual(['anna', 'j.doe']);
+    // A dotted name too long for a username is not cut into a shorter one.
+    expect(mentionedNames(`@${'a'.repeat(23)}.b`)).toEqual([]);
+  });
+
+  it('splits text into plain parts and mentions, in order', () => {
+    expect(splitMentions('hey @Zoe, look')).toEqual([
+      { text: 'hey ' },
+      { mention: 'Zoe' },
+      { text: ', look' },
+    ]);
+    expect(splitMentions('<b>@x</b>')).toEqual([{ text: '<b>@x</b>' }]);
   });
 });

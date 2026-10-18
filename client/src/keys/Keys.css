@@ -1,0 +1,57 @@
+/* ============================================================
+   File:        Keys.css
+   Path:        client/src/keys/Keys.css
+   Project:     Seasonal Entertainment
+   Description: The recovery-code dialog (a modal over the page), a shown recovery code, and
+                the row of actions in the private-messages section.
+   ============================================================ */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: var(--space-2);
+  background: var(--color-scrim);
+}
+
+.modal {
+  width: min(32rem, 100%);
+  max-height: 100%;
+  overflow: auto;
+}
+
+.modal:focus {
+  outline: none;
+}
+
+.modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.recovery-code {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.recovery-code__value code {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface-2);
+  font-size: 1.125rem;
+  letter-spacing: 0.08em;
+  user-select: all;
+}
+
+.unlock-broken {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

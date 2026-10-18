@@ -6,21 +6,20 @@
 //              BOOTSTRAP_TOKEN from the environment. Pattern and pitfalls from the race game's
 //              AUTH.md: the token travels in the x-bootstrap-token HEADER, never the body;
 //              "not configured" and "wrong token" give the same answer and differ only in the
-//              server log, which never contains the token.
+//              server log, which never contains the token. Like registration it takes the salt
+//              and auth key the client derived from the password (docs/AUTH.md), never the
+//              password itself.
 // ============================================================
 
 import { createHash, timingSafeEqual } from 'node:crypto';
 import express from 'express';
-import {
-  validateEmail,
-  validatePassword,
-  validateUsername,
-} from '@seasonal-entertainment/shared/accountRules.js';
+import { validateEmail, validateUsername } from '@seasonal-entertainment/shared/accountRules.js';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { startSession } from '../http/session.js';
 import { validBody } from '../http/validate.js';
+import { authKeyField, saltField } from './credentials.js';
 import { hashPassword } from './passwords.js';
 import { countAdmins, createUser, publicUser } from './userStore.js';
 
@@ -50,14 +49,16 @@ export function bootstrapRoutes(db, config, log = console.warn) {
       const input = validBody(req, res, {
         username: validateUsername,
         email: validateEmail,
-        password: validatePassword,
+        salt: saltField,
+        authKey: authKeyField('Password'),
       });
       if (!input) return;
-      const passwordHash = await hashPassword(input.password, config.bcryptCost);
+      const passwordHash = await hashPassword(input.authKey, config.bcryptCost);
+      const { username, email, salt: kdfSalt } = input;
       // Check and insert in one transaction: two simultaneous requests cannot both win.
       const admin = db.transaction(() => {
         if (countAdmins(db) > 0) return null;
-        return createUser(db, { ...input, passwordHash, role: 'admin' });
+        return createUser(db, { username, email, passwordHash, kdfSalt, role: 'admin' });
       })();
       if (!admin) {
         return sendError(res, 409, 'bootstrap_done', 'An admin already exists.');

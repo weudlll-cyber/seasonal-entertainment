@@ -1,0 +1,157 @@
+/* ============================================================
+   File:        ChatFavourites.css
+   Path:        client/src/chat/ChatFavourites.css
+   Project:     Seasonal Entertainment
+   Description: Favourites and room settings in the chat module: the small toggles (star,
+                bell; ToggleButton), the room list's rows (one grid of fixed columns: name,
+                count, star, bell) and group headings ("Favourites", "Rooms"),
+                a member's name as a button with its small menu, @mention chips and the
+                highlight of a message that mentions the reader. Under the .se-chat root
+                like every module style, except the toggles, which a host's room picker shows
+                too.
+   ============================================================ */
+
+/* A 44px hit area drawn as a compact 32px icon button: the hover background is clipped to
+   the content box, and the focus ring (base.css's accent outline) is pulled in to the same
+   rounded rectangle as the site's other icon buttons. */
+.chat-toggle {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  box-sizing: border-box;
+  width: 44px;
+  height: 44px;
+  padding: 6px;
+  border: 0;
+  border-radius: 14px;
+  background: none;
+  background-clip: content-box;
+  color: var(--color-text-muted, #59606b);
+  cursor: pointer;
+}
+
+.chat-toggle:hover {
+  background-color: var(--color-surface-2, #f1f3f6);
+  color: var(--color-text, #12161c);
+}
+
+.chat-toggle:focus-visible {
+  outline-offset: -6px;
+}
+
+.chat-toggle--star.chat-toggle--on {
+  color: var(--color-autumn, #f9a825);
+}
+
+.se-chat .chat-rooms-nav {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.se-chat .chat-rooms__heading {
+  margin: 0 0 0.25rem;
+  color: var(--chat-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* One room = one row of fixed columns, so stars and bells line up from row to row; named
+   areas keep a column empty when its part is absent (no count at 0, no toggles for guests). */
+.se-chat .chat-rooms__item {
+  display: grid;
+  grid-template-areas: 'name count star bell';
+  grid-template-columns: minmax(0, 1fr) 2.75rem 44px 44px;
+  align-items: center;
+  border-radius: var(--chat-radius);
+}
+
+.se-chat .chat-rooms__item:hover {
+  background: var(--color-surface-2, #f1f3f6);
+}
+
+/* The current room: the whole row, like the sidebar's active item. */
+.se-chat .chat-rooms__item--current,
+.se-chat .chat-rooms__item--current:hover {
+  background: var(--color-active-bg, #eaf6fe);
+  font-weight: var(--chat-strong);
+}
+
+.se-chat .chat-rooms__item > .chat-room {
+  grid-area: name;
+}
+
+.se-chat .chat-rooms__item > .chat-count {
+  grid-area: count;
+  justify-self: center;
+}
+
+.se-chat .chat-rooms__item > .chat-toggle--star {
+  grid-area: star;
+}
+
+.se-chat .chat-rooms__item > .chat-toggle--bell {
+  grid-area: bell;
+}
+
+/* A member's name: looks like the plain name, acts as a menu button. */
+.se-chat .chat-name-menu {
+  position: relative;
+}
+
+.se-chat .chat-name {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: var(--chat-strong);
+  cursor: pointer;
+}
+
+.se-chat .chat-name-menu__list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 3;
+  min-width: 13rem;
+  margin: 0.25rem 0 0;
+  padding: 0.25rem;
+  border: 1px solid var(--chat-border);
+  border-radius: var(--chat-radius);
+  background: var(--chat-bg);
+  box-shadow: var(--chat-shadow);
+  list-style: none;
+}
+
+.se-chat .chat-name-menu__list button {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--chat-space-1);
+  border: 0;
+  border-radius: var(--chat-radius);
+  background: none;
+  color: var(--chat-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.se-chat .chat-name-menu__list button:hover,
+.se-chat .chat-name-menu__list button:focus-visible {
+  background: var(--color-active-bg, #eaf6fe);
+}
+
+/* An @mention of a member: a highlighted name chip (it opens the name menu). */
+.se-chat .chat-mention {
+  padding: 0 0.25rem;
+  border-radius: 0.375rem;
+  background: var(--color-active-bg, #eaf6fe);
+}
+
+/* A message that mentions the reader. */
+.se-chat .chat-message--mention {
+  border-left: 3px solid var(--color-winter, #04aaf7);
+  background: var(--color-active-bg, #eaf6fe);
+}

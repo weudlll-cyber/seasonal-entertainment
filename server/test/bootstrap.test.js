@@ -10,10 +10,13 @@ import express from 'express';
 import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
 import { bootstrapRoutes } from '../src/accounts/bootstrap.js';
+import { keysFor } from './helpers/accountKeys.js';
 import { makeTestApp } from './helpers/testApp.js';
 
 const TOKEN = 'one-time-token-0123456789';
-const admin = { username: 'boss', email: 'boss@example.org', password: 'correct-horse-1' };
+// What the client sends: salt and auth key derived from the password, never the password.
+const { salt, authKey } = await keysFor('correct-horse-1');
+const admin = { username: 'boss', email: 'boss@example.org', salt, authKey };
 
 let t;
 afterEach(() => t?.close());

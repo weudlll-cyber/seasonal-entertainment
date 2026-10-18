@@ -2,14 +2,18 @@
 // File:        TwoFactorDisable.jsx
 // Path:        client/src/components/TwoFactorDisable.jsx
 // Project:     Seasonal Entertainment
-// Description: Turning 2FA off: needs the password and a current code.
+// Description: Turning 2FA off: needs the password (sent as its auth key,
+//              session/credentials.js) and a current code.
 // ============================================================
 
 import { useState } from 'react';
 import { api } from '../api/http.js';
+import { keysForPassword } from '../session/credentials.js';
+import { useSession } from '../session/SessionContext.jsx';
 import { FormField, FormMessage } from './FormField.jsx';
 
 export default function TwoFactorDisable({ onDisabled }) {
+  const { user } = useSession();
   const [error, setError] = useState(null);
 
   async function onSubmit(event) {
@@ -17,10 +21,8 @@ export default function TwoFactorDisable({ onDisabled }) {
     const form = new FormData(event.currentTarget);
     setError(null);
     try {
-      await api('/2fa/disable', {
-        method: 'POST',
-        body: { password: form.get('password'), code: form.get('code') },
-      });
+      const { authKey } = await keysForPassword(user.username, form.get('password'));
+      await api('/2fa/disable', { method: 'POST', body: { authKey, code: form.get('code') } });
       onDisabled();
     } catch (err) {
       setError(err.message);

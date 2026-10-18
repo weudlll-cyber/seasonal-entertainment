@@ -6,7 +6,9 @@
 //              guest names, and link detection. The server refuses links from guests with the
 //              same detector the client uses to auto-link members' links, so the two can never
 //              disagree about what counts as a link. Links are https only (members' plain
-//              http:// links are refused); the first https link gets a preview.
+//              http:// links are refused); the first https link gets a preview. @mentions:
+//              "@" and a username-shaped name, not inside a word or an email address; the
+//              server notifies with the same rule the client draws chips with.
 // ============================================================
 
 export const MESSAGE_MAX = 500;
@@ -57,3 +59,27 @@ export function validateMessage(body) {
   if (body.length > MESSAGE_MAX) return `Message is longer than ${MESSAGE_MAX} characters.`;
   return null;
 }
+
+// "@name" where name has the shape of a username (accountRules.js: 3-24 characters, letters,
+// digits, "_", "-", "."), not preceded by a letter, digit or one of those (so not in emails),
+// and not the start of a longer word. A dot right after the name ends the sentence instead.
+const MENTION =
+  /(?<![A-Za-z0-9_.@-])@([A-Za-z0-9][A-Za-z0-9_.-]{1,22}[A-Za-z0-9_-])(?![A-Za-z0-9_-])(?!\.[A-Za-z0-9])/g;
+
+// Splits text into plain parts and mentions ({ mention: name }), in order.
+export function splitMentions(text) {
+  const parts = [];
+  let last = 0;
+  for (const match of text.matchAll(MENTION)) {
+    if (match.index > last) parts.push({ text: text.slice(last, match.index) });
+    parts.push({ mention: match[1] });
+    last = match.index + match[0].length;
+  }
+  if (last < text.length) parts.push({ text: text.slice(last) });
+  return parts;
+}
+
+// The names mentioned in a text, once each, lower-cased (usernames are case-insensitive).
+export const mentionedNames = (text) => [
+  ...new Set([...text.matchAll(MENTION)].map((m) => m[1].toLowerCase())),
+];

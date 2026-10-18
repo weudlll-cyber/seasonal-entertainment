@@ -22,7 +22,10 @@
 The repository is one npm workspace root with three packages, `shared`, `server` and
 `client`, and one lockfile. `shared/` holds only rules both sides must apply identically
 (account rules: username format, password length, minimum age, role order); it exists since
-2026-10-17 because a registration form must never accept what the server refuses.
+2026-10-17 because a registration form must never accept what the server refuses. Since
+2026-10-18 it also holds the project's one cryptography helper, `shared/crypto.js` (libsodium,
+`libsodium-wrappers-sumo` pinned to an exact version), used by the browser, the server tests and
+the scripts, and `shared/cryptoFormat.js`, the shape checks the server applies (docs/AUTH.md).
 
 ## Data
 
@@ -279,6 +282,28 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
   `Content-Security-Policy: default-src 'none'; sandbox`; the site never shows them itself.
   Moderators' **Remove file** deletes the files from disk and leaves "File removed" (audited,
   `chat.file_remove`). Reported messages keep their file.
+- **Unread counters** (docs/CHAT.md, "Unread counters"): read markers per member, room and
+  conversation (`chat_reads`); `GET /api/chat/unread` feeds one client store, kept live by
+  "activity" and "read" pushes (`hub.notifyReaders`, `hub.sendToUser`).
+- **Online status** (docs/CHAT.md, "Online status"): `hub.onlineUserIds()` is the one source of
+  presence and honours each member's "Show when I'm online" (`users.show_online`).
+- **@mentions** (docs/CHAT.md): `server/src/chat/mentions.js` stores who a room message mentions
+  (`chat_mentions`); the counters add each room's unread mentions.
+- **Member search** (docs/CHAT.md, "Finding a member"): `GET /api/chat/members`, its own rate
+  limit; `server/src/db/like.js` escapes LIKE wildcards for it and the admin user search.
+- **Direct messages** (docs/CHAT.md, "Direct messages"): end-to-end encrypted between members;
+  `server/src/chat/directRoutes.js` (`/api/chat/direct`) stores and relays ciphertext only, pushed
+  to both members' sockets (`hub.sendToUser`); the client's `DirectPanel` (chat module) shows them
+  in the drawer's and the `/chat` page's Direct tab.
+- **Reporting a direct message** (docs/CHAT.md): `server/src/chat/directReportRoutes.js`; copies
+  of private messages reach moderators only when the reporter ticks to share them; every view of
+  them is audited.
+- **Keys** (docs/CHAT.md, "Keys and the recovery code"): `server/src/keys/` (`/api/keys`) holds
+  members' public keys and their private keys sealed in the browser, with the optional recovery
+  seal; the client side is `client/src/keys/` (KeyProvider, the unlocked copy in IndexedDB, the
+  recovery-code dialog, the account page's "Private messages").
+- **Favourites** (docs/CHAT.md, "Favourites"): members' favourite rooms and members,
+  `/api/chat/favourites`, keyed on the session's account only; rows cascade with the account.
 - **Retention**: messages older than `CHAT_RETENTION_DAYS` (default 90) are deleted with their
   uploaded files, files whose message was removed in any other way and uploads never sent
   within an hour go too (no orphans), unused link previews after the cache time, and guest
@@ -289,7 +314,11 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
 
 `server/src/http/securityHeaders.js` (helmet) sends a strict Content-Security-Policy on every
 response: scripts, styles, fonts and connections only from this origin, images from this origin
-or `data:` URLs, no plugins, no framing (`frame-ancestors 'none'`), no inline script or style.
+or `data:` URLs, no plugins, no framing (`frame-ancestors 'none'`), no inline script or style,
+no JavaScript `eval`. `script-src` also has `'wasm-unsafe-eval'` (added and confirmed by the
+owner 2026-10-18): it allows
+compiling WebAssembly only, which the browser's cryptography needs (libsodium, `shared/crypto.js`,
+docs/AUTH.md); the module itself is a same-origin file.
 Plus `nosniff`, `Referrer-Policy: same-origin` and helmet's other defaults. The browser smoke
 test fails on any console error, which is where a CSP violation shows up.
 
@@ -304,7 +333,8 @@ client/                    React + Vite client
                            (ChatDrawer, RoomPicker, its remembered state), icons, navigation
                            list, never-throwing browser storage
   src/api/http.js          the one fetch wrapper (JSON, ApiError)
-  src/session/             session context (who is signed in), RequireUser guard
+  src/session/             session context (who is signed in), RequireUser guard, credentials
+                           (password -> auth key and wrapping key, docs/AUTH.md)
   src/components/          shared UI pieces (form fields, forms)
   src/chat/                the chat module: <ChatPanel> (index.js is its only entry), live
                            connection, composer, picker, messages, styles (docs/CHAT.md)
@@ -317,6 +347,8 @@ client/                    React + Vite client
   src/pages/               one folder entry per page (component, CSS, test side by side)
   src/styles/              tokens.css (all design tokens, light and dark), fonts.css, base.css
   src/theme/               light/dark theme: rule, provider, toggle (docs/DESIGN.md)
+  src/keys/                a member's key pair in the browser: provider, device copy
+                           (IndexedDB), unlock, recovery code (docs/CHAT.md)
   public/theme-init.js     sets the theme before the first paint (external: strict CSP)
   src/assets/              logo, season marks, fonts (woff2)
   src/assets/seasons/source/  original season marks, input of build-season-marks.mjs
@@ -328,9 +360,12 @@ server/
   src/app.js               Express app (routes); no listen, so tests drive it directly
   src/http/                cross-cutting HTTP: security headers, access (allow), CSRF,
                            sessions, rate limits, validation, error shape
-  src/db/database.js       opens the database, applies every area's schema
-  src/accounts/            accounts area: schema, user store, passwords, routes, bootstrap
+  src/db/database.js       opens the database, applies every area's schema and migrations
+  src/db/addColumns.js     adds columns to older databases (each area's migrate function)
+  src/accounts/            accounts area: schema, user store, passwords, routes (login:
+                           loginRoutes.js, pre-login and legacy route), credentials, bootstrap
   src/twofa/               two-factor area: TOTP, schema, store, routes, staff gate
+  src/keys/                members' keys: public keys, sealed private keys, recovery seal
   src/audit/               audit log: schema and the one recordAudit helper
   src/admin/               /api/admin routes (users, audit); areas add their own editors
   src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md)
@@ -353,7 +388,7 @@ server/
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests
 shared/                    rules used by server and client (accountRules.js, eventSchedule.js,
-                           gameRules.js, chatRules.js)
+                           gameRules.js, chatRules.js), crypto.js and cryptoFormat.js
 scripts/
   dev.mjs                  npm run dev
   e2e.mjs                  npm run test:e2e (temporary database per run)

@@ -11,8 +11,9 @@ this website]
 
 This list describes what the website's software actually stores.
 
-- **Your account** (if you register): username, email address, your password as a one-way
-  hash (never the password itself), your role, whether you may start games, whether the
+- **Your account** (if you register): username, email address, a one-way hash of a key your
+  browser derives from your password (your password itself never reaches this site's server),
+  the random value ("salt") your browser needs for that derivation, your role, whether you may start games, whether the
   account is locked, and when it was created. Kept as long as the account exists. The
   confirmation that you are at least 14 is required to register but is not stored, and no date
   of birth is asked for.
@@ -30,9 +31,36 @@ This list describes what the website's software actually stores.
 - **Guest names in the chat**: a guest who writes or reports a message gets a random name such
   as "Guest-k7m2qa", kept with that guest's session. The name is released 30 days after it was
   last used.
+- **Private messages between members**: end-to-end encrypted in the senders' and recipients'
+  browsers. This site stores only the encrypted message, who sent it to whom, which keys were
+  used, and when, and cannot read the content; moderators and admins cannot read it either. It
+  also stores how far each of you has read a conversation (for the unread mark). Deleted after the
+  chat retention period (90 days), like room messages.
+- **Reports of a private message**: the reason, who reported whom, and when. Only if you tick
+  "Share the selected messages with the moderators" are copies of the messages you selected sent
+  along — as your browser shows them — so the moderators can judge the report. Every time a
+  moderator looks at such copies, this is recorded in the moderation log. The copies are deleted
+  90 days after the report was dealt with.
 - **Chat reports**: when someone reports a message, the site stores which account or guest name
   reported it, so each person counts once. No IP address is stored.
 - **Chat mutes and bans**: who was muted or banned, by whom, and until when.
+- **Your key for private messages** (members): your public key, and your private key only in
+  locked form — locked with a key your browser derives from your password, and, if you chose to
+  create one, also with your recovery code. This site cannot unlock either; your recovery code
+  itself is never sent here. Your browser keeps an unlocked copy, itself encrypted, until you
+  log out. Deleted with your account.
+- **Mentions in the chat**: when a room message mentions a member as "@name", the site stores
+  that this message mentions that member, so it can show it to them. Deleted with the message
+  (after the chat retention period).
+- **What you have read in the chat** (members only): for each room and each private
+  conversation, up to which message you have read, so the site can count what is new for you,
+  and which rooms you muted. Deleted with your account.
+- **Favourites in the chat** (members only): the rooms and other members you marked as
+  favourites. Only you see them; they are deleted with your account. A member you marked does
+  not learn about it. Next to your favourite members (and in your private conversations and when
+  searching for a member) the chat shows whether they are online right now (have the chat open);
+  this is not stored. You can switch off "Show when I'm online" on your account page: then nobody
+  sees you as online. The site stores this choice with your account.
 - **Stickers and GIFs in the chat** come from this site's own library, managed by its admins. No
   outside GIF or sticker service is contacted.
 - **Files in the chat**: members (not guests) can send images (JPG, PNG, WebP, GIF) and PDF

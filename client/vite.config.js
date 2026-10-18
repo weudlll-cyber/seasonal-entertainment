@@ -15,6 +15,15 @@ const apiOrigin = process.env.API_ORIGIN ?? 'http://127.0.0.1:3800';
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    // The cryptography chunk (libsodium with its WebAssembly, about 540 kB) is loaded only when
+    // a password or a private key is used (session/credentials.js); every other chunk stays
+    // well below this.
+    chunkSizeWarningLimit: 600,
+  },
+  // Pre-bundled when the dev server starts: found only later (at the first password form),
+  // the dev server would reload the page to add it, and the form with it.
+  optimizeDeps: { include: ['libsodium-wrappers-sumo'] },
   server: {
     port: devPort,
     strictPort: true,
@@ -33,9 +42,10 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.js'],
-    // Above findBy*'s 5 s wait (test/setup.js), so a slow screen fails as a missing element
-    // with a clear message, not as a test that ran out of time.
-    testTimeout: 15_000,
+    // Well above findBy*'s 15 s wait (test/setup.js), so a slow screen fails as a missing
+    // element with a clear message, not as a test that ran out of time; generous because the
+    // machine may be heavily loaded.
+    testTimeout: 45_000,
     include: ['src/**/*.test.{js,jsx}'],
   },
 });

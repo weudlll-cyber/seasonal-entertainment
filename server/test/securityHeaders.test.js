@@ -29,7 +29,9 @@ describe('security headers', () => {
     const res = await t.client().get('/api/health');
     const csp = res.headers['content-security-policy'];
     expect(csp).toContain("default-src 'self'");
-    expect(csp).toContain("script-src 'self'");
+    // Scripts from this origin and WebAssembly (libsodium), nothing else: no JavaScript eval.
+    const scriptSrc = csp.split(';').find((d) => d.trim().startsWith('script-src'));
+    expect(scriptSrc.trim().split(/\s+/)).toEqual(['script-src', "'self'", "'wasm-unsafe-eval'"]);
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).not.toContain('unsafe-inline');

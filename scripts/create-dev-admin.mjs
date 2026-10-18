@@ -7,6 +7,10 @@
 //              1. creates it via the bootstrap flow (one-time token held only in memory, sent
 //                 in the x-bootstrap-token header) if no admin exists;
 //              2. turns on its 2FA (required for admins) if it is off.
+//              The password never goes to the server: like a browser, the script derives the
+//              auth key from it with the shared crypto helper (docs/AUTH.md, "Login key split");
+//              an admin from before that change logs in once through the legacy route, which
+//              upgrades it.
 //              Password, TOTP secret and recovery codes go ONLY to data/DEV-ADMIN.txt
 //              (gitignored). Also adds a SESSION_SECRET to .env so dev logins survive
 //              restarts. Safe to run again. Refuses to run with NODE_ENV=production.
@@ -15,6 +19,7 @@
 import { randomBytes } from 'node:crypto';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { deriveAccountKeys, newSalt } from '@seasonal-entertainment/shared/crypto.js';
 import { createApp } from '../server/src/app.js';
 import { readBuildInfo } from '../server/src/buildInfo.js';
 import { ENV_FILE, readConfig } from '../server/src/config.js';
@@ -53,15 +58,31 @@ async function call(route, body, headers = {}) {
   return { status: res.status, body: await res.json() };
 }
 
+// Logs in as the browser does: the account's salt from the pre-login step, then the auth key
+// derived from it; a legacy account sends its password once, with a new salt and auth key.
+// Returns the login answer and the auth key (2FA setup asks for the password again).
+async function logIn(password) {
+  const pre = await call('/auth/prelogin', { username: USERNAME });
+  if (pre.body.legacy) {
+    const salt = await newSalt();
+    const { authKey } = await deriveAccountKeys(password, salt);
+    const body = { username: USERNAME, password, salt, authKey };
+    return { answer: await call('/auth/legacy-login', body), authKey };
+  }
+  const { authKey } = await deriveAccountKeys(password, pre.body.salt);
+  return { answer: await call('/auth/login', { username: USERNAME, authKey }), authKey };
+}
+
 try {
   // 1. The admin account. loggedIn: a full session exists (not just a pending 2FA login).
-  // currentPassword: the account's password, needed again to start the 2FA setup.
+  // currentAuthKey: proves the account's password again to start the 2FA setup.
   let loggedIn = false;
   const password = random(18);
-  let currentPassword = password;
+  const salt = await newSalt();
+  let { authKey: currentAuthKey } = await deriveAccountKeys(password, salt);
   const created = await call(
     '/auth/bootstrap',
-    { username: USERNAME, email: 'devadmin@example.org', password },
+    { username: USERNAME, email: 'devadmin@example.org', salt, authKey: currentAuthKey },
     { 'x-bootstrap-token': config.bootstrapToken }
   );
   if (created.status === 201) {
@@ -81,8 +102,8 @@ try {
   } else if (created.status === 409) {
     if (!existsSync(file)) throw new Error(`an admin exists but ${file} is missing`);
     const known = readFileSync(file, 'utf8').match(/^Password: (.+)$/m)?.[1];
-    currentPassword = known;
-    const login = await call('/auth/login', { username: USERNAME, password: known });
+    const { answer: login, authKey } = await logIn(known);
+    currentAuthKey = authKey;
     if (login.status !== 200) throw new Error(`login as ${USERNAME} failed: ${login.status}`);
     if (login.body.twoFactorRequired) console.log('The dev admin already has 2FA; nothing to do.');
     loggedIn = !login.body.twoFactorRequired;
@@ -92,7 +113,7 @@ try {
 
   // 2. Its 2FA (skipped when the login above already asked for a code).
   if (loggedIn) {
-    const setup = await call('/2fa/setup', { password: currentPassword });
+    const setup = await call('/2fa/setup', { authKey: currentAuthKey });
     if (setup.status !== 200) throw new Error(`2FA setup failed: ${setup.status}`);
     const code = codeForStep(setup.body.secret, stepAt(Date.now()));
     const enable = await call('/2fa/enable', { code });

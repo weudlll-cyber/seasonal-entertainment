@@ -13,6 +13,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { codeForStep, stepAt } from '../src/twofa/totp.js';
 import { bodies, post } from './helpers/chat.js';
 import { connect, cookieOf, listeningChat, stopServer } from './helpers/chatSocket.js';
+import { logIn, newPasswordBody, proof } from './helpers/accountKeys.js';
 import { STAFF_TOTP_SECRET, makeStaff, registerUser, setRole } from './helpers/testApp.js';
 
 let t;
@@ -93,8 +94,8 @@ describe('an open socket follows the account', () => {
   });
 
   it('password reset by an admin: the socket is closed', async () => {
-    const { socket } = await afterChange(({ admin, id }) =>
-      admin.post(`/api/admin/users/${id}/password`).send({ newPassword: 'another-horse-2' })
+    const { socket } = await afterChange(async ({ admin, id }) =>
+      admin.post(`/api/admin/users/${id}/password`).send(await newPasswordBody('another-horse-2'))
     );
     await socket.closed;
   });
@@ -108,9 +109,11 @@ describe('an open socket follows the account', () => {
     const code = (offset) => codeForStep(STAFF_TOTP_SECRET, stepAt(Date.now()) + offset);
     const { socket } = await afterChange(async ({ olga }) => {
       const other = t.client();
-      await other.post('/api/auth/login').send({ username: 'olga', password: 'correct-horse-1' });
+      await logIn(other, 'olga', 'correct-horse-1');
       await other.post('/api/2fa/login').send({ code: code(0) });
-      await other.post('/api/2fa/disable').send({ password: 'correct-horse-1', code: code(1) });
+      await other
+        .post('/api/2fa/disable')
+        .send({ ...(await proof('correct-horse-1')), code: code(1) });
       expect((await olga.get('/api/auth/session')).body.user).toBeNull();
     });
     await socket.closed;

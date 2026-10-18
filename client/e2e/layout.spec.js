@@ -61,11 +61,11 @@ for (const [width, height] of DESKTOP) {
         expect(await windowFits(page)).toBe(true);
         await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Open menu' })).toBeHidden();
-        await expect(page.getByRole('button', { name: 'Chat', exact: true })).toHaveCount(
+        await expect(page.getByRole('button', { name: /^Chat(:|$)/ })).toHaveCount(
           chatButton ? 1 : 0
         );
         if (chatButton)
-          await expect(page.getByRole('button', { name: 'Chat', exact: true })).toBeVisible();
+          await expect(page.getByRole('button', { name: /^Chat(:|$)/ })).toBeVisible();
       });
     }
 
@@ -111,7 +111,7 @@ test.describe('390 x 844 (phone)', () => {
 
   test('the chat drawer opens full width and closes', async ({ page }) => {
     await page.goto('/games');
-    const button = page.getByRole('button', { name: 'Chat', exact: true });
+    const button = page.getByRole('button', { name: /^Chat(:|$)/ });
     await button.click();
     const drawer = page.getByRole('dialog', { name: 'Chat' });
     await expect(drawer).toBeVisible();

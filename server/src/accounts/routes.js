@@ -2,35 +2,40 @@
 // File:        routes.js
 // Path:        server/src/accounts/routes.js
 // Project:     Seasonal Entertainment
-// Description: /api/auth: current session, registration, login, logout, own password
-//              change. Wrong username and wrong password answer the same 401 (race game rule).
-//              Logout and password change also close the affected chat sockets (chat/mount.js).
-//              Accounts with 2FA finish logging in at POST /api/2fa/login.
+// Description: /api/auth: current session, registration, logout, own password change (login:
+//              loginRoutes.js). No password ever arrives here: registration and password change
+//              carry the auth key the browser derived and its salt (docs/AUTH.md, "Login key
+//              split"); the server stores bcrypt of the auth key. The password rules are
+//              checked in the browser (shared/accountRules.js). A password change also carries
+//              the private key sealed again with the new wrapping key (keys/), stored in the
+//              same transaction as the new verifier. Logout and password change also close
+//              the affected chat sockets (chat/mount.js). PUT /api/auth/privacy: the member's
+//              own "Show when I'm online".
 // ============================================================
 
 import express from 'express';
 import {
   MINIMUM_AGE,
   validateEmail,
-  validatePassword,
   validateUsername,
 } from '@seasonal-entertainment/shared/accountRules.js';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { cookieName, endSession, restampSession, startSession } from '../http/session.js';
-import { mustBeTrue, required, validBody } from '../http/validate.js';
+import { mustBeTrue, validBody } from '../http/validate.js';
 import { twoFactorStatus } from '../twofa/gate.js';
-import { beginSecondFactor } from '../twofa/routes.js';
-import { isTwoFactorEnabled } from '../twofa/store.js';
-import { hashPassword, verifyPassword } from './passwords.js';
+import { resealKey } from '../keys/store.js';
+import { authKeyField, optional, saltField, sealedKeyField } from './credentials.js';
+import { loginRoutes } from './loginRoutes.js';
+import { provesPassword } from './passwordProof.js';
+import { hashPassword } from './passwords.js';
 import {
   DuplicateAccountError,
   createUser,
-  findLoginByUsername,
-  findPasswordHash,
   publicUser,
   setPasswordHash,
+  setShowOnline,
 } from './userStore.js';
 
 // chatSessions: the chat handle's sessions interface (chat/mount.js).
@@ -39,16 +44,7 @@ export function accountRoutes(db, config, chatSessions) {
   const limits = config.rateLimits;
   // What the client sees about the signed-in account, including its 2FA state.
   const view = (user) => ({ ...publicUser(user), ...twoFactorStatus(db, config, user) });
-  const loginLimiter = makeLimiter(limits.login, { failedOnly: true });
-  // Also per username, so many addresses cannot keep trying one account. Keyed on the name as
-  // typed (case-insensitive, like usernames), existing or not, so a 429 reveals nothing.
-  const loginAccountLimiter = makeLimiter(limits.loginAccount, {
-    failedOnly: true,
-    keyGenerator: (req) => {
-      const name = req.body?.username;
-      return `login:${typeof name === 'string' ? name.toLowerCase() : ''}`;
-    },
-  });
+  router.use(loginRoutes(db, config, view));
   const registerLimiter = makeLimiter(limits.register);
   // Keyed on the account, not the IP (see rateLimit.js).
   const passwordLimiter = makeLimiter(limits.passwordChange, {
@@ -64,7 +60,8 @@ export function accountRoutes(db, config, chatSessions) {
     const input = validBody(req, res, {
       username: validateUsername,
       email: validateEmail,
-      password: validatePassword,
+      salt: saltField,
+      authKey: authKeyField('Password'),
       ageConfirmed: mustBeTrue(`Please confirm that you are at least ${MINIMUM_AGE} years old.`),
     });
     if (!input) return;
@@ -72,7 +69,8 @@ export function accountRoutes(db, config, chatSessions) {
       const user = createUser(db, {
         username: input.username,
         email: input.email,
-        passwordHash: await hashPassword(input.password, config.bcryptCost),
+        passwordHash: await hashPassword(input.authKey, config.bcryptCost),
+        kdfSalt: input.salt,
       });
       await startSession(req, user);
       res.status(201).json({ ok: true, user: view(user) });
@@ -82,27 +80,6 @@ export function accountRoutes(db, config, chatSessions) {
     }
   });
 
-  router.post('/login', allow('public'), loginLimiter, loginAccountLimiter, async (req, res) => {
-    const input = validBody(req, res, {
-      username: required('Username', 100),
-      password: required('Password', 200),
-    });
-    if (!input) return;
-    const found = findLoginByUsername(db, input.username);
-    const ok = await verifyPassword(input.password, found?.passwordHash, config.bcryptCost);
-    if (!ok) return sendError(res, 401, 'invalid_credentials', 'Wrong username or password.');
-    // Only someone who knows the password learns that the account is locked.
-    if (found.user.locked) {
-      return sendError(res, 403, 'account_locked', 'This account is locked.');
-    }
-    if (isTwoFactorEnabled(db, found.user.id)) {
-      await beginSecondFactor(req, found.user);
-      return res.json({ ok: true, twoFactorRequired: true });
-    }
-    await startSession(req, found.user);
-    res.json({ ok: true, user: view(found.user) });
-  });
-
   router.post('/logout', allow('member'), async (req, res) => {
     chatSessions.ended(req.sessionID);
     await endSession(req);
@@ -110,21 +87,41 @@ export function accountRoutes(db, config, chatSessions) {
     res.json({ ok: true });
   });
 
-  // Own password only: the account comes from the session, never from the body.
+  // Own password only: the account comes from the session, never from the body. The browser
+  // proves the current password with its auth key and sends the new salt and auth key, and
+  // the private key re-sealed for the new password (absent when it had none it could open).
   router.post('/password', allow('member'), passwordLimiter, async (req, res) => {
     const input = validBody(req, res, {
-      currentPassword: required('Current password', 200),
-      newPassword: validatePassword,
+      currentAuthKey: authKeyField('Current password'),
+      newSalt: saltField,
+      newAuthKey: authKeyField('New password'),
+      sealedPrivateKey: optional(sealedKeyField),
     });
     if (!input) return;
-    const hash = findPasswordHash(db, req.user.id);
-    if (!(await verifyPassword(input.currentPassword, hash, config.bcryptCost))) {
+    if (!(await provesPassword(db, config, req.user.id, input.currentAuthKey))) {
       return sendError(res, 401, 'invalid_credentials', 'The current password is wrong.');
     }
-    const newHash = await hashPassword(input.newPassword, config.bcryptCost);
+    const newHash = await hashPassword(input.newAuthKey, config.bcryptCost);
+    // Verifier and sealed key change together, or neither does.
+    const epoch = db.transaction(() => {
+      if (input.sealedPrivateKey) resealKey(db, req.user.id, input.sealedPrivateKey);
+      return setPasswordHash(db, req.user.id, newHash, input.newSalt);
+    })();
     // Every other session of this account ends; this one is re-stamped and stays.
-    await restampSession(req, setPasswordHash(db, req.user.id, newHash));
+    await restampSession(req, epoch);
     chatSessions.accountChanged(req.user.id, req.sessionID);
+    res.json({ ok: true });
+  });
+
+  // "Show when I'm online": the member's own setting only (the account comes from the
+  // session). The change takes effect at once: open chat lists hear "presence" and reload.
+  router.put('/privacy', allow('member'), (req, res) => {
+    const input = validBody(req, res, {
+      showOnline: (v) => (typeof v === 'boolean' ? null : 'showOnline must be true or false.'),
+    });
+    if (!input) return;
+    setShowOnline(db, req.user.id, input.showOnline);
+    chatSessions.presenceChanged();
     res.json({ ok: true });
   });
 

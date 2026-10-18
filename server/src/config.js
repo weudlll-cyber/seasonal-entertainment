@@ -138,6 +138,7 @@ export function readConfig(env = process.env) {
       bootstrap: { windowMs: 60 * 60_000, max: 10 }, // attempts per IP
       twoFactor: { windowMs: 15 * 60_000, max: 5 }, // failed codes per user / per IP at login
       chatReport: { windowMs: 60_000, max: 10 }, // chat reports per IP
+      memberSearch: { windowMs: 60_000, max: 60 }, // member searches per account
       // Guests per IP, so clearing cookies does not reset them. In memory, no IP is stored.
       chatGuestPost: { windowMs: 60_000, max: 20 }, // guest messages per IP
       chatNewGuest: { windowMs: 60 * 60_000, max: 20 }, // new guest names per IP

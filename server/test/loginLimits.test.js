@@ -10,6 +10,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest';
 import { readConfig } from '../src/config.js';
+import { logIn } from './helpers/accountKeys.js';
 import { makeTestApp, registerUser } from './helpers/testApp.js';
 
 let t;
@@ -32,8 +33,7 @@ describe('production start', () => {
 });
 
 describe('failed logins per username', () => {
-  const login = (username, password = 'wrong-password-x') =>
-    t.client().post('/api/auth/login').send({ username, password });
+  const login = (username, password = 'wrong-password-x') => logIn(t.client(), username, password);
 
   it('locks one username after too many failures, whether it exists or not', async () => {
     t = makeTestApp({ rateLimits: { loginAccount: { windowMs: 60_000, max: 3 } } });

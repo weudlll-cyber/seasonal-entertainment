@@ -2,27 +2,23 @@
 // File:        routes.js
 // Path:        server/src/twofa/routes.js
 // Project:     Seasonal Entertainment
-// Description: /api/2fa: set up (current password; secret + QR), enable with a first code
-//              (returns recovery codes once), disable (password + second factor), and the
-//              second login step for accounts with 2FA. Turning 2FA on or off ends every other
-//              session of the account (session epoch) and closes its other chat sockets.
-//              beginSecondFactor() is called by the password login.
+// Description: /api/2fa: set up (current password, proven by the browser's auth key; secret
+//              + QR), enable with a first code (returns recovery codes once), disable (auth key
+//              + second factor), and the second login step for accounts with 2FA. Turning 2FA
+//              on or off ends every other session of the account (session epoch) and closes its
+//              other chat sockets. beginSecondFactor() is called by the password login.
 // ============================================================
 
 import express from 'express';
 import QRCode from 'qrcode';
-import { verifyPassword } from '../accounts/passwords.js';
-import {
-  bumpSessionEpoch,
-  findPasswordHash,
-  findUserById,
-  publicUser,
-} from '../accounts/userStore.js';
+import { authKeyField } from '../accounts/credentials.js';
+import { provesPassword } from '../accounts/passwordProof.js';
+import { bumpSessionEpoch, findUserById, publicUser } from '../accounts/userStore.js';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { restampSession, startSession } from '../http/session.js';
-import { required, validBody } from '../http/validate.js';
+import { validBody } from '../http/validate.js';
 import { twoFactorStatus } from './gate.js';
 import {
   acceptSecondFactor,
@@ -57,8 +53,9 @@ export function twoFactorRoutes(db, config, chatSessions) {
     failedOnly: true,
     keyGenerator: (req) => `user:${req.user.id}`,
   });
-  const passwordMatches = (req, password) =>
-    verifyPassword(password, findPasswordHash(db, req.user.id), config.bcryptCost);
+  // The current password, as the auth key the browser derived from it (never the password).
+  const passwordMatches = (req, authKey) => provesPassword(db, config, req.user.id, authKey);
+  const passwordInput = { authKey: authKeyField('Password') };
 
   // Every other session of the account ends; this one is re-stamped and stays (as after an
   // own password change).
@@ -70,9 +67,9 @@ export function twoFactorRoutes(db, config, chatSessions) {
   // Starting (or restarting) the setup reveals a new secret: only with the current password,
   // so a taken-over session cannot enrol an authenticator of its own.
   router.post('/setup', allow('member'), perUser, async (req, res) => {
-    const input = validBody(req, res, { password: required('Password', 200) });
+    const input = validBody(req, res, passwordInput);
     if (!input) return;
-    if (!(await passwordMatches(req, input.password))) {
+    if (!(await passwordMatches(req, input.authKey))) {
       return sendError(res, 401, 'invalid_credentials', 'The password is wrong.');
     }
     if (getTwoFactor(db, req.user.id)?.enabled) {
@@ -97,9 +94,9 @@ export function twoFactorRoutes(db, config, chatSessions) {
   });
 
   router.post('/disable', allow('member'), perUser, async (req, res) => {
-    const input = validBody(req, res, { password: required('Password', 200) });
+    const input = validBody(req, res, passwordInput);
     if (!input) return;
-    const passwordOk = await passwordMatches(req, input.password);
+    const passwordOk = await passwordMatches(req, input.authKey);
     if (!passwordOk || !acceptSecondFactor(db, req.user.id, secondFactor(req.body))) {
       return sendError(res, 401, 'invalid_credentials', 'Password or code is wrong.');
     }

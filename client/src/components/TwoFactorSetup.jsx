@@ -2,16 +2,20 @@
 // File:        TwoFactorSetup.jsx
 // Path:        client/src/components/TwoFactorSetup.jsx
 // Project:     Seasonal Entertainment
-// Description: Turning 2FA on: the current password starts it (the server asks for it), then
+// Description: Turning 2FA on: the current password starts it (the server asks for it, as
+//              the auth key derived from it, session/credentials.js), then
 //              show the QR code and secret, confirm with a first code, then show the recovery
 //              codes once (they are stored hashed and never shown again).
 // ============================================================
 
 import { useState } from 'react';
 import { api } from '../api/http.js';
+import { keysForPassword } from '../session/credentials.js';
+import { useSession } from '../session/SessionContext.jsx';
 import { FormField, FormMessage } from './FormField.jsx';
 
 export default function TwoFactorSetup({ onEnabled }) {
+  const { user } = useSession();
   const [setup, setSetup] = useState(null); // { secret, qrCode } once started
   const [recoveryCodes, setRecoveryCodes] = useState(null);
   const [error, setError] = useState(null);
@@ -21,7 +25,8 @@ export default function TwoFactorSetup({ onEnabled }) {
     const password = new FormData(event.currentTarget).get('password');
     setError(null);
     try {
-      setSetup(await api('/2fa/setup', { method: 'POST', body: { password } }));
+      const { authKey } = await keysForPassword(user.username, password);
+      setSetup(await api('/2fa/setup', { method: 'POST', body: { authKey } }));
     } catch (err) {
       setError(err.message);
     }

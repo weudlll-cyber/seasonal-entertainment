@@ -20,6 +20,11 @@ class FakeSocket {
 }
 beforeEach(() => vi.stubGlobal('WebSocket', FakeSocket));
 
+// The picker's own tabs (the chat page also has Rooms / Direct tabs).
+const pickerTabs = () =>
+  within(screen.getByRole('tablist', { name: 'Picker' }))
+    .getAllByRole('tab')
+    .map((tab) => tab.textContent);
 const item = (id, name, credit = null) => ({
   id,
   name,
@@ -71,7 +76,7 @@ describe('picker', () => {
   it('guests get only the Emoji tab and a hint', async () => {
     const calls = await chat(GUEST);
     fireEvent.click(await screen.findByRole('button', { name: 'Emoji' }));
-    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Emoji']);
+    expect(pickerTabs()).toEqual(['Emoji']);
     expect(screen.getByText('Log in to send stickers and GIFs.')).toBeInTheDocument();
     expect(calls.some((c) => c.key === 'GET /chat/media')).toBe(false);
   });
@@ -79,13 +84,9 @@ describe('picker', () => {
   it('members get Stickers and GIFs, packs in order; a choice becomes the attachment', async () => {
     const calls = await chat(signedIn({ id: 1, username: 'mia', role: 'member' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Emoji, stickers, GIFs' }));
-    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
-      'Emoji',
-      'Stickers',
-      'GIFs',
-    ]);
+    expect(pickerTabs()).toEqual(['Emoji', 'Stickers', 'GIFs']);
     fireEvent.click(screen.getByRole('tab', { name: 'Stickers' }));
-    const panel = screen.getByRole('tabpanel');
+    const panel = screen.getByRole('tabpanel', { name: 'Stickers' });
     await within(panel).findByRole('region', { name: 'Seasons' });
     expect(
       within(panel)
@@ -109,7 +110,9 @@ describe('picker', () => {
     expect(screen.getByLabelText('Message')).toHaveValue('');
     fireEvent.click(screen.getByRole('button', { name: 'Emoji, stickers, GIFs' }));
     fireEvent.click(screen.getByRole('tab', { name: 'GIFs' }));
-    expect(within(screen.getByRole('tabpanel')).getAllByRole('region')).toHaveLength(1);
+    expect(
+      within(screen.getByRole('tabpanel', { name: 'GIFs' })).getAllByRole('region')
+    ).toHaveLength(1);
   });
 });
 

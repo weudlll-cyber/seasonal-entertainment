@@ -2,78 +2,45 @@
 // File:        ChatMessage.jsx
 // Path:        client/src/chat/ChatMessage.jsx
 // Project:     Seasonal Entertainment
-// Description: One chat message: author (with a Guest badge), local time, then its text as
-//              plain text (members' https links become links; guests' never) and its sticker /
-//              GIF from the site's library ("Media removed" once it is gone), a link preview
-//              card (PreviewCard), an uploaded file (MessageFile), Report, and for
-//              moderators Hide / Mute / Ban / Remove file / Remove preview.
+// Description: One chat message: author (with a Guest badge; a member's name opens the name
+//              menu, NameMenu), local time, then its text (MessageParts: members' https links
+//              become links, @mentions name chips) and its sticker / GIF from the site's
+//              library, a link preview card (PreviewCard), an uploaded file (MessageFile),
+//              Report, and for moderators Hide / Mute / Ban / Remove file / Remove preview. A
+//              message that mentions the reader is highlighted for them.
 // ============================================================
 
-import { useState } from 'react';
-import { splitLinks } from '@seasonal-entertainment/shared/chatRules.js';
+import { useSession } from '../session/SessionContext.jsx';
 import MessageFile from './MessageFile.jsx';
+import { MessageMedia, MessageText } from './MessageParts.jsx';
+import NameMenu from './NameMenu.jsx';
 import PreviewCard from './PreviewCard.jsx';
 import './ChatMessage.css';
-
-function MessageText({ body, linkify }) {
-  if (!linkify) return body;
-  return splitLinks(body).map((part, i) =>
-    part.link ? (
-      <a key={i} href={part.link} target="_blank" rel="nofollow noopener noreferrer ugc">
-        {part.link}
-      </a>
-    ) : (
-      <span key={i}>{part.text}</span>
-    )
-  );
-}
-
-// A sticker (fixed size) or GIF (at most 240 px wide). A credit shows on hover (title) and,
-// for touch screens, on a tap.
-function MessageMedia({ kind, media }) {
-  const [showCredit, setShowCredit] = useState(false);
-  if (!media) return <p className="chat-message__removed">Media removed</p>;
-  const image = (
-    <img
-      className={`chat-media chat-media--${kind}`}
-      src={media.url}
-      alt={media.alt}
-      width={media.width}
-      height={media.height}
-      loading="lazy"
-    />
-  );
-  if (!media.credit) return <div className="chat-message__media">{image}</div>;
-  return (
-    <figure className="chat-message__media" title={`Credit: ${media.credit}`}>
-      <button
-        type="button"
-        className="chat-media__toggle"
-        aria-expanded={showCredit}
-        onClick={() => setShowCredit((shown) => !shown)}
-      >
-        {image}
-      </button>
-      {showCredit && <figcaption className="chat-note">Credit: {media.credit}</figcaption>}
-    </figure>
-  );
-}
 
 const time = (iso) =>
   new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 
 export default function ChatMessage({ message, moderator, onAction }) {
+  const { user } = useSession();
+  // A message mentioning the reader stands out for them.
+  const mentionsMe = Boolean(user) && (message.mentions ?? []).some((m) => m.id === user.id);
   return (
-    <li className={`chat-message${message.hiddenAt ? ' chat-message--hidden' : ''}`}>
+    <li
+      className={`chat-message${message.hiddenAt ? ' chat-message--hidden' : ''}${mentionsMe ? ' chat-message--mention' : ''}`}
+    >
       <div className="chat-message__meta">
-        <strong>{message.author}</strong>
+        <NameMenu name={message.author} authorId={message.authorId} />
         {message.isGuest && <span className="chat-badge">Guest</span>}
         <time dateTime={message.createdAt}>{time(message.createdAt)}</time>
         {message.hiddenAt && <em>hidden by {message.hiddenBy}</em>}
       </div>
       {message.body && (
         <p className="chat-message__text">
-          <MessageText body={message.body} linkify={!message.isGuest} />
+          <MessageText
+            body={message.body}
+            linkify={!message.isGuest}
+            mentions={message.mentions ?? []}
+          />
         </p>
       )}
       {(message.kind === 'sticker' || message.kind === 'gif') && (

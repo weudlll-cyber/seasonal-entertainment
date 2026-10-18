@@ -16,8 +16,9 @@ import { fileView } from '../uploads/view.js';
 
 const now = () => new Date().toISOString();
 
+// authorId: the author's account id (null for guests), for the name menu (favourites).
 const MESSAGE_COLUMNS = `m.id, r.slug AS room, m.author_name AS author,
-  (m.author_guest IS NOT NULL) AS isGuest, m.kind, m.body, m.created_at AS createdAt,
+  m.author_user_id AS authorId, (m.author_guest IS NOT NULL) AS isGuest, m.kind, m.body, m.created_at AS createdAt,
   m.hidden_at AS hiddenAt, m.hidden_by AS hiddenBy,
   i.file AS mediaFile, i.alt AS mediaAlt, i.credit AS mediaCredit, i.width AS mediaWidth,
   i.height AS mediaHeight,

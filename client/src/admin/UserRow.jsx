@@ -3,12 +3,15 @@
 // Path:        client/src/admin/UserRow.jsx
 // Project:     Seasonal Entertainment
 // Description: One row of the admin users list. Every control calls its own admin route;
-//              a refusal (e.g. "the last admin cannot be removed") is shown in the row.
+//              a refusal (e.g. "the last admin cannot be removed") is shown in the row. A
+//              password reset checks the shared password rules here and sends only a new salt
+//              and auth key derived from the password (session/credentials.js).
 // ============================================================
 
 import { useState } from 'react';
-import { ROLES } from '@seasonal-entertainment/shared/accountRules.js';
+import { ROLES, validatePassword } from '@seasonal-entertainment/shared/accountRules.js';
 import { api } from '../api/http.js';
+import { keysForNewPassword } from '../session/credentials.js';
 
 export default function UserRow({ user, onChanged }) {
   const [message, setMessage] = useState(null);
@@ -30,7 +33,10 @@ export default function UserRow({ user, onChanged }) {
   async function resetPassword(event) {
     event.preventDefault();
     const newPassword = new FormData(event.currentTarget).get('newPassword');
-    if (await change('password', { newPassword }, 'Password reset; their sessions ended.')) {
+    const problem = validatePassword(newPassword);
+    if (problem) return setMessage(problem);
+    const { salt, authKey } = await keysForNewPassword(newPassword);
+    if (await change('password', { salt, authKey }, 'Password reset; their sessions ended.')) {
       setResetting(false);
     }
   }

@@ -9,6 +9,7 @@
 // ============================================================
 
 import { WebSocket } from 'ws';
+import { idsShowingOnline } from '../accounts/userStore.js';
 import { findRoom } from './store.js';
 import { canRead, sessionViewer } from './viewer.js';
 
@@ -68,6 +69,49 @@ export class ChatHub {
   disconnectUser(userId, keepSessionId) {
     for (const [socket, session] of this.sessions) {
       if (session.data.userId === userId && session.id !== keepSessionId) this.close(socket);
+    }
+  }
+
+  // To every open socket of one account (direct messages need no subscription). Rights are
+  // checked as for room pushes: a socket whose account no longer qualifies is closed.
+  sendToUser(userId, event) {
+    const text = JSON.stringify(event);
+    for (const [socket, session] of this.sessions) {
+      if (session.data.userId !== userId || socket.readyState !== WebSocket.OPEN) continue;
+      if (this.viewerOf(socket)?.user?.id === userId) socket.send(text);
+    }
+  }
+
+  // To every account socket whose member may read `room` right now, subscribed or not (the
+  // unread counters). Guests have no counters and get nothing.
+  notifyReaders(room, event) {
+    if (!room) return;
+    const text = JSON.stringify(event);
+    for (const [socket, session] of this.sessions) {
+      if (session.data.userId === undefined || socket.readyState !== WebSocket.OPEN) continue;
+      const viewer = this.viewerOf(socket);
+      if (viewer?.user && canRead(room, viewer)) socket.send(text);
+    }
+  }
+
+  // Accounts others may see as online right now: an open chat socket, and "Show when I'm
+  // online" on. Every presence the server hands out comes from here, so a member who hides it
+  // never appears online anywhere.
+  onlineUserIds() {
+    const ids = new Set();
+    for (const session of this.sessions.values()) {
+      if (session.data.userId !== undefined) ids.add(session.data.userId);
+    }
+    return idsShowingOnline(this.db, ids);
+  }
+
+  // To every signed-in member's sockets (e.g. "presence": someone's visibility changed).
+  sendToMembers(event) {
+    const text = JSON.stringify(event);
+    for (const [socket, session] of this.sessions) {
+      if (session.data.userId !== undefined && socket.readyState === WebSocket.OPEN) {
+        socket.send(text);
+      }
     }
   }
 

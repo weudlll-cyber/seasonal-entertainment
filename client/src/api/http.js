@@ -4,14 +4,15 @@
 // Project:     Seasonal Entertainment
 // Description: The one way the client calls the API: JSON in, JSON out, same-origin cookies
 //              (upload(): a file as the raw body). Failures throw ApiError carrying the
-//              server's stable code and its message.
+//              server's stable code, its message and the rest of its answer (details).
 // ============================================================
 
 export class ApiError extends Error {
-  constructor(status, code, message) {
+  constructor(status, code, message, details = {}) {
     super(message);
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -19,7 +20,7 @@ async function call(path, init) {
   const res = await fetch(`/api${path}`, { credentials: 'same-origin', ...init });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new ApiError(res.status, data.error ?? 'error', data.message ?? 'Request failed.');
+    throw new ApiError(res.status, data.error ?? 'error', data.message ?? 'Request failed.', data);
   }
   return data;
 }
