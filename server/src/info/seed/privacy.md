@@ -49,6 +49,9 @@ This list describes what the website's software actually stores.
   create one, also with your recovery code. This site cannot unlock either; your recovery code
   itself is never sent here. Your browser keeps an unlocked copy, itself encrypted, until you
   log out. Deleted with your account.
+- **Mentions in the chat**: when a room message mentions a member as "@name", the site stores
+  that this message mentions that member, so it can show it to them. Deleted with the message
+  (after the chat retention period).
 - **What you have read in the chat** (members only): for each room and each private
   conversation, up to which message you have read, so the site can count what is new for you,
   and which rooms you muted. Deleted with your account.

@@ -50,7 +50,7 @@ An entry moves from part one to part two only when its branch is merged into `ma
   setting, security fix** — in progress (on PR #5). Part 1: unread counters for rooms (blue) and
   private messages (orange), live in every tab (docs/CHAT.md, "Unread counters"). Part 2: muting
   a room (bell; left out of the room total, its count dimmed). Part 4: "Find a member" in the
-  Direct tab.
+  Direct tab. Part 3: @mentions (notify also in muted rooms; name chips; suggestions).
 - **File uploads in direct messages** — open. Left out of v1 (decided 2026-10-18): an uploaded
   file would have to be encrypted in the browser too.
 - **Link previews in direct messages** — open. Left out of v1: the server would have to see the

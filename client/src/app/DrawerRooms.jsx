@@ -46,6 +46,7 @@ export default function DrawerRooms() {
           favouriteCount={groups.favourites.length}
           unreadOf={unread.room}
           mutedOf={unread.muted}
+          mentionOf={unread.mention}
           value={room}
           onChange={changeRoom}
         />

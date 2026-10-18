@@ -114,10 +114,20 @@ describe('muted rooms', () => {
     await post(ben.agent, 'general', 'one').expect(201);
     const general = async (agent) =>
       (await agent.get('/api/chat/unread')).body.rooms.find((r) => r.slug === 'general');
-    expect(await general(anna.agent)).toEqual({ slug: 'general', count: 1, muted: false });
+    expect(await general(anna.agent)).toEqual({
+      slug: 'general',
+      count: 1,
+      muted: false,
+      mentions: 0,
+    });
 
     await anna.agent.put('/api/chat/rooms/general/mute').expect(200);
-    expect(await general(anna.agent)).toEqual({ slug: 'general', count: 1, muted: true });
+    expect(await general(anna.agent)).toEqual({
+      slug: 'general',
+      count: 1,
+      muted: true,
+      mentions: 0,
+    });
     // The same account on another device sees it muted too; ben is not affected.
     const otherDevice = t.client();
     await logIn(otherDevice, 'anna', 'correct-horse-1');

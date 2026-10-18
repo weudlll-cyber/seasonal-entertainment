@@ -3,22 +3,43 @@
 // Path:        client/src/chat/MessageParts.jsx
 // Project:     Seasonal Entertainment
 // Description: Parts of a message shared by room and direct messages: the text as plain text
-//              (members' https links become links; guests' never) and a sticker or GIF from
-//              the site's library ("Media removed" once it is gone), with its credit.
+//              (members' https links become links; guests' never; an @mention of a member
+//              becomes a name chip that opens the name menu) and a sticker or GIF from the
+//              site's library ("Media removed" once it is gone), with its credit.
 // ============================================================
 
 import { useState } from 'react';
-import { splitLinks } from '@seasonal-entertainment/shared/chatRules.js';
+import { splitLinks, splitMentions } from '@seasonal-entertainment/shared/chatRules.js';
+import NameMenu from './NameMenu.jsx';
 
-export function MessageText({ body, linkify }) {
-  if (!linkify) return body;
+// Plain text with the mentions the server resolved ({ id, username }) as name chips; an
+// "@name" that is not one of them stays text. Everything is text to React: nothing in a
+// message is ever HTML.
+function TextWithMentions({ text, mentions }) {
+  if (!mentions.length) return text;
+  return splitMentions(text).map((part, i) => {
+    const member =
+      part.mention && mentions.find((m) => m.username.toLowerCase() === part.mention.toLowerCase());
+    if (!member) return part.text ?? `@${part.mention}`;
+    return (
+      <span key={i} className="chat-mention">
+        <NameMenu name={`@${member.username}`} authorId={member.id} />
+      </span>
+    );
+  });
+}
+
+export function MessageText({ body, linkify, mentions = [] }) {
+  if (!linkify) return <TextWithMentions text={body} mentions={mentions} />;
   return splitLinks(body).map((part, i) =>
     part.link ? (
       <a key={i} href={part.link} target="_blank" rel="nofollow noopener noreferrer ugc">
         {part.link}
       </a>
     ) : (
-      <span key={i}>{part.text}</span>
+      <span key={i}>
+        <TextWithMentions text={part.text} mentions={mentions} />
+      </span>
     )
   );
 }

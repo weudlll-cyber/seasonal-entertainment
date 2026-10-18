@@ -3,7 +3,8 @@
    Path:        client/src/chat/ChatComposer.css
    Project:     Seasonal Entertainment
    Description: The composer inside the chat module (under .se-chat): message field, actions,
-                the message's one attachment with its ×, and the upload button.
+                the message's one attachment with its ×, the upload button, and the @mention
+                suggestions.
    ============================================================ */
 
 .se-chat .chat-label {
@@ -76,4 +77,28 @@
   margin: 0;
   max-width: 16rem;
   overflow-wrap: anywhere;
+}
+
+/* @mention suggestions, above the message field. */
+.se-chat .chat-mentions {
+  margin: 0;
+  padding: 0.25rem;
+  border: 1px solid var(--chat-border);
+  border-radius: var(--chat-radius);
+  background: var(--chat-bg);
+  box-shadow: var(--chat-shadow);
+  list-style: none;
+}
+
+.se-chat .chat-mentions__option {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--chat-space-1);
+  border-radius: var(--chat-radius);
+  cursor: pointer;
+}
+
+.se-chat .chat-mentions__option--active {
+  background: var(--color-active-bg, #eaf6fe);
 }

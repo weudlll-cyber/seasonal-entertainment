@@ -3,13 +3,14 @@
 // Path:        client/src/chat/ChatMessage.jsx
 // Project:     Seasonal Entertainment
 // Description: One chat message: author (with a Guest badge; a member's name opens the name
-//              menu, NameMenu), local time, then its text as
-//              plain text (members' https links become links; guests' never) and its sticker /
-//              GIF from the site's library ("Media removed" once it is gone), a link preview
-//              card (PreviewCard), an uploaded file (MessageFile), Report, and for
-//              moderators Hide / Mute / Ban / Remove file / Remove preview.
+//              menu, NameMenu), local time, then its text (MessageParts: members' https links
+//              become links, @mentions name chips) and its sticker / GIF from the site's
+//              library, a link preview card (PreviewCard), an uploaded file (MessageFile),
+//              Report, and for moderators Hide / Mute / Ban / Remove file / Remove preview. A
+//              message that mentions the reader is highlighted for them.
 // ============================================================
 
+import { useSession } from '../session/SessionContext.jsx';
 import MessageFile from './MessageFile.jsx';
 import { MessageMedia, MessageText } from './MessageParts.jsx';
 import NameMenu from './NameMenu.jsx';
@@ -20,8 +21,13 @@ const time = (iso) =>
   new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 
 export default function ChatMessage({ message, moderator, onAction }) {
+  const { user } = useSession();
+  // A message mentioning the reader stands out for them.
+  const mentionsMe = Boolean(user) && (message.mentions ?? []).some((m) => m.id === user.id);
   return (
-    <li className={`chat-message${message.hiddenAt ? ' chat-message--hidden' : ''}`}>
+    <li
+      className={`chat-message${message.hiddenAt ? ' chat-message--hidden' : ''}${mentionsMe ? ' chat-message--mention' : ''}`}
+    >
       <div className="chat-message__meta">
         <NameMenu name={message.author} authorId={message.authorId} />
         {message.isGuest && <span className="chat-badge">Guest</span>}
@@ -30,7 +36,11 @@ export default function ChatMessage({ message, moderator, onAction }) {
       </div>
       {message.body && (
         <p className="chat-message__text">
-          <MessageText body={message.body} linkify={!message.isGuest} />
+          <MessageText
+            body={message.body}
+            linkify={!message.isGuest}
+            mentions={message.mentions ?? []}
+          />
         </p>
       )}
       {(message.kind === 'sticker' || message.kind === 'gif') && (

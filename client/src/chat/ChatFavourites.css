@@ -4,7 +4,8 @@
    Project:     Seasonal Entertainment
    Description: Favourites and room settings in the chat module: the small toggles (star,
                 bell; ToggleButton), the room list's group headings ("Favourites", "Rooms"),
-                and a member's name as a button with its small menu. Under the .se-chat root
+                a member's name as a button with its small menu, @mention chips and the
+                highlight of a message that mentions the reader. Under the .se-chat root
                 like every module style, except the toggles, which a host's room picker shows
                 too.
    ============================================================ */
@@ -98,5 +99,18 @@
 
 .se-chat .chat-name-menu__list button:hover,
 .se-chat .chat-name-menu__list button:focus-visible {
+  background: var(--color-active-bg, #eaf6fe);
+}
+
+/* An @mention of a member: a highlighted name chip (it opens the name menu). */
+.se-chat .chat-mention {
+  padding: 0 0.25rem;
+  border-radius: 0.375rem;
+  background: var(--color-active-bg, #eaf6fe);
+}
+
+/* A message that mentions the reader. */
+.se-chat .chat-message--mention {
+  border-left: 3px solid var(--color-winter, #04aaf7);
   background: var(--color-active-bg, #eaf6fe);
 }

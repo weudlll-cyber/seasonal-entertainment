@@ -16,6 +16,7 @@ import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { addMessage, findMessage, listMessages } from './messages.js';
+import { storeMentions, withMentions } from './mentions.js';
 import { readMessageInput } from './messageInput.js';
 import { roomLoader } from './roomLoader.js';
 import { refuseSanctioned } from './sanctionRefusal.js';
@@ -85,7 +86,7 @@ export function chatRoutes(db, config, hub, previews, allowMessage) {
 
   router.get('/rooms/:slug/messages', allow('public'), loadRoom, (req, res) => {
     const moderator = isModerator(chatViewer(req));
-    res.json({ ok: true, messages: listMessages(db, req.room, { moderator }) });
+    res.json({ ok: true, messages: withMentions(db, listMessages(db, req.room, { moderator })) });
   });
 
   router.post(
@@ -110,8 +111,11 @@ export function chatRoutes(db, config, hub, previews, allowMessage) {
       }
       // Stickers and GIFs count like text towards the sender's rate limit.
       const message = addMessage(db, req.room, viewer, input);
+      // Guests may type "@name" too: it notifies only a member who may read the room.
+      storeMentions(db, config, req.room, message, input.body ?? '');
       // Internal ids stay on the server; readers get only what the room shows.
-      const { roomId, authorUserId, authorGuest, ...visible } = message;
+      const { roomId, authorUserId, authorGuest, ...rest } = message;
+      const [visible] = withMentions(db, [rest]);
       hub.broadcast(req.room.id, { type: 'message', message: visible });
       // Every member who may read the room recounts their unread messages (other tabs too).
       hub.notifyReaders(req.room, { type: 'activity', room: req.room.slug });

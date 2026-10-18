@@ -206,6 +206,30 @@ mediaItemId? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh random no
   safety-number check between two members, to compare keys outside the site, is an open backlog
   item.
 
+## @mentions
+
+Typing `@` and a member's name in a room message mentions them (decided 2026-10-18). Rooms are not
+end-to-end encrypted, so the server reads the names; direct messages are left out (one-to-one
+anyway).
+
+- **Which names count**: "@" and a username-shaped name (3–24 letters, digits, `_`, `-`, `.`),
+  not inside a word or an email address; a full stop right after the name ends the sentence
+  (`shared/chatRules.js`, `splitMentions` / `mentionedNames`, the same rule on both sides). A
+  mention counts only for an existing member who may read that room and is not the sender; it is
+  stored per message and member (`chat_mentions`, `server/src/chat/mentions.js`). Unknown names do
+  nothing. Guests may type "@name" too: it notifies only if it resolves as above. Sender limits and
+  rate limits apply unchanged.
+- **For the mentioned member**: the message is highlighted for them; their room count shows an
+  "@" marker; the blue dot on the chat button and the sidebar shows an "@" while any unread mention
+  exists — **also in muted rooms** (decided 2026-10-18). Reading the message (the room's marker
+  passing it) clears it. `GET /api/chat/unread` counts each room's unread mentions.
+- **For everyone**: a resolved `@username` is a highlighted name chip; clicking it opens the
+  existing name menu. Everything stays text: nothing in a message is ever HTML.
+- **Suggestions**: in a room's composer, a member typing "@" and at least 2 more characters gets a
+  list of members who may read that room (the member search with a room filter, "Finding a
+  member"). Arrow keys move, Enter or Tab inserts "@username ", Escape closes the list. Guests get
+  no suggestions.
+
 ## Finding a member
 
 "Find a member" at the top of the Direct tab (drawer and `/chat`), members only: a combobox with a

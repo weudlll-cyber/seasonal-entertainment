@@ -6,7 +6,8 @@
 //              (optional text plus at most one attachment, shown above the field with an ×),
 //              the picker (emojis go into the text at the cursor; a member's sticker or GIF
 //              becomes the attachment), a member's "Attach file" (an uploaded image or PDF
-//              becomes the attachment) and Send, which sends both as one message.
+//              becomes the attachment) and Send, which sends both as one message. In a room, a
+//              member typing "@" gets mention suggestions (MentionSuggestions).
 // ============================================================
 
 import { useRef, useState } from 'react';
@@ -14,15 +15,18 @@ import { MESSAGE_MAX } from '@seasonal-entertainment/shared/chatRules.js';
 import ChatPicker from './ChatPicker.jsx';
 import ComposerAttachment from './ComposerAttachment.jsx';
 import ComposerUpload from './ComposerUpload.jsx';
+import { useMentionSuggestions } from './MentionSuggestions.jsx';
 import './ChatComposer.css';
 
 // onSend(payload) resolves true when the message went out (then text and attachment clear).
 // payload: { body, attachment?: { type: 'sticker' | 'gif', itemId } | { type: 'file', uploadId } }.
 // files: offer "Attach file" to members (false in direct messages: no uploads there, v1).
-export default function ChatComposer({ user, guestName, onSend, files = true }) {
+// room: the room's slug, for @mention suggestions (none in direct messages, none for guests).
+export default function ChatComposer({ user, guestName, onSend, files = true, room = null }) {
   const [draft, setDraft] = useState('');
   const [attachment, setAttachment] = useState(null); // { type, item } or { type: 'file', upload }
   const field = useRef(null);
+  const mentions = useMentionSuggestions({ field, draft, setDraft, room: user ? room : null });
 
   // Inserts at the cursor (or replaces the selection), never beyond the length limit, and
   // puts the cursor right after the emoji.
@@ -61,6 +65,7 @@ export default function ChatComposer({ user, guestName, onSend, files = true }) 
       {attachment && (
         <ComposerAttachment attachment={attachment} onRemove={() => setAttachment(null)} />
       )}
+      {mentions.list}
       <label>
         <span className="chat-label">Message</span>
         <textarea
@@ -68,7 +73,12 @@ export default function ChatComposer({ user, guestName, onSend, files = true }) 
           rows={2}
           maxLength={MESSAGE_MAX}
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          {...mentions.fieldProps}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            mentions.trackCaret(e);
+          }}
+          onKeyDown={mentions.onKeyDown}
         />
       </label>
       <div className="chat-composer__actions">

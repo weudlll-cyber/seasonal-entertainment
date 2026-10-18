@@ -49,7 +49,7 @@ export default function ChatPanel({ room: roomInput, variant = 'full', showRoomT
         />
         <ChatNotice error={chat.error} notice={chat.notice} />
         {current?.canWrite ? (
-          <ChatComposer user={user} guestName={info.me.guestName} onSend={chat.send} />
+          <ChatComposer user={user} guestName={info.me.guestName} onSend={chat.send} room={room} />
         ) : (
           current && <p className="chat-note">You can read this room, but not write in it.</p>
         )}

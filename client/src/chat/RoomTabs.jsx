@@ -33,8 +33,9 @@ function RoomGroup({ title, rooms, current, onPick }) {
             <UnreadCount
               count={unread.room(r.slug)}
               kind="room"
-              label={`${unread.room(r.slug)} unread in ${r.name}`}
+              label={`${unread.room(r.slug)} unread in ${r.name}${unread.mention(r.slug) ? ', with a mention of you' : ''}`}
               dim={unread.muted(r.slug)}
+              mention={unread.mention(r.slug) > 0}
             />
             <RoomStar room={r} />
             <RoomBell room={r} />

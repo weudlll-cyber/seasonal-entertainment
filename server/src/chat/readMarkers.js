@@ -61,6 +61,22 @@ export function roomUnread(db, me, roomIds) {
   return Object.fromEntries(rows.map((r) => [r.roomId, r.n]));
 }
 
+// { roomId: count } of unread messages in the given rooms that mention the member (muted rooms
+// included: mentions still notify there).
+export function roomMentions(db, me, roomIds) {
+  if (roomIds.length === 0) return {};
+  const rows = db
+    .prepare(
+      `SELECT m.room_id AS roomId, COUNT(*) AS n
+       FROM chat_mentions c JOIN chat_messages m ON m.id = c.message_id
+       WHERE c.user_id = @me AND m.room_id IN (${roomIds.map(() => '?').join(',')})
+         AND m.hidden_at IS NULL AND m.id > COALESCE(${marker('room', 'm.room_id')}, 0)
+       GROUP BY m.room_id`
+    )
+    .all(...roomIds, { me });
+  return Object.fromEntries(rows.map((r) => [r.roomId, r.n]));
+}
+
 // { partnerId: count } of messages from each partner after the member's marker.
 export function directUnread(db, me) {
   const rows = db
