@@ -17,9 +17,6 @@ An entry moves from part one to part two only when its branch is merged into `ma
 - **Unlock a new device by confirming it on an already logged-in device** — unconfirmed proposal,
   not decided: instead of the password or the recovery code, a device that is already unlocked
   hands the private key over to the new one.
-- **Remove the legacy-login route and the legacy flag in pre-login before go-live** — open. Both
-  exist only for accounts created before the login key split (development data); see
-  docs/AUTH.md, "Login key split".
 - **Operating-system notifications for mentions and direct messages** — unconfirmed proposal,
   not decided.
 - **Chat embedding on other sites** — open. The embed route exists for this site's own pages
@@ -53,6 +50,10 @@ An entry moves from part one to part two only when its branch is merged into `ma
 - **Password key derivation freezes the page** — closed by SE-NIGHT-2 part 3 (PR #7, not merged
   yet): Argon2id runs in a same-origin Web Worker; password buttons read "Checking…"; no CSP
   change (docs/AUTH.md, "Off the main thread").
+- **Remove the legacy-login route and the legacy flag in pre-login before go-live** — closed by
+  SE-NIGHT-2 part 7 (PR #7, not merged yet): no account in the development database was flagged
+  legacy and nothing outside the legacy flow depended on it; route, flag, browser branch, dev
+  admin script branch and migration step removed (docs/AUTH.md, "Login key split").
 - **Chat embedding on this site's own pages** — closed by SE-NIGHT-2 part 6 (PR #7, not merged
   yet): `/embed/chat` with the site's login state, a postMessage API with origin checks,
   `frame-ancestors 'self'` for `/embed/*` only, a demo page and docs/EMBED.md with the race

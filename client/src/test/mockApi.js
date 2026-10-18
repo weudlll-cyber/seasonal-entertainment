@@ -44,7 +44,7 @@ export function signedIn(user) {
 // The pre-login answer for any username: a fixed salt (docs/AUTH.md, "Login key split").
 export const PRELOGIN_SALT = 'AAECAwQFBgcICQoLDA0ODw==';
 export const PRELOGIN = {
-  'POST /auth/prelogin': { body: { ok: true, salt: PRELOGIN_SALT, legacy: false } },
+  'POST /auth/prelogin': { body: { ok: true, salt: PRELOGIN_SALT } },
 };
 
 // A member without a key pair yet (keys/): GET /api/keys/me.

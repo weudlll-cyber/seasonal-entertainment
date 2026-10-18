@@ -8,9 +8,7 @@
 //                 in the x-bootstrap-token header) if no admin exists;
 //              2. turns on its 2FA (required for admins) if it is off.
 //              The password never goes to the server: like a browser, the script derives the
-//              auth key from it with the shared crypto helper (docs/AUTH.md, "Login key split");
-//              an admin from before that change logs in once through the legacy route, which
-//              upgrades it.
+//              auth key from it with the shared crypto helper (docs/AUTH.md, "Login key split").
 //              Password, TOTP secret and recovery codes go ONLY to data/DEV-ADMIN.txt
 //              (gitignored). Also adds a SESSION_SECRET to .env so dev logins survive
 //              restarts. Safe to run again. Refuses to run with NODE_ENV=production.
@@ -59,16 +57,10 @@ async function call(route, body, headers = {}) {
 }
 
 // Logs in as the browser does: the account's salt from the pre-login step, then the auth key
-// derived from it; a legacy account sends its password once, with a new salt and auth key.
-// Returns the login answer and the auth key (2FA setup asks for the password again).
+// derived from it. Returns the login answer and the auth key (2FA setup asks for the password
+// again).
 async function logIn(password) {
   const pre = await call('/auth/prelogin', { username: USERNAME });
-  if (pre.body.legacy) {
-    const salt = await newSalt();
-    const { authKey } = await deriveAccountKeys(password, salt);
-    const body = { username: USERNAME, password, salt, authKey };
-    return { answer: await call('/auth/legacy-login', body), authKey };
-  }
   const { authKey } = await deriveAccountKeys(password, pre.body.salt);
   return { answer: await call('/auth/login', { username: USERNAME, authKey }), authKey };
 }

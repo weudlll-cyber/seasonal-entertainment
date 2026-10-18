@@ -16,7 +16,7 @@ from the race game's `docs/AUTH.md` are marked _(race game)_.
 - **Rules shared by server and client** (`shared/accountRules.js`): username 3–24 characters,
   letters, digits, `_`, `-`, `.`, starting with a letter or digit; unique **case-insensitively**
   (enforced by the database, `COLLATE NOCASE`). Password at least 10 characters _(race game)_ and
-  at most 72 bytes (kept for the legacy route's bcrypt). Email: a plain shape check; no
+  at most 72 bytes (from when bcrypt read the password itself; kept unchanged). Email: a plain shape check; no
   confirmation mail is sent. The password rules are checked **in the browser only** (next
   section).
 - **The password never reaches the server** (next section). The server stores bcrypt of the auth
@@ -47,7 +47,7 @@ unit tests) or it fails to load, the same functions run on the main thread; the 
 registration, password change, unlock or recovery runs, its button reads **Checking…**
 (`client/src/components/BusyButton.jsx`).
 
-- **Pre-login**: `POST /api/auth/prelogin { username }` → `{ salt, legacy }`. An unknown username
+- **Pre-login**: `POST /api/auth/prelogin { username }` → `{ salt }`. An unknown username
   gets a deterministic fake salt — HMAC-SHA-256 of the lower-cased username, keyed with a key
   derived from `SESSION_SECRET` (no new setting) — so the answer has the same shape for every name
   and does not change between requests. (In development without a `SESSION_SECRET` the secret is
@@ -61,16 +61,13 @@ registration, password change, unlock or recovery runs, its button reads **Check
   password), the first-run bootstrap and `npm run dev:admin` (both through `shared/crypto.js`).
   The server checks only the shapes (`shared/cryptoFormat.js`: salt 16 bytes, keys 32 bytes) and
   answers `400` to a body carrying a password instead.
-- **Legacy accounts** (created before this change; development data only — the site is not live):
-  opening an older database adds the columns and marks every existing account `legacy = 1`
-  (`migrateAccounts`, `server/src/accounts/schema.js`); new accounts are never legacy. Pre-login
-  answers `legacy: true` for them (this reveals that a legacy account exists — acceptable for
-  development data only). The browser then calls `POST /api/auth/legacy-login { username,
-password, salt, authKey }` with a **new** salt: the password is checked one last time against
-  the old hash and, in the same request, the new salt and auth-key verifier replace it and the
-  flag is cleared — exactly once (`UPDATE ... WHERE legacy = 1`); no session epoch change. The
-  route accepts only flagged accounts (any other answers the same `401`, after a dummy bcrypt)
-  and shares the login's rate limits. **It can be removed once no legacy account remains.**
+- **No legacy login any more** (removed in SE-NIGHT-2 part 7): accounts from before the key
+  split had a one-time `POST /api/auth/legacy-login` that checked the password against the old
+  hash and replaced it. No such account existed any more (the development database had none, and
+  the site was never live), so the route, the `legacy` flag in the pre-login answer and the
+  browser's branch for it are gone. An account in a database from before the split (no salt)
+  cannot log in; an admin's password reset gives it a salt. Older databases keep an unused
+  `legacy` column.
 - **Unchanged**: lockout and rate limits, the session epoch, 2FA, the audit log, the same
   `401 invalid_credentials` for a wrong name or secret.
 - **Wrapping key and recovery code**: the wrapping key seals the member's private key for direct
@@ -190,7 +187,7 @@ All answer `429 too_many_attempts`. Numbers are in `server/src/config.js` (`rate
 | `POST /api/auth/login` | 15 min | 10    | IP       | failed attempts |
 | `POST /api/auth/login` | 15 min | 10    | username | failed attempts |
 
-`POST /api/auth/prelogin` and `POST /api/auth/legacy-login` share the two login limiters above
+`POST /api/auth/prelogin` shares the two login limiters above
 (the same counters): a blocked name or address gets neither salts nor logins.
 | `POST /api/auth/register` | 1 h | 5 | IP | every attempt |
 | `POST /api/auth/password` | 15 min | 5 | account | failed attempts |
@@ -225,8 +222,7 @@ After the first admin exists, unset `BOOTSTRAP_TOKEN`; the route stays closed an
 
 `npm run dev:admin` runs the real app in-process on a random port with a one-time token held only
 in memory, calls the bootstrap route with it (salt and auth key derived from the password with
-`shared/crypto.js`; an existing legacy dev admin logs in once through the legacy route, which
-upgrades it), and writes the username and a random password to
+`shared/crypto.js`), and writes the username and a random password to
 `data/DEV-ADMIN.txt` (gitignored). Admins need 2FA, so it then turns 2FA on for that account
 through the real API and adds the TOTP secret, its `otpauth://` link and the recovery codes to
 the same file. It also adds a `SESSION_SECRET` to `.env` if missing, so dev logins survive

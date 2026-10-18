@@ -380,7 +380,7 @@ server/
   src/db/database.js       opens the database, applies every area's schema and migrations
   src/db/addColumns.js     adds columns to older databases (each area's migrate function)
   src/accounts/            accounts area: schema, user store, passwords, routes (login:
-                           loginRoutes.js, pre-login and legacy route), credentials, bootstrap
+                           loginRoutes.js, pre-login and login), credentials, bootstrap
   src/twofa/               two-factor area: TOTP, schema, store, routes, staff gate
   src/keys/                members' keys: public keys, sealed private keys, recovery seal
   src/audit/               audit log: schema and the one recordAudit helper
