@@ -7,6 +7,8 @@
 #              It calls the same script as local work, so both always run the same checks.
 #              The browser tests start their own call server: the pinned LiveKit binary,
 #              downloaded and checked against its SHA-256 first (scripts/calls-binary.mjs).
+#              A second job builds the production image (deploy/site/Dockerfile; never pushed)
+#              and checks the compose files and Caddyfiles, so the deployment files cannot rot.
 # ============================================================
 
 name: CI
@@ -46,3 +48,46 @@ jobs:
 
       - name: Verify
         run: npm run verify
+
+  deploy-files:
+    name: deployment files
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Build the site image (no push)
+        run: >-
+          docker build -f deploy/site/Dockerfile --build-arg COMMIT_SHA=${{ github.sha }}
+          -t seasonal-site:ci .
+
+      - name: The image starts in production and answers /api/health
+        run: |
+          docker run -d --name site -p 127.0.0.1:3800:3800 \
+            -e SESSION_SECRET="$(openssl rand -hex 32)" -e TRUST_PROXY=1 \
+            -e PUBLIC_ORIGIN=https://site.example seasonal-site:ci
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:3800/api/health && exit 0; sleep 1; done
+          docker logs site
+          exit 1
+
+      - name: Compose files are valid
+        run: |
+          cp .env.example deploy/site/site.env
+          printf 'SITE_DOMAIN=site.example\nCALLS_DOMAIN=calls.example\nACME_EMAIL=ops@site.example\n' > deploy/site/.env
+          docker compose -f deploy/site/docker-compose.yml config --quiet
+          printf 'LIVEKIT_KEYS=k: s\nCALLS_DOMAIN=calls.example\nCALLS_CERT_DIR=/tmp\nACME_EMAIL=ops@site.example\n' > deploy/calls/.env
+          docker compose -f deploy/calls/docker-compose.yml --profile proxy config --quiet
+
+      - name: Caddyfiles are valid and formatted
+        run: |
+          image=$(grep -m1 -o 'caddy:[^ ]*' deploy/site/docker-compose.yml)
+          docker run --rm -e SITE_DOMAIN=site.example -e CALLS_DOMAIN=calls.example \
+            -e ACME_EMAIL=ops@site.example -e CALLS_UPSTREAM=host.docker.internal:7880 \
+            -v "$PWD/deploy/site/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            -v "$PWD/deploy/site/caddy:/etc/caddy/sites:ro" \
+            -v "$PWD/deploy/calls/Caddyfile:/etc/caddy/calls-own:ro" "$image" sh -c '
+              caddy validate --config /etc/caddy/Caddyfile &&
+              caddy validate --config /etc/caddy/calls-own --adapter caddyfile &&
+              for f in /etc/caddy/Caddyfile /etc/caddy/sites/calls.caddy /etc/caddy/calls-own; do
+                caddy fmt "$f" | diff -q - "$f" || exit 1
+              done'

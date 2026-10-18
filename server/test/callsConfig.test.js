@@ -16,7 +16,7 @@ import { makeTestApp } from './helpers/testApp.js';
 
 const PROD_BASE = {
   NODE_ENV: 'production',
-  SESSION_SECRET: 's',
+  SESSION_SECRET: 's'.repeat(32),
   TRUST_PROXY: '1',
   PUBLIC_ORIGIN: 'https://se.example.org',
 };

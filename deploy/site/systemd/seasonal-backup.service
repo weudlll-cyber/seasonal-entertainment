@@ -1,0 +1,20 @@
+# ============================================================
+# File:        seasonal-backup.service
+# Path:        deploy/site/systemd/seasonal-backup.service
+# Project:     Seasonal Entertainment
+# Description: One backup of the running site (scripts/backup.mjs inside the site container:
+#              SQLite online backup plus media into /var/backups/seasonal, 14 days kept).
+#              Started nightly by seasonal-backup.timer; install both into /etc/systemd/system
+#              (docs/DEPLOYMENT.md, "Backups"). The path assumes the repository in
+#              /opt/seasonal-entertainment.
+# ============================================================
+
+[Unit]
+Description=Seasonal Entertainment backup (database and media)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/seasonal-entertainment/deploy/site
+ExecStart=/usr/bin/docker compose exec -T site node scripts/backup.mjs

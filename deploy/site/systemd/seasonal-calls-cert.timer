@@ -1,0 +1,18 @@
+# ============================================================
+# File:        seasonal-calls-cert.timer
+# Path:        deploy/site/systemd/seasonal-calls-cert.timer
+# Project:     Seasonal Entertainment
+# Description: Runs seasonal-calls-cert.service daily; Caddy renews about 30 days before
+#              expiry, so LiveKit always has a valid certificate.
+# ============================================================
+
+[Unit]
+Description=Daily calls certificate hand-over
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,23 @@
+# ============================================================
+# File:        .dockerignore
+# Path:        .dockerignore
+# Project:     Seasonal Entertainment
+# Description: What the site's image build (deploy/site/Dockerfile, context: the repository)
+#              never sees: local data and secrets, installed and built output (the image
+#              installs and builds its own), test output, git history and the dev call server.
+# ============================================================
+
+.git
+.env
+.env.*
+!.env.example
+data
+node_modules
+**/node_modules
+client/dist
+.calls-bin
+test-results
+playwright-report
+coverage
+reports
+deploy/*/.env

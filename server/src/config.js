@@ -5,13 +5,15 @@
 // Description: Reads the runtime configuration from environment variables at start time.
 //              Nothing is baked into a build, so one build runs on any host. Every key is
 //              listed in .env.example (test/envExample.test.js) and docs/ARCHITECTURE.md.
-//              The call service's keys are read by calls/config.js.
+//              The call service's keys are read by calls/config.js; what production refuses
+//              to start with is checked by productionConfig.js.
 // ============================================================
 
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readCallsConfig } from './calls/config.js';
+import { checkProduction } from './productionConfig.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const ENV_FILE = path.join(repoRoot, '.env');
@@ -46,26 +48,6 @@ function readStaff2fa(env, isProduction) {
   if (!required && isProduction)
     throw new Error('REQUIRE_STAFF_2FA=false is not allowed in production');
   return required;
-}
-
-// Production runs behind a reverse proxy: without TRUST_PROXY every visitor would share the
-// proxy's IP (one login limit for all), and without PUBLIC_ORIGIN the origin checks would
-// trust the Host header. Both must be set explicitly; TRUST_PROXY=0 means "nothing in front".
-function checkProductionDeployment(env, publicOrigin) {
-  if (env.TRUST_PROXY === undefined || env.TRUST_PROXY === '') {
-    throw new Error('TRUST_PROXY is required in production (number of reverse proxies, 0 if none)');
-  }
-  let isOrigin = false;
-  try {
-    isOrigin = new URL(publicOrigin).origin === publicOrigin;
-  } catch {
-    // not a URL at all
-  }
-  if (!isOrigin) {
-    throw new Error(
-      'PUBLIC_ORIGIN is required in production: the site origin, e.g. https://example.org (no path)'
-    );
-  }
 }
 
 export function readConfig(env = process.env) {
@@ -152,6 +134,6 @@ export function readConfig(env = process.env) {
       callAction: { windowMs: 60_000, max: 60 }, // hands, stage, mute, spotlight per account
     },
   };
-  if (isProduction) checkProductionDeployment(env, config.publicOrigin);
+  if (isProduction) checkProduction(env, config);
   return config;
 }

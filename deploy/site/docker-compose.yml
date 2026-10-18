@@ -1,0 +1,74 @@
+# ============================================================
+# File:        docker-compose.yml
+# Path:        deploy/site/docker-compose.yml
+# Project:     Seasonal Entertainment
+# Description: The site on its VPS (docs/DEPLOYMENT.md): the site container (deploy/site/
+#              Dockerfile) and Caddy in front, which gets and renews the HTTPS certificates for
+#              SITE_DOMAIN and CALLS_DOMAIN and is the only way in (ports 80/443). The call
+#              service is NOT part of this project: deploy/calls/ is its own compose project, so
+#              it can move to another VPS unchanged; while it runs on this one, Caddy forwards
+#              the calls domain to it (caddy/calls.caddy). Settings: ./.env (compose: domains)
+#              and ./site.env (the app, from the repository's .env.example); neither committed.
+# ============================================================
+
+name: seasonal-site
+
+services:
+  site:
+    build:
+      context: ../..
+      dockerfile: deploy/site/Dockerfile
+      args:
+        COMMIT_SHA: ${COMMIT_SHA:-unknown}
+    image: seasonal-site:${COMMIT_SHA:-local}
+    restart: unless-stopped
+    env_file: site.env
+    # Fixed by this setup; these win over site.env.
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: '3800'
+      # Exactly one reverse proxy in front: Caddy. req.ip is then the visitor's address.
+      TRUST_PROXY: '1'
+      PUBLIC_ORIGIN: https://${SITE_DOMAIN:?set SITE_DOMAIN in deploy/site/.env}
+      DATABASE_PATH: /data/seasonal.db
+      MEDIA_DIR: /data/media
+      BACKUP_DIR: /backups
+    volumes:
+      # The SQLite database and the media files (stickers, GIFs, uploads, previews).
+      - site-data:/data
+      # Nightly backups, on the host so they survive the container and the volume.
+      - ${BACKUP_HOST_DIR:-/var/backups/seasonal}:/backups
+    # Not published: only Caddy reaches it, over the project's own network.
+    expose:
+      - '3800'
+
+  caddy:
+    image: caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+    restart: unless-stopped
+    depends_on:
+      - site
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp' # HTTP/3
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?set SITE_DOMAIN in deploy/site/.env}
+      CALLS_DOMAIN: ${CALLS_DOMAIN:-}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in deploy/site/.env}
+      # The call service's signalling port as seen from this container (host networking).
+      CALLS_UPSTREAM: ${CALLS_UPSTREAM:-host.docker.internal:7880}
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Extra site blocks; calls.caddy while the call service runs on this VPS.
+      - ./caddy:/etc/caddy/sites:ro
+      # Certificates and ACME account: must persist, or Let's Encrypt limits are hit.
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  site-data:
+  caddy-data:
+  caddy-config:

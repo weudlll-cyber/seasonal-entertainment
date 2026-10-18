@@ -61,7 +61,7 @@ Read from the environment when the process starts, never baked into a build:
 | `COMMIT_SHA`          | output of `git rev-parse`                     | commit reported by `/api/health`                                |
 | `CLIENT_PORT`         | `5380`                                        | Vite dev server port                                            |
 | `API_ORIGIN`          | `http://127.0.0.1:3800`                       | where the Vite dev server forwards `/api` and `/ws`             |
-| `NODE_ENV`            | (unset)                                       | `production`: Secure cookies, secret required                   |
+| `NODE_ENV`            | (unset)                                       | `production`: Secure cookies, no dev defaults (DEPLOYMENT.md)   |
 | `DATABASE_PATH`       | `data/seasonal.db`                            | SQLite file                                                     |
 | `SESSION_SECRET`      | random per start (dev)                        | signs session cookies; required in production                   |
 | `BOOTSTRAP_TOKEN`     | (unset)                                       | one-time first-admin creation (AUTH.md)                         |
@@ -77,6 +77,7 @@ Read from the environment when the process starts, never baked into a build:
 | `CALLS_URL`           | (unset: Calls off)                            | call service origin, `wss://...` (docs/CALLS.md)                |
 | `CALLS_API_KEY`       | (unset)                                       | call service API key; set with the other two or none            |
 | `CALLS_API_SECRET`    | (unset)                                       | call service API secret; production: no dev pair, 32+ chars     |
+| `BACKUP_DIR`          | (unset)                                       | where `scripts/backup.mjs` writes backups (DEPLOYMENT.md)       |
 
 The server loads `.env` from the repository root if present; real environment variables win.
 `.env.example` lists every key the server reads, by name with a comment and no value;
@@ -419,9 +420,14 @@ scripts/
   verify.mjs               npm run verify
   calls-dev.mjs            npm run dev:calls (LiveKit in development mode)
   calls-binary.mjs         the pinned LiveKit binary, checksum-checked, in .calls-bin/
+  backup.mjs, restore.mjs  nightly backup and restore (server/src/backup/; DEPLOYMENT.md)
+  bootstrap-admin.mjs      the first admin of a running production site
+deploy/site/               the site for a server: Dockerfile, docker-compose.yml (site + Caddy),
+                           Caddyfile, systemd timers (docs/DEPLOYMENT.md)
 deploy/calls/              the call service for a server: livekit.yaml, docker-compose.yml
 docs/                      this file, the backlog, and one file per area (AUTH, CHAT, CALLS,
-                           DESIGN) plus SCALING (the staged plan for growing beyond one VPS)
+                           DESIGN, EMBED) plus SCALING (the staged plan for growing beyond one
+                           VPS) and DEPLOYMENT (the runbook for the VPS)
 ```
 
 ## Assets

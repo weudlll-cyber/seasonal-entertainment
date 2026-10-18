@@ -16,8 +16,8 @@ from the race game's `docs/AUTH.md` are marked _(race game)_.
 - **Rules shared by server and client** (`shared/accountRules.js`): username 3–24 characters,
   letters, digits, `_`, `-`, `.`, starting with a letter or digit; unique **case-insensitively**
   (enforced by the database, `COLLATE NOCASE`). Password at least 10 characters _(race game)_ and
-  at most 72 bytes (from when bcrypt read the password itself; kept unchanged). Email: a plain shape check; no
-  confirmation mail is sent. The password rules are checked **in the browser only** (next
+  at most 72 bytes (from when bcrypt read the password itself; kept unchanged). Email: a plain
+  shape check; no confirmation mail is sent. The password rules are checked **in the browser only** (next
   section).
 - **The password never reaches the server** (next section). The server stores bcrypt of the auth
   key the browser derives from it, cost 12 by default (`BCRYPT_COST`) _(race game)_.

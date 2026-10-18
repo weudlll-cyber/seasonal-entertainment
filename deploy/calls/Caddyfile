@@ -1,0 +1,16 @@
+# ============================================================
+# File:        Caddyfile
+# Path:        deploy/calls/Caddyfile
+# Project:     Seasonal Entertainment
+# Description: Caddy for the call service on a VPS of its own (docker-compose.yml in this
+#              folder, profile "proxy"): automatic HTTPS for CALLS_DOMAIN and signalling over
+#              wss forwarded to LiveKit on 127.0.0.1:7880. While the call service shares the
+#              site's VPS, the site's Caddy does this instead (deploy/site/caddy/calls.caddy).
+# ============================================================
+{
+	email {$ACME_EMAIL}
+}
+
+{$CALLS_DOMAIN} {
+	reverse_proxy 127.0.0.1:7880
+}

@@ -17,7 +17,7 @@ let t;
 afterEach(() => t?.close());
 
 describe('production start', () => {
-  const prod = { NODE_ENV: 'production', SESSION_SECRET: 's' };
+  const prod = { NODE_ENV: 'production', SESSION_SECRET: 's'.repeat(32) };
 
   it('refuses to start without TRUST_PROXY or a valid PUBLIC_ORIGIN', () => {
     expect(() => readConfig(prod)).toThrow(/TRUST_PROXY/);

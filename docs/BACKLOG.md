@@ -34,7 +34,9 @@ An entry moves from part one to part two only when its branch is merged into `ma
 - Chat
 - Notifications
 - Admin pages (events calendar editable without code changes)
-- VPS deployment
+- VPS deployment — prepared (SE-NIGHT-2 part 7: image, compose with Caddy, backups, runbook in
+  docs/DEPLOYMENT.md); the deployment itself waits for the owner's domains, VPS access and the
+  off-site backup target.
 
 ## PART TWO — closed
 
@@ -50,6 +52,10 @@ An entry moves from part one to part two only when its branch is merged into `ma
 - **Password key derivation freezes the page** — closed by SE-NIGHT-2 part 3 (PR #7, not merged
   yet): Argon2id runs in a same-origin Web Worker; password buttons read "Checking…"; no CSP
   change (docs/AUTH.md, "Off the main thread").
+- **Deployment preparation for the Contabo VPS** — closed by SE-NIGHT-2 part 7 (PR #7, not
+  merged yet): deploy/site/ (Dockerfile, compose with Caddy, Caddyfiles, systemd timers),
+  nightly SQLite online backups with restore, production refuses development defaults, the
+  first-admin script, CI builds the image; runbook docs/DEPLOYMENT.md.
 - **Remove the legacy-login route and the legacy flag in pre-login before go-live** — closed by
   SE-NIGHT-2 part 7 (PR #7, not merged yet): no account in the development database was flagged
   legacy and nothing outside the legacy flow depended on it; route, flag, browser branch, dev
