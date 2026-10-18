@@ -80,7 +80,8 @@ jobs:
 
       - name: Caddyfiles are valid and formatted
         run: |
-          image=$(grep -m1 -o 'caddy:[^ ]*' deploy/site/docker-compose.yml)
+          # The pinned image from the compose file's "image:" line, so both always agree.
+          image=$(sed -n 's/^ *image: \(caddy:[^ ]*\).*/\1/p' deploy/site/docker-compose.yml | head -1)
           docker run --rm -e SITE_DOMAIN=site.example -e CALLS_DOMAIN=calls.example \
             -e ACME_EMAIL=ops@site.example -e CALLS_UPSTREAM=host.docker.internal:7880 \
             -v "$PWD/deploy/site/Caddyfile:/etc/caddy/Caddyfile:ro" \
