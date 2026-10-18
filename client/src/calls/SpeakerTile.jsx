@@ -2,8 +2,10 @@
 // File:        SpeakerTile.jsx
 // Path:        client/src/calls/SpeakerTile.jsx
 // Project:     Seasonal Entertainment
-// Description: One speaker on the stage: camera picture (or the name's first letter), name,
-//              role (Host or Speaker), microphone state, and a ring while they talk. Organisers
+// Description: One speaker on the stage: their shared screen if they share one (so a share
+//              always shows, in any layout), else their camera picture (or the name's first
+//              letter); name, role (Host or Speaker), microphone state, and a ring while they
+//              talk. Organisers
 //              get Spotlight, Mute and Remove for others; a speaker may put themselves in the
 //              spotlight.
 // ============================================================
@@ -14,6 +16,7 @@ import { TrackVideo, hasMicrophoneOn, trackOf } from './TrackMedia.jsx';
 
 // person: stageModel.personOf(); actions: { spotlight, mute, remove, highlightSelf } or null.
 export default function SpeakerTile({ person, room, talking, highlighted, actions }) {
+  const screen = trackOf(room, person.identity, Track.Source.ScreenShare);
   const camera = trackOf(room, person.identity, Track.Source.Camera);
   const micOn = hasMicrophoneOn(room, person.identity);
   const name = person.isLocal ? `${person.name} (you)` : person.name;
@@ -23,8 +26,11 @@ export default function SpeakerTile({ person, room, talking, highlighted, action
       aria-label={`${name}, ${person.kind === 'host' ? 'host' : 'speaker'}${talking ? ', talking' : ''}`}
     >
       <div className="speaker-tile__picture">
-        {camera ? (
-          <TrackVideo track={camera} label={`${person.name}'s camera`} />
+        {screen || camera ? (
+          <TrackVideo
+            track={screen ?? camera}
+            label={`${person.name}'s ${screen ? 'screen' : 'camera'}`}
+          />
         ) : (
           <span className="speaker-tile__initial" aria-hidden="true">
             {person.name.charAt(0).toUpperCase()}

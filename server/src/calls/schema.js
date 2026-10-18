@@ -6,8 +6,11 @@
 //              status (scheduled, live, ended), who created it, when it started and ended, its
 //              chat room (an unlisted chat room, read-only once the call ends), the name of
 //              its room on the call service and who is in the spotlight (spotlight.js).
-//              Participants: one per call and person (participants.js).
+//              Participants: one per call and person (participants.js). migrateCalls() brings
+//              an older calls table up (the spotlight columns came later: SE-CALLS-2).
 // ============================================================
+
+import { addMissingColumns } from '../db/addColumns.js';
 
 export const CALLS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS calls (
@@ -42,3 +45,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS call_participants_user
 CREATE UNIQUE INDEX IF NOT EXISTS call_participants_guest
   ON call_participants (call_id, guest_id) WHERE guest_id IS NOT NULL;
 `;
+
+// CREATE TABLE IF NOT EXISTS skips a table that exists already: a calls table made before the
+// spotlight existed (a development database, 2026-10-18) gets its columns here.
+export function migrateCalls(db) {
+  addMissingColumns(db, [
+    ['calls', 'spotlight_identity', 'TEXT'],
+    ['calls', 'spotlight_by', "TEXT CHECK (spotlight_by IN ('organiser', 'self', 'share'))"],
+  ]);
+}

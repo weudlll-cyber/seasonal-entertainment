@@ -3,7 +3,8 @@
    Path:        client/src/calls/callControls.css
    Project:     Seasonal Entertainment
    Description: The call's control bar (CallControls.jsx): icon buttons with labels, pressed
-                and danger states, the "share your screen" question. Tokens only.
+                and danger states, the "share your screen" question; the notice under it (no
+                sound in the share, "Share again with sound"). Tokens only.
    ============================================================ */
 
 .call-controls {
@@ -49,5 +50,18 @@
 
 .call-controls__ask p {
   flex-basis: 100%;
+  margin: 0;
+}
+
+/* A notice with its action (CallStage.jsx). */
+.call-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.call-notice p {
+  flex: 1 1 18rem;
   margin: 0;
 }

@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { DisconnectReason, Room, RoomEvent, Track } from 'livekit-client';
 import { api } from '../api/http.js';
-import { personOf, shareAudioNotice, spotlightOf } from './stageModel.js';
+import { isChromium, personOf, shareAudioNotice, spotlightOf } from './stageModel.js';
 
 // Every event that changes what the page shows.
 const REDRAW = [
@@ -111,6 +111,13 @@ export function useCallRoom(callId) {
     };
   const local = () => room.current.localParticipant;
 
+  // Starts a screen share; then says whether it carries sound (stageModel.shareAudioNotice).
+  async function startShare() {
+    await local().setScreenShareEnabled(true, SHARE_OPTIONS);
+    const hasAudio = Boolean(local().getTrackPublication(Track.Source.ScreenShareAudio));
+    setNotice(shareAudioNotice(hasAudio, isChromium(navigator)));
+  }
+
   const controls = {
     join,
     leave: act(async () => {
@@ -121,10 +128,13 @@ export function useCallRoom(callId) {
     toggleCamera: act(() => local().setCameraEnabled(!local().isCameraEnabled)),
     toggleShare: act(async () => {
       if (local().isScreenShareEnabled) return local().setScreenShareEnabled(false);
-      await local().setScreenShareEnabled(true, SHARE_OPTIONS);
-      setNotice(
-        shareAudioNotice(Boolean(local().getTrackPublication(Track.Source.ScreenShareAudio)))
-      );
+      await startShare();
+    }),
+    // "Share again with sound": the browser asks once more, so the presenter can pick the
+    // whole screen with system audio, or a tab with its audio.
+    reshare: act(async () => {
+      await local().setScreenShareEnabled(false);
+      await startShare();
     }),
     leaveStage: act(() => post('leave-stage')),
     raiseHand: act((raised) => post('hand', { raised })),

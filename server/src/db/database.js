@@ -12,7 +12,7 @@ import path from 'node:path';
 import Database from 'better-sqlite3';
 import { ACCOUNTS_SCHEMA, migrateAccounts } from '../accounts/schema.js';
 import { AUDIT_SCHEMA } from '../audit/schema.js';
-import { CALLS_SCHEMA } from '../calls/schema.js';
+import { CALLS_SCHEMA, migrateCalls } from '../calls/schema.js';
 import { CHAT_SCHEMA, migrateChat } from '../chat/schema.js';
 import { EVENTS_SCHEMA } from '../events/schema.js';
 import { GAMES_SCHEMA } from '../games/schema.js';
@@ -51,5 +51,6 @@ export function openDatabase(databasePath) {
   // Columns added after a table was first created (CREATE IF NOT EXISTS skips them).
   migrateAccounts(db);
   migrateChat(db);
+  migrateCalls(db);
   return db;
 }

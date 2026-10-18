@@ -18,10 +18,19 @@ import { applySpotlight } from './spotlightUpdate.js';
 
 const ORGANISER_CHOICE = "An organiser's choice stands until an organiser changes it.";
 
-const answer = (res, result) =>
-  result.refused
-    ? sendError(res, 409, result.refused, ORGANISER_CHOICE)
-    : res.json({ ok: true, spotlight: result.state });
+// The details of a failure are in the server log only (spotlightUpdate.js).
+function answer(res, result) {
+  if (result.failed) {
+    return sendError(
+      res,
+      503,
+      'spotlight_unavailable',
+      'The spotlight could not be changed right now.'
+    );
+  }
+  if (result.refused) return sendError(res, 409, result.refused, ORGANISER_CHOICE);
+  return res.json({ ok: true, spotlight: result.state });
+}
 
 export function callSpotlightRoutes(db, config, service) {
   const router = express.Router();

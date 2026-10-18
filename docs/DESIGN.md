@@ -117,14 +117,24 @@ checks the alignment, the one-line rows and the overlap at 1440 x 900 and 1280 x
 **Call page** (`/calls/:id`, design "Community Call – Bühne", docs/CALLS.md): the header across
 (title, LIVE badge, start time, how many speak and listen); on the left the stage, the control
 bar and the listeners, scrolling inside; on the right (22rem) the call's chat. Below 1000px the
-chat opens as a drawer over the page (a "Chat" button in the header). The site's chat button is
+chat opens as a drawer over the page ("Show chat" in the header). The site's chat button is
 not shown on a call page. Speaker tiles: camera picture or the name's initial, name, Host or
-Speaker, microphone state, an accent ring while talking; at least 12rem per column. The
+Speaker, microphone state, an accent ring while talking (a shared screen replaces the camera
+picture); at least 12rem per column. The
 spotlight shows one speaker large (a shared screen with the camera inset in the corner, and the
 label "<name> is sharing the screen" with a sound icon when it carries audio), the others in a
-strip. Control buttons are icons with visible labels; on/off in `aria-pressed`. Raised hands
-come first in the listener list, marked with the hand icon on the active background; guests carry
-a "Guest" tag.
+strip. Control buttons are icons with visible labels; on/off in `aria-pressed`. Listeners are
+chips (pill shape): an initial circle (winter blue; neutral grey with a person icon for hidden
+listeners), the name, a "Guest" tag for guests; raised hands come first, with an autumn-orange
+border and hand symbol; organisers get a compact pill "Invite" button inside the chip (drawn
+32px, 44px hit area). "Find a listener" uses the site's field look (`.search-input`,
+`client/src/styles/forms.css`). The call's chat is the chat module's compact panel, like the
+drawer.
+
+**Compact chat composer** (the drawer and a call's chat, `client/src/chat/ChatComposer.css`): one
+row — a single-line message field and square 44px icon buttons (emoji/stickers/GIFs, attach,
+send); the "Message" heading and the button texts are kept for screen readers only. The picker
+opens above the row. The full chat page keeps its labelled text buttons.
 
 ## Chat drawer
 

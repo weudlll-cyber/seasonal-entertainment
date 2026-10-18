@@ -51,6 +51,7 @@ export function callStageRoutes(db, config, service, chat) {
       permission: stagePermission(false),
       name: shownName({ user }, false),
     });
+    // A failed release is logged there; leaving the stage still counts.
     await applySpotlight(db, service, call, { type: 'left', identity: participant.identity });
   }
 

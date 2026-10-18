@@ -35,6 +35,11 @@ const PATHS = {
   hand: 'M8 13V6.5a1.5 1.5 0 0 1 3 0V12M11 11V5a1.5 1.5 0 0 1 3 0v6M14 11V6.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-1a5 5 0 0 1-4.2-2.3L4 14.5a1.5 1.5 0 0 1 2.5-1.7L8 15',
   volume: 'M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11',
   leave: 'M14 4.5h4.5v15H14M10 8l-4 4 4 4M6 12h9',
+  person: 'M12 4a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM5 20a7 7 0 0 1 14 0',
+  smile: 'M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17ZM8.5 14a4 4 0 0 0 7 0M9 9.5h.01M15 9.5h.01',
+  paperclip:
+    'M16.5 7.5 9 15a2 2 0 0 0 2.8 2.8l7.4-7.4a4 4 0 0 0-5.6-5.6L6.2 12.2a6 6 0 0 0 8.5 8.5l5.8-5.8',
+  send: 'M4 12 20 4l-6 16-3-7ZM11 13l9-9',
 };
 
 // filled: fills the shape too (a favourite's star); data-icon names it for tests and styles.

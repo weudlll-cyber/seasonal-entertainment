@@ -75,7 +75,9 @@ of the module other than `index.js`.
 - **Layout**: a panel is a column that fills the height its container gives it; the message list
   takes the room left and the composer stays at the bottom. `full` fills its container (the
   `/chat` page's main column), with room tabs as a column on the left (a row below 600px).
-  `compact` caps its list at 18rem unless the host sets `--chat-list-max-height`.
+  `compact` caps its list at 18rem unless the host sets `--chat-list-max-height`, and draws the
+  composer as one row: a single-line field and icon buttons, their texts kept as accessible
+  names (docs/DESIGN.md, "Compact chat composer").
 - **No page paths or layout assumptions** inside the module: it calls the API and the WebSocket on
   the page's own origin (`/api/chat/...`, `/ws/chat`, `/media/...`) and fits the width it is given.
 - **Test-only page** `/test/chat-panels` (two compact panels side by side) is routed by the Vite

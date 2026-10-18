@@ -5,17 +5,24 @@
 // Description: The call page's rules (stageModel.js): people from LiveKit participants,
 //              audience order (hands first by time, then names, hidden listeners last), finding
 //              listeners (hidden ones never by name), the spotlight from the room metadata
-//              (only a speaker on the stage now), and the no-sound notice for screen sharing.
+//              (only a speaker on the stage now) and, without one, a screen share shown large
+//              anyway; numbered names for hidden listeners; the no-sound notice for screen
+//              sharing — how to share with sound in Chromium browsers, the browser hint in
+//              others — and telling Chromium browsers apart.
 // ============================================================
 
 import { describe, expect, it } from 'vitest';
 import {
   HIDDEN_LISTENER,
   NO_SHARE_AUDIO,
+  NO_SOUND_SHARED,
   audienceOrder,
   findListeners,
+  isChromium,
+  listenerNames,
   personOf,
   shareAudioNotice,
+  shownLarge,
   spotlightOf,
   spotlightSpeaker,
 } from './stageModel.js';
@@ -98,10 +105,61 @@ describe('the spotlight', () => {
   });
 });
 
-it('tells a presenter when their screen share carries no sound', () => {
-  expect(shareAudioNotice(false)).toBe(NO_SHARE_AUDIO);
-  expect(NO_SHARE_AUDIO).toBe(
-    "Your browser can't send sound with screen sharing — for presentations with sound use Chrome or Edge."
-  );
-  expect(shareAudioNotice(true)).toBeNull();
+describe('a screen share without the spotlight', () => {
+  const speakers = [person('mia', { speaker: true }), person('olga', { speaker: true })];
+
+  it('is shown large when the server named nobody (or its update failed)', () => {
+    expect(shownLarge(null, speakers, ['p-mia']).name).toBe('mia');
+    expect(shownLarge(null, speakers, ['p-mia', 'p-olga']).name).toBe('olga');
+    expect(shownLarge(null, speakers, [])).toBeNull();
+  });
+
+  it("gives way to the server's choice, and to an organiser's 'all speakers'", () => {
+    const olga = { identity: 'p-olga', by: 'organiser' };
+    expect(shownLarge(olga, speakers, ['p-mia']).name).toBe('olga');
+    expect(shownLarge({ identity: null, by: 'organiser' }, speakers, ['p-mia'])).toBeNull();
+  });
+});
+
+it('numbers hidden listeners, so every Invite button has its own name', () => {
+  const names = listenerNames([
+    person('bob'),
+    person(HIDDEN_LISTENER, { identity: 'p-h1' }),
+    person(HIDDEN_LISTENER, { identity: 'p-h2' }),
+  ]);
+  expect([...names.values()]).toEqual(['bob', 'listener 1', 'listener 2']);
+});
+
+describe('screen sharing without sound', () => {
+  it('Chromium browsers: how to share with sound, and offer to share again', () => {
+    expect(shareAudioNotice(false, true)).toEqual({ text: NO_SOUND_SHARED, reshare: true });
+    expect(NO_SOUND_SHARED).toBe(
+      "No sound is being shared. For sound, choose 'Entire screen' and tick 'Share system audio', or a browser tab with 'Share tab audio'."
+    );
+  });
+
+  it('other browsers: the browser hint; no notice when there is sound', () => {
+    expect(shareAudioNotice(false, false)).toEqual({ text: NO_SHARE_AUDIO, reshare: false });
+    expect(NO_SHARE_AUDIO).toBe(
+      "Your browser can't send sound with screen sharing — for presentations with sound use Chrome or Edge."
+    );
+    expect(shareAudioNotice(true, true)).toBeNull();
+    expect(shareAudioNotice(true, false)).toBeNull();
+  });
+
+  it('tells Chrome and Edge from Firefox and Safari', () => {
+    const ua = (userAgent) => isChromium({ userAgent });
+    const win = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)';
+    expect(ua(`${win} Chrome/141.0.0.0 Safari/537.36`)).toBe(true);
+    expect(ua(`${win} Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0`)).toBe(true);
+    expect(ua('Mozilla/5.0 (Windows NT 10.0; rv:131.0) Gecko/20100101 Firefox/131.0')).toBe(false);
+    expect(
+      ua(
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15'
+      )
+    ).toBe(false);
+    expect(isChromium({ userAgent: '', userAgentData: { brands: [{ brand: 'Chromium' }] } })).toBe(
+      true
+    );
+  });
 });

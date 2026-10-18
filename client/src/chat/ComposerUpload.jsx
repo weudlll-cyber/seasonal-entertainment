@@ -9,6 +9,7 @@
 
 import { useRef, useState } from 'react';
 import { upload } from '../api/http.js';
+import Icon from '../app/icons.jsx';
 import ChatNotice from './ChatNotice.jsx';
 
 const ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,application/pdf';
@@ -50,7 +51,8 @@ export default function ComposerUpload({ onUploaded }) {
         disabled={busy}
         onClick={() => input.current.click()}
       >
-        {busy ? 'Uploading…' : 'Attach file'}
+        <Icon name="paperclip" size={20} />
+        <span className="chat-button__text">{busy ? 'Uploading…' : 'Attach file'}</span>
       </button>
       <ChatNotice error={error} />
     </div>

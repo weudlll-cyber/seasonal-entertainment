@@ -5,7 +5,8 @@
 // Description: A joined call: the stage, the call's sound, the controls and the listeners,
 //              wired to the live connection (useCallRoom). Organisers get the stage actions;
 //              a speaker the spotlight for themselves; notices (no sound in the screen share,
-//              errors) show under the controls.
+//              with "Share again with sound" where the browser could send it; errors) show
+//              under the controls.
 // ============================================================
 
 import Audience from './Audience.jsx';
@@ -39,9 +40,14 @@ export default function CallStage({ call }) {
       <RoomAudio room={room} />
       <CallControls me={me} local={room.localParticipant} host={host} controls={controls} />
       {notice && (
-        <p className="form-message form-message--notice" role="status">
-          {notice}
-        </p>
+        <div className="form-message form-message--notice call-notice" role="status">
+          <p>{notice.text}</p>
+          {notice.reshare && (
+            <button type="button" className="button" onClick={controls.reshare}>
+              Share again with sound
+            </button>
+          )}
+        </div>
       )}
       <FormMessage error={error} />
       <Audience listeners={listeners} onInvite={host ? controls.invite : null} />

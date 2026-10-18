@@ -2,8 +2,10 @@
    File:        audience.css
    Path:        client/src/calls/audience.css
    Project:     Seasonal Entertainment
-   Description: The listener list (Audience.jsx): count, search, raised hands marked, guest
-                tags. Tokens only: both themes.
+   Description: The listener list (Audience.jsx, design "Community Call – Bühne"): count,
+                search (the shared .search-input look), and chips — initial circle and name,
+                raised hands marked in autumn orange, guest tags, a compact Invite button
+                inside the chip. Tokens only: both themes.
    ============================================================ */
 
 .audience {
@@ -28,51 +30,93 @@
   font-weight: normal;
 }
 
-.audience__search {
-  min-height: var(--hit-target);
-}
-
 .audience__list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
-  gap: 0.25rem var(--space-1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.audience__item {
-  display: flex;
+.audience-chip {
+  display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  min-height: 2.25rem;
-  padding: 0 0.5rem;
-  border-radius: var(--radius);
+  gap: 0.5rem;
+  max-width: 100%;
+  min-height: 2.5rem;
+  padding: 0.25rem 0.375rem 0.25rem 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface-2);
 }
 
-/* A raised hand: marked and first. */
-.audience__item--hand {
-  background: var(--color-active-bg);
+/* A raised hand: autumn orange border and hand, and first in the list. */
+.audience-chip--hand {
+  border-color: var(--color-autumn);
+  box-shadow: inset 0 0 0 1px var(--color-autumn);
 }
 
-.audience__hand {
-  display: inline-grid;
-  color: var(--color-autumn);
+.audience-chip__initial {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--color-winter);
+  color: var(--color-on-season);
+  font-weight: var(--font-weight-strong);
 }
 
-.audience__name {
+.audience-chip__initial--neutral {
+  background: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.audience-chip__name {
   overflow: hidden;
-  flex: 1;
+  max-width: 12rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.audience__tag {
+.audience-chip__hand {
+  display: inline-grid;
+  color: var(--color-autumn);
+}
+
+.audience-chip__tag {
   padding: 0 0.375rem;
   border: 1px solid var(--color-border-strong);
   border-radius: 999px;
   color: var(--color-text-muted);
   font-size: 0.75rem;
+}
+
+/* Drawn compact (32px); an invisible margin around it keeps the 44px hit target. */
+.audience-chip__invite {
+  position: relative;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-strong);
+  cursor: pointer;
+}
+
+.audience-chip__invite::after {
+  position: absolute;
+  inset: -6px;
+  content: '';
+}
+
+.audience-chip__invite:hover {
+  background: var(--color-active-bg);
 }
 
 .audience__none {

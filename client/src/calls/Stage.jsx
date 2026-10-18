@@ -3,16 +3,18 @@
 // Path:        client/src/calls/Stage.jsx
 // Project:     Seasonal Entertainment
 // Description: The stage (design "Community Call – Bühne"): all speakers in an adaptive grid,
-//              or — when the server's spotlight names a speaker — that speaker large: their
-//              shared screen with their camera inset and the label "<name> is sharing the
-//              screen" (plus a sound icon when the share carries audio), or their camera; the
-//              other speakers in a strip below. Organisers can return to all speakers.
+//              or one speaker large — the one the server's spotlight names, or without one
+//              whoever shares a screen (stageModel.shownLarge: a published share always shows,
+//              even when the spotlight update failed) — with their shared screen, their camera
+//              inset and the label "<name> is sharing the screen" (plus a sound icon when the
+//              share carries audio), or their camera; the other speakers in a strip below.
+//              Organisers can return to all speakers.
 // ============================================================
 
 import { Track } from 'livekit-client';
 import Icon from '../app/icons.jsx';
 import SpeakerTile from './SpeakerTile.jsx';
-import { spotlightSpeaker } from './stageModel.js';
+import { shownLarge } from './stageModel.js';
 import { TrackVideo, participantOf, trackOf } from './TrackMedia.jsx';
 import './stage.css';
 
@@ -54,7 +56,10 @@ function Highlighted({ person, room }) {
 
 // tileActions(person): the actions for one tile, or null; onAllSpeakers: organisers only.
 export default function Stage({ speakers, room, spotlight, talking, tileActions, onAllSpeakers }) {
-  const highlighted = spotlightSpeaker(spotlight, speakers);
+  const sharers = speakers
+    .filter((s) => trackOf(room, s.identity, Track.Source.ScreenShare))
+    .map((s) => s.identity);
+  const highlighted = shownLarge(spotlight, speakers, sharers);
   const tile = (person) => (
     <SpeakerTile
       key={person.identity}

@@ -140,6 +140,23 @@ Who is shown large is stored by the server and set as the room's metadata
 - Stopping one's share, or leaving the stage, releases one's own spotlight (back to all
   speakers).
 
+**A share never depends on the spotlight** (2026-10-18, SE-CALLS-2). Every page shows a
+published screen share by itself: without a spotlight from the server it shows the share large
+(the last sharer), and a sharing speaker's tile shows the screen instead of the camera in any
+layout; only an organiser's explicit "all speakers" keeps the grid. A failed spotlight update
+(database or call service) is written to the server log with its details
+(`[calls] spotlight update failed for call …`), answered with a generic message only (503
+`spotlight_unavailable`, "The spotlight could not be changed right now.") and leaves the call
+working.
+
+What happened in the eye test of 2026-10-18: the development database's `calls` table had been
+made before the spotlight columns existed (`CREATE TABLE IF NOT EXISTS` keeps an older table),
+so every spotlight request failed (`SqliteError: no such column: spotlight_identity`); the
+presenter saw "Something went wrong on the server." and the listener, whose page then showed a
+share only in the spotlight, kept seeing the camera. `migrateCalls()` now adds the columns to
+an older table on start; `server/test/callSpotlightResilience.test.js` and
+`client/e2e/callShare.spec.js` guard both sides.
+
 ## The call page
 
 `/calls/:id` (`client/src/pages/CallPage.jsx`, parts in `client/src/calls/`; layout:
@@ -149,27 +166,41 @@ chat (read-only after the end).
 - **Join call**: nothing connects and no sound plays before this button — browsers block sound
   until the visitor has clicked (`useCallRoom.js`: the join token, `room.connect`, then
   `room.startAudio()`).
-- **Stage**: an adaptive grid of up to 10 speakers (camera or initial, name, Host/Speaker,
-  microphone state, a ring for whoever talks); with a spotlight, that speaker large — their
+- **Stage**: an adaptive grid of up to 10 speakers (their shared screen, else camera or initial;
+  name, Host/Speaker, microphone state, a ring for whoever talks); with a spotlight (or a share
+  without one), that speaker large — their
   shared screen with their camera inset and "<name> is sharing the screen" (a sound icon when
   the share carries audio), or their camera — and the other speakers in a strip. Organisers:
   Spotlight / Mute / Remove on each speaker and "Show all speakers"; a speaker: "Put me in the
   spotlight".
-- **Listeners**: how many, "Find a listener", raised hands first and marked, guests tagged,
-  hidden listeners ("A listener") last; organisers invite members from here.
+- **Listeners**: how many, "Find a listener" (the site's search field), and one chip per
+  listener — an initial circle and the name; raised hands first, marked in autumn orange with
+  the hand symbol; guests tagged; hidden listeners ("A listener", a neutral circle) last.
+  Organisers invite members with a compact Invite button inside the chip; a hidden listener's
+  button is numbered by position ("Invite listener 2 to the stage"), so each has its own name.
 - **Controls**: speakers — Microphone, Camera, Share screen, Leave the stage; member listeners —
   Raise / Lower hand (guests have none); organisers — End call for everyone; everyone — Leave
   call.
-- **Chat**: the chat module's `ChatPanel` with the call's room (`unlisted`), on the right; on
-  narrow screens a drawer over the page.
+- **Chat**: the chat module's compact `ChatPanel` with the call's room (`unlisted`), on the
+  right — the same one-row composer as the chat drawer; on narrow screens a drawer over the
+  page.
 
 **Screen sharing with sound**: Share screen first shows "use headphones, so the call does not
 hear itself (echo)"; Share now asks the browser for the screen with its sound
 (`getDisplayMedia` audio, system audio included where supported, the presenter's own playback
-of it suppressed where supported). When the share comes without a sound track the page says:
-"Your browser can't send sound with screen sharing — for presentations with sound use Chrome or
-Edge." The presenter's page tells the server when the share starts and stops (it takes the
-spotlight).
+of it suppressed where supported). When the share comes without a sound track:
+
+- **Chrome, Edge and other Chromium browsers** can send sound, but only for the whole screen
+  with "Share system audio" ticked, or a browser tab with "Share tab audio"; a single window
+  never carries sound on Windows. The page says: "No sound is being shared. For sound, choose
+  'Entire screen' and tick 'Share system audio', or a browser tab with 'Share tab audio'." with
+  a button **Share again with sound**, which stops the share and asks the browser once more.
+- **Browsers without screen-share sound** (Firefox, Safari): "Your browser can't send sound with
+  screen sharing — for presentations with sound use Chrome or Edge."
+
+Chromium is recognised by Client Hints where offered, else by the user agent (`Chrome/`,
+`Edg/`; `stageModel.isChromium`). The presenter's page tells the server when the share starts
+and stops (it takes the spotlight).
 
 **Bandwidth**: listeners never publish. The page connects with adaptive stream (each video is
 received at the size it is shown), dynacast (layers nobody watches are paused) and simulcast
@@ -196,9 +227,10 @@ before go-live and whenever browsers change):
 | Firefox                  | no                    | no                                 | screen without sound              |
 | Safari                   | no                    | no                                 | screen without sound              |
 
-Whatever the browser, the page tells a presenter whose share has no sound: "Your browser can't
-send sound with screen sharing — for presentations with sound use Chrome or Edge." Listening and
-speaking work in all current browsers.
+A presenter whose share has no sound is told how to get it (Chrome and Edge: which choice in
+the browser's share dialog carries sound, and "Share again with sound") or that the browser
+cannot send it (Firefox, Safari): "The call page" above. Listening and speaking work in all
+current browsers.
 
 ## The call service (`deploy/calls/`)
 

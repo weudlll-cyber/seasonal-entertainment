@@ -5,7 +5,8 @@
 // Description: /calls/:id with a stand-in for livekit-client: nothing connects or plays until
 //              "Join call" (browsers need the click for sound); then the token from the server
 //              connects and audio starts; a speaker's screen share without sound shows the
-//              notice and is reported to the server; the call ending for everyone shows so.
+//              notice (in Chrome and Edge how to share with sound, and "Share again with sound",
+//              which asks the browser once more) and is reported to the server; the call ending for everyone shows so.
 //              Guests get no hand; calls not live offer no Join.
 // ============================================================
 
@@ -14,7 +15,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import { FakeSocket } from '../test/fakeSocket.js';
 import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
 import { renderApp } from '../test/renderApp.jsx';
-import { NO_SHARE_AUDIO } from './stageModel.js';
+import { NO_SHARE_AUDIO, NO_SOUND_SHARED } from './stageModel.js';
 
 // The stand-in Room: records what the page asks and lets a test send events.
 const rooms = [];
@@ -140,6 +141,30 @@ it('a share without sound shows the notice and is reported to the server', async
     true,
     expect.objectContaining({ audio: true, systemAudio: 'include' })
   );
+});
+
+it('in Chrome and Edge: how to share with sound, and sharing again', async () => {
+  vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0'
+  );
+  mockApi({ ...signedIn({ username: 'mia', role: 'member' }), ...answers('live') });
+  await renderApp('/calls/7');
+  fireEvent.click(await screen.findByRole('button', { name: 'Join call' }));
+  await screen.findByRole('button', { name: 'Raise hand' });
+  act(() => {
+    rooms[0].localParticipant.permissions = { canPublish: true };
+    rooms[0].emit('participantPermissionsChanged');
+  });
+  fireEvent.click(await screen.findByRole('button', { name: 'Share screen' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Share now' }));
+  expect(await screen.findByText(NO_SOUND_SHARED)).toBeInTheDocument();
+  expect(screen.queryByText(NO_SHARE_AUDIO)).toBeNull();
+  const share = rooms[0].localParticipant.setScreenShareEnabled;
+  share.mockClear();
+  fireEvent.click(screen.getByRole('button', { name: 'Share again with sound' }));
+  await vi.waitFor(() => expect(share).toHaveBeenCalledTimes(2));
+  expect(share.mock.calls.map(([on]) => on)).toEqual([false, true]);
+  vi.restoreAllMocks();
 });
 
 it('shows when the call has ended for everyone', async () => {
