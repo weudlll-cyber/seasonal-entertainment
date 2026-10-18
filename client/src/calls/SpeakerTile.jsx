@@ -16,6 +16,7 @@ import { Track } from 'livekit-client';
 import Icon from '../app/icons.jsx';
 import { MenuButton } from '../chat/index.js';
 import { TrackVideo, aspectOf, hasMicrophoneOn, trackOf } from './TrackMedia.jsx';
+import './speakerTile.css';
 
 // person: stageModel.personOf(); menu: the "…" menu's items, or null; large: the only tile
 // on the stage (it fills the stage).
