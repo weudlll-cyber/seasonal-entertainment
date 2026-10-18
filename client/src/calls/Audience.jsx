@@ -2,8 +2,10 @@
 // File:        Audience.jsx
 // Path:        client/src/calls/Audience.jsx
 // Project:     Seasonal Entertainment
-// Description: The listeners (design "Community Call – Bühne"): how many, "Find a listener",
-//              and one chip per listener — an initial circle and the name; raised hands first,
+// Description: The listeners (design "Community Call – Bühne"). Collapsed (the default): one
+//              row of chips — every raised hand first, then a few more — with "+N" and a button
+//              to show all; expanded: "Find a listener" and the whole list, scrolling inside
+//              its capped height. One chip per listener — an initial circle and the name; raised hands first,
 //              marked in autumn orange with the hand symbol; guests tagged; hidden listeners
 //              ("A listener") last, with a neutral circle. Organisers invite members from a
 //              compact button inside the chip (guests can only listen); hidden listeners are
@@ -13,7 +15,13 @@
 
 import { useState } from 'react';
 import Icon from '../app/icons.jsx';
-import { audienceOrder, findListeners, isHidden, listenerNames } from './stageModel.js';
+import {
+  audienceOrder,
+  collapsedListeners,
+  findListeners,
+  isHidden,
+  listenerNames,
+} from './stageModel.js';
 import './audience.css';
 
 function Chip({ person, inviteName, onInvite }) {
@@ -52,25 +60,47 @@ function Chip({ person, inviteName, onInvite }) {
 
 // onInvite(identity): organisers only, else null.
 export default function Audience({ listeners, onInvite }) {
+  const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState('');
-  const shown = findListeners(audienceOrder(listeners), query);
-  const names = listenerNames(shown);
+  const ordered = audienceOrder(listeners);
+  const row = collapsedListeners(ordered);
+  const shown = expanded ? findListeners(ordered, query) : row.shown;
+  const names = listenerNames(ordered);
   // Whom an Invite button names (none for guests and oneself).
   const inviteName = (person) =>
     onInvite && person.kind !== 'guest' && !person.isLocal ? names.get(person.identity) : null;
   return (
-    <section className="audience" aria-label="Listeners">
-      <h2 className="audience__title">
-        Listeners <span className="audience__count">{listeners.length}</span>
-      </h2>
-      <input
-        type="search"
-        className="search-input audience__search"
-        aria-label="Find a listener"
-        placeholder="Find a listener"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
+    <section className={`audience${expanded ? ' audience--expanded' : ''}`} aria-label="Listeners">
+      <div className="audience__head">
+        <h2 className="audience__title">
+          Listeners <span className="audience__count">{listeners.length}</span>
+        </h2>
+        {!expanded && row.more > 0 && (
+          <span className="audience__more" aria-label={`${row.more} more listeners`}>
+            +{row.more}
+          </span>
+        )}
+        {(expanded || row.more > 0) && (
+          <button
+            type="button"
+            className="audience__toggle"
+            aria-expanded={expanded}
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded ? 'Show fewer' : 'Show all listeners'}
+          </button>
+        )}
+      </div>
+      {expanded && (
+        <input
+          type="search"
+          className="search-input audience__search"
+          aria-label="Find a listener"
+          placeholder="Find a listener"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      )}
       <ul className="audience__list">
         {shown.map((person) => (
           <Chip
@@ -81,7 +111,9 @@ export default function Audience({ listeners, onInvite }) {
           />
         ))}
       </ul>
-      {query && shown.length === 0 && <p className="audience__none">No listener of that name.</p>}
+      {expanded && query && shown.length === 0 && (
+        <p className="audience__none">No listener of that name.</p>
+      )}
     </section>
   );
 }

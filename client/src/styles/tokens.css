@@ -57,6 +57,8 @@
 
   /* Shell (docs/DESIGN.md: the sidebar becomes a top bar below 760px) */
   --sidebar-width: 232px;
+  /* The sidebar as an icon rail (a call page). */
+  --rail-width: 4.5rem;
 
   /* Spacing */
   --space-1: 0.5rem;

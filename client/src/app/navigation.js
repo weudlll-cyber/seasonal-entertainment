@@ -16,6 +16,9 @@ export const MAIN_NAV = [
   { to: '/info', label: 'Seasonal Tokens', icon: 'tokens' },
 ];
 
+// A call's own page (/calls/<id>): its own chat (no chat drawer) and the sidebar as a rail.
+export const isCallPage = (pathname) => /^\/calls\/\d+/.test(pathname);
+
 // Calls: after Chat, shown when calls are set up (admins always: they see "not configured").
 export const CALLS_ITEM = { to: '/calls', label: 'Calls', icon: 'mic' };
 

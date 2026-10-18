@@ -2,78 +2,50 @@
 // File:        callParts.test.jsx
 // Path:        client/src/calls/callParts.test.jsx
 // Project:     Seasonal Entertainment
-// Description: The call page's parts without a call server: the listener list (hands first
-//              and marked, guests tagged, "Find a listener", Invite for organisers only, never
-//              for guests), the controls per role (guests have no hand; speakers get the
-//              "use headphones" hint before sharing; only hosts end the call), and the stage
-//              (all speakers, or the spotlight with "<name> is sharing the screen" and a sound
-//              mark when the share carries audio).
+// Description: The call page's listener panel and control bar without a call server. The
+//              panel: collapsed to one row by default (every raised hand shown, "+N", a button
+//              to show all), expanded with "Find a listener" and the whole list; chips (initial
+//              circle, neutral for hidden listeners, raised hand marked, guests tagged);
+//              Invite for organisers only, never for guests, with its own name for every hidden
+//              listener. The bar: round icon buttons named and with tooltips; guests have no
+//              hand; speakers get the "use headphones" hint before sharing; a muted microphone
+//              shows slashed and red; only hosts end the call, and it asks first.
 // ============================================================
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import Audience from './Audience.jsx';
 import CallControls from './CallControls.jsx';
-import Stage from './Stage.jsx';
 import { HEADPHONES_HINT, HIDDEN_LISTENER } from './stageModel.js';
+import { person } from './testRoom.js';
 
-const person = (name, extra = {}) => ({
-  identity: `p-${name}`,
-  name,
-  kind: 'member',
-  hand: false,
-  handAt: '',
-  speaker: false,
-  isLocal: false,
-  ...extra,
-});
-
-// A LiveKit-like room: participants with tracks by source ('camera', 'screen_share', ...).
-const fakeTrack = () => ({ attach: vi.fn(), detach: vi.fn() });
-function fakeRoom(tracksByIdentity) {
-  const participant = (identity) => ({
-    identity,
-    getTrackPublication: (source) => {
-      const track = tracksByIdentity[identity]?.[source];
-      return track ? { track, isMuted: false } : undefined;
-    },
-  });
-  const ids = Object.keys(tracksByIdentity);
-  return {
-    localParticipant: participant('p-me'),
-    remoteParticipants: new Map(ids.map((id) => [id, participant(id)])),
-  };
-}
-
-describe('the listener list', () => {
+describe('the listener panel', () => {
   const listeners = [
     person('zoe'),
     person(HIDDEN_LISTENER, { identity: 'p-h' }),
     person('bob', { hand: true, handAt: '2026-10-19T10:00:00Z' }),
     person('Guest-ab12cd', { kind: 'guest' }),
   ];
+  const chipNames = (list) =>
+    within(list)
+      .getAllByRole('listitem')
+      .map((li) => li.querySelector('.audience-chip__name')?.textContent ?? li.textContent);
 
-  it('puts raised hands first and marks them; tags guests; organisers invite members', () => {
+  it('chips: hands first and marked, guests tagged, organisers invite members', () => {
     const onInvite = vi.fn();
     render(<Audience listeners={listeners} onInvite={onInvite} />);
     const list = screen.getByRole('region', { name: 'Listeners' });
-    const names = within(list)
-      .getAllByRole('listitem')
-      .map((li) => li.querySelector('.audience-chip__name').textContent);
-    expect(names).toEqual(['bob', 'Guest-ab12cd', 'zoe', HIDDEN_LISTENER]);
+    expect(chipNames(list)).toEqual(['bob', 'Guest-ab12cd', 'zoe', HIDDEN_LISTENER]);
     expect(within(list).getByRole('img', { name: 'Hand raised' })).toBeInTheDocument();
-    // Chips: an initial circle (a neutral one for hidden listeners); the raised hand marked.
+    expect(within(list).getByText('Guest')).toBeInTheDocument();
+    expect(within(list).getByText('4')).toBeInTheDocument();
     const [bob, , , hidden] = within(list).getAllByRole('listitem');
     expect(bob).toHaveClass('audience-chip--hand');
     expect(bob.querySelector('.audience-chip__initial')).toHaveTextContent('B');
     expect(hidden.querySelector('.audience-chip__initial--neutral svg')).not.toBeNull();
-    // A compact button inside the chip, not a link-styled one.
-    expect(within(bob).getByRole('button', { name: 'Invite bob to the stage' })).toHaveClass(
-      'audience-chip__invite'
-    );
-    expect(within(list).getByText('Guest')).toBeInTheDocument();
-    expect(within(list).getByText('4')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Invite bob to the stage' }));
+    const invite = within(bob).getByRole('button', { name: 'Invite bob to the stage' });
+    expect(invite).toHaveClass('audience-chip__invite');
+    fireEvent.click(invite);
     expect(onInvite).toHaveBeenCalledWith('p-bob');
     expect(screen.queryByRole('button', { name: 'Invite Guest-ab12cd to the stage' })).toBeNull();
   });
@@ -89,20 +61,30 @@ describe('the listener list', () => {
     ).toBeInTheDocument();
   });
 
-  it('finds a listener by name; nobody else may invite', () => {
-    render(<Audience listeners={listeners} onInvite={null} />);
-    fireEvent.change(screen.getByRole('searchbox', { name: 'Find a listener' }), {
-      target: { value: 'ZO' },
-    });
-    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+  it('is one row when collapsed — every raised hand shown — and opens to search and all', () => {
+    const many = Array.from({ length: 9 }, (_, i) => person(`member${i}`));
+    many.push(person('late', { hand: true, handAt: '2026-10-19T11:00:00Z' }));
+    render(<Audience listeners={many} onInvite={null} />);
+    const list = screen.getByRole('region', { name: 'Listeners' });
+    // The raised hand is in the collapsed row (first), the rest counted as "+N".
+    expect(chipNames(list)[0]).toBe('late');
+    expect(chipNames(list)).toHaveLength(4);
+    expect(within(list).getByLabelText('6 more listeners')).toHaveTextContent('+6');
+    expect(screen.queryByRole('searchbox')).toBeNull();
+    const toggle = screen.getByRole('button', { name: 'Show all listeners' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(toggle);
+    const search = screen.getByRole('searchbox', { name: 'Find a listener' });
+    expect(search).toHaveClass('search-input');
+    expect(within(list).getAllByRole('listitem')).toHaveLength(10);
+    fireEvent.change(search, { target: { value: 'MEMBER3' } });
+    expect(chipNames(list)).toEqual(['member3']);
     expect(screen.queryByRole('button', { name: /^Invite/ })).toBeNull();
-    // The site's search field look, not the browser's grey default.
-    expect(screen.getByRole('searchbox', { name: 'Find a listener' })).toHaveClass('search-input');
   });
 });
 
-describe('the controls', () => {
-  const local = { isMicrophoneEnabled: false, isCameraEnabled: false, isScreenShareEnabled: false };
+describe('the control bar', () => {
+  const local = { isMicrophoneEnabled: false, isCameraEnabled: true, isScreenShareEnabled: false };
   const controls = () => ({
     toggleMicrophone: vi.fn(),
     toggleCamera: vi.fn(),
@@ -112,7 +94,7 @@ describe('the controls', () => {
     endCall: vi.fn(),
     leave: vi.fn(),
   });
-  const names = () => screen.getAllByRole('button').map((b) => b.textContent);
+  const names = () => screen.getAllByRole('button').map((b) => b.getAttribute('aria-label'));
 
   it('member listeners raise a hand; guests have none', () => {
     const c = controls();
@@ -129,7 +111,7 @@ describe('the controls', () => {
     expect(names()).toEqual(['Leave call']);
   });
 
-  it('speakers get the headphones hint before sharing; hosts end the call', () => {
+  it('speakers: round icon buttons with tooltips; the hint before sharing; hosts end, asked', () => {
     const c = controls();
     render(<CallControls me={person('olga', { speaker: true })} local={local} host controls={c} />);
     expect(names()).toEqual([
@@ -140,87 +122,27 @@ describe('the controls', () => {
       'End call for everyone',
       'Leave call',
     ]);
+    for (const button of screen.getAllByRole('button')) {
+      expect(button).toHaveAttribute('data-tooltip', button.getAttribute('aria-label'));
+      expect(button.textContent).toBe('');
+    }
+    // A muted microphone: slashed and red; the camera that is on: neither.
+    const mic = screen.getByRole('button', { name: 'Microphone' });
+    expect(mic).toHaveClass('call-control--off');
+    expect(mic.querySelector('[data-icon="micOff"]')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Camera' })).not.toHaveClass('call-control--off');
+
     fireEvent.click(screen.getByRole('button', { name: 'Share screen' }));
     expect(c.toggleShare).not.toHaveBeenCalled();
     const ask = screen.getByRole('group', { name: 'Share your screen' });
     expect(ask).toHaveTextContent(HEADPHONES_HINT);
     fireEvent.click(within(ask).getByRole('button', { name: 'Share now' }));
     expect(c.toggleShare).toHaveBeenCalledOnce();
+
     fireEvent.click(screen.getByRole('button', { name: 'End call for everyone' }));
+    expect(c.endCall).not.toHaveBeenCalled();
+    const end = screen.getByRole('group', { name: 'End the call for everyone' });
+    fireEvent.click(within(end).getByRole('button', { name: 'End call' }));
     expect(c.endCall).toHaveBeenCalledOnce();
-  });
-});
-
-describe('the stage', () => {
-  const speakers = [
-    person('mia', { speaker: true }),
-    person('olga', { speaker: true, kind: 'host' }),
-  ];
-  const stage = (room, spotlight) =>
-    render(
-      <Stage
-        speakers={speakers}
-        room={room}
-        spotlight={spotlight}
-        talking={new Set(['p-olga'])}
-        tileActions={() => null}
-        onAllSpeakers={null}
-      />
-    );
-
-  it('shows all speakers without a spotlight, the talking one marked', () => {
-    stage(fakeRoom({ 'p-mia': {}, 'p-olga': {} }), null);
-    const tiles = within(screen.getByRole('region', { name: 'Stage' })).getAllByRole('listitem');
-    expect(tiles.map((t) => t.getAttribute('aria-label'))).toEqual([
-      'mia, speaker',
-      'olga, host, talking',
-    ]);
-  });
-
-  it('puts a sharing presenter large, camera inset, with a sound mark for shared audio', () => {
-    const room = fakeRoom({
-      'p-mia': { screen_share: fakeTrack(), camera: fakeTrack(), screen_share_audio: fakeTrack() },
-      'p-olga': {},
-    });
-    stage(room, { identity: 'p-mia', by: 'share' });
-    expect(screen.getByText('mia is sharing the screen')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'with sound' })).toBeInTheDocument();
-    expect(screen.getByLabelText("mia's screen")).toBeInTheDocument();
-    expect(screen.getByLabelText("mia's camera")).toHaveClass('stage-spotlight__inset');
-    expect(
-      within(screen.getByRole('list', { name: 'Other speakers' })).getAllByRole('listitem')
-    ).toHaveLength(1);
-  });
-
-  it('shows a screen share large even without a spotlight (its update failed)', () => {
-    stage(
-      fakeRoom({ 'p-mia': { screen_share: fakeTrack(), camera: fakeTrack() }, 'p-olga': {} }),
-      null
-    );
-    expect(screen.getByText('mia is sharing the screen')).toBeInTheDocument();
-    expect(screen.getByLabelText("mia's screen")).toBeInTheDocument();
-  });
-
-  it("shows a share in its speaker's tile when an organiser chose all speakers", () => {
-    // With a camera on as well: the screen is what the tile plays.
-    const [shared, camera] = [fakeTrack(), fakeTrack()];
-    stage(fakeRoom({ 'p-mia': { screen_share: shared, camera }, 'p-olga': {} }), {
-      identity: null,
-      by: 'organiser',
-    });
-    expect(screen.queryByText('mia is sharing the screen')).toBeNull();
-    const tile = screen.getByRole('listitem', { name: 'mia, speaker' });
-    expect(within(tile).getByLabelText("mia's screen")).toBeInTheDocument();
-    expect(shared.attach).toHaveBeenCalled();
-    expect(camera.attach).not.toHaveBeenCalled();
-  });
-
-  it('shows no sound mark when the share has none', () => {
-    stage(fakeRoom({ 'p-mia': { screen_share: fakeTrack() }, 'p-olga': {} }), {
-      identity: 'p-mia',
-      by: 'share',
-    });
-    expect(screen.getByText('mia is sharing the screen')).toBeInTheDocument();
-    expect(screen.queryByRole('img', { name: 'with sound' })).toBeNull();
   });
 });

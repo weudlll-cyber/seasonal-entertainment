@@ -2,55 +2,136 @@
    File:        callControls.css
    Path:        client/src/calls/callControls.css
    Project:     Seasonal Entertainment
-   Description: The call's control bar (CallControls.jsx): icon buttons with labels, pressed
-                and danger states, the "share your screen" question; the notice under it (no
-                sound in the share, "Share again with sound"). Tokens only.
+   Description: The call's control bar (CallControls.jsx): one centred row of round icon
+                buttons with visible tooltips (data-tooltip, also on the stage's full-screen
+                button), off (red) / on (accent) / hand (autumn) / danger states, the questions
+                over the bar; and the notice under it (no sound in the share, "Share again with
+                sound"). Tokens only: both themes.
    ============================================================ */
 
 .call-controls {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.call-controls__gap {
+  width: 0.75rem;
 }
 
 .call-control {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  min-height: var(--hit-target);
-  padding: 0 var(--space-2);
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius);
+  border-radius: 50%;
   background: var(--color-surface);
   color: var(--color-text);
-  font: inherit;
   cursor: pointer;
 }
 
-.call-control[aria-pressed='true'] {
-  border-color: var(--color-accent);
-  background: var(--color-active-bg);
+.call-control:hover {
+  background: var(--color-surface-2);
 }
 
-.call-control--danger {
+/* Off (microphone muted, camera off): slashed icon, red. */
+.call-control--off {
   border-color: var(--color-danger);
   color: var(--color-danger);
 }
 
+/* On (sharing): the accent colour. */
+.call-control--on {
+  border-color: var(--color-accent);
+  background: var(--color-active-bg);
+  color: var(--color-text);
+}
+
+.call-control--hand {
+  border-color: var(--color-autumn);
+  background: var(--color-autumn);
+  color: var(--color-on-season);
+}
+
+/* End the call for everyone: red. */
+.call-control--danger {
+  border-color: var(--color-live);
+  background: var(--color-live);
+  color: var(--color-on-live);
+}
+
+.call-control--danger:hover {
+  background: var(--color-live);
+  filter: brightness(1.1);
+}
+
+/* A visible tooltip on pointing and keyboard focus; the name itself is aria-label. */
+[data-tooltip]::after {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 50%;
+  z-index: 6;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius);
+  background: var(--color-text);
+  color: var(--color-background);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  content: attr(data-tooltip);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+}
+
+/* The full-screen button's tooltip opens below it, inside the stage. */
+.stage__fullscreen[data-tooltip]::after {
+  top: calc(100% + 0.5rem);
+  right: 0;
+  bottom: auto;
+  left: auto;
+  transform: none;
+}
+
 .call-controls__ask {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 50%;
+  z-index: 7;
   display: flex;
   flex-wrap: wrap;
-  flex-basis: 100%;
   align-items: center;
   gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius);
-  background: var(--color-surface-2);
+  width: min(30rem, 92vw);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
+  transform: translateX(-50%);
 }
 
 .call-controls__ask p {
   flex-basis: 100%;
   margin: 0;
+}
+
+.call-controls__danger {
+  border-color: var(--color-live);
+  background: var(--color-live);
+  color: var(--color-on-live);
 }
 
 /* A notice with its action (CallStage.jsx). */
@@ -59,6 +140,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
+  margin: 0;
 }
 
 .call-notice p {

@@ -4,10 +4,12 @@
 // Project:     Seasonal Entertainment
 // Description: One decrypted direct message: author, local time, the text (links clickable) and
 //              a sticker or GIF from the site's library; a message made for an earlier key says
-//              it cannot be read. The partner's readable messages can be reported (onReport).
+//              it cannot be read. The partner's readable messages can be reported (onReport, from the
+//              message's "…" menu, MessageMenu).
 // ============================================================
 
 import { MessageMedia, MessageText } from './MessageParts.jsx';
+import MessageMenu from './MessageMenu.jsx';
 
 const time = (iso) =>
   new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -33,11 +35,10 @@ export default function DirectMessage({ message, partnerName, ownName, library, 
         <MessageMedia kind={item?.kind} media={item ?? null} />
       )}
       {message.fromPartner && message.payload && (
-        <div className="chat-message__actions">
-          <button className="chat-link-button" type="button" onClick={() => onReport(message)}>
-            Report
-          </button>
-        </div>
+        <MessageMenu
+          items={[{ label: 'Report', run: () => onReport(message) }]}
+          author={partnerName}
+        />
       )}
     </li>
   );

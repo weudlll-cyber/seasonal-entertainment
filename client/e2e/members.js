@@ -28,6 +28,7 @@ export const MEMBERS = [
   'unreadreader',
   'unreadwriter',
   'callmember',
+  'calllayout',
 ];
 
 export async function seedMembers(databasePath) {

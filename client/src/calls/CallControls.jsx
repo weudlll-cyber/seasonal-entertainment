@@ -2,11 +2,14 @@
 // File:        CallControls.jsx
 // Path:        client/src/calls/CallControls.jsx
 // Project:     Seasonal Entertainment
-// Description: The control bar under the stage. Speakers: microphone, camera, share screen
-//              (first a short "use headphones" hint, since the share carries sound where the
-//              browser allows), leave the stage. Member listeners: raise or lower the hand
-//              (guests have none). Organisers: end the call for everyone. Everyone: leave.
-//              Icon buttons with visible labels; on/off state in aria-pressed.
+// Description: The call's control bar (design "Community Call – Bühne"): one row of round icon
+//              buttons at the bottom, each with a visible tooltip and its accessible name.
+//              Speakers: microphone, camera, share screen (first a short "use headphones"
+//              hint, since the share carries sound where the browser allows), then leave the
+//              stage. Member listeners: raise or lower the hand (guests have none). Organisers:
+//              end the call for everyone (red, asks first). Everyone: leave the call. On/off
+//              shows in the icon and colour (microphone off: slashed and red) and in
+//              aria-pressed.
 // ============================================================
 
 import { useState } from 'react';
@@ -14,29 +17,54 @@ import Icon from '../app/icons.jsx';
 import { HEADPHONES_HINT } from './stageModel.js';
 import './callControls.css';
 
-function ControlButton({ icon, label, pressed, onClick, danger = false, ...rest }) {
+// tone: 'off' red (a muted microphone, a camera that is off), 'on' accent (sharing), 'hand'
+// autumn (a raised hand), 'danger' (end the call).
+function ControlButton({ icon, label, pressed, onClick, tone = '', ...rest }) {
   return (
     <button
       type="button"
-      className={`call-control${danger ? ' call-control--danger' : ''}`}
+      className={`call-control${tone ? ` call-control--${tone}` : ''}`}
+      aria-label={label}
       aria-pressed={pressed}
+      data-tooltip={label}
       onClick={onClick}
       {...rest}
     >
-      <Icon name={icon} />
-      <span>{label}</span>
+      <Icon name={icon} size={22} />
     </button>
   );
 }
 
-// me: stageModel person of oneself; local: LiveKit's local participant; host: may end the
-// call; controls: useCallRoom().controls.
+// A question over the bar with its action and Cancel (share with sound, end the call).
+function Ask({ label, text, action, onAction, onCancel, danger = false }) {
+  return (
+    <div className="call-controls__ask" role="group" aria-label={label}>
+      <p>{text}</p>
+      <button
+        type="button"
+        className={`button${danger ? ' call-controls__danger' : ''}`}
+        onClick={onAction}
+      >
+        {action}
+      </button>
+      <button type="button" className="button button--secondary" onClick={onCancel}>
+        Cancel
+      </button>
+    </div>
+  );
+}
+
+// me: stageModel person of oneself (kind from the server); local: LiveKit's local
+// participant; host: may end the call; controls: useCallRoom().controls.
 export default function CallControls({ me, local, host, controls }) {
-  const [asking, setAsking] = useState(false);
+  const [asking, setAsking] = useState(null); // 'share' | 'end' | null
   const sharing = local.isScreenShareEnabled;
+  const micOn = local.isMicrophoneEnabled;
+  const cameraOn = local.isCameraEnabled;
+  const ask = (what) => setAsking(asking === what ? null : what);
 
   async function share() {
-    setAsking(false);
+    setAsking(null);
     await controls.toggleShare();
   }
 
@@ -45,24 +73,28 @@ export default function CallControls({ me, local, host, controls }) {
       {me.speaker && (
         <>
           <ControlButton
-            icon={local.isMicrophoneEnabled ? 'mic' : 'micOff'}
+            icon={micOn ? 'mic' : 'micOff'}
             label="Microphone"
-            pressed={local.isMicrophoneEnabled}
+            pressed={micOn}
+            tone={micOn ? '' : 'off'}
             onClick={controls.toggleMicrophone}
           />
           <ControlButton
-            icon={local.isCameraEnabled ? 'camera' : 'cameraOff'}
+            icon={cameraOn ? 'camera' : 'cameraOff'}
             label="Camera"
-            pressed={local.isCameraEnabled}
+            pressed={cameraOn}
+            tone={cameraOn ? '' : 'off'}
             onClick={controls.toggleCamera}
           />
           <ControlButton
             icon="screen"
             label="Share screen"
             pressed={sharing}
-            aria-expanded={sharing ? undefined : asking}
-            onClick={() => (sharing ? controls.toggleShare() : setAsking(!asking))}
+            tone={sharing ? 'on' : ''}
+            aria-expanded={sharing ? undefined : asking === 'share'}
+            onClick={() => (sharing ? controls.toggleShare() : ask('share'))}
           />
+          <span className="call-controls__gap" aria-hidden="true" />
           <ControlButton icon="leave" label="Leave the stage" onClick={controls.leaveStage} />
         </>
       )}
@@ -71,32 +103,42 @@ export default function CallControls({ me, local, host, controls }) {
           icon="hand"
           label={me.hand ? 'Lower hand' : 'Raise hand'}
           pressed={me.hand}
+          tone={me.hand ? 'hand' : ''}
           onClick={() => controls.raiseHand(!me.hand)}
         />
       )}
+      <span className="call-controls__gap" aria-hidden="true" />
       {host && (
         <ControlButton
-          icon="close"
+          icon="phoneOff"
           label="End call for everyone"
-          danger
-          onClick={controls.endCall}
+          tone="danger"
+          aria-expanded={asking === 'end'}
+          onClick={() => ask('end')}
         />
       )}
-      <ControlButton icon="leave" label="Leave call" onClick={controls.leave} />
-      {asking && (
-        <div className="call-controls__ask" role="group" aria-label="Share your screen">
-          <p>{HEADPHONES_HINT}</p>
-          <button type="button" className="button" onClick={share}>
-            Share now
-          </button>
-          <button
-            type="button"
-            className="button button--secondary"
-            onClick={() => setAsking(false)}
-          >
-            Cancel
-          </button>
-        </div>
+      <ControlButton icon="close" label="Leave call" onClick={controls.leave} />
+      {asking === 'share' && (
+        <Ask
+          label="Share your screen"
+          text={HEADPHONES_HINT}
+          action="Share now"
+          onAction={share}
+          onCancel={() => setAsking(null)}
+        />
+      )}
+      {asking === 'end' && (
+        <Ask
+          label="End the call for everyone"
+          text="End the call for everyone? Everybody is disconnected and the chat becomes read-only."
+          action="End call"
+          danger
+          onAction={() => {
+            setAsking(null);
+            controls.endCall();
+          }}
+          onCancel={() => setAsking(null)}
+        />
       )}
     </div>
   );

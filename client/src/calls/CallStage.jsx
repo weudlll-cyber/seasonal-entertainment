@@ -2,11 +2,12 @@
 // File:        CallStage.jsx
 // Path:        client/src/calls/CallStage.jsx
 // Project:     Seasonal Entertainment
-// Description: A joined call: the stage, the call's sound, the controls and the listeners,
-//              wired to the live connection (useCallRoom). Organisers get the stage actions;
-//              a speaker the spotlight for themselves; notices (no sound in the screen share,
-//              with "Share again with sound" where the browser could send it; errors) show
-//              under the controls.
+// Description: A joined call, stage first: the stage takes all the height left, then the
+//              control bar (one row), notices (no sound in the screen share, with "Share again
+//              with sound" where the browser could send it; errors) and the listener panel
+//              (collapsed to one row). Wired to the live connection (useCallRoom). Organisers
+//              get a "…" menu on other speakers (Spotlight, Mute, Remove from the stage) and
+//              "Show all speakers"; a speaker the spotlight for themselves.
 // ============================================================
 
 import Audience from './Audience.jsx';
@@ -23,10 +24,18 @@ export default function CallStage({ call }) {
   const me = { ...people.find((p) => p.isLocal), kind };
   const speakers = people.filter((p) => p.speaker);
   const listeners = people.filter((p) => !p.speaker);
-  const tileActions = (person) => {
-    if (person.isLocal) return me.speaker ? { highlightSelf: controls.highlightSelf } : null;
-    return host ? controls : null;
-  };
+  const tileMenu = (person) =>
+    host && !person.isLocal
+      ? [
+          { label: 'Spotlight', run: () => controls.spotlight(person.identity) },
+          { label: 'Mute', run: () => controls.mute(person.identity) },
+          {
+            label: 'Remove from the stage',
+            run: () => controls.remove(person.identity),
+            confirm: { question: `Take ${person.name} off the stage?`, action: 'Remove' },
+          },
+        ]
+      : null;
   return (
     <>
       <Stage
@@ -34,8 +43,10 @@ export default function CallStage({ call }) {
         room={room}
         spotlight={spotlight}
         talking={activeSpeakers}
-        tileActions={tileActions}
+        me={me}
+        tileMenu={tileMenu}
         onAllSpeakers={host ? () => controls.spotlight(null) : null}
+        onHighlightSelf={me.speaker ? controls.highlightSelf : null}
       />
       <RoomAudio room={room} />
       <CallControls me={me} local={room.localParticipant} host={host} controls={controls} />

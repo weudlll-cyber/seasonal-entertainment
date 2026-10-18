@@ -166,24 +166,36 @@ chat (read-only after the end).
 - **Join call**: nothing connects and no sound plays before this button — browsers block sound
   until the visitor has clicked (`useCallRoom.js`: the join token, `room.connect`, then
   `room.startAudio()`).
-- **Stage**: an adaptive grid of up to 10 speakers (their shared screen, else camera or initial;
-  name, Host/Speaker, microphone state, a ring for whoever talks); with a spotlight (or a share
-  without one), that speaker large — their
-  shared screen with their camera inset and "<name> is sharing the screen" (a sound icon when
-  the share carries audio), or their camera — and the other speakers in a strip. Organisers:
-  Spotlight / Mute / Remove on each speaker and "Show all speakers"; a speaker: "Put me in the
-  spotlight".
-- **Listeners**: how many, "Find a listener" (the site's search field), and one chip per
-  listener — an initial circle and the name; raised hands first, marked in autumn orange with
-  the hand symbol; guests tagged; hidden listeners ("A listener", a neutral circle) last.
-  Organisers invite members with a compact Invite button inside the chip; a hidden listener's
-  button is numbered by position ("Invite listener 2 to the stage"), so each has its own name.
-- **Controls**: speakers — Microphone, Camera, Share screen, Leave the stage; member listeners —
-  Raise / Lower hand (guests have none); organisers — End call for everyone; everyone — Leave
-  call.
+  The page gives the stage the room (2026-10-18, SE-CALLS-3): the sidebar becomes an icon rail
+  (docs/DESIGN.md, "Call page"), the chat can be collapsed, and from 1280 x 720 nothing scrolls in
+  the main column during a share.
+
+- **Stage**: takes all the height the page has left. An adaptive grid of up to 10 speakers
+  (their shared screen, else camera or initial; name, Host/Speaker, microphone state, a ring for
+  whoever talks); with a spotlight (or a share without one), that speaker large — their shared
+  screen, **never cropped** (letterboxed, `object-fit: contain`; only camera pictures fill their
+  tile), with their camera inset, or their camera — and the other speakers in a strip. Chips over
+  the stage's top left: "<name> is sharing the screen" (a sound icon when the share carries
+  audio), "Show all speakers" for organisers, "Put me in the spotlight" / "Leave the spotlight"
+  for a speaker. Organisers have a "…" menu on every other speaker (Spotlight, Mute, Remove from
+  the stage — this one asks first). Top right: **Full screen** (the browser's Fullscreen API;
+  Esc or the button leaves it; not shown where the API is unavailable).
+- **Control bar**: one row of round icon buttons, each with a visible tooltip and its name.
+  Speakers: microphone, camera, share screen, then leave the stage; member listeners: raise or
+  lower the hand (guests have none); organisers: end the call for everyone (red; asks first);
+  everyone: leave the call. Off is slashed and red (microphone, camera), sharing is in the accent
+  colour, a raised hand in autumn orange.
+- **Listeners**: collapsed by default to one row — every raised hand first (organisers never miss
+  one; more than fit scroll sideways), then a few more chips — with "+N" and "Show all
+  listeners"; expanded, "Find a listener" (the site's search field) and the whole list, scrolling
+  inside its capped height. One chip per listener: an initial circle and the name; raised hands
+  marked in autumn orange with the hand symbol; guests tagged; hidden listeners ("A listener", a
+  neutral circle) last. Organisers invite members with a compact Invite button inside the chip; a
+  hidden listener's button is numbered by position ("Invite listener 2 to the stage").
 - **Chat**: the chat module's compact `ChatPanel` with the call's room (`unlisted`), on the
-  right — the same one-row composer as the chat drawer; on narrow screens a drawer over the
-  page.
+  right — the same one-row composer as the chat drawer. A collapse button turns it into a slim
+  vertical tab with how many messages arrived meanwhile (`useNewMessageCount`); this browser
+  remembers the choice (`se.callChat.collapsed`). On narrow screens a drawer over the page.
 
 **Screen sharing with sound**: Share screen first shows "use headphones, so the call does not
 hear itself (echo)"; Share now asks the browser for the screen with its sound

@@ -63,8 +63,9 @@ async function openReport() {
   const rude = (await within(list).findByText(TEXTS[2])).closest('li');
   // Only the partner's messages can be reported.
   const mine = within(list).getByText(TEXTS[1]).closest('li');
-  expect(within(mine).queryByRole('button', { name: 'Report' })).toBeNull();
-  fireEvent.click(within(rude).getByRole('button', { name: 'Report' }));
+  expect(within(mine).queryByRole('button', { name: /^Actions for the message from/ })).toBeNull();
+  fireEvent.click(within(rude).getByRole('button', { name: 'Actions for the message from zoe' }));
+  fireEvent.click(within(rude).getByRole('menuitem', { name: 'Report' }));
   const dialog = screen.getByRole('dialog', { name: 'Report a message from zoe' });
   fireEvent.change(within(dialog).getByLabelText('Reason'), { target: { value: 'insults' } });
   return dialog;

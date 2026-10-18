@@ -2,20 +2,20 @@
 // File:        SpeakerTile.jsx
 // Path:        client/src/calls/SpeakerTile.jsx
 // Project:     Seasonal Entertainment
-// Description: One speaker on the stage: their shared screen if they share one (so a share
-//              always shows, in any layout), else their camera picture (or the name's first
-//              letter); name, role (Host or Speaker), microphone state, and a ring while they
-//              talk. Organisers
-//              get Spotlight, Mute and Remove for others; a speaker may put themselves in the
-//              spotlight.
+// Description: One speaker on the stage: their shared screen if they share one (never
+//              cropped), else their camera picture (or the name's first letter); name, role
+//              (Host or Speaker), microphone state, and a ring while they talk. Organisers get
+//              a "…" menu on other speakers' tiles (Spotlight, Mute, Remove from the stage) —
+//              the chat module's MenuButton.
 // ============================================================
 
 import { Track } from 'livekit-client';
 import Icon from '../app/icons.jsx';
+import { MenuButton } from '../chat/index.js';
 import { TrackVideo, hasMicrophoneOn, trackOf } from './TrackMedia.jsx';
 
-// person: stageModel.personOf(); actions: { spotlight, mute, remove, highlightSelf } or null.
-export default function SpeakerTile({ person, room, talking, highlighted, actions }) {
+// person: stageModel.personOf(); menu: the "…" menu's items, or null.
+export default function SpeakerTile({ person, room, talking, menu }) {
   const screen = trackOf(room, person.identity, Track.Source.ScreenShare);
   const camera = trackOf(room, person.identity, Track.Source.Camera);
   const micOn = hasMicrophoneOn(room, person.identity);
@@ -30,6 +30,7 @@ export default function SpeakerTile({ person, room, talking, highlighted, action
           <TrackVideo
             track={screen ?? camera}
             label={`${person.name}'s ${screen ? 'screen' : 'camera'}`}
+            fit={screen ? 'contain' : 'cover'}
           />
         ) : (
           <span className="speaker-tile__initial" aria-hidden="true">
@@ -45,49 +46,19 @@ export default function SpeakerTile({ person, room, talking, highlighted, action
           role="img"
           aria-label={micOn ? 'Microphone on' : 'Microphone off'}
         >
-          <Icon name={micOn ? 'mic' : 'micOff'} size={18} />
+          <Icon name={micOn ? 'mic' : 'micOff'} size={16} />
         </span>
+        {menu && (
+          <MenuButton
+            items={menu}
+            label={person.name}
+            buttonLabel={`Actions for ${person.name}`}
+            className="speaker-tile__more"
+          >
+            <span aria-hidden="true">…</span>
+          </MenuButton>
+        )}
       </div>
-      {actions && (
-        <div className="speaker-tile__actions">
-          {person.isLocal ? (
-            <button
-              type="button"
-              className="link-button"
-              onClick={() => actions.highlightSelf(!highlighted)}
-            >
-              {highlighted ? 'Leave the spotlight' : 'Put me in the spotlight'}
-            </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                className="link-button"
-                aria-label={`Spotlight ${person.name}`}
-                onClick={() => actions.spotlight(person.identity)}
-              >
-                Spotlight
-              </button>
-              <button
-                type="button"
-                className="link-button"
-                aria-label={`Mute ${person.name}`}
-                onClick={() => actions.mute(person.identity)}
-              >
-                Mute
-              </button>
-              <button
-                type="button"
-                className="link-button"
-                aria-label={`Remove ${person.name} from the stage`}
-                onClick={() => actions.remove(person.identity)}
-              >
-                Remove
-              </button>
-            </>
-          )}
-        </div>
-      )}
     </li>
   );
 }

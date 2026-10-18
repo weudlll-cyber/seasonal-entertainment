@@ -34,6 +34,10 @@ isFavouriteUser, setRoom, setUser }`; one shared copy per page, so every place a
 and **`<RoomStar room>`** (the star; renders nothing for guests). For direct messages it exports
 **`<DirectPanel keyId privateKey variant>`** (the conversation list or one conversation; the host
 passes the member's unlocked key and shows the unlock step while there is none) and
+**`<MenuButton items label buttonLabel className>`** (the module's small keyboard menu: arrows,
+Escape, Tab; an item with `confirm` asks first — the call stage uses it for its speaker menu) and
+**`useNewMessageCount(room, counting)`** (messages that arrived in a room while counting — a
+collapsed call chat, whose unlisted room is not in the unread counters).
 **`onDirectRequest(callback)`** (a name menu asked for a conversation: the host brings its Direct
 tab forward). The module encrypts and decrypts with `shared/crypto.js`, the only other outside
 import it is allowed.
@@ -82,6 +86,17 @@ of the module other than `index.js`.
   the page's own origin (`/api/chat/...`, `/ws/chat`, `/media/...`) and fits the width it is given.
 - **Test-only page** `/test/chat-panels` (two compact panels side by side) is routed by the Vite
   dev server only; production builds leave it out (`import.meta.env.DEV`).
+
+## Message actions
+
+Every message — in a room (the `/chat` page, the drawer, a call's chat) and in a private
+conversation — has a **"…"** button at its top right (`MessageMenu.jsx`; shown on hover and
+keyboard focus, always on touch screens). It opens a keyboard-operable menu (`MenuButton.jsx`:
+Enter, Space or ArrowDown open it, arrows move, Escape closes) with the same actions, permissions
+and server routes as the former row of links under each message (2026-10-18, SE-CALLS-3):
+**Report** for everyone (in a private conversation: the partner's readable messages); for
+moderators also **Hide** and **Ban** (both ask first in the menu), **Mute 10 min / 1 h / 24 h**,
+**Remove file**, **Remove preview**.
 
 ## Unread counters
 

@@ -90,6 +90,11 @@ test('organiser, member and guest through one call', async ({ browser, baseURL }
 
   // Ending the call disconnects everyone.
   await host.getByRole('button', { name: 'End call for everyone' }).click();
+  // It asks first.
+  await host
+    .getByRole('group', { name: 'End the call for everyone' })
+    .getByRole('button', { name: 'End call' })
+    .click();
   for (const page of [member, guest]) {
     await expect(page.getByText('The call has ended.')).toBeVisible();
   }

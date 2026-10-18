@@ -17,6 +17,7 @@ import {
   NO_SHARE_AUDIO,
   NO_SOUND_SHARED,
   audienceOrder,
+  collapsedListeners,
   findListeners,
   isChromium,
   listenerNames,
@@ -118,6 +119,16 @@ describe('a screen share without the spotlight', () => {
     const olga = { identity: 'p-olga', by: 'organiser' };
     expect(shownLarge(olga, speakers, ['p-mia']).name).toBe('olga');
     expect(shownLarge({ identity: null, by: 'organiser' }, speakers, ['p-mia'])).toBeNull();
+  });
+});
+
+it('the collapsed listener row shows every raised hand, then fills up; the rest is "+N"', () => {
+  const hands = Array.from({ length: 6 }, (_, i) => person(`h${i}`, { hand: true }));
+  const others = Array.from({ length: 5 }, (_, i) => person(`o${i}`));
+  expect(collapsedListeners([...hands, ...others], 4)).toEqual({ shown: hands, more: 5 });
+  expect(collapsedListeners([hands[0], ...others], 4)).toEqual({
+    shown: [hands[0], ...others.slice(0, 3)],
+    more: 2,
   });
 });
 

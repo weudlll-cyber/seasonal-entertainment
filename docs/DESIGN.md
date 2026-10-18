@@ -114,22 +114,40 @@ checks the alignment, the one-line rows and the overlap at 1440 x 900 and 1280 x
   button — the hover background is clipped to the inner box and the focus ring (the accent
   outline of every control) is pulled in to the same rounded rectangle; never a circle.
 
-**Call page** (`/calls/:id`, design "Community Call – Bühne", docs/CALLS.md): the header across
-(title, LIVE badge, start time, how many speak and listen); on the left the stage, the control
-bar and the listeners, scrolling inside; on the right (22rem) the call's chat. Below 1000px the
-chat opens as a drawer over the page ("Show chat" in the header). The site's chat button is
-not shown on a call page. Speaker tiles: camera picture or the name's initial, name, Host or
-Speaker, microphone state, an accent ring while talking (a shared screen replaces the camera
-picture); at least 12rem per column. The
-spotlight shows one speaker large (a shared screen with the camera inset in the corner, and the
-label "<name> is sharing the screen" with a sound icon when it carries audio), the others in a
-strip. Control buttons are icons with visible labels; on/off in `aria-pressed`. Listeners are
-chips (pill shape): an initial circle (winter blue; neutral grey with a person icon for hidden
-listeners), the name, a "Guest" tag for guests; raised hands come first, with an autumn-orange
-border and hand symbol; organisers get a compact pill "Invite" button inside the chip (drawn
-32px, 44px hit area). "Find a listener" uses the site's field look (`.search-input`,
-`client/src/styles/forms.css`). The call's chat is the chat module's compact panel, like the
-drawer.
+**Call page** (`/calls/:id`, design "Community Call – Bühne", docs/CALLS.md), stage first: the
+header across (title, LIVE badge, start time, how many speak and listen); on the left the stage
+taking every bit of height left, then one row of round control buttons and the listener panel
+(collapsed to one row); on the right (20rem) the call's chat, or collapsed a 3rem vertical tab
+with its count of new messages. Nothing scrolls in the main column from 1280 x 720 on; only
+inner lists scroll. Below 1000px the chat opens as a drawer over the page ("Show chat" in the
+header). The site's chat button is not shown on a call page.
+
+- **Sidebar as a rail** (from 760px, `SidebarRail.css`, `useRail.js`): 4.5rem (`--rail-width`),
+  icons only with tooltips (`title`; the text stays the link's name), the LIVE badge and unread
+  counters shrink to dots. The menu button at the top expands it until pressed again; pointing at
+  the rail with a mouse slides the full sidebar over the stage (an overlay: the stage does not
+  move) until the pointer leaves; keyboard focus inside opens it too. Touch screens use the
+  button only. Other pages have the normal sidebar.
+- **Stage**: on the surface-2 colour with the card radius. Shared screens are letterboxed
+  (`object-fit: contain`), never cropped; camera pictures fill their tile (`cover`). Speaker
+  tiles: picture, name, Host or Speaker, microphone state (off: red), an accent ring while
+  talking, organisers' "…" menu. Chips over the top left (pill, surface colour, raised shadow);
+  the round full-screen button top right.
+- **Control bar**: round 48px icon buttons in one centred row with small gaps between groups; a
+  tooltip above each on hover and keyboard focus (`data-tooltip`); off = slashed icon and red
+  outline, on = accent, raised hand = autumn, end the call = the LIVE red. Questions (share with
+  sound, end the call) open as a card above the bar.
+- **Listeners**: chips (pill shape): an initial circle (winter blue; neutral grey with a person
+  icon for hidden listeners), the name, a "Guest" tag; raised hands come first, with an
+  autumn-orange border and hand symbol; organisers get a compact pill "Invite" button inside the
+  chip (drawn 32px, 44px hit area). Collapsed: one row with "+N" and "Show all listeners";
+  expanded: "Find a listener" (`.search-input`, `client/src/styles/forms.css`) and the list,
+  capped at 12rem and scrolling inside.
+
+**Chat message menu**: a message's actions sit behind a "…" button at its top right (shown on
+hover and keyboard focus, always on touch screens), opening a small menu (`chat/MenuButton.jsx`,
+`ChatMenu.css`) instead of a row of links; destructive actions (Hide, Ban) ask in the menu
+first.
 
 **Compact chat composer** (the drawer and a call's chat, `client/src/chat/ChatComposer.css`): one
 row — a single-line message field and square 44px icon buttons (emoji/stickers/GIFs, attach,

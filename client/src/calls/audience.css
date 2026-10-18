@@ -2,27 +2,49 @@
    File:        audience.css
    Path:        client/src/calls/audience.css
    Project:     Seasonal Entertainment
-   Description: The listener list (Audience.jsx, design "Community Call – Bühne"): count,
-                search (the shared .search-input look), and chips — initial circle and name,
-                raised hands marked in autumn orange, guest tags, a compact Invite button
+   Description: The listener panel (Audience.jsx, design "Community Call – Bühne"): collapsed
+                one row of chips with "+N", expanded the search (the shared .search-input look)
+                and the whole list scrolling inside a capped height; chips — initial circle and
+                name, raised hands marked in autumn orange, guest tags, a compact Invite button
                 inside the chip. Tokens only: both themes.
    ============================================================ */
 
 .audience {
   display: grid;
-  gap: var(--space-1);
-  padding: var(--space-2);
+  gap: 0.5rem;
+  min-height: 0;
+  padding: 0.5rem var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }
 
+.audience__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+
 .audience__title {
   display: flex;
+  flex: 1;
   align-items: center;
   gap: var(--space-1);
   margin: 0;
-  font-size: 1.125rem;
+  font-size: 1rem;
+}
+
+.audience__toggle {
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
 }
 
 .audience__count {
@@ -37,6 +59,34 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* Collapsed: one row; raised hands that do not fit scroll sideways, never hidden. */
+.audience:not(.audience--expanded) .audience__list {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.audience-chip {
+  flex: none;
+}
+
+/* Expanded: the whole list, scrolling inside its own capped height. */
+.audience--expanded .audience__list {
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+.audience__more {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.5rem;
+  min-height: 2rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-strong);
 }
 
 .audience-chip {

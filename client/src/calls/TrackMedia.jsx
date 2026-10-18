@@ -26,8 +26,9 @@ export function trackOf(room, identity, source) {
 export const hasMicrophoneOn = (room, identity) =>
   Boolean(trackOf(room, identity, Track.Source.Microphone));
 
-// label: what the video shows, e.g. "mia's camera" (the element has no other text).
-export function TrackVideo({ track, label, className = '' }) {
+// label: what the video shows, e.g. "mia's camera" (the element has no other text); fit:
+// 'contain' for screens (never cropped, letterboxed), 'cover' for cameras (fill the tile).
+export function TrackVideo({ track, label, className = '', fit = 'cover' }) {
   const element = useRef(null);
   useEffect(() => {
     const node = element.current;
@@ -37,7 +38,7 @@ export function TrackVideo({ track, label, className = '' }) {
   return (
     <video
       ref={element}
-      className={`track-video ${className}`}
+      className={`track-video track-video--${fit} ${className}`}
       autoPlay
       playsInline
       muted

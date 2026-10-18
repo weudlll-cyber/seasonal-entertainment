@@ -3,10 +3,12 @@
    Path:        client/src/chat/ChatMessage.css
    Project:     Seasonal Entertainment
    Description: One chat message inside the module (under .se-chat): meta line, guest badge,
-                text, stickers / GIFs, link preview card, actions.
+                text, stickers / GIFs, link preview card, and its "…" button (top right; shown
+                on hover and focus, always on touch screens).
    ============================================================ */
 
 .se-chat .chat-message {
+  position: relative;
   padding: var(--chat-space-1) var(--chat-space-2);
   border-bottom: 1px solid var(--chat-border);
 }
@@ -64,11 +66,45 @@
   color: var(--chat-muted);
 }
 
-.se-chat .chat-message__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--chat-space-1);
-  font-size: 0.8125rem;
+/* The "…" button: out of the way until the message is pointed at or focused. */
+.se-chat .chat-message__menu {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  opacity: 0;
+}
+
+.se-chat .chat-message:hover .chat-message__menu,
+.se-chat .chat-message__menu:focus-within {
+  opacity: 1;
+}
+
+/* Touch screens have no hover: the button is always there. */
+@media (hover: none) {
+  .se-chat .chat-message__menu {
+    opacity: 1;
+  }
+}
+
+.se-chat .chat-message__more {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--chat-border);
+  border-radius: var(--chat-radius);
+  background: var(--chat-bg);
+  color: var(--chat-text);
+  font: inherit;
+  font-weight: var(--chat-strong);
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* The menu opens to the left, inside the panel. */
+.se-chat .chat-message__menu .chat-menu__list {
+  right: 0;
+  left: auto;
 }
 
 .se-chat .chat-badge {

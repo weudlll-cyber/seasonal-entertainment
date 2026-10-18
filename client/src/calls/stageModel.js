@@ -60,6 +60,15 @@ export function listenerNames(listeners) {
   );
 }
 
+// The collapsed listener panel's one row: every raised hand (organisers must not miss one),
+// then others up to `size` chips; `more` counts the rest ("+N"). ordered: audienceOrder().
+export const COLLAPSED_CHIPS = 4;
+export function collapsedListeners(ordered, size = COLLAPSED_CHIPS) {
+  const hands = ordered.filter((p) => p.hand).length;
+  const shown = ordered.slice(0, Math.max(size, hands));
+  return { shown, more: ordered.length - shown.length };
+}
+
 // "Find a listener": by name, case-insensitive. Hidden listeners have no name to find.
 export function findListeners(listeners, query) {
   const wanted = query.trim().toLowerCase();

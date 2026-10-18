@@ -5,7 +5,7 @@
    Description: Favourites and room settings in the chat module: the small toggles (star,
                 bell; ToggleButton), the room list's rows (one grid of fixed columns: name,
                 count, star, bell) and group headings ("Favourites", "Rooms"),
-                a member's name as a button with its small menu, @mention chips and the
+                a member's name as a button (its menu: ChatMenu.css), @mention chips and the
                 highlight of a message that mentions the reader. Under the .se-chat root
                 like every module style, except the toggles, which a host's room picker shows
                 too.
@@ -95,11 +95,7 @@
   grid-area: bell;
 }
 
-/* A member's name: looks like the plain name, acts as a menu button. */
-.se-chat .chat-name-menu {
-  position: relative;
-}
-
+/* A member's name: looks like the plain name, acts as a menu button (MenuButton). */
 .se-chat .chat-name {
   padding: 0;
   border: 0;
@@ -108,39 +104,6 @@
   font: inherit;
   font-weight: var(--chat-strong);
   cursor: pointer;
-}
-
-.se-chat .chat-name-menu__list {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 3;
-  min-width: 13rem;
-  margin: 0.25rem 0 0;
-  padding: 0.25rem;
-  border: 1px solid var(--chat-border);
-  border-radius: var(--chat-radius);
-  background: var(--chat-bg);
-  box-shadow: var(--chat-shadow);
-  list-style: none;
-}
-
-.se-chat .chat-name-menu__list button {
-  width: 100%;
-  min-height: 44px;
-  padding: 0 var(--chat-space-1);
-  border: 0;
-  border-radius: var(--chat-radius);
-  background: none;
-  color: var(--chat-text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.se-chat .chat-name-menu__list button:hover,
-.se-chat .chat-name-menu__list button:focus-visible {
-  background: var(--color-active-bg, #eaf6fe);
 }
 
 /* An @mention of a member: a highlighted name chip (it opens the name menu). */
