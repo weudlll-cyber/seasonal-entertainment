@@ -3,9 +3,11 @@
 // Path:        server/src/chat/routes.js
 // Project:     Seasonal Entertainment
 // Description: /api/chat for everyone (guests included): the rooms this viewer may read,
-//              a room's recent messages, sending (room write access, what may be sent:
-//              messageInput.js; mute/ban, per-sender rate limit, per-IP limits for guests; a
-//              guest gets a unique guest name on the first message or report), and reporting
+//              a room's recent messages (or, with ?after=<id>, those newer than that id: the
+//              catch-up after a live connection subscribed), sending (room write access, what
+//              may be sent: messageInput.js; mute/ban, per-sender rate limit, per-IP limits
+//              for guests; a guest gets a unique guest name on the first message or report),
+//              and reporting
 //              a message (its preview then shows to moderators only until reviewed).
 //              New messages are pushed live; a member's first https link gets a preview
 //              card (previews/).
@@ -15,6 +17,7 @@ import express from 'express';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
+import { queryId } from '../http/validate.js';
 import { addMessage, findMessage, listMessages } from './messages.js';
 import { storeMentions, withMentions } from './mentions.js';
 import { readMessageInput } from './messageInput.js';
@@ -61,7 +64,9 @@ export function chatRoutes(db, config, hub, previews, allowMessage) {
 
   router.get('/rooms/:slug/messages', allow('public'), loadRoom, (req, res) => {
     const moderator = isModerator(chatViewer(req));
-    res.json({ ok: true, messages: withMentions(db, listMessages(db, req.room, { moderator })) });
+    const afterId = queryId(req.query.after);
+    const messages = listMessages(db, req.room, { moderator, afterId });
+    res.json({ ok: true, messages: withMentions(db, messages) });
   });
 
   router.post(

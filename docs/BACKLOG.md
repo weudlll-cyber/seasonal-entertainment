@@ -27,11 +27,6 @@ An entry moves from part one to part two only when its branch is merged into `ma
 - **Call recording** — unconfirmed proposal, not decided. Calls are not recorded (privacy draft).
 - **Linking calls to the events calendar** — unconfirmed proposal, not decided: an event could
   carry its call, and a call its event.
-- **Check a live room message right after login** — open. accounts.spec.js "register, log out
-  and log in again" failed once on master CI (run 39120387612, 5 s wait): check whether a room
-  message sent right after login, while the chat connection reopens as the new reader, can miss
-  its live update until reload; to be answered by a short targeted test, not by a larger
-  timeout.
 
 - Info pages with admin editor
 - Accounts with Discord/Telegram login and 2FA for organisers/admins
@@ -44,6 +39,12 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **Check a live room message right after login** — closed by SE-NIGHT-2 part 1
+  (`feat/se-night-2`, PR #7, not merged yet). Answer: yes, it could miss its live update until
+  reload, in two ways, both shown red by client/src/chat/chatCatchUp.test.jsx against the old
+  code: a message stored between the panel's load and the new socket's subscription was never
+  pushed, and a message pushed while the load was on its way was wiped by the load. Fixed by a
+  catch-up fetch (`?after=<id>`) on every `subscribed` and a merge by id; no timeout changed.
 - **SE-CALLS-1 — community calls on LiveKit** — closed by PR #6 (`feat/se-calls-1`), merged
   2026-10-18. Piece 1: the call service's configuration and portability (`deploy/calls/`,
   `npm run dev:calls`). Piece 2: calls, roles and management, the call chat, admin settings.

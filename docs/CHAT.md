@@ -65,6 +65,12 @@ of the module other than `index.js`.
   new one that subscribes every room again; the rooms and the messages are loaded again for
   the new reader. Without this, a panel opened as a guest kept a guest's connection after
   logging in (no live events from members-only rooms).
+- **Nothing is lost while a connection (re)opens** (SE-NIGHT-2 part 1): a message stored after
+  the panel's load but before the server has confirmed the new socket's subscription is neither
+  in the load nor pushed. So on every `subscribed` the panel fetches what it missed
+  (`GET /api/chat/rooms/<room>/messages?after=<newest id it has>`, same read rule as the plain
+  load), and a load or catch-up is merged by id into what was pushed meanwhile instead of
+  replacing it.
 - **The composer** writes one message at a time: optional text plus at most one attachment. A
   sticker or GIF from the picker is shown small above the field with an ×; Send sends both
   together (`{ body, attachment }` to `POST /api/chat/rooms/<room>/messages`). Members also

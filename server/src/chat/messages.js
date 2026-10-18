@@ -137,17 +137,22 @@ export function findMessage(db, id) {
   );
 }
 
-// The newest `limit` messages, oldest first. Moderators also get hidden messages and the
-// previews held back from reported ones.
-export function listMessages(db, room, { moderator = false, limit = 100 } = {}) {
+// The room's newest `limit` messages, oldest first. afterId: only messages newer than that id,
+// the oldest of them first — a reader catching up after its live connection (re)subscribed.
+// Moderators also get hidden messages and the previews held back from reported ones.
+export function listMessages(db, room, { moderator = false, limit = 100, afterId } = {}) {
+  const visible = 'm.room_id = ? AND (? OR m.hidden_at IS NULL)';
+  const params = [room.id, moderator ? 1 : 0];
+  const sql =
+    afterId === undefined
+      ? `SELECT * FROM (SELECT ${MESSAGE_COLUMNS} FROM ${MESSAGE_FROM}
+           WHERE ${visible} ORDER BY m.id DESC LIMIT ?) ORDER BY id`
+      : `SELECT ${MESSAGE_COLUMNS} FROM ${MESSAGE_FROM}
+           WHERE ${visible} AND m.id > ? ORDER BY m.id LIMIT ?`;
+  if (afterId !== undefined) params.push(afterId);
   return db
-    .prepare(
-      `SELECT * FROM (
-         SELECT ${MESSAGE_COLUMNS} FROM ${MESSAGE_FROM}
-         WHERE m.room_id = ? AND (? OR m.hidden_at IS NULL) ORDER BY m.id DESC LIMIT ?
-       ) ORDER BY id`
-    )
-    .all(room.id, moderator ? 1 : 0, limit)
+    .prepare(sql)
+    .all(...params, limit)
     .map((row) => toMessage(row, moderator));
 }
 

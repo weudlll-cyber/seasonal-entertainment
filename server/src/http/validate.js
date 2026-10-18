@@ -3,7 +3,8 @@
 // Path:        server/src/http/validate.js
 // Project:     Seasonal Entertainment
 // Description: Request-body validation: runs one validator per field (validators return an
-//              error sentence or null) and answers 400 with the first error.
+//              error sentence or null) and answers 400 with the first error; and queryId, the
+//              one reading of a paging id from the query string (?before=, ?after=).
 // ============================================================
 
 import { sendError } from './errors.js';
@@ -30,6 +31,10 @@ export const required = (label, max) => (value) =>
     : `${label} is required (at most ${max} characters).`;
 
 export const mustBeTrue = (message) => (value) => (value === true ? null : message);
+
+// A paging id from the query string: a whole number, or undefined when absent or not one
+// (a bad value means "no paging", never an error).
+export const queryId = (value) => (/^\d+$/.test(value ?? '') ? Number(value) : undefined);
 
 // A record id or similar: a whole number above zero.
 export const positiveInteger = (label) => (value) =>
