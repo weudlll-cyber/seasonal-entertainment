@@ -37,7 +37,7 @@ export function createApp({ buildInfo, config, db, previewNetwork }) {
   app.disable('x-powered-by');
   // Behind a reverse proxy, req.ip and req.protocol come from its X-Forwarded-* headers.
   app.set('trust proxy', config.trustProxy);
-  app.use(securityHeaders());
+  app.use(securityHeaders(config));
 
   const api = express.Router();
   api.use(express.json({ limit: '100kb' }));

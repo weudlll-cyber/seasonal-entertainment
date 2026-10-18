@@ -1,0 +1,33 @@
+# ============================================================
+# File:        docker-compose.yml
+# Path:        deploy/calls/docker-compose.yml
+# Project:     Seasonal Entertainment
+# Description: The call service alone (LiveKit server, Apache-2.0), pinned to one release by
+#              tag and image digest. Runs on the site's VPS for now; moving it to its own VPS
+#              is copying this folder there and changing the site's CALLS_URL
+#              (docs/CALLS.md, "Moving the call service"). Keys from ./.env (not committed).
+# ============================================================
+
+services:
+  livekit:
+    image: livekit/livekit-server:v1.13.10@sha256:89ca9ce0791e18d6e03bf6e2c49ceb27e1c754eae8bd50c989386c1a5963791a
+    command: --config /etc/livekit.yaml
+    restart: unless-stopped
+    # Host networking: WebRTC needs the real UDP ports and the public address unchanged.
+    network_mode: host
+    environment:
+      # "<key>: <secret>", the same pair as the site's CALLS_API_KEY / CALLS_API_SECRET.
+      LIVEKIT_KEYS: ${LIVEKIT_KEYS:?set LIVEKIT_KEYS in deploy/calls/.env}
+      # The calls domain, e.g. calls.example.org (TURN over TLS; must match the certificate).
+      LIVEKIT_TURN_DOMAIN: ${CALLS_DOMAIN:?set CALLS_DOMAIN in deploy/calls/.env}
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+      # The calls domain's TLS certificate (for TURN over TLS), e.g. from certbot.
+      - ${CALLS_CERT_DIR:?set CALLS_CERT_DIR in deploy/calls/.env}:/certs:ro
+    # Limits (decided 2026-10-18): 2 CPUs, 2 GB. Change both here; docs/CALLS.md explains
+    # how to size them.
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
