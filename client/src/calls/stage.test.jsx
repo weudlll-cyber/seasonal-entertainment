@@ -43,6 +43,42 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe('cameras', () => {
+  it('a lone speaker fills the stage, the camera never cropped', () => {
+    render(
+      <Stage
+        speakers={[speakers[0]]}
+        room={fakeRoom({ 'p-mia': { camera: fakeTrack() } })}
+        spotlight={null}
+        talking={new Set()}
+        me={speakers[0]}
+        tileMenu={() => null}
+        onAllSpeakers={null}
+        onHighlightSelf={null}
+      />
+    );
+    expect(screen.getByLabelText("mia's camera")).toHaveClass('track-video--contain');
+    expect(screen.getByRole('listitem')).toHaveClass('speaker-tile--large');
+  });
+
+  it("in a grid each picture takes its camera's shape (16:9 until known), filled", () => {
+    const room = fakeRoom({ 'p-mia': { camera: fakeTrack() }, 'p-olga': { camera: fakeTrack() } });
+    // olga's camera is known to be 4:3.
+    const olga = room.remoteParticipants.get('p-olga');
+    const plain = olga.getTrackPublication;
+    olga.getTrackPublication = (source) => ({
+      ...plain(source),
+      dimensions: { width: 640, height: 480 },
+    });
+    stage(room, null);
+    expect(screen.getByLabelText("mia's camera")).toHaveClass('track-video--cover');
+    const ratio = (name) =>
+      Number(screen.getByLabelText(name).parentElement.style.aspectRatio.split('/')[0]);
+    expect(ratio("mia's camera")).toBeCloseTo(16 / 9);
+    expect(ratio("olga's camera")).toBeCloseTo(4 / 3);
+  });
+});
+
 describe('layouts', () => {
   it('shows all speakers without a spotlight, the talking one marked', () => {
     stage(fakeRoom({ 'p-mia': {}, 'p-olga': {} }), null);

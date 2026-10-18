@@ -72,7 +72,7 @@ test('the stage gets the room; rail, chat tab, full screen, raised hands', async
   const host = await (await browser.newContext({ storageState: ADMIN_STATE })).newPage();
   await openCall(host, call.id);
   await host.getByRole('button', { name: 'Join call' }).click();
-  await host.getByRole('button', { name: 'Camera' }).click();
+  await host.getByRole('button', { name: 'Turn camera on' }).click();
   const { page: member } = await memberPage(browser, 'calllayout');
   await openCall(member, call.id);
   await member.getByRole('button', { name: 'Join call' }).click();

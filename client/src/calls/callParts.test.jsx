@@ -7,9 +7,10 @@
 //              to show all), expanded with "Find a listener" and the whole list; chips (initial
 //              circle, neutral for hidden listeners, raised hand marked, guests tagged);
 //              Invite for organisers only, never for guests, with its own name for every hidden
-//              listener. The bar: round icon buttons named and with tooltips; guests have no
-//              hand; speakers get the "use headphones" hint before sharing; a muted microphone
-//              shows slashed and red; only hosts end the call, and it asks first.
+//              listener. The bar: round icon buttons named and with tooltips; each toggle names
+//              what a click will do and its icon shows the state (sharing, microphone, camera);
+//              guests have no hand; speakers get the "use headphones" hint before sharing; only
+//              hosts end the call, and it asks first.
 // ============================================================
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -115,8 +116,8 @@ describe('the control bar', () => {
     const c = controls();
     render(<CallControls me={person('olga', { speaker: true })} local={local} host controls={c} />);
     expect(names()).toEqual([
-      'Microphone',
-      'Camera',
+      'Unmute microphone',
+      'Turn camera off',
       'Share screen',
       'Leave the stage',
       'End call for everyone',
@@ -126,11 +127,6 @@ describe('the control bar', () => {
       expect(button).toHaveAttribute('data-tooltip', button.getAttribute('aria-label'));
       expect(button.textContent).toBe('');
     }
-    // A muted microphone: slashed and red; the camera that is on: neither.
-    const mic = screen.getByRole('button', { name: 'Microphone' });
-    expect(mic).toHaveClass('call-control--off');
-    expect(mic.querySelector('[data-icon="micOff"]')).not.toBeNull();
-    expect(screen.getByRole('button', { name: 'Camera' })).not.toHaveClass('call-control--off');
 
     fireEvent.click(screen.getByRole('button', { name: 'Share screen' }));
     expect(c.toggleShare).not.toHaveBeenCalled();
@@ -145,4 +141,41 @@ describe('the control bar', () => {
     fireEvent.click(within(end).getByRole('button', { name: 'End call' }));
     expect(c.endCall).toHaveBeenCalledOnce();
   });
+
+  // [state, name a click means, icon, red/active class or null, aria-pressed]
+  const TOGGLES = {
+    microphone: [
+      [{ isMicrophoneEnabled: true }, 'Mute microphone', 'mic', null, 'true'],
+      [{ isMicrophoneEnabled: false }, 'Unmute microphone', 'micOff', 'call-control--off', 'false'],
+    ],
+    camera: [
+      [{ isCameraEnabled: true }, 'Turn camera off', 'camera', null, 'true'],
+      [{ isCameraEnabled: false }, 'Turn camera on', 'cameraOff', 'call-control--off', 'false'],
+    ],
+    share: [
+      [{ isScreenShareEnabled: false }, 'Share screen', 'screen', null, 'false'],
+      [{ isScreenShareEnabled: true }, 'Stop sharing', 'screenOff', 'call-control--on', 'true'],
+    ],
+  };
+  for (const [toggle, states] of Object.entries(TOGGLES)) {
+    it(`the ${toggle} button says what a click does and shows the state`, () => {
+      for (const [state, name, icon, marked, pressed] of states) {
+        const { unmount } = render(
+          <CallControls
+            me={person('olga', { speaker: true })}
+            local={{ ...local, ...state }}
+            host={false}
+            controls={controls()}
+          />
+        );
+        const button = screen.getByRole('button', { name });
+        expect(button).toHaveAttribute('data-tooltip', name);
+        expect(button).toHaveAttribute('aria-pressed', pressed);
+        expect(button.querySelector('svg').dataset.icon).toBe(icon);
+        if (marked) expect(button).toHaveClass(marked);
+        else expect(button.className).toBe('call-control');
+        unmount();
+      }
+    });
+  }
 });

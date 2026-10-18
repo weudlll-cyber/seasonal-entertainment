@@ -60,7 +60,7 @@ test('organiser, member and guest through one call', async ({ browser, baseURL }
   await openCall(member, call.id);
   await member.getByRole('button', { name: 'Join call' }).click();
   await expect(member.getByRole('button', { name: 'Raise hand' })).toBeVisible();
-  await expect(member.getByRole('button', { name: 'Microphone' })).toHaveCount(0);
+  await expect(member.getByRole('button', { name: /microphone/i })).toHaveCount(0);
   await expect.poll(() => canPublish('callmember')).toBe(false);
 
   // Hand up: the organiser sees it first in the list and invites.
@@ -70,7 +70,7 @@ test('organiser, member and guest through one call', async ({ browser, baseURL }
   await listeners.getByRole('button', { name: 'Invite callmember to the stage' }).click();
 
   // On the stage: the member publishes audio, which the organiser's page shows.
-  await member.getByRole('button', { name: 'Microphone' }).click();
+  await member.getByRole('button', { name: 'Unmute microphone' }).click();
   await expect.poll(() => canPublish('callmember')).toBe(true);
   const stage = host.getByRole('region', { name: 'Stage' });
   await expect(

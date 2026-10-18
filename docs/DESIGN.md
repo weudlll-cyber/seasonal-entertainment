@@ -128,21 +128,30 @@ header). The site's chat button is not shown on a call page.
   the rail with a mouse slides the full sidebar over the stage (an overlay: the stage does not
   move) until the pointer leaves; keyboard focus inside opens it too. Touch screens use the
   button only. Other pages have the normal sidebar.
-- **Stage**: on the surface-2 colour with the card radius. Shared screens are letterboxed
-  (`object-fit: contain`), never cropped; camera pictures fill their tile (`cover`). Speaker
+- **Stage**: on the surface-2 colour with the card radius. Fitting pictures (2026-10-18,
+  SE-CALLS-4): shared screens are always letterboxed (`object-fit: contain`), never cropped; a
+  camera shown large — alone on the stage or in the spotlight — is letterboxed too; in the grid
+  of several speakers every picture takes its camera's aspect ratio (16:9 until the call service
+  reports the real one) and fills it (`cover`), so at most a thin edge is cut — never more than
+  about 10% of either side (`client/e2e/callFit.spec.js`). A video always fills its picture box exactly
+  (positioned over it), so the box's shape decides and the fit does what it says; sized by its
+  own height, a video was clipped at the bottom instead (the cut-off faces of the eye test). Speaker
   tiles: picture, name, Host or Speaker, microphone state (off: red), an accent ring while
   talking, organisers' "…" menu. Chips over the top left (pill, surface colour, raised shadow);
   the round full-screen button top right.
 - **Control bar**: round 48px icon buttons in one centred row with small gaps between groups; a
-  tooltip above each on hover and keyboard focus (`data-tooltip`); off = slashed icon and red
-  outline, on = accent, raised hand = autumn, end the call = the LIVE red. Questions (share with
+  tooltip above each on hover and keyboard focus (`data-tooltip`). A toggle names what a click
+  will do ("Mute microphone", "Stop sharing"); its icon shows the state: microphone or camera
+  off = slashed icon and red outline, sharing = slashed screen on the accent colour, raised
+  hand = autumn, end the call = the LIVE red. Questions (share with
   sound, end the call) open as a card above the bar.
 - **Listeners**: chips (pill shape): an initial circle (winter blue; neutral grey with a person
   icon for hidden listeners), the name, a "Guest" tag; raised hands come first, with an
   autumn-orange border and hand symbol; organisers get a compact pill "Invite" button inside the
   chip (drawn 32px, 44px hit area). Collapsed: one row with "+N" and "Show all listeners";
   expanded: "Find a listener" (`.search-input`, `client/src/styles/forms.css`) and the list,
-  capped at 12rem and scrolling inside.
+  capped at 12rem and scrolling inside. Every inner list on the call page scrolls with
+  `overflow: auto` — a scrollbar only when its content overflows, never `overflow: scroll`.
 
 **Chat message menu**: a message's actions sit behind a "…" button at its top right (shown on
 hover and keyboard focus, always on touch screens), opening a small menu (`chat/MenuButton.jsx`,

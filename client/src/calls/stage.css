@@ -41,15 +41,26 @@
   list-style: none;
 }
 
-/* Up to 10 speakers in as many columns as fit (at least 12rem each), filling the height;
-   the top row leaves room for the chips. */
+/* The top row leaves room for the chips. */
 .stage-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-  grid-auto-rows: minmax(0, 1fr);
   gap: var(--space-1);
   min-height: 0;
   padding: 3rem var(--space-1) var(--space-1);
+}
+
+/* A lone speaker fills the stage (the camera letterboxed, never cropped). */
+.stage-grid--one {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+/* Up to 10 speakers in as many columns as fit (at least 12rem each); every picture keeps its
+   camera's shape (SpeakerTile), so cover crops a thin edge at most. A scrollbar only when ten
+   tiles need more than the stage's height. */
+.stage-grid--many {
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  align-content: center;
+  overflow-y: auto;
 }
 
 .stage-strip {
@@ -65,12 +76,11 @@
 
 .stage-strip .speaker-tile__picture {
   height: 4.5rem;
-  aspect-ratio: auto;
 }
 
 .speaker-tile {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
   gap: 0.25rem;
   min-height: 0;
   padding: 0.375rem;
@@ -79,12 +89,17 @@
   background: var(--color-surface);
 }
 
+.speaker-tile--large {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
 /* The active speaker: a ring in the accent colour. */
 .speaker-tile--talking {
   box-shadow: 0 0 0 3px var(--color-accent);
 }
 
 .speaker-tile__picture {
+  position: relative;
   display: grid;
   place-items: center;
   min-height: 0;
@@ -109,6 +124,15 @@
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* A picture's video fills its box exactly — the box's shape decides, not the video's own
+   size — so contain and cover do what they say (a video sized by its own height would be
+   clipped at the bottom instead). The presenter's inset keeps its own place. */
+.speaker-tile__picture > .track-video,
+.stage-spotlight__main > .track-video:not(.stage-spotlight__inset) {
+  position: absolute;
+  inset: 0;
 }
 
 /* Cameras fill their tile; shares are never cropped (letterboxed on the surface colour). */

@@ -61,19 +61,24 @@
   list-style: none;
 }
 
-/* Collapsed: one row; raised hands that do not fit scroll sideways, never hidden. */
+/* Collapsed: one row; raised hands that do not fit scroll sideways, never hidden. One row
+   can never need a vertical scrollbar, so that axis is closed (overflow-x: auto alone would
+   make the other axis auto too). */
 .audience:not(.audience--expanded) .audience__list {
   flex-wrap: nowrap;
   overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .audience-chip {
   flex: none;
 }
 
-/* Expanded: the whole list, scrolling inside its own capped height. */
+/* Expanded: the whole list, scrolling inside its own capped height (a scrollbar only when it
+   overflows); the chips wrap, so it never scrolls sideways. */
 .audience--expanded .audience__list {
   max-height: 12rem;
+  overflow-x: hidden;
   overflow-y: auto;
 }
 

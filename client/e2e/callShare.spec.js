@@ -55,7 +55,7 @@ test('a screen share shows large even when the spotlight update fails', async ({
   );
   await openCall(presenter, call.id);
   await presenter.getByRole('button', { name: 'Join call' }).click();
-  await presenter.getByRole('button', { name: 'Camera' }).click();
+  await presenter.getByRole('button', { name: 'Turn camera on' }).click();
 
   const listener = await (await browser.newContext()).newPage();
   await openCall(listener, call.id);

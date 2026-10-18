@@ -3,7 +3,8 @@
 // Path:        client/src/calls/Stage.jsx
 // Project:     Seasonal Entertainment
 // Description: The stage (design "Community Call – Bühne"), taking all the height the call
-//              page has left: all speakers in an adaptive grid, or one speaker large — the one
+//              page has left: a lone speaker large (camera never cropped), several in an
+//              adaptive grid of tiles shaped like their cameras, or one speaker large — the one
 //              the server's spotlight names, or without one whoever shares a screen
 //              (stageModel.shownLarge: a published share always shows) — with their shared
 //              screen (never cropped: letterboxed), their camera inset, and the other speakers
@@ -110,13 +111,15 @@ export default function Stage({
       room={room}
       talking={talking.has(person.identity)}
       menu={tileMenu(person)}
+      large={!highlighted && speakers.length === 1}
     />
   );
   let content;
   if (speakers.length === 0) {
     content = <p className="stage__empty">Nobody is on the stage yet.</p>;
   } else if (!highlighted) {
-    content = <ul className="stage-grid">{speakers.map(tile)}</ul>;
+    const layout = speakers.length === 1 ? 'stage-grid--one' : 'stage-grid--many';
+    content = <ul className={`stage-grid ${layout}`}>{speakers.map(tile)}</ul>;
   } else {
     const others = speakers.filter((s) => s !== highlighted);
     content = (

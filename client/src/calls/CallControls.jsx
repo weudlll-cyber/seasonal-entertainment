@@ -7,9 +7,10 @@
 //              Speakers: microphone, camera, share screen (first a short "use headphones"
 //              hint, since the share carries sound where the browser allows), then leave the
 //              stage. Member listeners: raise or lower the hand (guests have none). Organisers:
-//              end the call for everyone (red, asks first). Everyone: leave the call. On/off
-//              shows in the icon and colour (microphone off: slashed and red) and in
-//              aria-pressed.
+//              end the call for everyone (red, asks first). Everyone: leave the call. A toggle's
+//              name and tooltip say what a click will do ("Mute microphone", "Stop sharing");
+//              its icon and colour show the current state (slashed and red: microphone or
+//              camera off; slashed and highlighted: sharing); aria-pressed is the state.
 // ============================================================
 
 import { useState } from 'react';
@@ -74,21 +75,21 @@ export default function CallControls({ me, local, host, controls }) {
         <>
           <ControlButton
             icon={micOn ? 'mic' : 'micOff'}
-            label="Microphone"
+            label={micOn ? 'Mute microphone' : 'Unmute microphone'}
             pressed={micOn}
             tone={micOn ? '' : 'off'}
             onClick={controls.toggleMicrophone}
           />
           <ControlButton
             icon={cameraOn ? 'camera' : 'cameraOff'}
-            label="Camera"
+            label={cameraOn ? 'Turn camera off' : 'Turn camera on'}
             pressed={cameraOn}
             tone={cameraOn ? '' : 'off'}
             onClick={controls.toggleCamera}
           />
           <ControlButton
-            icon="screen"
-            label="Share screen"
+            icon={sharing ? 'screenOff' : 'screen'}
+            label={sharing ? 'Stop sharing' : 'Share screen'}
             pressed={sharing}
             tone={sharing ? 'on' : ''}
             aria-expanded={sharing ? undefined : asking === 'share'}

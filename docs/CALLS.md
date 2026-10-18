@@ -178,13 +178,18 @@ chat (read-only after the end).
   the stage's top left: "<name> is sharing the screen" (a sound icon when the share carries
   audio), "Show all speakers" for organisers, "Put me in the spotlight" / "Leave the spotlight"
   for a speaker. Organisers have a "…" menu on every other speaker (Spotlight, Mute, Remove from
-  the stage — this one asks first). Top right: **Full screen** (the browser's Fullscreen API;
+  the stage — this one asks first). Cameras: a lone speaker's camera is never cropped; in the
+  grid each picture takes its camera's shape (docs/DESIGN.md, "Call page"). Top right: **Full
+  screen** (the browser's Fullscreen API;
   Esc or the button leaves it; not shown where the API is unavailable).
 - **Control bar**: one row of round icon buttons, each with a visible tooltip and its name.
   Speakers: microphone, camera, share screen, then leave the stage; member listeners: raise or
   lower the hand (guests have none); organisers: end the call for everyone (red; asks first);
-  everyone: leave the call. Off is slashed and red (microphone, camera), sharing is in the accent
-  colour, a raised hand in autumn orange.
+  everyone: leave the call. A toggle's name and tooltip say what a click will do, its icon the
+  current state (2026-10-18, SE-CALLS-4): **Mute microphone** (microphone) / **Unmute
+  microphone** (slashed microphone, red); **Turn camera off** (camera) / **Turn camera on**
+  (slashed camera, red); **Share screen** (screen) / **Stop sharing** (slashed screen,
+  highlighted). `aria-pressed` holds the state; a raised hand shows in autumn orange.
 - **Listeners**: collapsed by default to one row — every raised hand first (organisers never miss
   one; more than fit scroll sideways), then a few more chips — with "+N" and "Show all
   listeners"; expanded, "Find a listener" (the site's search field) and the whole list, scrolling
