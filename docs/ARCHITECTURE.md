@@ -414,7 +414,8 @@ scripts/
   calls-dev.mjs            npm run dev:calls (LiveKit in development mode)
   calls-binary.mjs         the pinned LiveKit binary, checksum-checked, in .calls-bin/
 deploy/calls/              the call service for a server: livekit.yaml, docker-compose.yml
-docs/                      this file and the backlog
+docs/                      this file, the backlog, and one file per area (AUTH, CHAT, CALLS,
+                           DESIGN) plus SCALING (the staged plan for growing beyond one VPS)
 ```
 
 ## Assets

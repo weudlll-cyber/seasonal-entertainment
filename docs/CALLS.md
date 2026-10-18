@@ -6,6 +6,33 @@ where the browser allows. The call service is **LiveKit** (open source, Apache-2
 self-hosted). For now it runs on the same VPS as the site; moving it to its own VPS is a
 configuration change only (below).
 
+## Architecture
+
+```
+browser ──https──> site (Node, /api/calls/*) ──RoomService API──> call service (LiveKit)
+   │                    │ issues a join token                          ▲
+   │                    └ sets permissions, attributes, room metadata ─┘
+   └──wss + WebRTC (UDP/TCP, TURN) with the token ─────────────────────┘
+```
+
+- **The site is the only authority.** It decides who may join and what they may do, and puts
+  exactly that into a short-lived token (`server/src/calls/grants.js`). Every later change —
+  hands, the stage, muting, the spotlight, ending — goes through the site's API, which audits
+  the organisers' actions and applies them on the call service with LiveKit's RoomService
+  (`server/src/calls/service.js`, the one door to it). Browsers cannot change their own
+  permissions, names, attributes or metadata.
+- **The call service** (LiveKit, self-hosted, `deploy/calls/`) carries the media: it receives
+  what speakers publish and forwards it to everyone else (an SFU); nothing is recorded.
+- **The browser** (`client/src/calls/`, livekit-client) connects with the token, shows what the
+  call service sends and what the site set (attributes, metadata), and asks the site for
+  everything else.
+- **The call chat** is a room of the site's own chat module (docs/CHAT.md), unlisted.
+- Server modules: `config.js` (keys), `service.js`, `schema.js`, `store.js`,
+  `participants.js`, `people.js`, `grants.js`, `spotlight.js` + `spotlightUpdate.js`,
+  `middleware.js`, routes (`routes.js` management, `joinRoutes.js`, `stageRoutes.js`,
+  `spotlightRoutes.js`); settings in `server/src/settings/`. Growing beyond one server:
+  docs/SCALING.md.
+
 ## Configuration
 
 The site reads three environment keys (`server/src/calls/config.js`, listed in `.env.example`):
@@ -155,6 +182,23 @@ Chrome's fake camera, microphone and screen: the organiser starts and joins on t
 member joins as a listener (the call server confirms they cannot publish), raises a hand, is
 invited and publishes audio, a screen share puts them in the spotlight for a guest listener (who
 has no hand button), and ending the call disconnects everyone.
+
+## Browser support for screen sharing with sound
+
+What browsers send with a screen share (as far as known on 2026-10-19 — **to be re-checked**
+before go-live and whenever browsers change):
+
+| Browser                  | Sound of a shared tab | System sound (whole screen)        | Notes                             |
+| ------------------------ | --------------------- | ---------------------------------- | --------------------------------- |
+| Chrome / Edge on Windows | yes                   | yes                                | the best choice for presentations |
+| Chrome on macOS          | yes                   | yes from Chrome 141 on macOS 14.2+ | older: tab sound only             |
+| Chrome / Edge on Linux   | yes                   | no                                 | tab sound only                    |
+| Firefox                  | no                    | no                                 | screen without sound              |
+| Safari                   | no                    | no                                 | screen without sound              |
+
+Whatever the browser, the page tells a presenter whose share has no sound: "Your browser can't
+send sound with screen sharing — for presentations with sound use Chrome or Edge." Listening and
+speaking work in all current browsers.
 
 ## The call service (`deploy/calls/`)
 

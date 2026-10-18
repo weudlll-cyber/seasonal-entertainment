@@ -24,6 +24,14 @@ An entry moves from part one to part two only when its branch is merged into `ma
   not decided.
 - **Chat embedding in other applications** — open. An embed route, allowed embedding origins
   (`frame-ancestors`), login inside an embedded frame; see docs/CHAT.md, last section.
+- **SE-CALLS-1 — community calls on LiveKit** — in review (PR #6, not merged yet). Piece 1: the
+  call service's configuration and portability (`deploy/calls/`, `npm run dev:calls`). Piece 2:
+  calls, roles and management, the call chat, admin settings. Piece 3: join tokens and stage
+  permissions (the server decides). Piece 4: the stage page. Piece 5: docs/CALLS.md,
+  docs/SCALING.md, the privacy draft (docs/CALLS.md).
+- **Call recording** — unconfirmed proposal, not decided. Calls are not recorded (privacy draft).
+- **Linking calls to the events calendar** — unconfirmed proposal, not decided: an event could
+  carry its call, and a call its event.
 - **Check a live room message right after login** — open. accounts.spec.js "register, log out
   and log in again" failed once on master CI (run 39120387612, 5 s wait): check whether a room
   message sent right after login, while the chat connection reopens as the new reader, can miss
