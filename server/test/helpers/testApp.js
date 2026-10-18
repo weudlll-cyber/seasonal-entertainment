@@ -29,8 +29,9 @@ const OFFLINE = {
   },
 };
 
-// previewNetwork: the pretend internet for link previews (helpers/previewNet.js).
-export function makeTestApp(overrides = {}, { previewNetwork } = {}) {
+// previewNetwork: the pretend internet for link previews (helpers/previewNet.js);
+// callService: a stand-in call service (helpers/calls.js); without one, calls are off.
+export function makeTestApp(overrides = {}, { previewNetwork, callService = null } = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), 'se-test-'));
   const base = readConfig({ SESSION_SECRET: 'test-secret', BCRYPT_COST: '4' });
   const config = {
@@ -55,6 +56,7 @@ export function makeTestApp(overrides = {}, { previewNetwork } = {}) {
     config,
     db,
     previewNetwork: previewNetwork ?? OFFLINE,
+    callService,
   });
   return {
     app,

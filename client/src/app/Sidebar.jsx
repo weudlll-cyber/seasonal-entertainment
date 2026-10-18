@@ -3,13 +3,14 @@
 // Path:        client/src/app/Sidebar.jsx
 // Project:     Seasonal Entertainment
 // Description: The site's navigation (docs/DESIGN.md, "Shell"). From 760px a 232px sidebar:
-//              brand, main items with icons, the admin item behind a divider, the account card
+//              brand, main items with icons (Calls with its LIVE badge after Chat), the admin
+//              item behind a divider, the account card
 //              with the theme toggle, legal links. Below 760px a top bar (brand, theme toggle,
 //              menu button) whose menu opens the same navigation as a drawer: closed by its
 //              close button, Escape or following a link; focus goes in and back.
 // ============================================================
 
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router';
 import logo from '../assets/seasonal-entertainment.jpg';
 import { useSession } from '../session/SessionContext.jsx';
@@ -17,7 +18,9 @@ import ThemeToggle from '../theme/ThemeToggle.jsx';
 import AccountCard from './AccountCard.jsx';
 import { useUnread } from '../chat/index.js';
 import Icon from './icons.jsx';
-import { LEGAL_NAV, MAIN_NAV, staffNavFor } from './navigation.js';
+import LiveBadge from '../calls/LiveBadge.jsx';
+import { useCallsSummary } from '../calls/useCallsSummary.js';
+import { CALLS_ITEM, LEGAL_NAV, MAIN_NAV, staffNavFor } from './navigation.js';
 import UnreadDots, { unreadSummary } from './UnreadDots.jsx';
 import './Sidebar.css';
 
@@ -40,6 +43,20 @@ function ChatNavItem({ item }) {
   const unread = useUnread();
   return (
     <NavItem item={item} label={`${item.label}${unreadSummary(unread)}`} extra={<UnreadDots />} />
+  );
+}
+
+// "Calls" with a red LIVE badge while a call is live; only when calls are set up (admins
+// always: the page tells them it is not configured).
+function CallsNavItem({ user }) {
+  const { configured, live } = useCallsSummary();
+  if (!configured && user?.role !== 'admin') return null;
+  return (
+    <NavItem
+      item={CALLS_ITEM}
+      label={live ? `${CALLS_ITEM.label}: a call is live` : undefined}
+      extra={live && <LiveBadge />}
+    />
   );
 }
 
@@ -105,7 +122,10 @@ export default function Sidebar() {
           <ul>
             {MAIN_NAV.map((item) =>
               item.to === '/chat' ? (
-                <ChatNavItem key={item.to} item={item} />
+                <Fragment key={item.to}>
+                  <ChatNavItem item={item} />
+                  <CallsNavItem user={user} />
+                </Fragment>
               ) : (
                 <NavItem key={item.to} item={item} />
               )

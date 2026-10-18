@@ -25,6 +25,8 @@ set on `:root`; `:root[data-theme='dark']` replaces the colours.
 | `--color-warning-surface` | `#fff4d6` | `#3a2e10` | the staff 2FA banner                            |
 | `--shadow-raised`         | soft      | deeper    | drawers, the chat button                        |
 | `--color-on-season`       | `#12161c` | `#12161c` | icons/text on a season colour (9.2:1 on autumn) |
+| `--color-live`            | `#b42318` | `#b42318` | the red LIVE badge (calls)                      |
+| `--color-on-live`         | `#ffffff` | `#ffffff` | text on the LIVE badge (6.6:1)                  |
 
 Season colours (`--color-spring/summer/autumn/winter`) are the same in both themes. Dark values
 were chosen so every text colour keeps WCAG AA (4.5:1) on every surface of its set: lowest pairs
@@ -60,7 +62,9 @@ taller. `client/e2e/layout.spec.js` checks this on every main page at 1440 x 900
 **From 760px wide** (the shell's one breakpoint): two columns.
 
 1. **Sidebar**, 232px (`--sidebar-width`): logo with the "SEASONAL / ENTERTAINMENT" wordmark; nav
-   items with stroke icons (Home, Games, Events, Chat, Seasonal Tokens = the info section); a
+   items with stroke icons (Home, Games, Events, Chat, Calls, Seasonal Tokens = the info
+   section; Calls only when calls are set up, admins always, with a red LIVE badge while a call
+   is live, docs/CALLS.md); a
    divider and Admin for admins only (as before; `staffNavFor` in `navigation.js`); at the bottom
    the account card (initial, name, role, linking to /account) or, for guests, "Log in" and
    "Register", with the theme toggle; then the legal links (Imprint, Privacy). The active item

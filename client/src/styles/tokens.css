@@ -16,6 +16,9 @@
   --color-winter: #04aaf7;
   /* Text and icons on a season colour (the chat button's autumn, ...): 9.2:1 on autumn */
   --color-on-season: #12161c;
+  /* The LIVE badge (calls): the same red in both themes, white text 6.6:1. */
+  --color-live: #b42318;
+  --color-on-live: #ffffff;
 
   /* Arena neutrals (decided 2026-10-17). Every text colour below keeps at least 4.5:1 on
      every surface of its set (values checked in docs/DESIGN.md). */

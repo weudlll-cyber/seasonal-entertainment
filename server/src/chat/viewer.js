@@ -50,6 +50,7 @@ function passes(level, viewer) {
 
 export const canRead = (room, viewer) => passes(room.readAccess, viewer);
 // Guests write only in rooms explicitly marked guest-writable, whatever the write level says.
+// A closed room (a call that has ended) is read-only for everyone.
 export const canWrite = (room, viewer) =>
-  passes(room.writeAccess, viewer) && (Boolean(viewer.user) || room.guestWritable);
+  !room.closed && passes(room.writeAccess, viewer) && (Boolean(viewer.user) || room.guestWritable);
 export const isModerator = (viewer) => viewer.staff;

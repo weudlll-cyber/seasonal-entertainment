@@ -307,9 +307,20 @@ const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork });
 // chat.sessions.ended(sessionId)                 logout: close that session's sockets
 // chat.sessions.accountChanged(userId, keepSid)  role, lock, password, 2FA: close the account's sockets
 // chat.sessions.presenceChanged()                 someone showed or hid their online status
+// chat.rooms.createUnlisted(room)               a room of another area (a call's chat), unlisted
+// chat.rooms.close(id)                           that room becomes read-only for everyone
+// chat.rooms.find(id) / findBySlug(slug)          read a room
 // chat.attach(httpServer)                        the WebSocket, once the server listens
 // await chat.start()                             first-start rooms and media, retention job
 ```
+
+**Unlisted and closed rooms** (2026-10-19, for calls, docs/CALLS.md): an unlisted room is left
+out of the room lists (`GET /api/chat/rooms`, the drawer, the admin's room editor) and the
+unread counters; `GET /api/chat/rooms?include=<slug>` adds it for a panel that shows it, when the
+viewer may read it. A closed room keeps its messages (normal retention) but nobody may write in
+it any more (`canWrite` is false, posting answers 403 `read_only`). A guest's chat identity
+(`chat/guestIdentity.js`: a unique guest name kept in the session) is given on the first
+message, report or call join.
 
 `api` is the `/api` router after sessions, the current user and the 2FA gate; call `mountChat`
 before the API's catch-all 404. Outside the chat area only `mount.js` (and the table definitions

@@ -26,6 +26,31 @@ The site reads three environment keys (`server/src/calls/config.js`, listed in `
 Generate a production pair on the call server with
 `docker run --rm livekit/livekit-server:v1.13.10 generate-keys`.
 
+## Calls on the site
+
+- **`/calls`**: live calls on top, then upcoming (planned time first) and the ten most recent.
+  The sidebar's **Calls** item (after Chat) carries a red **LIVE** badge while any call is live
+  (`GET /api/calls/summary`, public; asked on load, every minute and right after a change on
+  the page). Without a call service the item is hidden, except for admins, whose page says
+  "not configured".
+- **Who may do what**: organisers and admins (with their 2FA set up) create, start and end calls
+  (`POST /api/calls`, `/api/calls/:id/start`, `/api/calls/:id/end`; `allow('organiser')`, rate
+  limit `callManage` per account, an audit entry `call.create` / `call.start` / `call.end`
+  each). Everyone may see the list and a call.
+- **Status**: `scheduled` → `live` → `ended`, or `scheduled` → `ended` (cancelled); never back.
+  A change applies only from the expected status, so two organisers acting at once cannot both
+  succeed. Starting opens the call's room on the call service with the participant cap; ending
+  marks the call ended first (nobody can join any more), then deletes the room (everyone is
+  disconnected) and closes the call's chat.
+- **Call chat**: every call gets a chat room of the existing chat module (`call-<id>`, "Call:
+  <title>"), readable and writable by everyone; guests may write there when they may in General
+  at the moment the call is created (decided 2026-10-18). It is **unlisted** (not in the room
+  lists or the unread counters) and becomes **read-only** when the call ends; its messages
+  follow the normal retention (docs/CHAT.md, "Server").
+- **Settings** (Admin → Settings, `/api/admin/settings`, audited `setting.change`): speakers on
+  stage at most (default 10, 1–25) and participants per call at most (default 250, 2–1000;
+  the call service's UDP range is sized for 250).
+
 ## The call service (`deploy/calls/`)
 
 - `livekit.yaml` — LiveKit's configuration, no secrets: ports, the UDP range, TURN, room

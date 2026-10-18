@@ -354,6 +354,8 @@ client/                    React + Vite client
   src/pages/               one folder entry per page (component, CSS, test side by side)
   src/styles/              tokens.css (all design tokens, light and dark), fonts.css, base.css
   src/theme/               light/dark theme: rule, provider, toggle (docs/DESIGN.md)
+  src/calls/               community calls: /calls list, call form and card, LIVE badge,
+                           the sidebar's calls summary
   src/keys/                a member's key pair in the browser: provider, device copy
                            (IndexedDB), unlock, recovery code (docs/CHAT.md)
   public/theme-init.js     sets the theme before the first paint (external: strict CSP)
@@ -392,7 +394,9 @@ server/
   test/helpers/testApp.js  app on a temporary database for tests (chat.js: chat helpers,
                            chatSocket.js: a listening server and WebSocket clients)
   src/config.js            environment configuration
-  src/calls/               community calls (docs/CALLS.md): call service configuration
+  src/calls/               community calls (docs/CALLS.md): call service configuration, the
+                           call service adapter, schema, store, routes
+  src/settings/            admin-editable site settings: definitions, store, admin routes
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests
 shared/                    rules used by server and client (accountRules.js, eventSchedule.js,

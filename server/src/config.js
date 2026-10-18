@@ -147,6 +147,7 @@ export function readConfig(env = process.env) {
       chatGuestPost: { windowMs: 60_000, max: 20 }, // guest messages per IP
       chatNewGuest: { windowMs: 60 * 60_000, max: 20 }, // new guest names per IP
       chatUpload: { windowMs: 60_000, max: 10 }, // file uploads per member
+      callManage: { windowMs: 60_000, max: 30 }, // call management actions per organiser
     },
   };
   if (isProduction) checkProductionDeployment(env, config.publicOrigin);

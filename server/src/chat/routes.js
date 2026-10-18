@@ -19,37 +19,10 @@ import { addMessage, findMessage, listMessages } from './messages.js';
 import { storeMentions, withMentions } from './mentions.js';
 import { readMessageInput } from './messageInput.js';
 import { roomLoader } from './roomLoader.js';
+import { ensureGuest } from './guestIdentity.js';
 import { refuseSanctioned } from './sanctionRefusal.js';
-import {
-  activeSanction,
-  assignGuestName,
-  findRoom,
-  listRooms,
-  reportMessage,
-  touchGuest,
-} from './store.js';
+import { activeSanction, findRoom, listRooms, reportMessage } from './store.js';
 import { canRead, canWrite, chatViewer, isModerator } from './viewer.js';
-
-const saveSession = (req) =>
-  new Promise((resolve, reject) => req.session.save((e) => (e ? reject(e) : resolve())));
-
-// A guest's first message (or report) gives them a name nobody else holds, kept in the
-// session; later ones mark it as still in use. false (after answering 503) if no name is free.
-async function ensureGuest(req, res, viewer, db) {
-  if (viewer.user) return true;
-  if (viewer.guest) {
-    touchGuest(db, viewer.guest.id);
-    return true;
-  }
-  viewer.guest = assignGuestName(db);
-  if (!viewer.guest) {
-    sendError(res, 503, 'guest_names_exhausted', 'Guest chat is full right now. Please log in.');
-    return false;
-  }
-  req.session.chatGuest = viewer.guest;
-  await saveSession(req);
-  return true;
-}
 
 // Per-IP limits that apply to guests only: members are limited per account, and people
 // behind one address must not slow each other down. newGuestsOnly: only requests that would
@@ -72,9 +45,11 @@ export function chatRoutes(db, config, hub, previews, allowMessage) {
 
   const loadRoom = roomLoader(db);
 
+  // ?include=<slug>: also an unlisted room (a call's chat) when this viewer may read it.
   router.get('/rooms', allow('public'), (req, res) => {
     const viewer = chatViewer(req);
-    const rooms = listRooms(db)
+    const include = typeof req.query.include === 'string' ? req.query.include : null;
+    const rooms = listRooms(db, { include })
       .filter((room) => canRead(room, viewer))
       .map(({ slug, name, ...room }) => ({ slug, name, canWrite: canWrite(room, viewer) }));
     res.json({

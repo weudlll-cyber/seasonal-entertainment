@@ -3,7 +3,8 @@
 // Path:        server/src/app.js
 // Project:     Seasonal Entertainment
 // Description: Builds the Express app: security headers, CSRF origin check, sessions, the
-//              JSON API under /api (the chat area through mountChat) and, when a built client
+//              JSON API under /api (the chat area through mountChat; calls, docs/CALLS.md,
+//              with the call service built from config) and, when a built client
 //              exists, the static client with a fallback to index.html for client routes. No
 //              listen(), so tests drive it directly; app.locals.chat is the chat's handle.
 // ============================================================
@@ -13,6 +14,8 @@ import path from 'node:path';
 import express from 'express';
 import { bootstrapRoutes } from './accounts/bootstrap.js';
 import { adminAuditRoutes } from './admin/auditRoutes.js';
+import { callRoutes } from './calls/routes.js';
+import { createCallService } from './calls/service.js';
 import { mountChat } from './chat/mount.js';
 import { adminUserRoutes } from './admin/userRoutes.js';
 import { accountRoutes } from './accounts/routes.js';
@@ -28,11 +31,19 @@ import { csrfGuard } from './http/csrf.js';
 import { errorHandler, sendError } from './http/errors.js';
 import { securityHeaders } from './http/securityHeaders.js';
 import { currentUser, sessionMiddleware } from './http/session.js';
+import { adminSettingRoutes } from './settings/adminRoutes.js';
 import { staffTwoFactorGate } from './twofa/gate.js';
 import { twoFactorRoutes } from './twofa/routes.js';
 
-// previewNetwork: how link previews reach the internet (tests replace it).
-export function createApp({ buildInfo, config, db, previewNetwork }) {
+// previewNetwork: how link previews reach the internet (tests replace it); callService: the
+// call service (calls/service.js; tests hand in a stand-in), built from config by default.
+export function createApp({
+  buildInfo,
+  config,
+  db,
+  previewNetwork,
+  callService = createCallService(config.calls),
+}) {
   const app = express();
   app.disable('x-powered-by');
   // Behind a reverse proxy, req.ip and req.protocol come from its X-Forwarded-* headers.
@@ -68,6 +79,8 @@ export function createApp({ buildInfo, config, db, previewNetwork }) {
   api.use('/admin/events', adminEventRoutes(db));
   api.use('/games', gameRoutes(db));
   api.use('/admin/games', adminGameRoutes(db));
+  api.use('/admin/settings', adminSettingRoutes(db));
+  api.use('/calls', callRoutes(db, config, callService, chat));
 
   // Unknown API paths answer JSON, never the HTML page.
   api.use((_req, res) => sendError(res, 404, 'not_found', 'No such API endpoint.'));
