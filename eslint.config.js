@@ -19,7 +19,8 @@ export default [
   // Dead code and dead variables are errors, not warnings (see CLAUDE.md).
   {
     rules: {
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      // ignoreRestSiblings: "const { secret, ...shown } = x" leaves fields out on purpose.
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_', ignoreRestSiblings: true }],
     },
   },
 
@@ -29,13 +30,24 @@ export default [
     languageOptions: { globals: globals.node },
   },
 
-  // Browser: the React client and its Playwright specs.
+  // Shared rules: run in both, so only globals both have.
   {
-    files: ['client/src/**/*.{js,jsx}', 'client/e2e/**/*.js'],
+    files: ['shared/**/*.js'],
+    languageOptions: { globals: globals['shared-node-browser'] },
+  },
+
+  // Browser: the React client.
+  {
+    files: ['client/src/**/*.{js,jsx}'],
     languageOptions: {
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+  },
+  // Playwright specs run in Node; their page.evaluate callbacks run in the browser.
+  {
+    files: ['client/e2e/**/*.js'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },
   {
     files: ['client/src/**/*.jsx'],

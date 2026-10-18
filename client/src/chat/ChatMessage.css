@@ -1,0 +1,150 @@
+/* ============================================================
+   File:        ChatMessage.css
+   Path:        client/src/chat/ChatMessage.css
+   Project:     Seasonal Entertainment
+   Description: One chat message inside the module (under .se-chat): meta line, guest badge,
+                text, stickers / GIFs, link preview card, actions.
+   ============================================================ */
+
+.se-chat .chat-message {
+  padding: var(--chat-space-1) var(--chat-space-2);
+  border-bottom: 1px solid var(--chat-border);
+}
+
+.se-chat .chat-message--hidden {
+  opacity: 0.55;
+}
+
+.se-chat .chat-message__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--chat-space-1);
+  align-items: baseline;
+  color: var(--chat-muted);
+  font-size: 0.875rem;
+}
+
+.se-chat .chat-message__meta strong {
+  color: var(--chat-text);
+}
+
+.se-chat .chat-message__text {
+  margin: 0.25rem 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.se-chat .chat-message__media {
+  margin: 0.25rem 0;
+}
+
+/* Stickers at one fixed size; GIFs at most 240 px wide, never wider than the column. */
+.se-chat .chat-media--sticker {
+  width: 128px;
+  height: 128px;
+  object-fit: contain;
+}
+
+.se-chat .chat-media--gif {
+  width: auto;
+  max-width: min(240px, 100%);
+  height: auto;
+}
+
+.se-chat .chat-media__toggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.se-chat .chat-message__removed {
+  margin: 0.25rem 0;
+  font-style: italic;
+  color: var(--chat-muted);
+}
+
+.se-chat .chat-message__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--chat-space-1);
+  font-size: 0.8125rem;
+}
+
+.se-chat .chat-badge {
+  padding: 0 0.375rem;
+  border: 1px solid var(--chat-border-strong);
+  border-radius: var(--chat-radius);
+  font-size: 0.75rem;
+}
+
+/* Link preview card: compact, image left when there is room. */
+.se-chat .chat-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--chat-space-1);
+  max-width: 32rem;
+  margin: 0.25rem 0;
+  padding: var(--chat-space-1);
+  border: 1px solid var(--chat-border);
+  border-left: 3px solid var(--chat-accent);
+  border-radius: var(--chat-radius);
+}
+
+.se-chat .chat-preview__image {
+  width: 6rem;
+  height: auto;
+  max-height: 6rem;
+  object-fit: cover;
+  border-radius: var(--chat-radius);
+}
+
+.se-chat .chat-preview__text {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.se-chat .chat-preview__site,
+.se-chat .chat-preview__description {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--chat-muted);
+  overflow-wrap: anywhere;
+}
+
+.se-chat .chat-preview__title {
+  font-weight: var(--chat-strong);
+  overflow-wrap: anywhere;
+}
+
+/* An uploaded file: an image thumbnail (click: full image), or a PDF card. */
+.se-chat .chat-file {
+  display: inline-flex;
+  margin: 0.25rem 0;
+}
+
+.se-chat .chat-file--image img {
+  display: block;
+  max-width: min(240px, 100%);
+  height: auto;
+  border-radius: var(--chat-radius);
+}
+
+.se-chat .chat-file--pdf {
+  flex-wrap: wrap;
+  gap: var(--chat-space-1);
+  align-items: baseline;
+  padding: var(--chat-space-1);
+  border: 1px solid var(--chat-border);
+  border-radius: var(--chat-radius);
+}
+
+.se-chat .chat-file__name {
+  font-weight: var(--chat-strong);
+  overflow-wrap: anywhere;
+}
+
+.se-chat .chat-file__size {
+  color: var(--chat-muted);
+  font-size: 0.8125rem;
+}

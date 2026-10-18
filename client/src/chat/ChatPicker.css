@@ -1,0 +1,94 @@
+/* ============================================================
+   File:        ChatPicker.css
+   Path:        client/src/chat/ChatPicker.css
+   Project:     Seasonal Entertainment
+   Description: The chat picker inside the module (.se-chat): toggle button, a scrolling panel
+                with tabs, grouped grids of emojis and of sticker / GIF thumbnails.
+   ============================================================ */
+
+.se-chat .chat-picker {
+  display: grid;
+  gap: var(--chat-space-1);
+  min-width: 0;
+}
+
+.se-chat .chat-picker__panel {
+  max-height: 18rem;
+  overflow-y: auto;
+  padding: var(--chat-space-1);
+  border: 1px solid var(--chat-border-strong);
+  border-radius: var(--chat-radius);
+  background: var(--chat-bg);
+}
+
+.se-chat .chat-picker__heading {
+  margin: var(--chat-space-1) 0 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--chat-muted);
+}
+
+.se-chat .chat-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
+  gap: 0.25rem;
+}
+
+.se-chat .chat-picker__emoji {
+  min-height: 2.5rem;
+  border: 0;
+  border-radius: var(--chat-radius);
+  background: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.se-chat .chat-picker__emoji:hover,
+.se-chat .chat-picker__emoji:focus-visible {
+  background: var(--chat-border);
+}
+
+.se-chat .chat-picker__tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--chat-border);
+}
+
+.se-chat .chat-picker__tab {
+  padding: 0.25rem var(--chat-space-1);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.se-chat .chat-picker__tab[aria-selected='true'] {
+  border-bottom-color: var(--chat-accent);
+  font-weight: var(--chat-strong);
+}
+
+.se-chat .chat-picker__grid--sticker,
+.se-chat .chat-picker__grid--gif {
+  grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
+}
+
+.se-chat .chat-picker__media {
+  padding: 0.25rem;
+  border: 0;
+  border-radius: var(--chat-radius);
+  background: none;
+  cursor: pointer;
+}
+
+.se-chat .chat-picker__media:hover,
+.se-chat .chat-picker__media:focus-visible {
+  background: var(--chat-border);
+}
+
+.se-chat .chat-picker__media img {
+  display: block;
+  width: 100%;
+  height: 4rem;
+  object-fit: contain;
+}
