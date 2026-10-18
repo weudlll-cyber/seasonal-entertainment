@@ -319,8 +319,9 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
 
 `server/src/http/securityHeaders.js` (helmet) sends a strict Content-Security-Policy on every
 response: scripts, styles, fonts and connections only from this origin, images from this origin
-or `data:` URLs, no plugins, no framing (`frame-ancestors 'none'`), no inline script or style,
-no JavaScript `eval`. `script-src` also has `'wasm-unsafe-eval'` (added and confirmed by the
+or `data:` URLs, no plugins, no framing (`frame-ancestors 'none'`; only the embedded chat
+under `/embed/` may be framed, by this origin alone: docs/EMBED.md), no inline script or
+style, no JavaScript `eval`. `script-src` also has `'wasm-unsafe-eval'` (added and confirmed by the
 owner 2026-10-18): it allows
 compiling WebAssembly only, which the browser's cryptography needs (libsodium, `shared/crypto.js`,
 docs/AUTH.md); the module itself is a same-origin file.
@@ -347,7 +348,10 @@ client/                    React + Vite client
   src/components/          shared UI pieces (form fields, forms, the busy submit button)
   src/chat/                the chat module: <ChatPanel> (index.js is its only entry), live
                            connection, composer, picker, messages, styles (docs/CHAT.md)
-  src/devPages/            test-only pages, routed by the Vite dev server only
+  src/devPages/            test-only pages, routed by the Vite dev server only (chat panels,
+                           the embedded chat's demo)
+  src/embed/               the embedded chat for iframes on this site (/embed/chat) and its
+                           postMessage API (docs/EMBED.md)
   src/admin/               admin area (/admin): layout, users, audit log, info editor; one section each
   src/components/Markdown.jsx  the one safe Markdown renderer
   e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels,

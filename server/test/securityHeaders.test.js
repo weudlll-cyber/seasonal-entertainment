@@ -2,8 +2,9 @@
 // File:        securityHeaders.test.js
 // Path:        server/test/securityHeaders.test.js
 // Project:     Seasonal Entertainment
-// Description: Guards the security headers on API and page responses, and the client-route
-//              fallback that serves index.html for deep links.
+// Description: Guards the security headers on API and page responses, who may frame what
+//              (frame-ancestors 'self' for the embedded chat under /embed/ only, 'none'
+//              elsewhere), and the client-route fallback that serves index.html for deep links.
 // ============================================================
 
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -43,6 +44,33 @@ describe('security headers', () => {
   it('sends them on page responses too', async () => {
     const res = await t.client().get('/events');
     expect(res.headers['content-security-policy']).toContain("default-src 'self'");
+  });
+});
+
+describe('framing (frame-ancestors per route)', () => {
+  const ancestors = async (url) => {
+    const csp = (await t.client().get(url)).headers['content-security-policy'];
+    return csp
+      .split(';')
+      .find((d) => d.trim().startsWith('frame-ancestors'))
+      .trim();
+  };
+
+  it("lets only this site's own pages frame the embedded chat", async () => {
+    const res = await t.client().get('/embed/chat?room=general&theme=dark');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('<title>shell</title>');
+    expect(await ancestors('/embed/chat?room=general')).toBe("frame-ancestors 'self'");
+    // Otherwise the same policy as every page.
+    const embed = res.headers['content-security-policy'].replace(/frame-ancestors [^;]+/, '');
+    const page = (await t.client().get('/events')).headers['content-security-policy'];
+    expect(embed).toBe(page.replace(/frame-ancestors [^;]+/, ''));
+  });
+
+  it('frames nothing else: pages, look-alike paths and the API stay unframeable', async () => {
+    for (const url of ['/', '/chat', '/events', '/embedded', '/embed', '/api/health']) {
+      expect(await ancestors(url)).toBe("frame-ancestors 'none'");
+    }
   });
 });
 

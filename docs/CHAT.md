@@ -359,18 +359,17 @@ message, report or call join.
 before the API's catch-all 404. Outside the chat area only `mount.js` (and the table definitions
 the database layer registers) may be imported; `server/test/chatBoundary.test.js` enforces it.
 
-## Embedding in other applications (next task)
+## Embedding
 
-Still needed before the panel can run inside the race game or on another site:
+On pages of this same site (the games, under the main domain) the chat runs as an iframe of
+`/embed/chat?room=<slug>&theme=<light|dark|auto>`: only the compact panel, the site's login
+state, the room's rules, and a small postMessage API (ready, unread, resize; visible, theme)
+with strict origin checks. Only this origin may frame `/embed/*` (`frame-ancestors 'self'`);
+everything else keeps `frame-ancestors 'none'`. Details and the race game's snippet:
+docs/EMBED.md (SE-NIGHT-2 part 6).
 
-- **An embed route**: a minimal page that shows one `<ChatPanel>` (room and variant from the URL),
-  without the site's header and footer.
-- **Allowed embedding origins**: a configured list of sites that may frame the embed route.
-- **`frame-ancestors`** in the Content-Security-Policy of the embed route only, set from that list
-  (everything else keeps `frame-ancestors 'none'`).
-- **Login inside an embedded frame**: third-party cookies are blocked in many browsers, so the
-  session cookie (`SameSite=Lax`) does not reach a framed page; a sign-in flow that works in a
-  frame (for example a pop-up and a short-lived token) is needed for members.
-- **Cross-origin API and WebSocket**: the origin checks (CSRF and WebSocket) accept only this site
-  today; the embed route keeps all calls on this site's origin, so no CORS opening is needed as
-  long as the panel runs inside that frame.
+Still open for **other sites** (other origins): a configured list of allowed embedding origins
+for `frame-ancestors`, and a login that works inside a third-party frame (third-party cookies
+are blocked in many browsers, so the `SameSite=Lax` session cookie does not reach it; for
+example a pop-up and a short-lived token). The API and WebSocket calls stay on this site's
+origin inside the frame, so no CORS opening is needed either way.

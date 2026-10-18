@@ -1,0 +1,21 @@
+/* ============================================================
+   File:        EmbedChat.css
+   Path:        client/src/embed/EmbedChat.css
+   Project:     Seasonal Entertainment
+   Description: The embedded chat (/embed/chat): the compact panel fills the iframe, on the
+                site's page background, with a small margin; no site shell around it.
+   ============================================================ */
+
+.embed-chat {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: var(--space-2);
+  background: var(--color-background);
+}
+
+.embed-chat > .se-chat {
+  flex: 1;
+  min-height: 0;
+}

@@ -22,8 +22,10 @@ An entry moves from part one to part two only when its branch is merged into `ma
   docs/AUTH.md, "Login key split".
 - **Operating-system notifications for mentions and direct messages** — unconfirmed proposal,
   not decided.
-- **Chat embedding in other applications** — open. An embed route, allowed embedding origins
-  (`frame-ancestors`), login inside an embedded frame; see docs/CHAT.md, last section.
+- **Chat embedding on other sites** — open. The embed route exists for this site's own pages
+  (SE-NIGHT-2 part 6, docs/EMBED.md); other origins still need a configured list of allowed
+  embedding origins (`frame-ancestors`) and a login inside a third-party frame; see
+  docs/CHAT.md, "Embedding".
 - **Call recording** — unconfirmed proposal, not decided. Calls are not recorded (privacy draft).
 - **Linking calls to the events calendar** — unconfirmed proposal, not decided: an event could
   carry its call, and a call its event.
@@ -51,6 +53,10 @@ An entry moves from part one to part two only when its branch is merged into `ma
 - **Password key derivation freezes the page** — closed by SE-NIGHT-2 part 3 (PR #7, not merged
   yet): Argon2id runs in a same-origin Web Worker; password buttons read "Checking…"; no CSP
   change (docs/AUTH.md, "Off the main thread").
+- **Chat embedding on this site's own pages** — closed by SE-NIGHT-2 part 6 (PR #7, not merged
+  yet): `/embed/chat` with the site's login state, a postMessage API with origin checks,
+  `frame-ancestors 'self'` for `/embed/*` only, a demo page and docs/EMBED.md with the race
+  game's snippet.
 - **Cleanup: one fake WebSocket, one media library load** — closed by SE-NIGHT-2 part 5 (PR #7,
   not merged yet): the six per-test fake sockets replaced by client/src/test/fakeSocket.js; the
   sticker/GIF library loaded once per page and shared (client/src/chat/mediaLibrary.js).
