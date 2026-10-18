@@ -21,6 +21,7 @@ import SpeakerTile from './SpeakerTile.jsx';
 import { shownLarge } from './stageModel.js';
 import { TrackVideo, participantOf, trackOf } from './TrackMedia.jsx';
 import './stage.css';
+import './stageOverlay.css';
 
 function Highlighted({ person, room }) {
   const screen = trackOf(room, person.identity, Track.Source.ScreenShare);
