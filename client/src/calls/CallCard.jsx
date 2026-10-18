@@ -3,10 +3,12 @@
 // Path:        client/src/calls/CallCard.jsx
 // Project:     Seasonal Entertainment
 // Description: One call in the /calls list: title, LIVE mark, when (planned, started or
-//              ended, in the browser's local time), description, who created it; for
-//              organisers and admins the Start / End button its status allows.
+//              ended, in the browser's local time), description, who created it, a link to
+//              the call's page; for organisers and admins the Start / End button its status
+//              allows.
 // ============================================================
 
+import { Link } from 'react-router';
 import LiveBadge from './LiveBadge.jsx';
 
 const when = (iso) =>
@@ -29,6 +31,11 @@ export default function CallCard({ call, onAction }) {
       <p className="call-card__time">{timeLine(call)}</p>
       {call.description && <p>{call.description}</p>}
       {call.createdBy && <p className="call-card__by">Created by {call.createdBy}</p>}
+      <p>
+        <Link to={`/calls/${call.id}`} className={call.status === 'live' ? 'button' : undefined}>
+          {call.status === 'live' ? `Open ${call.title}` : `Details of ${call.title}`}
+        </Link>
+      </p>
       {onAction && call.status !== 'ended' && (
         <div className="call-card__actions">
           {call.status === 'scheduled' && (

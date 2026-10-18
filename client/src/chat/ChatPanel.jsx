@@ -21,10 +21,16 @@ import './ChatFavourites.css';
 
 // room: slug of the room shown; when it changes the panel follows (a host's room picker).
 // variant: 'full' (a page of its own) or 'compact' (a box beside other content).
-// showRoomTabs: let the reader switch between their rooms (favourites first, RoomTabs).
-export default function ChatPanel({ room: roomInput, variant = 'full', showRoomTabs = false }) {
+// showRoomTabs: let the reader switch between their rooms (favourites first, RoomTabs);
+// unlisted: the room is not in the room lists (a call's chat), so it is asked for by name.
+export default function ChatPanel({
+  room: roomInput,
+  variant = 'full',
+  showRoomTabs = false,
+  unlisted = false,
+}) {
   const { user } = useSession();
-  const chat = useChatRoom(roomInput, user);
+  const chat = useChatRoom(roomInput, user, unlisted);
   const { info, room, current } = chat;
   const roomName = current?.name ?? room;
 

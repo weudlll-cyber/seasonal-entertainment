@@ -73,7 +73,6 @@ export default function CallsPage() {
     <section className="page page--wide">
       <h1>Calls</h1>
       <FormMessage error={error} />
-      {data?.canManage && <CallForm onCreate={create} />}
       {data &&
         SECTIONS.map(([key, title]) => (
           <section key={key} aria-label={title} className="calls-section">
@@ -89,6 +88,8 @@ export default function CallsPage() {
             )}
           </section>
         ))}
+      {/* After the lists: live calls stay on top (decided 2026-10-18). */}
+      {data?.canManage && <CallForm onCreate={create} />}
     </section>
   );
 }

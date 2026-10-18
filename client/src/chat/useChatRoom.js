@@ -47,8 +47,9 @@ export function applyEvent(list, event, moderator) {
 
 // roomInput: the panel's `room` input. The reader's tab choice holds while the input stays the
 // same; a new input (the host switched rooms) wins.
-export function useChatRoom(roomInput, user) {
-  const rooms = useChatRooms();
+// unlisted: the input names an unlisted room (a call's chat), which the room list then includes.
+export function useChatRoom(roomInput, user, unlisted = false) {
+  const rooms = useChatRooms(unlisted ? roomInput : null);
   const info = rooms.info; // { rooms, me }
   const [choice, setChoice] = useState({ input: roomInput, room: roomInput });
   const room = choice.input === roomInput ? choice.room : roomInput;

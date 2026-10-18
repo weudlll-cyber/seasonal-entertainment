@@ -21,6 +21,7 @@ import AdminUsersPage from '../admin/AdminUsersPage.jsx';
 import InfoEditorPage from '../admin/InfoEditorPage.jsx';
 import { KeyProvider } from '../keys/KeyContext.jsx';
 import AccountPage from '../pages/AccountPage.jsx';
+import CallPage from '../pages/CallPage.jsx';
 import CallsPage from '../pages/CallsPage.jsx';
 import ChatPage from '../pages/ChatPage.jsx';
 import EventsPage from '../pages/EventsPage.jsx';
@@ -56,6 +57,7 @@ export default function App() {
               <Route path="games" element={<GamesPage />} />
               <Route path="chat" element={<ChatPage />} />
               <Route path="calls" element={<CallsPage />} />
+              <Route path="calls/:id" element={<CallPage />} />
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<RegisterPage />} />
               <Route

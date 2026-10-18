@@ -113,6 +113,49 @@ Who is shown large is stored by the server and set as the room's metadata
 - Stopping one's share, or leaving the stage, releases one's own spotlight (back to all
   speakers).
 
+## The call page
+
+`/calls/:id` (`client/src/pages/CallPage.jsx`, parts in `client/src/calls/`; layout:
+docs/DESIGN.md, "Call page"). Not live: whether it has not started or has ended, and the call's
+chat (read-only after the end).
+
+- **Join call**: nothing connects and no sound plays before this button — browsers block sound
+  until the visitor has clicked (`useCallRoom.js`: the join token, `room.connect`, then
+  `room.startAudio()`).
+- **Stage**: an adaptive grid of up to 10 speakers (camera or initial, name, Host/Speaker,
+  microphone state, a ring for whoever talks); with a spotlight, that speaker large — their
+  shared screen with their camera inset and "<name> is sharing the screen" (a sound icon when
+  the share carries audio), or their camera — and the other speakers in a strip. Organisers:
+  Spotlight / Mute / Remove on each speaker and "Show all speakers"; a speaker: "Put me in the
+  spotlight".
+- **Listeners**: how many, "Find a listener", raised hands first and marked, guests tagged,
+  hidden listeners ("A listener") last; organisers invite members from here.
+- **Controls**: speakers — Microphone, Camera, Share screen, Leave the stage; member listeners —
+  Raise / Lower hand (guests have none); organisers — End call for everyone; everyone — Leave
+  call.
+- **Chat**: the chat module's `ChatPanel` with the call's room (`unlisted`), on the right; on
+  narrow screens a drawer over the page.
+
+**Screen sharing with sound**: Share screen first shows "use headphones, so the call does not
+hear itself (echo)"; Share now asks the browser for the screen with its sound
+(`getDisplayMedia` audio, system audio included where supported, the presenter's own playback
+of it suppressed where supported). When the share comes without a sound track the page says:
+"Your browser can't send sound with screen sharing — for presentations with sound use Chrome or
+Edge." The presenter's page tells the server when the share starts and stops (it takes the
+spotlight).
+
+**Bandwidth**: listeners never publish. The page connects with adaptive stream (each video is
+received at the size it is shown), dynacast (layers nobody watches are paused) and simulcast
+(speakers send several qualities), so each listener gets the layer that suits them.
+
+**Tests**: `client/src/calls/*.test.*` (rules, parts, the page with a stand-in for
+livekit-client) and `client/e2e/calls.spec.js`, which runs a whole call against the run's own
+LiveKit server (port 7890, the pinned binary; CI fetches it checksum-checked first) with
+Chrome's fake camera, microphone and screen: the organiser starts and joins on the stage, a
+member joins as a listener (the call server confirms they cannot publish), raises a hand, is
+invited and publishes audio, a screen share puts them in the spotlight for a guest listener (who
+has no hand button), and ending the call disconnects everyone.
+
 ## The call service (`deploy/calls/`)
 
 - `livekit.yaml` — LiveKit's configuration, no secrets: ports, the UDP range, TURN, room

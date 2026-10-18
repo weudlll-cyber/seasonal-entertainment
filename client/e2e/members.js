@@ -27,6 +27,7 @@ export const MEMBERS = [
   'rpwriter',
   'unreadreader',
   'unreadwriter',
+  'callmember',
 ];
 
 export async function seedMembers(databasePath) {

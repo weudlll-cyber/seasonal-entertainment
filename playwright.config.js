@@ -7,14 +7,21 @@
 //              temporary database (never the dev one). A Vite dev server on 5390 proxies to
 //              that server, so devProxy.spec.js tests the development path too. scripts/e2e.mjs
 //              creates and deletes the database directory; a direct "npx playwright test" gets
-//              one of its own in the system temp folder.
+//              one of its own in the system temp folder. Calls use the run's own LiveKit server
+//              in development mode (scripts/calls-dev.mjs, pinned and checksum-checked binary).
 // ============================================================
 
 import { existsSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
-import { DEV_PROXY_PORT, DEV_PROXY_URL, SERVER_PORT as port } from './client/e2e/ports.js';
+import {
+  CALLS_PORT,
+  CALLS_URL,
+  DEV_PROXY_PORT,
+  DEV_PROXY_URL,
+  SERVER_PORT as port,
+} from './client/e2e/ports.js';
 
 // Without a build the server answers the API only, and every page check would fail obscurely.
 if (!existsSync('client/dist/index.html')) {
@@ -41,6 +48,17 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
     {
+      command: 'node scripts/calls-dev.mjs',
+      // LiveKit answers "OK" on its HTTP port once it is up.
+      url: `http://127.0.0.1:${CALLS_PORT}`,
+      env: { CALLS_DEV_PORT: String(CALLS_PORT) },
+      // Development mode logs every packet at debug level: far too much for the test output.
+      stdout: 'ignore',
+      stderr: 'ignore',
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+    {
       command: 'node server/src/index.js',
       url: `http://127.0.0.1:${port}/api/health`,
       // Set explicitly so a local .env (dev database, bootstrap token) can never leak in.
@@ -57,6 +75,10 @@ export default defineConfig({
         BCRYPT_COST: '4',
         COOKIE_SECURE: 'false',
         PUBLIC_ORIGIN: '',
+        // LiveKit's development pair: accepted outside production only (docs/CALLS.md).
+        CALLS_URL,
+        CALLS_API_KEY: 'devkey',
+        CALLS_API_SECRET: 'secret',
       },
       // Always a fresh server, so a stale process can never answer for this build.
       reuseExistingServer: false,

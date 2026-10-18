@@ -114,6 +114,18 @@ checks the alignment, the one-line rows and the overlap at 1440 x 900 and 1280 x
   button — the hover background is clipped to the inner box and the focus ring (the accent
   outline of every control) is pulled in to the same rounded rectangle; never a circle.
 
+**Call page** (`/calls/:id`, design "Community Call – Bühne", docs/CALLS.md): the header across
+(title, LIVE badge, start time, how many speak and listen); on the left the stage, the control
+bar and the listeners, scrolling inside; on the right (22rem) the call's chat. Below 1000px the
+chat opens as a drawer over the page (a "Chat" button in the header). The site's chat button is
+not shown on a call page. Speaker tiles: camera picture or the name's initial, name, Host or
+Speaker, microphone state, an accent ring while talking; at least 12rem per column. The
+spotlight shows one speaker large (a shared screen with the camera inset in the corner, and the
+label "<name> is sharing the screen" with a sound icon when it carries audio), the others in a
+strip. Control buttons are icons with visible labels; on/off in `aria-pressed`. Raised hands
+come first in the listener list, marked with the hand icon on the active background; guests carry
+a "Guest" tag.
+
 ## Chat drawer
 
 On every page except `/chat` and `/admin/*` (`client/src/app/ChatDrawer.jsx`):

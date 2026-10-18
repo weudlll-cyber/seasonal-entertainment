@@ -22,8 +22,10 @@ export default function Layout() {
   const { user } = useSession();
   const { offerRecovery } = useKeys();
   const { pathname } = useLocation();
-  // The full chat page has the chat already; the admin area keeps the screen to itself.
-  const chatButton = pathname !== '/chat' && !pathname.startsWith('/admin');
+  // The full chat page and a call page (its own chat) have the chat already; the admin area
+  // keeps the screen to itself.
+  const chatButton =
+    pathname !== '/chat' && !/^\/calls\/\d+/.test(pathname) && !pathname.startsWith('/admin');
   return (
     <div className="shell">
       <Sidebar />

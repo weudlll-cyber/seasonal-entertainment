@@ -36,6 +36,7 @@
 .form input[type='password'],
 .form input[type='search'],
 .form input[type='time'],
+.form input[type='datetime-local'],
 .form input[type='number'],
 .form input[type='url'],
 .form textarea,

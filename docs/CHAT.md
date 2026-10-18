@@ -21,6 +21,7 @@ import { ChatPanel } from '../chat/index.js';
 | `room`                   | string (room slug)      | required         | the room shown; the panel follows when it changes                        |
 | `variant`                | `'full'` \| `'compact'` | `'full'`         | a page of its own, or a box beside other content                         |
 | `showRoomTabs`           | boolean                 | `false`          | let the reader switch between the rooms they may read                    |
+| `unlisted`               | boolean                 | `false`          | `room` is an unlisted room (a call's chat): asked for by name            |
 | `--chat-list-max-height` | CSS custom property     | `60vh` / `18rem` | cap of the message list; `none` lets it fill a container of fixed height |
 | account                  | from `SessionProvider`  | —                | who is signed in (`client/src/session`); a guest if no                   |
 
