@@ -12,11 +12,12 @@
 import { useEffect, useState } from 'react';
 import ChatTabs from '../app/ChatTabs.jsx';
 import DirectTab from '../app/DirectTab.jsx';
-import { ChatPanel, onDirectRequest } from '../chat/index.js';
+import { ChatPanel, onDirectRequest, useUnread } from '../chat/index.js';
 import { useSession } from '../session/SessionContext.jsx';
 
 export default function ChatPage() {
   const { user } = useSession();
+  const unread = useUnread();
   const [tab, setTab] = useState('rooms');
   useEffect(() => onDirectRequest(() => setTab('direct')), []);
   // Guests have no direct messages: for them there are only rooms.
@@ -24,7 +25,14 @@ export default function ChatPage() {
   return (
     <section className="chat-page">
       <h1 className="chat-page__title">Chat</h1>
-      {user && <ChatTabs value={shown} onChange={setTab} idPrefix="chat-page" />}
+      {user && (
+        <ChatTabs
+          value={shown}
+          onChange={setTab}
+          idPrefix="chat-page"
+          counts={{ rooms: unread.roomTotal, direct: unread.directTotal }}
+        />
+      )}
       <div
         id="chat-page-panel"
         className="chat-page__panel"

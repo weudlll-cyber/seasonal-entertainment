@@ -4,7 +4,7 @@
 // Project:     Seasonal Entertainment
 // Description: The chat module's direct-message view (public, index.js): the member's private
 //              conversations — favourite members first (with an online mark), then the most
-//              recent, each with an unread dot — or one conversation (DirectConversation). The
+//              recent, each with its unread count — or one conversation (DirectConversation). The
 //              host passes the member's unlocked key (and shows the unlock step while there is
 //              none; docs/CHAT.md). Members only.
 // ============================================================
@@ -14,6 +14,8 @@ import ChatNotice from './ChatNotice.jsx';
 import DirectConversation from './DirectConversation.jsx';
 import { showDirect, useDirectPartner } from './directView.js';
 import { useDirectConversations } from './useDirect.js';
+import { useUnread } from './unread.js';
+import UnreadCount from './UnreadCount.jsx';
 import './ChatPanel.css';
 import './ChatPanelVariants.css';
 import './ChatPicker.css';
@@ -21,6 +23,7 @@ import './ChatDirect.css';
 
 function ConversationList() {
   const { conversations, error } = useDirectConversations();
+  const unread = useUnread();
   if (error) return <ChatNotice error={error} />;
   if (!conversations) return null;
   if (conversations.length === 0) {
@@ -33,7 +36,7 @@ function ConversationList() {
   }
   return (
     <ul className="chat-direct-list" aria-label="Private conversations">
-      {conversations.map(({ partner, favourite, unread }) => (
+      {conversations.map(({ partner, favourite }) => (
         <li key={partner.id}>
           <button
             type="button"
@@ -43,7 +46,11 @@ function ConversationList() {
             {favourite && <span aria-hidden="true">★ </span>}
             <span className="chat-direct-list__name">{partner.username}</span>
             {partner.online && <span className="chat-online">online</span>}
-            {unread && <span className="chat-unread-dot" role="img" aria-label="unread messages" />}
+            <UnreadCount
+              count={unread.direct(partner.id)}
+              kind="direct"
+              label={`${unread.direct(partner.id)} unread from ${partner.username}`}
+            />
           </button>
         </li>
       ))}

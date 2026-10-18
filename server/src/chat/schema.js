@@ -10,7 +10,8 @@
 //              (previews/schema.js); a report counts until a moderator marks it reviewed.
 //              Members' favourite rooms and favourite members (gone with the account).
 //              Direct messages between members: only ciphertext, nonce and who/which keys
-//              (end-to-end encrypted, docs/CHAT.md), and how far each member has read.
+//              (end-to-end encrypted, docs/CHAT.md). How far each member has read, per room
+//              and per direct conversation (chat_reads: the unread counters).
 //              Reports of a private conversation: the reason, and only when the reporter chose
 //              to share them, copies of the selected messages as the reporter provided them.
 //              migrateChat() brings older databases up.
@@ -95,11 +96,12 @@ CREATE TABLE IF NOT EXISTS direct_messages (
 CREATE INDEX IF NOT EXISTS direct_by_sender ON direct_messages (sender_id, recipient_id, id);
 CREATE INDEX IF NOT EXISTS direct_by_recipient ON direct_messages (recipient_id, sender_id, id);
 CREATE INDEX IF NOT EXISTS direct_by_age ON direct_messages (created_at);
-CREATE TABLE IF NOT EXISTS direct_reads (
+CREATE TABLE IF NOT EXISTS chat_reads (
   user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  partner_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  scope        TEXT    NOT NULL CHECK (scope IN ('room', 'direct')),
+  target_id    INTEGER NOT NULL,
   last_read_id INTEGER NOT NULL,
-  PRIMARY KEY (user_id, partner_id)
+  PRIMARY KEY (user_id, scope, target_id)
 );
 CREATE TABLE IF NOT EXISTS direct_reports (
   id                  INTEGER PRIMARY KEY,
@@ -142,4 +144,8 @@ const ADDED_COLUMNS = [
   ['chat_reports', 'reviewed_at', 'TEXT'],
 ];
 
-export const migrateChat = (db) => addMissingColumns(db, ADDED_COLUMNS);
+export function migrateChat(db) {
+  addMissingColumns(db, ADDED_COLUMNS);
+  // Replaced by chat_reads (2026-10-18) before it was ever released; never held real data.
+  db.exec('DROP TABLE IF EXISTS direct_reads');
+}

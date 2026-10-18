@@ -10,9 +10,10 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup, configure } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 
-// findBy* waits up to 5 s instead of 1 s: a busy machine (e.g. during the full verify) must
-// not turn a correct screen into a failure. A real failure still fails, just later.
-configure({ asyncUtilTimeout: 5000 });
+// findBy* and waitFor wait up to 15 s instead of 1 s: tests derive keys with Argon2id, and a
+// heavily loaded machine (the full verify, other work running beside it) must not turn a correct
+// screen into a failure. A real failure still fails, just later.
+configure({ asyncUtilTimeout: 15_000 });
 
 afterEach(async () => {
   cleanup();

@@ -34,7 +34,7 @@ test('open, switch room, Escape, reload', async ({ page, playwright }) => {
   await page.reload();
   const main = page.locator('main');
   const before = await main.boundingBox();
-  const button = page.getByRole('button', { name: 'Chat', exact: true });
+  const button = page.getByRole('button', { name: /^Chat(:|$)/ });
   await button.click();
   const drawer = page.getByRole('dialog', { name: 'Chat' });
   await expect(drawer).toBeFocused();

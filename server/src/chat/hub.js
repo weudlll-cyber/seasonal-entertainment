@@ -81,6 +81,18 @@ export class ChatHub {
     }
   }
 
+  // To every account socket whose member may read `room` right now, subscribed or not (the
+  // unread counters). Guests have no counters and get nothing.
+  notifyReaders(room, event) {
+    if (!room) return;
+    const text = JSON.stringify(event);
+    for (const [socket, session] of this.sessions) {
+      if (session.data.userId === undefined || socket.readyState !== WebSocket.OPEN) continue;
+      const viewer = this.viewerOf(socket);
+      if (viewer?.user && canRead(room, viewer)) socket.send(text);
+    }
+  }
+
   // Accounts with an open chat socket right now: the "online" mark beside favourite members.
   onlineUserIds() {
     const ids = new Set();

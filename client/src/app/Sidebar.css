@@ -152,3 +152,8 @@
     background: var(--color-scrim);
   }
 }
+
+/* The "Chat" item's unread counters, at the end of the row. */
+.nav-item .unread-dots {
+  margin-left: auto;
+}

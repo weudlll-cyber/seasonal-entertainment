@@ -282,6 +282,9 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
   `Content-Security-Policy: default-src 'none'; sandbox`; the site never shows them itself.
   Moderators' **Remove file** deletes the files from disk and leaves "File removed" (audited,
   `chat.file_remove`). Reported messages keep their file.
+- **Unread counters** (docs/CHAT.md, "Unread counters"): read markers per member, room and
+  conversation (`chat_reads`); `GET /api/chat/unread` feeds one client store, kept live by
+  "activity" and "read" pushes (`hub.notifyReaders`, `hub.sendToUser`).
 - **Direct messages** (docs/CHAT.md, "Direct messages"): end-to-end encrypted between members;
   `server/src/chat/directRoutes.js` (`/api/chat/direct`) stores and relays ciphertext only, pushed
   to both members' sockets (`hub.sendToUser`); the client's `DirectPanel` (chat module) shows them

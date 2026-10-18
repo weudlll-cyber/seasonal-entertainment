@@ -155,3 +155,9 @@ a {
   flex: 1;
   min-height: 0;
 }
+
+/* The two unread counters side by side (UnreadDots). */
+.unread-dots {
+  display: inline-flex;
+  gap: 0.25rem;
+}

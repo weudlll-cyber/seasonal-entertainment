@@ -31,8 +31,10 @@ export default defineConfig({
   retries: 0,
   reporter: 'list',
   // Every password form derives keys with Argon2id in the browser (about 64 MiB,
-  // docs/AUTH.md); with several browsers busy at once that can pass the default 5 s wait.
-  expect: { timeout: 10_000 },
+  // docs/AUTH.md); with several browsers busy at once on a heavily loaded machine that can pass
+  // the default 5 s wait many times over. A real failure still fails, just later.
+  expect: { timeout: 20_000 },
+  timeout: 90_000,
   // Creates the run's admin (with 2FA) once, after the server is up.
   globalSetup: './client/e2e/globalSetup.js',
   use: { baseURL: `http://127.0.0.1:${port}` },
@@ -58,7 +60,7 @@ export default defineConfig({
       },
       // Always a fresh server, so a stale process can never answer for this build.
       reuseExistingServer: false,
-      timeout: 30_000,
+      timeout: 120_000,
     },
     {
       // The development setup: Vite serving the client source and proxying /api and /ws.
@@ -66,7 +68,7 @@ export default defineConfig({
       url: DEV_PROXY_URL,
       env: { CLIENT_PORT: String(DEV_PROXY_PORT), API_ORIGIN: `http://127.0.0.1:${port}` },
       reuseExistingServer: false,
-      timeout: 60_000,
+      timeout: 120_000,
     },
   ],
 });

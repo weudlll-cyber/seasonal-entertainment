@@ -24,6 +24,13 @@
   cursor: pointer;
 }
 
+/* The unread counters sit on the button's upper edge. */
+.chat-launcher__counts {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+}
+
 .chat-drawer {
   position: fixed;
   top: var(--space-2);

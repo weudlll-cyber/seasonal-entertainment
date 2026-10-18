@@ -24,7 +24,8 @@ import { sendError } from '../http/errors.js';
 import { positiveInteger, validBody } from '../http/validate.js';
 import { currentKeyId, publicKeysById } from '../keys/store.js';
 import { partnerHandlers } from './directPartner.js';
-import { addDirect, directConversations, listDirect, markDirectRead } from './directStore.js';
+import { markRead } from './readMarkers.js';
+import { addDirect, directConversations, listDirect } from './directStore.js';
 import { favouriteUsers } from './favouriteStore.js';
 import { refuseSanctioned } from './sanctionRefusal.js';
 import { activeSanction } from './store.js';
@@ -53,9 +54,7 @@ export function directRoutes(db, hub, allowMessage) {
       const known = byId.get(f.id);
       byId.set(
         f.id,
-        known
-          ? { ...known, favourite: true }
-          : { ...f, lastMessageAt: null, unread: false, favourite: true }
+        known ? { ...known, favourite: true } : { ...f, lastMessageAt: null, favourite: true }
       );
     }
     const conversations = [...byId.values()].map(({ id, username, ...rest }) => ({
@@ -122,7 +121,9 @@ export function directRoutes(db, hub, allowMessage) {
   router.post('/:id/read', allow('member'), ...partner, (req, res) => {
     const input = validBody(req, res, { lastId: positiveInteger('lastId') });
     if (!input) return;
-    markDirectRead(db, req.user.id, req.partner.id, input.lastId);
+    markRead(db, req.user.id, 'direct', req.partner.id, input.lastId);
+    // The member's other tabs recount.
+    hub.sendToUser(req.user.id, { type: 'read' });
     res.json({ ok: true });
   });
 

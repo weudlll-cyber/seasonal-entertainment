@@ -7,16 +7,18 @@
 //              pushed events (which name their room) go to that room's panels only. Reconnects
 //              after a drop and subscribes again; closes once the last panel has left. The
 //              server knows the reader from the session cookie at connect time only, so a new
-//              account (login, logout, switch) opens a fresh connection (connectAs). Direct
-//              messages need no subscription: the server pushes them to the account's sockets,
-//              and joinDirect() hands them to the direct-message views.
+//              account (login, logout, switch) opens a fresh connection (connectAs). Events
+//              for the account itself need no subscription — new direct messages, activity in a
+//              readable room and the member's own reads (the unread counters) — and
+//              joinPersonal() hands them on.
 // ============================================================
 
 const RECONNECT_MS = 3000;
 // An unused socket is closed after the current render, not during it: a panel that leaves and
 // comes straight back (React's StrictMode remounts every effect in development) reuses it.
 const listeners = new Map(); // room slug -> Set of event handlers
-const direct = new Set(); // handlers of direct-message events
+const PERSONAL = new Set(['direct', 'activity', 'read']); // events for the account itself
+const personal = new Set(); // their handlers
 let socket = null;
 let retry = null;
 let idle = null;
@@ -28,7 +30,7 @@ const socketUrl = () =>
   `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/chat`;
 
 const OPEN = 1; // WebSocket.OPEN
-const inUse = () => listeners.size > 0 || direct.size > 0;
+const inUse = () => listeners.size > 0 || personal.size > 0;
 const subscribeOn = (target, room) => target.send(JSON.stringify({ type: 'subscribe', room }));
 
 function open() {
@@ -38,7 +40,7 @@ function open() {
   current.onopen = () => listeners.forEach((_handlers, room) => subscribeOn(current, room));
   current.onmessage = (event) => {
     const data = JSON.parse(event.data);
-    if (data.type === 'direct') return direct.forEach((handler) => handler(data));
+    if (PERSONAL.has(data.type)) return personal.forEach((handler) => handler(data));
     const room = data.room ?? data.message?.room;
     listeners.get(room)?.forEach((handler) => handler(data));
   };
@@ -91,14 +93,15 @@ export function joinRoom(room, handler) {
   };
 }
 
-// Starts receiving direct-message events (the member's own); returns the function that stops.
-export function joinDirect(handler) {
+// Starts receiving the account's own events (handler gets each { type, ... }); returns the
+// function that stops.
+export function joinPersonal(handler) {
   clearTimeout(idle);
   idle = null;
-  direct.add(handler);
+  personal.add(handler);
   if (!socket && !retry) open();
   return () => {
-    direct.delete(handler);
+    personal.delete(handler);
     if (!inUse()) idle = setTimeout(closeWhenUnused, 0);
   };
 }

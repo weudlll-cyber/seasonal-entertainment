@@ -51,7 +51,7 @@ test('register, log out and log in again', async ({ page }) => {
   await expect(shell.getByRole('link', { name: 'Log in' })).toBeVisible();
 
   // A guest opens the chat drawer; it stays open while they log in.
-  await page.getByRole('button', { name: 'Chat', exact: true }).click();
+  await page.getByRole('button', { name: /^Chat(:|$)/ }).click();
   const drawer = page.getByRole('dialog', { name: 'Chat' });
   await expect(drawer.getByText(/You are a guest/)).toBeVisible();
 

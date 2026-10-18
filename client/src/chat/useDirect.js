@@ -11,8 +11,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, api } from '../api/http.js';
-import { useSession } from '../session/SessionContext.jsx';
-import { connectAs, joinDirect } from './connection.js';
+import { usePersonalEvents } from './usePersonalEvents.js';
 
 const crypto = () => import('@seasonal-entertainment/shared/crypto.js');
 
@@ -27,15 +26,10 @@ export function sortConversations(list) {
   ];
 }
 
-// Re-runs `load` whenever a direct message arrives for this member; the live connection
-// follows the account (connection.js).
+// Re-runs `load` whenever a direct message arrives for this member.
 function useDirectEvents(load) {
-  const { user } = useSession();
-  const userId = user?.id ?? null;
-  useEffect(() => {
-    if (userId !== null) connectAs(userId);
-  }, [userId]);
-  useEffect(() => joinDirect(() => load()), [load]);
+  const onEvent = useCallback((event) => event.type === 'direct' && load(), [load]);
+  usePersonalEvents(onEvent);
 }
 
 export function useDirectConversations() {

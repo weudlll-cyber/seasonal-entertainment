@@ -5,7 +5,8 @@
 // Description: The chat drawer's Direct tab: guests have no tabs (no direct messages); a member
 //              whose key is not unlocked on this device sees "Unlock private messages"; "Send
 //              private message" in a name menu opens that conversation on the Direct tab; the
-//              unread dot of a conversation clears once it was read.
+//              unread count of a conversation (also on the chat button and the Direct tab)
+//              clears once it was read, in this tab and, through the server's "read" event, any.
 // ============================================================
 
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
@@ -47,7 +48,7 @@ beforeEach(() => {
 });
 
 // The drawer on /games, opened. unlocked: this device holds mia's key.
-async function drawerFor(session, { unlocked = false, unread = false } = {}) {
+async function drawerFor(session, { unlocked = false, unread = 0 } = {}) {
   const { authKey, wrapKey } = await deriveAccountKeys('correct-horse-1', PRELOGIN_SALT);
   const { key, privateKey } = await browserKey(wrapKey);
   if (unlocked) resetDevice({ userId: 1, keyId: key.keyId, privateKey });
@@ -70,7 +71,6 @@ async function drawerFor(session, { unlocked = false, unread = false } = {}) {
             partner: { id: 8, username: 'zoe', online: true },
             favourite: false,
             lastMessageAt: '2026-10-18T09:00:00.000Z',
-            unread: state.unread,
           },
         ],
       },
@@ -95,8 +95,15 @@ async function drawerFor(session, { unlocked = false, unread = false } = {}) {
         ],
       },
     },
+    'GET /chat/unread': () => ({
+      body: {
+        ok: true,
+        rooms: [],
+        direct: state.unread ? [{ partnerId: 8, count: state.unread }] : [],
+      },
+    }),
     'POST /chat/direct/8/read': () => {
-      state.unread = false;
+      state.unread = 0;
       return { body: { ok: true } };
     },
     'GET /games': { body: { ok: true, games: [] } },
@@ -106,7 +113,7 @@ async function drawerFor(session, { unlocked = false, unread = false } = {}) {
       <App />
     </MemoryRouter>
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Chat' }));
+  fireEvent.click(screen.getByRole('button', { name: /^Chat(:|$)/ }));
   return { drawer: screen.getByRole('dialog', { name: 'Chat' }), calls };
 }
 
@@ -138,16 +145,23 @@ it('"Send private message" opens that conversation on the Direct tab', async () 
   expect(within(drawer).getByText('zoe cannot receive private messages yet.')).toBeInTheDocument();
 });
 
-it('the unread dot clears once the conversation was read', async () => {
-  const { drawer, calls } = await drawerFor(signedIn(MIA), { unlocked: true, unread: true });
-  fireEvent.click(await within(drawer).findByRole('tab', { name: 'Direct' }));
+it('the unread count clears once the conversation was read', async () => {
+  const { drawer, calls } = await drawerFor(signedIn(MIA), { unlocked: true, unread: 3 });
+  expect(
+    await screen.findByRole('button', { name: 'Chat: 3 unread private messages' })
+  ).toBeInTheDocument();
+  fireEvent.click(await within(drawer).findByRole('tab', { name: /Direct/ }));
+  expect(within(drawer).getByRole('tab', { name: /^Direct ?3 unread$/ })).toBeInTheDocument();
   const row = await within(drawer).findByRole('button', { name: /zoe/ });
-  expect(within(row).getByRole('img', { name: 'unread messages' })).toBeInTheDocument();
+  expect(within(row).getByRole('img', { name: '3 unread from zoe' })).toBeInTheDocument();
   fireEvent.click(row);
   await vi.waitFor(() =>
     expect(calls.find((c) => c.key === 'POST /chat/direct/8/read')?.body).toEqual({ lastId: 5 })
   );
+  // The server tells all of the member's sockets; every counter on the page recounts.
+  act(() => FakeSocket.all.at(-1).push({ type: 'read' }));
+  expect(await screen.findByRole('button', { name: 'Chat' })).toBeInTheDocument();
   fireEvent.click(within(drawer).getByRole('button', { name: 'All private conversations' }));
   const again = await within(drawer).findByRole('button', { name: /zoe/ });
-  expect(within(again).queryByRole('img', { name: 'unread messages' })).toBeNull();
+  expect(within(again).queryByRole('img')).toBeNull();
 });

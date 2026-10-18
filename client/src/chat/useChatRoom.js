@@ -9,7 +9,7 @@
 //              the shared connection reconnects as the new reader.
 // ============================================================
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api/http.js';
 import { connectAs, joinRoom } from './connection.js';
 import { useChatRooms } from './useChatRooms.js';
@@ -57,6 +57,7 @@ export function useChatRoom(roomInput, user) {
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
   const moderator = useRef(false);
+  const seen = useRef({ room: null, id: 0 }); // the read marker already sent for this room
   const userId = user?.id;
   // undefined while the account is still loading: wait, so rooms and messages are fetched once
   // for the right reader (a second fetch would replace live updates that arrived meanwhile).
@@ -80,6 +81,18 @@ export function useChatRoom(roomInput, user) {
     () =>
       joinRoom(room, (event) => setMessages((list) => applyEvent(list, event, moderator.current))),
     [room]
+  );
+
+  // The newest message in view: the member's read marker moves (guests keep none). Only
+  // forward, and once per message.
+  const markSeen = useCallback(
+    (lastId) => {
+      if (!userId) return;
+      if (seen.current.room === room && seen.current.id >= lastId) return;
+      seen.current = { room, id: lastId };
+      api(`/chat/rooms/${room}/read`, { method: 'POST', body: { lastId } }).catch(() => {});
+    },
+    [room, userId]
   );
 
   // payload: the request body. true when sent, so the composer can clear itself.
@@ -125,5 +138,16 @@ export function useChatRoom(roomInput, user) {
   }
 
   const current = info?.rooms.find((r) => r.slug === room) ?? null;
-  return { info, room, setRoom, current, messages, error: error ?? rooms.error, notice, send, act };
+  return {
+    info,
+    room,
+    setRoom,
+    current,
+    messages,
+    error: error ?? rooms.error,
+    notice,
+    send,
+    act,
+    markSeen,
+  };
 }

@@ -2,9 +2,9 @@
 // File:        directReads.test.js
 // Path:        server/test/directReads.test.js
 // Project:     Seasonal Entertainment
-// Description: Guards the unread marker of direct messages (a new message is unread until the
-//              conversation is read up to it; the marker never moves back; one's own messages
-//              are never unread) and that direct messages follow the chat retention.
+// Description: Guards the unread count of direct messages (/api/chat/unread: the partner's
+//              messages after the read marker; the marker never moves back; one's own messages
+//              never count) and that direct messages follow the chat retention.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -17,24 +17,24 @@ let t;
 afterEach(() => t?.close());
 
 describe('unread marker and retention', () => {
-  it('a new message is unread until read; read never moves back', async () => {
+  it('counts the partner messages not yet read; the marker never moves back', async () => {
     t = makeTestApp();
     const anna = await memberWithKey(t, 'anna');
     const ben = await memberWithKey(t, 'ben');
     const first = (await sendDirect(anna, ben.user, { text: 'hi' })).body.message;
     const second = (await sendDirect(anna, ben.user, { text: 'again' })).body.message;
-    const list = async () => (await ben.agent.get('/api/chat/direct')).body.conversations;
+    const counts = async (agent) => (await agent.get('/api/chat/unread')).body.direct;
     const read = (lastId) =>
       ben.agent.post(`/api/chat/direct/${anna.user.id}/read`).send({ lastId });
-    expect(await list()).toMatchObject([{ partner: { id: anna.user.id }, unread: true }]);
+    expect(await counts(ben.agent)).toEqual([{ partnerId: anna.user.id, count: 2 }]);
     await read(first.id);
-    expect((await list())[0].unread).toBe(true); // the second is still new
+    expect(await counts(ben.agent)).toEqual([{ partnerId: anna.user.id, count: 1 }]);
     await read(second.id);
-    expect((await list())[0].unread).toBe(false);
+    expect(await counts(ben.agent)).toEqual([]);
     await read(first.id); // an older marker changes nothing
-    expect((await list())[0].unread).toBe(false);
-    // The sender's own message is never "unread" for them.
-    expect((await anna.agent.get('/api/chat/direct')).body.conversations[0].unread).toBe(false);
+    expect(await counts(ben.agent)).toEqual([]);
+    // The sender's own messages never count for them.
+    expect(await counts(anna.agent)).toEqual([]);
   });
 
   it('direct messages follow the chat retention', async () => {

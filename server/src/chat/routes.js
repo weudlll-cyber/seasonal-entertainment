@@ -17,12 +17,12 @@ import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { addMessage, findMessage, listMessages } from './messages.js';
 import { readMessageInput } from './messageInput.js';
+import { roomLoader } from './roomLoader.js';
 import { refuseSanctioned } from './sanctionRefusal.js';
 import {
   activeSanction,
   assignGuestName,
   findRoom,
-  findRoomBySlug,
   listRooms,
   reportMessage,
   touchGuest,
@@ -69,15 +69,7 @@ export function chatRoutes(db, config, hub, previews, allowMessage) {
     newGuestsOnly: true,
   });
 
-  // Unknown and unreadable rooms answer the same 404: a room's existence is not revealed.
-  const loadRoom = (req, res, next) => {
-    const room = findRoomBySlug(db, req.params.slug);
-    if (!room || !canRead(room, chatViewer(req))) {
-      return sendError(res, 404, 'not_found', 'No such room.');
-    }
-    req.room = room;
-    next();
-  };
+  const loadRoom = roomLoader(db);
 
   router.get('/rooms', allow('public'), (req, res) => {
     const viewer = chatViewer(req);
@@ -121,6 +113,8 @@ export function chatRoutes(db, config, hub, previews, allowMessage) {
       // Internal ids stay on the server; readers get only what the room shows.
       const { roomId, authorUserId, authorGuest, ...visible } = message;
       hub.broadcast(req.room.id, { type: 'message', message: visible });
+      // Every member who may read the room recounts their unread messages (other tabs too).
+      hub.notifyReaders(req.room, { type: 'activity', room: req.room.slug });
       res.status(201).json({ ok: true, message: visible });
       previews.attach(message, viewer); // in the background; pushed when ready
     }

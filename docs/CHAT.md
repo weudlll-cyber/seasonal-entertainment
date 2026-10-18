@@ -78,6 +78,30 @@ of the module other than `index.js`.
 - **Test-only page** `/test/chat-panels` (two compact panels side by side) is routed by the Vite
   dev server only; production builds leave it out (`import.meta.env.DEV`).
 
+## Unread counters
+
+Members (never guests: no account to keep read state) see how many messages they have not read,
+in two colours (decided 2026-10-18): **blue** (winter, `#04AAF7`) for room messages, **orange**
+(summer, `#E06E22`), both with dark text `#12161C` (7.0:1 and 5.3:1, WCAG AA).
+
+- **Where**: two badges side by side on the floating chat button and the sidebar's "Chat" item
+  (blue: all rooms; orange: all private messages); per room in the drawer's room picker and the
+  full chat's room list; per conversation in the Direct list; the "Rooms" and "Direct" tabs carry
+  their totals. A badge is hidden at 0 and shows "99+" above 99. Accessible names say both numbers,
+  e.g. "Chat: 2 unread room messages, 3 unread private messages".
+- **Read markers** (`chat_reads`, one table and one helper for rooms and conversations,
+  `server/src/chat/readMarkers.js`): a room's unread messages are those after the member's marker
+  in a room they may read, not their own, not hidden; before the first marker, only messages
+  written after the account was created count. A conversation's are the partner's messages after
+  the marker. Markers only move forward.
+- **Reading**: a room panel (drawer or `/chat`) that shows the newest message — scrolled to the
+  bottom, no "New messages" waiting — moves the marker (`POST /api/chat/rooms/<slug>/read`); an
+  opened conversation does the same (`POST /api/chat/direct/<id>/read`).
+- **One store** (`client/src/chat/unread.js`, `useUnread()`): all counts come from one request,
+  `GET /api/chat/unread`; no badge fetches on its own. The server pushes "activity" to every
+  account socket that may read a room when a message arrives or is hidden there, and "read" to all
+  of a member's sockets when they read, so the counts stay live and the same in every tab.
+
 ## Favourites
 
 Members (never guests) keep favourite **rooms** and favourite **members**, stored on the server
@@ -150,9 +174,9 @@ open nor send them. Any member can write to any member.
 - **Where**: "Send private message" in the name menu of another member's message; the chat
   drawer's **Direct** tab and the **Direct** tab of the full `/chat` page (members only). The
   conversation list shows favourite members first (with an online mark), then the most recent
-  conversations, each with an **unread dot** (a server-side read marker per member and partner,
-  `direct_reads`, moved forward when the conversation is shown). Without an unlocked key on the
-  device, the Direct tab shows "Unlock private messages" (see "Keys and the recovery code").
+  conversations, each with its **unread count** (orange; see "Unread counters"). Without an
+  unlocked key on the device, the Direct tab shows "Unlock private messages" (see "Keys and the
+  recovery code").
 - **Encryption** (in the browser, `shared/crypto.js`): message = `crypto_box_easy(JSON { text,
 mediaItemId? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh random nonce each time.
   Either side opens it with the other's public key and its own private key. The server stores

@@ -4,13 +4,16 @@
 // Project:     Seasonal Entertainment
 // Description: The full chat's room list (ChatPanel with showRoomTabs): a member's favourite
 //              rooms first under "Favourites", then the other rooms; each room with its star
-//              (RoomStar, members only). Guests see one plain list.
+//              (RoomStar, members only) and its unread count. Guests see one plain list.
 // ============================================================
 
 import { groupRooms, useFavourites } from './favourites.js';
 import RoomStar from './RoomStar.jsx';
+import { useUnread } from './unread.js';
+import UnreadCount from './UnreadCount.jsx';
 
 function RoomGroup({ title, rooms, current, onPick }) {
+  const unread = useUnread();
   return (
     <>
       {title && <h2 className="chat-rooms__heading">{title}</h2>}
@@ -25,6 +28,11 @@ function RoomGroup({ title, rooms, current, onPick }) {
             >
               {r.name}
             </button>
+            <UnreadCount
+              count={unread.room(r.slug)}
+              kind="room"
+              label={`${unread.room(r.slug)} unread in ${r.name}`}
+            />
             <RoomStar room={r} />
           </li>
         ))}

@@ -23,21 +23,14 @@ import {
   removeFavouriteRoom,
   removeFavouriteUser,
 } from './favouriteStore.js';
+import { roomLoader } from './roomLoader.js';
 import { findRoomBySlug } from './store.js';
 import { canRead, chatViewer } from './viewer.js';
 
 export function favouriteRoutes(db, hub) {
   const router = express.Router();
 
-  // Unknown and unreadable rooms answer the same 404 (as in routes.js).
-  const loadRoom = (req, res, next) => {
-    const room = findRoomBySlug(db, req.params.slug);
-    if (!room || !canRead(room, chatViewer(req))) {
-      return sendError(res, 404, 'not_found', 'No such room.');
-    }
-    req.room = room;
-    next();
-  };
+  const loadRoom = roomLoader(db);
   const loadMember = loadById((id) => findUserById(db, id), 'member', 'member');
   const notSelf = (req, res, next) =>
     req.member.id === req.user.id

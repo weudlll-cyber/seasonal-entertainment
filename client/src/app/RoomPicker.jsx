@@ -6,10 +6,12 @@
 //              and a chevron, opening a listbox of the rooms the reader may read. Keyboard:
 //              arrows (and Home/End) move, Enter or Space picks, Escape or Tab closes the list
 //              (Escape does not reach the drawer); focus goes back to the button. A member's
-//              favourite rooms come first, in their own "Favourites" group.
+//              favourite rooms come first, in their own "Favourites" group. Each option shows
+//              the room's unread count.
 // ============================================================
 
 import { useRef, useState } from 'react';
+import { UnreadCount } from '../chat/index.js';
 import Icon from './icons.jsx';
 
 // Rooms carry no colour of their own: each gets a season colour by its place in the list.
@@ -27,8 +29,8 @@ function groupsOf(rooms, favouriteCount) {
 }
 
 // rooms: [{ slug, name, season }], favourites first; favouriteCount: how many of them are
-// favourites; value: the current slug; onChange(slug).
-export default function RoomPicker({ rooms, favouriteCount = 0, value, onChange }) {
+// favourites; value: the current slug; onChange(slug); unreadOf(slug): its unread count.
+export default function RoomPicker({ rooms, favouriteCount = 0, value, onChange, unreadOf }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const button = useRef(null);
@@ -132,6 +134,11 @@ export default function RoomPicker({ rooms, favouriteCount = 0, value, onChange 
                     {room.name}
                     {/* The group's name already says so to screen readers. */}
                     {offset + j < favouriteCount && <span aria-hidden="true"> ★</span>}
+                    <UnreadCount
+                      count={unreadOf(room.slug)}
+                      kind="room"
+                      label={`${unreadOf(room.slug)} unread`}
+                    />
                   </li>
                 ))}
               </ul>

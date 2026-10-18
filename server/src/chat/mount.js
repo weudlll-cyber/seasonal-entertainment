@@ -2,9 +2,9 @@
 // File:        mount.js
 // Path:        server/src/chat/mount.js
 // Project:     Seasonal Entertainment
-// Description: The whole chat area behind one call: rooms and messages, favourites, direct
-//              messages, moderation, the sticker/GIF library, link previews, members' file
-//              uploads, the live WebSocket and the retention job.
+// Description: The whole chat area behind one call: rooms and messages, unread counters,
+//              favourites, direct messages, moderation, the sticker/GIF library, link
+//              previews, members' file uploads, the live WebSocket and the retention job.
 //              The rest of the server knows only mountChat() and the handle it returns
 //              (docs/CHAT.md, "Server interface").
 // ============================================================
@@ -27,6 +27,7 @@ import { chatRoutes } from './routes.js';
 import { seedChatRooms } from './seed.js';
 import { makeSenderLimit } from './senderLimit.js';
 import { attachChatSocket } from './socket.js';
+import { unreadRoutes } from './unreadRoutes.js';
 
 // Public media file names: <32 hex>.<ext> at the top (library) or in previews/.
 const PUBLIC_MEDIA = /^\/(?:previews\/)?[0-9a-f]{32}\.(?:webp|png|gif|jpg)$/;
@@ -44,6 +45,7 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork 
 
   api.use('/chat', chatRoutes(db, config, hub, previews, allowMessage));
   api.use('/chat/favourites', favouriteRoutes(db, hub));
+  api.use('/chat', unreadRoutes(db, hub));
   api.use('/chat/direct', directRoutes(db, hub, allowMessage));
   const reports = directReportRoutes(db, config);
   api.use('/chat/direct', reports.member);

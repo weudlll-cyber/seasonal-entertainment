@@ -4,8 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: Data access for direct messages between members. A message is stored as the
 //              browser made it — nonce and ciphertext (crypto_box) — with who sent it to whom
-//              and which key ids it was made with; the server cannot read it. Also each
-//              member's read marker per conversation, for the unread dot.
+//              and which key ids it was made with; the server cannot read it. Read markers
+//              and unread counts: readMarkers.js.
 // ============================================================
 
 const now = () => new Date().toISOString();
@@ -39,31 +39,15 @@ export function listDirect(db, me, partner, limit = 100) {
     .all({ me, partner, limit });
 }
 
-// Everyone the member has written with: the partner, the last message's time, and whether a
-// message from them is newer than the member's read marker.
+// Everyone the member has written with: the partner and the last message's time.
 export function directConversations(db, me) {
   return db
     .prepare(
-      `SELECT u.id, u.username, MAX(d.created_at) AS lastMessageAt,
-         EXISTS (SELECT 1 FROM direct_messages n
-                 WHERE n.sender_id = u.id AND n.recipient_id = @me
-                   AND n.id > COALESCE((SELECT last_read_id FROM direct_reads
-                                        WHERE user_id = @me AND partner_id = u.id), 0))
-           AS unread
+      `SELECT u.id, u.username, MAX(d.created_at) AS lastMessageAt
        FROM direct_messages d
        JOIN users u ON u.id = CASE WHEN d.sender_id = @me THEN d.recipient_id ELSE d.sender_id END
        WHERE d.sender_id = @me OR d.recipient_id = @me
        GROUP BY u.id`
     )
-    .all({ me })
-    .map((row) => ({ ...row, unread: row.unread === 1 }));
-}
-
-// The member has read the conversation up to `lastId` (never moves backwards).
-export function markDirectRead(db, me, partner, lastId) {
-  db.prepare(
-    `INSERT INTO direct_reads (user_id, partner_id, last_read_id) VALUES (?, ?, ?)
-     ON CONFLICT (user_id, partner_id) DO UPDATE
-       SET last_read_id = MAX(last_read_id, excluded.last_read_id)`
-  ).run(me, partner, lastId);
+    .all({ me });
 }

@@ -48,7 +48,7 @@ const show = () =>
   );
 
 describe('the conversation list', () => {
-  it('favourites first, then the most recent; unread dots', async () => {
+  it('favourites first, then the most recent; unread counts', async () => {
     mockApi({
       ...signedIn(MIA),
       'GET /chat/direct': {
@@ -56,21 +56,23 @@ describe('the conversation list', () => {
           ok: true,
           conversations: [
             conversation({ id: 2, username: 'ann' }, { lastMessageAt: '2026-10-18T08:00:00Z' }),
-            conversation(
-              { id: 3, username: 'bob' },
-              { lastMessageAt: '2026-10-18T09:00:00Z', unread: true }
-            ),
+            conversation({ id: 3, username: 'bob' }, { lastMessageAt: '2026-10-18T09:00:00Z' }),
             conversation({ id: 4, username: 'cy' }, { favourite: true }),
           ],
         },
       },
+      // The shared counters (unread.js), not the list, say what is unread.
+      'GET /chat/unread': { body: { ok: true, rooms: [], direct: [{ partnerId: 3, count: 2 }] } },
     });
     show();
     const list = await screen.findByRole('list', { name: 'Private conversations' });
     const rows = within(list).getAllByRole('button');
-    expect(rows.map((r) => r.textContent.replace('★', '').trim())).toEqual(['cy', 'bob', 'ann']);
-    expect(within(rows[1]).getByRole('img', { name: 'unread messages' })).toBeInTheDocument();
-    expect(within(rows[2]).queryByRole('img', { name: 'unread messages' })).toBeNull();
+    const names = rows.map((r) => r.querySelector('.chat-direct-list__name').textContent);
+    expect(names).toEqual(['cy', 'bob', 'ann']);
+    expect(
+      await within(rows[1]).findByRole('img', { name: '2 unread from bob' })
+    ).toHaveTextContent('2');
+    expect(within(rows[2]).queryByRole('img')).toBeNull();
   });
 });
 

@@ -9,23 +9,25 @@
 //              "Direct" (DirectTab: private messages); guests see the rooms only. "Send private
 //              message" in a name menu opens the drawer on the Direct tab. Closes by its close
 //              button or Escape; focus moves in when opened and back to the button when closed.
-//              This browser remembers whether it was open and the last room. No unread badge
-//              yet: the chat module cannot tell.
+//              This browser remembers whether it was open and the last room. The chat button
+//              carries the unread counters (UnreadDots), also in its accessible name.
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { onDirectRequest } from '../chat/index.js';
+import { onDirectRequest, useUnread } from '../chat/index.js';
 import { useSession } from '../session/SessionContext.jsx';
 import ChatTabs from './ChatTabs.jsx';
 import { readDrawerState, rememberDrawerOpen } from './chatDrawerState.js';
 import DirectTab from './DirectTab.jsx';
 import DrawerRooms from './DrawerRooms.jsx';
 import Icon from './icons.jsx';
+import UnreadDots, { unreadSummary } from './UnreadDots.jsx';
 import './ChatDrawer.css';
 
 export default function ChatDrawer() {
   const { user } = useSession();
+  const unread = useUnread();
   const [open, setOpen] = useState(() => readDrawerState().open);
   const [tab, setTab] = useState('rooms');
   const launcher = useRef(null);
@@ -72,12 +74,15 @@ export default function ChatDrawer() {
         ref={launcher}
         type="button"
         className="chat-launcher"
-        aria-label="Chat"
+        aria-label={`Chat${unreadSummary(unread)}`}
         aria-expanded={open}
         aria-controls="chat-drawer"
         onClick={open ? closeDrawer : openDrawer}
       >
         <Icon name="chat" size={28} />
+        <span className="chat-launcher__counts">
+          <UnreadDots />
+        </span>
       </button>
       {open && (
         <section
@@ -102,7 +107,14 @@ export default function ChatDrawer() {
               <Icon name="close" />
             </button>
           </div>
-          {user && <ChatTabs value={shown} onChange={setTab} idPrefix="drawer" />}
+          {user && (
+            <ChatTabs
+              value={shown}
+              onChange={setTab}
+              idPrefix="drawer"
+              counts={{ rooms: unread.roomTotal, direct: unread.directTotal }}
+            />
+          )}
           <div
             id="drawer-panel"
             className="chat-drawer__panel"

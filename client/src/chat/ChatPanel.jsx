@@ -45,6 +45,7 @@ export default function ChatPanel({ room: roomInput, variant = 'full', showRoomT
           messages={chat.messages}
           moderator={info?.me.moderator}
           onAction={chat.act}
+          onSeen={chat.markSeen}
         />
         <ChatNotice error={chat.error} notice={chat.notice} />
         {current?.canWrite ? (
