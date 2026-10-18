@@ -14,7 +14,10 @@ import path from 'node:path';
 import express from 'express';
 import { bootstrapRoutes } from './accounts/bootstrap.js';
 import { adminAuditRoutes } from './admin/auditRoutes.js';
+import { callJoinRoutes } from './calls/joinRoutes.js';
 import { callRoutes } from './calls/routes.js';
+import { callSpotlightRoutes } from './calls/spotlightRoutes.js';
+import { callStageRoutes } from './calls/stageRoutes.js';
 import { createCallService } from './calls/service.js';
 import { mountChat } from './chat/mount.js';
 import { adminUserRoutes } from './admin/userRoutes.js';
@@ -81,6 +84,9 @@ export function createApp({
   api.use('/admin/games', adminGameRoutes(db));
   api.use('/admin/settings', adminSettingRoutes(db));
   api.use('/calls', callRoutes(db, config, callService, chat));
+  api.use('/calls', callJoinRoutes(db, config, callService, chat));
+  api.use('/calls', callStageRoutes(db, config, callService, chat));
+  api.use('/calls', callSpotlightRoutes(db, config, callService));
 
   // Unknown API paths answer JSON, never the HTML page.
   api.use((_req, res) => sendError(res, 404, 'not_found', 'No such API endpoint.'));

@@ -14,10 +14,10 @@ import { roleAtLeast } from '@seasonal-entertainment/shared/accountRules.js';
 import { recordAudit } from '../audit/auditLog.js';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
-import { loadById } from '../http/loadById.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { required, validBody } from '../http/validate.js';
 import { getSetting } from '../settings/store.js';
+import { callSteps } from './middleware.js';
 import {
   createCall,
   findCall,
@@ -57,9 +57,7 @@ export function callRoutes(db, config, service, chat) {
   const perUser = makeLimiter(config.rateLimits.callManage, {
     keyGenerator: (req) => `user:${req.user.id}`,
   });
-  const loadCall = loadById((id) => findCall(db, id), 'call', 'call');
-  const configured = (_req, res, next) =>
-    service ? next() : sendError(res, 503, 'calls_not_configured', 'Calls are not set up.');
+  const { configured, loadCall } = callSteps(db, config, service);
   const audit = (req, action, call) =>
     recordAudit(db, req.user, {
       action,

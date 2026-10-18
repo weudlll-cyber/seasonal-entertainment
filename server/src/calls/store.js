@@ -6,6 +6,7 @@
 //              recent) and the status changes scheduled -> live -> ended (a scheduled call may
 //              also be ended without ever going live: cancelled). A change applies only from
 //              the expected status, so two organisers acting at once cannot both succeed.
+//              Also the call's spotlight state.
 // ============================================================
 
 import { randomBytes } from 'node:crypto';
@@ -59,6 +60,22 @@ export function listCalls(db) {
     ),
     recent: all("c.status = 'ended'", 'c.ended_at DESC', RECENT),
   };
+}
+
+// The spotlight (spotlight.js): null, or { identity, by }.
+export function spotlightOf(db, id) {
+  const row = db
+    .prepare('SELECT spotlight_identity AS identity, spotlight_by AS by FROM calls WHERE id = ?')
+    .get(id);
+  return row?.by ? row : null;
+}
+
+export function setSpotlight(db, id, state) {
+  db.prepare('UPDATE calls SET spotlight_identity = ?, spotlight_by = ? WHERE id = ?').run(
+    state?.identity ?? null,
+    state?.by ?? null,
+    id
+  );
 }
 
 export const anyCallLive = (db) =>

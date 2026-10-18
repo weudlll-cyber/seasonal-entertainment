@@ -395,7 +395,8 @@ server/
                            chatSocket.js: a listening server and WebSocket clients)
   src/config.js            environment configuration
   src/calls/               community calls (docs/CALLS.md): call service configuration, the
-                           call service adapter, schema, store, routes
+                           call service adapter, schema, store, participants, grants and join
+                           tokens, spotlight rule, routes (management, join, stage, spotlight)
   src/settings/            admin-editable site settings: definitions, store, admin routes
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests

@@ -51,6 +51,68 @@ Generate a production pair on the call server with
   stage at most (default 10, 1–25) and participants per call at most (default 250, 2–1000;
   the call service's UDP range is sized for 250).
 
+## Joining, hands and the stage (the server decides)
+
+The server is the only authority over what anyone may do in a call; the browser only ever
+holds a token the server signed. Routes: `server/src/calls/joinRoutes.js`, `stageRoutes.js`,
+`spotlightRoutes.js`; grants: `grants.js`.
+
+**Joining** (`POST /api/calls/:id/join`, everyone; limit `callJoin` per address): only a live
+call (scheduled: 409 `not_started`, ended: 410 `call_ended`). Members join by account, guests by
+their chat guest identity (given now if they have none, docs/CHAT.md). Refused for anyone banned
+in the chat (403 `banned`) and when the call already has as many participants as the setting
+allows (403 `call_full`; someone already in it may rejoin). A locked account is logged out on
+its next request, so it can only come back as an anonymous guest listener. Every person gets
+one random identity per call (`p-…`, `call_participants`), which says nothing about the account.
+The answer is the call service URL and a token valid for 10 minutes (LiveKit renews it for a
+running connection):
+
+| Who                             | `canSubscribe` | `canPublish` | `canPublishSources`                                  | `canPublishData` | `canUpdateOwnMetadata` |
+| ------------------------------- | -------------- | ------------ | ---------------------------------------------------- | ---------------- | ---------------------- |
+| listener (member or guest)      | yes            | no           | none                                                 | no               | no                     |
+| speaker (invited; or organiser) | yes            | yes          | microphone, camera, screen share, screen share audio | no               | no                     |
+
+Organisers and admins (2FA in order) join on the stage while it has room, otherwise as
+listeners. Guests are never given publishing. The token also carries the name others see — a
+member's username, a guest's guest name; a member who hides their online status listens as
+**"A listener"** (counted, not named; on the stage everyone is named) — and attributes every
+client reads: `kind` (`host`, `member`, `guest`), `hand` and `handAt`.
+
+**Hands** (`POST /api/calls/:id/hand {raised}`, members only — guests cannot raise hands; limit
+`callAction`): stored on the server and set as the participant's attributes on the call service,
+so every client sees one truth and organisers can sort raised hands first.
+
+**The stage** (organisers and admins; each audited and limited per account):
+
+- **Invite** (`POST /api/calls/:id/stage/:identity`): gives the speaker permission above and the
+  member's real name, lowers the hand. Refused for guests (`guest_listener`), members muted or
+  banned in the chat (`sanctioned`; they may still listen), people not connected right now
+  (`not_connected`) and when the stage already has as many speakers as the setting allows
+  (`stage_full`; counted from who may publish right now on the call service).
+- **Remove** (`DELETE /api/calls/:id/stage/:identity`): back to the listener permission; the call
+  service unpublishes their tracks. A speaker may also leave by themselves
+  (`POST /api/calls/:id/leave-stage`).
+- **Mute** (`POST /api/calls/:id/mute/:identity`): mutes the speaker's microphone tracks (the
+  speaker may unmute again); camera and screen share stay.
+- **End**: see "Calls on the site".
+
+### Spotlight
+
+Who is shown large is stored by the server and set as the room's metadata
+(`{"spotlight": {"identity", "by"} | null}`), which every client reads (rules:
+`server/src/calls/spotlight.js`):
+
+- A **screen share** always takes the spotlight; the newest share wins. The sharing speaker's
+  client reports start and stop (`POST /api/calls/:id/spotlight/share {sharing}`); the server
+  checks that they are on the stage.
+- A **speaker** may highlight themselves (`POST /api/calls/:id/spotlight/self {on}`), unless an
+  organiser's choice stands (409 `organiser_choice`).
+- An **organiser** may highlight any speaker or return to all speakers
+  (`PUT /api/calls/:id/spotlight {identity | null}`, audited); that choice stands until an
+  organiser or a new screen share changes it.
+- Stopping one's share, or leaving the stage, releases one's own spotlight (back to all
+  speakers).
+
 ## The call service (`deploy/calls/`)
 
 - `livekit.yaml` — LiveKit's configuration, no secrets: ports, the UDP range, TURN, room
