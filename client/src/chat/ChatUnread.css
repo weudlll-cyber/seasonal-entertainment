@@ -1,0 +1,35 @@
+/* ============================================================
+   File:        ChatUnread.css
+   Path:        client/src/chat/ChatUnread.css
+   Project:     Seasonal Entertainment
+   Description: The unread counters (UnreadCount): round badges, blue (winter) for room
+                messages and orange (summer) for private messages, with dark text (#12161C:
+                7.0:1 on the blue, 5.3:1 on the orange). A muted room's count is dimmed. Not
+                under .se-chat: hosts (chat button, sidebar, room picker) show them too.
+   ============================================================ */
+
+.chat-count {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  min-width: 1.375rem;
+  height: 1.375rem;
+  padding: 0 0.375rem;
+  border-radius: 999px;
+  color: #12161c;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.chat-count--room {
+  background: var(--color-winter, #04aaf7);
+}
+
+.chat-count--direct {
+  background: var(--color-summer, #e06e22);
+}
+
+.chat-count--dim {
+  opacity: 0.45;
+}

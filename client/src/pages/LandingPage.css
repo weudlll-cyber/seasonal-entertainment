@@ -2,48 +2,143 @@
    File:        LandingPage.css
    Path:        client/src/pages/LandingPage.css
    Project:     Seasonal Entertainment
-   Description: Layout of the landing page; one centred column that fits phone width upward.
+   Description: Home: greeting and a bento grid sized to the main column. From 1000px wide the
+                featured game spans two rows beside "Up next" and Seasonal Tokens, and the page
+                fits 1280 x 720 without scrolling; narrower, the cards stack and the main
+                column scrolls.
    ============================================================ */
 
-.landing {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+.home {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: var(--space-2);
-  padding: var(--space-4) var(--space-2);
-  text-align: center;
+  max-width: 72rem;
+  height: 100%;
+  margin: 0 auto;
+  padding: var(--space-3);
 }
 
-.landing__logo {
-  width: min(100%, 320px);
-}
-
-.landing__title {
+.home__header h1 {
   margin: 0;
   font-size: var(--font-size-title);
 }
 
-.landing__lead {
-  margin: 0;
-  max-width: 32rem;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-lead);
+.home__header p {
+  margin: 0.25rem 0 0;
 }
 
-.landing__seasons {
+.home__text {
+  color: var(--color-text-muted);
+}
+
+.home__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  min-height: 0;
+}
+
+.home__card {
   display: flex;
-  gap: clamp(var(--space-1), 3vw, var(--space-3));
-  margin: var(--space-2) 0 0;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.home__card h2 {
+  margin: 0;
+}
+
+.home__card p {
+  margin: 0;
+}
+
+.home__eyebrow {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-strong);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.home__game {
+  grid-row: span 2;
+}
+
+/* The game itself is centred in the space below the card's label. */
+.home__game-image {
+  width: clamp(96px, 24vh, 200px);
+  height: auto;
+  margin-top: auto;
+}
+
+.home__game > :last-child {
+  margin-bottom: auto;
+}
+
+.home__badge {
+  align-self: flex-start;
+  padding: 0.125rem 0.625rem;
+  border-radius: 999px;
+  background: var(--color-autumn);
+  color: var(--color-on-season);
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-strong);
+}
+
+.home__game .button {
+  align-self: flex-start;
+  text-decoration: none;
+}
+
+.home__events {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: var(--space-1);
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
-/* Each mark sits on a thin ring in its own season colour. The ring is drawn here; the mark
-   files have none. They are square, optically centred and share one margin
+.home__events li {
+  display: grid;
+}
+
+@media (max-width: 999.98px) {
+  .home {
+    height: auto;
+  }
+
+  .home__grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+  }
+
+  .home__game {
+    grid-row: auto;
+  }
+}
+
+/* The four season marks. Each sits on a thin ring in its own season colour, drawn here; the
+   mark files have none. They are square, optically centred and share one margin
    (scripts/build-season-marks.mjs), so the motif simply fills the ring's inner area and
    nothing here corrects it. Explicit width AND height keep the ring round. */
+.landing__seasons {
+  /* Four marks in one row inside the card. */
+  --season-mark-size: clamp(56px, 5.5vw, 80px);
+  display: flex;
+  flex-wrap: wrap;
+  flex: 1;
+  align-items: center;
+  gap: clamp(var(--space-1), 2vw, var(--space-2));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .landing__season {
   width: var(--season-mark-size);
   height: var(--season-mark-size);

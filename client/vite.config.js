@@ -15,15 +15,37 @@ const apiOrigin = process.env.API_ORIGIN ?? 'http://127.0.0.1:3800';
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    // The cryptography chunk (libsodium with its WebAssembly, about 540 kB) is loaded only when
+    // a password or a private key is used (session/credentials.js); every other chunk stays
+    // well below this.
+    chunkSizeWarningLimit: 600,
+  },
+  // Pre-bundled when the dev server starts: found only later (at the first password form),
+  // the dev server would reload the page to add it, and the form with it.
+  optimizeDeps: { include: ['libsodium-wrappers-sumo'] },
   server: {
     port: devPort,
     strictPort: true,
-    // The browser calls /api on its own origin; in dev Vite forwards it to the server.
-    proxy: { '/api': apiOrigin },
+    // The browser calls /api and /ws on its own origin; in dev Vite forwards them. The
+    // browser's Host header is passed on unchanged (changeOrigin: false; the string shorthand
+    // would rewrite it to the API port), so the server's CSRF and WebSocket origin checks see
+    // the same origin the browser sends, exactly as without a proxy.
+    proxy: {
+      '/api': { target: apiOrigin, changeOrigin: false },
+      // Chat stickers, GIFs and preview images.
+      '/media': { target: apiOrigin, changeOrigin: false },
+      // The chat WebSocket, forwarded as a WebSocket.
+      '/ws': { target: apiOrigin, changeOrigin: false, ws: true },
+    },
   },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.js'],
+    // Well above findBy*'s 15 s wait (test/setup.js), so a slow screen fails as a missing
+    // element with a clear message, not as a test that ran out of time; generous because the
+    // machine may be heavily loaded.
+    testTimeout: 45_000,
     include: ['src/**/*.test.{js,jsx}'],
   },
 });

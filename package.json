@@ -9,6 +9,7 @@
     "node": ">=22"
   },
   "workspaces": [
+    "shared",
     "server",
     "client"
   ],
@@ -21,9 +22,11 @@
     "format:check": "prettier --check .",
     "test:server": "npm test --workspace server",
     "test:client": "npm test --workspace client",
-    "test:e2e": "playwright test",
+    "test:e2e": "node scripts/e2e.mjs",
     "verify": "node scripts/verify.mjs",
-    "marks:build": "node scripts/build-season-marks.mjs"
+    "marks:build": "node scripts/build-season-marks.mjs",
+    "test:shared": "npm test --workspace shared",
+    "dev:admin": "node scripts/create-dev-admin.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
