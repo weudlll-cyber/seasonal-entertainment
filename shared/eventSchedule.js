@@ -101,6 +101,19 @@ export function occurrencesInWeek(events, weekStart, timeZone) {
   return [...unique.values()].sort((a, b) => a.start - b.start);
 }
 
+// The next `count` occurrences at or after `from` (e.g. "Up next" on the home page), sorted.
+// Looks at most six local weeks ahead, which also reaches a first-of-the-month event.
+export function upcomingOccurrences(events, from, timeZone, count) {
+  const found = [];
+  for (let week = 0; week < 6 && found.length < count; week++) {
+    const weekStart = startOfWeek(from, timeZone, week);
+    for (const occurrence of occurrencesInWeek(events, weekStart, timeZone)) {
+      if (occurrence.start >= from) found.push(occurrence);
+    }
+  }
+  return found.slice(0, count);
+}
+
 // "20:00" in the zone, plus the zone's short name ("CEST", "GMT+2", ...).
 export function formatLocal(instant, timeZone) {
   const time = new Intl.DateTimeFormat('en-GB', {

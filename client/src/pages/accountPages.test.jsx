@@ -113,14 +113,17 @@ describe('Account page', () => {
     const calls = mockApi({ ...signedIn(anna), 'POST /auth/password': { body: { ok: true } } });
     renderAt('/account');
     expect(await screen.findByText('anna@example.org')).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: 'Main' })).toHaveTextContent('anna');
+    expect(screen.getByRole('link', { name: 'anna (Member), your account' })).toHaveAttribute(
+      'href',
+      '/account'
+    );
     type('Current password', 'correct-horse-1');
     type('New password', 'battery-staple-2');
     fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Password changed');
-    expect(calls.at(-1)).toEqual({
-      key: 'POST /auth/password',
-      body: { currentPassword: 'correct-horse-1', newPassword: 'battery-staple-2' },
+    expect(calls.find((c) => c.key === 'POST /auth/password').body).toEqual({
+      currentPassword: 'correct-horse-1',
+      newPassword: 'battery-staple-2',
     });
   });
 });

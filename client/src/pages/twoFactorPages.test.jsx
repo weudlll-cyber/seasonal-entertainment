@@ -47,7 +47,8 @@ describe('login with 2FA', () => {
     type('Authentication code', '123456');
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     expect(await screen.findByRole('heading', { name: 'Account' })).toBeInTheDocument();
-    expect(calls.at(-1)).toEqual({ key: 'POST /2fa/login', body: { code: '123456' } });
+    // Looked up by name: the shell's chat drawer reloads its rooms after the login.
+    expect(calls.find((c) => c.key === 'POST /2fa/login').body).toEqual({ code: '123456' });
   });
 
   it('can use a recovery code instead', async () => {
@@ -57,7 +58,9 @@ describe('login with 2FA', () => {
     type('Recovery code', 'abcd-efgh');
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     await screen.findByRole('heading', { name: 'Account' });
-    expect(calls.at(-1).body).toEqual({ recoveryCode: 'abcd-efgh' });
+    expect(calls.find((c) => c.key === 'POST /2fa/login').body).toEqual({
+      recoveryCode: 'abcd-efgh',
+    });
   });
 });
 
@@ -87,7 +90,7 @@ describe('2FA setup on the account page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Turn on' }));
     expect(await screen.findByText('aaaa-bbbb')).toBeInTheDocument();
     expect(screen.getByText(/will not be shown again/)).toBeInTheDocument();
-    expect(calls.at(-1)).toEqual({ key: 'POST /2fa/enable', body: { code: '654321' } });
+    expect(calls.find((c) => c.key === 'POST /2fa/enable').body).toEqual({ code: '654321' });
   });
 });
 
@@ -102,7 +105,7 @@ describe('staff banner', () => {
   it('is not shown to members', async () => {
     mockApi(signedIn(anna));
     renderAt('/');
-    await screen.findByRole('link', { name: 'anna' });
+    await screen.findByRole('link', { name: /^anna/ });
     expect(screen.queryByText(/Your role requires/)).toBeNull();
   });
 });

@@ -7,35 +7,15 @@
 //              panels on one page share one live connection, each showing only its room.
 // ============================================================
 
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionProvider } from '../session/SessionContext.jsx';
+import { FakeSocket } from '../test/fakeSocket.js';
 import { GUEST, mockApi } from '../test/mockApi.js';
 import { ChatPanel } from './index.js';
 
-class FakeSocket {
-  static all = [];
-  constructor(url) {
-    this.url = url;
-    this.sent = [];
-    this.readyState = 0;
-    FakeSocket.all.push(this);
-    setTimeout(() => {
-      this.readyState = 1;
-      this.onopen?.();
-    });
-  }
-  send(data) {
-    this.sent.push(JSON.parse(data));
-  }
-  close() {}
-  push(event) {
-    act(() => this.onmessage?.({ data: JSON.stringify(event) }));
-  }
-}
-
 beforeEach(() => {
-  FakeSocket.all = [];
+  FakeSocket.reset();
   vi.stubGlobal('WebSocket', FakeSocket);
 });
 

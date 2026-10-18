@@ -14,18 +14,22 @@ import ChatNotice from './ChatNotice.jsx';
 import MessageList from './MessageList.jsx';
 import { useChatRoom } from './useChatRoom.js';
 import './ChatPanel.css';
+import './ChatPanelVariants.css';
 import './ChatPicker.css';
 
-// room: slug of the room shown first. variant: 'full' (a page of its own) or 'compact' (a
+// room: slug of the room shown; when it changes the panel follows (a host's room picker). variant: 'full' (a page of its own) or 'compact' (a
 // box beside other content). showRoomTabs: let the reader switch between their rooms.
-export default function ChatPanel({ room: initialRoom, variant = 'full', showRoomTabs = false }) {
+export default function ChatPanel({ room: roomInput, variant = 'full', showRoomTabs = false }) {
   const { user } = useSession();
-  const chat = useChatRoom(initialRoom, user);
+  const chat = useChatRoom(roomInput, user);
   const { info, room, current } = chat;
   const roomName = current?.name ?? room;
 
   return (
-    <section className={`se-chat se-chat--${variant}`} aria-label={`Chat: ${roomName}`}>
+    <section
+      className={`se-chat se-chat--${variant}${showRoomTabs ? ' se-chat--rooms' : ''}`}
+      aria-label={`Chat: ${roomName}`}
+    >
       {showRoomTabs ? (
         <nav aria-label="Rooms">
           <ul className="chat-rooms">
@@ -46,19 +50,21 @@ export default function ChatPanel({ room: initialRoom, variant = 'full', showRoo
       ) : (
         <p className="chat-panel__title">{roomName}</p>
       )}
-      <MessageList
-        room={room}
-        roomName={roomName}
-        messages={chat.messages}
-        moderator={info?.me.moderator}
-        onAction={chat.act}
-      />
-      <ChatNotice error={chat.error} notice={chat.notice} />
-      {current?.canWrite ? (
-        <ChatComposer user={user} guestName={info.me.guestName} onSend={chat.send} />
-      ) : (
-        current && <p className="chat-note">You can read this room, but not write in it.</p>
-      )}
+      <div className="chat-conversation">
+        <MessageList
+          room={room}
+          roomName={roomName}
+          messages={chat.messages}
+          moderator={info?.me.moderator}
+          onAction={chat.act}
+        />
+        <ChatNotice error={chat.error} notice={chat.notice} />
+        {current?.canWrite ? (
+          <ChatComposer user={user} guestName={info.me.guestName} onSend={chat.send} />
+        ) : (
+          current && <p className="chat-note">You can read this room, but not write in it.</p>
+        )}
+      </div>
     </section>
   );
 }

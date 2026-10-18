@@ -2,28 +2,41 @@
    File:        tokens.css
    Path:        client/src/styles/tokens.css
    Project:     Seasonal Entertainment
-   Description: The single source of design tokens (colours, type, spacing). Components use
-                these custom properties and never hard-code their own values.
+   Description: The single source of design tokens (colours, type, shape, spacing). Light is
+                the default set; :root[data-theme="dark"] replaces the colours for dark mode
+                (data-theme is set before first paint by public/theme-init.js). Components use
+                these custom properties and never hard-code their own values (docs/DESIGN.md).
    ============================================================ */
 
 :root {
-  /* Season colours */
+  /* Season colours: the same in both themes */
   --color-spring: #afb84e;
   --color-summer: #e06e22;
   --color-autumn: #f9a825;
   --color-winter: #04aaf7;
+  /* Text and icons on a season colour (the chat button's autumn, ...): 9.2:1 on autumn */
+  --color-on-season: #12161c;
 
-  /* Neutrals: white matches the logo's own background */
-  --color-background: #ffffff;
-  --color-text: #1f2328;
-  --color-text-muted: #59606b;
-  --color-border: #e3e6ea;
+  /* Arena neutrals (decided 2026-10-17). Every text colour below keeps at least 4.5:1 on
+     every surface of its set (values checked in docs/DESIGN.md). */
+  --color-background: #f4f6f9;
+  --color-sidebar: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-2: #f1f3f6;
+  --color-active-bg: #eaf6fe;
+  --color-text: #12161c;
+  --color-text-muted: #56606c;
+  --color-border: #e2e6ec;
   --color-border-strong: #b8bec7;
   --color-danger: #b42318;
   --color-success: #1d7a46;
   --color-warning-surface: #fff4d6;
-  /* Accent for active/focus marks; text links stay dark for contrast */
+  /* Accent for active/focus marks; text links stay in the text colour for contrast */
   --color-accent: var(--color-winter);
+  --shadow-raised: 0 8px 24px rgb(18 22 28 / 14%);
+  /* Dims the page behind a drawer opened over it */
+  --color-scrim: rgb(0 0 0 / 40%);
+  color-scheme: light;
 
   /* Typography: Heavy for headings, Book for body (faces declared in fonts.css) */
   --font-family: 'Luxora Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -32,10 +45,15 @@
   --font-weight-heading: 900;
   --font-size-body: 1rem;
   --font-size-lead: clamp(1.05rem, 0.95rem + 0.5vw, 1.25rem);
-  --font-size-title: clamp(2rem, 1.4rem + 3vw, 3.5rem);
+  --font-size-title: clamp(1.6rem, 1.2rem + 1.6vw, 2.5rem);
 
-  /* Shape */
-  --radius: 6px;
+  /* Shape: controls (buttons, fields) and cards */
+  --radius: 12px;
+  --radius-card: 20px;
+  --hit-target: 44px;
+
+  /* Shell (docs/DESIGN.md: the sidebar becomes a top bar below 760px) */
+  --sidebar-width: 232px;
 
   /* Spacing */
   --space-1: 0.5rem;
@@ -46,4 +64,22 @@
   /* Season marks: size range and the ring drawn in each season colour */
   --season-mark-size: clamp(56px, 18vw, 96px);
   --season-ring-width: 3px;
+}
+
+:root[data-theme='dark'] {
+  --color-background: #0b0e13;
+  --color-sidebar: #0f131a;
+  --color-surface: #151a22;
+  --color-surface-2: #1c222c;
+  --color-active-bg: #1c2532;
+  --color-text: #eef1f5;
+  --color-text-muted: #a1aab6;
+  --color-border: #252c38;
+  --color-border-strong: #4a5466;
+  --color-danger: #ff8a80;
+  --color-success: #4acb8a;
+  --color-warning-surface: #3a2e10;
+  --shadow-raised: 0 8px 28px rgb(0 0 0 / 55%);
+  /* Form controls and scrollbars follow the theme */
+  color-scheme: dark;
 }

@@ -2,8 +2,8 @@
 // File:        smoke.spec.js
 // Path:        client/e2e/smoke.spec.js
 // Project:     Seasonal Entertainment
-// Description: Browser smoke tests against the production server: the landing page opens
-//              with title, loaded logo and no console errors (a Content-Security-Policy
+// Description: Browser smoke tests against the production server: the home page opens
+//              with title, the sidebar's loaded logo and no console errors (a Content-Security-Policy
 //              violation would show up as one), and a deep link reaches the client's router.
 // ============================================================
 
@@ -17,7 +17,8 @@ test('landing page opens with title, a loaded logo and no console errors', async
   await page.goto('/');
   await expect(page).toHaveTitle('Seasonal Entertainment');
 
-  const logo = page.getByAltText('Seasonal Entertainment logo');
+  // The logo in the sidebar's brand link (decorative: the link carries the name).
+  const logo = page.getByRole('link', { name: 'Seasonal Entertainment, home' }).locator('img');
   await expect(logo).toBeVisible();
   // naturalWidth is 0 when the image request failed or the file is not a decodable image.
   await expect
@@ -33,5 +34,7 @@ test('a deep link is answered by the client router (404 page inside the layout)'
   await page.goto('/no/such/page');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Page not found');
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Home' }).click();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Seasonal Entertainment');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'Welcome to Seasonal Entertainment'
+  );
 });
