@@ -52,6 +52,9 @@ An entry moves from part one to part two only when its branch is merged into `ma
 - **Password key derivation freezes the page** — closed by SE-NIGHT-2 part 3 (PR #7, not merged
   yet): Argon2id runs in a same-origin Web Worker; password buttons read "Checking…"; no CSP
   change (docs/AUTH.md, "Off the main thread").
+- **2FA secrets encrypted at rest** — closed by SE-NIGHT-2 part 8 (PR #7, not merged yet): TOTP
+  secrets sealed with libsodium under `SECRET_ENCRYPTION_KEY` (required in production), plain
+  rows encrypted on start, a wrong key refuses with a clear log line (docs/AUTH.md).
 - **Deployment preparation for the Contabo VPS** — closed by SE-NIGHT-2 part 7 (PR #7, not
   merged yet): deploy/site/ (Dockerfile, compose with Caddy, Caddyfiles, systemd timers),
   nightly SQLite online backups with restore, production refuses development defaults, the

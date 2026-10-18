@@ -14,6 +14,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readCallsConfig } from './calls/config.js';
 import { checkProduction } from './productionConfig.js';
+import { readSecretKey } from './secretKey.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const ENV_FILE = path.join(repoRoot, '.env');
@@ -79,6 +80,8 @@ export function readConfig(env = process.env) {
     publicOrigin: env.PUBLIC_ORIGIN || null,
     trustProxy: readInt(env, 'TRUST_PROXY', 0, 0, 10),
     sessionSecret: readSessionSecret(env, isProduction),
+    // Encrypts 2FA secrets at rest (secretKey.js, twofa/secretBox.js).
+    secretKey: readSecretKey(env.SECRET_ENCRYPTION_KEY, isProduction),
     cookieSecure: readBool(env, 'COOKIE_SECURE', isProduction),
     // Strict: a state-changing request without Origin/Referer is refused. Stricter than the
     // race game (strict there only in production); curl users send an Origin header.

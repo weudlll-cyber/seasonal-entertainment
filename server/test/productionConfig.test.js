@@ -12,12 +12,13 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { readConfig } from '../src/config.js';
 import { registration } from './helpers/accountKeys.js';
-import { makeTestApp } from './helpers/testApp.js';
+import { TEST_SECRET_KEY, makeTestApp } from './helpers/testApp.js';
 
 const LONG = 'x'.repeat(32);
 const PROD = {
   NODE_ENV: 'production',
   SESSION_SECRET: LONG,
+  SECRET_ENCRYPTION_KEY: TEST_SECRET_KEY,
   TRUST_PROXY: '1',
   PUBLIC_ORIGIN: 'https://se.example',
 };

@@ -11,13 +11,17 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { readConfig } from '../src/config.js';
 import { logIn } from './helpers/accountKeys.js';
-import { makeTestApp, registerUser } from './helpers/testApp.js';
+import { TEST_SECRET_KEY, makeTestApp, registerUser } from './helpers/testApp.js';
 
 let t;
 afterEach(() => t?.close());
 
 describe('production start', () => {
-  const prod = { NODE_ENV: 'production', SESSION_SECRET: 's'.repeat(32) };
+  const prod = {
+    NODE_ENV: 'production',
+    SESSION_SECRET: 's'.repeat(32),
+    SECRET_ENCRYPTION_KEY: TEST_SECRET_KEY,
+  };
 
   it('refuses to start without TRUST_PROXY or a valid PUBLIC_ORIGIN', () => {
     expect(() => readConfig(prod)).toThrow(/TRUST_PROXY/);

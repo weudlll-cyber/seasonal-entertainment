@@ -3,7 +3,8 @@
 // Path:        server/src/index.js
 // Project:     Seasonal Entertainment
 // Description: Server entry point: loads .env (if present), reads configuration, opens the
-//              database, adds first-start content, builds the app, starts the chat (its own
+//              database, encrypts any 2FA secret still stored in plain text (twofa/secretBox.js),
+//              adds first-start content, builds the app, starts the chat (its own
 //              first-start content and retention job) and the stale-call job, starts listening
 //              and attaches the chat WebSocket.
 // ============================================================
@@ -16,6 +17,7 @@ import { openDatabase } from './db/database.js';
 import { seedEvents } from './events/seed.js';
 import { seedGames } from './games/seed.js';
 import { seedInfoPages } from './info/seed.js';
+import { sealStoredSecrets } from './twofa/secretBox.js';
 
 // Variables already set in the real environment win over the file.
 if (existsSync(ENV_FILE)) process.loadEnvFile(ENV_FILE);
@@ -23,6 +25,7 @@ if (existsSync(ENV_FILE)) process.loadEnvFile(ENV_FILE);
 const config = readConfig();
 const buildInfo = readBuildInfo();
 const db = openDatabase(config.databasePath);
+await sealStoredSecrets(db, config.secretKey);
 const seeded = seedInfoPages(db);
 if (seeded) console.log(`Added ${seeded} draft info pages (first start)`);
 const seededEvents = seedEvents(db);

@@ -126,22 +126,24 @@ openssl rand -hex 32              # run once per secret below
 
 In **`site.env`**:
 
-| Key                | Value                                                                   |
-| ------------------ | ----------------------------------------------------------------------- |
-| `SESSION_SECRET`   | `openssl rand -hex 32` (production refuses less than 32 characters)     |
-| `BOOTSTRAP_TOKEN`  | `openssl rand -hex 32`, only until the first admin exists (step 5)      |
-| `CALLS_URL`        | `wss://<CALLS_DOMAIN>`                                                  |
-| `CALLS_API_KEY`    | a key name, e.g. `seasonal`                                             |
-| `CALLS_API_SECRET` | `openssl rand -hex 32` (the same pair goes into `deploy/calls/.env`)    |
-| everything else    | empty: the defaults fit (docs/ARCHITECTURE.md, "Runtime configuration") |
+| Key                     | Value                                                                                                                                        |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SESSION_SECRET`        | `openssl rand -hex 32` (production refuses less than 32 characters)                                                                          |
+| `BOOTSTRAP_TOKEN`       | `openssl rand -hex 32`, only until the first admin exists (step 5)                                                                           |
+| `SECRET_ENCRYPTION_KEY` | `openssl rand -base64 32`: encrypts 2FA secrets; **keep a copy outside the VPS**, apart from the backups (losing it locks 2FA: docs/AUTH.md) |
+| `CALLS_URL`             | `wss://<CALLS_DOMAIN>`                                                                                                                       |
+| `CALLS_API_KEY`         | a key name, e.g. `seasonal`                                                                                                                  |
+| `CALLS_API_SECRET`      | `openssl rand -hex 32` (the same pair goes into `deploy/calls/.env`)                                                                         |
+| everything else         | empty: the defaults fit (docs/ARCHITECTURE.md, "Runtime configuration")                                                                      |
 
 Set by `docker-compose.yml`, never in `site.env` (it would be overruled): `NODE_ENV=production`,
 `HOST`, `PORT`, `TRUST_PROXY=1` (exactly one proxy in front: Caddy),
 `PUBLIC_ORIGIN=https://<SITE_DOMAIN>`, `DATABASE_PATH`, `MEDIA_DIR`, `BACKUP_DIR`.
 
 Production **refuses to start** with development defaults (`server/src/productionConfig.js`,
-`server/src/calls/config.js`). That covers a missing or short `SESSION_SECRET`, an `http://`
-origin, `COOKIE_SECURE=false`, a short `BOOTSTRAP_TOKEN`, LiveKit's `devkey`/`secret` pair, a
+`server/src/secretKey.js`, `server/src/calls/config.js`). That covers a missing or short
+`SESSION_SECRET`, a missing `SECRET_ENCRYPTION_KEY` or the development one, an `http://` origin,
+`COOKIE_SECURE=false`, a short `BOOTSTRAP_TOKEN`, LiveKit's `devkey`/`secret` pair, a
 `CALLS_API_SECRET` under 32 characters, and `ws://` for calls. Cookies are `Secure` with the
 `__Host-` prefix. The site sees each visitor's own address (Caddy's `X-Forwarded-For`, one
 trusted proxy), so the per-IP limits work.
@@ -241,7 +243,9 @@ ls /var/backups/seasonal
 **⚠ OWNER: off-site copies.** Backups on the same VPS do not survive losing the VPS. Copy
 `/var/backups/seasonal` elsewhere nightly, e.g. with `rsync` to a Contabo storage box or another
 machine. Where to is the owner's decision. The backups hold the whole database (accounts, chat;
-direct messages only as ciphertext): keep the target private.
+direct messages only as ciphertext; 2FA secrets encrypted with `SECRET_ENCRYPTION_KEY`, which
+is **not** in the backups): keep the target private. A restore onto a new VPS needs the same
+`SECRET_ENCRYPTION_KEY` in its `site.env`, or 2FA users must sign in with recovery codes.
 
 ### Restoring
 

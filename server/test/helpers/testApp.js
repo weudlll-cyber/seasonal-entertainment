@@ -15,9 +15,12 @@ import request from 'supertest';
 import { createApp } from '../../src/app.js';
 import { readConfig } from '../../src/config.js';
 import { openDatabase } from '../../src/db/database.js';
+import { sealSecret } from '../../src/twofa/secretBox.js';
 import { registration } from './accountKeys.js';
 
 export const ORIGIN = 'http://se.test';
+// The tests' SECRET_ENCRYPTION_KEY (32 bytes as base64), so no development-key warning.
+export const TEST_SECRET_KEY = Buffer.from('a-test-key-for-2fa-secrets-32-by').toString('base64');
 const ROOMY = { windowMs: 60_000, max: 1000 };
 // Tests never reach the real internet: without a pretend one, every lookup fails.
 const OFFLINE = {
@@ -33,7 +36,11 @@ const OFFLINE = {
 // callService: a stand-in call service (helpers/calls.js); without one, calls are off.
 export function makeTestApp(overrides = {}, { previewNetwork, callService = null } = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), 'se-test-'));
-  const base = readConfig({ SESSION_SECRET: 'test-secret', BCRYPT_COST: '4' });
+  const base = readConfig({
+    SESSION_SECRET: 'test-secret',
+    BCRYPT_COST: '4',
+    SECRET_ENCRYPTION_KEY: TEST_SECRET_KEY,
+  });
   const config = {
     ...base,
     databasePath: path.join(dir, 'test.db'),
@@ -87,12 +94,13 @@ export function setRole(t, userId, role) {
 // The TOTP secret of every makeStaff() account, for tests that need its codes.
 export const STAFF_TOTP_SECRET = 'JBSWY3DPEHPK3PXP';
 
-// A staff account that passes the 2FA gate: registered, given the role, 2FA marked enabled.
+// A staff account that passes the 2FA gate: registered, given the role, 2FA marked enabled
+// (its secret stored encrypted, as the setup stores it).
 export async function makeStaff(t, name, role) {
   const account = await registerUser(t, name);
   setRole(t, account.user.id, role);
   t.db
     .prepare("INSERT INTO two_factor (user_id, secret, enabled_at) VALUES (?, ?, 'now')")
-    .run(account.user.id, STAFF_TOTP_SECRET);
+    .run(account.user.id, await sealSecret(STAFF_TOTP_SECRET, t.config.secretKey));
   return account;
 }

@@ -141,8 +141,25 @@ rate limit, the lockout, locked accounts, the session epoch.
   the server refuses to start with `false` in production.
 - Failed codes are rate-limited (`rateLimits.twoFactor`: 5 per 15 minutes, per account for
   enable/disable, per IP for the login step).
-- TOTP secrets are stored unencrypted in the database; encrypting them needs a key-management
-  decision (night report).
+- **TOTP secrets are encrypted at rest** (SE-NIGHT-2 part 8, `server/src/twofa/secretBox.js`):
+  - Authenticated encryption with the project's libsodium helper (`shared/crypto.js`
+    `sealBytes`/`openSealed`: secretbox, a fresh nonce each time).
+  - The key is `SECRET_ENCRYPTION_KEY`, 32 random bytes as base64 (`server/src/secretKey.js`).
+    Production refuses to start without it or with the development key. Development without
+    it uses a fixed, public development key and says so at start, so development data
+    survives restarts.
+  - Stored as `enc1:` + base64; the secret shown at setup is nowhere in the database.
+  - On every start, rows still in plain text are encrypted (`sealStoredSecrets`, idempotent:
+    sealed rows are skipped).
+  - A secret that does not open with the key (another key, a changed row) **never passes**.
+    The code is refused, and the server log says "the 2FA secret of user <id> cannot be
+    decrypted: SECRET_ENCRYPTION_KEY is not the key it was stored with", with no part of the
+    secret. At start it also counts such rows.
+  - Recovery codes stay SHA-256 hashes and work whatever the key, so they remain the way back
+    in.
+  - **Losing the key** makes every stored 2FA secret unreadable: those accounts sign in with a
+    recovery code or need 2FA reset by an admin. Keep the key with the other secrets, not with
+    the database backups.
 
 ## Authorisation: deny by default
 
