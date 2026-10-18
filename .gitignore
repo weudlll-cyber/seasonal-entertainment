@@ -7,6 +7,8 @@ test-results/
 playwright-report/
 # Local data: the SQLite database and the dev admin's credentials file
 data/
+# The development call server binary (npm run dev:calls downloads it)
+.calls-bin/
 # Local configuration and secrets
 .env
 .env.*

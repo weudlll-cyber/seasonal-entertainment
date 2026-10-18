@@ -3,7 +3,8 @@
 // Path:        server/src/chat/schema.js
 // Project:     Seasonal Entertainment
 // Description: Chat tables: rooms (who may read/write; guests write only where guest_writable
-//              is set), messages (author is an account or a guest; hidden by moderators),
+//              is set; an unlisted room — a call's chat — shows only where a panel names it;
+//              a closed room is read-only for everyone), messages (author is an account or a guest; hidden by moderators),
 //              reports, sanctions (mute with an end, ban without) and guest names (unique while
 //              held; released by the retention job). A message is text, or a sticker / GIF
 //              from the media library (media/schema.js), optionally with a link preview
@@ -29,7 +30,9 @@ CREATE TABLE IF NOT EXISTS chat_rooms (
   read_access  TEXT    NOT NULL CHECK (read_access IN ('everyone', 'members', 'organisers')),
   write_access TEXT    NOT NULL CHECK (write_access IN ('everyone', 'members', 'organisers')),
   guest_writable INTEGER NOT NULL DEFAULT 0 CHECK (guest_writable IN (0, 1)),
-  position     INTEGER NOT NULL DEFAULT 0
+  position     INTEGER NOT NULL DEFAULT 0,
+  listed       INTEGER NOT NULL DEFAULT 1 CHECK (listed IN (0, 1)),
+  closed       INTEGER NOT NULL DEFAULT 0 CHECK (closed IN (0, 1))
 );
 CREATE TABLE IF NOT EXISTS chat_guests (
   id        TEXT PRIMARY KEY,
@@ -139,6 +142,8 @@ CREATE TABLE IF NOT EXISTS direct_report_copies (
 
 // Columns added after a table was first created; CREATE IF NOT EXISTS skips them.
 const ADDED_COLUMNS = [
+  ['chat_rooms', 'listed', 'INTEGER NOT NULL DEFAULT 1 CHECK (listed IN (0, 1))'],
+  ['chat_rooms', 'closed', 'INTEGER NOT NULL DEFAULT 0 CHECK (closed IN (0, 1))'],
   [
     'chat_rooms',
     'guest_writable',

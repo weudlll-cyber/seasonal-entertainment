@@ -5,7 +5,8 @@
 // Description: Guards the first-start info pages: inserted only into an empty table, all as
 //              drafts (invisible to the public), and the content rules: every source-based page
 //              ends with a Sources list, no contract address is retyped, no raw HTML or local
-//              file links, Risks says "not financial advice", legal pages carry placeholders.
+//              file links, Risks says "not financial advice", legal pages carry placeholders,
+//              the privacy draft says calls are not recorded and what the call server processes.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -59,4 +60,10 @@ describe.each(SEED_ORDER)('seed page %s', (slug) => {
 
 it('the Risks page says "not financial advice"', () => {
   expect(readSeedPage('risks').body).toMatch(/not financial advice/i);
+});
+
+it('the privacy draft says calls are not recorded and what the call server processes', () => {
+  const { body } = readSeedPage('privacy');
+  expect(body).toContain('calls are **not recorded**');
+  expect(body).toMatch(/IP addresses of everyone connected/);
 });

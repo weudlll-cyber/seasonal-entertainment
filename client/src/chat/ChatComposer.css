@@ -4,7 +4,9 @@
    Project:     Seasonal Entertainment
    Description: The composer inside the chat module (under .se-chat): message field, actions,
                 the message's one attachment with its ×, the upload button, and the @mention
-                suggestions.
+                suggestions. The compact variant (the drawer, a call's chat) is one row: a
+                single-line field and icon buttons (picker, attach, send) whose texts stay as
+                their accessible names; the picker opens above the row.
    ============================================================ */
 
 .se-chat .chat-label {
@@ -101,4 +103,66 @@
 
 .se-chat .chat-mentions__option--active {
   background: var(--color-active-bg, #eaf6fe);
+}
+
+/* --- buttons: icon and text --------------------------------------------------------- */
+.se-chat .chat-composer .chat-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* The full variant keeps its text buttons. */
+.se-chat--full .chat-composer .chat-button .icon {
+  display: none;
+}
+
+/* --- compact: one row ------------------------------------------------------------------ */
+.se-chat--compact .chat-composer {
+  position: relative;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+/* The guest note, the attachment and the mention suggestions take the whole width. */
+.se-chat--compact .chat-composer > :not(label, .chat-composer__actions) {
+  grid-column: 1 / -1;
+}
+
+/* Hidden from sight, still the field's and the buttons' names. */
+.se-chat--compact .chat-composer .chat-label,
+.se-chat--compact .chat-composer .chat-button__text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.se-chat--compact .chat-composer textarea {
+  height: 44px;
+  padding: 0.6rem var(--chat-space-1);
+  resize: none;
+}
+
+.se-chat--compact .chat-composer__actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.se-chat--compact .chat-composer__actions .chat-button {
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+
+.se-chat--compact .chat-picker__panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.25rem);
+  left: 0;
+  z-index: 3;
+  box-shadow: var(--chat-shadow);
 }

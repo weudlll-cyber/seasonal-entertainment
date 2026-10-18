@@ -134,7 +134,8 @@ describe('files in messages', () => {
     });
     // Signed in first: the account arriving reloads the messages, which would undo the click.
     await screen.findByRole('link', { name: /^olga/ });
-    fireEvent.click(await screen.findByRole('button', { name: 'Remove file' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Actions for the message from/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Remove file' }));
     expect(await screen.findByText('File removed')).toBeInTheDocument();
     expect(calls.some((c) => c.key === 'POST /chat/messages/1/file/remove')).toBe(true);
   });

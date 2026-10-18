@@ -41,7 +41,8 @@ describe('Register page', () => {
     type('Password', 'correct-horse-1');
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('at least 14');
-    expect(calls.map((c) => c.key)).toEqual(['GET /auth/session']);
+    // Nothing was sent (the page shell's own reads, such as the Calls summary, do not count).
+    expect(calls.filter((c) => !c.key.startsWith('GET '))).toEqual([]);
   });
 
   it('registers and lands on the account page', async () => {

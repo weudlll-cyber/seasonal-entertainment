@@ -26,7 +26,7 @@ test('a report shares message text only with consent', async ({ browser }) => {
     .getByRole('list', { name: 'Messages in General' })
     .getByRole('listitem')
     .filter({ hasText: hello })
-    .getByRole('button', { name: 'rpreporter' })
+    .getByRole('button', { name: 'rpreporter', exact: true })
     .click();
   await writer.page.getByRole('menuitem', { name: 'Send private message' }).click();
   await writer.page.getByLabel('Message', { exact: true }).fill(rude);
@@ -44,14 +44,16 @@ test('a report shares message text only with consent', async ({ browser }) => {
     .filter({ hasText: rude });
   const dialog = reporter.page.getByRole('dialog', { name: 'Report a message from rpwriter' });
 
-  await message.getByRole('button', { name: 'Report' }).click();
+  await message.getByRole('button', { name: 'Actions for the message from rpwriter' }).click();
+  await message.getByRole('menuitem', { name: 'Report' }).click();
   await dialog.getByLabel('Reason').fill('insults');
   await dialog.getByRole('button', { name: 'Send report' }).click();
   await expect(reporter.page.getByText('Report sent. Thank you.')).toBeVisible();
   expect(reporter.requests.text()).toContain('/report');
   expect(reporter.requests.text()).not.toContain(rude);
 
-  await message.getByRole('button', { name: 'Report' }).click();
+  await message.getByRole('button', { name: 'Actions for the message from rpwriter' }).click();
+  await message.getByRole('menuitem', { name: 'Report' }).click();
   await dialog.getByLabel('Reason').fill('insults, with the message');
   await dialog.getByLabel('Share the selected messages with the moderators').check();
   await dialog.getByRole('button', { name: 'Send report' }).click();

@@ -24,6 +24,7 @@ const PAGES = [
   ['Events', '/events', true],
   ['Info index', '/info', true],
   ['Chat', '/chat', false],
+  ['Calls', '/calls', true],
   ['Account', '/account', true],
   ['Admin users', '/admin/users', false],
 ];

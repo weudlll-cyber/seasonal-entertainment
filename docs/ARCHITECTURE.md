@@ -40,12 +40,14 @@ roles and the bootstrap are described in [AUTH.md](AUTH.md).
 
 The race game uses 5173 and 4173; this project stays clear of them.
 
-| Port | What                                                               |
-| ---- | ------------------------------------------------------------------ |
-| 3800 | Server (`npm start`, and the API behind `npm run dev`)             |
-| 5380 | Vite dev server (`npm run dev`), forwards `/api` and `/ws` to 3800 |
-| 3810 | Server started by the Playwright browser tests                     |
-| 5390 | Vite dev server in front of 3810 during the browser tests          |
+| Port | What                                                                 |
+| ---- | -------------------------------------------------------------------- |
+| 3800 | Server (`npm start`, and the API behind `npm run dev`)               |
+| 5380 | Vite dev server (`npm run dev`), forwards `/api` and `/ws` to 3800   |
+| 3810 | Server started by the Playwright browser tests                       |
+| 5390 | Vite dev server in front of 3810 during the browser tests            |
+| 7880 | LiveKit call server in development (`npm run dev:calls`)             |
+| 7890 | LiveKit call server of the browser tests (ICE on 7891 TCP, 7892 UDP) |
 
 ## Runtime configuration
 
@@ -72,6 +74,9 @@ Read from the environment when the process starts, never baked into a build:
 | `CHAT_RETENTION_DAYS` | `90`                                          | chat messages older than this are deleted                       |
 | `MEDIA_DIR`           | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`      |
 | `LINK_PREVIEWS`       | `true`                                        | `false` switches chat link previews off                         |
+| `CALLS_URL`           | (unset: Calls off)                            | call service origin, `wss://...` (docs/CALLS.md)                |
+| `CALLS_API_KEY`       | (unset)                                       | call service API key; set with the other two or none            |
+| `CALLS_API_SECRET`    | (unset)                                       | call service API secret; production: no dev pair, 32+ chars     |
 
 The server loads `.env` from the repository root if present; real environment variables win.
 `.env.example` lists every key the server reads, by name with a comment and no value;
@@ -321,6 +326,9 @@ compiling WebAssembly only, which the browser's cryptography needs (libsodium, `
 docs/AUTH.md); the module itself is a same-origin file.
 Plus `nosniff`, `Referrer-Policy: same-origin` and helmet's other defaults. The browser smoke
 test fails on any console error, which is where a CSP violation shows up.
+With calls configured, `connect-src` also holds the call service's origin (`CALLS_URL` and the
+same host over https) and nothing else; `Permissions-Policy` allows camera, microphone and
+screen capture for this origin only (docs/CALLS.md, "Security headers").
 
 ## Folder layout
 
@@ -347,6 +355,10 @@ client/                    React + Vite client
   src/pages/               one folder entry per page (component, CSS, test side by side)
   src/styles/              tokens.css (all design tokens, light and dark), fonts.css, base.css
   src/theme/               light/dark theme: rule, provider, toggle (docs/DESIGN.md)
+  src/calls/               community calls: /calls list, call form and card, LIVE badge,
+                           the sidebar's calls summary; the call page's parts (stage, speaker
+                           tiles, listeners, controls, media), its live connection
+                           (useCallRoom, livekit-client) and its rules (stageModel)
   src/keys/                a member's key pair in the browser: provider, device copy
                            (IndexedDB), unlock, recovery code (docs/CHAT.md)
   public/theme-init.js     sets the theme before the first paint (external: strict CSP)
@@ -385,6 +397,10 @@ server/
   test/helpers/testApp.js  app on a temporary database for tests (chat.js: chat helpers,
                            chatSocket.js: a listening server and WebSocket clients)
   src/config.js            environment configuration
+  src/calls/               community calls (docs/CALLS.md): call service configuration, the
+                           call service adapter, schema, store, participants, grants and join
+                           tokens, spotlight rule, routes (management, join, stage, spotlight)
+  src/settings/            admin-editable site settings: definitions, store, admin routes
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests
 shared/                    rules used by server and client (accountRules.js, eventSchedule.js,
@@ -395,7 +411,11 @@ scripts/
   create-dev-admin.mjs     npm run dev:admin (local admin via the bootstrap flow)
   build-season-marks.mjs   npm run marks:build (web-ready season marks)
   verify.mjs               npm run verify
-docs/                      this file and the backlog
+  calls-dev.mjs            npm run dev:calls (LiveKit in development mode)
+  calls-binary.mjs         the pinned LiveKit binary, checksum-checked, in .calls-bin/
+deploy/calls/              the call service for a server: livekit.yaml, docker-compose.yml
+docs/                      this file, the backlog, and one file per area (AUTH, CHAT, CALLS,
+                           DESIGN) plus SCALING (the staged plan for growing beyond one VPS)
 ```
 
 ## Assets

@@ -5,13 +5,15 @@
 // Description: One chat message: author (with a Guest badge; a member's name opens the name
 //              menu, NameMenu), local time, then its text (MessageParts: members' https links
 //              become links, @mentions name chips) and its sticker / GIF from the site's
-//              library, a link preview card (PreviewCard), an uploaded file (MessageFile),
-//              Report, and for moderators Hide / Mute / Ban / Remove file / Remove preview. A
-//              message that mentions the reader is highlighted for them.
+//              library, a link preview card (PreviewCard), an uploaded file (MessageFile), and
+//              its "…" menu (MessageMenu: Report; for moderators Hide / Mute / Ban / Remove
+//              file / Remove preview). A message that mentions the reader is highlighted for
+//              them.
 // ============================================================
 
 import { useSession } from '../session/SessionContext.jsx';
 import MessageFile from './MessageFile.jsx';
+import MessageMenu, { roomMessageActions } from './MessageMenu.jsx';
 import { MessageMedia, MessageText } from './MessageParts.jsx';
 import NameMenu from './NameMenu.jsx';
 import PreviewCard from './PreviewCard.jsx';
@@ -51,61 +53,10 @@ export default function ChatMessage({ message, moderator, onAction }) {
       {message.previewHeld && (
         <p className="chat-note">Preview hidden from others until the reports are reviewed.</p>
       )}
-      <div className="chat-message__actions">
-        <button
-          className="chat-link-button"
-          type="button"
-          onClick={() => onAction('report', message)}
-        >
-          Report
-        </button>
-        {moderator && !message.hiddenAt && (
-          <>
-            <button
-              className="chat-link-button"
-              type="button"
-              onClick={() => onAction('hide', message)}
-            >
-              Hide
-            </button>
-            {[10, 60, 1440].map((minutes) => (
-              <button
-                key={minutes}
-                className="chat-link-button"
-                type="button"
-                onClick={() => onAction('mute', message, minutes)}
-              >
-                Mute {minutes < 60 ? `${minutes} min` : `${minutes / 60} h`}
-              </button>
-            ))}
-            <button
-              className="chat-link-button"
-              type="button"
-              onClick={() => onAction('ban', message)}
-            >
-              Ban
-            </button>
-            {message.file && !message.file.removed && (
-              <button
-                className="chat-link-button"
-                type="button"
-                onClick={() => onAction('file/remove', message)}
-              >
-                Remove file
-              </button>
-            )}
-            {message.preview && (
-              <button
-                className="chat-link-button"
-                type="button"
-                onClick={() => onAction('preview/remove', message)}
-              >
-                Remove preview
-              </button>
-            )}
-          </>
-        )}
-      </div>
+      <MessageMenu
+        items={roomMessageActions(message, moderator, onAction)}
+        author={message.author}
+      />
     </li>
   );
 }

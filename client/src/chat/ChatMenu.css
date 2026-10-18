@@ -1,0 +1,57 @@
+/* ============================================================
+   File:        ChatMenu.css
+   Path:        client/src/chat/ChatMenu.css
+   Project:     Seasonal Entertainment
+   Description: The small menus of MenuButton (a member's name, a message's "…", a host's
+                speaker menu): the list under its button and the confirm step of a destructive
+                action. Not under .se-chat: hosts (the call stage) use the menu too. Tokens
+                with fallbacks, so it works in any host.
+   ============================================================ */
+
+.chat-menu {
+  position: relative;
+}
+
+.chat-menu__list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 5;
+  min-width: 13rem;
+  margin: 0.25rem 0 0;
+  padding: 0.25rem;
+  border: 1px solid var(--color-border, #e3e6ea);
+  border-radius: var(--radius, 6px);
+  background: var(--color-surface, #ffffff);
+  box-shadow: var(--shadow-raised, 0 2px 6px rgb(0 0 0 / 15%));
+  color: var(--color-text, #1f2328);
+  list-style: none;
+}
+
+.chat-menu__list button {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 0.5rem;
+  border: 0;
+  border-radius: var(--radius, 6px);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chat-menu__list button:hover,
+.chat-menu__list button:focus-visible {
+  background: var(--color-active-bg, #eaf6fe);
+}
+
+.chat-menu__confirm p {
+  margin: 0.25rem 0.5rem 0.5rem;
+  font-weight: var(--font-weight-strong, 700);
+}
+
+.chat-menu__list .chat-menu__danger {
+  color: var(--color-danger, #b42318);
+  font-weight: var(--font-weight-strong, 700);
+}

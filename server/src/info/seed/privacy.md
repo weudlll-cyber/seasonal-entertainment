@@ -71,6 +71,14 @@ This list describes what the website's software actually stores.
   that page once and stores its title, description, site name and a scaled-down copy of its
   image, which are shown with the message. Your browser loads nothing from the linked site for
   this; it only goes there if you click the link.
+- **Community calls**: calls are **not recorded** — neither sound, nor pictures, nor shared
+  screens. While you are in a call, the site's own call server (run by this site, not by
+  another company) passes the sound, camera pictures and shared screens of the speakers on to
+  the other participants as they happen, and processes the IP addresses of everyone connected
+  to do so; nothing of it is stored afterwards. The site stores who joined which call (as a
+  random participant number linked to your account or guest name), whether you raised your
+  hand and whether you were on the stage, and keeps the call's chat like any other chat room.
+  If you hide your online status, other listeners see you as "A listener".
 - **Protection against abuse**: to limit repeated login attempts and similar, the server keeps
   your IP address in its memory for up to one hour. It is not written to the database.
 
@@ -79,7 +87,8 @@ This list describes what the website's software actually stores.
 - No tracking, no analytics, no advertising.
 - No cookies other than the session cookie described above.
 - No content from other websites is loaded: fonts and images, including chat stickers, GIFs
-  and link-preview images, come from this site. Links to other sites (such as Discord or
+  and link-preview images, come from this site, and calls go through the site's own call
+  server. Links to other sites (such as Discord or
   Telegram) are only followed when you click them.
 
 ## Your rights

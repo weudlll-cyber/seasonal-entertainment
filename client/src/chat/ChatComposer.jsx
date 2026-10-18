@@ -7,11 +7,14 @@
 //              the picker (emojis go into the text at the cursor; a member's sticker or GIF
 //              becomes the attachment), a member's "Attach file" (an uploaded image or PDF
 //              becomes the attachment) and Send, which sends both as one message. In a room, a
-//              member typing "@" gets mention suggestions (MentionSuggestions).
+//              member typing "@" gets mention suggestions (MentionSuggestions). The buttons carry
+//              an icon and their text; the compact variant (the drawer, a call's chat) shows one
+//              row — field and icon buttons, the texts kept as their names (ChatComposer.css).
 // ============================================================
 
 import { useRef, useState } from 'react';
 import { MESSAGE_MAX } from '@seasonal-entertainment/shared/chatRules.js';
+import Icon from '../app/icons.jsx';
 import ChatPicker from './ChatPicker.jsx';
 import ComposerAttachment from './ComposerAttachment.jsx';
 import ComposerUpload from './ComposerUpload.jsx';
@@ -92,7 +95,8 @@ export default function ChatComposer({ user, guestName, onSend, files = true, ro
           <ComposerUpload onUploaded={(upload) => setAttachment({ type: 'file', upload })} />
         )}
         <button className="chat-button" type="submit" disabled={!draft.trim() && !attachment}>
-          Send
+          <Icon name="send" size={20} />
+          <span className="chat-button__text">Send</span>
         </button>
       </div>
     </form>

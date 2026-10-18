@@ -51,7 +51,7 @@ test('a private message is readable only in the two browsers', async ({ browser 
   await rooms
     .getByRole('listitem')
     .filter({ hasText: hello })
-    .getByRole('button', { name: 'dmrecip' })
+    .getByRole('button', { name: 'dmrecip', exact: true })
     .click();
   await sender.page.getByRole('menuitem', { name: 'Send private message' }).click();
   const conversation = sender.page.getByRole('list', { name: 'Private messages with dmrecip' });

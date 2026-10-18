@@ -108,6 +108,29 @@ describe('chat page', () => {
     expect(screen.queryByRole('button', { name: 'Hide' })).toBeNull();
   });
 
+  it('a member\'s "…" menu has Report only, and it reports', async () => {
+    const calls = mockApi({
+      ...signedIn({ id: 4, username: 'mia', role: 'member' }),
+      ...rooms({ guestName: null, moderator: false }),
+      'GET /chat/rooms/general/messages': {
+        body: { ok: true, messages: [msg(1, 'bert', 'spam')] },
+      },
+      'POST /chat/messages/1/report': { body: { ok: true } },
+    });
+    await renderAt('/chat');
+    const item = (await screen.findByText('spam')).closest('li');
+    fireEvent.click(within(item).getByRole('button', { name: /^Actions for the message from/ }));
+    const menu = within(item).getByRole('menu');
+    expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map((b) => b.textContent)
+    ).toEqual(['Report']);
+    fireEvent.click(within(menu).getByRole('menuitem', { name: 'Report' }));
+    expect(await screen.findByText('Reported. Thank you.')).toBeInTheDocument();
+    expect(calls.some((c) => c.key === 'POST /chat/messages/1/report')).toBe(true);
+  });
+
   it('moderators get Hide, Mute and Ban', async () => {
     const calls = mockApi({
       ...signedIn({ id: 3, username: 'olga', role: 'organiser' }),
@@ -116,14 +139,32 @@ describe('chat page', () => {
         body: { ok: true, messages: [msg(1, 'bert', 'spam')] },
       },
       'POST /chat/messages/1/mute': { body: { ok: true } },
+      'POST /chat/messages/1/ban': { body: { ok: true } },
     });
     await renderAt('/chat');
     const item = (await screen.findByText('spam')).closest('li');
-    expect(within(item).getByRole('button', { name: 'Hide' })).toBeInTheDocument();
-    expect(within(item).getByRole('button', { name: 'Ban' })).toBeInTheDocument();
-    fireEvent.click(within(item).getByRole('button', { name: 'Mute 1 h' }));
+    const more = within(item).getByRole('button', { name: /^Actions for the message from/ });
+    fireEvent.click(more);
+    // Exactly the actions moderators had as links before.
+    expect(
+      within(item)
+        .getAllByRole('menuitem')
+        .map((b) => b.textContent)
+    ).toEqual(['Report', 'Hide', 'Mute 10 min', 'Mute 1 h', 'Mute 24 h', 'Ban']);
+    fireEvent.click(within(item).getByRole('menuitem', { name: 'Mute 1 h' }));
     expect(await screen.findByText('Author muted.')).toBeInTheDocument();
     expect(calls.find((c) => c.key === 'POST /chat/messages/1/mute').body).toEqual({ minutes: 60 });
+
+    // Ban asks first: Cancel sends nothing, the confirm button bans.
+    fireEvent.click(more);
+    fireEvent.click(within(item).getByRole('menuitem', { name: 'Ban' }));
+    const ask = within(item).getByRole('group', { name: 'Ban bert from the chat?' });
+    fireEvent.click(within(ask).getByRole('button', { name: 'Cancel' }));
+    expect(calls.some((c) => c.key === 'POST /chat/messages/1/ban')).toBe(false);
+    fireEvent.click(more);
+    fireEvent.click(within(item).getByRole('menuitem', { name: 'Ban' }));
+    fireEvent.click(within(item).getByRole('button', { name: 'Ban' }));
+    expect(await screen.findByText('Author banned from the chat.')).toBeInTheDocument();
   });
 });
 

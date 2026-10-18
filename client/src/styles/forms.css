@@ -31,11 +31,15 @@
   font-size: 0.875rem;
 }
 
+/* .search-input: a search field outside a form card (the call's "Find a listener") looks
+   like every other field of the site. */
 .form input[type='text'],
+.search-input,
 .form input[type='email'],
 .form input[type='password'],
 .form input[type='search'],
 .form input[type='time'],
+.form input[type='datetime-local'],
 .form input[type='number'],
 .form input[type='url'],
 .form textarea,

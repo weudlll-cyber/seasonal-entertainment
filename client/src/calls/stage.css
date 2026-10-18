@@ -1,0 +1,126 @@
+/* ============================================================
+   File:        stage.css
+   Path:        client/src/calls/stage.css
+   Project:     Seasonal Entertainment
+   Description: The stage (Stage.jsx), filling the height the call page gives
+                it: the speaker grid, tiles with a ring while talking, the spotlight (a shared
+                screen letterboxed, never cropped; the presenter's camera inset) with the strip
+                of other speakers. What lies over the stage: stageOverlay.css. Tokens only:
+                both themes.
+   ============================================================ */
+
+.stage {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  background: var(--color-surface-2);
+}
+
+/* In the browser's full screen the stage is the whole screen. */
+.stage:fullscreen {
+  border-radius: 0;
+}
+
+.stage--spotlight {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.stage__empty {
+  align-self: center;
+  margin: 0;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.stage-grid,
+.stage-strip {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The top row leaves room for the chips. */
+.stage-grid {
+  display: grid;
+  gap: var(--space-1);
+  min-height: 0;
+  padding: 3rem var(--space-1) var(--space-1);
+}
+
+/* A lone speaker fills the stage (the camera letterboxed, never cropped). */
+.stage-grid--one {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+/* Up to 10 speakers in as many columns as fit (at least 12rem each); every picture keeps its
+   camera's shape (SpeakerTile), so cover crops a thin edge at most. A scrollbar only when ten
+   tiles need more than the stage's height. */
+.stage-grid--many {
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  align-content: center;
+  overflow-y: auto;
+}
+
+.stage-strip {
+  display: flex;
+  gap: var(--space-1);
+  padding: 0 var(--space-1) var(--space-1);
+  overflow-x: auto;
+}
+
+.stage-strip .speaker-tile {
+  flex: 0 0 10rem;
+}
+
+.stage-strip .speaker-tile__picture {
+  height: 4.5rem;
+}
+
+/* Every call video (TrackVideo). */
+.track-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* A picture's video fills its box exactly — the box's shape decides, not the video's own
+   size — so contain and cover do what they say (a video sized by its own height would be
+   clipped at the bottom instead). The presenter's inset keeps its own place. */
+.speaker-tile__picture > .track-video,
+.stage-spotlight__main > .track-video:not(.stage-spotlight__inset) {
+  position: absolute;
+  inset: 0;
+}
+
+/* Cameras fill their tile; shares are never cropped (letterboxed on the surface colour). */
+.track-video--cover {
+  object-fit: cover;
+}
+
+.track-video--contain {
+  object-fit: contain;
+  background: var(--color-surface-2);
+}
+
+/* The spotlight: the share or camera takes all the stage's height. */
+.stage-spotlight__main {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+.stage-spotlight__inset {
+  position: absolute;
+  right: var(--space-1);
+  bottom: var(--space-1);
+  width: 20%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border: 2px solid var(--color-surface);
+  border-radius: var(--radius);
+}

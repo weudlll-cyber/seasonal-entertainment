@@ -26,6 +26,15 @@ import { adminChatRoomRoutes, chatModerationRoutes } from './moderationRoutes.js
 import { startChatRetention } from './retention.js';
 import { chatRoutes } from './routes.js';
 import { seedChatRooms } from './seed.js';
+import { ensureGuest } from './guestIdentity.js';
+import {
+  activeSanction,
+  closeRoom,
+  createUnlistedRoom,
+  findRoom,
+  findRoomBySlug,
+} from './store.js';
+import { chatViewer } from './viewer.js';
 import { makeSenderLimit } from './senderLimit.js';
 import { attachChatSocket } from './socket.js';
 import { unreadRoutes } from './unreadRoutes.js';
@@ -77,6 +86,24 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork 
       accountChanged: (userId, keepSessionId) => hub.disconnectUser(userId, keepSessionId),
       // A member showed or hid their online status: open lists reload their presence.
       presenceChanged: () => hub.sendToMembers({ type: 'presence' }),
+    },
+    // For areas with a chat room of their own (a call's chat, calls/): an unlisted room,
+    // shown only where a panel names it, closed (read-only for everyone) when it is over.
+    rooms: {
+      find: (id) => findRoom(db, id),
+      findBySlug: (slug) => findRoomBySlug(db, slug),
+      createUnlisted: (room) => createUnlistedRoom(db, room),
+      close: (id) => closeRoom(db, id),
+    },
+    // For areas that let chat users in (a call, calls/): who is asking — an account, or a
+    // guest with their chat identity (given now if needed; null after answering 503) — and
+    // their chat sanction (mute or ban), if any.
+    people: {
+      identify: async (req, res) => {
+        const viewer = chatViewer(req);
+        return (await ensureGuest(req, res, viewer, db)) ? viewer : null;
+      },
+      sanction: (who) => activeSanction(db, who),
     },
     // The live connection, once the HTTP server listens.
     attach: (server) => attachChatSocket(server, { hub, sessionParser, db, config }),

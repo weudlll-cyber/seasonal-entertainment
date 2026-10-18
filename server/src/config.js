@@ -5,11 +5,13 @@
 // Description: Reads the runtime configuration from environment variables at start time.
 //              Nothing is baked into a build, so one build runs on any host. Every key is
 //              listed in .env.example (test/envExample.test.js) and docs/ARCHITECTURE.md.
+//              The call service's keys are read by calls/config.js.
 // ============================================================
 
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readCallsConfig } from './calls/config.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const ENV_FILE = path.join(repoRoot, '.env');
@@ -102,6 +104,8 @@ export function readConfig(env = process.env) {
     bootstrapToken: env.BOOTSTRAP_TOKEN || null,
     bcryptCost: readInt(env, 'BCRYPT_COST', 12, 4, 15),
     requireStaff2fa: readStaff2fa(env, isProduction),
+    // The call service (LiveKit, docs/CALLS.md); null when not configured (feature off).
+    calls: readCallsConfig(env, isProduction),
     chat: {
       // Messages older than this are deleted by the retention job.
       retentionDays: readInt(env, 'CHAT_RETENTION_DAYS', 90, 1, 3650),
@@ -143,6 +147,9 @@ export function readConfig(env = process.env) {
       chatGuestPost: { windowMs: 60_000, max: 20 }, // guest messages per IP
       chatNewGuest: { windowMs: 60 * 60_000, max: 20 }, // new guest names per IP
       chatUpload: { windowMs: 60_000, max: 10 }, // file uploads per member
+      callManage: { windowMs: 60_000, max: 30 }, // call management actions per organiser
+      callJoin: { windowMs: 60_000, max: 30 }, // call joins per IP (guests have no account)
+      callAction: { windowMs: 60_000, max: 60 }, // hands, stage, mute, spotlight per account
     },
   };
   if (isProduction) checkProductionDeployment(env, config.publicOrigin);

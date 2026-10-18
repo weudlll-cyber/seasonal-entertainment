@@ -11,6 +11,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '../api/http.js';
+import Icon from '../app/icons.jsx';
 import ChatNotice from './ChatNotice.jsx';
 import { EMOJI_GROUPS } from './emojis.js';
 
@@ -95,7 +96,8 @@ export default function ChatPicker({ member, onEmoji, onMedia }) {
         aria-controls="chat-picker-panel"
         onClick={() => setOpen((o) => !o)}
       >
-        {member ? 'Emoji, stickers, GIFs' : 'Emoji'}
+        <Icon name="smile" size={20} />
+        <span className="chat-button__text">{member ? 'Emoji, stickers, GIFs' : 'Emoji'}</span>
       </button>
       {open && (
         <div id="chat-picker-panel" className="chat-picker__panel">

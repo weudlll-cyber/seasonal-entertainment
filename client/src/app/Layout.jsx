@@ -6,7 +6,8 @@
 //              top bar below 760px) and the main column with the routed page. The window
 //              never scrolls; only the main column does, when its page is taller. Staff
 //              accounts without 2FA see a banner leading them to set it up. Every page except
-//              /chat and /admin gets the chat button and drawer (ChatDrawer). Right after a
+//              /chat, a call page and /admin gets the chat button and drawer (ChatDrawer). On a
+//              call page the sidebar is an icon rail (more room for the stage). Right after a
 //              member's key pair was made, the recovery-code offer opens over the page.
 // ============================================================
 
@@ -15,6 +16,7 @@ import { useKeys } from '../keys/KeyContext.jsx';
 import RecoveryOffer from '../keys/RecoveryOffer.jsx';
 import { useSession } from '../session/SessionContext.jsx';
 import ChatDrawer from './ChatDrawer.jsx';
+import { isCallPage } from './navigation.js';
 import Sidebar from './Sidebar.jsx';
 import './Layout.css';
 
@@ -22,11 +24,13 @@ export default function Layout() {
   const { user } = useSession();
   const { offerRecovery } = useKeys();
   const { pathname } = useLocation();
-  // The full chat page has the chat already; the admin area keeps the screen to itself.
-  const chatButton = pathname !== '/chat' && !pathname.startsWith('/admin');
+  // The full chat page and a call page (its own chat) have the chat already; the admin area
+  // keeps the screen to itself.
+  const rail = isCallPage(pathname);
+  const chatButton = pathname !== '/chat' && !rail && !pathname.startsWith('/admin');
   return (
-    <div className="shell">
-      <Sidebar />
+    <div className={`shell${rail ? ' shell--rail' : ''}`}>
+      <Sidebar rail={rail} />
       <main className="shell__main">
         {user?.twoFactorRequired && (
           <p className="banner" role="status">

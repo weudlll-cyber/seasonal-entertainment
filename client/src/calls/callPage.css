@@ -1,0 +1,153 @@
+/* ============================================================
+   File:        callPage.css
+   Path:        client/src/calls/callPage.css
+   Project:     Seasonal Entertainment
+   Description: The call page's layout (design "Community Call – Bühne"), stage first: the
+                header across; on the left the stage taking all the height left, then the
+                control bar, notices and the listener panel; on the right the call's chat (or,
+                collapsed, a slim vertical tab). Nothing scrolls but inner lists. Below 1000px
+                the chat is a drawer over the page. The parts have their own files: stage.css,
+                callControls.css, audience.css. Tokens only: both themes.
+   ============================================================ */
+
+.call-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--space-1) var(--space-2);
+  height: 100%;
+  padding: var(--space-2);
+}
+
+.call-page--chat-collapsed {
+  grid-template-columns: minmax(0, 1fr) 3rem;
+}
+
+.call-page__header {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 0.25rem var(--space-2);
+}
+
+.call-page__header h1 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.call-page__facts {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.call-page__chat-button {
+  display: none;
+  margin-left: auto;
+}
+
+/* Stage first: it takes every bit of height the bar, notices and listeners leave. */
+.call-page__main {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  grid-auto-rows: auto;
+  gap: 0.5rem;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.call-page__join {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: var(--space-1);
+}
+
+.call-page__chat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  --chat-list-max-height: none;
+}
+
+.call-page__chat .se-chat {
+  flex: 1;
+  min-height: 0;
+}
+
+.call-chat__collapse {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transform: rotate(-90deg);
+}
+
+/* Collapsed: a slim vertical tab with the count of new messages. */
+.call-chat__tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  height: 100%;
+  padding: var(--space-1) 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: var(--font-weight-strong);
+  cursor: pointer;
+}
+
+.call-chat__tab-text {
+  writing-mode: vertical-rl;
+}
+
+@media (max-width: 999.98px) {
+  .call-page,
+  .call-page--chat-collapsed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .call-page__chat-button {
+    display: inline-flex;
+  }
+
+  .call-chat__collapse {
+    display: none;
+  }
+
+  /* The chat as a drawer over the page, like the site's chat drawer. */
+  .call-page__chat {
+    position: fixed;
+    top: var(--space-2);
+    right: var(--space-2);
+    bottom: var(--space-2);
+    z-index: 15;
+    display: none;
+    width: min(400px, calc(100vw - 2 * var(--space-2)));
+    padding: var(--space-2);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-raised);
+  }
+
+  .call-page--chat-open .call-page__chat {
+    display: flex;
+  }
+}

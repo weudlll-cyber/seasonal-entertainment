@@ -105,7 +105,8 @@ describe('preview cards', () => {
       [message(1, PREVIEW)],
       true
     );
-    fireEvent.click(await screen.findByRole('button', { name: 'Remove preview' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Actions for the message from/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Remove preview' }));
     await vi.waitFor(() => expect(screen.queryByRole('complementary')).toBeNull());
     expect(calls.some((c) => c.key === 'POST /chat/messages/1/preview/remove')).toBe(true);
   });

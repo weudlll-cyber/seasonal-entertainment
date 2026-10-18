@@ -12,6 +12,7 @@ import path from 'node:path';
 import Database from 'better-sqlite3';
 import { ACCOUNTS_SCHEMA, migrateAccounts } from '../accounts/schema.js';
 import { AUDIT_SCHEMA } from '../audit/schema.js';
+import { CALLS_SCHEMA, migrateCalls } from '../calls/schema.js';
 import { CHAT_SCHEMA, migrateChat } from '../chat/schema.js';
 import { EVENTS_SCHEMA } from '../events/schema.js';
 import { GAMES_SCHEMA } from '../games/schema.js';
@@ -19,6 +20,7 @@ import { INFO_SCHEMA } from '../info/schema.js';
 import { KEYS_SCHEMA } from '../keys/schema.js';
 import { MEDIA_SCHEMA } from '../media/schema.js';
 import { PREVIEW_SCHEMA } from '../previews/schema.js';
+import { SETTINGS_SCHEMA } from '../settings/schema.js';
 import { UPLOAD_SCHEMA } from '../uploads/schema.js';
 import { TWO_FACTOR_SCHEMA } from '../twofa/schema.js';
 
@@ -35,6 +37,8 @@ const SCHEMAS = [
   PREVIEW_SCHEMA,
   CHAT_SCHEMA,
   UPLOAD_SCHEMA,
+  SETTINGS_SCHEMA,
+  CALLS_SCHEMA,
 ];
 
 export function openDatabase(databasePath) {
@@ -47,5 +51,6 @@ export function openDatabase(databasePath) {
   // Columns added after a table was first created (CREATE IF NOT EXISTS skips them).
   migrateAccounts(db);
   migrateChat(db);
+  migrateCalls(db);
   return db;
 }

@@ -12,6 +12,7 @@
 // ============================================================
 
 import { expect, test } from '@playwright/test';
+import { expectOneRowComposer } from './composer.js';
 import { SERVER_PORT } from './ports.js';
 
 const SERVER = `http://127.0.0.1:${SERVER_PORT}`;
@@ -50,6 +51,8 @@ test('open, switch room, Escape, reload', async ({ page, playwright }) => {
   await expect(
     drawer.getByRole('list', { name: 'Messages in General' }).getByText(hello)
   ).toBeVisible();
+  // General can be written in: the compact composer is one row (the call's chat has the same).
+  await expectOneRowComposer(drawer);
 
   await page.keyboard.press('Escape');
   await expect(drawer).toBeHidden();

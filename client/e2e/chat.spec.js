@@ -51,11 +51,12 @@ test('live chat between a guest and a member, and moderation', async ({ browser,
   const adminContext = await browser.newContext({ storageState: ADMIN_STATE });
   const adminPage = await adminContext.newPage();
   await adminPage.goto('/chat');
-  await adminPage
-    .getByRole('listitem')
-    .filter({ hasText: text })
-    .getByRole('button', { name: 'Hide' })
-    .click();
+  // The message's "…" menu; Hide asks first.
+  const item = adminPage.getByRole('listitem').filter({ hasText: text });
+  await item.hover();
+  await item.getByRole('button', { name: /^Actions for the message from/ }).click();
+  await item.getByRole('menuitem', { name: 'Hide' }).click();
+  await item.getByRole('button', { name: 'Hide' }).click();
   await expect(adminPage.getByText('Message hidden.')).toBeVisible();
 
   await expect(seen).toHaveCount(0);

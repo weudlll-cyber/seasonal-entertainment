@@ -1,0 +1,60 @@
+/* ============================================================
+   File:        stageOverlay.css
+   Path:        client/src/calls/stageOverlay.css
+   Project:     Seasonal Entertainment
+   Description: What lies over the stage (Stage.jsx, FullscreenButton.jsx): the chips over its
+                top left ("<name> is sharing the screen", "Show all speakers", a speaker's own
+                spotlight switch) and the round full-screen button top right. Tokens only:
+                both themes.
+   ============================================================ */
+
+.stage__chips {
+  position: absolute;
+  top: var(--space-1);
+  left: var(--space-1);
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  max-width: calc(100% - 4rem);
+}
+
+.stage-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-strong);
+  box-shadow: var(--shadow-raised);
+}
+
+button.stage-chip {
+  cursor: pointer;
+}
+
+button.stage-chip:hover {
+  background: var(--color-active-bg);
+}
+
+.stage__fullscreen {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: var(--hit-target);
+  height: var(--hit-target);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}

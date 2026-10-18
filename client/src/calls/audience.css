@@ -1,0 +1,180 @@
+/* ============================================================
+   File:        audience.css
+   Path:        client/src/calls/audience.css
+   Project:     Seasonal Entertainment
+   Description: The listener panel (Audience.jsx, design "Community Call – Bühne"): collapsed
+                one row of chips with "+N", expanded the search (the shared .search-input look)
+                and the whole list scrolling inside a capped height; chips — initial circle and
+                name, raised hands marked in autumn orange, guest tags, a compact Invite button
+                inside the chip. Tokens only: both themes.
+   ============================================================ */
+
+.audience {
+  display: grid;
+  gap: 0.5rem;
+  min-height: 0;
+  padding: 0.5rem var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.audience__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+
+.audience__title {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: 1rem;
+}
+
+.audience__toggle {
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.audience__count {
+  color: var(--color-text-muted);
+  font-weight: normal;
+}
+
+.audience__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Collapsed: one row; raised hands that do not fit scroll sideways, never hidden. One row
+   can never need a vertical scrollbar, so that axis is closed (overflow-x: auto alone would
+   make the other axis auto too). */
+.audience:not(.audience--expanded) .audience__list {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.audience-chip {
+  flex: none;
+}
+
+/* Expanded: the whole list, scrolling inside its own capped height (a scrollbar only when it
+   overflows); the chips wrap, so it never scrolls sideways. */
+.audience--expanded .audience__list {
+  max-height: 12rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.audience__more {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.5rem;
+  min-height: 2rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-strong);
+}
+
+.audience-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 100%;
+  min-height: 2.5rem;
+  padding: 0.25rem 0.375rem 0.25rem 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface-2);
+}
+
+/* A raised hand: autumn orange border and hand, and first in the list. */
+.audience-chip--hand {
+  border-color: var(--color-autumn);
+  box-shadow: inset 0 0 0 1px var(--color-autumn);
+}
+
+.audience-chip__initial {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--color-winter);
+  color: var(--color-on-season);
+  font-weight: var(--font-weight-strong);
+}
+
+.audience-chip__initial--neutral {
+  background: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.audience-chip__name {
+  overflow: hidden;
+  max-width: 12rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audience-chip__hand {
+  display: inline-grid;
+  color: var(--color-autumn);
+}
+
+.audience-chip__tag {
+  padding: 0 0.375rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+/* Drawn compact (32px); an invisible margin around it keeps the 44px hit target. */
+.audience-chip__invite {
+  position: relative;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-strong);
+  cursor: pointer;
+}
+
+.audience-chip__invite::after {
+  position: absolute;
+  inset: -6px;
+  content: '';
+}
+
+.audience-chip__invite:hover {
+  background: var(--color-active-bg);
+}
+
+.audience__none {
+  margin: 0;
+  color: var(--color-text-muted);
+}

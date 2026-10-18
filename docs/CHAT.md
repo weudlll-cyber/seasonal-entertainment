@@ -21,6 +21,7 @@ import { ChatPanel } from '../chat/index.js';
 | `room`                   | string (room slug)      | required         | the room shown; the panel follows when it changes                        |
 | `variant`                | `'full'` \| `'compact'` | `'full'`         | a page of its own, or a box beside other content                         |
 | `showRoomTabs`           | boolean                 | `false`          | let the reader switch between the rooms they may read                    |
+| `unlisted`               | boolean                 | `false`          | `room` is an unlisted room (a call's chat): asked for by name            |
 | `--chat-list-max-height` | CSS custom property     | `60vh` / `18rem` | cap of the message list; `none` lets it fill a container of fixed height |
 | account                  | from `SessionProvider`  | —                | who is signed in (`client/src/session`); a guest if no                   |
 
@@ -33,6 +34,10 @@ isFavouriteUser, setRoom, setUser }`; one shared copy per page, so every place a
 and **`<RoomStar room>`** (the star; renders nothing for guests). For direct messages it exports
 **`<DirectPanel keyId privateKey variant>`** (the conversation list or one conversation; the host
 passes the member's unlocked key and shows the unlock step while there is none) and
+**`<MenuButton items label buttonLabel className>`** (the module's small keyboard menu: arrows,
+Escape, Tab; an item with `confirm` asks first — the call stage uses it for its speaker menu) and
+**`useNewMessageCount(room, counting)`** (messages that arrived in a room while counting — a
+collapsed call chat, whose unlisted room is not in the unread counters).
 **`onDirectRequest(callback)`** (a name menu asked for a conversation: the host brings its Direct
 tab forward). The module encrypts and decrypts with `shared/crypto.js`, the only other outside
 import it is allowed.
@@ -74,11 +79,24 @@ of the module other than `index.js`.
 - **Layout**: a panel is a column that fills the height its container gives it; the message list
   takes the room left and the composer stays at the bottom. `full` fills its container (the
   `/chat` page's main column), with room tabs as a column on the left (a row below 600px).
-  `compact` caps its list at 18rem unless the host sets `--chat-list-max-height`.
+  `compact` caps its list at 18rem unless the host sets `--chat-list-max-height`, and draws the
+  composer as one row: a single-line field and icon buttons, their texts kept as accessible
+  names (docs/DESIGN.md, "Compact chat composer").
 - **No page paths or layout assumptions** inside the module: it calls the API and the WebSocket on
   the page's own origin (`/api/chat/...`, `/ws/chat`, `/media/...`) and fits the width it is given.
 - **Test-only page** `/test/chat-panels` (two compact panels side by side) is routed by the Vite
   dev server only; production builds leave it out (`import.meta.env.DEV`).
+
+## Message actions
+
+Every message — in a room (the `/chat` page, the drawer, a call's chat) and in a private
+conversation — has a **"…"** button at its top right (`MessageMenu.jsx`; shown on hover and
+keyboard focus, always on touch screens). It opens a keyboard-operable menu (`MenuButton.jsx`:
+Enter, Space or ArrowDown open it, arrows move, Escape closes) with the same actions, permissions
+and server routes as the former row of links under each message (2026-10-18, SE-CALLS-3):
+**Report** for everyone (in a private conversation: the partner's readable messages); for
+moderators also **Hide** and **Ban** (both ask first in the menu), **Mute 10 min / 1 h / 24 h**,
+**Remove file**, **Remove preview**.
 
 ## Unread counters
 
@@ -307,9 +325,20 @@ const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork });
 // chat.sessions.ended(sessionId)                 logout: close that session's sockets
 // chat.sessions.accountChanged(userId, keepSid)  role, lock, password, 2FA: close the account's sockets
 // chat.sessions.presenceChanged()                 someone showed or hid their online status
+// chat.rooms.createUnlisted(room)               a room of another area (a call's chat), unlisted
+// chat.rooms.close(id)                           that room becomes read-only for everyone
+// chat.rooms.find(id) / findBySlug(slug)          read a room
 // chat.attach(httpServer)                        the WebSocket, once the server listens
 // await chat.start()                             first-start rooms and media, retention job
 ```
+
+**Unlisted and closed rooms** (2026-10-19, for calls, docs/CALLS.md): an unlisted room is left
+out of the room lists (`GET /api/chat/rooms`, the drawer, the admin's room editor) and the
+unread counters; `GET /api/chat/rooms?include=<slug>` adds it for a panel that shows it, when the
+viewer may read it. A closed room keeps its messages (normal retention) but nobody may write in
+it any more (`canWrite` is false, posting answers 403 `read_only`). A guest's chat identity
+(`chat/guestIdentity.js`: a unique guest name kept in the session) is given on the first
+message, report or call join.
 
 `api` is the `/api` router after sessions, the current user and the 2FA gate; call `mountChat`
 before the API's catch-all 404. Outside the chat area only `mount.js` (and the table definitions

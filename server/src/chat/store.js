@@ -12,16 +12,38 @@ import { base32Encode } from '../twofa/totp.js';
 
 const now = () => new Date().toISOString();
 const ROOM_COLUMNS = `id, slug, name, read_access AS readAccess, write_access AS writeAccess,
-  guest_writable AS guestWritable, position`;
+  guest_writable AS guestWritable, position, listed, closed`;
 
-const toRoom = (row) => row && { ...row, guestWritable: row.guestWritable === 1 };
+const toRoom = (row) =>
+  row && {
+    ...row,
+    guestWritable: row.guestWritable === 1,
+    listed: row.listed === 1,
+    closed: row.closed === 1,
+  };
 
 // --- rooms ---------------------------------------------------------------------------
-export function listRooms(db) {
+// The listed rooms (room lists, unread counters, the admin's room editor); include: the slug
+// of one unlisted room to add (a call's chat, for the panel that shows it).
+export function listRooms(db, { include = null } = {}) {
   return db
-    .prepare(`SELECT ${ROOM_COLUMNS} FROM chat_rooms ORDER BY position, id`)
-    .all()
+    .prepare(
+      `SELECT ${ROOM_COLUMNS} FROM chat_rooms WHERE listed = 1 OR slug = ? ORDER BY position, id`
+    )
+    .all(include)
     .map(toRoom);
+}
+
+// An unlisted room for another area (a call's chat, calls/): created hidden from the room
+// lists; closeRoom() makes it read-only for everyone (messages stay, normal retention).
+export function createUnlistedRoom(db, room) {
+  const created = saveRoom(db, room);
+  db.prepare('UPDATE chat_rooms SET listed = 0 WHERE id = ?').run(created.id);
+  return findRoom(db, created.id);
+}
+
+export function closeRoom(db, id) {
+  db.prepare('UPDATE chat_rooms SET closed = 1 WHERE id = ?').run(id);
 }
 
 export function findRoomBySlug(db, slug) {

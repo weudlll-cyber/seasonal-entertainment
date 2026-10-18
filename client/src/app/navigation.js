@@ -3,7 +3,7 @@
 // Path:        client/src/app/navigation.js
 // Project:     Seasonal Entertainment
 // Description: The one definition of the site's navigation: the sidebar's main items (with
-//              their icons), the admin item and who sees it, the legal links, and the admin
+//              their icons), the Calls item, the admin item and who sees it, the legal links, and the admin
 //              area's sections. Used by the sidebar, the admin layout and their tests.
 // ============================================================
 
@@ -15,6 +15,12 @@ export const MAIN_NAV = [
   { to: '/chat', label: 'Chat', icon: 'chat' },
   { to: '/info', label: 'Seasonal Tokens', icon: 'tokens' },
 ];
+
+// A call's own page (/calls/<id>): its own chat (no chat drawer) and the sidebar as a rail.
+export const isCallPage = (pathname) => /^\/calls\/\d+/.test(pathname);
+
+// Calls: after Chat, shown when calls are set up (admins always: they see "not configured").
+export const CALLS_ITEM = { to: '/calls', label: 'Calls', icon: 'mic' };
 
 export const ADMIN_ITEM = { to: '/admin', label: 'Admin', icon: 'admin' };
 
@@ -37,5 +43,6 @@ export const ADMIN_NAV = [
   { to: '/admin/games', label: 'Games' },
   { to: '/admin/chat', label: 'Chat' },
   { to: '/admin/chat-media', label: 'Chat media' },
+  { to: '/admin/settings', label: 'Settings' },
   { to: '/admin/audit', label: 'Audit log' },
 ];
