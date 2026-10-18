@@ -34,7 +34,7 @@ test('a report shares message text only with consent', async ({ browser }) => {
   await expect(writer.page.getByText(rude)).toBeVisible();
 
   await reporter.page.getByRole('tab', { name: 'Direct' }).click();
-  await reporter.page.getByRole('button', { name: /rpwriter/ }).click();
+  await reporter.page.getByRole('button', { name: /^rpwriter/ }).click();
   const message = reporter.page
     .getByRole('list', { name: 'Private messages with rpwriter' })
     .getByRole('listitem')

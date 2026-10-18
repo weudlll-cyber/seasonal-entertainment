@@ -118,9 +118,13 @@ per account (`chat_favourite_rooms`, `chat_favourite_users`; deleted with either
   keyboard moves through both as one list. Rooms keep their colour mark by their place among all
   rooms. Only rooms the member may read can be favourites, and a favourite the member can no
   longer read (role or room change) is left out.
-- **Members**: in every message, another member's name is a button opening a small menu ("Add
-  to favourites" / "Remove from favourites"; Enter, Space or ArrowDown open it on the first item,
-  arrows move, Escape closes and returns to the name). Guests' names and one's own name stay
+- **Members**: in every message, another member's name is a button opening a small menu ("Send
+  private message", "Add to favourites" / "Remove from favourites"; Enter, Space or ArrowDown
+  open it on the first item, arrows move, Escape closes and returns to the name). The same star
+  as for rooms (`UserStar`, both drawn by one `ToggleButton`) sits beside each conversation in
+  the Direct list and each "Find a member" result (there in a column beside the listbox, since a
+  button inside an option could not be operated); all of them change the same favourites, and
+  favourite partners stay listed first. Guests' names and one's own name stay
   plain text, and guests see no menus or stars. Messages carry the author's account id
   (`authorId`, `null` for guests) for this.
 - **API** (`server/src/chat/favouriteRoutes.js`, members only): `GET /api/chat/favourites` →

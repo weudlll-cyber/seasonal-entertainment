@@ -145,3 +145,23 @@
   cursor: default;
   opacity: 0.55;
 }
+
+/* A conversation row: the row's button, then its star. */
+.se-chat .chat-direct-list__row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Results and their stars side by side, row for row (every row is 44px high). */
+.se-chat .chat-member-search__results {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.25rem;
+}
+
+.se-chat .chat-member-search__stars {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}

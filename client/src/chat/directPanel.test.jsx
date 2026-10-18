@@ -66,7 +66,7 @@ describe('the conversation list', () => {
     });
     show();
     const list = await screen.findByRole('list', { name: 'Private conversations' });
-    const rows = within(list).getAllByRole('button');
+    const rows = within(list).getAllByRole('listitem');
     const names = rows.map((r) => r.querySelector('.chat-direct-list__name').textContent);
     expect(names).toEqual(['cy', 'bob', 'ann']);
     expect(

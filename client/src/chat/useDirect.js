@@ -11,6 +11,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, api } from '../api/http.js';
+import { useFavourites } from './favourites.js';
 import { usePersonalEvents } from './usePersonalEvents.js';
 
 const crypto = () => import('@seasonal-entertainment/shared/crypto.js');
@@ -32,7 +33,12 @@ function useDirectEvents(load) {
   usePersonalEvents(onEvent);
 }
 
+// Loaded again when a message arrives and when the favourite members change (a star here or
+// in a name menu): favourites are listed first, and favourites without messages are listed.
 export function useDirectConversations() {
+  const favouriteIds = useFavourites()
+    .users.map((u) => u.id)
+    .join(',');
   const [conversations, setConversations] = useState(null);
   const [error, setError] = useState(null);
   const load = useCallback(
@@ -44,7 +50,7 @@ export function useDirectConversations() {
   );
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, favouriteIds]);
   useDirectEvents(load);
   return { conversations, error };
 }

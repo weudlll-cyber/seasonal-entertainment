@@ -152,7 +152,7 @@ it('the unread count clears once the conversation was read', async () => {
   ).toBeInTheDocument();
   fireEvent.click(await within(drawer).findByRole('tab', { name: /Direct/ }));
   expect(within(drawer).getByRole('tab', { name: /^Direct ?3 unread$/ })).toBeInTheDocument();
-  const row = await within(drawer).findByRole('button', { name: /zoe/ });
+  const row = await within(drawer).findByRole('button', { name: /^zoe/ });
   expect(within(row).getByRole('img', { name: '3 unread from zoe' })).toBeInTheDocument();
   fireEvent.click(row);
   await vi.waitFor(() =>
@@ -162,6 +162,6 @@ it('the unread count clears once the conversation was read', async () => {
   act(() => FakeSocket.all.at(-1).push({ type: 'read' }));
   expect(await screen.findByRole('button', { name: 'Chat' })).toBeInTheDocument();
   fireEvent.click(within(drawer).getByRole('button', { name: 'All private conversations' }));
-  const again = await within(drawer).findByRole('button', { name: /zoe/ });
+  const again = await within(drawer).findByRole('button', { name: /^zoe/ });
   expect(within(again).queryByRole('img')).toBeNull();
 });

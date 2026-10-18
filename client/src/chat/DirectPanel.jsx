@@ -13,6 +13,7 @@ import { useSession } from '../session/SessionContext.jsx';
 import ChatNotice from './ChatNotice.jsx';
 import DirectConversation from './DirectConversation.jsx';
 import MemberSearch from './MemberSearch.jsx';
+import UserStar from './UserStar.jsx';
 import { showDirect, useDirectPartner } from './directView.js';
 import { useDirectConversations } from './useDirect.js';
 import { useUnread } from './unread.js';
@@ -37,14 +38,13 @@ function ConversationList() {
   }
   return (
     <ul className="chat-direct-list" aria-label="Private conversations">
-      {conversations.map(({ partner, favourite }) => (
-        <li key={partner.id}>
+      {conversations.map(({ partner }) => (
+        <li key={partner.id} className="chat-direct-list__row">
           <button
             type="button"
             className="chat-direct-list__item"
             onClick={() => showDirect({ id: partner.id, username: partner.username })}
           >
-            {favourite && <span aria-hidden="true">★ </span>}
             <span className="chat-direct-list__name">{partner.username}</span>
             {partner.online && <span className="chat-online">online</span>}
             <UnreadCount
@@ -53,6 +53,7 @@ function ConversationList() {
               label={`${unread.direct(partner.id)} unread from ${partner.username}`}
             />
           </button>
+          <UserStar member={partner} />
         </li>
       ))}
     </ul>

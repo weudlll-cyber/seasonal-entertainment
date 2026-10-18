@@ -61,7 +61,7 @@ test('a private message is readable only in the two browsers', async ({ browser 
   await expect(conversation.getByText(canary)).toBeVisible();
 
   // The recipient's list shows the conversation (live) with its unread count; opening it decrypts it.
-  const row = recipient.page.getByRole('button', { name: /dmsender/ });
+  const row = recipient.page.getByRole('button', { name: /^dmsender/ });
   await expect(row.getByRole('img', { name: /unread from dmsender/ })).toBeVisible();
   await row.click();
   await expect(
