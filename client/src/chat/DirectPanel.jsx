@@ -2,8 +2,8 @@
 // File:        DirectPanel.jsx
 // Path:        client/src/chat/DirectPanel.jsx
 // Project:     Seasonal Entertainment
-// Description: The chat module's direct-message view (public, index.js): the member's private
-//              conversations — favourite members first (with an online mark), then the most
+// Description: The chat module's direct-message view (public, index.js): "Find a member"
+//              (MemberSearch) above the member's private conversations — favourite members first (with an online mark), then the most
 //              recent, each with its unread count — or one conversation (DirectConversation). The
 //              host passes the member's unlocked key (and shows the unlock step while there is
 //              none; docs/CHAT.md). Members only.
@@ -12,6 +12,7 @@
 import { useSession } from '../session/SessionContext.jsx';
 import ChatNotice from './ChatNotice.jsx';
 import DirectConversation from './DirectConversation.jsx';
+import MemberSearch from './MemberSearch.jsx';
 import { showDirect, useDirectPartner } from './directView.js';
 import { useDirectConversations } from './useDirect.js';
 import { useUnread } from './unread.js';
@@ -67,7 +68,10 @@ export default function DirectPanel({ keyId, privateKey, variant = 'full' }) {
       {partner ? (
         <DirectConversation partner={partner} me={user} keyId={keyId} privateKey={privateKey} />
       ) : (
-        <ConversationList />
+        <>
+          <MemberSearch />
+          <ConversationList />
+        </>
       )}
     </section>
   );

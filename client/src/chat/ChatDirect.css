@@ -2,8 +2,8 @@
    File:        ChatDirect.css
    Path:        client/src/chat/ChatDirect.css
    Project:     Seasonal Entertainment
-   Description: Direct messages in the chat module: the conversation list (online mark,
-                unread dot), a conversation's header and key-change notices, and the report
+   Description: Direct messages in the chat module: "Find a member", the conversation list
+                (online mark), a conversation's header and key-change notices, and the report
                 dialog. Under the .se-chat root like every module style.
    ============================================================ */
 
@@ -40,13 +40,6 @@
 .se-chat .chat-online {
   color: var(--color-success, #1d7a46);
   font-size: 0.8125rem;
-}
-
-.se-chat .chat-unread-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--color-autumn, #f9a825);
 }
 
 .se-chat .chat-direct__header {
@@ -113,4 +106,42 @@
 .se-chat .chat-dialog__actions {
   display: flex;
   gap: var(--chat-space-1);
+}
+
+/* "Find a member": the field, and its list of up to 10 names below it. */
+.se-chat .chat-member-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--chat-space-1);
+  border: 1px solid var(--chat-border-strong);
+  border-radius: var(--chat-radius);
+  background: var(--chat-bg);
+  color: var(--chat-text);
+  font: inherit;
+}
+
+.se-chat .chat-member-search__list {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.se-chat .chat-member-search__option {
+  display: flex;
+  align-items: center;
+  gap: var(--chat-space-1);
+  min-height: 44px;
+  padding: 0 var(--chat-space-1);
+  border-radius: var(--chat-radius);
+  cursor: pointer;
+}
+
+.se-chat .chat-member-search__option--active {
+  background: var(--color-active-bg, #eaf6fe);
+}
+
+/* Not set up for private messages yet: shown, not choosable. */
+.se-chat .chat-member-search__option[aria-disabled='true'] {
+  cursor: default;
+  opacity: 0.55;
 }

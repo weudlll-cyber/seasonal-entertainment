@@ -27,6 +27,12 @@ function makeViewer(user, guest, twoFactorMissing) {
 export const chatViewer = (req) =>
   makeViewer(req.user ?? null, req.session?.chatGuest ?? null, Boolean(req.staffRefusal));
 
+// Any account, not the one asking (who may read a room, for @mentions and the member search):
+// the same rule as for that account's own requests.
+export function accountViewer(db, config, user) {
+  return makeViewer(user, null, needsTwoFactorSetup(db, config, user));
+}
+
 // WebSocket: the same rule from the account as it is in the database right now. null when
 // the session's account no longer qualifies (locked, deleted, epoch changed).
 export function sessionViewer(db, config, session) {

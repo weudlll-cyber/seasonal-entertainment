@@ -285,6 +285,8 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
 - **Unread counters** (docs/CHAT.md, "Unread counters"): read markers per member, room and
   conversation (`chat_reads`); `GET /api/chat/unread` feeds one client store, kept live by
   "activity" and "read" pushes (`hub.notifyReaders`, `hub.sendToUser`).
+- **Member search** (docs/CHAT.md, "Finding a member"): `GET /api/chat/members`, its own rate
+  limit; `server/src/db/like.js` escapes LIKE wildcards for it and the admin user search.
 - **Direct messages** (docs/CHAT.md, "Direct messages"): end-to-end encrypted between members;
   `server/src/chat/directRoutes.js` (`/api/chat/direct`) stores and relays ciphertext only, pushed
   to both members' sockets (`hub.sendToUser`); the client's `DirectPanel` (chat module) shows them

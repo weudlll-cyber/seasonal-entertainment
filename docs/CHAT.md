@@ -206,6 +206,21 @@ mediaItemId? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh random no
   safety-number check between two members, to compare keys outside the site, is an open backlog
   item.
 
+## Finding a member
+
+"Find a member" at the top of the Direct tab (drawer and `/chat`), members only: a combobox with a
+listbox of up to 10 members. From 2 characters (debounced), usernames containing the text,
+case-insensitively, names starting with it first, then by name. Arrow keys move, Enter opens the
+conversation (or starts it), Escape closes the list. Members who have not set up private messages
+(no key yet) are shown greyed, "Has not set up private messages yet", and cannot be chosen.
+
+`GET /api/chat/members?q=<text>[&room=<slug>]` (`server/src/chat/memberRoutes.js`): members only,
+its own rate limit per account (`rateLimits.memberSearch`, 60 a minute). Never the searcher,
+locked accounts or members banned from the chat. With a room (the @mention suggestions), only
+members who may read it, judged by the same rule as their own requests; the searcher must be able
+to read it too. Each result is exactly `{ id, username, canReceive, online }`: never an email or
+anything else.
+
 ## Reporting a direct message
 
 Moderators and admins may see direct messages **only when the affected member releases them**

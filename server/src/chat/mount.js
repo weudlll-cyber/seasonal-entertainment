@@ -3,7 +3,7 @@
 // Path:        server/src/chat/mount.js
 // Project:     Seasonal Entertainment
 // Description: The whole chat area behind one call: rooms and messages, unread counters,
-//              favourites, direct messages, moderation, the sticker/GIF library, link
+//              favourites, the member search, direct messages, moderation, the sticker/GIF library, link
 //              previews, members' file uploads, the live WebSocket and the retention job.
 //              The rest of the server knows only mountChat() and the handle it returns
 //              (docs/CHAT.md, "Server interface").
@@ -20,6 +20,7 @@ import { uploadRoutes } from '../uploads/routes.js';
 import { directReportRoutes } from './directReportRoutes.js';
 import { directRoutes } from './directRoutes.js';
 import { favouriteRoutes } from './favouriteRoutes.js';
+import { memberRoutes } from './memberRoutes.js';
 import { ChatHub } from './hub.js';
 import { adminChatRoomRoutes, chatModerationRoutes } from './moderationRoutes.js';
 import { startChatRetention } from './retention.js';
@@ -46,6 +47,7 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork 
   api.use('/chat', chatRoutes(db, config, hub, previews, allowMessage));
   api.use('/chat/favourites', favouriteRoutes(db, hub));
   api.use('/chat', unreadRoutes(db, hub));
+  api.use('/chat', memberRoutes(db, config, hub));
   api.use('/chat/direct', directRoutes(db, hub, allowMessage));
   const reports = directReportRoutes(db, config);
   api.use('/chat/direct', reports.member);
