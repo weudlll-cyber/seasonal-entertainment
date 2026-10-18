@@ -9,7 +9,9 @@
 //              their own conversations. Sending reuses the room rules: mute and ban, the
 //              per-sender rate limit; the partner must have a key, and both key ids must be
 //              the current ones (else 409 with the partner's current key, to encrypt again).
-//              New messages are pushed to both members' open sockets.
+//              New messages are pushed to both members' open sockets. A conversation is read
+//              in pages of 100, newest first: ?before=<id> gives the 100 before that id, and
+//              `more` says whether there are older ones still.
 // ============================================================
 
 import express from 'express';
@@ -21,7 +23,7 @@ import {
 } from '@seasonal-entertainment/shared/cryptoFormat.js';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
-import { positiveInteger, validBody } from '../http/validate.js';
+import { positiveInteger, queryId, validBody } from '../http/validate.js';
 import { currentKeyId, publicKeysById } from '../keys/store.js';
 import { partnerHandlers } from './directPartner.js';
 import { markRead } from './readMarkers.js';
@@ -30,6 +32,8 @@ import { favouriteUsers } from './favouriteStore.js';
 import { refuseSanctioned } from './sanctionRefusal.js';
 import { activeSanction } from './store.js';
 import { chatViewer } from './viewer.js';
+
+const PAGE = 100;
 
 // The partner's current key for encrypting to them: { keyId, publicKey } or null.
 function partnerKey(db, partnerId) {
@@ -65,7 +69,11 @@ export function directRoutes(db, hub, allowMessage) {
   });
 
   router.get('/:id', allow('member'), ...partner, (req, res) => {
-    const messages = listDirect(db, req.user.id, req.partner.id);
+    // One more than a page: whether it came tells if there are older messages still.
+    const beforeId = queryId(req.query.before);
+    const page = listDirect(db, req.user.id, req.partner.id, { limit: PAGE + 1, beforeId });
+    const more = page.length > PAGE;
+    const messages = more ? page.slice(1) : page;
     const ids = messages.flatMap((m) => [m.senderKeyId, m.recipientKeyId]);
     const { id, username } = req.partner;
     res.json({
@@ -74,6 +82,7 @@ export function directRoutes(db, hub, allowMessage) {
       partnerKey: partnerKey(db, id),
       keys: publicKeysById(db, ids),
       messages,
+      more,
     });
   });
 

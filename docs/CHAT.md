@@ -237,6 +237,14 @@ mediaItemId? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh random no
 - **Key changes**: when the partner's key id changes (they started over), the conversation shows
   "<name>'s security key changed" at that point; messages made for an earlier key of one's own
   say they cannot be read.
+- **Older messages** (SE-NIGHT-2 part 4): a conversation opens with its newest 100 messages.
+  Reaching the top, or **Load older messages** there, loads the 100 before the oldest shown
+  (`GET /api/chat/direct/:id?before=<id>`, oldest first within the page, with `more` telling
+  whether older ones remain and the public keys that page's messages name). They are decrypted
+  in the browser like the rest, key-change notices included, and the reader stays on the
+  message they were looking at (`client/src/chat/useOlderOnTop.js`). Pages are merged by id
+  (`mergeMessages`, shared with the rooms), so a live reload of the newest page keeps them. Only
+  the two members of a conversation can page through it, as with the newest page.
 - **Retention**: direct messages follow the same `CHAT_RETENTION_DAYS` as room messages.
 - **Known limit**: the server hands out the public keys. A compromised server could give a member
   a key of its own instead of the partner's and read what is then sent (an active attack). A

@@ -25,18 +25,20 @@ export function addDirect(db, message) {
   return db.prepare(`SELECT ${COLUMNS} FROM direct_messages WHERE id = ?`).get(lastInsertRowid);
 }
 
-// The newest `limit` messages between the two members, oldest first.
-export function listDirect(db, me, partner, limit = 100) {
+// The newest `limit` messages between the two members, oldest first; with beforeId, the
+// newest `limit` older than that id (paging back through the conversation).
+export function listDirect(db, me, partner, { limit = 100, beforeId } = {}) {
   return db
     .prepare(
       `SELECT * FROM (
          SELECT ${COLUMNS} FROM direct_messages
-         WHERE (sender_id = @me AND recipient_id = @partner)
-            OR (sender_id = @partner AND recipient_id = @me)
+         WHERE ((sender_id = @me AND recipient_id = @partner)
+            OR (sender_id = @partner AND recipient_id = @me))
+           AND (@beforeId IS NULL OR id < @beforeId)
          ORDER BY id DESC LIMIT @limit)
        ORDER BY id`
     )
-    .all({ me, partner, limit });
+    .all({ me, partner, limit, beforeId: beforeId ?? null });
 }
 
 // Everyone the member has written with: the partner and the last message's time.

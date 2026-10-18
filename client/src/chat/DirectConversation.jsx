@@ -5,7 +5,8 @@
 // Description: One end-to-end encrypted conversation with another member: the messages,
 //              decrypted in this browser (text with clickable links, a sticker or GIF from the
 //              site's library; no file uploads and no link previews in v1), a notice wherever
-//              the partner's security key changed, and the composer. A message made for an
+//              the partner's security key changed (older pages too), older messages on reaching
+//              the top (or with "Load older messages"), and the composer. A message made for an
 //              earlier key cannot be read and says so. The partner's messages can be reported
 //              (ReportDirectDialog: shared only with consent).
 // ============================================================
@@ -17,7 +18,8 @@ import ChatNotice from './ChatNotice.jsx';
 import DirectMessage from './DirectMessage.jsx';
 import ReportDirectDialog from './ReportDirectDialog.jsx';
 import { showDirect } from './directView.js';
-import { useDirectConversation } from './useDirect.js';
+import { useDirectConversation } from './useDirectConversation.js';
+import { useOlderOnTop } from './useOlderOnTop.js';
 import { useScrollPin } from './useScrollPin.js';
 import './ChatMessage.css';
 
@@ -61,6 +63,7 @@ export default function DirectConversation({ partner, me, keyId, privateKey }) {
   const { data, messages } = conversation;
   const list = useRef(null);
   const { onScroll, unseen, showNewest } = useScrollPin(list, `direct:${partner.id}`, messages);
+  const older = useOlderOnTop(list, messages[0]?.id, conversation);
   const library = useLibraryItems(messages);
   const [reporting, setReporting] = useState(null); // the message being reported
   const [notice, setNotice] = useState(null);
@@ -91,8 +94,23 @@ export default function DirectConversation({ partner, me, keyId, privateKey }) {
           ref={list}
           className="chat-messages"
           aria-label={`Private messages with ${name}`}
-          onScroll={onScroll}
+          onScroll={() => {
+            onScroll();
+            older.onScroll();
+          }}
         >
+          {conversation.more && (
+            <li className="chat-note">
+              <button
+                type="button"
+                className="chat-link-button"
+                disabled={conversation.loadingOlder}
+                onClick={older.showOlder}
+              >
+                {conversation.loadingOlder ? 'Loading older messages…' : 'Load older messages'}
+              </button>
+            </li>
+          )}
           {withKeyNotices(messages, data?.partnerKey?.keyId).map((row) =>
             row.notice ? (
               <li key={row.notice} className="chat-note chat-key-notice">

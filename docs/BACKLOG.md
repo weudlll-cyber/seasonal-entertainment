@@ -45,6 +45,15 @@ An entry moves from part one to part two only when its branch is merged into `ma
   code: a message stored between the panel's load and the new socket's subscription was never
   pushed, and a message pushed while the load was on its way was wiped by the load. Fixed by a
   catch-up fetch (`?after=<id>`) on every `subscribed` and a merge by id; no timeout changed.
+- **Stale live calls** — closed by SE-NIGHT-2 part 2 (PR #7, not merged yet): a live call whose
+  LiveKit room is gone is ended after 10 minutes like "End call", audited as "system"
+  (docs/CALLS.md, "Stale live calls").
+- **Password key derivation freezes the page** — closed by SE-NIGHT-2 part 3 (PR #7, not merged
+  yet): Argon2id runs in a same-origin Web Worker; password buttons read "Checking…"; no CSP
+  change (docs/AUTH.md, "Off the main thread").
+- **Older direct messages** — closed by SE-NIGHT-2 part 4 (PR #7, not merged yet): a
+  conversation pages back 100 at a time on reaching the top, keeping the scroll position
+  (docs/CHAT.md, "Direct messages").
 - **SE-CALLS-1 — community calls on LiveKit** — closed by PR #6 (`feat/se-calls-1`), merged
   2026-10-18. Piece 1: the call service's configuration and portability (`deploy/calls/`,
   `npm run dev:calls`). Piece 2: calls, roles and management, the call chat, admin settings.
