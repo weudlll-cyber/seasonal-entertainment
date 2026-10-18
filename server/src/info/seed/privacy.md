@@ -50,8 +50,8 @@ This list describes what the website's software actually stores.
   itself is never sent here. Your browser keeps an unlocked copy, itself encrypted, until you
   log out. Deleted with your account.
 - **What you have read in the chat** (members only): for each room and each private
-  conversation, up to which message you have read, so the site can count what is new for you.
-  Deleted with your account.
+  conversation, up to which message you have read, so the site can count what is new for you,
+  and which rooms you muted. Deleted with your account.
 - **Favourites in the chat** (members only): the rooms and other members you marked as
   favourites. Only you see them; they are deleted with your account. A member you marked does
   not learn about it. Next to your favourite members the chat shows whether they are online

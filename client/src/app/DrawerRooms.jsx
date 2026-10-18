@@ -3,7 +3,8 @@
 // Path:        client/src/app/DrawerRooms.jsx
 // Project:     Seasonal Entertainment
 // Description: The chat drawer's Rooms tab: the room picker (a member's favourite rooms first)
-//              with the star for the current room and each room's unread count, and the compact
+//              with the star and bell for the current room and each room's unread count (dimmed
+//              when muted), and the compact
 //              chat panel of that room.
 //              This browser remembers the last room (chatDrawerState.js).
 // ============================================================
@@ -11,6 +12,7 @@
 import { useState } from 'react';
 import {
   ChatPanel,
+  RoomBell,
   RoomStar,
   groupRooms,
   useChatRooms,
@@ -43,10 +45,12 @@ export default function DrawerRooms() {
           rooms={[...groups.favourites, ...groups.others]}
           favouriteCount={groups.favourites.length}
           unreadOf={unread.room}
+          mutedOf={unread.muted}
           value={room}
           onChange={changeRoom}
         />
         <RoomStar room={coloured.find((r) => r.slug === room)} />
+        <RoomBell room={coloured.find((r) => r.slug === room)} />
       </div>
       <ChatPanel room={room} variant="compact" />
     </>

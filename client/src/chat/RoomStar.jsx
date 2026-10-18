@@ -8,20 +8,18 @@
 // ============================================================
 
 import { useFavourites } from './favourites.js';
+import ToggleButton from './ToggleButton.jsx';
 
 export default function RoomStar({ room }) {
   const favourites = useFavourites();
   if (!favourites.member) return null;
-  const on = favourites.rooms.includes(room.slug);
   return (
-    <button
-      type="button"
-      className={`chat-star${on ? ' chat-star--on' : ''}`}
-      aria-pressed={on}
-      aria-label={`Favourite: ${room.name}`}
-      onClick={() => favourites.setRoom(room.slug, !on).catch(() => {})}
-    >
-      <span aria-hidden="true">{on ? '★' : '☆'}</span>
-    </button>
+    <ToggleButton
+      kind="star"
+      on={favourites.rooms.includes(room.slug)}
+      label={`Favourite: ${room.name}`}
+      glyphs={['★', '☆']}
+      onToggle={(on) => favourites.setRoom(room.slug, on).catch(() => {})}
+    />
   );
 }

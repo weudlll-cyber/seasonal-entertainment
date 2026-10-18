@@ -48,7 +48,8 @@ An entry moves from part one to part two only when its branch is merged into `ma
   ticks to share them; moderators' views audited; copies deleted 90 days after review).
 - **SE-DM-2 — unread counters, room mute, @mentions, member search, favourites star, presence
   setting, security fix** — in progress (on PR #5). Part 1: unread counters for rooms (blue) and
-  private messages (orange), live in every tab (docs/CHAT.md, "Unread counters").
+  private messages (orange), live in every tab (docs/CHAT.md, "Unread counters"). Part 2: muting
+  a room (bell; left out of the room total, its count dimmed).
 - **File uploads in direct messages** — open. Left out of v1 (decided 2026-10-18): an uploaded
   file would have to be encrypted in the browser too.
 - **Link previews in direct messages** — open. Left out of v1: the server would have to see the

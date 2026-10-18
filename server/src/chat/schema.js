@@ -11,7 +11,8 @@
 //              Members' favourite rooms and favourite members (gone with the account).
 //              Direct messages between members: only ciphertext, nonce and who/which keys
 //              (end-to-end encrypted, docs/CHAT.md). How far each member has read, per room
-//              and per direct conversation (chat_reads: the unread counters).
+//              and per direct conversation (chat_reads: the unread counters), and the rooms a
+//              member muted (left out of the room total).
 //              Reports of a private conversation: the reason, and only when the reporter chose
 //              to share them, copies of the selected messages as the reporter provided them.
 //              migrateChat() brings older databases up.
@@ -96,6 +97,12 @@ CREATE TABLE IF NOT EXISTS direct_messages (
 CREATE INDEX IF NOT EXISTS direct_by_sender ON direct_messages (sender_id, recipient_id, id);
 CREATE INDEX IF NOT EXISTS direct_by_recipient ON direct_messages (recipient_id, sender_id, id);
 CREATE INDEX IF NOT EXISTS direct_by_age ON direct_messages (created_at);
+CREATE TABLE IF NOT EXISTS chat_room_mutes (
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  room_id    INTEGER NOT NULL REFERENCES chat_rooms(id) ON DELETE CASCADE,
+  created_at TEXT    NOT NULL,
+  PRIMARY KEY (user_id, room_id)
+);
 CREATE TABLE IF NOT EXISTS chat_reads (
   user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   scope        TEXT    NOT NULL CHECK (scope IN ('room', 'direct')),

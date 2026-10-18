@@ -6,10 +6,12 @@
 //              others' messages count until the room is read; one's own never count; hidden
 //              messages never count; rooms the member cannot read never appear; messages from
 //              before the account existed do not count; guests have no counters; and the
-//              member's sockets hear "activity" and "read", so every tab recounts.
+//              member's sockets hear "activity" and "read", so every tab recounts. Muted rooms
+//              keep their own count, flagged muted, per account.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
+import { logIn } from './helpers/accountKeys.js';
 import { chatApp, post } from './helpers/chat.js';
 import { connect, cookieOf, listeningChat, stopServer } from './helpers/chatSocket.js';
 import { makeStaff, registerUser } from './helpers/testApp.js';
@@ -101,5 +103,30 @@ describe('live recounting', () => {
     // A guest has no counters and hears neither.
     expect(sockets[2].events).toEqual([]);
     for (const s of sockets) s.ws.close();
+  });
+});
+
+describe('muted rooms', () => {
+  it('stay counted per room, flagged muted, until unmuted; per account, not per device', async () => {
+    t = chatApp();
+    const anna = await registerUser(t, 'anna');
+    const ben = await registerUser(t, 'ben');
+    await post(ben.agent, 'general', 'one').expect(201);
+    const general = async (agent) =>
+      (await agent.get('/api/chat/unread')).body.rooms.find((r) => r.slug === 'general');
+    expect(await general(anna.agent)).toEqual({ slug: 'general', count: 1, muted: false });
+
+    await anna.agent.put('/api/chat/rooms/general/mute').expect(200);
+    expect(await general(anna.agent)).toEqual({ slug: 'general', count: 1, muted: true });
+    // The same account on another device sees it muted too; ben is not affected.
+    const otherDevice = t.client();
+    await logIn(otherDevice, 'anna', 'correct-horse-1');
+    expect((await general(otherDevice)).muted).toBe(true);
+    expect((await general(ben.agent)).muted).toBe(false);
+
+    await anna.agent.delete('/api/chat/rooms/general/mute').expect(200);
+    expect((await general(anna.agent)).muted).toBe(false);
+    expect((await t.client().put('/api/chat/rooms/general/mute')).status).toBe(401);
+    expect((await anna.agent.put('/api/chat/rooms/organisers/mute')).status).toBe(404);
   });
 });

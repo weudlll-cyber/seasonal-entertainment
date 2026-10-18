@@ -29,8 +29,16 @@ function groupsOf(rooms, favouriteCount) {
 }
 
 // rooms: [{ slug, name, season }], favourites first; favouriteCount: how many of them are
-// favourites; value: the current slug; onChange(slug); unreadOf(slug): its unread count.
-export default function RoomPicker({ rooms, favouriteCount = 0, value, onChange, unreadOf }) {
+// favourites; value: the current slug; onChange(slug); unreadOf(slug): its unread count;
+// mutedOf(slug): whether it is muted (its count dimmed).
+export default function RoomPicker({
+  rooms,
+  favouriteCount = 0,
+  value,
+  onChange,
+  unreadOf,
+  mutedOf,
+}) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const button = useRef(null);
@@ -138,6 +146,7 @@ export default function RoomPicker({ rooms, favouriteCount = 0, value, onChange,
                       count={unreadOf(room.slug)}
                       kind="room"
                       label={`${unreadOf(room.slug)} unread`}
+                      dim={mutedOf(room.slug)}
                     />
                   </li>
                 ))}

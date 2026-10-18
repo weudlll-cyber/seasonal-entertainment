@@ -2,13 +2,14 @@
    File:        ChatFavourites.css
    Path:        client/src/chat/ChatFavourites.css
    Project:     Seasonal Entertainment
-   Description: Favourites in the chat module: the room star, the room list's group headings
-                ("Favourites", "Rooms"), and a member's name as a button with its small menu.
-                Under the .se-chat root like every module style, except the star, which a
-                host's room picker shows too.
+   Description: Favourites and room settings in the chat module: the small toggles (star,
+                bell; ToggleButton), the room list's group headings ("Favourites", "Rooms"),
+                and a member's name as a button with its small menu. Under the .se-chat root
+                like every module style, except the toggles, which a host's room picker shows
+                too.
    ============================================================ */
 
-.chat-star {
+.chat-toggle {
   display: inline-grid;
   place-items: center;
   flex: none;
@@ -23,8 +24,13 @@
   cursor: pointer;
 }
 
-.chat-star--on {
+.chat-toggle--star.chat-toggle--on {
   color: var(--color-autumn, #f9a825);
+}
+
+/* The bell sits in a row of small toggles; the muted glyph says it already. */
+.chat-toggle--bell {
+  font-size: 1rem;
 }
 
 .se-chat .chat-rooms-nav {

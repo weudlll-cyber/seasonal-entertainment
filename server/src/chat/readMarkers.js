@@ -7,8 +7,28 @@
 //              (scope 'room' or 'direct'). A room's unread messages are the ones after the
 //              marker that are not the member's own and not hidden; without a marker yet, only
 //              messages written after the account was created count. A conversation's unread
-//              messages are the partner's after the marker.
+//              messages are the partner's after the marker. Also which rooms a member muted.
 // ============================================================
+
+// Ids of the rooms the member muted (their unread messages stay out of the room total).
+export function mutedRoomIds(db, userId) {
+  return new Set(
+    db
+      .prepare('SELECT room_id AS id FROM chat_room_mutes WHERE user_id = ?')
+      .all(userId)
+      .map((r) => r.id)
+  );
+}
+
+export function setRoomMuted(db, userId, roomId, muted) {
+  if (muted) {
+    db.prepare(
+      'INSERT OR IGNORE INTO chat_room_mutes (user_id, room_id, created_at) VALUES (?, ?, ?)'
+    ).run(userId, roomId, new Date().toISOString());
+  } else {
+    db.prepare('DELETE FROM chat_room_mutes WHERE user_id = ? AND room_id = ?').run(userId, roomId);
+  }
+}
 
 // The member has read up to `lastId` (a marker never moves backwards).
 export function markRead(db, userId, scope, targetId, lastId) {

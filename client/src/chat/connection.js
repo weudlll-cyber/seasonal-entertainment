@@ -9,7 +9,7 @@
 //              server knows the reader from the session cookie at connect time only, so a new
 //              account (login, logout, switch) opens a fresh connection (connectAs). Events
 //              for the account itself need no subscription — new direct messages, activity in a
-//              readable room and the member's own reads (the unread counters) — and
+//              readable room, the member's own reads and mutes (the unread counters) — and
 //              joinPersonal() hands them on.
 // ============================================================
 
@@ -17,7 +17,7 @@ const RECONNECT_MS = 3000;
 // An unused socket is closed after the current render, not during it: a panel that leaves and
 // comes straight back (React's StrictMode remounts every effect in development) reuses it.
 const listeners = new Map(); // room slug -> Set of event handlers
-const PERSONAL = new Set(['direct', 'activity', 'read']); // events for the account itself
+const PERSONAL = new Set(['direct', 'activity', 'read', 'muted']); // events for the account itself
 const personal = new Set(); // their handlers
 let socket = null;
 let retry = null;

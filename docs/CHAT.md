@@ -97,6 +97,11 @@ in two colours (decided 2026-10-18): **blue** (winter, `#04AAF7`) for room messa
 - **Reading**: a room panel (drawer or `/chat`) that shows the newest message — scrolled to the
   bottom, no "New messages" waiting — moves the marker (`POST /api/chat/rooms/<slug>/read`); an
   opened conversation does the same (`POST /api/chat/direct/<id>/read`).
+- **Muting a room** (members): a bell (`RoomBell`, `aria-pressed`, label "Mute: <room>") beside
+  each room in the full chat's room list and beside the drawer's room picker. A muted room stays
+  readable as normal; its own count is shown dimmed and left out of the blue total. Stored per
+  account on the server (`chat_room_mutes`, `PUT`/`DELETE /api/chat/rooms/<slug>/mute`), so it
+  holds across reloads and devices; the member's other sockets hear "muted" and recount.
 - **One store** (`client/src/chat/unread.js`, `useUnread()`): all counts come from one request,
   `GET /api/chat/unread`; no badge fetches on its own. The server pushes "activity" to every
   account socket that may read a room when a message arrives or is hidden there, and "read" to all

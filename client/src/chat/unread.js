@@ -5,8 +5,9 @@
 // Description: The unread counters, held once per page (docs/CHAT.md, "Unread counters"): every
 //              readable room's count and every direct partner's count, loaded in one request
 //              and loaded again (briefly debounced) whenever the server says something changed
-//              — a new message, a hidden one, or the member's own read in any tab. Every badge
-//              reads from here; none fetches on its own. Members only: guests have no counters.
+//              — a new message, a hidden one, or the member's own read or mute in any tab.
+//              Every badge reads from here; none fetches on its own. Muted rooms keep their own
+//              count but stay out of the room total. Members only: guests have no counters.
 // ============================================================
 
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
@@ -43,14 +44,15 @@ async function load(userId) {
   const data = await api('/chat/unread');
   if (loadedFor !== userId) return; // a logout or switch meanwhile
   setState({
-    rooms: Object.fromEntries(data.rooms.map((r) => [r.slug, r.count])),
+    rooms: Object.fromEntries(data.rooms.map((r) => [r.slug, { count: r.count, muted: r.muted }])),
     direct: Object.fromEntries(data.direct.map((d) => [d.partnerId, d.count])),
   });
 }
 
-const sum = (counts) => Object.values(counts).reduce((total, n) => total + n, 0);
+const sum = (counts) => counts.reduce((total, n) => total + n, 0);
 
-// Returns { member, room(slug), direct(partnerId), roomTotal, directTotal }; zeros for guests.
+// Returns { member, room(slug), muted(slug), setMuted(slug, on), direct(partnerId), roomTotal,
+// directTotal }; zeros for guests.
 export function useUnread() {
   const { user } = useSession();
   const userId = user?.id ?? null;
@@ -71,12 +73,17 @@ export function useUnread() {
   }, [userId]);
   usePersonalEvents(onEvent);
 
+  const rooms = Object.values(current.rooms);
   return {
     member: userId !== null,
-    room: (slug) => current.rooms[slug] ?? 0,
+    room: (slug) => current.rooms[slug]?.count ?? 0,
+    muted: (slug) => current.rooms[slug]?.muted ?? false,
+    // The server tells every tab ("muted"), which then recounts.
+    setMuted: (slug, on) =>
+      api(`/chat/rooms/${encodeURIComponent(slug)}/mute`, { method: on ? 'PUT' : 'DELETE' }),
     direct: (partnerId) => current.direct[partnerId] ?? 0,
-    roomTotal: sum(current.rooms),
-    directTotal: sum(current.direct),
+    roomTotal: sum(rooms.filter((r) => !r.muted).map((r) => r.count)),
+    directTotal: sum(Object.values(current.direct)),
   };
 }
 

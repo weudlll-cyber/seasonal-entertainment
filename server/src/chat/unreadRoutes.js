@@ -6,14 +6,16 @@
 //              no account to keep read state): GET /api/chat/unread gives every readable room's
 //              count and every direct partner's count in one answer, for the client's one
 //              shared store; POST /api/chat/rooms/<slug>/read moves the member's marker when a
-//              panel showed the newest message. Each change tells the member's other sockets
-//              to recount (other tabs stay in step).
+//              panel showed the newest message; PUT / DELETE /api/chat/rooms/<slug>/mute mutes a
+//              room for the member (its count is then left out of the room total; still
+//              readable as normal). Each change tells the member's other sockets to recount
+//              (other tabs and devices stay in step).
 // ============================================================
 
 import express from 'express';
 import { allow } from '../http/access.js';
 import { positiveInteger, validBody } from '../http/validate.js';
-import { directUnread, markRead, roomUnread } from './readMarkers.js';
+import { directUnread, markRead, mutedRoomIds, roomUnread, setRoomMuted } from './readMarkers.js';
 import { roomLoader } from './roomLoader.js';
 import { listRooms } from './store.js';
 import { canRead, chatViewer } from './viewer.js';
@@ -24,6 +26,7 @@ export function unreadRoutes(db, hub) {
   router.get('/unread', allow('member'), (req, res) => {
     const viewer = chatViewer(req);
     const rooms = listRooms(db).filter((room) => canRead(room, viewer));
+    const muted = mutedRoomIds(db, req.user.id);
     const counts = roomUnread(
       db,
       req.user.id,
@@ -31,7 +34,7 @@ export function unreadRoutes(db, hub) {
     );
     res.json({
       ok: true,
-      rooms: rooms.map((r) => ({ slug: r.slug, count: counts[r.id] ?? 0 })),
+      rooms: rooms.map((r) => ({ slug: r.slug, count: counts[r.id] ?? 0, muted: muted.has(r.id) })),
       direct: Object.entries(directUnread(db, req.user.id)).map(([partnerId, count]) => ({
         partnerId: Number(partnerId),
         count,
@@ -46,6 +49,17 @@ export function unreadRoutes(db, hub) {
     hub.sendToUser(req.user.id, { type: 'read' });
     res.json({ ok: true });
   });
+
+  for (const [method, muted] of [
+    ['put', true],
+    ['delete', false],
+  ]) {
+    router[method]('/rooms/:slug/mute', allow('member'), roomLoader(db), (req, res) => {
+      setRoomMuted(db, req.user.id, req.room.id, muted);
+      hub.sendToUser(req.user.id, { type: 'muted' });
+      res.json({ ok: true });
+    });
+  }
 
   return router;
 }
