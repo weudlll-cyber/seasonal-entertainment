@@ -10,7 +10,7 @@
 //              also for a muted room.
 // ============================================================
 
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, expect, it, vi } from 'vitest';
 import App from '../app/App.jsx';
@@ -127,6 +127,16 @@ it('suggests members of the room while "@name" is typed', async () => {
   fireEvent.keyDown(field, { key: 'Escape' });
   expect(screen.queryByRole('listbox', { name: 'Mention a member' })).toBeNull();
   expect(field).toHaveValue('hi @ki');
+});
+
+it('a pick just before the panel closes does no harm', async () => {
+  chat(signedIn(MIA));
+  const field = await screen.findByLabelText('Message');
+  fireEvent.change(field, { target: { value: 'hi @ki', selectionStart: 6 } });
+  await screen.findByRole('listbox', { name: 'Mention a member' });
+  fireEvent.keyDown(field, { key: 'Enter' });
+  cleanup(); // the panel is gone before the next frame
+  await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 20)));
 });
 
 it('guests get no suggestions', async () => {

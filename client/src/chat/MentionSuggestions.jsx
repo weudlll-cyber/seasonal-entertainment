@@ -40,9 +40,10 @@ export function useMentionSuggestions({ field, draft, setDraft, room }) {
     const next = token.start + inserted.length;
     setCaret(next);
     setActive(0);
+    // A frame later the composer may be gone (the panel closed): then there is nothing to do.
     requestAnimationFrame(() => {
-      field.current.focus();
-      field.current.setSelectionRange(next, next);
+      field.current?.focus();
+      field.current?.setSelectionRange(next, next);
     });
   }
 

@@ -35,9 +35,10 @@ export default function ChatComposer({ user, guestName, onSend, files = true, ro
     const next = draft.slice(0, start) + emoji + draft.slice(end);
     if (next.length > MESSAGE_MAX) return;
     setDraft(next);
+    // A frame later the composer may be gone (the panel closed): then there is nothing to do.
     requestAnimationFrame(() => {
-      field.current.focus();
-      field.current.setSelectionRange(start + emoji.length, start + emoji.length);
+      field.current?.focus();
+      field.current?.setSelectionRange(start + emoji.length, start + emoji.length);
     });
   }
 

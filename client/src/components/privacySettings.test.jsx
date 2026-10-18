@@ -69,6 +69,9 @@ it('a "presence" event reloads the online marks', async () => {
     </SessionProvider>
   );
   expect(await screen.findByText('online')).toBeInTheDocument();
+  // The live connection and the favourites wait for the session; the list may show before.
+  await vi.waitFor(() => expect(FakeSocket.all.length).toBeGreaterThan(0));
+  await vi.waitFor(() => expect(calls.some((c) => c.key === 'GET /chat/favourites')).toBe(true));
   online = false;
   const before = calls.filter((c) => c.key === 'GET /chat/favourites').length;
   act(() => FakeSocket.all.at(-1).push({ type: 'presence' }));
