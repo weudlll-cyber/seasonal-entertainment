@@ -75,6 +75,8 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork 
     sessions: {
       ended: (sessionId) => hub.disconnectSession(sessionId),
       accountChanged: (userId, keepSessionId) => hub.disconnectUser(userId, keepSessionId),
+      // A member showed or hid their online status: open lists reload their presence.
+      presenceChanged: () => hub.sendToMembers({ type: 'presence' }),
     },
     // The live connection, once the HTTP server listens.
     attach: (server) => attachChatSocket(server, { hub, sessionParser, db, config }),

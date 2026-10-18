@@ -9,7 +9,8 @@
 //              checked in the browser (shared/accountRules.js). A password change also carries
 //              the private key sealed again with the new wrapping key (keys/), stored in the
 //              same transaction as the new verifier. Logout and password change also close
-//              the affected chat sockets (chat/mount.js).
+//              the affected chat sockets (chat/mount.js). PUT /api/auth/privacy: the member's
+//              own "Show when I'm online".
 // ============================================================
 
 import express from 'express';
@@ -29,7 +30,13 @@ import { authKeyField, optional, saltField, sealedKeyField } from './credentials
 import { loginRoutes } from './loginRoutes.js';
 import { provesPassword } from './passwordProof.js';
 import { hashPassword } from './passwords.js';
-import { DuplicateAccountError, createUser, publicUser, setPasswordHash } from './userStore.js';
+import {
+  DuplicateAccountError,
+  createUser,
+  publicUser,
+  setPasswordHash,
+  setShowOnline,
+} from './userStore.js';
 
 // chatSessions: the chat handle's sessions interface (chat/mount.js).
 export function accountRoutes(db, config, chatSessions) {
@@ -103,6 +110,18 @@ export function accountRoutes(db, config, chatSessions) {
     // Every other session of this account ends; this one is re-stamped and stays.
     await restampSession(req, epoch);
     chatSessions.accountChanged(req.user.id, req.sessionID);
+    res.json({ ok: true });
+  });
+
+  // "Show when I'm online": the member's own setting only (the account comes from the
+  // session). The change takes effect at once: open chat lists hear "presence" and reload.
+  router.put('/privacy', allow('member'), (req, res) => {
+    const input = validBody(req, res, {
+      showOnline: (v) => (typeof v === 'boolean' ? null : 'showOnline must be true or false.'),
+    });
+    if (!input) return;
+    setShowOnline(db, req.user.id, input.showOnline);
+    chatSessions.presenceChanged();
     res.json({ ok: true });
   });
 

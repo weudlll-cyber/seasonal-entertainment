@@ -285,6 +285,8 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
 - **Unread counters** (docs/CHAT.md, "Unread counters"): read markers per member, room and
   conversation (`chat_reads`); `GET /api/chat/unread` feeds one client store, kept live by
   "activity" and "read" pushes (`hub.notifyReaders`, `hub.sendToUser`).
+- **Online status** (docs/CHAT.md, "Online status"): `hub.onlineUserIds()` is the one source of
+  presence and honours each member's "Show when I'm online" (`users.show_online`).
 - **@mentions** (docs/CHAT.md): `server/src/chat/mentions.js` stores who a room message mentions
   (`chat_mentions`); the counters add each room's unread mentions.
 - **Member search** (docs/CHAT.md, "Finding a member"): `GET /api/chat/members`, its own rate

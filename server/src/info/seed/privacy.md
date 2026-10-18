@@ -57,8 +57,10 @@ This list describes what the website's software actually stores.
   and which rooms you muted. Deleted with your account.
 - **Favourites in the chat** (members only): the rooms and other members you marked as
   favourites. Only you see them; they are deleted with your account. A member you marked does
-  not learn about it. Next to your favourite members the chat shows whether they are online
-  right now (have the chat open); this is not stored.
+  not learn about it. Next to your favourite members (and in your private conversations and when
+  searching for a member) the chat shows whether they are online right now (have the chat open);
+  this is not stored. You can switch off "Show when I'm online" on your account page: then nobody
+  sees you as online. The site stores this choice with your account.
 - **Stickers and GIFs in the chat** come from this site's own library, managed by its admins. No
   outside GIF or sticker service is contacted.
 - **Files in the chat**: members (not guests) can send images (JPG, PNG, WebP, GIF) and PDF

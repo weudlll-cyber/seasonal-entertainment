@@ -18,6 +18,7 @@ import { addMissingColumns } from '../db/addColumns.js';
 // kdf_salt:        the account's random 16-byte salt for that derivation (base64); NULL only
 //                  for legacy accounts.
 // legacy:          1 for accounts created before the key split, until their next login.
+// show_online:     whether others see this member as online (the chat; default on).
 export const ACCOUNTS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
   id              INTEGER PRIMARY KEY,
@@ -31,6 +32,7 @@ CREATE TABLE IF NOT EXISTS users (
   session_epoch   INTEGER NOT NULL DEFAULT 0,
   kdf_salt        TEXT,
   legacy          INTEGER NOT NULL DEFAULT 0 CHECK (legacy IN (0, 1)),
+  show_online     INTEGER NOT NULL DEFAULT 1 CHECK (show_online IN (0, 1)),
   created_at      TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 `;
@@ -46,4 +48,6 @@ export const migrateAccounts = (db) =>
       'INTEGER NOT NULL DEFAULT 0 CHECK (legacy IN (0, 1))',
       'UPDATE users SET legacy = 1 WHERE kdf_salt IS NULL',
     ],
+    // Existing accounts keep today's behaviour: shown as online.
+    ['users', 'show_online', 'INTEGER NOT NULL DEFAULT 1 CHECK (show_online IN (0, 1))'],
   ]);

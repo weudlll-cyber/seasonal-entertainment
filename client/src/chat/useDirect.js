@@ -27,9 +27,13 @@ export function sortConversations(list) {
   ];
 }
 
-// Re-runs `load` whenever a direct message arrives for this member.
+// Re-runs `load` whenever a direct message arrives for this member, or someone's online
+// visibility changed ("presence": the online marks may be different now).
 function useDirectEvents(load) {
-  const onEvent = useCallback((event) => event.type === 'direct' && load(), [load]);
+  const onEvent = useCallback(
+    (event) => (event.type === 'direct' || event.type === 'presence') && load(),
+    [load]
+  );
   usePersonalEvents(onEvent);
 }
 

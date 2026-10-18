@@ -8,11 +8,16 @@
 // ============================================================
 
 const COLUMNS = `id, username, email, role, can_start_games AS canStartGames, locked,
-  session_epoch AS sessionEpoch, created_at AS createdAt`;
+  session_epoch AS sessionEpoch, show_online AS showOnline, created_at AS createdAt`;
 
 function toUser(row) {
   if (!row) return null;
-  return { ...row, canStartGames: row.canStartGames === 1, locked: row.locked === 1 };
+  return {
+    ...row,
+    canStartGames: row.canStartGames === 1,
+    locked: row.locked === 1,
+    showOnline: row.showOnline === 1,
+  };
 }
 
 export class DuplicateAccountError extends Error {
@@ -104,6 +109,25 @@ export function bumpSessionEpoch(db, id) {
     .get(id).e;
 }
 
+// "Show when I'm online" (the member's own setting).
+export function setShowOnline(db, id, show) {
+  db.prepare('UPDATE users SET show_online = ? WHERE id = ?').run(show ? 1 : 0, id);
+}
+
+// Of these account ids, the ones that let others see them online.
+export function idsShowingOnline(db, ids) {
+  const list = [...ids];
+  if (list.length === 0) return new Set();
+  return new Set(
+    db
+      .prepare(
+        `SELECT id FROM users WHERE show_online = 1 AND id IN (${list.map(() => '?').join(',')})`
+      )
+      .all(...list)
+      .map((r) => r.id)
+  );
+}
+
 export function countAdmins(db) {
   return db.prepare("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'").get().n;
 }
@@ -116,5 +140,6 @@ export function publicUser(user) {
     email: user.email,
     role: user.role,
     canStartGames: user.canStartGames || user.role === 'admin',
+    showOnline: user.showOnline,
   };
 }

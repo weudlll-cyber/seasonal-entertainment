@@ -31,7 +31,10 @@ test('a report shares message text only with consent', async ({ browser }) => {
   await writer.page.getByRole('menuitem', { name: 'Send private message' }).click();
   await writer.page.getByLabel('Message', { exact: true }).fill(rude);
   await writer.page.getByRole('button', { name: 'Send' }).click();
-  await expect(writer.page.getByText(rude)).toBeVisible();
+  // Scoped to the conversation: the field may still hold the text until the send completes.
+  await expect(
+    writer.page.getByRole('list', { name: 'Private messages with rpreporter' }).getByText(rude)
+  ).toBeVisible();
 
   await reporter.page.getByRole('tab', { name: 'Direct' }).click();
   await reporter.page.getByRole('button', { name: /^rpwriter/ }).click();

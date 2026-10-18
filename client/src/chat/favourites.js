@@ -5,16 +5,19 @@
 // Description: The signed-in member's favourite rooms and members, held once per page so every
 //              place that shows them (the drawer's room picker, the full chat's room list, the
 //              name menus, the Direct tab) agrees. useFavourites() loads them for members and
-//              clears them for guests; adding or removing goes to the server, then reloads.
+//              clears them for guests; adding or removing goes to the server, then reloads; so
+//              does a "presence" event (someone showed or hid their online status).
 // ============================================================
 
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { api } from '../api/http.js';
 import { useSession } from '../session/SessionContext.jsx';
+import { usePersonalEvents } from './usePersonalEvents.js';
 
 const EMPTY = { rooms: [], users: [] };
 let state = EMPTY;
 let loadedFor = null; // the account the state belongs to
+let presenceTimer = null; // one reload per "presence" event, however many components listen
 const listeners = new Set();
 
 function setState(next) {
@@ -64,6 +67,16 @@ export function useFavourites() {
       load(userId).catch(() => {});
     }
   }, [userId]);
+
+  const onEvent = useCallback(
+    (event) => {
+      if (event.type !== 'presence') return;
+      clearTimeout(presenceTimer);
+      presenceTimer = setTimeout(() => load(userId).catch(() => {}), 0);
+    },
+    [userId]
+  );
+  usePersonalEvents(onEvent);
 
   const change = useCallback(
     async (path, on) => {

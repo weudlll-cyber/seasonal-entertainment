@@ -128,7 +128,7 @@ per account (`chat_favourite_rooms`, `chat_favourite_users`; deleted with either
   plain text, and guests see no menus or stars. Messages carry the author's account id
   (`authorId`, `null` for guests) for this.
 - **API** (`server/src/chat/favouriteRoutes.js`, members only): `GET /api/chat/favourites` →
-  `{ rooms: [slug], users: [{ id, username, online }] }` (online: an open chat socket right now);
+  `{ rooms: [slug], users: [{ id, username, online }] }` (online: see "Online status");
   `PUT`/`DELETE /api/chat/favourites/rooms/<slug>` and `/users/<id>`. The account always comes
   from the session, so nobody can read or change another member's favourites. A guest is not an
   account and so cannot be a favourite; neither can oneself.
@@ -249,6 +249,20 @@ members who may read it, judged by the same rule as their own requests; the sear
 to read it too. Each result is exactly `{ id, username, canReceive, online }`: never an email or
 anything else.
 
+## Online status
+
+A member counts as online while they have the chat open (an open chat socket). The site shows it
+beside favourite members, in the Direct list and conversation, and in "Find a member" results.
+
+- **"Show when I'm online"** (account page, "Privacy"; decided 2026-10-18): a switch, **on** by
+  default for new and existing accounts (`users.show_online`, `PUT /api/auth/privacy`, the
+  member's own account only). Off, the member appears offline to everyone else everywhere: every
+  presence the server hands out goes through one place (`hub.onlineUserIds()`), which leaves them
+  out. Their own view of others does not change.
+- **Live**: a change is pushed as "presence" to every member's open sockets; open lists (the
+  favourites, the Direct list) reload their online marks at once.
+- There are no room online lists or presence counts; if they come, they must use the same place.
+
 ## Reporting a direct message
 
 Moderators and admins may see direct messages **only when the affected member releases them**
@@ -283,6 +297,7 @@ uploads (`server/src/uploads/`), the WebSocket hub and the retention job:
 const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork });
 // chat.sessions.ended(sessionId)                 logout: close that session's sockets
 // chat.sessions.accountChanged(userId, keepSid)  role, lock, password, 2FA: close the account's sockets
+// chat.sessions.presenceChanged()                 someone showed or hid their online status
 // chat.attach(httpServer)                        the WebSocket, once the server listens
 // await chat.start()                             first-start rooms and media, retention job
 ```

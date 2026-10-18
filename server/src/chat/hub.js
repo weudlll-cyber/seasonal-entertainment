@@ -9,6 +9,7 @@
 // ============================================================
 
 import { WebSocket } from 'ws';
+import { idsShowingOnline } from '../accounts/userStore.js';
 import { findRoom } from './store.js';
 import { canRead, sessionViewer } from './viewer.js';
 
@@ -93,13 +94,25 @@ export class ChatHub {
     }
   }
 
-  // Accounts with an open chat socket right now: the "online" mark beside favourite members.
+  // Accounts others may see as online right now: an open chat socket, and "Show when I'm
+  // online" on. Every presence the server hands out comes from here, so a member who hides it
+  // never appears online anywhere.
   onlineUserIds() {
     const ids = new Set();
     for (const session of this.sessions.values()) {
       if (session.data.userId !== undefined) ids.add(session.data.userId);
     }
-    return ids;
+    return idsShowingOnline(this.db, ids);
+  }
+
+  // To every signed-in member's sockets (e.g. "presence": someone's visibility changed).
+  sendToMembers(event) {
+    const text = JSON.stringify(event);
+    for (const [socket, session] of this.sessions) {
+      if (session.data.userId !== undefined && socket.readyState === WebSocket.OPEN) {
+        socket.send(text);
+      }
+    }
   }
 
   disconnectSession(sessionId) {
