@@ -6,7 +6,8 @@
 //              JSON API under /api (the chat area through mountChat; calls, docs/CALLS.md,
 //              with the call service built from config) and, when a built client
 //              exists, the static client with a fallback to index.html for client routes. No
-//              listen(), so tests drive it directly; app.locals.chat is the chat's handle.
+//              listen(), so tests drive it directly; app.locals.chat is the chat's handle,
+//              app.locals.calls.start() starts the stale-call job (calls/staleCalls.js).
 // ============================================================
 
 import { existsSync } from 'node:fs';
@@ -19,6 +20,7 @@ import { callRoutes } from './calls/routes.js';
 import { callSpotlightRoutes } from './calls/spotlightRoutes.js';
 import { callStageRoutes } from './calls/stageRoutes.js';
 import { createCallService } from './calls/service.js';
+import { startStaleCalls } from './calls/staleCalls.js';
 import { mountChat } from './chat/mount.js';
 import { adminUserRoutes } from './admin/userRoutes.js';
 import { accountRoutes } from './accounts/routes.js';
@@ -87,6 +89,7 @@ export function createApp({
   api.use('/calls', callJoinRoutes(db, config, callService, chat));
   api.use('/calls', callStageRoutes(db, config, callService, chat));
   api.use('/calls', callSpotlightRoutes(db, config, callService));
+  app.locals.calls = { start: (log) => startStaleCalls(db, config, callService, chat, log) };
 
   // Unknown API paths answer JSON, never the HTML page.
   api.use((_req, res) => sendError(res, 404, 'not_found', 'No such API endpoint.'));

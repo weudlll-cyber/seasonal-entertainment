@@ -399,7 +399,8 @@ server/
   src/config.js            environment configuration
   src/calls/               community calls (docs/CALLS.md): call service configuration, the
                            call service adapter, schema, store, participants, grants and join
-                           tokens, spotlight rule, routes (management, join, stage, spotlight)
+                           tokens, spotlight rule, routes (management, join, stage, spotlight),
+                           ending a call and the stale-call job
   src/settings/            admin-editable site settings: definitions, store, admin routes
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests

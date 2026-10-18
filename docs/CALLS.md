@@ -68,7 +68,18 @@ Generate a production pair on the call server with
   A change applies only from the expected status, so two organisers acting at once cannot both
   succeed. Starting opens the call's room on the call service with the participant cap; ending
   marks the call ended first (nobody can join any more), then deletes the room (everyone is
-  disconnected) and closes the call's chat.
+  disconnected) and closes the call's chat (`server/src/calls/endCall.js`, the one way a call
+  ends).
+- **Stale live calls** (SE-NIGHT-2 part 2): a call marked live whose room no longer exists on
+  the call service — everyone left and the service closed the room, or the service restarted —
+  is ended by the site **10 minutes** after the room was first found missing (decision rule of
+  2026-10-18; the owner may change it). It ends exactly like "End call": status `ended`, the
+  chat read-only, an audit entry `call.end` with the actor **system**. The job
+  (`server/src/calls/staleCalls.js`) checks at server start and then every minute; the time a
+  room was first missing is stored (`calls.room_missing_since`), so a restart neither resets
+  nor skips the grace, and a room that comes back clears it. A call service that cannot be
+  reached ends nothing (the check is skipped and logged). Off when `backgroundJobs` is off,
+  like the chat retention.
 - **Call chat**: every call gets a chat room of the existing chat module (`call-<id>`, "Call:
   <title>"), readable and writable by everyone; guests may write there when they may in General
   at the moment the call is created (decided 2026-10-18). It is **unlisted** (not in the room

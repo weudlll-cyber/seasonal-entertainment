@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: The site's one door to the call service (LiveKit's RoomService API, server SDK
 //              livekit-server-sdk): open and close a call's room, list who is in it, change a
-//              participant's permissions, name and attributes, mute a track, set the room's
+//              participant's permissions, name and attributes, mute a track, which of some rooms
+//              still exist (the stale-call job, staleCalls.js), set the room's
 //              metadata (the spotlight), and sign join tokens (grants.js). Built from
 //              config.calls; the routes take it as a parameter, so tests hand in a stand-in with
 //              the same methods and never need a running call server.
@@ -33,6 +34,9 @@ export function createCallService(calls) {
       }
     },
     listParticipants: (name) => rooms.listParticipants(name),
+    // Of these room names, the ones the call service still has. Throws when it cannot be
+    // reached, so an outage never looks like rooms that are gone.
+    existingRooms: async (names) => (await rooms.listRooms(names)).map((room) => room.name),
     // options: { permission, name, attributes } (only what changes).
     updateParticipant: (name, identity, options) =>
       rooms.updateParticipant(name, identity, options),
