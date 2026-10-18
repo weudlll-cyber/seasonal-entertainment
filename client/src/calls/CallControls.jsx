@@ -12,6 +12,7 @@
 import { useState } from 'react';
 import Icon from '../app/icons.jsx';
 import { HEADPHONES_HINT } from './stageModel.js';
+import './callControls.css';
 
 function ControlButton({ icon, label, pressed, onClick, danger = false, ...rest }) {
   return (

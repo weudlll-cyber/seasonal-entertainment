@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import Icon from '../app/icons.jsx';
 import { audienceOrder, findListeners } from './stageModel.js';
+import './audience.css';
 
 // onInvite(identity): organisers only, else null.
 export default function Audience({ listeners, onInvite }) {

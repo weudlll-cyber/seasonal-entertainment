@@ -14,6 +14,7 @@ import Icon from '../app/icons.jsx';
 import SpeakerTile from './SpeakerTile.jsx';
 import { spotlightSpeaker } from './stageModel.js';
 import { TrackVideo, participantOf, trackOf } from './TrackMedia.jsx';
+import './stage.css';
 
 function Highlighted({ person, room }) {
   const screen = trackOf(room, person.identity, Track.Source.ScreenShare);
