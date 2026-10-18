@@ -39,7 +39,9 @@ import it is allowed.
 
 The module uses nothing else from the page around it. From outside its folder it imports only
 React, the shared chat rules (`@seasonal-entertainment/shared/chatRules.js`), the account context
-(`client/src/session/SessionContext.jsx`) and the site's API client (`client/src/api/http.js`);
+(`client/src/session/SessionContext.jsx`), the site's API client (`client/src/api/http.js`) and
+the site's stroke icons (`client/src/app/icons.jsx`, a leaf file without imports; since
+2026-10-18, so the stars and bells match the rest of the site);
 `client/src/chat/chatModule.test.js` fails on any other import, and on any page importing a file
 of the module other than `index.js`.
 
@@ -97,8 +99,9 @@ in two colours (decided 2026-10-18): **blue** (winter, `#04AAF7`) for room messa
 - **Reading**: a room panel (drawer or `/chat`) that shows the newest message — scrolled to the
   bottom, no "New messages" waiting — moves the marker (`POST /api/chat/rooms/<slug>/read`); an
   opened conversation does the same (`POST /api/chat/direct/<id>/read`).
-- **Muting a room** (members): a bell (`RoomBell`, `aria-pressed`, label "Mute: <room>") beside
-  each room in the full chat's room list and beside the drawer's room picker. A muted room stays
+- **Muting a room** (members): a bell (`RoomBell`, `aria-pressed`, label "Mute: <room>"; the bell
+  icon when sounding, the bell with a slash when muted) beside each room in the full chat's room
+  list and beside the drawer's room picker. A muted room stays
   readable as normal; its own count is shown dimmed and left out of the blue total. Stored per
   account on the server (`chat_room_mutes`, `PUT`/`DELETE /api/chat/rooms/<slug>/mute`), so it
   holds across reloads and devices; the member's other sockets hear "muted" and recount.
@@ -113,7 +116,8 @@ Members (never guests) keep favourite **rooms** and favourite **members**, store
 per account (`chat_favourite_rooms`, `chat_favourite_users`; deleted with either account).
 
 - **Rooms**: a star beside each room in the full chat's room list and beside the drawer's room
-  picker (`aria-pressed`, label "Favourite: <room>"). Favourite rooms come first under a
+  picker (`aria-pressed`, label "Favourite: <room>"; an outline star when off, a filled autumn
+  star when on). Favourite rooms come first under a
   "Favourites" heading (in the picker: a "Favourites" group of the listbox), then the rest; the
   keyboard moves through both as one list. Rooms keep their colour mark by their place among all
   rooms. Only rooms the member may read can be favourites, and a favourite the member can no
@@ -121,7 +125,8 @@ per account (`chat_favourite_rooms`, `chat_favourite_users`; deleted with either
 - **Members**: in every message, another member's name is a button opening a small menu ("Send
   private message", "Add to favourites" / "Remove from favourites"; Enter, Space or ArrowDown
   open it on the first item, arrows move, Escape closes and returns to the name). The same star
-  as for rooms (`UserStar`, both drawn by one `ToggleButton`) sits beside each conversation in
+  as for rooms (`UserStar`; every star and bell is one `ToggleButton` with the site's stroke
+  icons, `client/src/app/icons.jsx`, docs/DESIGN.md "Icons") sits beside each conversation in
   the Direct list and each "Find a member" result (there in a column beside the listbox, since a
   button inside an option could not be operated); all of them change the same favourites, and
   favourite partners stay listed first. Guests' names and one's own name stay

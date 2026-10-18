@@ -5,7 +5,8 @@
 // Description: The favourite star beside members in the Direct tab: starring a conversation
 //              partner stores the favourite and moves them first; a fresh page shows it still
 //              starred; the name menu in a room then offers "Remove from favourites" (one
-//              shared state); a "Find a member" result shows the same star.
+//              shared state); a "Find a member" result shows the same star (the filled stroke
+//              icon, as for rooms).
 // ============================================================
 
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
@@ -105,6 +106,9 @@ const order = () =>
       .querySelectorAll('.chat-direct-list__name'),
   ].map((n) => n.textContent);
 
+// The stroke icon a toggle shows (icons.jsx names it in data-icon).
+const iconOf = (button) => button.querySelector('svg').dataset.icon;
+
 it('starring a partner moves them first and stays; the name menu agrees', async () => {
   await chatPage();
   await screen.findByRole('list', { name: 'Private conversations' });
@@ -139,4 +143,7 @@ it('a fresh page shows the star still on, also on a search result', async () => 
     'aria-pressed',
     'true'
   );
+  // Same star drawing as in the rooms: the filled stroke star.
+  expect(iconOf(within(stars).getByRole('button', { name: 'Favourite: ann' }))).toBe('star-filled');
+  expect(iconOf(star)).toBe('star-filled');
 });

@@ -7,6 +7,7 @@
 //              API, so a host's own room picker (the site's chat drawer) shows the same star.
 // ============================================================
 
+import Icon from '../app/icons.jsx';
 import { useFavourites } from './favourites.js';
 import ToggleButton from './ToggleButton.jsx';
 
@@ -18,7 +19,7 @@ export default function RoomStar({ room }) {
       kind="star"
       on={favourites.rooms.includes(room.slug)}
       label={`Favourite: ${room.name}`}
-      glyphs={['★', '☆']}
+      icons={[<Icon key="on" name="star" filled />, <Icon key="off" name="star" />]}
       onToggle={(on) => favourites.setRoom(room.slug, on).catch(() => {})}
     />
   );

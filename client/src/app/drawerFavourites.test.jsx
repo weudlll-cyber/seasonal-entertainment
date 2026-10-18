@@ -67,7 +67,10 @@ it("lists a member's favourite rooms first, in their own group", async () => {
     within(favourites)
       .getAllByRole('option')
       .map((o) => o.textContent)
-  ).toEqual(['# Help ★']);
+  ).toEqual(['# Help']);
+  // The favourite mark is the filled stroke star (hidden from screen readers: the group says it).
+  expect(list.querySelector('#room-option-help [data-icon="star-filled"]')).not.toBeNull();
+  expect(list.querySelector('#room-option-general [data-icon="star-filled"]')).toBeNull();
   expect(
     within(list)
       .getAllByRole('option')

@@ -5,7 +5,9 @@
 // Description: The full chat's room list (ChatPanel with showRoomTabs): a member's favourite
 //              rooms first under "Favourites", then the other rooms; each room with its star
 //              (RoomStar), its bell (RoomBell: mute) and its unread count, dimmed when muted
-//              (members only). Guests see one plain list.
+//              (members only). Guests see one plain list. Each room is one grid row of fixed
+//              columns — name (one line, ellipsis), count, star, bell — so every row's star and
+//              bell line up (ChatFavourites.css); the current room's whole row is highlighted.
 // ============================================================
 
 import { groupRooms, useFavourites } from './favourites.js';
@@ -21,10 +23,15 @@ function RoomGroup({ title, rooms, current, onPick }) {
       {title && <h2 className="chat-rooms__heading">{title}</h2>}
       <ul className="chat-rooms">
         {rooms.map((r) => (
-          <li key={r.slug} className="chat-rooms__item">
+          <li
+            key={r.slug}
+            className={`chat-rooms__item${r.slug === current ? ' chat-rooms__item--current' : ''}`}
+          >
+            {/* The text holds the full name (the accessible name); the ellipsis is CSS only. */}
             <button
               type="button"
-              className={`chat-room${r.slug === current ? ' chat-room--current' : ''}`}
+              className="chat-room"
+              title={r.name}
               aria-current={r.slug === current ? 'page' : undefined}
               onClick={() => onPick(r.slug)}
             >

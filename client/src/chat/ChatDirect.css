@@ -33,8 +33,12 @@
 }
 
 .se-chat .chat-direct-list__name {
+  overflow: hidden;
   flex: 1;
+  min-width: 0;
   font-weight: var(--chat-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .se-chat .chat-online {
@@ -146,9 +150,11 @@
   opacity: 0.55;
 }
 
-/* A conversation row: the row's button, then its star. */
+/* A conversation row: the row's button (it takes the free width), then its star, so every
+   row's star stands in the same column. */
 .se-chat .chat-direct-list__row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
   align-items: center;
   gap: 0.25rem;
 }

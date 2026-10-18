@@ -6,7 +6,7 @@
 //              "Favourites" in the full chat's room list and the star adds and removes them;
 //              a member's name opens a keyboard-operable menu to add or remove them as a
 //              favourite; guests see no stars and no menus; guests' names and one's own name
-//              are never menus.
+//              are never menus. The star is the outline icon when off, the filled one when on.
 // ============================================================
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -81,12 +81,16 @@ const roomNames = () =>
     .getAllByRole('button', { name: /^(General|Announcements|Help)$/ })
     .map((b) => b.textContent);
 
+// The stroke icon a toggle shows (icons.jsx names it in data-icon).
+const iconOf = (button) => button.querySelector('svg').dataset.icon;
+
 describe('favourite rooms in the full chat', () => {
   it('the star puts a room first under Favourites, and takes it back', async () => {
     const calls = api(signedIn({ username: 'mia', role: 'member' }));
     show();
     const star = await screen.findByRole('button', { name: 'Favourite: Help' });
     expect(star).toHaveAttribute('aria-pressed', 'false');
+    expect(iconOf(star)).toBe('star');
     expect(within(rooms()).queryByRole('heading', { name: 'Favourites' })).toBeNull();
 
     fireEvent.click(star);
@@ -96,6 +100,10 @@ describe('favourite rooms in the full chat', () => {
       'aria-pressed',
       'true'
     );
+    expect(iconOf(screen.getByRole('button', { name: 'Favourite: Help' }))).toBe('star-filled');
+    expect(
+      screen.getByRole('button', { name: 'Favourite: Help' }).querySelector('svg')
+    ).toHaveAttribute('fill', 'currentColor');
     expect(calls.some((c) => c.key === 'PUT /chat/favourites/rooms/help')).toBe(true);
 
     fireEvent.click(screen.getByRole('button', { name: 'Favourite: Help' }));

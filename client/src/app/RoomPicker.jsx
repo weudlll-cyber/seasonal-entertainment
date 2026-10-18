@@ -6,13 +6,15 @@
 //              and a chevron, opening a listbox of the rooms the reader may read. Keyboard:
 //              arrows (and Home/End) move, Enter or Space picks, Escape or Tab closes the list
 //              (Escape does not reach the drawer); focus goes back to the button. A member's
-//              favourite rooms come first, in their own "Favourites" group. Each option shows
-//              the room's unread count.
+//              favourite rooms come first, in their own "Favourites" group. Each option is one
+//              row of fixed columns — mark, name (one line, ellipsis), favourite star (the
+//              filled stroke star of icons.jsx), unread count — like the full chat's room list.
 // ============================================================
 
 import { useRef, useState } from 'react';
 import { UnreadCount } from '../chat/index.js';
 import Icon from './icons.jsx';
+import './RoomPicker.css';
 
 // Rooms carry no colour of their own: each gets a season colour by its place in the list.
 const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
@@ -139,10 +141,14 @@ export default function RoomPicker({
                     className={`room-picker__option${offset + j === active ? ' room-picker__option--active' : ''}`}
                     onClick={() => pick(room.slug)}
                   >
-                    <span className={`room-mark room-mark--${room.season}`} aria-hidden="true" />#{' '}
-                    {room.name}
-                    {/* The group's name already says so to screen readers. */}
-                    {offset + j < favouriteCount && <span aria-hidden="true"> ★</span>}
+                    <span className={`room-mark room-mark--${room.season}`} aria-hidden="true" />
+                    <span className="room-picker__option-name"># {room.name}</span>
+                    {/* The group's name already says so to screen readers (Icon is hidden). */}
+                    {offset + j < favouriteCount && (
+                      <span className="room-picker__option-star">
+                        <Icon name="star" size={16} filled />
+                      </span>
+                    )}
                     <UnreadCount
                       count={unreadOf(room.slug)}
                       kind="room"

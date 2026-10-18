@@ -7,6 +7,7 @@
 //              still count). Members only. Part of the module's public API, like RoomStar.
 // ============================================================
 
+import Icon from '../app/icons.jsx';
 import ToggleButton from './ToggleButton.jsx';
 import { useUnread } from './unread.js';
 
@@ -18,7 +19,7 @@ export default function RoomBell({ room }) {
       kind="bell"
       on={unread.muted(room.slug)}
       label={`Mute: ${room.name}`}
-      glyphs={['🔕', '🔔']}
+      icons={[<Icon key="on" name="bellOff" />, <Icon key="off" name="bell" />]}
       onToggle={(on) => unread.setMuted(room.slug, on).catch(() => {})}
     />
   );

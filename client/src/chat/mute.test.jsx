@@ -5,7 +5,8 @@
 // Description: Muting a room in the full chat's room list: the bell (aria-pressed) mutes it on
 //              the server; the room's count then stays, dimmed, but leaves the blue total (tab
 //              and sidebar); unmuting brings it back; a fresh page shows the room still muted
-//              (the server keeps it, per account).
+//              (the server keeps it, per account). The bell shows the bell icon when sounding
+//              and the bell-off icon when muted.
 // ============================================================
 
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
@@ -60,12 +61,16 @@ const roomsTab = (total) =>
 // The server says "muted" to all of the member's sockets; every counter recounts.
 const pushMuted = () => act(() => FakeSocket.all.at(-1).push({ type: 'muted' }));
 
+// The stroke icon a toggle shows (icons.jsx names it in data-icon).
+const iconOf = (button) => button.querySelector('svg').dataset.icon;
+
 it('a muted room keeps its count, dimmed, but leaves the total; unmuting restores it', async () => {
   page();
   await within(rooms()).findByRole('img', { name: '4 unread in Help' });
   expect(roomsTab(5)).toBeInTheDocument();
   const bell = within(rooms()).getByRole('button', { name: 'Mute: Help' });
   expect(bell).toHaveAttribute('aria-pressed', 'false');
+  expect(iconOf(bell)).toBe('bell');
 
   fireEvent.click(bell);
   await vi.waitFor(() => expect(server.help.muted).toBe(true));
@@ -78,6 +83,7 @@ it('a muted room keeps its count, dimmed, but leaves the total; unmuting restore
     'aria-pressed',
     'true'
   );
+  expect(iconOf(within(rooms()).getByRole('button', { name: 'Mute: Help' }))).toBe('bellOff');
   expect(screen.getByRole('link', { name: 'Chat: 1 unread room message' })).toBeInTheDocument();
 
   fireEvent.click(within(rooms()).getByRole('button', { name: 'Mute: Help' }));
@@ -87,6 +93,7 @@ it('a muted room keeps its count, dimmed, but leaves the total; unmuting restore
   expect(within(rooms()).getByRole('img', { name: '4 unread in Help' })).not.toHaveClass(
     'chat-count--dim'
   );
+  expect(iconOf(within(rooms()).getByRole('button', { name: 'Mute: Help' }))).toBe('bell');
 });
 
 it('a fresh page shows the room still muted', async () => {

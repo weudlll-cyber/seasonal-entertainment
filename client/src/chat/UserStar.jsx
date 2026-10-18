@@ -7,6 +7,7 @@
 //              ("Add to favourites"), held once per page (favourites.js). Members only.
 // ============================================================
 
+import Icon from '../app/icons.jsx';
 import { useFavourites } from './favourites.js';
 import ToggleButton from './ToggleButton.jsx';
 
@@ -19,7 +20,7 @@ export default function UserStar({ member }) {
       kind="star"
       on={favourites.isFavouriteUser(member.id)}
       label={`Favourite: ${member.username}`}
-      glyphs={['★', '☆']}
+      icons={[<Icon key="on" name="star" filled />, <Icon key="off" name="star" />]}
       onToggle={(on) => favourites.setUser(member.id, on).catch(() => {})}
     />
   );

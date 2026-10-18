@@ -84,12 +84,38 @@ info section. Real data only. Below 1000px the cards stack and the main column s
 **Chat page**: the full chat fills the main column, rooms on its left; only the message list
 scrolls and the composer stays at the bottom.
 
+**Room list** (`client/src/chat/RoomTabs.jsx`, layout 2026-10-18): each room is one grid row of
+fixed columns — the room name (flexible, one line, cut with an ellipsis; the full name stays in
+its text, so in the accessible name, and in its `title`), the unread count (2.75rem), the star
+(44px) and the bell (44px). Named grid areas keep a column empty when its part is absent (no
+count at 0, no toggles for guests), so every row's star and bell stand at the same x. The column
+is 28% of the panel, at least 15rem and at most 18rem: "Announcements" fits beside its count and
+toggles, longer names get the ellipsis, and nothing reaches into the message panel. The current
+room highlights its whole row with the active background and bold text, as the sidebar does; the
+name button stays the click target. Below 600px the rooms stand side by side and scroll
+sideways. The drawer's room picker uses the same columns in its options (mark, name, favourite
+star, count), and the Direct list keeps its stars in one column. `client/e2e/roomRows.spec.js`
+checks the alignment, the one-line rows and the overlap at 1440 x 900 and 1280 x 720.
+
+## Icons
+
+- One set: the stroke icons of `client/src/app/icons.jsx` — a 24px grid drawn at 22px, stroke
+  1.8, round caps and joins, in `currentColor` so they follow the theme. No text glyphs or emoji
+  as icons (they differ per system font).
+- Decorative: every icon is `aria-hidden`; the control around it carries the name or label.
+- State by shape, not only by colour: the favourite star is an outline when off and filled
+  (`filled`, autumn colour) when on; the room bell is a bell when sounding and a bell with a
+  slash when muted. `data-icon` names the drawn icon (e.g. `star-filled`, `bellOff`) for tests.
+- Small toggles (`ToggleButton`: stars, bells): a 44px hit area drawn as a compact 32px icon
+  button — the hover background is clipped to the inner box and the focus ring (the accent
+  outline of every control) is pulled in to the same rounded rectangle; never a circle.
+
 ## Chat drawer
 
 On every page except `/chat` and `/admin/*` (`client/src/app/ChatDrawer.jsx`):
 
-- A round **chat button** bottom right: 64px, autumn colour, chat icon (`--color-on-season`). No
-  unread badge: the chat module cannot tell yet (backlog: "Unread count for the chat button").
+- A round **chat button** bottom right: 64px, autumn colour, chat icon (`--color-on-season`), with
+  the unread dots (blue rooms, orange private messages; docs/CHAT.md, "Unread counters").
 - It opens a **drawer over the page**, on the right: 400px wide, 16px from the window's top,
   right and bottom, rounded, with the raised shadow; the full width below 760px. The page
   underneath keeps its size and is never resized (`client/e2e/chatDrawer.spec.js` compares the

@@ -19,9 +19,12 @@
   height: 100%;
 }
 
+/* The room column: wide enough for a name like "Announcements" next to its count, star and
+   bell (about 9rem of name); 28% of the panel between 15rem and 18rem, so the message list
+   keeps its room in the shell's narrow two-column range. Longer names get an ellipsis. */
 .se-chat--full.se-chat--rooms {
   display: grid;
-  grid-template-columns: 12rem minmax(0, 1fr);
+  grid-template-columns: clamp(15rem, 28%, 18rem) minmax(0, 1fr);
   gap: var(--chat-space-2);
 }
 
@@ -29,12 +32,6 @@
   flex-direction: column;
   flex-wrap: nowrap;
   margin: 0;
-}
-
-.se-chat--rooms .chat-room {
-  width: 100%;
-  min-height: 44px;
-  text-align: left;
 }
 
 @media (max-width: 599.98px) {
@@ -48,8 +45,10 @@
     overflow-x: auto;
   }
 
-  .se-chat--rooms .chat-room {
-    width: auto;
+  /* Side by side the rows need not line up: each takes its name's width. */
+  .se-chat--rooms .chat-rooms__item {
+    flex: none;
+    grid-template-columns: auto 2.75rem 44px 44px;
   }
 }
 

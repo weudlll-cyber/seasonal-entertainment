@@ -4,6 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: The shell's stroke icons (24 px grid, drawn in currentColor so they follow the
 //              theme). Decorative: the control around each icon carries the text or label.
+//              Also the chat's toggles (star, bell, bell-off: ToggleButton), so every icon on
+//              the site shares one stroke width.
 // ============================================================
 
 const PATHS = {
@@ -20,16 +22,21 @@ const PATHS = {
   menu: 'M4 7h16M4 12h16M4 17h16',
   close: 'M6 6l12 12M18 6 6 18',
   chevron: 'M7 10l5 5 5-5',
+  star: 'M12 3.8l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8Z',
+  bell: 'M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15ZM10 20.5h4',
+  bellOff: 'M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15ZM10 20.5h4M4 4l16 16',
 };
 
-export default function Icon({ name, size = 22 }) {
+// filled: fills the shape too (a favourite's star); data-icon names it for tests and styles.
+export default function Icon({ name, size = 22, filled = false }) {
   return (
     <svg
       className="icon"
+      data-icon={filled ? `${name}-filled` : name}
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="none"
+      fill={filled ? 'currentColor' : 'none'}
       stroke="currentColor"
       strokeWidth="1.8"
       strokeLinecap="round"

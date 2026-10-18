@@ -3,35 +3,44 @@
    Path:        client/src/chat/ChatFavourites.css
    Project:     Seasonal Entertainment
    Description: Favourites and room settings in the chat module: the small toggles (star,
-                bell; ToggleButton), the room list's group headings ("Favourites", "Rooms"),
+                bell; ToggleButton), the room list's rows (one grid of fixed columns: name,
+                count, star, bell) and group headings ("Favourites", "Rooms"),
                 a member's name as a button with its small menu, @mention chips and the
                 highlight of a message that mentions the reader. Under the .se-chat root
                 like every module style, except the toggles, which a host's room picker shows
                 too.
    ============================================================ */
 
+/* A 44px hit area drawn as a compact 32px icon button: the hover background is clipped to
+   the content box, and the focus ring (base.css's accent outline) is pulled in to the same
+   rounded rectangle as the site's other icon buttons. */
 .chat-toggle {
   display: inline-grid;
   place-items: center;
   flex: none;
+  box-sizing: border-box;
   width: 44px;
   height: 44px;
-  padding: 0;
+  padding: 6px;
   border: 0;
-  border-radius: 50%;
+  border-radius: 14px;
   background: none;
+  background-clip: content-box;
   color: var(--color-text-muted, #59606b);
-  font-size: 1.25rem;
   cursor: pointer;
+}
+
+.chat-toggle:hover {
+  background-color: var(--color-surface-2, #f1f3f6);
+  color: var(--color-text, #12161c);
+}
+
+.chat-toggle:focus-visible {
+  outline-offset: -6px;
 }
 
 .chat-toggle--star.chat-toggle--on {
   color: var(--color-autumn, #f9a825);
-}
-
-/* The bell sits in a row of small toggles; the muted glyph says it already. */
-.chat-toggle--bell {
-  font-size: 1rem;
 }
 
 .se-chat .chat-rooms-nav {
@@ -48,10 +57,42 @@
   text-transform: uppercase;
 }
 
+/* One room = one row of fixed columns, so stars and bells line up from row to row; named
+   areas keep a column empty when its part is absent (no count at 0, no toggles for guests). */
 .se-chat .chat-rooms__item {
-  display: flex;
+  display: grid;
+  grid-template-areas: 'name count star bell';
+  grid-template-columns: minmax(0, 1fr) 2.75rem 44px 44px;
   align-items: center;
-  gap: 0.25rem;
+  border-radius: var(--chat-radius);
+}
+
+.se-chat .chat-rooms__item:hover {
+  background: var(--color-surface-2, #f1f3f6);
+}
+
+/* The current room: the whole row, like the sidebar's active item. */
+.se-chat .chat-rooms__item--current,
+.se-chat .chat-rooms__item--current:hover {
+  background: var(--color-active-bg, #eaf6fe);
+  font-weight: var(--chat-strong);
+}
+
+.se-chat .chat-rooms__item > .chat-room {
+  grid-area: name;
+}
+
+.se-chat .chat-rooms__item > .chat-count {
+  grid-area: count;
+  justify-self: center;
+}
+
+.se-chat .chat-rooms__item > .chat-toggle--star {
+  grid-area: star;
+}
+
+.se-chat .chat-rooms__item > .chat-toggle--bell {
+  grid-area: bell;
 }
 
 /* A member's name: looks like the plain name, acts as a menu button. */
