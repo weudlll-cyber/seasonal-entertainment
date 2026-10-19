@@ -49,6 +49,15 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **A 2FA secret that decrypts but cannot be used answered 500** — closed by SE-NIGHT-3 piece 2
+  (`feat/se-night-3`, PR #8, not merged yet): `openSecret` (`server/src/twofa/secretBox.js`)
+  refuses such a secret (e.g. encrypted twice) like one that does not decrypt: the same 401
+  answer and a log line in the same style. Found in SE-EMBED-CHECK-1.
+- **`data/DEV-ADMIN.txt` held a stale 2FA secret** — closed by SE-NIGHT-3 piece 2
+  (`feat/se-night-3`, PR #8, not merged yet): `npm run dev:admin` rewrites the file's 2FA part
+  from the stored secret when the account already has 2FA; it never resets or changes that
+  2FA. Run once on 2026-10-20, so the file is current. Found in SE-EMBED-CHECK-1.
+
 - **The chat on another site showed controls it cannot use** — closed by SE-EMBED-CHECK-2
   (PR #7, merged 2026-10-20), from the screenshots of SE-EMBED-CHECK-1:
   - a guest there saw the composer and "your first message gets a guest name", but a guest
