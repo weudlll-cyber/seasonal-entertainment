@@ -36,7 +36,8 @@ header, sidebar or footer (`client/src/embed/EmbedChatPage.jsx`): the room, and 
   (`/embed-login?origin=<site>`, its address visible). There:
   - a visitor who is not logged in uses the normal login (2FA included), or registers from there:
     both return to the popup's own step, naming the site (`?next=` survives the switch from
-    login to registration; `client/src/session/nextPage.js`);
+    login to registration; `client/src/session/nextPage.js`); inside the popup these pages show
+    no chat button;
   - a logged-in member sees a confirm step naming the site that asks;
   - the popup asks for the password, which opens the private key **in the popup** (the same
     derivation as everywhere, docs/AUTH.md); "Allow without private messages" skips that;
@@ -50,9 +51,11 @@ header, sidebar or footer (`client/src/embed/EmbedChatPage.jsx`): the room, and 
   list. The frame then forgets the account and the key on the spot and shows **Log in** again.
 - **What works there**: rooms and **direct messages**, read and write under the usual rules,
   emoji, stickers and GIFs, @mentions, favourites, unread counts, mutes and reporting.
-- **What does not**: uploading files; account, 2FA, key, moderation and admin actions (the
-  server answers 403 to a token there); guests cannot write (a guest name needs a cookie);
-  uploaded images in members-only rooms do not show (an image request cannot carry the token).
+- **What does not**: uploading files (the frame shows no "Attach file" there); account, 2FA,
+  key, moderation and admin actions (the server answers 403 to a token there); guests cannot
+  write (a guest name needs a cookie), so a guest reads and gets **Log in to write** in place
+  of the composer, the same popup as **Log in**; uploaded images in members-only rooms do not
+  show (an image request cannot carry the token).
 - **Private messages locked** (the page was reloaded, or "Allow without private messages"):
   the Direct tab offers **Unlock in a login window**, the same popup. The password is never typed
   into the other site's page.
@@ -185,13 +188,16 @@ different sites to the browser.
 - `client/src/embed/embedChat.test.jsx`: same-site embed (panel only, login state, guests,
   theme, origin checks, unread).
 - `client/src/embed/embedForeign.test.jsx`: talks only to an approved parent; the hand-over
-  only from its popup; the token on requests and the socket.
+  only from its popup; the token on requests and the socket; a guest gets "Log in to write"
+  instead of the composer, a member no "Attach file".
 - `client/src/embed/embedForeignDirect.test.jsx`: direct messages with the handed-over key;
   nothing secret to the host; a refused token takes account and key, and the key is gone from
   memory. (Shared setup: `client/src/test/foreignEmbed.jsx`.)
 - `client/src/embed/embedLoginPopup.test.jsx`: the popup names the site, refuses unapproved
   ones, hands over only to its own opener at this origin; a wrong password or a foreign opener
   gets no token.
+- `client/src/app/chatDrawer.test.jsx`: no chat button on the login and registration pages
+  inside the popup.
 - `client/src/admin/adminEmbedding.test.jsx`: the admin page.
 - `client/e2e/embed.spec.js` and `client/e2e/embedForeign.spec.js` (real browser, real
   headers): framing per site; a member on an approved other site logs in through the popup,

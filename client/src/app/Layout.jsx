@@ -6,14 +6,16 @@
 //              top bar below 760px) and the main column with the routed page. The window
 //              never scrolls; only the main column does, when its page is taller. Staff
 //              accounts without 2FA see a banner leading them to set it up. Every page except
-//              /chat, a call page and /admin gets the chat button and drawer (ChatDrawer). On a
-//              call page the sidebar is an icon rail (more room for the stage). Right after a
-//              member's key pair was made, the recovery-code offer opens over the page.
+//              /chat, a call page, /admin and the login or registration page inside the chat's
+//              login popup (?next=/embed-login…) gets the chat button and drawer (ChatDrawer).
+//              On a call page the sidebar is an icon rail (more room for the stage). Right
+//              after a member's key pair was made, the recovery-code offer opens over the page.
 // ============================================================
 
 import { Link, Outlet, useLocation } from 'react-router';
 import { useKeys } from '../keys/KeyContext.jsx';
 import RecoveryOffer from '../keys/RecoveryOffer.jsx';
+import { inEmbedLoginFlow } from '../session/nextPage.js';
 import { useSession } from '../session/SessionContext.jsx';
 import ChatDrawer from './ChatDrawer.jsx';
 import { isCallPage } from './navigation.js';
@@ -23,11 +25,12 @@ import './Layout.css';
 export default function Layout() {
   const { user } = useSession();
   const { offerRecovery } = useKeys();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   // The full chat page and a call page (its own chat) have the chat already; the admin area
-  // keeps the screen to itself.
+  // keeps the screen to itself; the login popup is a small window for one step.
   const rail = isCallPage(pathname);
-  const chatButton = pathname !== '/chat' && !rail && !pathname.startsWith('/admin');
+  const chatButton =
+    pathname !== '/chat' && !rail && !pathname.startsWith('/admin') && !inEmbedLoginFlow(search);
   return (
     <div className={`shell${rail ? ' shell--rail' : ''}`}>
       <Sidebar rail={rail} />

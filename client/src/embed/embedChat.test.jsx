@@ -70,6 +70,7 @@ it('shows only the panel, with the member signed in, and says ready', async () =
   expect(await screen.findByRole('region', { name: 'Chat: General' })).toBeInTheDocument();
   // A member's composer: stickers and GIFs too. No site shell around it.
   expect(await screen.findByRole('button', { name: 'Emoji, stickers, GIFs' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Attach file' })).toBeInTheDocument(); // same site
   expect(screen.queryByRole('banner')).toBeNull();
   expect(screen.queryByRole('navigation')).toBeNull();
   await waitFor(() =>
@@ -95,6 +96,8 @@ it('lets a guest read and write where guests may, and nothing where they may not
   });
   const { unmount } = renderEmbed('room=general');
   expect(await screen.findByRole('button', { name: 'Emoji' })).toBeInTheDocument(); // a guest's
+  expect(screen.getByText(/You are a guest/)).toBeInTheDocument(); // on this site, guests write
+  expect(screen.queryByRole('button', { name: 'Log in to write' })).toBeNull();
   unmount();
 
   renderEmbed('room=seasonal-race');

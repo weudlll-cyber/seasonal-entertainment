@@ -85,12 +85,15 @@ export default function EmbedLoginPage() {
       ) : !approved ? (
         <p role="alert">This site is not approved for the Seasonal Entertainment chat.</p>
       ) : !user ? (
-        <p>
-          <strong>{origin}</strong> asks you to log in to the chat.{' '}
+        // A card like the Allow step: the text, then the button on its own line.
+        <div className="form">
+          <p>
+            <strong>{origin}</strong> asks you to log in to the chat.
+          </p>
           <Link className="button" to={`/login?next=${next}`}>
             Log in
           </Link>
-        </p>
+        </div>
       ) : (
         <form
           className="form"

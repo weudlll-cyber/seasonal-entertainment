@@ -23,11 +23,16 @@ import './ChatFavourites.css';
 // variant: 'full' (a page of its own) or 'compact' (a box beside other content).
 // showRoomTabs: let the reader switch between their rooms (favourites first, RoomTabs);
 // unlisted: the room is not in the room lists (a call's chat), so it is asked for by name.
+// files: the composer's "Attach file" for members (ChatComposer); false where uploads are refused.
+// guestPrompt: shown to a guest instead of the composer where a guest cannot write (the chat
+// embedded on another site: a guest name needs a cookie there); null keeps the guest composer.
 export default function ChatPanel({
   room: roomInput,
   variant = 'full',
   showRoomTabs = false,
   unlisted = false,
+  files = true,
+  guestPrompt = null,
 }) {
   const { user } = useSession();
   const chat = useChatRoom(roomInput, user, unlisted);
@@ -55,7 +60,17 @@ export default function ChatPanel({
         />
         <ChatNotice error={chat.error} notice={chat.notice} />
         {current?.canWrite ? (
-          <ChatComposer user={user} guestName={info.me.guestName} onSend={chat.send} room={room} />
+          !user && guestPrompt ? (
+            guestPrompt
+          ) : (
+            <ChatComposer
+              user={user}
+              guestName={info.me.guestName}
+              onSend={chat.send}
+              room={room}
+              files={files}
+            />
+          )
         ) : (
           current && <p className="chat-note">You can read this room, but not write in it.</p>
         )}

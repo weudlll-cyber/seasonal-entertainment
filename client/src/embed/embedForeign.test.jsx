@@ -6,6 +6,8 @@
 //              approved parent, to that origin exactly, and ignores other origins and windows;
 //              an unapproved parent hears nothing; it takes the login hand-over only from its
 //              own popup, and afterwards the token rides on every request and on the socket.
+//              A guest there gets "Log in to write" instead of a composer that could not send;
+//              a member gets no "Attach file" (uploads are refused with a token).
 // ============================================================
 
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
@@ -17,6 +19,7 @@ import {
   answers,
   fromWindow,
   handOver,
+  logIn,
   page,
   sentToHost,
   setUpForeignHost,
@@ -72,4 +75,29 @@ it('takes the hand-over only from its popup; then the token rides on requests an
   await waitFor(() =>
     expect(FakeSocket.all.at(-1).protocols).toEqual(['se-chat', `se-embed.${TOKEN}`])
   );
+});
+
+it('a guest reads but gets "Log in to write" instead of the composer, which opens the popup', async () => {
+  mockApi(answers(true));
+  await showEmbed();
+  const write = await screen.findByRole('button', { name: 'Log in to write' });
+  expect(screen.getByRole('region', { name: 'Chat: General' })).toBeInTheDocument();
+  expect(screen.queryByLabelText('Message')).toBeNull();
+  expect(screen.queryByText(/You are a guest/)).toBeNull();
+  await waitFor(() => expect(write).toBeEnabled());
+  fireEvent.click(write);
+  expect(window.open).toHaveBeenCalledWith(
+    `/embed-login?origin=${encodeURIComponent(SITE)}`,
+    'se-embed-login',
+    expect.any(String)
+  );
+});
+
+it('a member logged in with a token writes, but gets no "Attach file"', async () => {
+  mockApi(answers(true));
+  await showEmbed();
+  await logIn();
+  expect(await screen.findByLabelText('Message')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Emoji, stickers, GIFs' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Attach file' })).toBeNull();
 });

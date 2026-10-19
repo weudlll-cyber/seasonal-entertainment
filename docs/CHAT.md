@@ -22,6 +22,8 @@ import { ChatPanel } from '../chat/index.js';
 | `variant`                | `'full'` \| `'compact'` | `'full'`         | a page of its own, or a box beside other content                         |
 | `showRoomTabs`           | boolean                 | `false`          | let the reader switch between the rooms they may read                    |
 | `unlisted`               | boolean                 | `false`          | `room` is an unlisted room (a call's chat): asked for by name            |
+| `files`                  | boolean                 | `true`           | offer members "Attach file"; `false` where uploads are refused           |
+| `guestPrompt`            | React node              | `null`           | shown to a guest instead of the composer (e.g. a login offer)            |
 | `--chat-list-max-height` | CSS custom property     | `60vh` / `18rem` | cap of the message list; `none` lets it fill a container of fixed height |
 | account                  | from `SessionProvider`  | —                | who is signed in (`client/src/session`); a guest if no                   |
 

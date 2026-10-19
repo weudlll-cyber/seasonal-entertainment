@@ -41,6 +41,18 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **The chat on another site showed controls it cannot use** — closed by SE-EMBED-CHECK-2
+  (PR #7, not merged yet), from the screenshots of SE-EMBED-CHECK-1:
+  - a guest there saw the composer and "your first message gets a guest name", but a guest
+    name needs a cookie: now one "Log in to write" opens the same login popup (`LogInToWrite`,
+    `client/src/embed/EmbedAccount.jsx`);
+  - a member logged in with an embed token saw "Attach file", which the server refuses there:
+    now hidden through the composer's `files` switch (`ChatPanel` passes it on);
+  - the popup's not-logged-in step had its "Log in" button squeezed under the text: now a card
+    like the Allow step;
+  - the login and registration pages inside the popup (`?next=/embed-login…`) showed the
+    floating chat button: now hidden there (`inEmbedLoginFlow`,
+    `client/src/session/nextPage.js`).
 - **Registering from the chat's login popup lost the way back** — closed by SE-EMBED-CHECK-1
   (PR #7, not merged yet): the login page's "Register" link now keeps `?next=`, and registration
   returns there like the login does (`client/src/session/nextPage.js`), so a new visitor lands

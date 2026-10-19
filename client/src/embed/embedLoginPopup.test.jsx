@@ -4,10 +4,11 @@
 // Project:     Seasonal Entertainment
 // Description: The login popup of the chat embedded on another site (/embed-login,
 //              EmbedLoginPage.jsx): it names the site and refuses one that is not approved;
-//              signed out, it sends the visitor to the normal login and back; signed in, the
-//              password opens the private key here, a token is asked for, and token, account
-//              and key go to the opener only if that is this site's own window, addressed to
-//              this origin; a wrong password or a foreign opener gets no token at all.
+//              signed out, it sends the visitor to the normal login and back (the button on
+//              its own line in a card, like the Allow step); signed in, the password opens the
+//              private key here, a token is asked for, and token, account and key go to the
+//              opener only if that is this site's own window, addressed to this origin; a
+//              wrong password or a foreign opener gets no token at all.
 // ============================================================
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -156,4 +157,7 @@ it('signed out: the normal login, and back here afterwards', async () => {
     'href',
     `/login?next=${encodeURIComponent(`/embed-login?origin=${encodeURIComponent(SITE)}`)}`
   );
+  // Below the text, not inside its line: the same card as the Allow step.
+  expect(link.closest('p')).toBeNull();
+  expect(link.closest('.form')).toHaveTextContent(`${SITE} asks you to log in to the chat.`);
 });
