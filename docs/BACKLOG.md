@@ -19,10 +19,11 @@ An entry moves from part one to part two only when its branch is merged into `ma
   hands the private key over to the new one.
 - **Operating-system notifications for mentions and direct messages** — unconfirmed proposal,
   not decided.
-- **Chat embedding on other sites** — open. The embed route exists for this site's own pages
-  (SE-NIGHT-2 part 6, docs/EMBED.md); other origins still need a configured list of allowed
-  embedding origins (`frame-ancestors`) and a login inside a third-party frame; see
-  docs/CHAT.md, "Embedding".
+- **Uploads and uploaded images in the chat on other sites** — open. With an embed token,
+  uploading is refused (decided scope), and uploaded images of members-only rooms do not show
+  there: an image request cannot carry the token. Would need short-lived signed file links.
+- **Guests writing in the chat on other sites** — open. A guest name is kept in a cookie, which
+  other sites' frames do not get; guests can read there but not write.
 - **Call recording** — unconfirmed proposal, not decided. Calls are not recorded (privacy draft).
 - **Linking calls to the events calendar** — unconfirmed proposal, not decided: an event could
   carry its call, and a call its event.
@@ -40,6 +41,11 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **Chat embedding on other sites** — closed by the SE-NIGHT-2 follow-up, part A (PR #7, not
+  merged yet; owner decision 2026-10-19): admin list "Embedding" (exact https origins, audited),
+  `frame-ancestors` for `/embed/*` from that list, login through a popup on this site handing
+  the frame a 12-hour embed token and the unlocked key (memory only), rooms and direct messages
+  there, uploads/account/admin refused (docs/EMBED.md, AUTH.md "Embed tokens").
 - **Check a live room message right after login** — closed by SE-NIGHT-2 part 1
   (`feat/se-night-2`, PR #7, not merged yet). Answer: yes, it could miss its live update until
   reload, in two ways, both shown red by client/src/chat/chatCatchUp.test.jsx against the old

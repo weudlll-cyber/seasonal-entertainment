@@ -352,8 +352,9 @@ client/                    React + Vite client
                            connection, composer, picker, messages, styles (docs/CHAT.md)
   src/devPages/            test-only pages, routed by the Vite dev server only (chat panels,
                            the embedded chat's demo)
-  src/embed/               the embedded chat for iframes on this site (/embed/chat) and its
-                           postMessage API (docs/EMBED.md)
+  src/embed/               the embedded chat for iframes (/embed/chat) on this site and on
+                           approved other sites, its postMessage API, the login popup
+                           (/embed-login) and the in-memory embed token (docs/EMBED.md)
   src/admin/               admin area (/admin): layout, users, audit log, info editor; one section each
   src/components/Markdown.jsx  the one safe Markdown renderer
   e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels,
@@ -409,6 +410,8 @@ server/
                            tokens, spotlight rule, routes (management, join, stage, spotlight),
                            ending a call and the stale-call job
   src/settings/            admin-editable site settings: definitions, store, admin routes
+  src/embed/               the chat on approved other sites: the approved list (a setting),
+                           embed tokens, their route allow-list, routes (docs/EMBED.md, AUTH.md)
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests
 shared/                    rules used by server and client (accountRules.js, eventSchedule.js,

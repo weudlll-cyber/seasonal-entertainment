@@ -34,9 +34,15 @@ beforeEach(() => {
   host = frame.contentWindow;
   vi.spyOn(host, 'postMessage');
   Object.defineProperty(window, 'parent', { value: host, configurable: true });
+  // A game page of this same site frames the chat (what the browser reports as the parent).
+  Object.defineProperty(document, 'referrer', {
+    value: `${window.location.origin}/games/race`,
+    configurable: true,
+  });
 });
 afterEach(() => {
   Object.defineProperty(window, 'parent', { value: window, configurable: true });
+  Object.defineProperty(document, 'referrer', { value: '', configurable: true });
   window.localStorage.clear();
 });
 

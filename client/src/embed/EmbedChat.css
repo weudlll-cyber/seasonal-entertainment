@@ -2,20 +2,45 @@
    File:        EmbedChat.css
    Path:        client/src/embed/EmbedChat.css
    Project:     Seasonal Entertainment
-   Description: The embedded chat (/embed/chat): the compact panel fills the iframe, on the
-                site's page background, with a small margin; no site shell around it.
+   Description: The embedded chat (/embed/chat): the account line (foreign sites), the tabs
+                and the compact panel filling the iframe, on the site's page background, with
+                a small margin; no site shell around it. Also the login popup (/embed-login).
    ============================================================ */
 
 .embed-chat {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  gap: var(--space-2);
   height: 100vh;
   padding: var(--space-2);
   background: var(--color-background);
 }
 
-.embed-chat > .se-chat {
+.embed-chat__account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.embed-chat__panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.embed-chat__panel > .se-chat {
   flex: 1;
   min-height: 0;
+}
+
+/* The popup: a small window of its own, the site's address visible above it. */
+.embed-login {
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: var(--space-4);
+  background: var(--color-background);
 }

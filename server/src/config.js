@@ -135,6 +135,7 @@ export function readConfig(env = process.env) {
       callManage: { windowMs: 60_000, max: 30 }, // call management actions per organiser
       callJoin: { windowMs: 60_000, max: 30 }, // call joins per IP (guests have no account)
       callAction: { windowMs: 60_000, max: 60 }, // hands, stage, mute, spotlight per account
+      embedToken: { windowMs: 60 * 60_000, max: 30 }, // embed tokens per member (login popup)
     },
   };
   if (isProduction) checkProduction(env, config);

@@ -111,6 +111,47 @@ rate limit, the lockout, locked accounts, the session epoch.
   lock or password change closes the account's sockets (except the session making its own
   change); and every push re-checks the account (`server/src/chat/hub.js`).
 
+## Embed tokens (the chat on approved other sites)
+
+The chat embedded on a site an admin approved (docs/EMBED.md) has no cookie there. It acts for a
+member with an **embed token** instead (`server/src/embed/`; SE-NIGHT-2 follow-up, part A):
+
+- **Issued** by `POST /api/embed/token { origin }` to a member's own **cookie** session (the
+  login popup on this site), only for an approved site (`403 origin_not_allowed` otherwise), at
+  most 30 per member and hour. A token cannot ask for another token. The answer is
+  `{ token, expiresAt }`: 32 random bytes (base64url). Only its SHA-256 is stored
+  (`embed_tokens`), with the account, the site, the account's **session epoch** at issue and the
+  expiry.
+- **Valid 12 hours** (decision rule of 2026-10-19), for that member and that site.
+- **Sent** by the frame in the `X-Embed-Token` header, and on the chat WebSocket as the
+  subprotocol `se-embed.<token>` (next to `se-chat`, which the server answers with). The token
+  is not a cookie, so CSRF rules are unaffected: the requests come from the frame, on this
+  site's origin, and pass the usual Origin check. Requests without the header keep cookie
+  sessions exactly as before.
+- **Scope** (`server/src/embed/auth.js`, an allow-list of exact paths): `GET /api/auth/session`,
+  the chat's rooms (read, write, read markers, mutes, reports), direct messages (list, read,
+  send, read marker, report), unread counts, favourites, the member search, the sticker/GIF
+  library, and `/api/embed/me` and `/api/embed/logout`. Everything else answers
+  `403 embed_not_allowed`: uploads, keys, account (password, logout, privacy), 2FA, moderation,
+  admin, calls. Within the scope the usual rules apply to the token's member: room access,
+  mute and ban, rate limits, the staff 2FA gate.
+- **Ends at once** (`401 embed_token_invalid`, and its sockets close) when:
+  - it expires;
+  - the frame logs out (`POST /api/embed/logout`);
+  - the member logs out on the site (all their embed tokens end);
+  - the session epoch moves (own password change, admin reset, 2FA on or off);
+  - the account is locked or deleted;
+  - an admin removes the site from the list.
+- **In the browser** the token and the private key live in the frame's memory only
+  (`client/src/embed/embedAuth.js`, `keys/KeyContext.jsx`: no IndexedDB on other sites, where
+  storage is partitioned). On `401 embed_token_invalid` the frame forgets both at once.
+- **The popup** (`/embed-login`) is a top-level page on this site, with its address visible. It
+  uses the normal login (2FA included) and then derives the keys from the password **in the
+  popup** (the same derivation, `session/credentials.js`). It hands over only to its opener, and
+  only when that opener is this site's own frame (same origin, `targetOrigin` this origin). It is
+  the one page sent without `Cross-Origin-Opener-Policy`, which would cut it off from that
+  opener, and it cannot be framed.
+
 ## Two-factor authentication (2FA)
 
 - **TOTP** (RFC 6238: HMAC-SHA1, 30-second steps, 6 digits), readable by every authenticator

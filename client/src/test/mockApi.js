@@ -5,7 +5,7 @@
 // Description: Test helper: replaces fetch with fixed API answers keyed "METHOD /path"
 //              (path without /api). An answer is { status, body } or a function of the sent
 //              body returning one (or a promise of one, to hold an answer back). Returns the
-//              list of calls made. Unknown calls fail the test.
+//              list of calls made ({ key, body, headers }). Unknown calls fail the test.
 //              PRELOGIN answers the login key split's pre-login step with a fixed salt; NO_KEY
 //              is a member without a key pair yet.
 // ============================================================
@@ -20,7 +20,7 @@ export function mockApi(answers) {
       const key = `${init.method ?? 'GET'} ${url.replace(/^\/api/, '')}`;
       // JSON bodies are parsed; a file (upload) is passed through as it is.
       const sent = typeof init.body === 'string' ? JSON.parse(init.body) : init.body;
-      calls.push({ key, body: sent });
+      calls.push({ key, body: sent, headers: init.headers ?? {} });
       const answer = answers[key];
       if (!answer) throw new Error(`unexpected API call ${key}`);
       const { status = 200, body = {} } =

@@ -11,8 +11,12 @@
 //              for the account itself need no subscription — new direct messages, activity in a
 //              readable room, the member's own reads and mutes (the unread counters), someone's
 //              changed online visibility ("presence") — and
-//              joinPersonal() hands them on.
+//              joinPersonal() hands them on. The chat embedded on an approved foreign site has
+//              no cookie there: it offers its embed token as a subprotocol (api/http.js), and when
+//              that socket closes, asks whether the token still works (if not, it is dropped).
 // ============================================================
+
+import { api, socketProtocols } from '../api/http.js';
 
 const RECONNECT_MS = 3000;
 // An unused socket is closed after the current render, not during it: a panel that leaves and
@@ -36,7 +40,8 @@ const subscribeOn = (target, room) => target.send(JSON.stringify({ type: 'subscr
 
 function open() {
   retry = null;
-  const current = new WebSocket(socketUrl());
+  const protocols = socketProtocols();
+  const current = new WebSocket(socketUrl(), protocols);
   socket = current;
   current.onopen = () => listeners.forEach((_handlers, room) => subscribeOn(current, room));
   current.onmessage = (event) => {
@@ -49,6 +54,9 @@ function open() {
     // A socket replaced meanwhile (closed on purpose, then reopened) must not interfere.
     if (socket !== current) return;
     socket = null;
+    // Closed for a token that ended? The answer drops it (api/http.js), and the page then
+    // reconnects as a guest.
+    if (protocols.length > 0) api('/embed/me').catch(() => {});
     if (inUse()) retry = setTimeout(open, RECONNECT_MS);
   };
 }

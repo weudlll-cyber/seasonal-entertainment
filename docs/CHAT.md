@@ -361,15 +361,21 @@ the database layer registers) may be imported; `server/test/chatBoundary.test.js
 
 ## Embedding
 
-On pages of this same site (the games, under the main domain) the chat runs as an iframe of
-`/embed/chat?room=<slug>&theme=<light|dark|auto>`: only the compact panel, the site's login
-state, the room's rules, and a small postMessage API (ready, unread, resize; visible, theme)
-with strict origin checks. Only this origin may frame `/embed/*` (`frame-ancestors 'self'`);
-everything else keeps `frame-ancestors 'none'`. Details and the race game's snippet:
-docs/EMBED.md (SE-NIGHT-2 part 6).
+The chat runs as an iframe of `/embed/chat?room=<slug>&theme=<light|dark|auto>`: the compact
+panel, for members with **Rooms | Direct** tabs, the room's rules, and a small postMessage API
+(ready, unread, resize; visible, theme) with strict origin checks. Details and the snippet:
+docs/EMBED.md.
 
-Still open for **other sites** (other origins): a configured list of allowed embedding origins
-for `frame-ancestors`, and a login that works inside a third-party frame (third-party cookies
-are blocked in many browsers, so the `SameSite=Lax` session cookie does not reach it; for
-example a pop-up and a short-lived token). The API and WebSocket calls stay on this site's
-origin inside the frame, so no CORS opening is needed either way.
+- **On this site's own pages** (the games under the main domain; SE-NIGHT-2 part 6): the site's
+  login cookie and device unlock, exactly as on the site.
+- **On other sites an admin approved** (SE-NIGHT-2 follow-up, part A; owner decision
+  2026-10-19): no cookie there. A login popup on this site hands the frame an embed token
+  (docs/AUTH.md, "Embed tokens") and, unlocked with the password in the popup, the member's
+  private key. Both stay in the frame's memory only. **Direct messages work there**: read and
+  sent with that key, encrypted and decrypted in the frame as everywhere; the host page never
+  sees a token, a key or a message text. Without the key (page reloaded, or the member left it
+  locked), the Direct tab offers to unlock it in the popup again. Uploads, moderation and account
+  actions are not available there.
+- `frame-ancestors` for `/embed/*` is `'self'` plus exactly the approved sites; everything else
+  keeps `'none'`. The API and WebSocket calls stay on this site's origin inside the frame, so no
+  CORS opening is needed.

@@ -44,5 +44,6 @@ export const ADMIN_NAV = [
   { to: '/admin/chat', label: 'Chat' },
   { to: '/admin/chat-media', label: 'Chat media' },
   { to: '/admin/settings', label: 'Settings' },
+  { to: '/admin/embedding', label: 'Embedding' },
   { to: '/admin/audit', label: 'Audit log' },
 ];

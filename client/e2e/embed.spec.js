@@ -10,27 +10,10 @@
 // ============================================================
 
 import { expect, test } from '@playwright/test';
+import { frameOf, refused } from './frames.js';
 import { DEV_PROXY_URL, SERVER_PORT } from './ports.js';
 
 const SERVER = `http://127.0.0.1:${SERVER_PORT}`;
-
-// Puts an iframe of `src` into the current page; returns its frame once it has loaded.
-async function frameOf(page, src) {
-  await page.evaluate((url) => {
-    const frame = document.createElement('iframe');
-    frame.src = url;
-    frame.title = 'framed';
-    document.body.append(frame);
-  }, src);
-  const element = page.locator('iframe[title="framed"]').last();
-  await expect(element).toBeAttached();
-  const frame = await (await element.elementHandle()).contentFrame();
-  await frame.waitForLoadState();
-  return frame;
-}
-
-// A frame the browser refused to show (frame-ancestors) ends on its error page.
-const refused = (frame) => frame.url().startsWith('chrome-error://');
 
 test('a page of this site frames the chat; other pages cannot be framed', async ({ page }) => {
   await page.goto('/events');

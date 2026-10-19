@@ -8,10 +8,14 @@
 //              password no longer opens it: recovery code or start over). Logging out deletes
 //              the device copy. Also whether to offer a recovery code right after a new key
 //              pair was made (asked once, never again automatically), holding that flow's auth
-//              key in memory until the offer closes: the server asks for it.
+//              key in memory until the offer closes: the server asks for it. On another site's
+//              page (the chat embedded there, embed/) the key lives in memory only: no device
+//              copy (storage there is partitioned), handed over by the login popup (adopt), and
+//              gone the moment the member is (logout, token refused) or the page closes.
 // ============================================================
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { isForeignEmbed } from '../embed/embedAuth.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { clearDeviceKey, loadDeviceKey, saveDeviceKey } from './deviceKey.js';
 import * as actions from './keyActions.js';
@@ -44,12 +48,14 @@ export function KeyProvider({ children }) {
   const set = (forUser, next) => setStored({ ...NONE, ...next, forUser });
 
   useEffect(() => {
-    // Logged out (or the session ended): no key material stays on this device.
+    // Logged out (or the session ended): no key material stays on this device. (A foreign
+    // embed has no device copy; its key is dropped by forget(), see below.)
     if (guest) {
-      clearDeviceKey();
+      if (!isForeignEmbed()) clearDeviceKey();
       return;
     }
-    if (userId === null) return;
+    // A foreign embed has only what the login popup handed over (adopt); nothing to load.
+    if (userId === null || isForeignEmbed()) return;
     loadState(userId)
       .then(setStored)
       .catch(() => setStored({ ...NONE, status: 'locked', forUser: userId }));
@@ -57,7 +63,7 @@ export function KeyProvider({ children }) {
 
   // A private key is open: keep it here and on this device.
   const unlocked = useCallback(async (forUser, { keyId, privateKey }, hasRecovery) => {
-    await saveDeviceKey(forUser, keyId, privateKey);
+    if (!isForeignEmbed()) await saveDeviceKey(forUser, keyId, privateKey);
     set(forUser, { status: 'unlocked', keyId, privateKey, hasRecovery });
   }, []);
 
@@ -78,8 +84,9 @@ export function KeyProvider({ children }) {
   );
 
   const value = useMemo(() => {
-    const state =
-      userId === null ? NONE : stored.forUser === userId ? stored : { ...NONE, status: 'loading' };
+    // Not yet known for this account: loading — or, in a foreign embed, locked until adopted.
+    const pending = { ...NONE, status: isForeignEmbed() ? 'locked' : 'loading' };
+    const state = userId === null ? NONE : stored.forUser === userId ? stored : pending;
     return {
       status: state.status,
       keyId: state.keyId,
@@ -89,6 +96,12 @@ export function KeyProvider({ children }) {
       // Closing the offer also forgets the auth key it held.
       dismissRecoveryOffer: () => setOffer(null),
       openWithPassword,
+      // The key the login popup opened for a foreign embed: { keyId, privateKey }, or null
+      // when private messages were left locked. Memory only.
+      adopt: (forUser, key) =>
+        set(forUser, key ? { status: 'unlocked', ...key } : { status: 'locked' }),
+      // The embed token ended: the key goes from memory at once (not just out of view).
+      forget: () => setStored({ ...NONE, forUser: null }),
       async recover(code, passwordKeys) {
         const result = await actions.recoverWithCode(code, passwordKeys);
         if (result) await unlocked(userId, result, true);

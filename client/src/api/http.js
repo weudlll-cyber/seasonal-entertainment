@@ -4,8 +4,12 @@
 // Project:     Seasonal Entertainment
 // Description: The one way the client calls the API: JSON in, JSON out, same-origin cookies
 //              (upload(): a file as the raw body). Failures throw ApiError carrying the
-//              server's stable code, its message and the rest of its answer (details).
+//              server's stable code, its message and the rest of its answer (details). The chat
+//              embedded on an approved foreign site also sends its embed token
+//              (embed/embedAuth.js), and drops it when the server refuses it.
 // ============================================================
+
+import { dropEmbedToken, embedToken } from '../embed/embedAuth.js';
 
 export class ApiError extends Error {
   constructor(status, code, message, details = {}) {
@@ -17,12 +21,22 @@ export class ApiError extends Error {
 }
 
 async function call(path, init) {
-  const res = await fetch(`/api${path}`, { credentials: 'same-origin', ...init });
+  const token = embedToken();
+  const headers = token ? { ...init.headers, 'X-Embed-Token': token } : init.headers;
+  const res = await fetch(`/api${path}`, { credentials: 'same-origin', ...init, headers });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (data.error === 'embed_token_invalid') dropEmbedToken();
     throw new ApiError(res.status, data.error ?? 'error', data.message ?? 'Request failed.', data);
   }
   return data;
+}
+
+// The chat socket's subprotocols (chat/connection.js): the embed token offered as
+// "se-embed.<token>" where the page is the chat on an approved foreign site, else none.
+export function socketProtocols() {
+  const token = embedToken();
+  return token ? ['se-chat', `se-embed.${token}`] : [];
 }
 
 export function api(path, { method = 'GET', body } = {}) {
