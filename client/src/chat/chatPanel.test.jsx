@@ -4,7 +4,9 @@
 // Project:     Seasonal Entertainment
 // Description: Guards the chat module as a reusable part: a ChatPanel works on its own, with
 //              only the account context around it (no app layout, no router), and several
-//              panels on one page share one live connection, each showing only its room.
+//              panels on one page share one live connection, each showing only its room. The
+//              sender's own message pushed live before its send is answered shows once, and the
+//              composer keeps the text until the answer (SE-NIGHT-3 piece 4).
 // ============================================================
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -69,8 +71,39 @@ describe('ChatPanel on its own', () => {
     expect(await within(panel).findByText('hi')).toBeInTheDocument();
     fireEvent.change(within(panel).getByLabelText('Message'), { target: { value: 'hello' } });
     fireEvent.click(within(panel).getByRole('button', { name: 'Send' }));
-    expect(await within(panel).findByText('hello')).toBeInTheDocument();
+    // In the message list: until the send is answered, the composer's field holds the text too.
+    const list = within(panel).getByRole('list', { name: 'Messages in General' });
+    expect(await within(list).findByText('hello')).toBeInTheDocument();
     expect(calls.some((c) => c.key === 'POST /chat/rooms/general/messages')).toBe(true);
+  });
+
+  it('its own message pushed before the send is answered: shown once; the field clears after', async () => {
+    let answer;
+    api({
+      // The answer is held back until the push has arrived (as the socket often wins).
+      'POST /chat/rooms/general/messages': () => new Promise((resolve) => (answer = resolve)),
+    });
+    alone(<ChatPanel room="general" variant="compact" />);
+    const panel = await screen.findByRole('region', { name: 'Chat: General' });
+    const list = within(panel).getByRole('list', { name: 'Messages in General' });
+    await within(list).findByText('hi');
+    await vi.waitFor(() => expect(FakeSocket.all[0]?.sent).toHaveLength(1));
+    const field = within(panel).getByLabelText('Message');
+    fireEvent.change(field, { target: { value: 'mine' } });
+    fireEvent.click(within(panel).getByRole('button', { name: 'Send' }));
+    await vi.waitFor(() => expect(answer).toBeTypeOf('function'));
+
+    FakeSocket.all[0].push({
+      type: 'message',
+      message: msg(5, 'general', 'mine'),
+      room: 'general',
+    });
+    expect(within(list).getAllByText('mine')).toHaveLength(1);
+    expect(field).toHaveValue('mine'); // not sent yet as far as the composer knows
+
+    answer({ status: 201, body: { ok: true, message: msg(5, 'general', 'mine') } });
+    await vi.waitFor(() => expect(field).toHaveValue(''));
+    expect(within(list).getAllByText('mine')).toHaveLength(1);
   });
 });
 

@@ -24,10 +24,6 @@ An entry moves from part one to part two only when its branch is merged into `ma
   there: an image request cannot carry the token. Would need short-lived signed file links.
 - **Guests writing in the chat on other sites** — open. A guest name is kept in a cookie, which
   other sites' frames do not get; guests can read there but not write.
-- **Own room message seen twice in the chat on another site** — open, cause unknown. Seen
-  once in SE-EMBED-CHECK-2: a member's room message, sent from the frame on another site,
-  showed twice there; stored once, and four further runs showed it once. The list merges by id
-  (`client/src/chat/useChatRoom.js`).
 - **Real sites to approve for the chat embed** — open, the owner's word: which game sites go on
   Admin → Embedding once the site is live (only exact `https://` origins).
 - **Age key pair for the backups** — open, at deployment: the owner creates it on the PC
@@ -58,6 +54,14 @@ An entry moves from part one to part two only when its branch is merged into `ma
   the backup key pair made on the owner's PC (backups go there, decided 2026-10-19).
 
 ## PART TWO — closed
+
+- **Own room message seen twice in the chat on another site** — closed by SE-NIGHT-3 piece 4
+  (`feat/se-night-3`, PR #8, not merged yet): not shown twice. The browser check's
+  `getByText` also matched the composer's field, which still holds the text until the send is
+  answered, while the live push had already listed the message. Reproduced every time with
+  the answer held back and in 2 of 30 natural runs; never twice in the list. The client tests
+  that had the same blind spot now look inside the message list, and a new test pins the
+  push-before-answer case (docs/CHAT.md, "Sending").
 
 - **Prices and events from the owner's bots** — closed by SE-NIGHT-3 piece 3 (`feat/se-night-3`,
   PR #8, not merged yet): read-only reads of the price and event bots' SQLite files

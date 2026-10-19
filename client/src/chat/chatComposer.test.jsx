@@ -6,7 +6,7 @@
 //              emoji goes into the text at the cursor, and the message is sent as plain text.
 // ============================================================
 
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeSocket } from '../test/fakeSocket.js';
 import { GUEST, mockApi } from '../test/mockApi.js';
@@ -60,7 +60,9 @@ describe('emoji picker', () => {
     fireEvent.click(screen.getByRole('button', { name: 'party popper' }));
     expect(field).toHaveValue('Hi 🎉all');
     fireEvent.click(screen.getByRole('button', { name: 'Send' }));
-    expect(await screen.findByText('Hi 🎉all')).toBeInTheDocument();
+    // In the message list: until the send is answered, the composer's field holds the text too.
+    const list = screen.getByRole('list', { name: 'Messages in General' });
+    expect(await within(list).findByText('Hi 🎉all')).toBeInTheDocument();
     expect(calls.find((c) => c.key === 'POST /chat/rooms/general/messages').body).toEqual({
       body: 'Hi 🎉all',
     });

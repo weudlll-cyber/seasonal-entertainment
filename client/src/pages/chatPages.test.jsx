@@ -65,7 +65,9 @@ describe('chat page', () => {
     expect(screen.getByText(/your first message gets a guest name/)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'hello' } });
     fireEvent.click(screen.getByRole('button', { name: 'Send' }));
-    expect(await screen.findByText('hello')).toBeInTheDocument();
+    // In the message list: until the send is answered, the composer's field holds the text too.
+    const list = screen.getByRole('list', { name: 'Messages in General' });
+    expect(await within(list).findByText('hello')).toBeInTheDocument();
     expect(calls.find((c) => c.key === 'POST /chat/rooms/general/messages').body).toEqual({
       body: 'hello',
     });
