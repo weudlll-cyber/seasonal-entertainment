@@ -99,19 +99,31 @@ function requestOnce(url, address, options, network, signal) {
         return fail(`content type ${contentType || 'missing'}`);
       }
       if (Number(res.headers['content-length']) > options.maxBytes) return fail('too large');
-      const chunks = [];
-      let size = 0;
-      res.on('data', (chunk) => {
-        size += chunk.length;
-        if (size > options.maxBytes) return fail('too large');
-        chunks.push(chunk);
-      });
-      res.on('end', () =>
-        resolve({ status: res.statusCode, contentType, body: Buffer.concat(chunks) })
+      readBody(res, options.maxBytes, () => fail('too large')).then(
+        (body) => resolve({ status: res.statusCode, contentType, body }),
+        reject
       );
-      res.on('error', (err) => reject(new FetchRefused(err.message)));
     });
     req.end();
+  });
+}
+
+// The body of a response, at most maxBytes. Over that, onTooLarge() stops the transfer and the
+// promise rejects — also when the end arrives before the transfer has stopped (the last
+// chunks may all be in already): a cut-off body is never handed over as if complete.
+export function readBody(res, maxBytes, onTooLarge) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    res.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > maxBytes) return onTooLarge();
+      chunks.push(chunk);
+    });
+    res.on('end', () =>
+      size > maxBytes ? reject(new FetchRefused('too large')) : resolve(Buffer.concat(chunks))
+    );
+    res.on('error', (err) => reject(new FetchRefused(err.message)));
   });
 }
 

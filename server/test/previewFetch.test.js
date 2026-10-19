@@ -9,8 +9,9 @@
 //              redirects; size cap, deadline, content type; fixed User-Agent, no cookies.
 // ============================================================
 
+import { PassThrough } from 'node:stream';
 import { afterEach, describe, expect, it } from 'vitest';
-import { FetchRefused, safeFetch } from '../src/previews/safeFetch.js';
+import { FetchRefused, readBody, safeFetch } from '../src/previews/safeFetch.js';
 import { PUBLIC_IP, html, previewInternet, redirect } from './helpers/previewNet.js';
 
 let internet;
@@ -132,6 +133,22 @@ describe('limits', () => {
     });
     await expect(fetch('https://site.test/big')).rejects.toThrow(/too large/);
     await expect(fetch('https://site.test/streamed')).rejects.toThrow(/too large/);
+  });
+
+  it('an over-cap body is refused even when its end arrives before the transfer stops', async () => {
+    // Everything in at once: the end follows the last chunk in the same tick (what made the
+    // test above fail now and then on CI before readBody checked it).
+    const res = new PassThrough();
+    let stopped = 0;
+    const body = readBody(res, 1024, () => (stopped += 1));
+    res.write('x'.repeat(800));
+    res.end('x'.repeat(800));
+    await expect(body).rejects.toThrow(/too large/);
+    expect(stopped).toBe(1);
+    const small = new PassThrough();
+    const fits = readBody(small, 1024, () => (stopped += 1));
+    small.end('x'.repeat(1024));
+    expect((await fits).length).toBe(1024);
   });
 
   it('a slow answer is given up at the deadline', async () => {
