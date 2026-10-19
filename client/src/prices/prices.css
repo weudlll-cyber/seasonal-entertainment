@@ -115,6 +115,11 @@
   background: var(--color-active-bg);
 }
 
+/* The picked token keeps its season edge. */
+.price-pick[aria-pressed='true'] {
+  border-left-color: var(--season);
+}
+
 .price-pick span,
 .price-pick small {
   font-variant-numeric: tabular-nums;

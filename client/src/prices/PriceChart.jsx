@@ -15,13 +15,13 @@ import { formatPriceTime, formatUsd } from './priceFormat.js';
 const BOX = { width: 640, height: 260, pad: 12 };
 const STEP_KEYS = { ArrowLeft: -1, ArrowRight: 1 };
 
-// points: [[ms, price], ...] oldest first; name: the token's name; withDate: show dates.
-export default function PriceChart({ points, token, name, withDate, timeZone }) {
+// points: [[ms, price], ...] oldest first; name: the token's name.
+export default function PriceChart({ points, token, name, timeZone }) {
   const [marked, setMarked] = useState(null); // index of the marked snapshot
   if (points.length < 2) return <p>Not enough prices in this range yet.</p>;
   const { coords, minY, maxY } = scalePoints(points, BOX);
   const at = marked === null ? null : Math.min(marked, points.length - 1);
-  const time = (ms) => formatPriceTime(ms, withDate, timeZone);
+  const time = (ms) => formatPriceTime(ms, timeZone);
 
   function pointAt(event) {
     const rect = event.currentTarget.getBoundingClientRect();

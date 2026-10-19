@@ -47,11 +47,14 @@ export function formatChange(change) {
 export const changeClass = (change) =>
   `price-change${change > 0 ? ' price-change--up' : change < 0 ? ' price-change--down' : ''}`;
 
-// A snapshot time in the viewer's zone; with the date for ranges longer than a day.
-export function formatPriceTime(ms, withDate, timeZone) {
+// A snapshot time in the viewer's zone, always with its date (a day's chart starts and ends at
+// the same hour).
+export function formatPriceTime(ms, timeZone) {
   return new Intl.DateTimeFormat('en-GB', {
     timeZone,
-    ...(withDate && { day: 'numeric', month: 'short', year: 'numeric' }),
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
     hourCycle: 'h23',

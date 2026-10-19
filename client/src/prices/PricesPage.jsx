@@ -105,7 +105,6 @@ export default function PricesPage({ timeZone = deviceZone() }) {
               points={shown.points}
               token={token}
               name={picked.name}
-              withDate={range !== '24h'}
               timeZone={timeZone}
             />
           ) : (

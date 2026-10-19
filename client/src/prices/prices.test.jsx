@@ -97,6 +97,7 @@ describe('/info/prices', () => {
     ...GUEST,
     'GET /prices': { body: PRICES },
     'GET /prices/spring?range=7d': history('spring', '7d'),
+    'GET /prices/spring?range=24h': history('spring', '24h'),
     'GET /prices/spring?range=30d': history('spring', '30d'),
     'GET /prices/winter?range=30d': history('winter', '30d'),
   };
@@ -129,6 +130,23 @@ describe('/info/prices', () => {
     expect(screen.getByText('$0.002600 at 20 Oct 2026, 14:00')).toBeInTheDocument();
     fireEvent.keyDown(chart, { key: 'ArrowRight' });
     expect(screen.getByText('$0.002800 at 21 Oct 2026, 02:00')).toBeInTheDocument();
+  });
+
+  it('dates the time axis even for a day, where it starts and ends at the same hour', async () => {
+    mockApi(ANSWERS);
+    render(
+      <MemoryRouter>
+        <PricesPage timeZone="Europe/Berlin" />
+      </MemoryRouter>
+    );
+    await screen.findByRole('img', { name: /^Spring price from/ });
+    fireEvent.click(screen.getByRole('button', { name: '24 h' }));
+    expect(
+      await screen.findByRole('img', {
+        name: 'Spring price from 20 Oct 2026, 14:00 to 21 Oct 2026, 14:00',
+      })
+    ).toBeInTheDocument();
+    expect(screen.getByText('20 Oct 2026, 14:00')).toBeInTheDocument(); // the axis's first time
   });
 
   it('without the price bot, says so plainly', async () => {
