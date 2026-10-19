@@ -5,12 +5,11 @@
 // Description: Logging in (docs/AUTH.md, "Login key split"). POST /api/auth/prelogin gives
 //              the browser the salt to derive its keys with (a deterministic fake one for
 //              unknown names: same shape, so it reveals nothing); POST /api/auth/login takes
-//              the derived auth key, never the password. POST /api/auth/legacy-login serves
-//              accounts from before the key split only: their password is checked one last
-//              time against the old hash and, in the same request, replaced by the new salt
-//              and auth-key verifier. Wrong name and wrong secret answer the same 401; both
-//              routes share the login rate limits (failed attempts per IP and per username).
-//              Accounts with 2FA finish at POST /api/2fa/login.
+//              the derived auth key, never the password. Wrong name and wrong secret answer the
+//              same 401; both routes share the login rate limits (failed attempts per IP and
+//              per username). Accounts with 2FA finish at POST /api/2fa/login. (The one-time
+//              legacy login for accounts from before the key split was removed in SE-NIGHT-2:
+//              no such account existed any more.)
 // ============================================================
 
 import express from 'express';
@@ -21,9 +20,9 @@ import { startSession } from '../http/session.js';
 import { required, validBody } from '../http/validate.js';
 import { beginSecondFactor } from '../twofa/routes.js';
 import { isTwoFactorEnabled } from '../twofa/store.js';
-import { authKeyField, fakeSalt, saltField } from './credentials.js';
-import { hashPassword, verifyPassword } from './passwords.js';
-import { findKdfSalt, findLoginByUsername, upgradeLegacyAccount } from './userStore.js';
+import { authKeyField, fakeSalt } from './credentials.js';
+import { verifyPassword } from './passwords.js';
+import { findKdfSalt, findLoginByUsername } from './userStore.js';
 
 const wrongCredentials = (res) =>
   sendError(res, 401, 'invalid_credentials', 'Wrong username or password.');
@@ -60,12 +59,9 @@ export function loginRoutes(db, config, view) {
   router.post('/prelogin', allow('public'), perIp, perName, (req, res) => {
     const input = validBody(req, res, { username: required('Username', 100) });
     if (!input) return;
-    const found = findKdfSalt(db, input.username);
-    // A legacy account has no salt yet: it gets a fake one too (its browser makes a new salt).
     res.json({
       ok: true,
-      salt: found?.salt ?? fakeSalt(config.sessionSecret, input.username),
-      legacy: found?.legacy ?? false,
+      salt: findKdfSalt(db, input.username) ?? fakeSalt(config.sessionSecret, input.username),
     });
   });
 
@@ -76,30 +72,9 @@ export function loginRoutes(db, config, view) {
     });
     if (!input) return;
     const found = findLoginByUsername(db, input.username);
-    // A legacy account's hash is of the password, so an auth key never matches it here.
     if (!(await verifyPassword(input.authKey, found?.passwordHash, config.bcryptCost))) {
       return wrongCredentials(res);
     }
-    await finish(req, res, found.user);
-  });
-
-  router.post('/legacy-login', allow('public'), perIp, perName, async (req, res) => {
-    const input = validBody(req, res, {
-      username: required('Username', 100),
-      password: required('Password', 200),
-      salt: saltField,
-      authKey: authKeyField(),
-    });
-    if (!input) return;
-    const found = findLoginByUsername(db, input.username);
-    // Accounts that are not legacy never accept a password here (the dummy hash keeps the
-    // response time the same).
-    const hash = found?.legacy ? found.passwordHash : null;
-    if (!(await verifyPassword(input.password, hash, config.bcryptCost))) {
-      return wrongCredentials(res);
-    }
-    const verifier = await hashPassword(input.authKey, config.bcryptCost);
-    upgradeLegacyAccount(db, found.user.id, verifier, input.salt);
     await finish(req, res, found.user);
   });
 

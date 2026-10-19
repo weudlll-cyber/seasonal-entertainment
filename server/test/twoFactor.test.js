@@ -16,7 +16,7 @@ import { allow } from '../src/http/access.js';
 import { staffTwoFactorGate } from '../src/twofa/gate.js';
 import { codeForStep, stepAt } from '../src/twofa/totp.js';
 import { logIn, proof } from './helpers/accountKeys.js';
-import { makeTestApp, registerUser, setRole } from './helpers/testApp.js';
+import { TEST_SECRET_KEY, makeTestApp, registerUser, setRole } from './helpers/testApp.js';
 
 let t;
 afterEach(() => t?.close());
@@ -164,7 +164,12 @@ describe('staff requirement', () => {
 
   it('the requirement cannot be switched off in production', () => {
     expect(() =>
-      readConfig({ NODE_ENV: 'production', SESSION_SECRET: 's', REQUIRE_STAFF_2FA: 'false' })
+      readConfig({
+        NODE_ENV: 'production',
+        SESSION_SECRET: 's'.repeat(32),
+        SECRET_ENCRYPTION_KEY: TEST_SECRET_KEY,
+        REQUIRE_STAFF_2FA: 'false',
+      })
     ).toThrow(/not allowed in production/);
   });
 });

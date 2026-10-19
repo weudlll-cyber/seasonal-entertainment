@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: Login form, with a second step (code or recovery code) for accounts with 2FA.
 //              After success it returns to the page that sent the visitor here (?next=,
-//              same-site paths only) or to the account page. The password itself never leaves
+//              same-site paths only; session/nextPage.js) or to the account page; the link to
+//              the registration keeps ?next=. The password itself never leaves
 //              the browser: only the auth key derived from it is sent (session/credentials.js).
 //              Once logged in, the same derived keys open (or first create) the member's key
 //              pair for private messages (keys/), before the page moves on.
@@ -16,12 +17,9 @@ import { FormField, FormMessage } from '../components/FormField.jsx';
 import SecondFactorForm from '../components/SecondFactorForm.jsx';
 import { useKeys } from '../keys/KeyContext.jsx';
 import { logIn } from '../session/credentials.js';
+import { safeNext, withNext } from '../session/nextPage.js';
 import { useSession } from '../session/SessionContext.jsx';
-
-// Only local paths: "//evil.example" or "https://..." would be an open redirect.
-function safeNext(value) {
-  return value && value.startsWith('/') && !value.startsWith('//') ? value : '/account';
-}
+import { BusyButton } from '../components/BusyButton.jsx';
 
 export default function LoginPage() {
   const { setUser } = useSession();
@@ -82,12 +80,10 @@ export default function LoginPage() {
           required
         />
         <FormMessage error={error} />
-        <button className="button" type="submit" disabled={busy}>
-          Log in
-        </button>
+        <BusyButton busy={busy}>Log in</BusyButton>
       </form>
       <p>
-        No account yet? <Link to="/register">Register</Link>
+        No account yet? <Link to={withNext('/register', params.get('next'))}>Register</Link>
       </p>
     </section>
   );

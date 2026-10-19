@@ -16,11 +16,14 @@ const apiOrigin = process.env.API_ORIGIN ?? 'http://127.0.0.1:3800';
 export default defineConfig({
   plugins: [react()],
   build: {
-    // The cryptography chunk (libsodium with its WebAssembly, about 540 kB) is loaded only when
-    // a password or a private key is used (session/credentials.js); every other chunk stays
-    // well below this.
+    // The cryptography chunk (libsodium with its WebAssembly, about 540 kB; the password-hashing
+    // worker carries its own copy) is loaded only when a password or a private key is used
+    // (session/credentials.js); every other chunk stays well below this.
     chunkSizeWarningLimit: 600,
   },
+  // The password-hashing worker (session/passwordHashing.worker.js) as an ES module, the same
+  // form the dev server serves it in; every browser the site supports runs module workers.
+  worker: { format: 'es' },
   // Pre-bundled when the dev server starts: found only later (at the first password form),
   // the dev server would reload the page to add it, and the form with it.
   optimizeDeps: { include: ['libsodium-wrappers-sumo'] },

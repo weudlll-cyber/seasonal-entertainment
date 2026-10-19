@@ -3,8 +3,10 @@
 // Path:        client/src/app/App.jsx
 // Project:     Seasonal Entertainment
 // Description: The client's route table inside the session provider. Every page renders
-//              inside Layout; unknown paths show the 404 page. The router itself is supplied
-//              by main.jsx (or a test).
+//              inside Layout, except the embedded chat (/embed/chat, no site shell, for an
+//              iframe) and its login popup (/embed-login; docs/EMBED.md); unknown paths show
+//              the 404 page. The router itself is
+//              supplied by main.jsx (or a test).
 // ============================================================
 
 import { Suspense, lazy } from 'react';
@@ -19,6 +21,9 @@ import AdminSettingsPage from '../admin/AdminSettingsPage.jsx';
 import AdminLayout from '../admin/AdminLayout.jsx';
 import AdminUsersPage from '../admin/AdminUsersPage.jsx';
 import InfoEditorPage from '../admin/InfoEditorPage.jsx';
+import AdminEmbeddingPage from '../admin/AdminEmbeddingPage.jsx';
+import EmbedChatPage from '../embed/EmbedChatPage.jsx';
+import EmbedLoginPage from '../embed/EmbedLoginPage.jsx';
 import { KeyProvider } from '../keys/KeyContext.jsx';
 import AccountPage from '../pages/AccountPage.jsx';
 import CallPage from '../pages/CallPage.jsx';
@@ -38,9 +43,12 @@ import { ThemeProvider } from '../theme/ThemeContext.jsx';
 import Layout from './Layout.jsx';
 
 // Test-only pages: routed by the Vite dev server only. In a production build DEV is false, so
-// this and the page's code are left out entirely.
+// these and the pages' code are left out entirely.
 const ChatPanelsTestPage = import.meta.env.DEV
   ? lazy(() => import('../devPages/ChatPanelsTestPage.jsx'))
+  : null;
+const EmbedDemoPage = import.meta.env.DEV
+  ? lazy(() => import('../devPages/EmbedDemoPage.jsx'))
   : null;
 
 export default function App() {
@@ -49,6 +57,8 @@ export default function App() {
       <SessionProvider>
         <KeyProvider>
           <Routes>
+            <Route path="embed/chat" element={<EmbedChatPage />} />
+            <Route path="embed-login" element={<EmbedLoginPage />} />
             <Route element={<Layout />}>
               <Route index element={<LandingPage />} />
               <Route path="info" element={<InfoIndexPage />} />
@@ -84,6 +94,7 @@ export default function App() {
                 <Route path="games" element={<AdminGamesPage />} />
                 <Route path="chat" element={<AdminChatPage />} />
                 <Route path="settings" element={<AdminSettingsPage />} />
+                <Route path="embedding" element={<AdminEmbeddingPage />} />
                 <Route path="chat-media" element={<AdminChatMediaPage />} />
                 <Route path="audit" element={<AdminAuditPage />} />
               </Route>
@@ -93,6 +104,16 @@ export default function App() {
                   element={
                     <Suspense>
                       <ChatPanelsTestPage />
+                    </Suspense>
+                  }
+                />
+              )}
+              {EmbedDemoPage && (
+                <Route
+                  path="test/embed-chat"
+                  element={
+                    <Suspense>
+                      <EmbedDemoPage />
                     </Suspense>
                   }
                 />

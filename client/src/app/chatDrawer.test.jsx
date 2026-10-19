@@ -2,11 +2,12 @@
 // File:        chatDrawer.test.jsx
 // Path:        client/src/app/chatDrawer.test.jsx
 // Project:     Seasonal Entertainment
-// Description: Guards the chat drawer: the button on every page except /chat and /admin;
-//              opening moves focus in, Escape and the close button close it and focus goes
-//              back; the room picker switches the panel's room and works by keyboard; the
-//              browser remembers open state and room (and copes with blocked storage or a room
-//              the reader can no longer read).
+// Description: Guards the chat drawer: the button on every page except /chat, /admin and
+//              the login or registration page inside the chat's login popup; opening moves
+//              focus in, Escape and the close button close it and focus goes back; the room
+//              picker switches the panel's room and works by keyboard; the browser remembers
+//              open state and room (and copes with blocked storage or a room the reader can
+//              no longer read).
 // ============================================================
 
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
@@ -74,6 +75,19 @@ describe('where the chat button is', () => {
   it.each(['/chat', '/admin/users'])('not on %s', (path) => {
     renderAt(path);
     expect(screen.queryByRole('button', { name: 'Chat' })).toBeNull();
+  });
+
+  // The login popup of the chat on another site runs these pages with ?next=/embed-login….
+  const popupNext = `?next=${encodeURIComponent('/embed-login?origin=https://game.example')}`;
+  it.each(['/login', '/register'])('not on %s inside the login popup', async (path) => {
+    renderAt(path + popupNext);
+    await screen.findByRole('heading', { level: 1 });
+    expect(screen.queryByRole('button', { name: 'Chat' })).toBeNull();
+  });
+
+  it.each(['/login', '/register', '/login?next=/account'])('shown on %s', (path) => {
+    renderAt(path);
+    expect(launcher()).toBeInTheDocument();
   });
 });
 

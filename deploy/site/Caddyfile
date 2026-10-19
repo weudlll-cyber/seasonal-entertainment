@@ -1,0 +1,27 @@
+# ============================================================
+# File:        Caddyfile
+# Path:        deploy/site/Caddyfile
+# Project:     Seasonal Entertainment
+# Description: Caddy for the site's VPS (docker-compose.yml in this folder): automatic HTTPS
+#              (Let's Encrypt) for SITE_DOMAIN, http redirected to https, everything forwarded
+#              to the site container (pages, /api, the chat WebSocket /ws/chat, /media).
+#              Security headers come from the app (helmet, server/src/http/securityHeaders.js)
+#              and pass through unchanged; Caddy adds none of its own. Further site blocks
+#              (the calls domain) come from ./caddy/*.caddy.
+# ============================================================
+{
+	email {$ACME_EMAIL}
+}
+
+{$SITE_DOMAIN} {
+	encode zstd gzip
+	# Caddy replaces any X-Forwarded-For a visitor sends with the visitor's real address;
+	# the site trusts exactly this one proxy (TRUST_PROXY=1).
+	reverse_proxy site:3800
+	log {
+		output stdout
+		format console
+	}
+}
+
+import /etc/caddy/sites/*.caddy

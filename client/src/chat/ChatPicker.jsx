@@ -6,14 +6,15 @@
 //              go into the text at the cursor; a sticker or GIF becomes the message's one
 //              attachment (sent with the text). Stickers and
 //              GIFs are for members only (decided 2026-10-17): guests see only Emoji and a hint.
-//              The library (active packs in order) loads the first time a media tab opens.
+//              The library (active packs in order, mediaLibrary.js, shared with the direct
+//              messages) loads the first time a media tab opens.
 // ============================================================
 
-import { useEffect, useState } from 'react';
-import { api } from '../api/http.js';
+import { useState } from 'react';
 import Icon from '../app/icons.jsx';
 import ChatNotice from './ChatNotice.jsx';
 import { EMOJI_GROUPS } from './emojis.js';
+import { useMediaLibrary } from './mediaLibrary.js';
 
 const TABS = [
   ['emoji', 'Emoji'],
@@ -71,16 +72,8 @@ function MediaTab({ packs, kind, onMedia }) {
 export default function ChatPicker({ member, onEmoji, onMedia }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState('emoji');
-  const [packs, setPacks] = useState(null);
-  const [error, setError] = useState(null);
+  const { packs, error } = useMediaLibrary(open && tab !== 'emoji');
   const tabs = member ? TABS : TABS.slice(0, 1);
-
-  useEffect(() => {
-    if (!open || tab === 'emoji' || packs) return;
-    api('/chat/media')
-      .then((data) => setPacks(data.packs))
-      .catch((err) => setError(err.message));
-  }, [open, tab, packs]);
 
   function chooseMedia(kind, item) {
     setOpen(false);

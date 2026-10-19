@@ -68,7 +68,18 @@ Generate a production pair on the call server with
   A change applies only from the expected status, so two organisers acting at once cannot both
   succeed. Starting opens the call's room on the call service with the participant cap; ending
   marks the call ended first (nobody can join any more), then deletes the room (everyone is
-  disconnected) and closes the call's chat.
+  disconnected) and closes the call's chat (`server/src/calls/endCall.js`, the one way a call
+  ends).
+- **Stale live calls** (SE-NIGHT-2 part 2): a call marked live whose room no longer exists on
+  the call service — everyone left and the service closed the room, or the service restarted —
+  is ended by the site **10 minutes** after the room was first found missing (decision rule of
+  2026-10-18; the owner may change it). It ends exactly like "End call": status `ended`, the
+  chat read-only, an audit entry `call.end` with the actor **system**. The job
+  (`server/src/calls/staleCalls.js`) checks at server start and then every minute; the time a
+  room was first missing is stored (`calls.room_missing_since`), so a restart neither resets
+  nor skips the grace, and a room that comes back clears it. A call service that cannot be
+  reached ends nothing (the check is skipped and logged). Off when `backgroundJobs` is off,
+  like the chat retention.
 - **Call chat**: every call gets a chat room of the existing chat module (`call-<id>`, "Call:
   <title>"), readable and writable by everyone; guests may write there when they may in General
   at the moment the call is created (decided 2026-10-18). It is **unlisted** (not in the room
@@ -288,15 +299,18 @@ Example with ufw: `ufw allow 7881/tcp`, `ufw allow 50000:50499/udp`, `ufw allow 
 
 LiveKit's built-in TURN server is on for production: listeners behind strict company or
 hotel firewalls reach the call over TURN/TLS on 5349, which looks like ordinary TLS. It needs a
-TLS certificate for the calls domain (e.g. from certbot, the same one the reverse proxy uses):
-put `fullchain.pem` and `privkey.pem` in a folder and set `CALLS_CERT_DIR` to it. Renewing the
-certificate needs `docker compose restart`.
+TLS certificate for the calls domain: Caddy (the reverse proxy) gets and renews it, and
+`deploy/site/calls-cert.sh` (daily, from a systemd timer) copies it as `fullchain.pem` and
+`privkey.pem` into `CALLS_CERT_DIR` and restarts LiveKit when it changed (docs/DEPLOYMENT.md).
 
 ### Starting it
 
-On the server, in `deploy/calls/`: copy `.env.example` to `.env`, fill it in, then
-`docker compose up -d`. The reverse proxy forwards `wss://<calls domain>` to `127.0.0.1:7880`
-(WebSocket upgrade on). The site's `CALLS_URL` is `wss://<calls domain>`.
+On the server, in `deploy/calls/` (its own compose project, `seasonal-calls`): copy
+`.env.example` to `.env`, fill it in, then `docker compose up -d`. On the site's VPS the site's
+Caddy forwards `wss://<calls domain>` to LiveKit (`deploy/site/caddy/calls.caddy`); on a VPS of
+its own, `docker compose --profile proxy up -d` also starts a Caddy for it
+(`deploy/calls/Caddyfile`). The site's `CALLS_URL` is `wss://<calls domain>`. Step by step:
+docs/DEPLOYMENT.md.
 
 ### Moving the call service to its own VPS
 
@@ -305,7 +319,9 @@ Nothing in the site changes except one setting:
 1. On the new VPS: install Docker, copy the folder `deploy/calls/` there (with its `.env`).
 2. Point the calls domain's DNS record at the new VPS; get its certificate there
    (`CALLS_CERT_DIR`).
-3. Set up the reverse proxy on the new VPS: `wss://<calls domain>` → `127.0.0.1:7880`.
+3. The reverse proxy on the new VPS: set `ACME_EMAIL` in `deploy/calls/.env` and start with
+   `docker compose --profile proxy up -d` in step 5 (its own Caddy); delete
+   `deploy/site/caddy/calls.caddy` on the site's VPS and restart its Caddy.
 4. Open the firewall ports above on the new VPS.
 5. `docker compose up -d` in `deploy/calls/`.
 6. On the site's server: set `CALLS_URL` to the new origin if the domain changed (same domain:

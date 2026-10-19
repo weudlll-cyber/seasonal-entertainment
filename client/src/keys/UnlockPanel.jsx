@@ -14,6 +14,7 @@ import { FormField, FormMessage } from '../components/FormField.jsx';
 import { keysForPassword } from '../session/credentials.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { useKeys } from './KeyContext.jsx';
+import { BusyButton } from '../components/BusyButton.jsx';
 
 export default function UnlockPanel() {
   const { user } = useSession();
@@ -69,9 +70,7 @@ export default function UnlockPanel() {
           required
         />
         <FormMessage error={error} />
-        <button className="button" type="submit" disabled={busy}>
-          Unlock private messages
-        </button>
+        <BusyButton busy={busy}>Unlock private messages</BusyButton>
       </form>
     );
   }
@@ -83,9 +82,7 @@ export default function UnlockPanel() {
         <form className="form" onSubmit={recover}>
           <p>Your recovery code opens your private messages again.</p>
           <FormField label="Recovery code" name="code" type="text" autoComplete="off" required />
-          <button className="button" type="submit" disabled={busy}>
-            Use recovery code
-          </button>
+          <BusyButton busy={busy}>Use recovery code</BusyButton>
         </form>
       )}
       <div className="form">

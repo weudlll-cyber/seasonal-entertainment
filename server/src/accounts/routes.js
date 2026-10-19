@@ -9,11 +9,13 @@
 //              checked in the browser (shared/accountRules.js). A password change also carries
 //              the private key sealed again with the new wrapping key (keys/), stored in the
 //              same transaction as the new verifier. Logout and password change also close
-//              the affected chat sockets (chat/mount.js). PUT /api/auth/privacy: the member's
+//              the affected chat sockets (chat/mount.js); logout also ends the member's embed
+//              tokens (embed/tokens.js). PUT /api/auth/privacy: the member's
 //              own "Show when I'm online".
 // ============================================================
 
 import express from 'express';
+import { revokeUserTokens } from '../embed/tokens.js';
 import {
   MINIMUM_AGE,
   validateEmail,
@@ -82,6 +84,9 @@ export function accountRoutes(db, config, chatSessions) {
 
   router.post('/logout', allow('member'), async (req, res) => {
     chatSessions.ended(req.sessionID);
+    // Logging out on the site also ends this member's chat on approved foreign sites.
+    revokeUserTokens(db, req.user.id);
+    chatSessions.embedRevoked({ userId: req.user.id });
     await endSession(req);
     res.clearCookie(cookieName(config), { path: '/' });
     res.json({ ok: true });

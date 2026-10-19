@@ -1,0 +1,15 @@
+# ============================================================
+# File:        calls.caddy
+# Path:        deploy/site/caddy/calls.caddy
+# Project:     Seasonal Entertainment
+# Description: The calls domain while the call service (deploy/calls/) runs on this VPS:
+#              HTTPS for CALLS_DOMAIN, signalling over wss forwarded to LiveKit on the host
+#              (port 7880, closed to the outside). When the call service moves to its own VPS,
+#              delete this file here (docs/CALLS.md, "Moving the call service"); its VPS then
+#              runs deploy/calls/ with its own Caddy (profile "proxy").
+# ============================================================
+
+{$CALLS_DOMAIN} {
+	# WebSocket upgrades (wss signalling) are forwarded as they are.
+	reverse_proxy {$CALLS_UPSTREAM}
+}

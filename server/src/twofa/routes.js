@@ -6,7 +6,8 @@
 //              + QR), enable with a first code (returns recovery codes once), disable (auth key
 //              + second factor), and the second login step for accounts with 2FA. Turning 2FA
 //              on or off ends every other session of the account (session epoch) and closes its
-//              other chat sockets. beginSecondFactor() is called by the password login.
+//              other chat sockets. beginSecondFactor() is called by the password login. The
+//              secret is stored encrypted (secretBox.js) under SECRET_ENCRYPTION_KEY.
 // ============================================================
 
 import express from 'express';
@@ -20,6 +21,7 @@ import { makeLimiter } from '../http/rateLimit.js';
 import { restampSession, startSession } from '../http/session.js';
 import { validBody } from '../http/validate.js';
 import { twoFactorStatus } from './gate.js';
+import { openSecret, sealSecret } from './secretBox.js';
 import {
   acceptSecondFactor,
   disableTwoFactor,
@@ -76,7 +78,7 @@ export function twoFactorRoutes(db, config, chatSessions) {
       return sendError(res, 409, 'already_enabled', 'Two-factor authentication is already on.');
     }
     const secret = generateSecret();
-    savePendingSecret(db, req.user.id, secret);
+    savePendingSecret(db, req.user.id, await sealSecret(secret, config.secretKey));
     const url = otpauthUrl(secret, req.user.username, ISSUER);
     res.json({ ok: true, secret, otpauthUrl: url, qrCode: await QRCode.toDataURL(url) });
   });
@@ -86,7 +88,9 @@ export function twoFactorRoutes(db, config, chatSessions) {
     if (!factor || factor.enabled) {
       return sendError(res, 409, 'no_pending_setup', 'Start the setup first.');
     }
-    const step = matchStep(factor.secret, secondFactor(req.body).code, Date.now());
+    const secret = await openSecret(factor.secret, config.secretKey, req.user.id);
+    const step =
+      secret === null ? null : matchStep(secret, secondFactor(req.body).code, Date.now());
     if (step === null) return sendError(res, 400, 'invalid_code', 'That code is not valid.');
     const recoveryCodes = enableTwoFactor(db, req.user.id, step);
     await endOtherSessions(req);
@@ -97,7 +101,8 @@ export function twoFactorRoutes(db, config, chatSessions) {
     const input = validBody(req, res, passwordInput);
     if (!input) return;
     const passwordOk = await passwordMatches(req, input.authKey);
-    if (!passwordOk || !acceptSecondFactor(db, req.user.id, secondFactor(req.body))) {
+    const factor = secondFactor(req.body);
+    if (!passwordOk || !(await acceptSecondFactor(db, config.secretKey, req.user.id, factor))) {
       return sendError(res, 401, 'invalid_credentials', 'Password or code is wrong.');
     }
     disableTwoFactor(db, req.user.id);
@@ -117,7 +122,9 @@ export function twoFactorRoutes(db, config, chatSessions) {
       if (expired || (user && user.sessionEpoch !== pending.sessionEpoch)) {
         return sendError(res, 401, 'login_expired', 'Please log in again.');
       }
-      if (!user || user.locked || !acceptSecondFactor(db, user.id, secondFactor(req.body))) {
+      const accepted =
+        user && (await acceptSecondFactor(db, config.secretKey, user.id, secondFactor(req.body)));
+      if (!user || user.locked || !accepted) {
         return sendError(res, 401, 'invalid_code', 'That code is not valid.');
       }
       await startSession(req, user); // a fresh session id; the pending marker is gone

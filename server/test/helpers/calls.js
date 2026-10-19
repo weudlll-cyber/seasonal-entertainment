@@ -3,9 +3,9 @@
 // Path:        server/test/helpers/calls.js
 // Project:     Seasonal Entertainment
 // Description: Test helpers for calls: a stand-in call service with the methods of
-//              calls/service.js that records every request and keeps who is "connected" (no
-//              call server needed; tokens are signed for real with test keys and can be
-//              decoded), an app with calls switched on and the seeded chat rooms, creating and
+//              calls/service.js that records every request, keeps the open rooms and who is
+//              "connected" (no call server needed; tokens are signed for real with test keys
+//              and can be decoded), an app with calls switched on and the seeded chat rooms, creating and
 //              starting a call as an organiser, and joining one.
 // ============================================================
 
@@ -24,12 +24,21 @@ export function fakeCallService() {
   const log = [];
   // identity -> { identity, name, permission, attributes, tracks }: who is connected now.
   const connected = new Map();
+  const rooms = new Set(); // the open rooms' names; a test deletes one to make it "gone"
   return {
     log,
     connected,
+    rooms,
     url: 'wss://calls.test',
-    openRoom: async (name, maxParticipants) => log.push(['open', name, maxParticipants]),
-    closeRoom: async (name) => log.push(['close', name]),
+    openRoom: async (name, maxParticipants) => {
+      log.push(['open', name, maxParticipants]);
+      rooms.add(name);
+    },
+    closeRoom: async (name) => {
+      log.push(['close', name]);
+      rooms.delete(name);
+    },
+    existingRooms: async (names) => names.filter((name) => rooms.has(name)),
     listParticipants: async () => [...connected.values()],
     updateParticipant: async (_room, identity, options) => {
       log.push(['update', identity, options]);

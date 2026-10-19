@@ -2,12 +2,14 @@
 // File:        store.js
 // Path:        server/src/twofa/store.js
 // Project:     Seasonal Entertainment
-// Description: Data access for two-factor authentication: pending/enabled TOTP secrets, the
+// Description: Data access for two-factor authentication: pending/enabled TOTP secrets
+//              (stored encrypted, secretBox.js; this module gets and gives them sealed), the
 //              replay guard, recovery codes (stored as SHA-256 hashes, each usable once), and
 //              the check of a second factor during login or disabling.
 // ============================================================
 
 import { createHash, randomBytes } from 'node:crypto';
+import { openSecret } from './secretBox.js';
 import { base32Encode, matchStep } from './totp.js';
 
 const RECOVERY_CODE_COUNT = 10;
@@ -28,13 +30,14 @@ export function isTwoFactorEnabled(db, userId) {
   return getTwoFactor(db, userId)?.enabled === true;
 }
 
-// A new secret replaces any earlier pending one; an enabled one is never overwritten here.
-export function savePendingSecret(db, userId, secret) {
+// A new secret (sealed: secretBox.js) replaces any earlier pending one; an enabled one is never
+// overwritten here.
+export function savePendingSecret(db, userId, sealedSecret) {
   db.prepare(
     `INSERT INTO two_factor (user_id, secret) VALUES (?, ?)
      ON CONFLICT (user_id) DO UPDATE SET secret = excluded.secret, last_step = 0
      WHERE two_factor.enabled_at IS NULL`
-  ).run(userId, secret);
+  ).run(userId, sealedSecret);
 }
 
 // Enables 2FA and issues fresh recovery codes (returned in plain text, this one time only).
@@ -65,11 +68,21 @@ export function disableTwoFactor(db, userId) {
 
 // Checks a TOTP code or a recovery code for an enabled account. Accepting marks it used in
 // the same statement (step moves forward / code gets used_at), so it cannot be used twice.
-export function acceptSecondFactor(db, userId, { code, recoveryCode }, timeMs = Date.now()) {
+// key: SECRET_ENCRYPTION_KEY's bytes; a secret that does not open with it accepts no code.
+// Recovery codes are hashed, not encrypted: they work whatever the key.
+export async function acceptSecondFactor(
+  db,
+  key,
+  userId,
+  { code, recoveryCode },
+  timeMs = Date.now()
+) {
   const factor = getTwoFactor(db, userId);
   if (!factor?.enabled) return false;
   if (code) {
-    const step = matchStep(factor.secret, code, timeMs);
+    const secret = await openSecret(factor.secret, key, userId);
+    if (secret === null) return false;
+    const step = matchStep(secret, code, timeMs);
     if (step === null) return false;
     const { changes } = db
       .prepare('UPDATE two_factor SET last_step = ? WHERE user_id = ? AND last_step < ?')

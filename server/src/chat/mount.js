@@ -45,9 +45,10 @@ const PUBLIC_MEDIA = /^\/(?:previews\/)?[0-9a-f]{32}\.(?:webp|png|gif|jpg)$/;
 // app: the Express app (chat media files are served at /media); api: the /api router, after
 // sessions, current user and the 2FA gate; sessionParser: the session middleware, reused on
 // the WebSocket upgrade; previewNetwork: how link previews reach the internet (tests replace
-// it). Call before the API's catch-all 404.
-export function mountChat({ app, api, db, config, sessionParser, previewNetwork }) {
-  const hub = new ChatHub(db, config);
+// it); embedOrigins: the sites approved for the embedded chat (embed/origins.js), for sockets
+// that connect with an embed token. Call before the API's catch-all 404.
+export function mountChat({ app, api, db, config, sessionParser, previewNetwork, embedOrigins }) {
+  const hub = new ChatHub(db, config, embedOrigins);
   const previews = createPreviewService(db, config, hub, previewNetwork);
 
   // One per-sender rate limit for room and direct messages alike.
@@ -86,6 +87,8 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork 
       accountChanged: (userId, keepSessionId) => hub.disconnectUser(userId, keepSessionId),
       // A member showed or hid their online status: open lists reload their presence.
       presenceChanged: () => hub.sendToMembers({ type: 'presence' }),
+      // Embed tokens ended (embed/): { tokenId } | { origin } | { userId } — their sockets close.
+      embedRevoked: (which) => hub.disconnectEmbeds(which),
     },
     // For areas with a chat room of their own (a call's chat, calls/): an unlisted room,
     // shown only where a panel names it, closed (read-only for everyone) when it is over.
@@ -106,7 +109,7 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork 
       sanction: (who) => activeSanction(db, who),
     },
     // The live connection, once the HTTP server listens.
-    attach: (server) => attachChatSocket(server, { hub, sessionParser, db, config }),
+    attach: (server) => attachChatSocket(server, { hub, sessionParser, db, config, embedOrigins }),
     // First-start rooms and stickers/GIFs, then the retention job (unless switched off).
     async start(log = console.log) {
       if (seedChatRooms(db)) log('Added the chat rooms (first start)');

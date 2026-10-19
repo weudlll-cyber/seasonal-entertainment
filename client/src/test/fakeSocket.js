@@ -3,7 +3,8 @@
 // Path:        client/src/test/fakeSocket.js
 // Project:     Seasonal Entertainment
 // Description: Test helper: a stand-in for the browser's WebSocket. Records every socket made
-//              (FakeSocket.all), what each sent, and whether it was closed; opens on the next
+//              (FakeSocket.all), the subprotocols it offered, what each sent, and whether it
+//              was closed; opens on the next
 //              timer tick like a real one; push() delivers a server event to the page.
 //              Install with vi.stubGlobal('WebSocket', FakeSocket) after FakeSocket.reset().
 // ============================================================
@@ -17,8 +18,9 @@ export class FakeSocket {
     FakeSocket.all = [];
   }
 
-  constructor(url) {
+  constructor(url, protocols = []) {
     this.url = url;
+    this.protocols = protocols;
     this.sent = [];
     this.readyState = 0;
     this.closed = false;

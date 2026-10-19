@@ -6,7 +6,8 @@
 //              recent) and the status changes scheduled -> live -> ended (a scheduled call may
 //              also be ended without ever going live: cancelled). A change applies only from
 //              the expected status, so two organisers acting at once cannot both succeed.
-//              Also the call's spotlight state.
+//              Also the call's spotlight state, and the live calls with since when their room
+//              has been missing (the stale-call job, staleCalls.js).
 // ============================================================
 
 import { randomBytes } from 'node:crypto';
@@ -76,6 +77,20 @@ export function setSpotlight(db, id, state) {
     state?.by ?? null,
     id
   );
+}
+
+// The live calls the stale-call job looks at: { id, roomName, roomMissingSince }.
+export const liveCallRooms = (db) =>
+  db
+    .prepare(
+      `SELECT id, room_name AS roomName, room_missing_since AS roomMissingSince
+       FROM calls WHERE status = 'live'`
+    )
+    .all();
+
+// since: an ISO time the room was first found missing, or null once it is there again.
+export function setRoomMissingSince(db, id, since) {
+  db.prepare('UPDATE calls SET room_missing_since = ? WHERE id = ?').run(since, id);
 }
 
 export const anyCallLive = (db) =>

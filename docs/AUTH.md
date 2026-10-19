@@ -16,8 +16,8 @@ from the race game's `docs/AUTH.md` are marked _(race game)_.
 - **Rules shared by server and client** (`shared/accountRules.js`): username 3–24 characters,
   letters, digits, `_`, `-`, `.`, starting with a letter or digit; unique **case-insensitively**
   (enforced by the database, `COLLATE NOCASE`). Password at least 10 characters _(race game)_ and
-  at most 72 bytes (kept for the legacy route's bcrypt). Email: a plain shape check; no
-  confirmation mail is sent. The password rules are checked **in the browser only** (next
+  at most 72 bytes (from when bcrypt read the password itself; kept unchanged). Email: a plain
+  shape check; no confirmation mail is sent. The password rules are checked **in the browser only** (next
   section).
 - **The password never reaches the server** (next section). The server stores bcrypt of the auth
   key the browser derives from it, cost 12 by default (`BCRYPT_COST`) _(race game)_.
@@ -37,7 +37,17 @@ crypto helper `shared/crypto.js`, libsodium):
 libsodium's KDF context is exactly 8 bytes: the contexts are "se-auth" and "se-wrap" as C strings,
 i.e. with their terminating NUL byte (`'se-auth\0'` in JavaScript).
 
-- **Pre-login**: `POST /api/auth/prelogin { username }` → `{ salt, legacy }`. An unknown username
+**Off the main thread** (SE-NIGHT-2 part 3): step 1 takes most of a second and would freeze the
+page, so `deriveAccountKeys` and `deriveRecoveryKey` run in a Web Worker
+(`client/src/session/passwordHashing.worker.js`, which runs the very functions of
+`shared/crypto.js`; `passwordHashing.js` is the page's side, with the same arguments and
+results). One worker per page, started at the first password. Where there is no `Worker` (the
+unit tests) or it fails to load, the same functions run on the main thread; the browser test
+`client/e2e/passwordWorker.spec.js` makes sure a real login does use the worker. While a login,
+registration, password change, unlock or recovery runs, its button reads **Checking…**
+(`client/src/components/BusyButton.jsx`).
+
+- **Pre-login**: `POST /api/auth/prelogin { username }` → `{ salt }`. An unknown username
   gets a deterministic fake salt — HMAC-SHA-256 of the lower-cased username, keyed with a key
   derived from `SESSION_SECRET` (no new setting) — so the answer has the same shape for every name
   and does not change between requests. (In development without a `SESSION_SECRET` the secret is
@@ -51,16 +61,13 @@ i.e. with their terminating NUL byte (`'se-auth\0'` in JavaScript).
   password), the first-run bootstrap and `npm run dev:admin` (both through `shared/crypto.js`).
   The server checks only the shapes (`shared/cryptoFormat.js`: salt 16 bytes, keys 32 bytes) and
   answers `400` to a body carrying a password instead.
-- **Legacy accounts** (created before this change; development data only — the site is not live):
-  opening an older database adds the columns and marks every existing account `legacy = 1`
-  (`migrateAccounts`, `server/src/accounts/schema.js`); new accounts are never legacy. Pre-login
-  answers `legacy: true` for them (this reveals that a legacy account exists — acceptable for
-  development data only). The browser then calls `POST /api/auth/legacy-login { username,
-password, salt, authKey }` with a **new** salt: the password is checked one last time against
-  the old hash and, in the same request, the new salt and auth-key verifier replace it and the
-  flag is cleared — exactly once (`UPDATE ... WHERE legacy = 1`); no session epoch change. The
-  route accepts only flagged accounts (any other answers the same `401`, after a dummy bcrypt)
-  and shares the login's rate limits. **It can be removed once no legacy account remains.**
+- **No legacy login any more** (removed in SE-NIGHT-2 part 7): accounts from before the key
+  split had a one-time `POST /api/auth/legacy-login` that checked the password against the old
+  hash and replaced it. No such account existed any more (the development database had none, and
+  the site was never live), so the route, the `legacy` flag in the pre-login answer and the
+  browser's branch for it are gone. An account in a database from before the split (no salt)
+  cannot log in; an admin's password reset gives it a salt. Older databases keep an unused
+  `legacy` column.
 - **Unchanged**: lockout and rate limits, the session epoch, 2FA, the audit log, the same
   `401 invalid_credentials` for a wrong name or secret.
 - **Wrapping key and recovery code**: the wrapping key seals the member's private key for direct
@@ -104,6 +111,47 @@ rate limit, the lockout, locked accounts, the session epoch.
   lock or password change closes the account's sockets (except the session making its own
   change); and every push re-checks the account (`server/src/chat/hub.js`).
 
+## Embed tokens (the chat on approved other sites)
+
+The chat embedded on a site an admin approved (docs/EMBED.md) has no cookie there. It acts for a
+member with an **embed token** instead (`server/src/embed/`; SE-NIGHT-2 follow-up, part A):
+
+- **Issued** by `POST /api/embed/token { origin }` to a member's own **cookie** session (the
+  login popup on this site), only for an approved site (`403 origin_not_allowed` otherwise), at
+  most 30 per member and hour. A token cannot ask for another token. The answer is
+  `{ token, expiresAt }`: 32 random bytes (base64url). Only its SHA-256 is stored
+  (`embed_tokens`), with the account, the site, the account's **session epoch** at issue and the
+  expiry.
+- **Valid 12 hours** (decision rule of 2026-10-19), for that member and that site.
+- **Sent** by the frame in the `X-Embed-Token` header, and on the chat WebSocket as the
+  subprotocol `se-embed.<token>` (next to `se-chat`, which the server answers with). The token
+  is not a cookie, so CSRF rules are unaffected: the requests come from the frame, on this
+  site's origin, and pass the usual Origin check. Requests without the header keep cookie
+  sessions exactly as before.
+- **Scope** (`server/src/embed/auth.js`, an allow-list of exact paths): `GET /api/auth/session`,
+  the chat's rooms (read, write, read markers, mutes, reports), direct messages (list, read,
+  send, read marker, report), unread counts, favourites, the member search, the sticker/GIF
+  library, and `/api/embed/me` and `/api/embed/logout`. Everything else answers
+  `403 embed_not_allowed`: uploads, keys, account (password, logout, privacy), 2FA, moderation,
+  admin, calls. Within the scope the usual rules apply to the token's member: room access,
+  mute and ban, rate limits, the staff 2FA gate.
+- **Ends at once** (`401 embed_token_invalid`, and its sockets close) when:
+  - it expires;
+  - the frame logs out (`POST /api/embed/logout`);
+  - the member logs out on the site (all their embed tokens end);
+  - the session epoch moves (own password change, admin reset, 2FA on or off);
+  - the account is locked or deleted;
+  - an admin removes the site from the list.
+- **In the browser** the token and the private key live in the frame's memory only
+  (`client/src/embed/embedAuth.js`, `keys/KeyContext.jsx`: no IndexedDB on other sites, where
+  storage is partitioned). On `401 embed_token_invalid` the frame forgets both at once.
+- **The popup** (`/embed-login`) is a top-level page on this site, with its address visible. It
+  uses the normal login (2FA included) and then derives the keys from the password **in the
+  popup** (the same derivation, `session/credentials.js`). It hands over only to its opener, and
+  only when that opener is this site's own frame (same origin, `targetOrigin` this origin). It is
+  the one page sent without `Cross-Origin-Opener-Policy`, which would cut it off from that
+  opener, and it cannot be framed.
+
 ## Two-factor authentication (2FA)
 
 - **TOTP** (RFC 6238: HMAC-SHA1, 30-second steps, 6 digits), readable by every authenticator
@@ -134,8 +182,25 @@ rate limit, the lockout, locked accounts, the session epoch.
   the server refuses to start with `false` in production.
 - Failed codes are rate-limited (`rateLimits.twoFactor`: 5 per 15 minutes, per account for
   enable/disable, per IP for the login step).
-- TOTP secrets are stored unencrypted in the database; encrypting them needs a key-management
-  decision (night report).
+- **TOTP secrets are encrypted at rest** (SE-NIGHT-2 part 8, `server/src/twofa/secretBox.js`):
+  - Authenticated encryption with the project's libsodium helper (`shared/crypto.js`
+    `sealBytes`/`openSealed`: secretbox, a fresh nonce each time).
+  - The key is `SECRET_ENCRYPTION_KEY`, 32 random bytes as base64 (`server/src/secretKey.js`).
+    Production refuses to start without it or with the development key. Development without
+    it uses a fixed, public development key and says so at start, so development data
+    survives restarts.
+  - Stored as `enc1:` + base64; the secret shown at setup is nowhere in the database.
+  - On every start, rows still in plain text are encrypted (`sealStoredSecrets`, idempotent:
+    sealed rows are skipped).
+  - A secret that does not open with the key (another key, a changed row) **never passes**.
+    The code is refused, and the server log says "the 2FA secret of user <id> cannot be
+    decrypted: SECRET_ENCRYPTION_KEY is not the key it was stored with", with no part of the
+    secret. At start it also counts such rows.
+  - Recovery codes stay SHA-256 hashes and work whatever the key, so they remain the way back
+    in.
+  - **Losing the key** makes every stored 2FA secret unreadable: those accounts sign in with a
+    recovery code or need 2FA reset by an admin. Keep the key with the other secrets, not with
+    the database backups.
 
 ## Authorisation: deny by default
 
@@ -156,6 +221,12 @@ it permits compiling WebAssembly only, which the browser's cryptography (libsodi
 `shared/crypto.js`) needs; JavaScript `eval` and inline scripts stay forbidden
 (`server/src/http/securityHeaders.js`).
 
+The password-hashing worker needs **no CSP change**: it is a same-origin module file from
+`/assets` (no inline or `blob:` worker), so the absent `worker-src` falls back to
+`script-src 'self'`, and the worker's own response carries the same policy, whose
+`'wasm-unsafe-eval'` lets it compile libsodium. Checked in a real browser by
+`client/e2e/passwordWorker.spec.js`, which fails on any CSP violation.
+
 ## CSRF
 
 Every state-changing API request (`POST`, `PUT`, `PATCH`, `DELETE`) must carry an `Origin` (or
@@ -174,7 +245,7 @@ All answer `429 too_many_attempts`. Numbers are in `server/src/config.js` (`rate
 | `POST /api/auth/login` | 15 min | 10    | IP       | failed attempts |
 | `POST /api/auth/login` | 15 min | 10    | username | failed attempts |
 
-`POST /api/auth/prelogin` and `POST /api/auth/legacy-login` share the two login limiters above
+`POST /api/auth/prelogin` shares the two login limiters above
 (the same counters): a blocked name or address gets neither salts nor logins.
 | `POST /api/auth/register` | 1 h | 5 | IP | every attempt |
 | `POST /api/auth/password` | 15 min | 5 | account | failed attempts |
@@ -209,8 +280,7 @@ After the first admin exists, unset `BOOTSTRAP_TOKEN`; the route stays closed an
 
 `npm run dev:admin` runs the real app in-process on a random port with a one-time token held only
 in memory, calls the bootstrap route with it (salt and auth key derived from the password with
-`shared/crypto.js`; an existing legacy dev admin logs in once through the legacy route, which
-upgrades it), and writes the username and a random password to
+`shared/crypto.js`), and writes the username and a random password to
 `data/DEV-ADMIN.txt` (gitignored). Admins need 2FA, so it then turns 2FA on for that account
 through the real API and adds the TOTP secret, its `otpauth://` link and the recovery codes to
 the same file. It also adds a `SESSION_SECRET` to `.env` if missing, so dev logins survive

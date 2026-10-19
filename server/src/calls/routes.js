@@ -5,8 +5,9 @@
 // Description: /api/calls: the listing and one call for everyone (when calls are configured),
 //              a summary for the sidebar's LIVE badge, and management for organisers and
 //              admins — create (with its unlisted chat room), start (opens the room on the call
-//              service), end (closes that room, which disconnects everyone, and makes the chat
-//              read-only). Every management action is audited and rate-limited per account.
+//              service), end (endCall.js: closes that room, which disconnects everyone, and
+//              makes the chat read-only). Every management action is audited and rate-limited
+//              per account.
 // ============================================================
 
 import express from 'express';
@@ -17,16 +18,9 @@ import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { required, validBody } from '../http/validate.js';
 import { getSetting } from '../settings/store.js';
+import { endCall } from './endCall.js';
 import { callSteps } from './middleware.js';
-import {
-  createCall,
-  findCall,
-  listCalls,
-  anyCallLive,
-  markEnded,
-  markLive,
-  setChatRoom,
-} from './store.js';
+import { createCall, findCall, listCalls, anyCallLive, markLive, setChatRoom } from './store.js';
 
 const CALL_FIELDS = {
   title: required('Title', 100),
@@ -119,13 +113,9 @@ export function callRoutes(db, config, service, chat) {
   });
 
   router.post('/:id/end', allow('organiser'), configured, loadCall, perUser, async (req, res) => {
-    if (!markEnded(db, req.call.id)) {
+    if (!(await endCall(db, service, chat, req.call, req.user))) {
       return sendError(res, 409, 'wrong_status', 'This call has ended already.');
     }
-    // After the status change: nobody can join any more while the room closes.
-    await service.closeRoom(req.call.roomName);
-    if (req.call.chatRoomId) chat.rooms.close(req.call.chatRoomId);
-    audit(req, 'call.end', req.call);
     res.json({ ok: true, call: shown(findCall(db, req.call.id), chat) });
   });
 

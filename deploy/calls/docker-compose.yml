@@ -6,7 +6,12 @@
 #              tag and image digest. Runs on the site's VPS for now; moving it to its own VPS
 #              is copying this folder there and changing the site's CALLS_URL
 #              (docs/CALLS.md, "Moving the call service"). Keys from ./.env (not committed).
+#              Its own compose project, separate from the site's (deploy/site/). On a VPS of
+#              its own, "docker compose --profile proxy up -d" also runs Caddy for the calls
+#              domain (./Caddyfile); on the site's VPS the site's Caddy does that.
 # ============================================================
+
+name: seasonal-calls
 
 services:
   livekit:
@@ -31,3 +36,21 @@ services:
         limits:
           cpus: '2'
           memory: 2G
+
+  # Only on a VPS of its own (profile "proxy"): HTTPS for the calls domain, wss to LiveKit.
+  caddy:
+    profiles: [proxy]
+    image: caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      CALLS_DOMAIN: ${CALLS_DOMAIN:?set CALLS_DOMAIN in deploy/calls/.env}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in deploy/calls/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  caddy-data:
+  caddy-config:

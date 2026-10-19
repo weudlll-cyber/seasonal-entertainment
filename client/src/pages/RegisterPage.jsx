@@ -7,10 +7,12 @@
 //              password rules: the password never leaves the browser, only a salt and the auth
 //              key derived from it are sent (session/credentials.js). The new member's key pair
 //              for private messages is made right away (keys/), and the recovery code offered.
+//              Afterwards it returns to the page that sent the visitor (?next=, e.g. the
+//              embedded chat's login popup), like the login page (session/nextPage.js).
 // ============================================================
 
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import {
   MINIMUM_AGE,
   PASSWORD_MIN,
@@ -23,12 +25,15 @@ import { api } from '../api/http.js';
 import { FormField, FormMessage } from '../components/FormField.jsx';
 import { useKeys } from '../keys/KeyContext.jsx';
 import { keysForNewPassword } from '../session/credentials.js';
+import { safeNext, withNext } from '../session/nextPage.js';
 import { useSession } from '../session/SessionContext.jsx';
+import { BusyButton } from '../components/BusyButton.jsx';
 
 export default function RegisterPage() {
   const { setUser } = useSession();
   const keys = useKeys();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -56,7 +61,8 @@ export default function RegisterPage() {
       // A key problem must not block the new account: the account page offers it again.
       await keys.openWithPassword({ authKey, wrapKey }, user.id).catch(() => {});
       setUser(user);
-      navigate('/account', { replace: true });
+      // Back where the visitor came from (e.g. the embedded chat's login popup), as after login.
+      navigate(safeNext(params.get('next')), { replace: true });
     } catch (err) {
       setError(err.message);
       setBusy(false);
@@ -87,12 +93,10 @@ export default function RegisterPage() {
           <span>I am at least {MINIMUM_AGE} years old.</span>
         </label>
         <FormMessage error={error} />
-        <button className="button" type="submit" disabled={busy}>
-          Create account
-        </button>
+        <BusyButton busy={busy}>Create account</BusyButton>
       </form>
       <p>
-        Already registered? <Link to="/login">Log in</Link>
+        Already registered? <Link to={withNext('/login', params.get('next'))}>Log in</Link>
       </p>
     </section>
   );

@@ -30,9 +30,12 @@ export const cookieOf = (agent) =>
     .map((c) => c.toValueString())
     .join('; ');
 
-// Opens a socket and collects every event it receives; closed resolves on close.
-export function connect(url, { origin = ORIGIN, cookie } = {}) {
-  const ws = new WebSocket(url, { headers: { Origin: origin, ...(cookie && { Cookie: cookie }) } });
+// Opens a socket and collects every event it receives; closed resolves with the close code.
+// protocols: subprotocols to offer (the embedded chat's token, embed/).
+export function connect(url, { origin = ORIGIN, cookie, protocols = [] } = {}) {
+  const ws = new WebSocket(url, protocols, {
+    headers: { Origin: origin, ...(cookie && { Cookie: cookie }) },
+  });
   const events = [];
   ws.on('message', (data) => events.push(JSON.parse(String(data))));
   const opened = new Promise((resolve, reject) => {
@@ -40,7 +43,7 @@ export function connect(url, { origin = ORIGIN, cookie } = {}) {
     ws.once('error', reject);
     ws.once('unexpected-response', (_req, res) => reject(new Error(`HTTP ${res.statusCode}`)));
   });
-  const closed = new Promise((resolve) => ws.once('close', resolve));
+  const closed = new Promise((resolve) => ws.once('close', (code) => resolve(code)));
   const next = (type) =>
     new Promise((resolve) => {
       const check = () => {

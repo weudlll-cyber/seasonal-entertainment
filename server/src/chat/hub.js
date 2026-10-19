@@ -6,10 +6,13 @@
 //              which rooms they are subscribed to, and pushing new and hidden messages. Rights
 //              are never cached: every subscribe and every push checks the account as it is
 //              now. Account changes (logout, lock, role, password, 2FA) also close the sockets.
+//              A socket of the embedded chat on a foreign site (embed/) holds an embed token
+//              instead of a session: it is closed as soon as that token no longer works.
 // ============================================================
 
 import { WebSocket } from 'ws';
 import { idsShowingOnline } from '../accounts/userStore.js';
+import { tokenStillActive } from '../embed/tokens.js';
 import { findRoom } from './store.js';
 import { canRead, sessionViewer } from './viewer.js';
 
@@ -17,9 +20,11 @@ import { canRead, sessionViewer } from './viewer.js';
 const SESSION_CHANGED = 4001;
 
 export class ChatHub {
-  constructor(db, config) {
+  // embedOrigins: the approved sites (embed/origins.js), to judge embed-token sockets.
+  constructor(db, config, embedOrigins) {
     this.db = db;
     this.config = config;
+    this.embedOrigins = embedOrigins;
     this.sessions = new Map(); // socket -> { id, data } of its session at connect time
     this.rooms = new Map(); // room id -> Set of sockets
   }
@@ -36,7 +41,9 @@ export class ChatHub {
   // The socket's viewer as of now; a socket whose account no longer qualifies is closed.
   viewerOf(socket) {
     const session = this.sessions.get(socket);
-    const viewer = session && sessionViewer(this.db, this.config, session.data);
+    const tokenId = session?.data.embedTokenId;
+    const tokenOk = !tokenId || tokenStillActive(this.db, this.embedOrigins, tokenId);
+    const viewer = session && tokenOk && sessionViewer(this.db, this.config, session.data);
     if (!viewer) this.close(socket);
     return viewer;
   }
@@ -112,6 +119,16 @@ export class ChatHub {
       if (session.data.userId !== undefined && socket.readyState === WebSocket.OPEN) {
         socket.send(text);
       }
+    }
+  }
+
+  // Embed-token sockets matching { tokenId } or { origin } or { userId } (embed/ revoked them).
+  disconnectEmbeds({ tokenId, origin, userId }) {
+    for (const [socket, { data }] of this.sessions) {
+      if (data.embedTokenId === undefined) continue;
+      const hit =
+        data.embedTokenId === tokenId || data.embedOrigin === origin || data.userId === userId;
+      if (hit) this.close(socket);
     }
   }
 

@@ -7,10 +7,12 @@
 //              open the sealed private key with the password's wrapping key, recover it with a
 //              recovery code, start over with a new pair, make or remove a recovery code, and
 //              re-seal for a new password. The private key leaves the browser only sealed.
-//              Crypto: shared/crypto.js, loaded when needed.
+//              Crypto: shared/crypto.js, loaded when needed; the recovery code's Argon2id runs in
+//              the password-hashing worker (session/passwordHashing.js).
 // ============================================================
 
 import { api } from '../api/http.js';
+import { deriveRecoveryKey } from '../session/passwordHashing.js';
 
 const crypto = () => import('@seasonal-entertainment/shared/crypto.js');
 
@@ -53,7 +55,7 @@ export async function openWithPassword(passwordKeys) {
 // The recovery code opens the second seal; the private key is then sealed again for the
 // current password. null when the code is wrong.
 export async function recoverWithCode(code, passwordKeys) {
-  const { deriveRecoveryKey, openSealed, sealBytes } = await crypto();
+  const { openSealed, sealBytes } = await crypto();
   const key = await fetchKey();
   if (!key?.recovery) return null;
   const recoveryKey = await deriveRecoveryKey(code, key.recovery.salt);
@@ -73,7 +75,7 @@ export const startOver = (passwordKeys) => newPair('replace', passwordKeys);
 // A new recovery code for an unlocked private key; replaces any old one. authKey: the current
 // password's, which the server asks for. Returns the code, to be shown once.
 export async function createRecoveryCode(privateKey, authKey) {
-  const { deriveRecoveryKey, newRecoveryCode, newSalt, sealBytes } = await crypto();
+  const { newRecoveryCode, newSalt, sealBytes } = await crypto();
   const code = await newRecoveryCode();
   const salt = await newSalt();
   const sealed = await sealBytes(privateKey, await deriveRecoveryKey(code, salt));

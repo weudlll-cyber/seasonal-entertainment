@@ -69,6 +69,8 @@ export default defineConfig({
         // The starter stickers and GIFs are copied here on start (first-start seed).
         MEDIA_DIR: path.join(process.env.SE_E2E_DIR, 'media'),
         SESSION_SECRET: 'e2e-session-secret',
+        // 2FA secrets at rest (docs/AUTH.md): a fixed test key, so no development-key warning.
+        SECRET_ENCRYPTION_KEY: 'ZTJlLW9ubHktc2VjcmV0LWVuY3J5cHRpb24ta2V5ISE=',
         // A token only test runs know: the admin spec creates its admin through the real
         // bootstrap route. Not a secret: it only ever unlocks this throw-away database.
         BOOTSTRAP_TOKEN: 'e2e-bootstrap-token',

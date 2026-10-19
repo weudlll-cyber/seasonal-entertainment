@@ -1,0 +1,19 @@
+# ============================================================
+# File:        seasonal-calls-cert.service
+# Path:        deploy/site/systemd/seasonal-calls-cert.service
+# Project:     Seasonal Entertainment
+# Description: Hands Caddy's certificate for the calls domain to LiveKit's TURN server when it
+#              changed (deploy/site/calls-cert.sh). Started daily by seasonal-calls-cert.timer.
+#              Fill in the calls domain; the paths assume the repository in
+#              /opt/seasonal-entertainment and the certificate folder /etc/seasonal/calls-cert
+#              (CALLS_CERT_DIR in deploy/calls/.env).
+# ============================================================
+
+[Unit]
+Description=Seasonal Entertainment: calls certificate for TURN
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/seasonal-entertainment/deploy/site/calls-cert.sh seasonal-site-caddy-1 CALLS_DOMAIN_HERE /etc/seasonal/calls-cert /opt/seasonal-entertainment/deploy/calls

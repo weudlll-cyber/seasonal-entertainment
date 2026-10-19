@@ -16,6 +16,7 @@ import { resealForNewPassword } from '../keys/keyActions.js';
 import { keysForNewPassword, keysForPassword } from '../session/credentials.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { FormField, FormMessage } from './FormField.jsx';
+import { BusyButton } from './BusyButton.jsx';
 
 export default function ChangePasswordForm() {
   const { user } = useSession();
@@ -67,9 +68,7 @@ export default function ChangePasswordForm() {
         hint={`At least ${PASSWORD_MIN} characters.`}
       />
       <FormMessage error={error} notice={notice} />
-      <button className="button" type="submit" disabled={busy}>
-        Change password
-      </button>
+      <BusyButton busy={busy}>Change password</BusyButton>
     </form>
   );
 }

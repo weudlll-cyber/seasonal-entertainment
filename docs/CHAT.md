@@ -22,6 +22,8 @@ import { ChatPanel } from '../chat/index.js';
 | `variant`                | `'full'` \| `'compact'` | `'full'`         | a page of its own, or a box beside other content                         |
 | `showRoomTabs`           | boolean                 | `false`          | let the reader switch between the rooms they may read                    |
 | `unlisted`               | boolean                 | `false`          | `room` is an unlisted room (a call's chat): asked for by name            |
+| `files`                  | boolean                 | `true`           | offer members "Attach file"; `false` where uploads are refused           |
+| `guestPrompt`            | React node              | `null`           | shown to a guest instead of the composer (e.g. a login offer)            |
 | `--chat-list-max-height` | CSS custom property     | `60vh` / `18rem` | cap of the message list; `none` lets it fill a container of fixed height |
 | account                  | from `SessionProvider`  | —                | who is signed in (`client/src/session`); a guest if no                   |
 
@@ -65,6 +67,12 @@ of the module other than `index.js`.
   new one that subscribes every room again; the rooms and the messages are loaded again for
   the new reader. Without this, a panel opened as a guest kept a guest's connection after
   logging in (no live events from members-only rooms).
+- **Nothing is lost while a connection (re)opens** (SE-NIGHT-2 part 1): a message stored after
+  the panel's load but before the server has confirmed the new socket's subscription is neither
+  in the load nor pushed. So on every `subscribed` the panel fetches what it missed
+  (`GET /api/chat/rooms/<room>/messages?after=<newest id it has>`, same read rule as the plain
+  load), and a load or catch-up is merged by id into what was pushed meanwhile instead of
+  replacing it.
 - **The composer** writes one message at a time: optional text plus at most one attachment. A
   sticker or GIF from the picker is shown small above the field with an ×; Send sends both
   together (`{ body, attachment }` to `POST /api/chat/rooms/<room>/messages`). Members also
@@ -221,7 +229,8 @@ mediaItemId? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh random no
   subscription needed). It never sees the text.
 - **What a message can hold (v1, decided 2026-10-18)**: text, emoji, and stickers/GIFs from the
   site's library (the library id travels inside the ciphertext; the browser loads the public
-  library file). **No file uploads and no link previews** in direct messages; links are plain
+  library file, `GET /api/chat/media`, once per page and shares it with the picker:
+  `client/src/chat/mediaLibrary.js`, SE-NIGHT-2 part 5). **No file uploads and no link previews** in direct messages; links are plain
   clickable links. Both are open backlog items.
 - **Rules** (`server/src/chat/directRoutes.js`): the same mute/ban and the same per-sender rate
   limit as room messages (one shared limiter); a locked account has no session. The partner must
@@ -231,6 +240,14 @@ mediaItemId? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh random no
 - **Key changes**: when the partner's key id changes (they started over), the conversation shows
   "<name>'s security key changed" at that point; messages made for an earlier key of one's own
   say they cannot be read.
+- **Older messages** (SE-NIGHT-2 part 4): a conversation opens with its newest 100 messages.
+  Reaching the top, or **Load older messages** there, loads the 100 before the oldest shown
+  (`GET /api/chat/direct/:id?before=<id>`, oldest first within the page, with `more` telling
+  whether older ones remain and the public keys that page's messages name). They are decrypted
+  in the browser like the rest, key-change notices included, and the reader stays on the
+  message they were looking at (`client/src/chat/useOlderOnTop.js`). Pages are merged by id
+  (`mergeMessages`, shared with the rooms), so a live reload of the newest page keeps them. Only
+  the two members of a conversation can page through it, as with the newest page.
 - **Retention**: direct messages follow the same `CHAT_RETENTION_DAYS` as room messages.
 - **Known limit**: the server hands out the public keys. A compromised server could give a member
   a key of its own instead of the partner's and read what is then sent (an active attack). A
@@ -344,18 +361,23 @@ message, report or call join.
 before the API's catch-all 404. Outside the chat area only `mount.js` (and the table definitions
 the database layer registers) may be imported; `server/test/chatBoundary.test.js` enforces it.
 
-## Embedding in other applications (next task)
+## Embedding
 
-Still needed before the panel can run inside the race game or on another site:
+The chat runs as an iframe of `/embed/chat?room=<slug>&theme=<light|dark|auto>`: the compact
+panel, for members with **Rooms | Direct** tabs, the room's rules, and a small postMessage API
+(ready, unread, resize; visible, theme) with strict origin checks. Details and the snippet:
+docs/EMBED.md.
 
-- **An embed route**: a minimal page that shows one `<ChatPanel>` (room and variant from the URL),
-  without the site's header and footer.
-- **Allowed embedding origins**: a configured list of sites that may frame the embed route.
-- **`frame-ancestors`** in the Content-Security-Policy of the embed route only, set from that list
-  (everything else keeps `frame-ancestors 'none'`).
-- **Login inside an embedded frame**: third-party cookies are blocked in many browsers, so the
-  session cookie (`SameSite=Lax`) does not reach a framed page; a sign-in flow that works in a
-  frame (for example a pop-up and a short-lived token) is needed for members.
-- **Cross-origin API and WebSocket**: the origin checks (CSRF and WebSocket) accept only this site
-  today; the embed route keeps all calls on this site's origin, so no CORS opening is needed as
-  long as the panel runs inside that frame.
+- **On this site's own pages** (the games under the main domain; SE-NIGHT-2 part 6): the site's
+  login cookie and device unlock, exactly as on the site.
+- **On other sites an admin approved** (SE-NIGHT-2 follow-up, part A; owner decision
+  2026-10-19): no cookie there. A login popup on this site hands the frame an embed token
+  (docs/AUTH.md, "Embed tokens") and, unlocked with the password in the popup, the member's
+  private key. Both stay in the frame's memory only. **Direct messages work there**: read and
+  sent with that key, encrypted and decrypted in the frame as everywhere; the host page never
+  sees a token, a key or a message text. Without the key (page reloaded, or the member left it
+  locked), the Direct tab offers to unlock it in the popup again. Uploads, moderation and account
+  actions are not available there.
+- `frame-ancestors` for `/embed/*` is `'self'` plus exactly the approved sites; everything else
+  keeps `'none'`. The API and WebSocket calls stay on this site's origin inside the frame, so no
+  CORS opening is needed.

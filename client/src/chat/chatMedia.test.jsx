@@ -11,14 +11,14 @@
 
 import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { FakeSocket } from '../test/fakeSocket.js';
 import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
 import { renderApp } from '../test/renderApp.jsx';
 
-class FakeSocket {
-  send() {}
-  close() {}
-}
-beforeEach(() => vi.stubGlobal('WebSocket', FakeSocket));
+beforeEach(() => {
+  FakeSocket.reset();
+  vi.stubGlobal('WebSocket', FakeSocket);
+});
 
 // The picker's own tabs (the chat page also has Rooms / Direct tabs).
 const pickerTabs = () =>

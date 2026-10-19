@@ -53,30 +53,34 @@ The race game uses 5173 and 4173; this project stays clear of them.
 
 Read from the environment when the process starts, never baked into a build:
 
-| Variable              | Default                                       | Used by                                                         |
-| --------------------- | --------------------------------------------- | --------------------------------------------------------------- |
-| `HOST`                | `127.0.0.1`                                   | server listen address                                           |
-| `PORT`                | `3800`                                        | server listen port                                              |
-| `CLIENT_DIST`         | `client/dist`                                 | folder of the built client the server serves                    |
-| `COMMIT_SHA`          | output of `git rev-parse`                     | commit reported by `/api/health`                                |
-| `CLIENT_PORT`         | `5380`                                        | Vite dev server port                                            |
-| `API_ORIGIN`          | `http://127.0.0.1:3800`                       | where the Vite dev server forwards `/api` and `/ws`             |
-| `NODE_ENV`            | (unset)                                       | `production`: Secure cookies, secret required                   |
-| `DATABASE_PATH`       | `data/seasonal.db`                            | SQLite file                                                     |
-| `SESSION_SECRET`      | random per start (dev)                        | signs session cookies; required in production                   |
-| `BOOTSTRAP_TOKEN`     | (unset)                                       | one-time first-admin creation (AUTH.md)                         |
-| `PUBLIC_ORIGIN`       | from the Host header (required in production) | own origin for CSRF/WebSocket origin checks                     |
-| `TRUST_PROXY`         | `0` (must be set explicitly in production)    | number of reverse proxies in front                              |
-| `COOKIE_SECURE`       | `true` in production                          | Secure session cookie                                           |
-| `CSRF_STRICT`         | `true`                                        | refuse state changes without Origin/Referer                     |
-| `BCRYPT_COST`         | `12`                                          | password hashing cost (4–15)                                    |
-| `REQUIRE_STAFF_2FA`   | `true`                                        | organisers/admins must use 2FA; `false` only outside production |
-| `CHAT_RETENTION_DAYS` | `90`                                          | chat messages older than this are deleted                       |
-| `MEDIA_DIR`           | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`      |
-| `LINK_PREVIEWS`       | `true`                                        | `false` switches chat link previews off                         |
-| `CALLS_URL`           | (unset: Calls off)                            | call service origin, `wss://...` (docs/CALLS.md)                |
-| `CALLS_API_KEY`       | (unset)                                       | call service API key; set with the other two or none            |
-| `CALLS_API_SECRET`    | (unset)                                       | call service API secret; production: no dev pair, 32+ chars     |
+| Variable                | Default                                       | Used by                                                         |
+| ----------------------- | --------------------------------------------- | --------------------------------------------------------------- |
+| `HOST`                  | `127.0.0.1`                                   | server listen address                                           |
+| `PORT`                  | `3800`                                        | server listen port                                              |
+| `CLIENT_DIST`           | `client/dist`                                 | folder of the built client the server serves                    |
+| `COMMIT_SHA`            | output of `git rev-parse`                     | commit reported by `/api/health`                                |
+| `CLIENT_PORT`           | `5380`                                        | Vite dev server port                                            |
+| `API_ORIGIN`            | `http://127.0.0.1:3800`                       | where the Vite dev server forwards `/api` and `/ws`             |
+| `NODE_ENV`              | (unset)                                       | `production`: Secure cookies, no dev defaults (DEPLOYMENT.md)   |
+| `DATABASE_PATH`         | `data/seasonal.db`                            | SQLite file                                                     |
+| `SESSION_SECRET`        | random per start (dev)                        | signs session cookies; required in production                   |
+| `SECRET_ENCRYPTION_KEY` | public development key (dev)                  | encrypts 2FA secrets at rest; required in production (AUTH.md)  |
+| `BOOTSTRAP_TOKEN`       | (unset)                                       | one-time first-admin creation (AUTH.md)                         |
+| `PUBLIC_ORIGIN`         | from the Host header (required in production) | own origin for CSRF/WebSocket origin checks                     |
+| `TRUST_PROXY`           | `0` (must be set explicitly in production)    | number of reverse proxies in front                              |
+| `COOKIE_SECURE`         | `true` in production                          | Secure session cookie                                           |
+| `CSRF_STRICT`           | `true`                                        | refuse state changes without Origin/Referer                     |
+| `BCRYPT_COST`           | `12`                                          | password hashing cost (4–15)                                    |
+| `REQUIRE_STAFF_2FA`     | `true`                                        | organisers/admins must use 2FA; `false` only outside production |
+| `CHAT_RETENTION_DAYS`   | `90`                                          | chat messages older than this are deleted                       |
+| `MEDIA_DIR`             | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`      |
+| `LINK_PREVIEWS`         | `true`                                        | `false` switches chat link previews off                         |
+| `CALLS_URL`             | (unset: Calls off)                            | call service origin, `wss://...` (docs/CALLS.md)                |
+| `CALLS_API_KEY`         | (unset)                                       | call service API key; set with the other two or none            |
+| `CALLS_API_SECRET`      | (unset)                                       | call service API secret; production: no dev pair, 32+ chars     |
+| `BACKUP_DIR`            | (unset)                                       | where `scripts/backup.mjs` writes backups (DEPLOYMENT.md)       |
+| `BACKUP_ENCRYPTION`     | `on`                                          | encrypt backups with age (`off`: plain folders)                 |
+| `BACKUP_RECIPIENT`      | (unset; required while encryption is on)      | the owner's age public key (`age1…`) the backups are for        |
 
 The server loads `.env` from the repository root if present; real environment variables win.
 `.env.example` lists every key the server reads, by name with a comment and no value;
@@ -319,8 +323,9 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
 
 `server/src/http/securityHeaders.js` (helmet) sends a strict Content-Security-Policy on every
 response: scripts, styles, fonts and connections only from this origin, images from this origin
-or `data:` URLs, no plugins, no framing (`frame-ancestors 'none'`), no inline script or style,
-no JavaScript `eval`. `script-src` also has `'wasm-unsafe-eval'` (added and confirmed by the
+or `data:` URLs, no plugins, no framing (`frame-ancestors 'none'`; only the embedded chat
+under `/embed/` may be framed, by this origin alone: docs/EMBED.md), no inline script or
+style, no JavaScript `eval`. `script-src` also has `'wasm-unsafe-eval'` (added and confirmed by the
 owner 2026-10-18): it allows
 compiling WebAssembly only, which the browser's cryptography needs (libsodium, `shared/crypto.js`,
 docs/AUTH.md); the module itself is a same-origin file.
@@ -342,11 +347,16 @@ client/                    React + Vite client
                            list, never-throwing browser storage
   src/api/http.js          the one fetch wrapper (JSON, ApiError)
   src/session/             session context (who is signed in), RequireUser guard, credentials
-                           (password -> auth key and wrapping key, docs/AUTH.md)
-  src/components/          shared UI pieces (form fields, forms)
+                           (password -> auth key and wrapping key, docs/AUTH.md) and the
+                           password-hashing Web Worker that derives them off the main thread
+  src/components/          shared UI pieces (form fields, forms, the busy submit button)
   src/chat/                the chat module: <ChatPanel> (index.js is its only entry), live
                            connection, composer, picker, messages, styles (docs/CHAT.md)
-  src/devPages/            test-only pages, routed by the Vite dev server only
+  src/devPages/            test-only pages, routed by the Vite dev server only (chat panels,
+                           the embedded chat's demo)
+  src/embed/               the embedded chat for iframes (/embed/chat) on this site and on
+                           approved other sites, its postMessage API, the login popup
+                           (/embed-login) and the in-memory embed token (docs/EMBED.md)
   src/admin/               admin area (/admin): layout, users, audit log, info editor; one section each
   src/components/Markdown.jsx  the one safe Markdown renderer
   e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels,
@@ -366,7 +376,7 @@ client/                    React + Vite client
   src/assets/seasons/source/  original season marks, input of build-season-marks.mjs
   src/test/setup.js        Vitest setup
   src/test/                test helpers: mockApi.js (fixed API answers), fakeSocket.js
-                           (stand-in WebSocket), renderApp.jsx
+                           (stand-in WebSocket; the only one, every test uses it), renderApp.jsx
 server/
   src/index.js             entry point: config, app, listen
   src/app.js               Express app (routes); no listen, so tests drive it directly
@@ -375,7 +385,7 @@ server/
   src/db/database.js       opens the database, applies every area's schema and migrations
   src/db/addColumns.js     adds columns to older databases (each area's migrate function)
   src/accounts/            accounts area: schema, user store, passwords, routes (login:
-                           loginRoutes.js, pre-login and legacy route), credentials, bootstrap
+                           loginRoutes.js, pre-login and login), credentials, bootstrap
   src/twofa/               two-factor area: TOTP, schema, store, routes, staff gate
   src/keys/                members' keys: public keys, sealed private keys, recovery seal
   src/audit/               audit log: schema and the one recordAudit helper
@@ -399,8 +409,11 @@ server/
   src/config.js            environment configuration
   src/calls/               community calls (docs/CALLS.md): call service configuration, the
                            call service adapter, schema, store, participants, grants and join
-                           tokens, spotlight rule, routes (management, join, stage, spotlight)
+                           tokens, spotlight rule, routes (management, join, stage, spotlight),
+                           ending a call and the stale-call job
   src/settings/            admin-editable site settings: definitions, store, admin routes
+  src/embed/               the chat on approved other sites: the approved list (a setting),
+                           embed tokens, their route allow-list, routes (docs/EMBED.md, AUTH.md)
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests
 shared/                    rules used by server and client (accountRules.js, eventSchedule.js,
@@ -413,9 +426,16 @@ scripts/
   verify.mjs               npm run verify
   calls-dev.mjs            npm run dev:calls (LiveKit in development mode)
   calls-binary.mjs         the pinned LiveKit binary, checksum-checked, in .calls-bin/
+  backup.mjs, restore.mjs  nightly backup (encrypted with age) and restore
+                           (server/src/backup/; DEPLOYMENT.md)
+  bootstrap-admin.mjs      the first admin of a running production site
+deploy/site/               the site for a server: Dockerfile, docker-compose.yml (site + Caddy),
+                           Caddyfile, systemd timers (docs/DEPLOYMENT.md)
+deploy/pc/                 the owner's PC: fetches the encrypted backups (PowerShell, sftp)
 deploy/calls/              the call service for a server: livekit.yaml, docker-compose.yml
 docs/                      this file, the backlog, and one file per area (AUTH, CHAT, CALLS,
-                           DESIGN) plus SCALING (the staged plan for growing beyond one VPS)
+                           DESIGN, EMBED) plus SCALING (the staged plan for growing beyond one
+                           VPS) and DEPLOYMENT (the runbook for the VPS)
 ```
 
 ## Assets
