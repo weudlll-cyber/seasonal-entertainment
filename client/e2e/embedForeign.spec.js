@@ -53,8 +53,9 @@ test('a member chats privately in the chat embedded on an approved site', async 
   await expect(chat.getByRole('region', { name: 'Chat: General' })).toBeVisible();
 
   // The login popup: on this site, the normal login, then the password for private messages.
+  // `exact`: a guest's room also offers "Log in to write" (the same popup), once it has loaded.
   const opening = host.waitForEvent('popup');
-  await chat.getByRole('button', { name: 'Log in' }).click();
+  await chat.getByRole('button', { name: 'Log in', exact: true }).click();
   const popup = await opening;
   await expect(popup).toHaveURL(`${SERVER}/embed-login?origin=${encodeURIComponent(GAME)}`);
   await expect(popup.getByText(GAME)).toBeVisible();
@@ -111,7 +112,7 @@ test('a member chats privately in the chat embedded on an approved site', async 
 
   // The site removed from the list: the embed is logged out at once.
   expect((await site('DELETE')).status()).toBe(200);
-  await expect(chat.getByRole('button', { name: 'Log in' })).toBeVisible();
+  await expect(chat.getByRole('button', { name: 'Log in', exact: true })).toBeVisible();
   await expect(chat.getByRole('tab', { name: /Direct/ })).toHaveCount(0);
   await admin.close();
 });
