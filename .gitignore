@@ -3,6 +3,8 @@ node_modules/
 client/dist/
 coverage/
 # Playwright output
+# Screenshots of the manual-style browser checks (reports/embed-check/; looked at, never committed)
+reports/embed-check/
 test-results/
 playwright-report/
 # Local data: the SQLite database and the dev admin's credentials file

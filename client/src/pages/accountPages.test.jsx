@@ -8,7 +8,7 @@
 //              browser: requests carry salts and auth keys only (docs/AUTH.md).
 // ============================================================
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { base64Length } from '@seasonal-entertainment/shared/cryptoFormat.js';
@@ -43,6 +43,41 @@ describe('Register page', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('at least 14');
     // Nothing was sent (the page shell's own reads, such as the Calls summary, do not count).
     expect(calls.filter((c) => !c.key.startsWith('GET '))).toEqual([]);
+  });
+
+  it('from the chat login popup: Register keeps ?next=, and the new member lands back there', async () => {
+    const site = 'https://game.example';
+    const popup = `/embed-login?origin=${encodeURIComponent(site)}`;
+    mockApi({
+      ...GUEST,
+      [`GET /embed/check?origin=${encodeURIComponent(site)}`]: {
+        body: { ok: true, allowed: true },
+      },
+      'POST /auth/register': { status: 201, body: { ok: true, user: anna } },
+    });
+    renderAt(`/login?next=${encodeURIComponent(popup)}`);
+    fireEvent.click(within(screen.getByRole('main')).getByRole('link', { name: 'Register' }));
+    type('Username', 'anna');
+    type('Email', 'anna@example.org');
+    type('Password', 'correct-horse-1');
+    fireEvent.click(screen.getByLabelText(/at least 14 years old/));
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+    // The popup's own step again, naming the site that asked.
+    const question = await screen.findByText(
+      (_, el) => el?.tagName === 'P' && /^Chat on/.test(el.textContent)
+    );
+    expect(question).toHaveTextContent(`Chat on ${site} as anna?`);
+  });
+
+  it('never sends a new member to another site', async () => {
+    mockApi({ ...GUEST, 'POST /auth/register': { status: 201, body: { ok: true, user: anna } } });
+    renderAt('/register?next=%2F%2Fevil.example');
+    type('Username', 'anna');
+    type('Email', 'anna@example.org');
+    type('Password', 'correct-horse-1');
+    fireEvent.click(screen.getByLabelText(/at least 14 years old/));
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+    expect(await screen.findByRole('heading', { name: 'Account' })).toBeInTheDocument();
   });
 
   it('registers and lands on the account page', async () => {

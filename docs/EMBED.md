@@ -34,7 +34,9 @@ header, sidebar or footer (`client/src/embed/EmbedChatPage.jsx`): the room, and 
 - **No cookie there**: browsers block or partition third-party cookies, so the frame does not
   rely on them. It shows **Log in**, which opens a small popup window **on this site**
   (`/embed-login?origin=<site>`, its address visible). There:
-  - a visitor who is not logged in uses the normal login (2FA included);
+  - a visitor who is not logged in uses the normal login (2FA included), or registers from there:
+    both return to the popup's own step, naming the site (`?next=` survives the switch from
+    login to registration; `client/src/session/nextPage.js`);
   - a logged-in member sees a confirm step naming the site that asks;
   - the popup asks for the password, which opens the private key **in the popup** (the same
     derivation as everywhere, docs/AUTH.md); "Allow without private messages" skips that;

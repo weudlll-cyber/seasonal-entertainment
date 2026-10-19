@@ -41,6 +41,11 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **Registering from the chat's login popup lost the way back** — closed by SE-EMBED-CHECK-1
+  (PR #7, not merged yet): the login page's "Register" link now keeps `?next=`, and registration
+  returns there like the login does (`client/src/session/nextPage.js`), so a new visitor lands
+  back in the popup with the requesting site named. Found by the browser check of the
+  foreign-site login.
 - **Backups kept at the owner's PC** — closed by the SE-NIGHT-2 follow-up, part B (PR #7, not
   merged yet; owner decision 2026-10-19): nightly backups encrypted with age to the owner's
   public key (on by default), a PowerShell download over read-only sftp with catch-up and
