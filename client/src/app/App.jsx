@@ -28,6 +28,7 @@ import { KeyProvider } from '../keys/KeyContext.jsx';
 import AccountPage from '../pages/AccountPage.jsx';
 import CallPage from '../pages/CallPage.jsx';
 import CallsPage from '../pages/CallsPage.jsx';
+import PricesPage from '../prices/PricesPage.jsx';
 import ChatPage from '../pages/ChatPage.jsx';
 import EventsPage from '../pages/EventsPage.jsx';
 import GamesPage from '../pages/GamesPage.jsx';
@@ -62,6 +63,8 @@ export default function App() {
             <Route element={<Layout />}>
               <Route index element={<LandingPage />} />
               <Route path="info" element={<InfoIndexPage />} />
+              {/* Before info/:slug: the slug "prices" is reserved on the server too. */}
+              <Route path="info/prices" element={<PricesPage />} />
               <Route path="info/:slug" element={<InfoPage />} />
               <Route path="events" element={<EventsPage />} />
               <Route path="games" element={<GamesPage />} />

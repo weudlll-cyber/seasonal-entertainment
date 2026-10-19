@@ -21,3 +21,4 @@ playwright-report
 coverage
 reports
 deploy/*/.env
+deploy/site/site.env

@@ -4,11 +4,26 @@
 // Project:     Seasonal Entertainment
 // Description: `npm run dev`: starts the API server (port 3800, restarts on change) and the
 //              Vite dev server (port 5380, proxies /api) together; stopping it stops both.
+//              PRICE_BOT_DB and EVENT_BOT_DB not set (neither here nor in .env): they point at
+//              the fake bot data of `npm run dev:bot-fixtures` when it exists (docs/BOTS.md).
+//              Set to an empty value in .env, a bot stays off (its "not connected" state).
 // ============================================================
 
 import { spawn, spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { ENV_FILE } from '../server/src/config.js';
+import { FIXTURE_FILES } from './build-bot-fixtures.mjs';
 
 const isWindows = process.platform === 'win32';
+
+// .env first, as the server reads it, so a value set there (even empty) wins over the fixtures.
+if (existsSync(ENV_FILE)) process.loadEnvFile(ENV_FILE);
+for (const [key, file] of Object.entries(FIXTURE_FILES)) {
+  if (process.env[key] === undefined && existsSync(file)) {
+    process.env[key] = file;
+    console.log(`[dev] ${key} -> fake bot data in ${file}`);
+  }
+}
 
 // On Linux each side gets its own process group, so the whole group can be signalled.
 const start = (command) => spawn(command, { stdio: 'inherit', shell: true, detached: !isWindows });

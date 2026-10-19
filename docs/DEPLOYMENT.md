@@ -28,6 +28,8 @@ The site's data lives in the Docker volume `seasonal-site_site-data` (`/data` in
 - An age key pair for the backups, made on the owner's PC (section 6, "Backups to your PC"):
   backups are kept there (owner decision 2026-10-19).
 - Whether the call service starts on this VPS (the default here) or its own.
+- Whether the price and event bots run on this VPS too: the site reads their files through
+  read-only mounts (section 3, "The owner's bots").
 - Still open and not needed for the deployment itself: login lockout values, chat retention
   period, roles, info page texts, Telegram/Discord, legal pages.
 
@@ -137,6 +139,33 @@ In **`site.env`**:
 | `CALLS_API_KEY`         | a key name, e.g. `seasonal`                                                                                                                  |
 | `CALLS_API_SECRET`      | `openssl rand -hex 32` (the same pair goes into `deploy/calls/.env`)                                                                         |
 | everything else         | empty: the defaults fit (docs/ARCHITECTURE.md, "Runtime configuration")                                                                      |
+
+### The owner's bots (prices and events, read-only)
+
+The site reads the price bot's and the event bot's SQLite files (docs/BOTS.md). **This assumes
+the bots run on the same VPS as the site** (open owner decision). Mount both files into the site
+container **read-only**, in `deploy/site/docker-compose.override.yml` (never committed; compose
+reads it beside `docker-compose.yml`):
+
+```yaml
+services:
+  site:
+    volumes:
+      - /var/lib/stpricebot/snapshots.db:/bots/snapshots.db:ro
+      - /var/lib/stannouncebot/stannouncebot.db:/bots/stannouncebot.db:ro
+```
+
+and in **`site.env`**: `PRICE_BOT_DB=/bots/snapshots.db`, `EVENT_BOT_DB=/bots/stannouncebot.db`.
+Leave a key empty to keep that feature off (the pages then say the data source is not connected).
+
+- Both files must exist on the host **before** `docker compose up`: Docker creates a missing bind
+  source as an empty directory, and the site then answers 503 for that bot until it is fixed.
+- The site's user in the container must be able to read them (the bots' files are usually
+  readable by everyone; check with `ls -l`).
+- A file mount follows the file, not its name: if a bot ever replaces its file (a restore, a
+  rename), restart the site (`docker compose restart site`) so it sees the new one.
+- Neither bot uses SQLite's WAL mode; while a bot is in the middle of writing, a read can fail
+  once and the next one (or the five-minute cache) carries on.
 
 Set by `docker-compose.yml`, never in `site.env` (it would be overruled): `NODE_ENV=production`,
 `HOST`, `PORT`, `TRUST_PROXY=1` (exactly one proxy in front: Caddy),

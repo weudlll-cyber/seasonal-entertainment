@@ -117,6 +117,12 @@ export function readConfig(env = process.env) {
       descriptionMax: 300,
       siteNameMax: 60,
     },
+    // The owner's bots' databases, read-only (docs/BOTS.md); null: that feature is off.
+    bots: {
+      priceDb: env.PRICE_BOT_DB ? path.resolve(env.PRICE_BOT_DB) : null,
+      eventDb: env.EVENT_BOT_DB ? path.resolve(env.EVENT_BOT_DB) : null,
+      cacheMs: 5 * 60_000, // answers kept in memory this long
+    },
     // Timers (session sweep, chat retention). Tests switch them off; not an env key.
     backgroundJobs: true,
     rateLimits: {
@@ -136,6 +142,7 @@ export function readConfig(env = process.env) {
       callJoin: { windowMs: 60_000, max: 30 }, // call joins per IP (guests have no account)
       callAction: { windowMs: 60_000, max: 60 }, // hands, stage, mute, spotlight per account
       embedToken: { windowMs: 60 * 60_000, max: 30 }, // embed tokens per member (login popup)
+      botRead: { windowMs: 60_000, max: 120 }, // price and bot-event reads per IP
     },
   };
   if (isProduction) checkProduction(env, config);

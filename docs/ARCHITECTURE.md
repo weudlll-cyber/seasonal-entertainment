@@ -81,6 +81,8 @@ Read from the environment when the process starts, never baked into a build:
 | `BACKUP_DIR`            | (unset)                                       | where `scripts/backup.mjs` writes backups (DEPLOYMENT.md)       |
 | `BACKUP_ENCRYPTION`     | `on`                                          | encrypt backups with age (`off`: plain folders)                 |
 | `BACKUP_RECIPIENT`      | (unset; required while encryption is on)      | the owner's age public key (`age1…`) the backups are for        |
+| `PRICE_BOT_DB`          | (unset: prices off)                           | the price bot's `snapshots.db`, read-only (docs/BOTS.md)        |
+| `EVENT_BOT_DB`          | (unset: bot events off)                       | the event bot's database, read-only (docs/BOTS.md)              |
 
 The server loads `.env` from the repository root if present; real environment variables win.
 `.env.example` lists every key the server reads, by name with a comment and no value;
@@ -357,6 +359,8 @@ client/                    React + Vite client
   src/embed/               the embedded chat for iframes (/embed/chat) on this site and on
                            approved other sites, its postMessage API, the login popup
                            (/embed-login) and the in-memory embed token (docs/EMBED.md)
+  src/prices/              token prices from the price bot: the /info/prices page, the
+                           hand-built SVG chart and sparkline, formats (docs/BOTS.md)
   src/admin/               admin area (/admin): layout, users, audit log, info editor; one section each
   src/components/Markdown.jsx  the one safe Markdown renderer
   e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels,
@@ -414,6 +418,9 @@ server/
   src/settings/            admin-editable site settings: definitions, store, admin routes
   src/embed/               the chat on approved other sites: the approved list (a setting),
                            embed tokens, their route allow-list, routes (docs/EMBED.md, AUTH.md)
+  src/bots/                the owner's bots' databases, read-only: prices, event occurrences,
+                           public routes with a cache; fixtures.js: fake development data
+                           (docs/BOTS.md)
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests
 shared/                    rules used by server and client (accountRules.js, eventSchedule.js,
@@ -421,7 +428,9 @@ shared/                    rules used by server and client (accountRules.js, eve
 scripts/
   dev.mjs                  npm run dev
   e2e.mjs                  npm run test:e2e (temporary database per run)
-  create-dev-admin.mjs     npm run dev:admin (local admin via the bootstrap flow)
+  create-dev-admin.mjs     npm run dev:admin (local admin via the bootstrap flow; rewrites
+                           DEV-ADMIN.txt's 2FA part from the stored secret, never changing it)
+  build-bot-fixtures.mjs   npm run dev:bot-fixtures (fake bot databases in data/bot-fixtures/)
   build-season-marks.mjs   npm run marks:build (web-ready season marks)
   verify.mjs               npm run verify
   calls-dev.mjs            npm run dev:calls (LiveKit in development mode)
@@ -433,8 +442,8 @@ deploy/site/               the site for a server: Dockerfile, docker-compose.yml
                            Caddyfile, systemd timers (docs/DEPLOYMENT.md)
 deploy/pc/                 the owner's PC: fetches the encrypted backups (PowerShell, sftp)
 deploy/calls/              the call service for a server: livekit.yaml, docker-compose.yml
-docs/                      this file, the backlog, and one file per area (AUTH, CHAT, CALLS,
-                           DESIGN, EMBED) plus SCALING (the staged plan for growing beyond one
+docs/                      this file, the backlog, and one file per area (AUTH, BOTS, CHAT,
+                           CALLS, DESIGN, EMBED) plus SCALING (the staged plan for growing beyond one
                            VPS) and DEPLOYMENT (the runbook for the VPS)
 ```
 

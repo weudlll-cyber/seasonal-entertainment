@@ -3,7 +3,8 @@
 // Path:        server/src/info/adminRoutes.js
 // Project:     Seasonal Entertainment
 // Description: /api/admin/info (admins only): list all pages, read one, create, edit,
-//              publish/unpublish, reorder. Every change writes one audit entry.
+//              publish/unpublish, reorder. Every change writes one audit entry. The slug
+//              "prices" is reserved: /info/prices is the site's price chart (docs/BOTS.md).
 // ============================================================
 
 import express from 'express';
@@ -23,13 +24,17 @@ import {
 } from './store.js';
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+// Paths under /info/ that are pages of the site itself: such an info page could never be opened.
+const RESERVED_SLUGS = ['prices'];
 const BODY_MAX = 50_000;
 
 const PAGE_FIELDS = {
-  slug: (v) =>
-    typeof v === 'string' && v.length <= 60 && SLUG_PATTERN.test(v)
+  slug: (v) => {
+    if (RESERVED_SLUGS.includes(v)) return `The slug "${v}" belongs to a page of the site itself.`;
+    return typeof v === 'string' && v.length <= 60 && SLUG_PATTERN.test(v)
       ? null
-      : 'Slug must be lowercase letters and digits, words joined by "-" (at most 60).',
+      : 'Slug must be lowercase letters and digits, words joined by "-" (at most 60).';
+  },
   title: required('Title', 120),
   body: (v) =>
     typeof v === 'string' && v.length <= BODY_MAX

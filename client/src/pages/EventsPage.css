@@ -58,3 +58,13 @@
 .event__channel {
   color: var(--color-text-muted);
 }
+
+/* An event bot occurrence that was canceled: struck through, its status in words. */
+.event--canceled .event__body {
+  color: var(--color-text-muted);
+}
+
+.event__status {
+  color: var(--color-danger);
+  font-weight: var(--font-weight-strong);
+}

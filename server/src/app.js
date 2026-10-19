@@ -9,13 +9,14 @@
 //              listen(), so tests drive it directly; app.locals.chat is the chat's handle,
 //              app.locals.calls.start() starts the stale-call job (calls/staleCalls.js).
 //              The embedded chat on approved foreign sites (embed/) adds its CSP, its token
-//              check and its routes.
+//              check and its routes; prices and bot events (bots/) are read-only public reads.
 // ============================================================
 
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import express from 'express';
 import { bootstrapRoutes } from './accounts/bootstrap.js';
+import { botRoutes } from './bots/routes.js';
 import { adminAuditRoutes } from './admin/auditRoutes.js';
 import { callJoinRoutes } from './calls/joinRoutes.js';
 import { callRoutes } from './calls/routes.js';
@@ -99,6 +100,9 @@ export function createApp({
   api.use('/info', infoRoutes(db));
   api.use('/admin/info', adminInfoRoutes(db));
   api.use('/events', eventRoutes(db));
+  const bots = botRoutes(config);
+  api.use('/prices', bots.prices);
+  api.use('/bot-events', bots.events);
   api.use('/admin/events', adminEventRoutes(db));
   api.use('/games', gameRoutes(db));
   api.use('/admin/games', adminGameRoutes(db));

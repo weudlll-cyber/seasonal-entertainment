@@ -4,7 +4,9 @@
 // Project:     Seasonal Entertainment
 // Description: The three cards of the home page's bento grid, all from real data: the
 //              featured game (the first game of the games list), the next two events, and
-//              Seasonal Tokens with the four season marks (linking to the info section).
+//              Seasonal Tokens: each season's price, 24-hour change and a sparkline from the
+//              price bot (docs/BOTS.md), or the four season marks while there are no prices;
+//              linking to the price charts and the info section.
 // ============================================================
 
 import { Link } from 'react-router';
@@ -15,6 +17,9 @@ import summerMark from '../assets/seasons/summer.svg';
 import autumnMark from '../assets/seasons/autumn.svg';
 import winterMark from '../assets/seasons/winter.svg';
 import { GAME_IMAGE_FILES } from '../games/gameImages.js';
+import { changeClass, formatChange, formatUsd } from '../prices/priceFormat.js';
+import Sparkline from '../prices/Sparkline.jsx';
+import '../prices/prices.css';
 
 // Calendar order; `id` picks the season colour token in LandingPage.css.
 const SEASONS = [
@@ -81,18 +86,47 @@ export function UpNextCard({ next, timeZone }) {
   );
 }
 
-export function TokensCard() {
+// prices: the /api/prices answer ({ connected, prices }), or null while loading or failed.
+export function TokensCard({ prices }) {
+  const byToken = Object.fromEntries((prices?.prices ?? []).map((p) => [p.token, p]));
   return (
     <section className="card home__card" aria-label="Seasonal Tokens">
       <p className="home__eyebrow">Seasonal Tokens</p>
-      <ul className="landing__seasons" aria-label="The four seasons">
-        {SEASONS.map((season) => (
-          <li key={season.id} className={`landing__season landing__season--${season.id}`}>
-            <img src={season.mark} alt={`${season.name} season mark`} width="96" height="96" />
-          </li>
-        ))}
-      </ul>
-      <Link to="/info">About Seasonal Tokens</Link>
+      {prices?.connected ? (
+        <ul className="price-rows" aria-label="Prices in US dollars">
+          {SEASONS.map((season) => {
+            const price = byToken[season.id];
+            return (
+              <li key={season.id} className="price-row">
+                <img src={season.mark} alt="" width="28" height="28" />
+                <strong>{season.name}</strong>
+                <span className="price-row__price">
+                  {formatUsd(price?.price)}{' '}
+                  <span className={changeClass(price?.change24h)}>
+                    {formatChange(price?.change24h)}
+                  </span>
+                </span>
+                <Sparkline values={price?.spark} token={season.id} />
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <ul className="landing__seasons" aria-label="The four seasons">
+          {SEASONS.map((season) => (
+            <li key={season.id} className={`landing__season landing__season--${season.id}`}>
+              <img src={season.mark} alt={`${season.name} season mark`} width="96" height="96" />
+            </li>
+          ))}
+        </ul>
+      )}
+      {prices && !prices.connected && (
+        <p className="home__text">Prices: the data source is not connected.</p>
+      )}
+      <p className="home__links">
+        {prices?.connected && <Link to="/info/prices">Price charts</Link>}
+        <Link to="/info">About Seasonal Tokens</Link>
+      </p>
     </section>
   );
 }
