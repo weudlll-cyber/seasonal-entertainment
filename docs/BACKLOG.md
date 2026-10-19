@@ -24,6 +24,14 @@ An entry moves from part one to part two only when its branch is merged into `ma
   there: an image request cannot carry the token. Would need short-lived signed file links.
 - **Guests writing in the chat on other sites** — open. A guest name is kept in a cookie, which
   other sites' frames do not get; guests can read there but not write.
+- **Own room message seen twice in the chat on another site** — open, cause unknown. Seen
+  once in SE-EMBED-CHECK-2: a member's room message, sent from the frame on another site,
+  showed twice there; stored once, and four further runs showed it once. The list merges by id
+  (`client/src/chat/useChatRoom.js`).
+- **Real sites to approve for the chat embed** — open, the owner's word: which game sites go on
+  Admin → Embedding once the site is live (only exact `https://` origins).
+- **Age key pair for the backups** — open, at deployment: the owner creates it on the PC
+  (docs/DEPLOYMENT.md, "Backups"); the VPS gets only the public key.
 - **Call recording** — unconfirmed proposal, not decided. Calls are not recorded (privacy draft).
 - **Linking calls to the events calendar** — unconfirmed proposal, not decided: an event could
   carry its call, and a call its event.
@@ -42,7 +50,7 @@ An entry moves from part one to part two only when its branch is merged into `ma
 ## PART TWO — closed
 
 - **The chat on another site showed controls it cannot use** — closed by SE-EMBED-CHECK-2
-  (PR #7, not merged yet), from the screenshots of SE-EMBED-CHECK-1:
+  (PR #7, merged 2026-10-20), from the screenshots of SE-EMBED-CHECK-1:
   - a guest there saw the composer and "your first message gets a guest name", but a guest
     name needs a cookie: now one "Log in to write" opens the same login popup (`LogInToWrite`,
     `client/src/embed/EmbedAccount.jsx`);
@@ -54,51 +62,51 @@ An entry moves from part one to part two only when its branch is merged into `ma
     floating chat button: now hidden there (`inEmbedLoginFlow`,
     `client/src/session/nextPage.js`).
 - **Registering from the chat's login popup lost the way back** — closed by SE-EMBED-CHECK-1
-  (PR #7, not merged yet): the login page's "Register" link now keeps `?next=`, and registration
+  (PR #7, merged 2026-10-20): the login page's "Register" link now keeps `?next=`, and registration
   returns there like the login does (`client/src/session/nextPage.js`), so a new visitor lands
   back in the popup with the requesting site named. Found by the browser check of the
   foreign-site login.
-- **Backups kept at the owner's PC** — closed by the SE-NIGHT-2 follow-up, part B (PR #7, not
-  merged yet; owner decision 2026-10-19): nightly backups encrypted with age to the owner's
+- **Backups kept at the owner's PC** — closed by the SE-NIGHT-2 follow-up, part B (PR #7, merged
+  2026-10-20; owner decision 2026-10-19): nightly backups encrypted with age to the owner's
   public key (on by default), a PowerShell download over read-only sftp with catch-up and
   retention, restore from the decrypted .tar, a CI restore of an encrypted backup
   (docs/DEPLOYMENT.md, "Backups to your PC").
-- **Chat embedding on other sites** — closed by the SE-NIGHT-2 follow-up, part A (PR #7, not
-  merged yet; owner decision 2026-10-19): admin list "Embedding" (exact https origins, audited),
+- **Chat embedding on other sites** — closed by the SE-NIGHT-2 follow-up, part A (PR #7, merged
+  2026-10-20; owner decision 2026-10-19): admin list "Embedding" (exact https origins, audited),
   `frame-ancestors` for `/embed/*` from that list, login through a popup on this site handing
   the frame a 12-hour embed token and the unlocked key (memory only), rooms and direct messages
   there, uploads/account/admin refused (docs/EMBED.md, AUTH.md "Embed tokens").
 - **Check a live room message right after login** — closed by SE-NIGHT-2 part 1
-  (`feat/se-night-2`, PR #7, not merged yet). Answer: yes, it could miss its live update until
+  (`feat/se-night-2`, PR #7, merged 2026-10-20). Answer: yes, it could miss its live update until
   reload, in two ways, both shown red by client/src/chat/chatCatchUp.test.jsx against the old
   code: a message stored between the panel's load and the new socket's subscription was never
   pushed, and a message pushed while the load was on its way was wiped by the load. Fixed by a
   catch-up fetch (`?after=<id>`) on every `subscribed` and a merge by id; no timeout changed.
-- **Stale live calls** — closed by SE-NIGHT-2 part 2 (PR #7, not merged yet): a live call whose
+- **Stale live calls** — closed by SE-NIGHT-2 part 2 (PR #7, merged 2026-10-20): a live call whose
   LiveKit room is gone is ended after 10 minutes like "End call", audited as "system"
   (docs/CALLS.md, "Stale live calls").
-- **Password key derivation freezes the page** — closed by SE-NIGHT-2 part 3 (PR #7, not merged
-  yet): Argon2id runs in a same-origin Web Worker; password buttons read "Checking…"; no CSP
+- **Password key derivation freezes the page** — closed by SE-NIGHT-2 part 3 (PR #7, merged
+  2026-10-20): Argon2id runs in a same-origin Web Worker; password buttons read "Checking…"; no CSP
   change (docs/AUTH.md, "Off the main thread").
-- **2FA secrets encrypted at rest** — closed by SE-NIGHT-2 part 8 (PR #7, not merged yet): TOTP
+- **2FA secrets encrypted at rest** — closed by SE-NIGHT-2 part 8 (PR #7, merged 2026-10-20): TOTP
   secrets sealed with libsodium under `SECRET_ENCRYPTION_KEY` (required in production), plain
   rows encrypted on start, a wrong key refuses with a clear log line (docs/AUTH.md).
-- **Deployment preparation for the Contabo VPS** — closed by SE-NIGHT-2 part 7 (PR #7, not
-  merged yet): deploy/site/ (Dockerfile, compose with Caddy, Caddyfiles, systemd timers),
+- **Deployment preparation for the Contabo VPS** — closed by SE-NIGHT-2 part 7 (PR #7, merged
+  2026-10-20): deploy/site/ (Dockerfile, compose with Caddy, Caddyfiles, systemd timers),
   nightly SQLite online backups with restore, production refuses development defaults, the
   first-admin script, CI builds the image; runbook docs/DEPLOYMENT.md.
 - **Remove the legacy-login route and the legacy flag in pre-login before go-live** — closed by
-  SE-NIGHT-2 part 7 (PR #7, not merged yet): no account in the development database was flagged
+  SE-NIGHT-2 part 7 (PR #7, merged 2026-10-20): no account in the development database was flagged
   legacy and nothing outside the legacy flow depended on it; route, flag, browser branch, dev
   admin script branch and migration step removed (docs/AUTH.md, "Login key split").
-- **Chat embedding on this site's own pages** — closed by SE-NIGHT-2 part 6 (PR #7, not merged
-  yet): `/embed/chat` with the site's login state, a postMessage API with origin checks,
+- **Chat embedding on this site's own pages** — closed by SE-NIGHT-2 part 6 (PR #7, merged
+  2026-10-20): `/embed/chat` with the site's login state, a postMessage API with origin checks,
   `frame-ancestors 'self'` for `/embed/*` only, a demo page and docs/EMBED.md with the race
   game's snippet.
 - **Cleanup: one fake WebSocket, one media library load** — closed by SE-NIGHT-2 part 5 (PR #7,
-  not merged yet): the six per-test fake sockets replaced by client/src/test/fakeSocket.js; the
+  merged 2026-10-20): the six per-test fake sockets replaced by client/src/test/fakeSocket.js; the
   sticker/GIF library loaded once per page and shared (client/src/chat/mediaLibrary.js).
-- **Older direct messages** — closed by SE-NIGHT-2 part 4 (PR #7, not merged yet): a
+- **Older direct messages** — closed by SE-NIGHT-2 part 4 (PR #7, merged 2026-10-20): a
   conversation pages back 100 at a time on reaching the top, keeping the scroll position
   (docs/CHAT.md, "Direct messages").
 - **SE-CALLS-1 — community calls on LiveKit** — closed by PR #6 (`feat/se-calls-1`), merged
