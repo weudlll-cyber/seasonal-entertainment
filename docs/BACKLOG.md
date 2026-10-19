@@ -36,11 +36,16 @@ An entry moves from part one to part two only when its branch is merged into `ma
 - Notifications
 - Admin pages (events calendar editable without code changes)
 - VPS deployment — prepared (SE-NIGHT-2 part 7: image, compose with Caddy, backups, runbook in
-  docs/DEPLOYMENT.md); the deployment itself waits for the owner's domains, VPS access and the
-  off-site backup target.
+  docs/DEPLOYMENT.md); the deployment itself waits for the owner's domains, VPS access and
+  the backup key pair made on the owner's PC (backups go there, decided 2026-10-19).
 
 ## PART TWO — closed
 
+- **Backups kept at the owner's PC** — closed by the SE-NIGHT-2 follow-up, part B (PR #7, not
+  merged yet; owner decision 2026-10-19): nightly backups encrypted with age to the owner's
+  public key (on by default), a PowerShell download over read-only sftp with catch-up and
+  retention, restore from the decrypted .tar, a CI restore of an encrypted backup
+  (docs/DEPLOYMENT.md, "Backups to your PC").
 - **Chat embedding on other sites** — closed by the SE-NIGHT-2 follow-up, part A (PR #7, not
   merged yet; owner decision 2026-10-19): admin list "Embedding" (exact https origins, audited),
   `frame-ancestors` for `/embed/*` from that list, login through a popup on this site handing

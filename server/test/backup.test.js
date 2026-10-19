@@ -142,6 +142,7 @@ it('the scripts back up and restore from the command line', async () => {
     DATABASE_PATH: data.databasePath,
     MEDIA_DIR: data.mediaDir,
     BACKUP_DIR: backupRoot(),
+    BACKUP_ENCRYPTION: 'off', // the plain folder; encrypted backups: backupEncrypted.test.js
   };
   const run = (script, args = [], extra = {}) =>
     execFileSync(process.execPath, [path.join(repoRoot, 'scripts', script), ...args], {

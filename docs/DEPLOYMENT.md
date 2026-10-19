@@ -13,6 +13,7 @@ Everything marked **⚠ OWNER** needs a value or a decision from the owner befor
 | `deploy/site/` (project `seasonal-site`)   | the site container (Node, one process: pages, API, chat WebSocket) and Caddy (ports 80/443, certificates for both domains)   |
 | `deploy/calls/` (project `seasonal-calls`) | LiveKit, the call service (host networking; its own compose project, so it can move to another VPS unchanged: docs/CALLS.md) |
 | systemd timers                             | the nightly backup; the daily hand-over of the calls certificate to LiveKit's TURN                                           |
+| The owner's Windows PC                     | a daily task fetches the encrypted backups over read-only sftp and keeps them (`deploy/pc/`; section 6)                      |
 
 The site's data lives in the Docker volume `seasonal-site_site-data` (`/data` in the container:
 `seasonal.db` and `media/`). Backups go to `/var/backups/seasonal` on the host.
@@ -24,7 +25,8 @@ The site's data lives in the Docker volume `seasonal-site_site-data` (`/data` in
   at the VPS before the first start: Caddy gets the certificates on the first request.
 - The email address Let's Encrypt writes to (`ACME_EMAIL`).
 - Your SSH public key.
-- Where off-site copies of the backups go (see "Backups").
+- An age key pair for the backups, made on the owner's PC (section 6, "Backups to your PC"):
+  backups are kept there (owner decision 2026-10-19).
 - Whether the call service starts on this VPS (the default here) or its own.
 - Still open and not needed for the deployment itself: login lockout values, chat retention
   period, roles, info page texts, Telegram/Discord, legal pages.
@@ -226,44 +228,166 @@ Every night `seasonal-backup.timer` runs `scripts/backup.mjs` inside the site co
 
 - The database is copied through **SQLite's online backup API** (consistent while the site
   runs; never a file copy) and checked with `PRAGMA integrity_check`.
-- The media folder is copied too.
-- Both go into `/var/backups/seasonal/<UTC time>/` with a `manifest.json` (database SHA-256,
-  media file count).
-- A backup counts only when complete: it is written as `<time>.partial` and renamed at the end.
+- The media folder is copied too, with a `manifest.json` (database SHA-256, media file count).
+- **Encrypted** (decision rule of 2026-10-19, on by default; the owner may confirm or change
+  it): the backup is packed as a `.tar` and encrypted with **age** to the owner's **public**
+  key. It uses `age-encryption` 0.3.1, the age author's own implementation, pinned. Only
+  `/var/backups/seasonal/<UTC time>.tar.age` stays on the server. The private key exists only on
+  the owner's PC, so the server cannot read its own backups, and neither can anyone who takes
+  them from it. `BACKUP_ENCRYPTION=off` in `site.env` would keep plain backup folders instead;
+  not recommended.
+- A backup counts only when complete: it is written as `….partial` and renamed at the end.
 - Backups older than **14 days** are deleted, but only after a new one is complete.
+- The owner's PC fetches every new backup over sftp (next section) and keeps its own copies:
+  the off-site copy (owner decision 2026-10-19: backups are kept locally at the owner's PC).
+
+In `site.env`: `BACKUP_RECIPIENT=age1…`, the public key from the next section. Without it the
+backup refuses to run and says so (and it refuses a private key pasted there by mistake). Then:
 
 ```sh
 sudo cp /opt/seasonal-entertainment/deploy/site/systemd/seasonal-backup.* /etc/systemd/system/
 sudo systemctl daemon-reload && sudo systemctl enable --now seasonal-backup.timer
 sudo systemctl start seasonal-backup.service      # one now, to see it work
-journalctl -u seasonal-backup.service -n 20
+journalctl -u seasonal-backup.service -n 20       # "… .tar.age (encrypted): database …"
 ls /var/backups/seasonal
 ```
 
-**⚠ OWNER: off-site copies.** Backups on the same VPS do not survive losing the VPS. Copy
-`/var/backups/seasonal` elsewhere nightly, e.g. with `rsync` to a Contabo storage box or another
-machine. Where to is the owner's decision. The backups hold the whole database (accounts, chat;
-direct messages only as ciphertext; 2FA secrets encrypted with `SECRET_ENCRYPTION_KEY`, which
-is **not** in the backups): keep the target private. A restore onto a new VPS needs the same
-`SECRET_ENCRYPTION_KEY` in its `site.env`, or 2FA users must sign in with recovery codes.
+The backups hold the whole database (accounts, chat; direct messages only as ciphertext; 2FA
+secrets encrypted with `SECRET_ENCRYPTION_KEY`, which is **not** in the backups). A restore onto
+a new VPS needs the same `SECRET_ENCRYPTION_KEY` in its `site.env`, or 2FA users must sign in
+with recovery codes.
+
+### Backups to your PC
+
+On the owner's Windows PC, once. All commands are PowerShell.
+
+**1. The age key pair.** Install the age tool, version **1.2.1** (the version the encryption is
+checked against): `winget install --id FiloSottile.age --version 1.2.1`, or download
+`age-v1.2.1-windows-amd64.zip` from the official releases page,
+`https://github.com/FiloSottile/age/releases`, and put `age.exe` and `age-keygen.exe` on your
+PATH. Then:
+
+```powershell
+New-Item -ItemType Directory -Force "$HOME\SeasonalBackupKey" | Out-Null
+age-keygen -o "$HOME\SeasonalBackupKey\backup-key.txt"   # prints "Public key: age1…"
+```
+
+- The **public key** (`age1…`) goes into the server's `site.env` as `BACKUP_RECIPIENT`.
+- The **private key file** `backup-key.txt` is the only way to read the backups. Keep it on
+  this PC, **not** in the backup folder and **never** on the VPS. Also keep a second copy
+  offline (a USB stick in a drawer, or a password manager's secure note). Without it, every
+  backup is unreadable.
+
+**2. A read-only backup user on the VPS** (as `deploy`, with sudo). It may only read the backup
+folder over sftp: no shell, no writing, nothing else on the server.
+
+```sh
+sudo useradd --system --create-home --shell /usr/sbin/nologin seasonal-backup
+sudo install -d -o root -g root -m 755 /srv/backup-chroot /srv/backup-chroot/backups
+echo '/var/backups/seasonal /srv/backup-chroot/backups none bind,ro 0 0' | sudo tee -a /etc/fstab
+sudo systemctl daemon-reload && sudo mount /srv/backup-chroot/backups
+sudo tee /etc/ssh/sshd_config.d/20-seasonal-backup.conf > /dev/null <<'CONF'
+Match User seasonal-backup
+    ChrootDirectory /srv/backup-chroot
+    ForceCommand internal-sftp -R
+    AllowTcpForwarding no
+    X11Forwarding no
+    PasswordAuthentication no
+CONF
+sudo sshd -t && sudo systemctl reload ssh
+```
+
+`internal-sftp -R` is read-only; the chroot shows only `/backups`, a read-only view of
+`/var/backups/seasonal`.
+
+**3. Its SSH key**, made on the PC, without a passphrase (the task runs unattended; the account
+can only read encrypted files):
+
+```powershell
+ssh-keygen -t ed25519 -f "$HOME\.ssh\seasonal-backup" -N '""' -C seasonal-backup
+Get-Content "$HOME\.ssh\seasonal-backup.pub"
+```
+
+On the VPS, put that one line into the backup user's `authorized_keys`:
+
+```sh
+sudo install -d -o seasonal-backup -g seasonal-backup -m 700 /home/seasonal-backup/.ssh
+sudo nano /home/seasonal-backup/.ssh/authorized_keys          # paste the .pub line
+sudo chown seasonal-backup: /home/seasonal-backup/.ssh/authorized_keys
+sudo chmod 600 /home/seasonal-backup/.ssh/authorized_keys
+```
+
+**4. The first run by hand.** Copy `deploy\pc\` (three files) to e.g.
+`$HOME\SeasonalBackupTools`. Connect once interactively, so Windows knows the server's host key
+(answer `yes`), then fetch:
+
+```powershell
+sftp -i "$HOME\.ssh\seasonal-backup" seasonal-backup@<SITE_DOMAIN>     # "yes", then: ls /backups, bye
+& "$HOME\SeasonalBackupTools\Get-SeasonalBackups.ps1" -Server <SITE_DOMAIN> -KeyFile "$HOME\.ssh\seasonal-backup"
+```
+
+It fetches every backup the server has that the PC has not (catching up after the PC was off;
+the server keeps 14), into `$HOME\SeasonalBackups`. It keeps the newest 30 there (`-Keep`), and
+logs each run to `$HOME\SeasonalBackups\download.log`. A download arrives as `….partial` and gets
+its name only when complete.
+
+**5. The daily task.** Windows Task Scheduler, daily at 09:00 (the server's backup is at 03:30
+server time). "Run as soon as possible after a missed start" also covers a PC that was off then:
+
+```powershell
+$script = "$HOME\SeasonalBackupTools\Get-SeasonalBackups.ps1"
+$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument (
+  "-NoProfile -ExecutionPolicy Bypass -File `"$script`" -Server <SITE_DOMAIN> " +
+  "-KeyFile `"$HOME\.ssh\seasonal-backup`"")
+$trigger = New-ScheduledTaskTrigger -Daily -At 09:00
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable
+Register-ScheduledTask -TaskName 'Seasonal backups' -Action $action -Trigger $trigger -Settings $settings
+```
+
+**Checking that it ran:**
+
+```powershell
+Get-ScheduledTaskInfo -TaskName 'Seasonal backups'   # LastRunTime, LastTaskResult (0 = fine)
+Get-Content "$HOME\SeasonalBackups\download.log" -Tail 10
+Get-ChildItem "$HOME\SeasonalBackups" -Filter *.tar.age | Sort-Object Name | Select-Object -Last 3
+```
+
+`LastTaskResult` 1 means a run failed; the log says which backup and why, and the next run
+fetches it again.
 
 ### Restoring
 
+From a backup on the PC (the server's own copies are encrypted, and only the PC can open them):
+
+```powershell
+age -d -i "$HOME\SeasonalBackupKey\backup-key.txt" -o "$HOME\restore.tar" "$HOME\SeasonalBackups\<time>.tar.age"
+scp "$HOME\restore.tar" deploy@<SITE_DOMAIN>:/tmp/restore.tar
+```
+
+On the VPS (as `deploy`):
+
 ```sh
+sudo mv /tmp/restore.tar /var/backups/seasonal/restore.tar     # the container sees /backups
 cd /opt/seasonal-entertainment/deploy/site
-docker compose run --rm --no-deps site node scripts/restore.mjs /backups/<time> --check
+docker compose run --rm --no-deps site node scripts/restore.mjs /backups/restore.tar --check
 docker compose stop site
-docker compose run --rm --no-deps site node scripts/restore.mjs /backups/<time> --force
+docker compose run --rm --no-deps site node scripts/restore.mjs /backups/restore.tar --force
 docker compose start site
 curl -s https://<SITE_DOMAIN>/api/health
+sudo rm /var/backups/seasonal/restore.tar                      # the plain copy goes again
 ```
+
+Then delete `$HOME\restore.tar` on the PC too: decrypted, it is the whole database in plain
+form.
 
 `--check` verifies the checksum, the SQLite integrity and the media count without touching
 anything. The restore refuses existing data without `--force`. With it, the current database
 (with its `-wal`/`-shm` files) and media folder are **moved aside** to `….before-restore-<time>`
 in the volume, never deleted. Delete those by hand once the restored site looks right. A restore
 drill now and then (into a scratch VPS or a copy of the volume) is the only proof a backup works.
-`server/test/backup.test.js` restores one into a temporary location on every CI run.
+In CI, `server/test/backupEncrypted.test.js` decrypts an encrypted backup and restores it into a
+temporary location. The "deployment files" job decrypts one made by the real image with the real
+age tool and runs the restore check on it.
 
 ## 7. Updating
 
@@ -314,17 +438,18 @@ restart Docker once.
 
 ## Files
 
-| File                                                                       | What                                                                                        |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `deploy/site/Dockerfile`                                                   | the image: multi-stage, production build, non-root `node` user, base image pinned by digest |
-| `deploy/site/docker-compose.yml`                                           | site + Caddy; volumes for the database and media, backups on the host                       |
-| `deploy/site/Caddyfile`, `caddy/calls.caddy`                               | HTTPS for both domains; wss to LiveKit                                                      |
-| `deploy/site/.env.example`                                                 | compose settings (domains, ACME email, commit)                                              |
-| `deploy/site/calls-cert.sh`                                                | Caddy's calls certificate → LiveKit's TURN                                                  |
-| `deploy/site/systemd/`                                                     | the backup and certificate timers                                                           |
-| `deploy/calls/`                                                            | the call service (docs/CALLS.md); `Caddyfile` for its own VPS                               |
-| `scripts/backup.mjs`, `scripts/restore.mjs`, `scripts/bootstrap-admin.mjs` | operations, inside the site container                                                       |
-| `.dockerignore`                                                            | keeps data, secrets and build output out of the image                                       |
+| File                                                                       | What                                                                                                                        |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `deploy/site/Dockerfile`                                                   | the image: multi-stage, production build, non-root `node` user, base image pinned by digest                                 |
+| `deploy/site/docker-compose.yml`                                           | site + Caddy; volumes for the database and media, backups on the host                                                       |
+| `deploy/site/Caddyfile`, `caddy/calls.caddy`                               | HTTPS for both domains; wss to LiveKit                                                                                      |
+| `deploy/site/.env.example`                                                 | compose settings (domains, ACME email, commit)                                                                              |
+| `deploy/site/calls-cert.sh`                                                | Caddy's calls certificate → LiveKit's TURN                                                                                  |
+| `deploy/site/systemd/`                                                     | the backup and certificate timers                                                                                           |
+| `deploy/calls/`                                                            | the call service (docs/CALLS.md); `Caddyfile` for its own VPS                                                               |
+| `scripts/backup.mjs`, `scripts/restore.mjs`, `scripts/bootstrap-admin.mjs` | operations, inside the site container                                                                                       |
+| `deploy/pc/`                                                               | the PC side of the backups: `Get-SeasonalBackups.ps1` (the daily task), `SeasonalBackups.psm1`, `SeasonalBackups.Tests.ps1` |
+| `.dockerignore`                                                            | keeps data, secrets and build output out of the image                                                                       |
 
 CI (`.github/workflows/ci.yml`, job "deployment files") builds the image (no push), starts it in
 production mode against `/api/health`, and validates both compose projects and all Caddyfiles

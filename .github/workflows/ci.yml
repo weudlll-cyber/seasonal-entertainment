@@ -8,7 +8,9 @@
 #              The browser tests start their own call server: the pinned LiveKit binary,
 #              downloaded and checked against its SHA-256 first (scripts/calls-binary.mjs).
 #              A second job builds the production image (deploy/site/Dockerfile; never pushed)
-#              and checks the compose files and Caddyfiles, so the deployment files cannot rot.
+#              and checks the compose files and Caddyfiles, so the deployment files cannot rot;
+#              it also decrypts an encrypted backup with the real age tool and runs the PC-side
+#              PowerShell tests (deploy/pc/).
 # ============================================================
 
 name: CI
@@ -70,6 +72,21 @@ jobs:
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:3800/api/health && exit 0; sleep 1; done
           docker logs site
           exit 1
+
+      - name: An encrypted backup decrypts with the age tool and passes the restore check
+        run: |
+          sudo apt-get install -y age > /dev/null
+          age-keygen -o key.txt 2> /dev/null
+          docker exec -e BACKUP_RECIPIENT="$(age-keygen -y key.txt)" site node scripts/backup.mjs
+          name=$(docker exec site sh -c 'ls /backups')
+          docker cp "site:/backups/$name" backup.tar.age
+          age -d -i key.txt -o backup.tar backup.tar.age
+          tar -tf backup.tar | grep -q '/seasonal.db$'
+          docker cp backup.tar site:/tmp/backup.tar
+          docker exec site node scripts/restore.mjs /tmp/backup.tar --check
+
+      - name: The PC side of the backups (PowerShell)
+        run: pwsh -NoProfile -File deploy/pc/SeasonalBackups.Tests.ps1
 
       - name: Compose files are valid
         run: |

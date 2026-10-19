@@ -8,7 +8,8 @@
 //              plus the media folder, into <backupRoot>/<UTC time>/ with a manifest
 //              (database checksum, media file count). A backup counts only once complete: it
 //              is written under a ".partial" name and renamed at the end. Backups older than
-//              14 days are deleted. scripts/backup.mjs runs it; restore.js reads it back.
+//              14 days are deleted (encrypted ones too, encrypted.js). scripts/backup.mjs runs
+//              it; restore.js reads it back.
 // ============================================================
 
 import { cpSync, existsSync, mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs';
@@ -26,8 +27,9 @@ import {
 
 export const KEEP_DAYS = 14;
 const DAY_MS = 24 * 60 * 60 * 1000;
-// A backup's folder name: its UTC time, sortable and safe in file names (no colons).
-const STAMP = /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z$/;
+// A backup's folder name: its UTC time, sortable and safe in file names (no colons); an
+// encrypted backup (encrypted.js) is that name plus ".tar.age".
+const STAMP = /^(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z)(\.tar\.age)?$/;
 const stampOf = (date) => date.toISOString().slice(0, 19).replaceAll(':', '-') + 'Z';
 const timeOf = (stamp) => Date.parse(stamp.replace(/T(\d{2})-(\d{2})-(\d{2})Z/, 'T$1:$2:$3Z'));
 
@@ -35,7 +37,8 @@ const timeOf = (stamp) => Date.parse(stamp.replace(/T(\d{2})-(\d{2})-(\d{2})Z/, 
 export function pruneBackups(backupRoot, now = new Date(), keepDays = KEEP_DAYS) {
   const pruned = [];
   for (const name of readdirSync(backupRoot)) {
-    const old = STAMP.test(name) && now - timeOf(name) > keepDays * DAY_MS;
+    const stamp = STAMP.exec(name)?.[1];
+    const old = stamp !== undefined && now - timeOf(stamp) > keepDays * DAY_MS;
     if (old || name.endsWith('.partial')) {
       rmSync(path.join(backupRoot, name), { recursive: true, force: true });
       pruned.push(name);
