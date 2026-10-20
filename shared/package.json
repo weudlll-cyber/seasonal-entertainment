@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "license": "AGPL-3.0-or-later",
-  "description": "Rules and helpers both server and client must apply identically (accounts, roles, event schedule, games hub, chat, cryptography).",
+  "description": "Rules and helpers both server and client must apply identically (accounts, roles, local week and times, games hub, chat, cryptography).",
   "type": "module",
   "exports": {
     "./accountRules.js": "./accountRules.js",
-    "./eventSchedule.js": "./eventSchedule.js",
+    "./localWeek.js": "./localWeek.js",
     "./gameRules.js": "./gameRules.js",
     "./chatRules.js": "./chatRules.js",
     "./crypto.js": "./crypto.js",

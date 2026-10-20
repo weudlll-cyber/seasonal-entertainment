@@ -8,7 +8,8 @@
 //              that server, so devProxy.spec.js tests the development path too. scripts/e2e.mjs
 //              creates and deletes the database directory; a direct "npx playwright test" gets
 //              one of its own in the system temp folder. Calls use the run's own LiveKit server
-//              in development mode (scripts/calls-dev.mjs, pinned and checksum-checked binary).
+//              in development mode (scripts/calls-dev.mjs, pinned and checksum-checked binary);
+//              the event bot is the run's own fake database (scripts/build-bot-fixtures.mjs).
 // ============================================================
 
 import { existsSync, mkdtempSync } from 'node:fs';
@@ -59,7 +60,8 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: 'node server/src/index.js',
+      // The bots' fake data first (the run's own folder), then the server reading it.
+      command: 'node scripts/build-bot-fixtures.mjs && node server/src/index.js',
       url: `http://127.0.0.1:${port}/api/health`,
       // Set explicitly so a local .env (dev database, bootstrap token) can never leak in.
       env: {
@@ -81,6 +83,10 @@ export default defineConfig({
         CALLS_URL,
         CALLS_API_KEY: 'devkey',
         CALLS_API_SECRET: 'secret',
+        // The event bot, read-only (docs/BOTS.md): the fixture built just before. The price
+        // bot stays off, so the home page keeps its season marks (seasonMarks.spec.js).
+        BOT_FIXTURE_DIR: path.join(process.env.SE_E2E_DIR, 'bots'),
+        EVENT_BOT_DB: path.join(process.env.SE_E2E_DIR, 'bots', 'stannouncebot.db'),
       },
       // Always a fresh server, so a stale process can never answer for this build.
       reuseExistingServer: false,

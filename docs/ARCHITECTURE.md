@@ -40,49 +40,51 @@ roles and the bootstrap are described in [AUTH.md](AUTH.md).
 
 The race game uses 5173 and 4173; this project stays clear of them.
 
-| Port | What                                                                 |
-| ---- | -------------------------------------------------------------------- |
-| 3800 | Server (`npm start`, and the API behind `npm run dev`)               |
-| 5380 | Vite dev server (`npm run dev`), forwards `/api` and `/ws` to 3800   |
-| 3810 | Server started by the Playwright browser tests                       |
-| 5390 | Vite dev server in front of 3810 during the browser tests            |
-| 7880 | LiveKit call server in development (`npm run dev:calls`)             |
-| 7890 | LiveKit call server of the browser tests (ICE on 7891 TCP, 7892 UDP) |
+| Port | What                                                                                         |
+| ---- | -------------------------------------------------------------------------------------------- |
+| 3800 | Server (`npm start`, and the API behind `npm run dev`)                                       |
+| 5380 | Vite dev server (`npm run dev`), forwards `/api` and `/ws` to 3800                           |
+| 3810 | Server started by the Playwright browser tests                                               |
+| 5390 | Vite dev server in front of 3810 during the browser tests (`SE_E2E_DEV_PROXY_PORT` moves it) |
+| 7880 | LiveKit call server in development (`npm run dev:calls`)                                     |
+| 7890 | LiveKit call server of the browser tests (ICE on 7891 TCP, 7892 UDP)                         |
 
 ## Runtime configuration
 
 Read from the environment when the process starts, never baked into a build:
 
-| Variable                | Default                                       | Used by                                                         |
-| ----------------------- | --------------------------------------------- | --------------------------------------------------------------- |
-| `HOST`                  | `127.0.0.1`                                   | server listen address                                           |
-| `PORT`                  | `3800`                                        | server listen port                                              |
-| `CLIENT_DIST`           | `client/dist`                                 | folder of the built client the server serves                    |
-| `COMMIT_SHA`            | output of `git rev-parse`                     | commit reported by `/api/health`                                |
-| `CLIENT_PORT`           | `5380`                                        | Vite dev server port                                            |
-| `API_ORIGIN`            | `http://127.0.0.1:3800`                       | where the Vite dev server forwards `/api` and `/ws`             |
-| `NODE_ENV`              | (unset)                                       | `production`: Secure cookies, no dev defaults (DEPLOYMENT.md)   |
-| `DATABASE_PATH`         | `data/seasonal.db`                            | SQLite file                                                     |
-| `SESSION_SECRET`        | random per start (dev)                        | signs session cookies; required in production                   |
-| `SECRET_ENCRYPTION_KEY` | public development key (dev)                  | encrypts 2FA secrets at rest; required in production (AUTH.md)  |
-| `BOOTSTRAP_TOKEN`       | (unset)                                       | one-time first-admin creation (AUTH.md)                         |
-| `PUBLIC_ORIGIN`         | from the Host header (required in production) | own origin for CSRF/WebSocket origin checks                     |
-| `TRUST_PROXY`           | `0` (must be set explicitly in production)    | number of reverse proxies in front                              |
-| `COOKIE_SECURE`         | `true` in production                          | Secure session cookie                                           |
-| `CSRF_STRICT`           | `true`                                        | refuse state changes without Origin/Referer                     |
-| `BCRYPT_COST`           | `12`                                          | password hashing cost (4–15)                                    |
-| `REQUIRE_STAFF_2FA`     | `true`                                        | organisers/admins must use 2FA; `false` only outside production |
-| `CHAT_RETENTION_DAYS`   | `90`                                          | chat messages older than this are deleted                       |
-| `MEDIA_DIR`             | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`      |
-| `LINK_PREVIEWS`         | `true`                                        | `false` switches chat link previews off                         |
-| `CALLS_URL`             | (unset: Calls off)                            | call service origin, `wss://...` (docs/CALLS.md)                |
-| `CALLS_API_KEY`         | (unset)                                       | call service API key; set with the other two or none            |
-| `CALLS_API_SECRET`      | (unset)                                       | call service API secret; production: no dev pair, 32+ chars     |
-| `BACKUP_DIR`            | (unset)                                       | where `scripts/backup.mjs` writes backups (DEPLOYMENT.md)       |
-| `BACKUP_ENCRYPTION`     | `on`                                          | encrypt backups with age (`off`: plain folders)                 |
-| `BACKUP_RECIPIENT`      | (unset; required while encryption is on)      | the owner's age public key (`age1…`) the backups are for        |
-| `PRICE_BOT_DB`          | (unset: prices off)                           | the price bot's `snapshots.db`, read-only (docs/BOTS.md)        |
-| `EVENT_BOT_DB`          | (unset: bot events off)                       | the event bot's database, read-only (docs/BOTS.md)              |
+| Variable                 | Default                                       | Used by                                                                   |
+| ------------------------ | --------------------------------------------- | ------------------------------------------------------------------------- |
+| `HOST`                   | `127.0.0.1`                                   | server listen address                                                     |
+| `PORT`                   | `3800`                                        | server listen port                                                        |
+| `CLIENT_DIST`            | `client/dist`                                 | folder of the built client the server serves                              |
+| `COMMIT_SHA`             | output of `git rev-parse`                     | commit reported by `/api/health`                                          |
+| `CLIENT_PORT`            | `5380`                                        | Vite dev server port                                                      |
+| `API_ORIGIN`             | `http://127.0.0.1:3800`                       | where the Vite dev server forwards `/api` and `/ws`                       |
+| `NODE_ENV`               | (unset)                                       | `production`: Secure cookies, no dev defaults (DEPLOYMENT.md)             |
+| `DATABASE_PATH`          | `data/seasonal.db`                            | SQLite file                                                               |
+| `SESSION_SECRET`         | random per start (dev)                        | signs session cookies; required in production                             |
+| `SECRET_ENCRYPTION_KEY`  | public development key (dev)                  | encrypts 2FA secrets at rest; required in production (AUTH.md)            |
+| `BOOTSTRAP_TOKEN`        | (unset)                                       | one-time first-admin creation (AUTH.md)                                   |
+| `PUBLIC_ORIGIN`          | from the Host header (required in production) | own origin for CSRF/WebSocket origin checks                               |
+| `TRUST_PROXY`            | `0` (must be set explicitly in production)    | number of reverse proxies in front                                        |
+| `COOKIE_SECURE`          | `true` in production                          | Secure session cookie                                                     |
+| `CSRF_STRICT`            | `true`                                        | refuse state changes without Origin/Referer                               |
+| `BCRYPT_COST`            | `12`                                          | password hashing cost (4–15)                                              |
+| `REQUIRE_STAFF_2FA`      | `true`                                        | organisers/admins must use 2FA; `false` only outside production           |
+| `CHAT_RETENTION_DAYS`    | `90`                                          | chat messages older than this are deleted                                 |
+| `MEDIA_DIR`              | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`                |
+| `LINK_PREVIEWS`          | `true`                                        | `false` switches chat link previews off                                   |
+| `CALLS_URL`              | (unset: Calls off)                            | call service origin, `wss://...` (docs/CALLS.md)                          |
+| `CALLS_API_KEY`          | (unset)                                       | call service API key; set with the other two or none                      |
+| `CALLS_API_SECRET`       | (unset)                                       | call service API secret; production: no dev pair, 32+ chars               |
+| `BACKUP_DIR`             | (unset)                                       | where `scripts/backup.mjs` writes backups (DEPLOYMENT.md)                 |
+| `BACKUP_ENCRYPTION`      | `on`                                          | encrypt backups with age (`off`: plain folders)                           |
+| `BACKUP_RECIPIENT`       | (unset; required while encryption is on)      | the owner's age public key (`age1…`) the backups are for                  |
+| `PRICE_BOT_DB`           | (unset: prices off)                           | the price bot's `snapshots.db`, read-only (docs/BOTS.md)                  |
+| `EVENT_BOT_DB`           | (unset: bot events off)                       | the event bot's database, read-only (docs/BOTS.md)                        |
+| `PRICE_BOT_MINING_RATES` | (unset: no fair price, no mining times)       | the price bot's `mining_rates.json`, read-only (docs/BOTS.md)             |
+| `COINGECKO_API_KEY`      | (unset: ETH, POL, BTC not connected)          | CoinGecko Demo key: the server fetches ETH/POL/BTC history (docs/BOTS.md) |
 
 The server loads `.env` from the repository root if present; real environment variables win.
 `.env.example` lists every key the server reads, by name with a comment and no value;
@@ -135,22 +137,16 @@ sheet and farming guide, and each ends with its Sources list (2026-10-17). No co
 is retyped anywhere (the pages link to the official site); `server/test/infoSeed.test.js` guards
 these rules. Imprint and Privacy are drafts with `[TO BE FILLED BY OWNER]` placeholders.
 
-## Events calendar
+## Events
 
-Events are rows in the database (`events`), editable at `/admin/events` without code changes
-(decided 2026-10-16); every change is audited. Each has a rule — `weekly`, or `monthly_first`
-(the first <weekday> of each month) — an ISO weekday (1 = Monday) and a start time **in UTC**,
-plus optional duration, a channel text, an optional https link and an active flag. The public
-`/api/events` returns only active events.
-
-`shared/eventSchedule.js` turns the rules into the occurrences of one week, Monday to Sunday
-**in the viewer's time zone**, and formats them in that zone (`/events` shows the local time,
-the zone's name and the UTC time). Weeks that contain a daylight-saving change are 167 or 169
-hours long; the module handles that and `shared/eventSchedule.test.js` pins it with the
-European change of 25 October 2026.
-
-First start: `server/src/events/seed.js` inserts the owner's weekly schedule (14 events, UTC,
-checked against "ST Schedule.pdf" on 2026-10-17) when the table is empty.
+Events come **only from the owner's event bot** (decided 2026-10-20; docs/BOTS.md): the site
+reads its occurrences read-only and has no events table or editor of its own (the old `events`
+table is dropped on start, `server/src/db/database.js`). `/events` shows one week, Monday to
+Sunday **in the viewer's time zone**, and the home page's "Up next" the next two occurrences.
+`shared/localWeek.js` finds the local week and formats days and times in that zone (`/events`
+shows the local time, the zone's name and the UTC time). Weeks that contain a daylight-saving
+change are 167 or 169 hours long; `shared/localWeek.test.js` pins that with the European change
+of 25 October 2026.
 
 ## Games hub
 
@@ -359,8 +355,9 @@ client/                    React + Vite client
   src/embed/               the embedded chat for iframes (/embed/chat) on this site and on
                            approved other sites, its postMessage API, the login popup
                            (/embed-login) and the in-memory embed token (docs/EMBED.md)
-  src/prices/              token prices from the price bot: the /info/prices page, the
-                           hand-built SVG chart and sparkline, formats (docs/BOTS.md)
+  src/prices/              coin prices (the price bot, CoinGecko via the server): the /info/prices
+                           page, the hand-built SVG chart for one coin or several, the coin
+                           choice, sparkline, fair price, converter, formats (docs/BOTS.md)
   src/admin/               admin area (/admin): layout, users, audit log, info editor; one section each
   src/components/Markdown.jsx  the one safe Markdown renderer
   e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels,
@@ -395,7 +392,6 @@ server/
   src/audit/               audit log: schema and the one recordAudit helper
   src/admin/               /api/admin routes (users, audit); areas add their own editors
   src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md)
-  src/events/              events: schema, store, public and admin routes, seed
   src/games/               games hub: schema, store, public and admin routes, seed
   src/chat/                chat area, mounted by mount.js (the only entry for the rest of the
                            server): schema, store, messages and what may be sent, viewer rules,
@@ -404,7 +400,8 @@ server/
   src/media/               chat media library: schema, store, image validator, files on disk,
                            picker and admin routes, first-start seed
   src/previews/            chat link previews: safe fetching (SSRF rules), meta parsing, cache,
-                           the preview service, moderators' removal route
+                           the preview service, moderators' removal route; fetchImage.js, also
+                           used for the event bot's images
   src/uploads/             chat file uploads: schema, store, processing (type, metadata,
                            thumbnails), access-checked serving, moderators' removal
   seeds/chat-media/        the starter stickers and GIFs (owner's own files, README credits)
@@ -418,12 +415,15 @@ server/
   src/settings/            admin-editable site settings: definitions, store, admin routes
   src/embed/               the chat on approved other sites: the approved list (a setting),
                            embed tokens, their route allow-list, routes (docs/EMBED.md, AUTH.md)
+  src/reference/           ETH, POL and BTC prices from CoinGecko: schema, the API call, the daily
+                           and hourly job, public routes (docs/BOTS.md, "Reference prices")
   src/bots/                the owner's bots' databases, read-only: prices, event occurrences,
-                           public routes with a cache; fixtures.js: fake development data
-                           (docs/BOTS.md)
+                           public routes with a cache, the events' images (fetched by the
+                           server); fixtures.js and fixtureNetwork.js: fake development data
+                           and its image host (docs/BOTS.md)
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests
-shared/                    rules used by server and client (accountRules.js, eventSchedule.js,
+shared/                    rules used by server and client (accountRules.js, localWeek.js,
                            gameRules.js, chatRules.js), crypto.js and cryptoFormat.js
 scripts/
   dev.mjs                  npm run dev
@@ -511,8 +511,7 @@ None of these exist yet. Each gets its own branch and backlog entry.
 - **Games hub**: list of games; the race game connected here.
 - **Chat**: community chat.
 - **Bots**: Discord/Telegram bots and group roles.
-- **Admin pages**: management screens, including an events calendar that is edited without
-  code changes.
+- **Admin pages**: management screens (events are kept in the event bot, docs/BOTS.md).
 
 ## Adding a new area or game
 

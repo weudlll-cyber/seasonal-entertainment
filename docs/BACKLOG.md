@@ -28,32 +28,73 @@ An entry moves from part one to part two only when its branch is merged into `ma
   Admin → Embedding once the site is live (only exact `https://` origins).
 - **Age key pair for the backups** — open, at deployment: the owner creates it on the PC
   (docs/DEPLOYMENT.md, "Backups"); the VPS gets only the public key.
-- **Prices of ETH and POL** — open, the owner's word: the price bot does not store them, and the
-  site calls no outside price API (docs/BOTS.md). They would need the bot to keep their history.
-- **Keep or drop the site's own event admin** — open, the owner's word: the event bot's
-  occurrences are now shown on `/events` beside the site's own events (SE-NIGHT-3 piece 3).
+- **Event bot admin page inside the site for admins without a second login** — open, waits for
+  a change in the bot project: the bot page skips its own login when the site's server supplies
+  the bot token, and its API paths can sit under a path prefix (today it calls absolute
+  `/api/...`, which collide with the site's `/api`).
 - **Site and bots on the same VPS** — open, the owner's word: reading the bots' files through
   read-only mounts assumes it (docs/DEPLOYMENT.md, "The owner's bots").
 - **A ratio view between the seasons** — unconfirmed proposal, not decided (e.g. Spring priced
   in Summer).
-- **Event images from the bot** — open, the owner's word: `image_url` is not loaded, since
-  outside images would need a CSP change.
 - **Call recording** — unconfirmed proposal, not decided. Calls are not recorded (privacy draft).
-- **Linking calls to the events calendar** — unconfirmed proposal, not decided: an event could
-  carry its call, and a call its event.
-
-- Info pages with admin editor
-- Accounts with Discord/Telegram login and 2FA for organisers/admins
-- Bots and group roles
-- Games hub and race-game connection
-- Chat
-- Notifications
-- Admin pages (events calendar editable without code changes)
-- VPS deployment — prepared (SE-NIGHT-2 part 7: image, compose with Caddy, backups, runbook in
-  docs/DEPLOYMENT.md); the deployment itself waits for the owner's domains, VPS access and
-  the backup key pair made on the owner's PC (backups go there, decided 2026-10-19).
+- **Linking calls to events** — unconfirmed proposal, not decided: an event (now kept in the event
+  bot) could carry its call, and a call its event.
+- **Login with Discord or Telegram** — open. Accounts use a username and password, with 2FA
+  required for organisers and admins (closed: SE-NIGHT-1 pieces 2 and 3); logging in with a
+  Discord or Telegram account is not built (for Telegram's recovery codes see above).
+- **Group roles** — open: site roles tied to Discord or Telegram groups are not built. The bots'
+  data is shown (prices, events: SE-NIGHT-3 and SE-BOTS-2).
+- **Race-game connection** — open: the games hub lists the race game as "coming soon"; the game
+  lives in its own repository and is not connected to the site yet.
+- **VPS deployment** — open, the owner's word: prepared (SE-NIGHT-2 part 7: image, compose with
+  Caddy, backups, runbook in docs/DEPLOYMENT.md); the deployment itself waits for the owner's
+  domains, VPS access and the backup key pair made on the owner's PC (backups go there, decided
+  2026-10-19).
 
 ## PART TWO — closed
+
+- **Small prices cut to two decimals** — closed by SE-BOTS-2c (`feat/se-bots-2`, not merged yet;
+  owner request 2026-10-20): POL showed $0.09 where the price bot shows 0.094195. One rule for
+  every coin's price on the prices page now (`formatUsd`): below $1 at least four significant
+  digits ($0.09420), from $1 on two decimals.
+
+- **Several coins on one price chart, BTC, a converter with every coin** — closed by SE-BOTS-2b
+  (`feat/se-bots-2`, not merged yet; owner request 2026-10-20): BTC joins ETH and POL as a
+  reference coin (CoinGecko `bitcoin`, about 78 calls a day in all); the coin buttons on
+  `/info/prices` toggle the coins on the one chart, two or more shown as % change since the
+  range's start with a legend, the choice kept in the address; the converter offers every
+  connected coin (docs/BOTS.md, "The chart: one coin or several").
+
+- **The first roadmap list's finished items** — checked against the tree by SE-BOTS-2
+  (2026-10-20) and moved here: info pages with admin editor (SE-NIGHT-1 piece 5); accounts with
+  2FA for organisers and admins (pieces 2 and 3; Discord/Telegram login stays open); the games
+  hub (piece 7; the race-game connection stays open); chat (piece 8 and the chat work after it);
+  notifications inside the site — unread counters and @mentions (SE-DM-2; operating-system
+  notifications stay a proposal); admin pages (users, audit log, info pages, games, chat rooms,
+  chat media, settings, embedding; the events calendar editor was dropped, events come from the
+  event bot, SE-BOTS-2 part 2).
+
+- **Prices of ETH and POL** — closed by SE-BOTS-2 part 1 (`feat/se-bots-2`, not merged yet;
+  owner decision 2026-10-20): the site fetches their history from CoinGecko's free Demo API
+  (`COINGECKO_API_KEY`, server only), keeps a year of it in its own database, refreshed daily and
+  hourly, and shows ETH and POL as a reference row on `/info/prices` with CoinGecko's attribution
+  (docs/BOTS.md, "Reference prices"). **Owner**: create the Demo key and put it in `site.env`.
+
+- **Fair price and converter with mining time** — closed by SE-BOTS-2 part 4 (`feat/se-bots-2`,
+  not merged yet; owner decision 2026-10-20): `/info/prices` shows the price bot's `/value` fair
+  price table and its `/swap` converter with mining times, from the bot's `mining_rates.json`
+  (`PRICE_BOT_MINING_RATES`, read-only); the arithmetic is ported with the bot's own test numbers
+  (docs/BOTS.md, "Fair price and converter").
+
+- **Event images from the bot** — closed by SE-BOTS-2 part 3 (`feat/se-bots-2`, not merged yet;
+  owner decision 2026-10-20): the server fetches each event's image through the link previews'
+  network guard, re-encodes it without metadata, stores it by a hash of its URL and refreshes it
+  at most daily; `/events` and "Up next" show it from this site (docs/BOTS.md, "Event images").
+
+- **Keep or drop the site's own event admin** — closed by SE-BOTS-2 part 2 (`feat/se-bots-2`,
+  not merged yet): dropped (owner decision 2026-10-20). Events are kept only in the event bot;
+  the site's editor, routes, seeded schedule, store and `events` table are gone, and `/events`
+  and the home page's "Up next" read only the bot (docs/BOTS.md).
 
 - **Own room message seen twice in the chat on another site** — closed by SE-NIGHT-3 piece 4
   (`feat/se-night-3`, PR #8, merged 2026-10-20): not shown twice. The browser check's

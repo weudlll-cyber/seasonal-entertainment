@@ -3,10 +3,12 @@
 // Path:        server/src/bots/routes.js
 // Project:     Seasonal Entertainment
 // Description: Public reads of the owner's bot data (docs/BOTS.md), guests included:
-//              GET /api/prices (latest prices, 24-hour change, sparkline), GET
+//              GET /api/prices (latest prices, 24-hour change, sparkline, and the price bot's
+//              mining rates for the fair price and the converter, miningRates.js), GET
 //              /api/prices/:token?range= (history: 24h, 7d, 30d, 1y, all; at most 500 points)
 //              and GET /api/bot-events?from=&to= (the event bot's occurrences in a window of at
-//              most eight days). A bot whose file is not configured answers connected: false.
+//              most eight days), each with its event's image on this site when there is one
+//              (images.js). A bot whose file is not configured answers connected: false.
 //              Answers are cached in memory (config.bots.cacheMs) and rate limited per address.
 // ============================================================
 
@@ -16,13 +18,18 @@ import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { cachedRead, readBotDb } from './botDb.js';
 import { botOccurrences } from './events.js';
+import { createBotImages } from './images.js';
+import { readMiningRates } from './miningRates.js';
 import { PRICE_RANGES, PRICE_TOKENS, latestPrices, priceHistory } from './prices.js';
 
 const MAX_WINDOW_MS = 8 * 24 * 60 * 60_000; // a week in any time zone, with room for DST
 
-export function botRoutes(config) {
-  const { priceDb, eventDb, cacheMs } = config.bots;
+// chatImages: the chat area's image fetch and media address (chat/mount.js); imageNetwork:
+// how event images are fetched (bots/images.js), the real internet when undefined.
+export function botRoutes(config, chatImages, imageNetwork) {
+  const { priceDb, eventDb, miningRates: ratesFile, cacheMs } = config.bots;
   const cached = cachedRead(cacheMs);
+  const images = createBotImages(config, chatImages, imageNetwork);
   const limit = makeLimiter(config.rateLimits.botRead);
 
   // The bot's answer, or 503 when its file cannot be read now (missing, locked, replaced). The
@@ -36,10 +43,33 @@ export function botRoutes(config) {
     }
   }
 
+  // The mining rates, re-read at most every cacheMs (5 minutes); null when not configured,
+  // missing or invalid. The reason is logged once per reason, not on every read.
+  let lastProblem = null;
+  const miningRates = () =>
+    ratesFile
+      ? cached('mining-rates', () => {
+          try {
+            const rates = readMiningRates(ratesFile);
+            lastProblem = null;
+            return rates;
+          } catch (err) {
+            if (err.message !== lastProblem) console.error(`[bots] ${ratesFile}: ${err.message}`);
+            lastProblem = err.message;
+            return null;
+          }
+        })
+      : null;
+
   const prices = express.Router();
   prices.get('/', allow('public'), limit, (_req, res) => {
-    if (!priceDb) return res.json({ ok: true, connected: false, prices: [] });
-    answer(res, priceDb, 'latest', latestPrices, (list) => ({ prices: list }));
+    if (!priceDb) {
+      return res.json({ ok: true, connected: false, prices: [], miningRates: miningRates() });
+    }
+    answer(res, priceDb, 'latest', latestPrices, (list) => ({
+      prices: list,
+      miningRates: miningRates(),
+    }));
   });
   prices.get('/:token', allow('public'), limit, (req, res) => {
     const { token } = req.params;
@@ -71,7 +101,14 @@ export function botRoutes(config) {
       eventDb,
       `events:${from}:${to}`,
       (db) => botOccurrences(db, from, to),
-      (occurrences) => ({ occurrences })
+      // The image's address on this site, looked up per answer (not cached with the rows):
+      // an image fetched meanwhile shows at once. The bot's own URL is never passed on.
+      (occurrences) => ({
+        occurrences: occurrences.map(({ imageUrl, ...o }) => ({
+          ...o,
+          image: images.lookup(imageUrl),
+        })),
+      })
     );
   });
 

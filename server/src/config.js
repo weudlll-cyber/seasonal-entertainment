@@ -121,8 +121,23 @@ export function readConfig(env = process.env) {
     bots: {
       priceDb: env.PRICE_BOT_DB ? path.resolve(env.PRICE_BOT_DB) : null,
       eventDb: env.EVENT_BOT_DB ? path.resolve(env.EVENT_BOT_DB) : null,
+      // The price bot's mining_rates.json (tokens mined per hour), for the fair price.
+      miningRates: env.PRICE_BOT_MINING_RATES ? path.resolve(env.PRICE_BOT_MINING_RATES) : null,
       cacheMs: 5 * 60_000, // answers kept in memory this long
+      // The event bot's images, fetched by this server (bots/images.js), once a day per URL.
+      images: {
+        maxBytes: 2 * 1024 * 1024,
+        maxWidth: 640,
+        timeoutMs: 5000,
+        maxRedirects: 3,
+        userAgent: 'SeasonalEntertainmentEventImages/1.0 (event images for Seasonal Entertainment)',
+      },
     },
+    // ETH, POL and BTC prices from CoinGecko's free Demo API (reference/, docs/BOTS.md); null:
+    // they show as not connected. Calls are spaced by gapMs (about 78 a day in all).
+    coingecko: env.COINGECKO_API_KEY
+      ? { apiKey: env.COINGECKO_API_KEY, timeoutMs: 10_000, gapMs: 2500 }
+      : null,
     // Timers (session sweep, chat retention). Tests switch them off; not an env key.
     backgroundJobs: true,
     rateLimits: {

@@ -16,7 +16,6 @@ import { staffNavFor } from './navigation.js';
 
 const NO_DATA = {
   'GET /games': { body: { ok: true, games: [] } },
-  'GET /events': { body: { ok: true, events: [] } },
 };
 
 function renderAt(path, session = GUEST) {

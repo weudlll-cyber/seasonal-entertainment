@@ -56,7 +56,12 @@ const MONDAY = Date.parse('2026-10-19T00:00:00Z');
 
 it('unset keys: every read says the data source is not connected', async () => {
   const api = appWith({ priceDb: null, eventDb: null });
-  expect((await api.get('/api/prices')).body).toEqual({ ok: true, connected: false, prices: [] });
+  expect((await api.get('/api/prices')).body).toEqual({
+    ok: true,
+    connected: false,
+    prices: [],
+    miningRates: null,
+  });
   expect((await api.get('/api/prices/spring?range=7d')).body).toMatchObject({
     connected: false,
     points: [],
@@ -168,7 +173,7 @@ describe('bot events', () => {
     const stream = occurrences.find((o) => o.name === '[Sample] Bot Weekend Stream');
     expect(stream.locationUrl).toBeNull(); // tg://… is not a web address
     expect(stream.locationLabel).toBe('Not a web link');
-    expect(JSON.stringify(occurrences)).not.toContain('never-loaded.png');
+    expect(JSON.stringify(occurrences)).not.toContain('images.bot-fixtures.test');
   });
 
   it('refuses a window that is not one of at most eight days', async () => {

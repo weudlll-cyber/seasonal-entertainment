@@ -7,7 +7,8 @@
 //              with the call service built from config) and, when a built client
 //              exists, the static client with a fallback to index.html for client routes. No
 //              listen(), so tests drive it directly; app.locals.chat is the chat's handle,
-//              app.locals.calls.start() starts the stale-call job (calls/staleCalls.js).
+//              app.locals.calls.start() starts the stale-call job (calls/staleCalls.js),
+//              app.locals.reference.start() the ETH, POL and BTC prices job (reference/sync.js).
 //              The embedded chat on approved foreign sites (embed/) adds its CSP, its token
 //              check and its routes; prices and bot events (bots/) are read-only public reads.
 // ============================================================
@@ -17,6 +18,8 @@ import path from 'node:path';
 import express from 'express';
 import { bootstrapRoutes } from './accounts/bootstrap.js';
 import { botRoutes } from './bots/routes.js';
+import { referenceRoutes } from './reference/routes.js';
+import { createReferenceSync } from './reference/sync.js';
 import { adminAuditRoutes } from './admin/auditRoutes.js';
 import { callJoinRoutes } from './calls/joinRoutes.js';
 import { callRoutes } from './calls/routes.js';
@@ -31,8 +34,6 @@ import { createEmbedOrigins } from './embed/origins.js';
 import { embedRoutes } from './embed/routes.js';
 import { adminUserRoutes } from './admin/userRoutes.js';
 import { accountRoutes } from './accounts/routes.js';
-import { adminEventRoutes } from './events/adminRoutes.js';
-import { eventRoutes } from './events/routes.js';
 import { adminGameRoutes } from './games/adminRoutes.js';
 import { gameRoutes } from './games/routes.js';
 import { allow } from './http/access.js';
@@ -47,13 +48,16 @@ import { adminSettingRoutes } from './settings/adminRoutes.js';
 import { staffTwoFactorGate } from './twofa/gate.js';
 import { twoFactorRoutes } from './twofa/routes.js';
 
-// previewNetwork: how link previews reach the internet (tests replace it); callService: the
-// call service (calls/service.js; tests hand in a stand-in), built from config by default.
+// previewNetwork: how link previews reach the internet (tests replace it); botImageNetwork:
+// how the event bot's images are fetched (tests, and development's fixture,
+// bots/fixtureNetwork.js); callService: the call service (calls/service.js; tests hand in a
+// stand-in), built from config by default.
 export function createApp({
   buildInfo,
   config,
   db,
   previewNetwork,
+  botImageNetwork,
   callService = createCallService(config.calls),
 }) {
   const app = express();
@@ -99,11 +103,10 @@ export function createApp({
   api.use('/admin/audit', adminAuditRoutes(db));
   api.use('/info', infoRoutes(db));
   api.use('/admin/info', adminInfoRoutes(db));
-  api.use('/events', eventRoutes(db));
-  const bots = botRoutes(config);
+  const bots = botRoutes(config, chat.images, botImageNetwork);
   api.use('/prices', bots.prices);
   api.use('/bot-events', bots.events);
-  api.use('/admin/events', adminEventRoutes(db));
+  api.use('/reference-prices', referenceRoutes(db, config));
   api.use('/games', gameRoutes(db));
   api.use('/admin/games', adminGameRoutes(db));
   api.use('/admin/settings', adminSettingRoutes(db));
@@ -114,6 +117,11 @@ export function createApp({
   api.use('/calls', callStageRoutes(db, config, callService, chat));
   api.use('/calls', callSpotlightRoutes(db, config, callService));
   app.locals.calls = { start: (log) => startStaleCalls(db, config, callService, chat, log) };
+  // The ETH, POL and BTC prices job (reference/sync.js): only with a CoinGecko key and timers on.
+  app.locals.reference = {
+    start: () =>
+      config.coingecko && config.backgroundJobs ? createReferenceSync(db, config).start() : null,
+  };
 
   // Unknown API paths answer JSON, never the HTML page.
   api.use((_req, res) => sendError(res, 404, 'not_found', 'No such API endpoint.'));

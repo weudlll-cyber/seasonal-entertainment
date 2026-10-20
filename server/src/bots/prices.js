@@ -5,7 +5,8 @@
 // Description: The price bot's hourly snapshots (table snapshots(ts_ms, token, price), the four
 //              seasonal tokens in lower case; docs/BOTS.md): each token's latest price with its
 //              change over 24 hours and the last day's prices for a sparkline, and one token's
-//              history over a range, thinned out to at most HISTORY_POINTS points.
+//              history over a range, thinned out to at most HISTORY_POINTS points. The same for
+//              any table of that shape: the site's own ETH, POL and BTC prices (reference/) use it.
 // ============================================================
 
 export const PRICE_TOKENS = ['spring', 'summer', 'autumn', 'winter'];
@@ -20,11 +21,14 @@ export const PRICE_RANGES = {
   all: null,
 };
 export const HISTORY_POINTS = 500;
+// Where the prices are: a table (ts_ms, token, price) and its tokens. Names are constants of
+// this code, never input.
+export const BOT_SNAPSHOTS = { table: 'snapshots', tokens: PRICE_TOKENS };
 
 // [[ts, price], ...] of one token from `since` on (or all), oldest first.
-const pointsSince = (db, token, since) =>
+const pointsSince = (db, table, token, since) =>
   db
-    .prepare(`SELECT ts_ms, price FROM snapshots WHERE token = ? AND ts_ms >= ? ORDER BY ts_ms`)
+    .prepare(`SELECT ts_ms, price FROM ${table} WHERE token = ? AND ts_ms >= ? ORDER BY ts_ms`)
     .raw()
     .all(token, since ?? 0);
 
@@ -42,16 +46,16 @@ export function thinOut(points, max = HISTORY_POINTS) {
 }
 
 // Per token: { token, price, at, change24h (fraction, null without a price a day earlier),
-// spark: the last 24 hours' prices }. Tokens the bot has no snapshot of are left out.
-export function latestPrices(db) {
-  return PRICE_TOKENS.flatMap((token) => {
+// spark: the last 24 hours' prices }. Tokens without a stored price are left out.
+export function latestPrices(db, { table, tokens } = BOT_SNAPSHOTS) {
+  return tokens.flatMap((token) => {
     const latest = db
-      .prepare('SELECT ts_ms, price FROM snapshots WHERE token = ? ORDER BY ts_ms DESC LIMIT 1')
+      .prepare(`SELECT ts_ms, price FROM ${table} WHERE token = ? ORDER BY ts_ms DESC LIMIT 1`)
       .raw()
       .get(token);
     if (!latest) return [];
     const [at, price] = latest;
-    const day = pointsSince(db, token, at - DAY_MS);
+    const day = pointsSince(db, table, token, at - DAY_MS);
     // The snapshot closest to 24 hours before the latest one, if the bot has one that old.
     const before = day[0] && day[0][0] <= at - DAY_MS + HOUR_MS ? day[0][1] : null;
     return [
@@ -67,9 +71,9 @@ export function latestPrices(db) {
 }
 
 // One token over a range (a key of PRICE_RANGES), counted back from its latest snapshot.
-export function priceHistory(db, token, range) {
-  const latest = db.prepare('SELECT MAX(ts_ms) AS at FROM snapshots WHERE token = ?').get(token).at;
+export function priceHistory(db, token, range, { table } = BOT_SNAPSHOTS) {
+  const latest = db.prepare(`SELECT MAX(ts_ms) AS at FROM ${table} WHERE token = ?`).get(token).at;
   if (latest === null) return [];
   const length = PRICE_RANGES[range];
-  return thinOut(pointsSince(db, token, length === null ? null : latest - length));
+  return thinOut(pointsSince(db, table, token, length === null ? null : latest - length));
 }

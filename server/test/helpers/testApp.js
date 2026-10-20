@@ -33,8 +33,12 @@ const OFFLINE = {
 };
 
 // previewNetwork: the pretend internet for link previews (helpers/previewNet.js);
+// botImageNetwork: the same for the event bot's images (offline unless a test hands one in);
 // callService: a stand-in call service (helpers/calls.js); without one, calls are off.
-export function makeTestApp(overrides = {}, { previewNetwork, callService = null } = {}) {
+export function makeTestApp(
+  overrides = {},
+  { previewNetwork, botImageNetwork, callService = null } = {}
+) {
   const dir = mkdtempSync(path.join(tmpdir(), 'se-test-'));
   const base = readConfig({
     SESSION_SECRET: 'test-secret',
@@ -56,6 +60,7 @@ export function makeTestApp(overrides = {}, { previewNetwork, callService = null
     },
     chat: { ...base.chat, rate: { member: ROOMY, guest: ROOMY }, ...overrides.chat },
     linkPreviews: { ...base.linkPreviews, ...overrides.linkPreviews },
+    bots: { ...base.bots, ...overrides.bots },
   };
   const db = openDatabase(config.databasePath);
   const app = createApp({
@@ -63,6 +68,7 @@ export function makeTestApp(overrides = {}, { previewNetwork, callService = null
     config,
     db,
     previewNetwork: previewNetwork ?? OFFLINE,
+    botImageNetwork: botImageNetwork ?? OFFLINE,
     callService,
   });
   return {

@@ -11,9 +11,10 @@
 
 import express from 'express';
 import { adminMediaRoutes } from '../media/adminRoutes.js';
-import { MEDIA_URL_PREFIX } from '../media/files.js';
+import { MEDIA_URL_PREFIX, mediaUrl } from '../media/files.js';
 import { mediaRoutes } from '../media/routes.js';
 import { seedChatMedia } from '../media/seed.js';
+import { fetchImage } from '../previews/fetchImage.js';
 import { previewModerationRoutes } from '../previews/routes.js';
 import { createPreviewService } from '../previews/service.js';
 import { uploadRoutes } from '../uploads/routes.js';
@@ -40,7 +41,8 @@ import { attachChatSocket } from './socket.js';
 import { unreadRoutes } from './unreadRoutes.js';
 
 // Public media file names: <32 hex>.<ext> at the top (library) or in previews/.
-const PUBLIC_MEDIA = /^\/(?:previews\/)?[0-9a-f]{32}\.(?:webp|png|gif|jpg)$/;
+// Library files, link-preview images and the event bot's images (bots/images.js).
+const PUBLIC_MEDIA = /^\/(?:previews\/|bot-images\/)?[0-9a-f]{32}\.(?:webp|png|gif|jpg)$/;
 
 // app: the Express app (chat media files are served at /media); api: the /api router, after
 // sessions, current user and the 2FA gate; sessionParser: the session middleware, reused on
@@ -69,7 +71,8 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
   api.use('/admin/chat/rooms', adminChatRoomRoutes(db));
   api.use('/admin/chat/media', adminMediaRoutes(db, config));
 
-  // The sticker/GIF library and preview images are public: generated names, never reused
+  // The sticker/GIF library, preview images and event images are public: generated names (an
+  // event image's changes with its ?v=), never reused
   // (immutable cache); the type follows the checked extension, helmet adds nosniff. Only those
   // exact names are served: members' uploads share the media folder (uploads/) but are never
   // public, and anything else (other paths, "..", encodings) answers 404, never the client page.
@@ -81,6 +84,10 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
   );
 
   return {
+    // For areas that show outside images from this site (the event bot's, bots/images.js):
+    // the link previews' guarded image fetch (previews/fetchImage.js) and the public media
+    // address of a stored file.
+    images: { fetch: fetchImage, url: mediaUrl },
     // For account code: open chat sockets follow logouts and account changes.
     sessions: {
       ended: (sessionId) => hub.disconnectSession(sessionId),

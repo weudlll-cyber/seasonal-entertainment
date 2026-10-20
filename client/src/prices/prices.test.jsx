@@ -6,7 +6,8 @@
 //              price, 24-hour change and sparkline, or the season marks and a "not connected"
 //              note; /info/prices picks a token and a range and asks the server for exactly
 //              that; pointing at the chart (or the arrow keys) reads a price at a local time;
-//              the formats: four significant digits below a cent, signed percentages.
+//              the formats: four significant digits below $1 (seasons and POL alike), cents
+//              from $1 on, signed percentages.
 // ============================================================
 
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -38,7 +39,6 @@ const PRICES = {
 const HOME = {
   ...GUEST,
   'GET /games': { body: { ok: true, games: [] } },
-  'GET /events': { body: { ok: true, events: [] } },
 };
 const renderAt = (path) =>
   render(
@@ -59,7 +59,7 @@ describe('home card', () => {
       'Autumn$0.002500 ±0.00 %',
       'Winter$0.002980 —',
     ]);
-    expect(rows[0].querySelector('svg.sparkline--spring path')).not.toBeNull();
+    expect(rows[0].querySelector('svg.sparkline.coin--spring path')).not.toBeNull();
     expect(within(rows[0]).getByText('+4.41 %')).toHaveClass('price-change--up');
     expect(within(rows[1]).getByText('−1.78 %')).toHaveClass('price-change--down');
     expect(screen.getByRole('link', { name: 'Price charts' })).toHaveAttribute(
@@ -102,14 +102,17 @@ describe('/info/prices', () => {
     'GET /prices/winter?range=30d': history('winter', '30d'),
   };
 
-  it('is the route under Seasonal Tokens, and asks for the picked token and range', async () => {
+  it('is the route under Seasonal Tokens, and asks for the picked coins and range', async () => {
     const calls = mockApi(ANSWERS);
     renderAt('/info/prices');
     expect(await screen.findByRole('img', { name: /^Spring price from/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '30 days' }));
     await waitFor(() => expect(calls.map((c) => c.key)).toContain('GET /prices/spring?range=30d'));
+    // Winter joins Spring on the chart, for the same range.
     fireEvent.click(screen.getByRole('button', { name: /^Winter/ }));
-    expect(await screen.findByRole('img', { name: /^Winter price from/ })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('img', { name: /^Comparison of Spring, Winter/ })
+    ).toBeInTheDocument();
     expect(calls.map((c) => c.key)).toContain('GET /prices/winter?range=30d');
     expect(screen.getByRole('button', { name: /^Winter/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '30 days' })).toHaveAttribute('aria-pressed', 'true');
@@ -161,9 +164,13 @@ describe('/info/prices', () => {
   });
 });
 
-it('formats: four significant digits below a cent, cents above, signed changes', () => {
+it('formats: four significant digits below $1, cents from $1 on, signed changes', () => {
   expect(formatUsd(0.0027123)).toBe('$0.002712');
+  // Below $1 but above a cent (POL): four significant digits too, not cut to two decimals.
+  expect(formatUsd(0.094195)).toBe('$0.09420');
+  expect(formatUsd(0.5)).toBe('$0.5000');
   expect(formatUsd(1.5)).toBe('$1.50');
+  expect(formatUsd(82445.0479)).toBe('$82,445.05');
   expect(formatUsd(undefined)).toBe('—');
   expect(formatChange(0.0441)).toBe('+4.41 %');
   expect(formatChange(-0.0178)).toBe('−1.78 %');

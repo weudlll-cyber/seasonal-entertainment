@@ -4,13 +4,14 @@
 // Project:     Seasonal Entertainment
 // Description: Guards the home page: the greeting (with the username when signed in), the
 //              featured game from the games data (a "Coming soon" badge only when the data says
-//              so), the next two events from the events data, and the Seasonal Tokens card with
-//              the four season marks linking to the info section.
+//              so), the event bot's next two occurrences that still take place (or "not
+//              connected"), and the Seasonal Tokens card with the four season marks linking to
+//              the info section.
 // ============================================================
 
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionProvider } from '../session/SessionContext.jsx';
 import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
 import LandingPage from './LandingPage.jsx';
@@ -24,19 +25,31 @@ const game = (overrides) => ({
   path: '/games/race',
   ...overrides,
 });
-const weekly = (id, weekday, timeUtc) => ({
+// Wednesday 21 October 12:34 UTC; the home page asks from the full hour, for seven days.
+const NOW = Date.parse('2026-10-21T12:34:00Z');
+const FROM = Date.parse('2026-10-21T12:00:00Z');
+const UP_NEXT = `GET /bot-events?from=${FROM}&to=${FROM + 7 * 24 * 60 * 60_000}`;
+const occurrence = (id, start, status = 'scheduled') => ({
   id,
-  title: `Event ${id}`,
-  weekday,
-  timeUtc,
-  rule: 'weekly',
+  name: `Event ${id}`,
+  start: Date.parse(start),
+  status,
 });
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(NOW);
+});
+afterEach(() => vi.useRealTimers());
 
-function home({ session = GUEST, games = [game()], events = [] } = {}) {
+function home({
+  session = GUEST,
+  games = [game()],
+  bot = { connected: true, occurrences: [] },
+} = {}) {
   mockApi({
     ...session,
     'GET /games': { body: { ok: true, games } },
-    'GET /events': { body: { ok: true, events } },
+    [UP_NEXT]: { body: { ok: true, ...bot } },
   });
   render(
     <MemoryRouter>
@@ -75,24 +88,41 @@ describe('home', () => {
     expect(within(card).queryByText('Coming soon')).toBeNull();
   });
 
-  it('shows the next two events, soonest first', async () => {
-    // One event on every day of the week: the next two are always on consecutive days.
-    const events = [1, 2, 3, 4, 5, 6, 7].map((day) => weekly(day, day, '00:00'));
-    home({ events });
+  it("shows the bot's next two occurrences that still take place, soonest first", async () => {
+    const occurrences = [
+      occurrence(1, '2026-10-21T12:00:00Z'), // started before now
+      occurrence(2, '2026-10-21T18:00:00Z', 'canceled'),
+      { ...occurrence(3, '2026-10-22T09:00:00Z'), image: '/media/bot-images/a.webp?v=1' },
+      occurrence(4, '2026-10-23T09:00:00Z'),
+      occurrence(5, '2026-10-24T09:00:00Z'),
+    ];
+    home({ bot: { connected: true, occurrences } });
     const card = screen.getByRole('region', { name: 'Up next' });
     const items = await within(card).findAllByRole('listitem');
-    expect(items).toHaveLength(2);
-    const day = ((new Date().getUTCDay() + 6) % 7) + 1; // today, Monday = 1
-    expect(items[0]).toHaveTextContent(`Event ${(day % 7) + 1}`);
+    expect(items.map((i) => i.textContent)).toEqual([
+      'Event 3Thursday 22 October, 09:00 UTC',
+      'Event 4Friday 23 October, 09:00 UTC',
+    ]);
+    // The event's image, small, with its name as alt text; none where the server has none.
+    expect(within(items[0]).getByRole('img', { name: 'Event 3' })).toHaveAttribute(
+      'src',
+      '/media/bot-images/a.webp?v=1'
+    );
+    expect(within(items[1]).queryByRole('img')).toBeNull();
     expect(within(card).getByRole('link', { name: 'All events' })).toHaveAttribute(
       'href',
       '/events'
     );
   });
 
-  it('says so when nothing is planned', async () => {
+  it('says so when nothing is planned in the next seven days', async () => {
     home();
-    expect(await screen.findByText('No events planned.')).toBeInTheDocument();
+    expect(await screen.findByText('No events in the next seven days.')).toBeInTheDocument();
+  });
+
+  it('without the event bot: says the calendar is not connected', async () => {
+    home({ bot: { connected: false, occurrences: [] } });
+    expect(await screen.findByText('The event calendar is not connected.')).toBeInTheDocument();
   });
 
   it('shows the four season marks in calendar order, linking to the info section', () => {

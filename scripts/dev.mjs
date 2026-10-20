@@ -4,8 +4,9 @@
 // Project:     Seasonal Entertainment
 // Description: `npm run dev`: starts the API server (port 3800, restarts on change) and the
 //              Vite dev server (port 5380, proxies /api) together; stopping it stops both.
-//              PRICE_BOT_DB and EVENT_BOT_DB not set (neither here nor in .env): they point at
-//              the fake bot data of `npm run dev:bot-fixtures` when it exists (docs/BOTS.md).
+//              PRICE_BOT_DB, EVENT_BOT_DB and PRICE_BOT_MINING_RATES not set (neither here nor in
+//              .env): they point at the fake bot data of `npm run dev:bot-fixtures` when it
+//              exists (docs/BOTS.md).
 //              Set to an empty value in .env, a bot stays off (its "not connected" state).
 // ============================================================
 

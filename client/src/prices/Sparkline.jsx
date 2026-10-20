@@ -20,7 +20,7 @@ export default function Sparkline({ values, token }) {
   );
   return (
     <svg
-      className={`sparkline sparkline--${token}`}
+      className={`sparkline coin--${token}`}
       viewBox={`0 0 ${BOX.width} ${BOX.height}`}
       width={BOX.width}
       height={BOX.height}

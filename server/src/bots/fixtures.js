@@ -6,15 +6,19 @@
 //              two bot databases with the bots' exact schemas (weudlll-cyber/Seasonal-tokens:
 //              stpricebot helpers/snapshots.py, stannouncebot db/schema.sql; only the tables
 //              the site reads) and clearly fake, seeded sample data. Prices: hourly snapshots of
-//              the four seasonal tokens with a seeded random walk. Events: a few weekly events
+//              the four seasonal tokens with a seeded random walk, and fake mining rates
+//              (buildMiningRates). Events: a few weekly events
 //              around `now`, past ones done, one moved by an override (two overrides, the later
-//              wins), one canceled this week, one inactive, one with a non-web link, and one with the same
-//              name and minute as a seeded site event (shown once, the bot's version).
+//              wins), one canceled this week, one inactive and one with a non-web link; three
+//              with an image on the fixture's own image host (buildEventImages draws them), one
+//              with an image the network guard refuses (http).
 //              docs/BOTS.md, "Development data".
 // ============================================================
 
-import { rmSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
 import Database from 'better-sqlite3';
+import sharp from 'sharp';
 
 export const BOT_TOKENS = ['spring', 'summer', 'autumn', 'winter'];
 const HOUR_MS = 60 * 60_000;
@@ -65,6 +69,13 @@ export function buildPriceFixture(
   db.close();
 }
 
+// The price bot's mining_rates.json, in its own format (season names capitalised, tokens mined
+// per hour). Fake, round numbers: not the real rates.
+export function buildMiningRates(file) {
+  const rates = { Spring: 40, Summer: 30, Autumn: 60, Winter: 50 };
+  writeFileSync(file, `${JSON.stringify(rates, null, 2)}\n`);
+}
+
 const EVENT_TABLES = `
 CREATE TABLE IF NOT EXISTS events (
     id INTEGER PRIMARY KEY,
@@ -102,65 +113,91 @@ CREATE TABLE IF NOT EXISTS occurrence_overrides (
     FOREIGN KEY (occurrence_id) REFERENCES occurrences (id) ON DELETE CASCADE
 );`;
 
-// [name, description, ISO weekday (1 = Monday), UTC hour, minute, platform, url, label, active]
+// The fixture's own image host (bots/fixtureNetwork.js answers it in development only).
+const IMAGES = 'https://images.bot-fixtures.test';
+// weekday: ISO (1 = Monday); hour and minute in UTC; image: the bot's image_url.
 const SAMPLE_EVENTS = [
-  [
-    '[Sample] Bot Quiz Night',
-    'Fake event from the development fixture.',
-    2,
-    20,
-    0,
-    'telegram',
-    'https://example.org/quiz',
-    'Sample quiz group',
-    1,
-  ],
-  [
-    '[Sample] Bot Community Call',
-    'Fake event; this week moved by an override.',
-    4,
-    17,
-    0,
-    'discord',
-    'https://example.org/call',
-    'Sample voice channel',
-    1,
-  ],
-  [
-    '[Sample] Bot Weekend Stream',
-    'Fake event; this week canceled.',
-    6,
-    15,
-    0,
-    'discord',
-    'tg://resolve?domain=example',
-    'Not a web link',
-    1,
-  ],
-  // The same name and minute as the site's own seeded Friday event: shown once, the bot's version.
-  [
-    'Seasonal Tokens Friday Battles',
-    'Fake bot copy of a site event (development fixture).',
-    5,
-    22,
-    0,
-    'discord',
-    'https://example.org/battles',
-    'Sample battle channel',
-    1,
-  ],
-  [
-    '[Sample] Inactive bot event',
-    'Never shown: the event is inactive.',
-    3,
-    12,
-    0,
-    'telegram',
-    null,
-    null,
-    0,
-  ],
+  {
+    name: '[Sample] Bot Quiz Night',
+    description: 'Fake event from the development fixture.',
+    weekday: 2,
+    hour: 20,
+    minute: 0,
+    platform: 'telegram',
+    url: 'https://example.org/quiz',
+    label: 'Sample quiz group',
+    image: `${IMAGES}/quiz.png`,
+  },
+  {
+    name: '[Sample] Bot Community Call',
+    description: 'Fake event; this week moved by an override.',
+    weekday: 4,
+    hour: 17,
+    minute: 0,
+    platform: 'discord',
+    url: 'https://example.org/call',
+    label: 'Sample voice channel',
+    image: `${IMAGES}/call.png`,
+  },
+  {
+    // Its image is refused (http, not https): the event shows without one.
+    name: '[Sample] Bot Weekend Stream',
+    description: 'Fake event; this week canceled.',
+    weekday: 6,
+    hour: 15,
+    minute: 0,
+    platform: 'discord',
+    url: 'tg://resolve?domain=example',
+    label: 'Not a web link',
+    image: 'http://images.bot-fixtures.test/stream.png',
+  },
+  {
+    name: 'Seasonal Tokens Friday Battles',
+    description: 'Fake event from the development fixture.',
+    weekday: 5,
+    hour: 22,
+    minute: 0,
+    platform: 'discord',
+    url: 'https://example.org/battles',
+    label: 'Sample battle channel',
+    image: `${IMAGES}/battles.png`,
+  },
+  {
+    name: '[Sample] Inactive bot event',
+    description: 'Never shown: the event is inactive.',
+    weekday: 3,
+    hour: 12,
+    minute: 0,
+    platform: 'telegram',
+    url: null,
+    label: null,
+    image: null,
+    inactive: true,
+  },
 ];
+
+// The images the fixture events name, drawn as season-coloured cards with their name:
+// [file, colour, text].
+const SAMPLE_IMAGES = [
+  ['quiz.png', '#afb84e', 'Quiz'],
+  ['call.png', '#04aaf7', 'Call'],
+  ['battles.png', '#e06e22', 'Battles'],
+];
+
+// The fixture's image files (PNG, 320 × 180) into dir, for bots/fixtureNetwork.js.
+export async function buildEventImages(dir) {
+  mkdirSync(dir, { recursive: true });
+  for (const [file, colour, text] of SAMPLE_IMAGES) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180">
+      <rect width="320" height="180" rx="16" fill="${colour}"/>
+      <text x="160" y="100" font-family="sans-serif" font-size="40" font-weight="700"
+        fill="#12161c" text-anchor="middle">${text}</text>
+      <text x="160" y="140" font-family="sans-serif" font-size="18" fill="#12161c"
+        text-anchor="middle">[Sample image]</text>
+    </svg>`;
+    await sharp(Buffer.from(svg)).png().toFile(path.join(dir, file));
+  }
+}
 
 const iso = (ms) => new Date(ms).toISOString().replace('.000Z', 'Z');
 
@@ -184,27 +221,11 @@ export function buildEventFixture(file, { now = Date.now() } = {}) {
   const today = Math.floor(now / DAY_MS) * DAY_MS;
   const monday = today - ((new Date(today).getUTCDay() + 6) % 7) * DAY_MS;
   db.transaction(() => {
-    for (const [
-      name,
-      description,
-      weekday,
-      hour,
-      minute,
-      platform,
-      url,
-      label,
-      active,
-    ] of SAMPLE_EVENTS) {
+    for (const event of SAMPLE_EVENTS) {
+      const { name, description, weekday, hour, minute, platform, url, label } = event;
+      const active = event.inactive ? 0 : 1;
       const eventId = Number(
-        addEvent.run(
-          name,
-          description,
-          'sample',
-          'https://example.org/never-loaded.png',
-          active,
-          stamp,
-          stamp
-        ).lastInsertRowid
+        addEvent.run(name, description, 'sample', event.image, active, stamp, stamp).lastInsertRowid
       );
       for (let week = -2; week <= 4; week += 1) {
         const start =

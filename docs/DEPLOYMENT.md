@@ -138,6 +138,7 @@ In **`site.env`**:
 | `CALLS_URL`             | `wss://<CALLS_DOMAIN>`                                                                                                                       |
 | `CALLS_API_KEY`         | a key name, e.g. `seasonal`                                                                                                                  |
 | `CALLS_API_SECRET`      | `openssl rand -hex 32` (the same pair goes into `deploy/calls/.env`)                                                                         |
+| `COINGECKO_API_KEY`     | your free CoinGecko Demo key (coingecko.com/en/api): ETH, POL and BTC prices on `/info/prices`; empty: "not connected" (docs/BOTS.md)        |
 | everything else         | empty: the defaults fit (docs/ARCHITECTURE.md, "Runtime configuration")                                                                      |
 
 ### The owner's bots (prices and events, read-only)
@@ -152,10 +153,12 @@ services:
   site:
     volumes:
       - /var/lib/stpricebot/snapshots.db:/bots/snapshots.db:ro
+      - /var/lib/stpricebot/mining_rates.json:/bots/mining_rates.json:ro
       - /var/lib/stannouncebot/stannouncebot.db:/bots/stannouncebot.db:ro
 ```
 
-and in **`site.env`**: `PRICE_BOT_DB=/bots/snapshots.db`, `EVENT_BOT_DB=/bots/stannouncebot.db`.
+and in **`site.env`**: `PRICE_BOT_DB=/bots/snapshots.db`,
+`PRICE_BOT_MINING_RATES=/bots/mining_rates.json`, `EVENT_BOT_DB=/bots/stannouncebot.db`.
 Leave a key empty to keep that feature off (the pages then say the data source is not connected).
 
 - Both files must exist on the host **before** `docker compose up`: Docker creates a missing bind

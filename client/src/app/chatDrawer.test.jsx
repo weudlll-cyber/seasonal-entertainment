@@ -52,7 +52,6 @@ beforeEach(() => {
       ])
     ),
     'GET /games': { body: { ok: true, games: [] } },
-    'GET /events': { body: { ok: true, events: [] } },
     'GET /info': { body: { ok: true, pages: [] } },
   });
 });

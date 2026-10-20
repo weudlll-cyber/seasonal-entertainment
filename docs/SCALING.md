@@ -39,7 +39,7 @@ When the media folder or its traffic outgrows the VPS.
 When one Node process can no longer serve the site. Needs stage 2 first (no local files).
 
 - **PostgreSQL instead of SQLite**: `server/src/db/database.js` and every area's schema and
-  store (`accounts/`, `twofa/`, `keys/`, `audit/`, `info/`, `events/`, `games/`, `chat/`,
+  store (`accounts/`, `twofa/`, `keys/`, `audit/`, `info/`, `games/`, `chat/`,
   `media/`, `previews/`, `uploads/`, `settings/`, `calls/`); better-sqlite3 is synchronous, so
   every store and the routes calling it become asynchronous; `db/addColumns.js` gives way to
   real migrations; transactions (`db.transaction`) move to the PostgreSQL client.
