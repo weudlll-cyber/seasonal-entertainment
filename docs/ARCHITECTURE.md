@@ -357,7 +357,12 @@ client/                    React + Vite client
                            (/embed-login) and the in-memory embed token (docs/EMBED.md)
   src/prices/              coin prices (the price bot, CoinGecko via the server): the /info/prices
                            page, the hand-built SVG chart for one coin or several, the coin
-                           choice, sparkline, fair price, converter, formats (docs/BOTS.md)
+                           choice, fair price, converter, formats (docs/BOTS.md)
+  src/brand/               the SE style's brand pieces: which logo image is which (brand.js),
+                           the section page header with its quarter, the login card's logo,
+                           the banners' season pattern (docs/DESIGN.md)
+  public/brand/            the logo, emblem, quarters and season pattern as WebP, made by
+                           scripts/build-brand-images.mjs (docs/DESIGN.md, "Brand images")
   src/admin/               admin area (/admin): layout, users, audit log, info editor; one section each
   src/components/Markdown.jsx  the one safe Markdown renderer
   e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels,
@@ -432,6 +437,8 @@ scripts/
                            DEV-ADMIN.txt's 2FA part from the stored secret, never changing it)
   build-bot-fixtures.mjs   npm run dev:bot-fixtures (fake bot databases in data/bot-fixtures/)
   build-season-marks.mjs   npm run marks:build (web-ready season marks)
+  build-brand-images.mjs   one-off: the brand images in client/public/brand/ from the owner's
+                           logo file (docs/DESIGN.md, "Brand images")
   verify.mjs               npm run verify
   calls-dev.mjs            npm run dev:calls (LiveKit in development mode)
   calls-binary.mjs         the pinned LiveKit binary, checksum-checked, in .calls-bin/
@@ -449,11 +456,12 @@ docs/                      this file, the backlog, and one file per area (AUTH, 
 
 ## Assets
 
-Copied from the owner's Seasonal Token folder and renamed to lowercase:
+The logo images (`client/public/brand/`) are cut from the owner's logo by
+`scripts/build-brand-images.mjs`; their sources and crop boxes are in docs/DESIGN.md, "Brand
+images". Copied from the owner's Seasonal Token folder and renamed to lowercase:
 
 | In the repo                            | Original file                                  |
 | -------------------------------------- | ---------------------------------------------- |
-| `assets/seasonal-entertainment.jpg`    | `seasonal_entertainment.jpg`                   |
 | `assets/seasonal-tokens.svg` (favicon) | `Seasonal_Tokens-02.svg`                       |
 | `assets/seasons/source/spring.svg`     | `Spring_Season-02.svg`                         |
 | `assets/seasons/source/summer.svg`     | `Summer_Season-02.svg`                         |
@@ -490,16 +498,15 @@ radius. All four motifs therefore have the same size relative to the square. Fin
 optimises the file with settings that keep the group and its transform and never replace
 curves; the script prints the offsets and scales it applied and re-measures its own output.
 
-The round ring around each mark is page CSS (`.landing__season` in `LandingPage.css`, on the
-home page's Seasonal Tokens card), in the
-season colour, with explicit width and height (with `aspect-ratio` alone a tall motif once
-stretched it oval). The mark simply fills the ring's inner area.
+On the home page each mark sits in a white circle on its season's price tile
+(`.price-tile__mark` in `priceTiles.css`, 48px in 62px), with explicit width and height. The
+mark simply fills its box; nothing corrects it.
 
 Checks: `client/src/assets/seasons/seasonMarks.test.js` (fast) verifies each web-ready file has
 a square viewBox, one shared size and one translate + scale group.
-`client/e2e/seasonMarks.spec.js` verifies on the page, at 360 px and 1280 px: each mark (ring
-included) is round within 2 %; each optical centre is within 1 px of the ring centre; each
-motif stays at least 1 px inside the ring. A new mark gets its original in `source/`, its
+`client/e2e/seasonMarks.spec.js` verifies on the page, at 360 px and 1280 px: each tile's circle
+is round within 2 %; each optical centre is within 1 px of the circle centre; each motif stays
+at least 1 px inside the circle. A new mark gets its original in `source/`, its
 optical centre in `opticalCentres.js`, and a run of `npm run marks:build`.
 
 ## Planned areas

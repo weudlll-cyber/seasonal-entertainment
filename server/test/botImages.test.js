@@ -24,6 +24,10 @@ import { botImageFile } from '../src/bots/images.js';
 import { PUBLIC_IP, html, previewInternet } from './helpers/previewNet.js';
 import { makeTestApp } from './helpers/testApp.js';
 
+// The background fetch takes its time on a loaded machine (the 1 s default once ran out
+// during a full verify): wait up to 10 s.
+const FETCHED = { timeout: 10_000 };
+
 const NOW = Date.parse('2026-10-21T12:34:00Z');
 const MONDAY = Date.parse('2026-10-19T00:00:00Z');
 const WEEK = `/api/bot-events?from=${MONDAY}&to=${MONDAY + 7 * 24 * 60 * 60_000}`;
@@ -73,7 +77,7 @@ const quizOf = async (api) =>
 it('fetches the image, stores it as WebP without metadata, and serves it from this site', async () => {
   const api = await appOn({ [`${HOST}/quiz.png`]: image(await photo(), 'image/jpeg') });
   expect((await quizOf(api)).image).toBeNull(); // not fetched yet: the event shows without one
-  await vi.waitFor(async () => expect((await quizOf(api)).image).not.toBeNull());
+  await vi.waitFor(async () => expect((await quizOf(api)).image).not.toBeNull(), FETCHED);
 
   const { image: address } = await quizOf(api);
   expect(address).toMatch(/^\/media\/bot-images\/[0-9a-f]{32}\.webp\?v=\d+$/);
@@ -103,7 +107,7 @@ it('a private address, plain http or something that is no image: no image, nothi
     { [HOST]: ['10.0.0.5'] } // the bot's image host resolves to a private address
   );
   await api.get(WEEK);
-  await vi.waitFor(() => expect(warn.mock.calls.length).toBeGreaterThanOrEqual(3));
+  await vi.waitFor(() => expect(warn.mock.calls.length).toBeGreaterThanOrEqual(3), FETCHED);
   const week = (await api.get(WEEK)).body.occurrences;
   expect(week.every((o) => o.image === null)).toBe(true);
   expect(net.dialled).toEqual([]); // the private address was never contacted
@@ -116,14 +120,14 @@ it('fetches each image at most once a day', async () => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(NOW);
   const api = await appOn({ [`${HOST}/quiz.png`]: image(await photo(), 'image/jpeg') });
-  await vi.waitFor(async () => expect((await quizOf(api)).image).not.toBeNull());
+  await vi.waitFor(async () => expect((await quizOf(api)).image).not.toBeNull(), FETCHED);
   for (let i = 0; i < 3; i += 1) await api.get(WEEK);
   expect(net.hits(`${HOST}/quiz.png`)).toBe(1);
 
   // Over a day after it was stored (the clock runs on meanwhile): fetched again, once.
   vi.setSystemTime(NOW + 24 * 60 * 60_000 + 60_000);
   await api.get(WEEK);
-  await vi.waitFor(() => expect(net.hits(`${HOST}/quiz.png`)).toBe(2));
+  await vi.waitFor(() => expect(net.hits(`${HOST}/quiz.png`)).toBe(2), FETCHED);
   await api.get(WEEK);
   expect(net.hits(`${HOST}/quiz.png`)).toBe(2);
 });
@@ -137,7 +141,7 @@ it("development: the fixture's images come from its files; no other host is reac
     { botImageNetwork: network }
   );
   const api = request(t.app);
-  await vi.waitFor(async () => expect((await quizOf(api)).image).not.toBeNull());
+  await vi.waitFor(async () => expect((await quizOf(api)).image).not.toBeNull(), FETCHED);
   expect((await api.get((await quizOf(api)).image)).status).toBe(200);
   await expect(network.resolve('example.org')).rejects.toThrow(/not the fixture's image host/);
 });

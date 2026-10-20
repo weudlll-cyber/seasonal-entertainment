@@ -2,10 +2,11 @@
 // File:        prices.test.jsx
 // Path:        client/src/prices/prices.test.jsx
 // Project:     Seasonal Entertainment
-// Description: Prices from the price bot (docs/BOTS.md): the home card shows each season's
-//              price, 24-hour change and sparkline, or the season marks and a "not connected"
-//              note; /info/prices picks a token and a range and asks the server for exactly
-//              that; pointing at the chart (or the arrow keys) reads a price at a local time;
+// Description: Prices from the price bot (docs/BOTS.md): the home page's four season tiles
+//              show each season's price and 24-hour change and open that coin's chart; without
+//              the bot the tiles stay (no prices, no links) beside a "not connected" note;
+//              /info/prices picks a token and a range and asks the server for exactly that;
+//              pointing at the chart (or the arrow keys) reads a price at a local time;
 //              the formats: four significant digits below $1 (seasons and POL alike), cents
 //              from $1 on, signed percentages.
 // ============================================================
@@ -47,35 +48,42 @@ const renderAt = (path) =>
     </MemoryRouter>
   );
 
-describe('home card', () => {
-  it("shows each season's price, its 24-hour change and a sparkline", async () => {
+describe('home tiles', () => {
+  it("shows each season's price and 24-hour change, each opening its coin's chart", async () => {
     mockApi({ ...HOME, 'GET /prices': { body: PRICES } });
     renderAt('/');
     const list = await screen.findByRole('list', { name: 'Prices in US dollars' });
-    const rows = within(list).getAllByRole('listitem');
-    expect(rows.map((r) => r.textContent)).toEqual([
-      'Spring$0.002712 +4.41 %',
-      'Summer$0.003100 −1.78 %',
-      'Autumn$0.002500 ±0.00 %',
-      'Winter$0.002980 —',
+    await within(list).findByText('$0.002712');
+    const tiles = within(list).getAllByRole('link');
+    expect(tiles.map((t) => t.textContent)).toEqual([
+      'Spring$0.002712+4.41 % · 24 h',
+      'Summer$0.003100−1.78 % · 24 h',
+      'Autumn$0.002500±0.00 % · 24 h',
+      'Winter$0.002980— · 24 h',
     ]);
-    expect(rows[0].querySelector('svg.sparkline.coin--spring path')).not.toBeNull();
-    expect(within(rows[0]).getByText('+4.41 %')).toHaveClass('price-change--up');
-    expect(within(rows[1]).getByText('−1.78 %')).toHaveClass('price-change--down');
-    expect(screen.getByRole('link', { name: 'Price charts' })).toHaveAttribute(
+    expect(tiles.map((t) => t.getAttribute('href'))).toEqual(
+      ['spring', 'summer', 'autumn', 'winter'].map((id) => `/info/prices?coins=${id}`)
+    );
+    expect(screen.getByRole('link', { name: /^Fair price & charts/ })).toHaveAttribute(
       'href',
       '/info/prices'
     );
   });
 
-  it('without the price bot: the season marks and a plain note', async () => {
+  it('without the price bot: the tiles without prices or links, and a plain note', async () => {
     mockApi({ ...HOME, 'GET /prices': { body: { ok: true, connected: false, prices: [] } } });
     renderAt('/');
     expect(
-      await screen.findByText('Prices: the data source is not connected.')
+      await screen.findByText(/Prices: the data source is not connected\./)
     ).toBeInTheDocument();
-    expect(screen.getByRole('list', { name: 'The four seasons' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Price charts' })).toBeNull();
+    const list = screen.getByRole('list', { name: 'Prices in US dollars' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(4);
+    expect(within(list).queryByRole('link')).toBeNull();
+    expect(screen.queryByRole('link', { name: /^Fair price & charts/ })).toBeNull();
+    expect(screen.getByRole('link', { name: 'About Seasonal Tokens' })).toHaveAttribute(
+      'href',
+      '/info'
+    );
   });
 });
 

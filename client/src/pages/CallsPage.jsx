@@ -5,17 +5,21 @@
 // Description: /calls: live calls on top, then upcoming and recent ones (docs/CALLS.md).
 //              Organisers and admins create, start and end calls here. Without a call service
 //              admins see "not configured"; the sidebar hides Calls from everyone else then.
+//              SE style: the Calls header with the play-button quarter; with nothing live, a
+//              "No call is live right now" card.
 // ============================================================
 
 import { useEffect, useState } from 'react';
 import { api } from '../api/http.js';
 import CallCard from '../calls/CallCard.jsx';
 import CallForm from '../calls/CallForm.jsx';
+import PageHeader from '../brand/PageHeader.jsx';
 import { callsChanged } from '../calls/useCallsSummary.js';
 import { FormMessage } from '../components/FormField.jsx';
 import { useSession } from '../session/SessionContext.jsx';
 import '../calls/calls.css';
 
+const LEAD = 'Community calls with speakers on stage and everyone listening.';
 const SECTIONS = [
   ['live', 'Live now'],
   ['upcoming', 'Upcoming'],
@@ -59,7 +63,7 @@ export default function CallsPage() {
   if (data && !data.configured) {
     return (
       <section className="page">
-        <h1>Calls</h1>
+        <PageHeader quarter="calls" title="Calls" lead={LEAD} />
         <p>
           {user?.role === 'admin'
             ? 'Calls are not configured: the call service keys are missing (docs/CALLS.md).'
@@ -71,13 +75,20 @@ export default function CallsPage() {
 
   return (
     <section className="page page--wide">
-      <h1>Calls</h1>
+      <PageHeader quarter="calls" title="Calls" lead={LEAD} />
       <FormMessage error={error} />
       {data &&
         SECTIONS.map(([key, title]) => (
           <section key={key} aria-label={title} className="calls-section">
             <h2>{title}</h2>
-            {data.calls[key].length === 0 ? (
+            {data.calls[key].length === 0 && key === 'live' ? (
+              <div className="card calls-none">
+                <p className="calls-none__title">No call is live right now</p>
+                <p className="calls-section__empty">
+                  When an organiser starts a community call, it shows up here.
+                </p>
+              </div>
+            ) : data.calls[key].length === 0 ? (
               <p className="calls-section__empty">None.</p>
             ) : (
               <ul className="call-list">

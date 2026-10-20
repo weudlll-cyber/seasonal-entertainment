@@ -53,17 +53,26 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
-- **Small prices cut to two decimals** — closed by SE-BOTS-2c (`feat/se-bots-2`, not merged yet;
-  owner request 2026-10-20): POL showed $0.09 where the price bot shows 0.094195. One rule for
-  every coin's price on the prices page now (`formatUsd`): below $1 at least four significant
-  digits ($0.09420), from $1 on two decimals.
+- **SE-REDESIGN-1 — the SE style** — closed by SE-NIGHT-4 piece 1 (`feat/se-night-4`, not merged
+  yet; reference approved 2026-10-20, kept in `docs/design/se-style/`): new tokens (the four
+  token colours, glows over warm white or night blue, the seasons' sidebar gradient,
+  translucent cards, pills), the logo's emblem and quarters as brand images, the sidebar with
+  the emblem, solid current item and season dots, the home page as banner, featured game and
+  Up next, four season price tiles, Community and fair price, the sub pages' quarter headers
+  and faint quarters, the prices banner, the login card's logo (docs/DESIGN.md). The home
+  sparkline went with the old price card.
 
-- **Several coins on one price chart, BTC, a converter with every coin** — closed by SE-BOTS-2b
-  (`feat/se-bots-2`, not merged yet; owner request 2026-10-20): BTC joins ETH and POL as a
+- **Small prices cut to two decimals** — closed by SE-BOTS-2c (PR #11, `feat/se-bots-2`, merged
+  2026-10-20; owner request 2026-10-20): POL showed $0.09 where the price bot shows 0.094195. One
+  rule for every coin's price on the prices page now (`formatUsd`): below $1 at least four
+  significant digits ($0.09420), from $1 on two decimals.
+
+- **Several coins on one price chart, BTC, a converter with every coin** — closed by SE-BOTS-2b (PR
+  #11, `feat/se-bots-2`, merged 2026-10-20; owner request 2026-10-20): BTC joins ETH and POL as a
   reference coin (CoinGecko `bitcoin`, about 78 calls a day in all); the coin buttons on
-  `/info/prices` toggle the coins on the one chart, two or more shown as % change since the
-  range's start with a legend, the choice kept in the address; the converter offers every
-  connected coin (docs/BOTS.md, "The chart: one coin or several").
+  `/info/prices` toggle the coins on the one chart, two or more shown as % change since the range's
+  start with a legend, the choice kept in the address; the converter offers every connected coin
+  (docs/BOTS.md, "The chart: one coin or several").
 
 - **The first roadmap list's finished items** — checked against the tree by SE-BOTS-2
   (2026-10-20) and moved here: info pages with admin editor (SE-NIGHT-1 piece 5); accounts with
@@ -74,27 +83,29 @@ An entry moves from part one to part two only when its branch is merged into `ma
   chat media, settings, embedding; the events calendar editor was dropped, events come from the
   event bot, SE-BOTS-2 part 2).
 
-- **Prices of ETH and POL** — closed by SE-BOTS-2 part 1 (`feat/se-bots-2`, not merged yet;
-  owner decision 2026-10-20): the site fetches their history from CoinGecko's free Demo API
-  (`COINGECKO_API_KEY`, server only), keeps a year of it in its own database, refreshed daily and
-  hourly, and shows ETH and POL as a reference row on `/info/prices` with CoinGecko's attribution
-  (docs/BOTS.md, "Reference prices"). **Owner**: create the Demo key and put it in `site.env`.
+- **Prices of ETH and POL** — closed by SE-BOTS-2 part 1 (PR #11, `feat/se-bots-2`, merged
+  2026-10-20; owner decision 2026-10-20): the site fetches their history from CoinGecko's free Demo
+  API (`COINGECKO_API_KEY`, server only), keeps a year of it in its own database, refreshed daily
+  and hourly, and shows ETH and POL as a reference row on `/info/prices` with CoinGecko's
+  attribution (docs/BOTS.md, "Reference prices"). **Owner**: create the Demo key and put it in
+  `site.env`.
 
-- **Fair price and converter with mining time** — closed by SE-BOTS-2 part 4 (`feat/se-bots-2`,
-  not merged yet; owner decision 2026-10-20): `/info/prices` shows the price bot's `/value` fair
-  price table and its `/swap` converter with mining times, from the bot's `mining_rates.json`
-  (`PRICE_BOT_MINING_RATES`, read-only); the arithmetic is ported with the bot's own test numbers
-  (docs/BOTS.md, "Fair price and converter").
+- **Fair price and converter with mining time** — closed by SE-BOTS-2 part 4 (PR #11,
+  `feat/se-bots-2`, merged 2026-10-20; owner decision 2026-10-20): `/info/prices` shows the price
+  bot's `/value` fair price table and its `/swap` converter with mining times, from the bot's
+  `mining_rates.json` (`PRICE_BOT_MINING_RATES`, read-only); the arithmetic is ported with the bot's
+  own test numbers (docs/BOTS.md, "Fair price and converter").
 
-- **Event images from the bot** — closed by SE-BOTS-2 part 3 (`feat/se-bots-2`, not merged yet;
-  owner decision 2026-10-20): the server fetches each event's image through the link previews'
-  network guard, re-encodes it without metadata, stores it by a hash of its URL and refreshes it
-  at most daily; `/events` and "Up next" show it from this site (docs/BOTS.md, "Event images").
+- **Event images from the bot** — closed by SE-BOTS-2 part 3 (PR #11, `feat/se-bots-2`, merged
+  2026-10-20; owner decision 2026-10-20): the server fetches each event's image through the link
+  previews' network guard, re-encodes it without metadata, stores it by a hash of its URL and
+  refreshes it at most daily; `/events` and "Up next" show it from this site (docs/BOTS.md, "Event
+  images").
 
-- **Keep or drop the site's own event admin** — closed by SE-BOTS-2 part 2 (`feat/se-bots-2`,
-  not merged yet): dropped (owner decision 2026-10-20). Events are kept only in the event bot;
-  the site's editor, routes, seeded schedule, store and `events` table are gone, and `/events`
-  and the home page's "Up next" read only the bot (docs/BOTS.md).
+- **Keep or drop the site's own event admin** — closed by SE-BOTS-2 part 2 (PR #11,
+  `feat/se-bots-2`, merged 2026-10-20): dropped (owner decision 2026-10-20). Events are kept only in
+  the event bot; the site's editor, routes, seeded schedule, store and `events` table are gone, and
+  `/events` and the home page's "Up next" read only the bot (docs/BOTS.md).
 
 - **Own room message seen twice in the chat on another site** — closed by SE-NIGHT-3 piece 4
   (`feat/se-night-3`, PR #8, merged 2026-10-20): not shown twice. The browser check's

@@ -5,7 +5,9 @@
 // Description: /calls and the sidebar's Calls item (docs/CALLS.md): live, upcoming and recent
 //              calls; organisers create, start and end calls there (members see no controls);
 //              without a call service admins see "not configured" and everyone else no Calls
-//              item; the item shows the LIVE badge while a call is live.
+//              item; the item shows the LIVE badge while a call is live; with nothing live, the
+//              page says so on a card ("No call is live right now"); the Calls header and the
+//              item's Winter dot.
 // ============================================================
 
 import { fireEvent, screen, within } from '@testing-library/react';
@@ -37,6 +39,25 @@ const configured = (live, canManage) => ({
 
 const section = (name) => screen.findByRole('region', { name });
 const callsLink = () => screen.findByRole('link', { name: /^Calls/ });
+
+it('with nothing live: the "No call is live right now" card; the Calls header and dot', async () => {
+  mockApi({
+    ...GUEST,
+    'GET /calls/summary': { body: { ok: true, configured: true, live: false } },
+    'GET /calls': {
+      body: { ok: true, configured: true, canManage: false, calls: { ...LISTS, live: [] } },
+    },
+  });
+  await renderApp('/calls');
+  const live = await section('Live now');
+  expect(await within(live).findByText('No call is live right now')).toBeInTheDocument();
+  expect(within(await section('Upcoming')).queryByText('No call is live right now')).toBeNull();
+  // The header shows the play-button quarter beside the title.
+  const title = screen.getByRole('heading', { level: 1, name: 'Calls' });
+  const mark = title.closest('.page-header').querySelector('.page-header__mark');
+  expect(mark).toHaveAttribute('src', '/brand/quarter-calls.webp');
+  expect((await callsLink()).querySelector('.nav-item__dot--winter')).not.toBeNull();
+});
 
 it('lists live, upcoming and recent calls; members get no controls', async () => {
   mockApi({ ...signedIn({ username: 'mia', role: 'member' }), ...configured(true, false) });

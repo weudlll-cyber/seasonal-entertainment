@@ -2,14 +2,17 @@
    File:        tokens.css
    Path:        client/src/styles/tokens.css
    Project:     Seasonal Entertainment
-   Description: The single source of design tokens (colours, type, shape, spacing). Light is
-                the default set; :root[data-theme="dark"] replaces the colours for dark mode
-                (data-theme is set before first paint by public/theme-init.js). Components use
-                these custom properties and never hard-code their own values (docs/DESIGN.md).
+   Description: The single source of design tokens (colours, type, shape, spacing) of the SE
+                style (owner approved 2026-10-20; docs/DESIGN.md, reference in
+                docs/design/se-style/). Light is the default set; :root[data-theme="dark"]
+                replaces the colours for dark mode (data-theme is set before first paint by
+                public/theme-init.js). Components use these custom properties and never
+                hard-code their own values.
    ============================================================ */
 
 :root {
-  /* Season colours: the same in both themes */
+  /* Token colours, exactly these wherever a token is shown, in both themes (owner decision
+     2026-10-20). Lightened tints of them appear only as mood (page glow, sidebar gradient). */
   --color-spring: #afb84e;
   --color-summer: #e06e22;
   --color-autumn: #f9a825;
@@ -19,28 +22,59 @@
   --color-coin-eth: #6d4fd6;
   --color-coin-pol: #c0368a;
   --color-coin-btc: #1f8a7a;
-  /* Text and icons on a season colour (the chat button's autumn, ...): 9.2:1 on autumn */
-  --color-on-season: #12161c;
+  /* Text and icons on a token colour (price tiles, the chat button): 6.2:1 or more on all four */
+  --color-on-season: #14171c;
   /* The LIVE badge (calls): the same red in both themes, white text 6.6:1. */
   --color-live: #b42318;
   --color-on-live: #ffffff;
 
-  /* Arena neutrals (decided 2026-10-17). Every text colour below keeps at least 4.5:1 on
-     every surface of its set (values checked in docs/DESIGN.md). */
-  --color-background: #f4f6f9;
-  --color-sidebar: #ffffff;
+  /* The page: the four token colours as soft glows over a warm white. */
+  --color-background: #fbfaf6;
+  --page-background:
+    radial-gradient(circle at 15% 0%, rgb(175 184 78 / 26%), transparent 40%),
+    radial-gradient(circle at 95% 15%, rgb(4 170 247 / 22%), transparent 45%),
+    radial-gradient(circle at 85% 100%, rgb(224 110 34 / 20%), transparent 45%),
+    radial-gradient(circle at 30% 100%, rgb(249 168 37 / 22%), transparent 40%), #fbfaf6;
+  /* The sidebar: tints of the four token colours, top to bottom. */
+  --sidebar-background: linear-gradient(180deg, #e7edc2 0%, #f8d9c2 35%, #fce7ba 65%, #c9e9fb 100%);
+  /* Cards on the page (translucent, the glow shows through); surfaces that cover the page
+     (drawers, dialogs, the call stage, fields) stay opaque. */
+  --color-card: rgb(255 255 255 / 78%);
   --color-surface: #ffffff;
   --color-surface-2: #f1f3f6;
-  --color-active-bg: #eaf6fe;
-  --color-text: #12161c;
-  --color-text-muted: #56606c;
-  --color-border: #e2e6ec;
-  --color-border-strong: #b8bec7;
+  /* Light controls on a card (secondary buttons, the theme toggle). */
+  --color-glass: rgb(255 255 255 / 60%);
+  --color-active-bg: rgb(20 23 28 / 6%);
+  --color-text: #14171c;
+  --color-text-muted: #4f5663;
+  --color-border: rgb(20 23 28 / 10%);
+  --color-border-strong: #a9b0ba;
   --color-danger: #b42318;
   --color-success: #1d7a46;
   --color-warning-surface: #fff4d6;
-  /* Accent for active/focus marks; text links stay in the text colour for contrast */
+  /* The solid pill: the current navigation item and primary buttons. */
+  --color-solid: #14171c;
+  --color-on-solid: #ffffff;
+  /* Accent for focus marks; text links stay in the text colour for contrast */
   --color-accent: var(--color-winter);
+  /* The home banner (both themes) and the Community box: night blue. */
+  --banner-background: radial-gradient(ellipse at 30% 50%, #1d4fb8 0%, #0c2a7a 38%, #081a52 75%);
+  --color-community: #0c2a7a;
+  --color-on-banner: #ffffff;
+  --color-on-banner-muted: #d2d8e6;
+  /* The logo's lettering: its gradient through the four seasons. */
+  --logo-lettering: linear-gradient(
+    90deg,
+    #6cc24a 0%,
+    #c9d23c 30%,
+    #f9a825 50%,
+    #e06e22 62%,
+    #2fa8f0 82%,
+    #1e6fd9 100%
+  );
+  /* The logo images faint behind content: on the home boxes and on sub pages. */
+  --wash-home: 0.2;
+  --wash-page: 0.16;
   --shadow-raised: 0 8px 24px rgb(18 22 28 / 14%);
   /* Dims the page behind a drawer opened over it */
   --color-scrim: rgb(0 0 0 / 40%);
@@ -53,15 +87,16 @@
   --font-weight-heading: 900;
   --font-size-body: 1rem;
   --font-size-lead: clamp(1.05rem, 0.95rem + 0.5vw, 1.25rem);
-  --font-size-title: clamp(1.6rem, 1.2rem + 1.6vw, 2.5rem);
+  --font-size-title: clamp(1.8rem, 1.2rem + 1.8vw, 2.75rem);
 
-  /* Shape: controls (buttons, fields) and cards */
-  --radius: 12px;
-  --radius-card: 20px;
+  /* Shape: controls (fields), cards and pills (buttons, navigation items, badges) */
+  --radius: 14px;
+  --radius-card: 28px;
+  --radius-pill: 999px;
   --hit-target: 44px;
 
   /* Shell (docs/DESIGN.md: the sidebar becomes a top bar below 760px) */
-  --sidebar-width: 232px;
+  --sidebar-width: 248px;
   /* The sidebar as an icon rail (a call page). */
   --rail-width: 4.5rem;
 
@@ -70,28 +105,45 @@
   --space-2: 1rem;
   --space-3: 1.5rem;
   --space-4: 2.5rem;
-
-  /* Season marks: size range and the ring drawn in each season colour */
-  --season-mark-size: clamp(56px, 18vw, 96px);
-  --season-ring-width: 3px;
 }
 
 :root[data-theme='dark'] {
-  --color-background: #0b0e13;
-  --color-sidebar: #0f131a;
-  --color-surface: #151a22;
-  --color-surface-2: #1c222c;
-  --color-active-bg: #1c2532;
-  --color-text: #eef1f5;
-  --color-text-muted: #a1aab6;
-  --color-border: #252c38;
-  --color-border-strong: #4a5466;
+  /* Night blue, not black, with the same glows a little stronger on the dark. */
+  --color-background: #0a1233;
+  --page-background:
+    radial-gradient(circle at 15% 0%, rgb(175 184 78 / 22%), transparent 40%),
+    radial-gradient(circle at 95% 15%, rgb(4 170 247 / 24%), transparent 45%),
+    radial-gradient(circle at 85% 100%, rgb(224 110 34 / 20%), transparent 45%),
+    radial-gradient(circle at 30% 100%, rgb(249 168 37 / 16%), transparent 40%), #0a1233;
+  --sidebar-background:
+    linear-gradient(
+      180deg,
+      rgb(175 184 78 / 30%) 0%,
+      rgb(224 110 34 / 26%) 35%,
+      rgb(249 168 37 / 24%) 65%,
+      rgb(4 170 247 / 30%) 100%
+    ),
+    #0c1538;
+  --color-card: rgb(16 26 66 / 72%);
+  --color-surface: #101a42;
+  --color-surface-2: #17224f;
+  --color-glass: rgb(255 255 255 / 6%);
+  --color-active-bg: rgb(255 255 255 / 10%);
+  --color-text: #f1f4fa;
+  --color-text-muted: #b3bcd0;
+  --color-border: rgb(255 255 255 / 12%);
+  --color-border-strong: #5b6788;
   --color-danger: #ff8a80;
   --color-success: #4acb8a;
   --color-warning-surface: #3a2e10;
+  --color-solid: #f1f4fa;
+  --color-on-solid: #0a1233;
+  --color-community: #081a52;
   --color-coin-eth: #a796ff;
   --color-coin-pol: #f07cc4;
   --color-coin-btc: #4fd1bd;
+  --wash-home: 0.26;
+  --wash-page: 0.2;
   --shadow-raised: 0 8px 28px rgb(0 0 0 / 55%);
   /* Form controls and scrollbars follow the theme */
   color-scheme: dark;

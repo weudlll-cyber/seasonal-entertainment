@@ -1,42 +1,79 @@
-# DESIGN.md — the "Arena" look
+# DESIGN.md — the SE style
 
-The site's design direction ("Arena", chosen 2026-10-17): dark-capable, a left sidebar, no
-page-level scrolling, and the chat one button away on every page. This file holds the rules;
-the values live in `client/src/styles/tokens.css`, the single source of tokens.
+The site's look is the **SE style** (approved 2026-10-20; it replaced the earlier "Arena" look
+of 2026-10-17 and keeps its shell: a left sidebar, no page-level scrolling, the chat one button
+away). It is built from the Seasonal Entertainment logo: the four token colours, the round
+emblem and its four quarters (one per section). The approved reference — a README and four
+mockups, light and dark — is kept unchanged in `docs/design/se-style/`. This file holds the
+rules; the values live in `client/src/styles/tokens.css`, the single source of tokens.
 
 ## Tokens
 
 Components use custom properties only; no component hard-codes a colour. Light is the default
 set on `:root`; `:root[data-theme='dark']` replaces the colours.
 
-| Token                     | Light     | Dark      | Use                                             |
-| ------------------------- | --------- | --------- | ----------------------------------------------- |
-| `--color-background`      | `#f4f6f9` | `#0b0e13` | behind everything (main column)                 |
-| `--color-sidebar`         | `#ffffff` | `#0f131a` | sidebar / top bar                               |
-| `--color-surface`         | `#ffffff` | `#151a22` | cards, panels, the chat drawer                  |
-| `--color-surface-2`       | `#f1f3f6` | `#1c222c` | inset areas inside a surface                    |
-| `--color-active-bg`       | `#eaf6fe` | `#1c2532` | the active navigation item                      |
-| `--color-text`            | `#12161c` | `#eef1f5` | body text                                       |
-| `--color-text-muted`      | `#56606c` | `#a1aab6` | secondary text                                  |
-| `--color-border`          | `#e2e6ec` | `#252c38` | hairlines                                       |
-| `--color-border-strong`   | `#b8bec7` | `#4a5466` | field outlines                                  |
-| `--color-danger`          | `#b42318` | `#ff8a80` | errors                                          |
-| `--color-success`         | `#1d7a46` | `#4acb8a` | confirmations                                   |
-| `--color-warning-surface` | `#fff4d6` | `#3a2e10` | the staff 2FA banner                            |
-| `--shadow-raised`         | soft      | deeper    | drawers, the chat button                        |
-| `--color-on-season`       | `#12161c` | `#12161c` | icons/text on a season colour (9.2:1 on autumn) |
-| `--color-live`            | `#b42318` | `#b42318` | the red LIVE badge (calls)                      |
-| `--color-on-live`         | `#ffffff` | `#ffffff` | text on the LIVE badge (6.6:1)                  |
-| `--color-coin-eth`        | `#6d4fd6` | `#a796ff` | ETH's line on the price chart (docs/BOTS.md)    |
-| `--color-coin-pol`        | `#c0368a` | `#f07cc4` | POL's line                                      |
-| `--color-coin-btc`        | `#1f8a7a` | `#4fd1bd` | BTC's line                                      |
+**Token colours** (decided 2026-10-20), exactly these wherever a token is shown, in both themes:
+Spring `#AFB84E`, Summer `#E06E22`, Autumn `#F9A825`, Winter `#04AAF7`
+(`--color-spring/summer/autumn/winter`). Lightened tints of them appear only as mood surfaces
+(the page's glows, the sidebar gradient), never as a token's own colour.
 
-Season colours (`--color-spring/summer/autumn/winter`) are the same in both themes. Dark values
-were chosen so every text colour keeps WCAG AA (4.5:1) on every surface of its set: lowest pairs
-are muted text on the active background (dark 6.57:1) and success on surface-2 (light 4.81:1).
+| Token                                | Light                                           | Dark                                                 | Use                                                   |
+| ------------------------------------ | ----------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------- |
+| `--page-background`                  | four token glows over `#FBFAF6`                 | the glows over `#0A1233`                             | behind everything (fixed while the column scrolls)    |
+| `--color-background`                 | `#FBFAF6`                                       | `#0A1233`                                            | the base colour under the glows                       |
+| `--sidebar-background`               | `#E7EDC2 → #F8D9C2 → #FCE7BA → #C9E9FB`         | the token gradient at .30/.26/.24/.30 over `#0C1538` | sidebar, top bar, the phone menu                      |
+| `--color-card`                       | `rgb(255 255 255 / 78%)`                        | `rgb(16 26 66 / 72%)`                                | cards on the page (translucent: the glow shows)       |
+| `--color-surface`                    | `#FFFFFF`                                       | `#101A42`                                            | opaque: drawers, dialogs, fields, the call stage      |
+| `--color-surface-2`                  | `#F1F3F6`                                       | `#17224F`                                            | inset areas, status pills                             |
+| `--color-glass`                      | `rgb(255 255 255 / 60%)`                        | `rgb(255 255 255 / 6%)`                              | secondary buttons, icon buttons, hover                |
+| `--color-text`                       | `#14171C`                                       | `#F1F4FA`                                            | body text                                             |
+| `--color-text-muted`                 | `#4F5663`                                       | `#B3BCD0`                                            | secondary text, leads                                 |
+| `--color-border`                     | `rgb(20 23 28 / 10%)`                           | `rgb(255 255 255 / 12%)`                             | hairlines, card edges                                 |
+| `--color-border-strong`              | `#A9B0BA`                                       | `#5B6788`                                            | field outlines                                        |
+| `--color-solid` / `--color-on-solid` | `#14171C` / `#FFFFFF`                           | `#F1F4FA` / `#0A1233`                                | the current navigation item, primary buttons          |
+| `--banner-background`                | night-blue radial `#1D4FB8 → #0C2A7A → #081A52` | the same                                             | the home and prices banners                           |
+| `--color-community`                  | `#0C2A7A`                                       | `#081A52`                                            | the home page's Community box                         |
+| `--color-on-banner` / `-muted`       | `#FFFFFF` / `#D2D8E6`                           | the same                                             | text on night blue                                    |
+| `--logo-lettering`                   | the logo's gradient                             | the same                                             | the "SEASONAL" lettering in the home banner           |
+| `--wash-home` / `--wash-page`        | .20 / .16                                       | .26 / .20                                            | opacity of the faint logo images                      |
+| `--color-on-season`                  | `#14171C`                                       | `#14171C`                                            | text and icons on a token colour (tiles, chat button) |
+| `--color-danger` / `--color-success` | `#B42318` / `#1D7A46`                           | `#FF8A80` / `#4ACB8A`                                | errors, confirmations                                 |
+| `--color-warning-surface`            | `#FFF4D6`                                       | `#3A2E10`                                            | the staff 2FA banner                                  |
+| `--color-live` / `--color-on-live`   | `#B42318` / `#FFFFFF`                           | the same                                             | the red LIVE badge (calls)                            |
+| `--color-coin-eth/pol/btc`           | `#6D4FD6` / `#C0368A` / `#1F8A7A`               | `#A796FF` / `#F07CC4` / `#4FD1BD`                    | the reference coins' lines (docs/BOTS.md)             |
 
-Shape: `--radius` 12px for controls, `--radius-card` 20px for cards, `--hit-target` 44px for the
-smallest clickable control.
+Shape: `--radius` 14px for fields, `--radius-card` 28px for cards, `--radius-pill` 999px for
+buttons, navigation items and badges; `--hit-target` 44px for the smallest clickable control.
+
+**Contrast** (WCAG AA, 4.5:1 for text), measured with the translucent layers composited over
+the strongest glow behind them, in both themes: body text 11.0:1 or more and muted text 5.7:1 or
+more on the page and on cards; sidebar text 13.4:1 (light) and 8.9:1 (dark, muted 5.1:1); the
+solid pill 16.6:1 or more; dark text on the four token colours 5.5:1 (Summer) to 9.1:1 (Autumn);
+white on the banner's lightest blue 6.4:1; the Community box's muted text 9.0:1; success on
+surface-2 4.8:1 (the lowest pair). One pair failed and was changed: the muted banner text
+(`#D2D8E6`) is 4.1:1 on the banner's lightest blue, so the home greeting is white.
+
+## Brand images
+
+Made from the owner's logo file (`Seasonal Token/Seasonal Entertainment logo.png`, 1254 × 1254,
+transparent; the source is only read) by `scripts/build-brand-images.mjs`, with the crop boxes
+of `docs/design/se-style/README.md`, each trimmed to its content, scaled down and saved as WebP
+with transparency into `client/public/brand/`:
+
+| File                  | What                                          | Size              |
+| --------------------- | --------------------------------------------- | ----------------- |
+| `logo.webp`           | the full logo with lettering                  | 640 × 674, 124 KB |
+| `emblem.webp`         | the round emblem without lettering            | 640 × 570, 94 KB  |
+| `quarter-games.webp`  | top left: controller (Games)                  | 546 × 462, 49 KB  |
+| `quarter-chat.webp`   | top right: circle of people (Chat)            | 471 × 462, 34 KB  |
+| `quarter-events.webp` | bottom left: football and basketball (Events) | 451 × 443, 47 KB  |
+| `quarter-calls.webp`  | bottom right: play button (Calls)             | 471 × 443, 40 KB  |
+| `season-pattern.webp` | one tile of the four season marks (banners)   | 464 × 232, 21 KB  |
+
+The pattern tile is drawn from the repo's own season marks (`client/src/assets/seasons/`), two
+rows of four, the second shifted by two. `client/src/brand/brand.js` is the one place that names
+these files and which quarter belongs to which section. The font stays Luxora Grotesk, and the
+CSP is unchanged (all images are the site's own).
 
 ## Theme logic
 
@@ -64,32 +101,70 @@ taller. `client/e2e/layout.spec.js` checks this on every main page at 1440 x 900
 
 **From 760px wide** (the shell's one breakpoint): two columns.
 
-1. **Sidebar**, 232px (`--sidebar-width`): logo with the "SEASONAL / ENTERTAINMENT" wordmark; nav
-   items with stroke icons (Home, Games, Events, Chat, Calls, Seasonal Tokens = the info
+1. **Sidebar**, 248px (`--sidebar-width`), on the seasons' gradient: the emblem with the
+   "SEASONAL / ENTERTAINMENT" wordmark; nav items as pills with stroke icons (Home, Games, Events, Chat, Calls, Seasonal Tokens = the info
    section; Calls only when calls are set up, admins always, with a red LIVE badge while a call
    is live, docs/CALLS.md); a
    divider and Admin for admins only (as before; `staffNavFor` in `navigation.js`); at the bottom
    the account card (initial, name, role, linking to /account) or, for guests, "Log in" and
-   "Register", with the theme toggle; then the legal links (Imprint, Privacy). The active item
-   has the active background, bold text and `aria-current="page"`.
+   "Register", with the theme toggle; then the legal links (Imprint, Privacy). The current item
+   is the solid pill (`--color-solid`, bold, `aria-current="page"`). Games, Events, Chat and
+   Calls end in a 10px dot in the colour of their quarter of the logo: Games Spring `#AFB84E`,
+   Events Summer `#E06E22`, Chat Autumn `#F9A825`, Calls Winter `#04AAF7` (`dot` in
+   `navigation.js`).
 2. **Main column**: the routed page.
 
 **Below 760px**: the sidebar becomes a top bar (logo, theme toggle, menu button). The menu opens
 the same navigation as a drawer from the left, over a scrim: closed by its close button, Escape,
 the scrim, or following a link; focus moves into it and back to the menu button.
 
-**Pages** sit on the background; their content blocks are cards (`--color-surface`, 20px radius):
-forms, admin tables, info text, game cards, event days. Controls have a 12px radius and at least
-the 44px hit target; keyboard focus always shows a ring in the accent colour.
+**Pages** sit on the page background; their content blocks are translucent cards
+(`--color-card`, 28px radius): forms, admin tables, info text, game cards, event days, call
+cards, the chat on its page. Buttons are pills: the primary one solid, the secondary one glass
+with a hairline; icon buttons are round. Fields keep a 14px radius. Every control has at least
+the 44px hit target; keyboard focus always shows a ring in the accent colour. Every page shares
+this background, sidebar, cards and buttons (info, login, register, account, admin, embed, the
+call stage, 404).
 
-**Home** is a bento grid that fits the main column at 1280 x 720 without scrolling: the greeting
-(with the username when signed in), the featured game (the first game of the games data, a
-"Coming soon" badge only when its status says so), "Up next" with the next two events
-(`upcomingOccurrences`, shared), and Seasonal Tokens with the four season marks linking to the
-info section. Real data only. Below 1000px the cards stack and the main column scrolls.
+**Home** (`LandingPage.jsx`, `homeCards.jsx`; reference `StyleBlocks2.dc.html`) fits the main
+column at 1280 x 720 without scrolling. Real data only.
 
-**Chat page**: the full chat fills the main column, rooms on its left; only the message list
-scrolls and the composer stays at the bottom.
+1. **Banner**: night blue (`--banner-background`) with the faint season pattern
+   (`client/src/brand/seasonPattern.css`), the emblem, "SEASONAL" in the logo's gradient
+   lettering, "ENTERTAINMENT" in white, and the greeting as the page's `h1` (with the username
+   when signed in). Its height follows the window (120–190px).
+2. **Featured game** (the first game of the games data; a "Coming soon" badge only when its
+   status says so) and **Up next** (the event bot's next two occurrences; a dot in the season
+   colours in turn, or the event's own image) side by side.
+3. The **four season price tiles in one row**: each in its solid token colour with dark text,
+   the name, the price large, the 24-hour change; the season mark 48px in a white 62px circle at
+   the bottom right. With prices each tile opens its coin's chart (`/info/prices?coins=<id>`).
+4. **Community** (the night-blue box, leading to the chat) and **Fair price & charts** (to
+   `/info/prices`; without the price bot a plain note and the link to the info section).
+
+Faint logo images behind the boxes (`--wash-home`): Featured the controller quarter, Up next the
+balls quarter, Community the people quarter, Fair price the emblem. Below 1000px the boxes stack
+two columns wide (tiles two by two) and the main column scrolls.
+
+**Sub pages** (`client/src/brand/PageHeader.jsx`; reference `StyleSubpages.dc.html`): the header
+has the section's quarter (64 × 56px) beside the title and a one-line lead, and the same quarter
+lies large and faint (`--wash-page`) at the window's bottom right, behind the content. Games:
+the controller; Events: the balls; Chat: the people; Calls: the play button.
+
+- **Games**: larger cards with a 200px image band in the season colours in turn, the status as
+  a pill above the name.
+- **Events**: each day a card; each event has a bar in the season colours in turn beside its
+  time.
+- **Calls**: with nothing live, a "No call is live right now" card under "Live now".
+- **Chat page**: the full chat fills the main column as one card, rooms on its left; only the
+  message list scrolls and the composer stays at the bottom.
+
+**Prices page** (`/info/prices`): the title on a smaller night-blue banner with the season
+pattern and the four season marks on white discs.
+
+**Login and registration**: the card shows the full logo in light mode and the emblem in dark
+mode (`client/src/brand/FormLogo.jsx`; the dark lettering would vanish on night blue), but not
+in the chat's small login popup.
 
 **Room list** (`client/src/chat/RoomTabs.jsx`, layout 2026-10-18): each room is one grid row of
 fixed columns — the room name (flexible, one line, cut with an ellipsis; the full name stays in
@@ -98,7 +173,7 @@ its text, so in the accessible name, and in its `title`), the unread count (2.75
 count at 0, no toggles for guests), so every row's star and bell stand at the same x. The column
 is 28% of the panel, at least 15rem and at most 18rem: "Announcements" fits beside its count and
 toggles, longer names get the ellipsis, and nothing reaches into the message panel. The current
-room highlights its whole row with the active background and bold text, as the sidebar does; the
+room highlights its whole row with the active background and bold text; the
 name button stays the click target. Below 600px the rooms stand side by side and scroll
 sideways. The drawer's room picker uses the same columns in its options (mark, name, favourite
 star, count), and the Direct list keeps its stars in one column. `client/e2e/roomRows.spec.js`

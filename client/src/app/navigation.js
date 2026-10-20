@@ -3,16 +3,17 @@
 // Path:        client/src/app/navigation.js
 // Project:     Seasonal Entertainment
 // Description: The one definition of the site's navigation: the sidebar's main items (with
-//              their icons), the Calls item, the admin item and who sees it, the legal links, and the admin
+//              their icons and season dots), the Calls item, the admin item and who sees it, the legal links, and the admin
 //              area's sections. Used by the sidebar, the admin layout and their tests.
 // ============================================================
 
-// Sidebar order (decided 2026-10-17). "Seasonal Tokens" is the info section.
+// Sidebar order (decided 2026-10-17). "Seasonal Tokens" is the info section. `dot`: the
+// season colour of the section's quarter of the logo, shown as a small dot (docs/DESIGN.md).
 export const MAIN_NAV = [
   { to: '/', label: 'Home', icon: 'home' },
-  { to: '/games', label: 'Games', icon: 'games' },
-  { to: '/events', label: 'Events', icon: 'events' },
-  { to: '/chat', label: 'Chat', icon: 'chat' },
+  { to: '/games', label: 'Games', icon: 'games', dot: 'spring' },
+  { to: '/events', label: 'Events', icon: 'events', dot: 'summer' },
+  { to: '/chat', label: 'Chat', icon: 'chat', dot: 'autumn' },
   { to: '/info', label: 'Seasonal Tokens', icon: 'tokens' },
 ];
 
@@ -20,7 +21,7 @@ export const MAIN_NAV = [
 export const isCallPage = (pathname) => /^\/calls\/\d+/.test(pathname);
 
 // Calls: after Chat, shown when calls are set up (admins always: they see "not configured").
-export const CALLS_ITEM = { to: '/calls', label: 'Calls', icon: 'mic' };
+export const CALLS_ITEM = { to: '/calls', label: 'Calls', icon: 'mic', dot: 'winter' };
 
 export const ADMIN_ITEM = { to: '/admin', label: 'Admin', icon: 'admin' };
 

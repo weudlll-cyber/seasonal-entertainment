@@ -8,16 +8,18 @@
 //              the registration keeps ?next=. The password itself never leaves
 //              the browser: only the auth key derived from it is sent (session/credentials.js).
 //              Once logged in, the same derived keys open (or first create) the member's key
-//              pair for private messages (keys/), before the page moves on.
+//              pair for private messages (keys/), before the page moves on. The card shows the
+//              logo (FormLogo.jsx), except in the chat's login popup.
 // ============================================================
 
 import { useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
+import FormLogo from '../brand/FormLogo.jsx';
 import { FormField, FormMessage } from '../components/FormField.jsx';
 import SecondFactorForm from '../components/SecondFactorForm.jsx';
 import { useKeys } from '../keys/KeyContext.jsx';
 import { logIn } from '../session/credentials.js';
-import { safeNext, withNext } from '../session/nextPage.js';
+import { inEmbedLoginFlow, safeNext, withNext } from '../session/nextPage.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { BusyButton } from '../components/BusyButton.jsx';
 
@@ -71,6 +73,8 @@ export default function LoginPage() {
     <section className="page">
       <h1>Login</h1>
       <form className="form" onSubmit={onSubmit}>
+        {/* Not in the chat's small login popup: there the fields come first. */}
+        {!inEmbedLoginFlow(params) && <FormLogo />}
         <FormField label="Username" name="username" type="text" autoComplete="username" required />
         <FormField
           label="Password"

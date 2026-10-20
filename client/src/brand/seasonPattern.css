@@ -1,0 +1,26 @@
+/* ============================================================
+   File:        seasonPattern.css
+   Path:        client/src/brand/seasonPattern.css
+   Project:     Seasonal Entertainment
+   Description: The faint pattern of the four season marks on the night-blue banners (home,
+                prices; docs/DESIGN.md). One repeating tile (client/public/brand/
+                season-pattern.webp, made by scripts/build-brand-images.mjs) on a layer under the
+                banner's content, so only the pattern is faint.
+   ============================================================ */
+
+.season-pattern {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--banner-background);
+  color: var(--color-on-banner);
+}
+
+.season-pattern::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url('/brand/season-pattern.webp') 0 0 / 232px 116px repeat;
+  opacity: 0.2;
+  content: '';
+}

@@ -2,8 +2,8 @@
    File:        EventsPage.css
    Path:        client/src/pages/EventsPage.css
    Project:     Seasonal Entertainment
-   Description: The events week: navigation row, one block per day, time column + details
-                (+ the event's image when the server has one).
+   Description: The events week: navigation row, one card per day, time column, a bar in a
+                season colour (in turn) + details (+ the event's image when the server has one).
    ============================================================ */
 
 .week-nav {
@@ -25,7 +25,7 @@
   padding: var(--space-1) var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  background: var(--color-surface);
+  background: var(--color-card);
 }
 
 .event-day h3 {
@@ -41,14 +41,40 @@
 }
 
 .event {
+  position: relative;
   display: grid;
   grid-template-columns: 6rem 1fr;
-  gap: var(--space-1);
-  padding: var(--space-1) 0;
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-1) 0 var(--space-1) 1.25rem;
+}
+
+/* The bar left of each event: the season colours in turn. */
+.event::before {
+  position: absolute;
+  top: var(--space-1);
+  bottom: var(--space-1);
+  left: 0;
+  width: 8px;
+  border-radius: 4px;
+  background: var(--color-winter);
+  content: '';
+}
+
+.event:nth-child(4n + 2)::before {
+  background: var(--color-spring);
+}
+
+.event:nth-child(4n + 3)::before {
+  background: var(--color-summer);
+}
+
+.event:nth-child(4n + 4)::before {
+  background: var(--color-autumn);
 }
 
 .event__time {
-  font-weight: var(--font-weight-strong);
+  font-size: 1.125rem;
+  font-weight: var(--font-weight-heading);
 }
 
 .event__body {

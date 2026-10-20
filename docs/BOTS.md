@@ -4,15 +4,15 @@ The site shows data that two of the owner's bots already collect (SE-NIGHT-3, 20
 bots live in the private repository `weudlll-cyber/Seasonal-tokens`; the site only **reads**
 their SQLite files and never talks to the bots themselves.
 
-| Bot             | Its file on the VPS                       | Config key               | What the site shows                                      |
-| --------------- | ----------------------------------------- | ------------------------ | -------------------------------------------------------- |
-| `stpricebot`    | `/var/lib/stpricebot/snapshots.db`        | `PRICE_BOT_DB`           | the home card's prices, the charts at `/info/prices`     |
-| `stannouncebot` | `/var/lib/stannouncebot/stannouncebot.db` | `EVENT_BOT_DB`           | `/events` and the home page's "Up next": the only events |
-| `stpricebot`    | `/var/lib/stpricebot/mining_rates.json`   | `PRICE_BOT_MINING_RATES` | the fair price and the converter's mining times          |
+| Bot             | Its file on the VPS                       | Config key               | What the site shows                                       |
+| --------------- | ----------------------------------------- | ------------------------ | --------------------------------------------------------- |
+| `stpricebot`    | `/var/lib/stpricebot/snapshots.db`        | `PRICE_BOT_DB`           | the home page's price tiles, the charts at `/info/prices` |
+| `stannouncebot` | `/var/lib/stannouncebot/stannouncebot.db` | `EVENT_BOT_DB`           | `/events` and the home page's "Up next": the only events  |
+| `stpricebot`    | `/var/lib/stpricebot/mining_rates.json`   | `PRICE_BOT_MINING_RATES` | the fair price and the converter's mining times           |
 
 Each key is a file path. **Unset, that feature is off** and the page says plainly that the
-data source is not connected: the home card shows the season marks and "Prices: the data source
-is not connected.", `/info/prices` says there are no prices to show, `/events` says "The event
+data source is not connected: the home page's season tiles show no prices and the fair-price
+box says "Prices: the data source is not connected.", `/info/prices` says there are no prices to show, `/events` says "The event
 calendar is not connected, so there are no events to show." and "Up next" on the home page "The
 event calendar is not connected.".
 
@@ -22,7 +22,9 @@ event calendar is not connected.".
   one row per token per hour. `token` is a season's name in lower case: `spring`, `summer`,
   `autumn`, `winter`. Prices are US dollars (`server/src/bots/prices.js`).
   - Latest: each token's newest snapshot, its change against the snapshot 24 hours before it
-    (none when the bot has no price that old), and the last day's prices for the sparkline.
+    (none when the bot has no price that old), and the last day's prices (`spark`; the home
+    sparkline that used them gave way to the season tiles of the SE style on 2026-10-21, and
+    the field is kept unchanged).
   - History: one token over `24h`, `7d`, `30d`, `1y` or `all`, counted back from its newest
     snapshot. More than 500 snapshots are thinned out: the range is cut into 500 equal time
     slices and each keeps its last snapshot, so every point is a real price at a real time.
@@ -147,8 +149,8 @@ coins the one chart shows (owner request 2026-10-20; `client/src/prices/PriceCha
   shown coin's price in US dollars there, and its % change when several are shown.
 - The choice lives in the page address (`?coins=spring,eth`), so a link shows the same view;
   nothing valid there: Spring.
-- Built from the existing chart, geometry (now with one scale for several lines), sparkline and
-  price formats; no chart library.
+- Built from the existing chart, geometry (one scale for several lines) and price formats; no
+  chart library.
 
 ## Reference prices (ETH, POL and BTC, from CoinGecko)
 
@@ -185,8 +187,8 @@ browser never does, and the CSP is unchanged.
   - `reference_sync` remembers both times, so a restart does not fetch again;
   - a failed fetch keeps the stored prices; the log says so once until it works again.
 - **Shown** on `/info/prices` as a "Reference" row (price, 24-hour change) on the same chart and
-  ranges as the seasons (`all` reaches back a year), and in the converter. The home price card
-  stays the four seasons only.
+  ranges as the seasons (`all` reaches back a year), and in the converter. The home page's price
+  tiles stay the four seasons only.
 - Routes: `GET /api/reference-prices` and `GET /api/reference-prices/:token?range=`, public,
   cached for 5 minutes and rate limited like the bots' reads. The converter offers every connected coin (owner request 2026-10-20).
 
@@ -226,8 +228,8 @@ sample week to the current one.
   event week with overrides, canceled and inactive events, only web links and never the bot's
   image URL; 503
   for an unreadable file.
-- `client/src/prices/prices.test.jsx`: the home card (prices, change colours, sparklines; the
-  marks and the note without the bot); `/info/prices` (token and range asked for, hover and
+- `client/src/prices/prices.test.jsx`: the home tiles (prices, changes, each linking to its
+  coin's chart; without the bot no prices or links, and the note); `/info/prices` (token and range asked for, hover and
   arrow keys read a price at local time; "not connected"); the formats.
 - `client/src/pages/eventsPage.test.jsx`: the bot week at local times across daylight saving,
   canceled, text only and safe links, the week asked for, "not connected".
@@ -246,7 +248,7 @@ sample week to the current one.
   USD, the key only in the header, the pause), the next hour, the next day without data over a
   year old; a failure keeps the prices, logs once and waits an hour.
 - `client/src/prices/referencePrices.test.jsx`: the reference row with CoinGecko's attribution,
-  its chart and ranges, ETH in the converter, "not connected", the home card unchanged.
+  its chart and ranges, ETH in the converter, "not connected", the home tiles unchanged.
 - `client/e2e/prices.spec.js` (real browser, the price answers stubbed): the converter's fields
   are named exactly "Amount", "From" and "To", and Autumn into ETH shows Autumn's mining time only.
 - `client/src/prices/coinSelection.test.js`: the address read in button order with Spring as the

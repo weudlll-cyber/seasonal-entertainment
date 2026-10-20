@@ -6,12 +6,14 @@
 //              bot's occurrences (docs/BOTS.md), each at the viewer's local time with the zone
 //              named and the UTC time beside it (EventItem.jsx). Previous/next week buttons.
 //              Without the event bot the page says so plainly. timeZone and now are props so
-//              tests can pin them; in the browser they come from the device.
+//              tests can pin them; in the browser they come from the device. SE style: the
+//              Events header with the balls quarter; each event's bar takes a season colour.
 // ============================================================
 
 import { useEffect, useState } from 'react';
 import { formatDay, startOfWeek } from '@seasonal-entertainment/shared/localWeek.js';
 import { api } from '../api/http.js';
+import PageHeader from '../brand/PageHeader.jsx';
 import EventItem from './EventItem.jsx';
 import './EventsPage.css';
 
@@ -44,7 +46,11 @@ export default function EventsPage({ timeZone = deviceZone(), now }) {
 
   return (
     <section className="page">
-      <h1>Events</h1>
+      <PageHeader
+        quarter="events"
+        title="Events"
+        lead="Mind games, battles and contests of the community."
+      />
       <p>
         Times are shown in your time zone (<strong>{timeZone}</strong>); UTC in brackets.
       </p>
