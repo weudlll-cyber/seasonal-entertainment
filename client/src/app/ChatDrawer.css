@@ -2,10 +2,10 @@
    File:        ChatDrawer.css
    Path:        client/src/app/ChatDrawer.css
    Project:     Seasonal Entertainment
-   Description: The floating chat button and the chat drawer over the page (400px wide, 16px
-                from the window's top, right and bottom; the full width below 760px), and the
-                row holding the room picker (RoomPicker.css) with its star and bell. The page
-                underneath is never resized.
+   Description: The floating chat button (56px, its icon and unread badges scaled with it) and
+                the chat drawer over the page (400px wide, 16px from the window's top, right and
+                bottom; the full width below 760px), and the row holding the room picker
+                (RoomPicker.css) with its star and bell. The page underneath is never resized.
    ============================================================ */
 
 .chat-launcher {
@@ -15,8 +15,8 @@
   z-index: 20;
   display: grid;
   place-items: center;
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border: 0;
   border-radius: 50%;
   background: var(--color-autumn);
@@ -26,10 +26,14 @@
 }
 
 /* The unread counters sit on the button's upper edge. */
+/* The badges keep their size elsewhere (sidebar, room picker); on the button they shrink with
+   it (56 / 64), from the corner they sit on, so they stay aligned to it. */
 .chat-launcher__counts {
   position: absolute;
-  top: -6px;
-  right: -6px;
+  top: -5px;
+  right: -5px;
+  transform: scale(0.875);
+  transform-origin: top right;
 }
 
 .chat-drawer {

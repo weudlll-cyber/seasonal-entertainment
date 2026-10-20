@@ -79,7 +79,7 @@ export default function ChatDrawer() {
         aria-controls="chat-drawer"
         onClick={open ? closeDrawer : openDrawer}
       >
-        <Icon name="chat" size={28} />
+        <Icon name="chat" size={24} />
         <span className="chat-launcher__counts">
           <UnreadDots />
         </span>

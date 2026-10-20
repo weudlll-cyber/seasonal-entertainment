@@ -167,8 +167,9 @@ opens above the row. The full chat page keeps its labelled text buttons.
 
 On every page except `/chat` and `/admin/*` (`client/src/app/ChatDrawer.jsx`):
 
-- A round **chat button** bottom right: 64px, autumn colour, chat icon (`--color-on-season`), with
-  the unread dots (blue rooms, orange private messages; docs/CHAT.md, "Unread counters").
+- A round **chat button** bottom right: 56px, autumn colour, a 24px chat icon
+  (`--color-on-season`), with the unread dots scaled with the button (blue rooms, orange private
+  messages; docs/CHAT.md, "Unread counters").
 - It opens a **drawer over the page**, on the right: 400px wide, 16px from the window's top,
   right and bottom, rounded, with the raised shadow; the full width below 760px. The page
   underneath keeps its size and is never resized (`client/e2e/chatDrawer.spec.js` compares the
