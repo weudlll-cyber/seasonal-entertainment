@@ -217,6 +217,8 @@ sample week to the current one.
   year old; a failure keeps the prices, logs once and waits an hour.
 - `client/src/prices/referencePrices.test.jsx`: the reference row with CoinGecko's attribution,
   its chart and ranges, ETH in the converter, "not connected", the home card unchanged.
+- `client/e2e/prices.spec.js` (real browser, the price answers stubbed): the converter's fields
+  are named exactly "Amount", "From" and "To", and Autumn into ETH shows Autumn's mining time only.
 - `server/test/droppedTables.test.js`: the old `events` table is dropped on start.
 - `client/e2e/events.spec.js`: the real server reading a fixture event bot; no events editor in
   the admin area.

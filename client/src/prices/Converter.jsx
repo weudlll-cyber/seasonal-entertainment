@@ -9,7 +9,7 @@
 //              conversion still works and the mining times say they are not available.
 // ============================================================
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { convert, formatHours } from './fairPrice.js';
 import { TOKENS } from './priceFormat.js';
 
@@ -28,31 +28,39 @@ export default function Converter({ prices, rates }) {
   const [amount, setAmount] = useState('100');
   const [from, setFrom] = useState('summer');
   const [to, setTo] = useState('winter');
+  const id = useId();
   const name = (id) => tokens.find((t) => t.id === id)?.name;
   const value = Number(amount);
   const ready = value > 0 && name(from) && name(to);
   const result = ready ? convert(value, from, to, prices, rates) : null;
 
+  // Labels beside their controls (htmlFor), not around them: a wrapping label would put the
+  // options' text, or the typed amount, into the control's accessible name.
   const picker = (label, current, onChange) => (
-    <label className="form-field">
-      <span className="form-field__label">{label}</span>
-      <select value={current} onChange={(e) => onChange(e.target.value)}>
+    <div className="form-field">
+      <label className="form-field__label" htmlFor={`${id}-${label}`}>
+        {label}
+      </label>
+      <select id={`${id}-${label}`} value={current} onChange={(e) => onChange(e.target.value)}>
         {tokens.map((t) => (
           <option key={t.id} value={t.id}>
             {t.name}
           </option>
         ))}
       </select>
-    </label>
+    </div>
   );
 
   return (
     <section className="prices__section" aria-labelledby="converter">
       <h2 id="converter">Converter</h2>
       <div className="converter">
-        <label className="form-field">
-          <span className="form-field__label">Amount</span>
+        <div className="form-field">
+          <label className="form-field__label" htmlFor={`${id}-amount`}>
+            Amount
+          </label>
           <input
+            id={`${id}-amount`}
             type="number"
             min="0"
             step="any"
@@ -60,7 +68,7 @@ export default function Converter({ prices, rates }) {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
           />
-        </label>
+        </div>
         {picker('From', from, setFrom)}
         {picker('To', to, setTo)}
       </div>
