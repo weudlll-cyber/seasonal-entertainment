@@ -32,7 +32,6 @@ function api(session) {
     ),
     'GET /chat/favourites': { body: { ok: true, rooms: ['help'], users: [] } },
     'GET /games': { body: { ok: true, games: [] } },
-    'GET /events': { body: { ok: true, events: [] } },
   });
 }
 

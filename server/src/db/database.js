@@ -15,7 +15,6 @@ import { AUDIT_SCHEMA } from '../audit/schema.js';
 import { CALLS_SCHEMA, migrateCalls } from '../calls/schema.js';
 import { CHAT_SCHEMA, migrateChat } from '../chat/schema.js';
 import { EMBED_SCHEMA } from '../embed/schema.js';
-import { EVENTS_SCHEMA } from '../events/schema.js';
 import { GAMES_SCHEMA } from '../games/schema.js';
 import { INFO_SCHEMA } from '../info/schema.js';
 import { KEYS_SCHEMA } from '../keys/schema.js';
@@ -32,7 +31,6 @@ const SCHEMAS = [
   KEYS_SCHEMA,
   AUDIT_SCHEMA,
   INFO_SCHEMA,
-  EVENTS_SCHEMA,
   GAMES_SCHEMA,
   MEDIA_SCHEMA,
   PREVIEW_SCHEMA,
@@ -50,6 +48,9 @@ export function openDatabase(databasePath) {
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   for (const schema of SCHEMAS) db.exec(schema);
+  // The site's own events calendar, dropped 2026-10-20: events come only from the event bot
+  // (docs/BOTS.md). Nothing was online yet, so the table simply goes.
+  db.exec('DROP TABLE IF EXISTS events');
   // Columns added after a table was first created (CREATE IF NOT EXISTS skips them).
   migrateAccounts(db);
   migrateChat(db);

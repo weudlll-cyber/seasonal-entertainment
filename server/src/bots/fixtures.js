@@ -8,8 +8,7 @@
 //              the site reads) and clearly fake, seeded sample data. Prices: hourly snapshots of
 //              the four seasonal tokens with a seeded random walk. Events: a few weekly events
 //              around `now`, past ones done, one moved by an override (two overrides, the later
-//              wins), one canceled this week, one inactive, one with a non-web link, and one with the same
-//              name and minute as a seeded site event (shown once, the bot's version).
+//              wins), one canceled this week, one inactive and one with a non-web link.
 //              docs/BOTS.md, "Development data".
 // ============================================================
 
@@ -137,10 +136,9 @@ const SAMPLE_EVENTS = [
     'Not a web link',
     1,
   ],
-  // The same name and minute as the site's own seeded Friday event: shown once, the bot's version.
   [
     'Seasonal Tokens Friday Battles',
-    'Fake bot copy of a site event (development fixture).',
+    'Fake event from the development fixture.',
     5,
     22,
     0,

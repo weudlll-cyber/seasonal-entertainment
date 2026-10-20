@@ -4,15 +4,16 @@ The site shows data that two of the owner's bots already collect (SE-NIGHT-3, 20
 bots live in the private repository `weudlll-cyber/Seasonal-tokens`; the site only **reads**
 their SQLite files and never talks to the bots themselves.
 
-| Bot             | Its file on the VPS                       | Config key     | What the site shows                                       |
-| --------------- | ----------------------------------------- | -------------- | --------------------------------------------------------- |
-| `stpricebot`    | `/var/lib/stpricebot/snapshots.db`        | `PRICE_BOT_DB` | the home card's prices, the charts at `/info/prices`      |
-| `stannouncebot` | `/var/lib/stannouncebot/stannouncebot.db` | `EVENT_BOT_DB` | the bot's occurrences on `/events`, beside the site's own |
+| Bot             | Its file on the VPS                       | Config key     | What the site shows                                      |
+| --------------- | ----------------------------------------- | -------------- | -------------------------------------------------------- |
+| `stpricebot`    | `/var/lib/stpricebot/snapshots.db`        | `PRICE_BOT_DB` | the home card's prices, the charts at `/info/prices`     |
+| `stannouncebot` | `/var/lib/stannouncebot/stannouncebot.db` | `EVENT_BOT_DB` | `/events` and the home page's "Up next": the only events |
 
 Each key is a file path. **Unset, that feature is off** and the page says plainly that the
 data source is not connected: the home card shows the season marks and "Prices: the data source
-is not connected.", `/info/prices` says there are no prices to show, and `/events` shows the
-site's own events with "The event bot's calendar is not connected".
+is not connected.", `/info/prices` says there are no prices to show, `/events` says "The event
+calendar is not connected, so there are no events to show." and "Up next" on the home page "The
+event calendar is not connected.".
 
 ## What is read
 
@@ -33,7 +34,7 @@ site's own events with "The event bot's calendar is not connected".
     occurrence's wherever it sets them.
   - Statuses: `scheduled`, `done` (shown as usual), `canceled` (struck through, "canceled").
   - Times are ISO-8601 UTC text (`…Z` or `…+00:00`; no offset counts as UTC). `/events` shows
-    them in the viewer's time zone with the UTC time beside them, like the site's own events.
+    them in the viewer's time zone with the UTC time beside them.
 
 ## The routes
 
@@ -71,11 +72,12 @@ A configured file that cannot be read (missing, locked, being replaced) answers 
 - `image_url` is never passed on or loaded: the site loads no outside images, and the CSP stays
   as it is.
 
-## Shown twice? The duplicate rule
+## Only the bot's events
 
-An event the site has in its own calendar and the bot announces too would appear twice. Same
-name (trimmed, any case) and the same start minute: **shown once, the bot's version** (decided
-2026-10-20, `client/src/pages/eventWeek.js`). The site's own event admin stays exactly as it is.
+Events are kept **only in the event bot** (decided 2026-10-20): the site's own events calendar,
+its admin editor and its seeded schedule are gone, so there is no duplicate between the two any
+more. "Up next" on the home page asks for the next seven days from the full hour (one cached
+question per hour) and shows the next two scheduled occurrences that have not started.
 
 ## What is not shown, and why
 
@@ -95,9 +97,8 @@ name (trimmed, any case) and the same start minute: **shown once, the bot's vers
 - a year of hourly prices for the four tokens (a seeded random walk around a few tenths of a US
   cent, ±1 % per hour at most);
 - a few weekly `[Sample]` events from two weeks back to four ahead: past ones `done`, one moved
-  by two overrides (the later wins), one canceled this week, one inactive (never shown), one
-  with a non-web link (shown as text), and one with the same name and minute as a seeded site
-  event (shown once).
+  by two overrides (the later wins), one canceled this week, one inactive (never shown) and one
+  with a non-web link (shown as text).
 
 `npm run dev` points `PRICE_BOT_DB` and `EVENT_BOT_DB` at these files when neither the shell nor
 `.env` sets them. A key set to an empty value in `.env` keeps that bot off, to see the "not
@@ -113,7 +114,11 @@ sample week to the current one.
 - `client/src/prices/prices.test.jsx`: the home card (prices, change colours, sparklines; the
   marks and the note without the bot); `/info/prices` (token and range asked for, hover and
   arrow keys read a price at local time; "not connected"); the formats.
-- `client/src/pages/botEvents.test.jsx`: the bot week beside the site's events, the duplicate
-  rule, canceled, text only and safe links, the week asked for across daylight saving, "not
-  connected".
+- `client/src/pages/eventsPage.test.jsx`: the bot week at local times across daylight saving,
+  canceled, text only and safe links, the week asked for, "not connected".
+- `client/src/pages/LandingPage.test.jsx`: "Up next" (the next two scheduled occurrences that
+  have not started; "not connected").
+- `server/test/droppedTables.test.js`: the old `events` table is dropped on start.
+- `client/e2e/events.spec.js`: the real server reading a fixture event bot; no events editor in
+  the admin area.
 - `server/test/info.test.js`: the info slug `prices` is reserved (`/info/prices` is this page).

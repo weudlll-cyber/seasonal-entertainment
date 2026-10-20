@@ -9,7 +9,8 @@
 // ============================================================
 
 export const SERVER_PORT = 3810;
-export const DEV_PROXY_PORT = 5390;
+// SE_E2E_DEV_PROXY_PORT moves it when another project's dev server already holds 5390.
+export const DEV_PROXY_PORT = Number(process.env.SE_E2E_DEV_PROXY_PORT) || 5390;
 // Vite listens on "localhost" only, as in development; the browser opens it by that name.
 export const DEV_PROXY_URL = `http://localhost:${DEV_PROXY_PORT}`;
 // LiveKit: signalling on this port, ICE over TCP and UDP on the next two.

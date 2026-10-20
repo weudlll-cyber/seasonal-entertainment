@@ -30,8 +30,10 @@ An entry moves from part one to part two only when its branch is merged into `ma
   (docs/DEPLOYMENT.md, "Backups"); the VPS gets only the public key.
 - **Prices of ETH and POL** — open, the owner's word: the price bot does not store them, and the
   site calls no outside price API (docs/BOTS.md). They would need the bot to keep their history.
-- **Keep or drop the site's own event admin** — open, the owner's word: the event bot's
-  occurrences are now shown on `/events` beside the site's own events (SE-NIGHT-3 piece 3).
+- **Event bot admin page inside the site for admins without a second login** — open, waits for
+  a change in the bot project: the bot page skips its own login when the site's server supplies
+  the bot token, and its API paths can sit under a path prefix (today it calls absolute
+  `/api/...`, which collide with the site's `/api`).
 - **Site and bots on the same VPS** — open, the owner's word: reading the bots' files through
   read-only mounts assumes it (docs/DEPLOYMENT.md, "The owner's bots").
 - **A ratio view between the seasons** — unconfirmed proposal, not decided (e.g. Spring priced
@@ -54,6 +56,11 @@ An entry moves from part one to part two only when its branch is merged into `ma
   the backup key pair made on the owner's PC (backups go there, decided 2026-10-19).
 
 ## PART TWO — closed
+
+- **Keep or drop the site's own event admin** — closed by SE-BOTS-2 part 2 (`feat/se-bots-2`,
+  not merged yet): dropped (owner decision 2026-10-20). Events are kept only in the event bot;
+  the site's editor, routes, seeded schedule, store and `events` table are gone, and `/events`
+  and the home page's "Up next" read only the bot (docs/BOTS.md).
 
 - **Own room message seen twice in the chat on another site** — closed by SE-NIGHT-3 piece 4
   (`feat/se-night-3`, PR #8, merged 2026-10-20): not shown twice. The browser check's

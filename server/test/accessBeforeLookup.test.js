@@ -9,7 +9,6 @@
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { seedEvents } from '../src/events/seed.js';
 import { seedGames } from '../src/games/seed.js';
 import { seedInfoPages } from '../src/info/seed.js';
 import { chatApp, post } from './helpers/chat.js';
@@ -24,7 +23,6 @@ describe('an unauthorised caller cannot tell which ids exist', () => {
   it('guest, member and organiser without 2FA: same status for existing and missing ids', async () => {
     t = chatApp();
     seedInfoPages(t.db);
-    seedEvents(t.db);
     seedGames(t.db);
     const { agent: member, user } = await registerUser(t, 'mia');
     const { agent: owen, user: owenUser } = await registerUser(t, 'owen');
@@ -34,7 +32,6 @@ describe('an unauthorised caller cannot tell which ids exist', () => {
       ['post', '/api/admin/users/:id/role', user.id],
       ['post', '/api/chat/messages/:id/hide', message.id],
       ['put', '/api/admin/info/:id', firstId('info_pages')],
-      ['put', '/api/admin/events/:id', firstId('events')],
       ['put', '/api/admin/games/:id', firstId('games')],
       ['put', '/api/admin/chat/rooms/:id', firstId('chat_rooms')],
     ];

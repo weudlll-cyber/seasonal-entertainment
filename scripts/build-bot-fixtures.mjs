@@ -5,8 +5,9 @@
 // Description: `npm run dev:bot-fixtures`: builds the two development stand-ins for the
 //              owner's bot databases (server/src/bots/fixtures.js: the bots' exact schemas,
 //              clearly fake seeded data) into data/bot-fixtures/ (gitignored, like all of
-//              data/). `npm run dev` points PRICE_BOT_DB and EVENT_BOT_DB there when they are
-//              not set (docs/BOTS.md). Run again to move the sample week to the current one.
+//              data/), or into BOT_FIXTURE_DIR when set (the browser tests' own folder).
+//              `npm run dev` points PRICE_BOT_DB and EVENT_BOT_DB there when they are not set
+//              (docs/BOTS.md). Run again to move the sample week to the current one.
 // ============================================================
 
 import { mkdirSync } from 'node:fs';
@@ -14,12 +15,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildEventFixture, buildPriceFixture } from '../server/src/bots/fixtures.js';
 
-export const FIXTURE_DIR = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '..',
-  'data',
-  'bot-fixtures'
-);
+export const FIXTURE_DIR =
+  process.env.BOT_FIXTURE_DIR ||
+  path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'data', 'bot-fixtures');
 export const FIXTURE_FILES = {
   PRICE_BOT_DB: path.join(FIXTURE_DIR, 'snapshots.db'),
   EVENT_BOT_DB: path.join(FIXTURE_DIR, 'stannouncebot.db'),

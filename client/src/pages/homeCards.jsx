@@ -3,14 +3,15 @@
 // Path:        client/src/pages/homeCards.jsx
 // Project:     Seasonal Entertainment
 // Description: The three cards of the home page's bento grid, all from real data: the
-//              featured game (the first game of the games list), the next two events, and
+//              featured game (the first game of the games list), the event bot's next two
+//              occurrences, and
 //              Seasonal Tokens: each season's price, 24-hour change and a sparkline from the
 //              price bot (docs/BOTS.md), or the four season marks while there are no prices;
 //              linking to the price charts and the info section.
 // ============================================================
 
 import { Link } from 'react-router';
-import { formatDay, formatLocal } from '@seasonal-entertainment/shared/eventSchedule.js';
+import { formatDay, formatLocal } from '@seasonal-entertainment/shared/localWeek.js';
 import { GAME_STATUS_LABELS } from '@seasonal-entertainment/shared/gameRules.js';
 import springMark from '../assets/seasons/spring.svg';
 import summerMark from '../assets/seasons/summer.svg';
@@ -62,18 +63,24 @@ export function FeaturedGameCard({ game }) {
   );
 }
 
-// next: [{ event, start }] (upcomingOccurrences), or null while loading.
+// next: { connected, next: the bot's occurrences } or { failed }; null while loading.
 export function UpNextCard({ next, timeZone }) {
   return (
     <section className="card home__card" aria-label="Up next">
       <p className="home__eyebrow">Up next</p>
-      {next?.length === 0 && <p className="home__text">No events planned.</p>}
+      {next?.connected === false && (
+        <p className="home__text">The event calendar is not connected.</p>
+      )}
+      {next?.failed && <p className="home__text">The event calendar cannot be read right now.</p>}
+      {next?.connected && next.next.length === 0 && (
+        <p className="home__text">No events in the next seven days.</p>
+      )}
       <ul className="home__events">
-        {next?.map(({ event, start }) => {
+        {next?.next?.map(({ id, name, start }) => {
           const local = formatLocal(start, timeZone);
           return (
-            <li key={`${event.id}-${start}`}>
-              <strong>{event.title}</strong>
+            <li key={`${id}-${start}`}>
+              <strong>{name}</strong>
               <span className="home__text">
                 {formatDay(start, timeZone)}, {local.time} {local.zone}
               </span>

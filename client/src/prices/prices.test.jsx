@@ -38,7 +38,6 @@ const PRICES = {
 const HOME = {
   ...GUEST,
   'GET /games': { body: { ok: true, games: [] } },
-  'GET /events': { body: { ok: true, events: [] } },
 };
 const renderAt = (path) =>
   render(
