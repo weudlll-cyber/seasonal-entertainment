@@ -24,14 +24,20 @@ An entry moves from part one to part two only when its branch is merged into `ma
   there: an image request cannot carry the token. Would need short-lived signed file links.
 - **Guests writing in the chat on other sites** — open. A guest name is kept in a cookie, which
   other sites' frames do not get; guests can read there but not write.
-- **Own room message seen twice in the chat on another site** — open, cause unknown. Seen
-  once in SE-EMBED-CHECK-2: a member's room message, sent from the frame on another site,
-  showed twice there; stored once, and four further runs showed it once. The list merges by id
-  (`client/src/chat/useChatRoom.js`).
 - **Real sites to approve for the chat embed** — open, the owner's word: which game sites go on
   Admin → Embedding once the site is live (only exact `https://` origins).
 - **Age key pair for the backups** — open, at deployment: the owner creates it on the PC
   (docs/DEPLOYMENT.md, "Backups"); the VPS gets only the public key.
+- **Prices of ETH and POL** — open, the owner's word: the price bot does not store them, and the
+  site calls no outside price API (docs/BOTS.md). They would need the bot to keep their history.
+- **Keep or drop the site's own event admin** — open, the owner's word: the event bot's
+  occurrences are now shown on `/events` beside the site's own events (SE-NIGHT-3 piece 3).
+- **Site and bots on the same VPS** — open, the owner's word: reading the bots' files through
+  read-only mounts assumes it (docs/DEPLOYMENT.md, "The owner's bots").
+- **A ratio view between the seasons** — unconfirmed proposal, not decided (e.g. Spring priced
+  in Summer).
+- **Event images from the bot** — open, the owner's word: `image_url` is not loaded, since
+  outside images would need a CSP change.
 - **Call recording** — unconfirmed proposal, not decided. Calls are not recorded (privacy draft).
 - **Linking calls to the events calendar** — unconfirmed proposal, not decided: an event could
   carry its call, and a call its event.
@@ -48,6 +54,29 @@ An entry moves from part one to part two only when its branch is merged into `ma
   the backup key pair made on the owner's PC (backups go there, decided 2026-10-19).
 
 ## PART TWO — closed
+
+- **Own room message seen twice in the chat on another site** — closed by SE-NIGHT-3 piece 4
+  (`feat/se-night-3`, PR #8, merged 2026-10-20): not shown twice. The browser check's
+  `getByText` also matched the composer's field, which still holds the text until the send is
+  answered, while the live push had already listed the message. Reproduced every time with
+  the answer held back and in 2 of 30 natural runs; never twice in the list. The client tests
+  that had the same blind spot now look inside the message list, and a new test pins the
+  push-before-answer case (docs/CHAT.md, "Sending").
+
+- **Prices and events from the owner's bots** — closed by SE-NIGHT-3 piece 3 (`feat/se-night-3`,
+  PR #8, merged 2026-10-20): read-only reads of the price and event bots' SQLite files
+  (`PRICE_BOT_DB`, `EVENT_BOT_DB`, docs/BOTS.md); a price card on the home page, charts at
+  `/info/prices`, the bot's occurrences on `/events`; fake fixture data for development. The
+  part-one entry "Bots and group roles" stays open for the group roles.
+
+- **A 2FA secret that decrypts but cannot be used answered 500** — closed by SE-NIGHT-3 piece 2
+  (`feat/se-night-3`, PR #8, merged 2026-10-20): `openSecret` (`server/src/twofa/secretBox.js`)
+  refuses such a secret (e.g. encrypted twice) like one that does not decrypt: the same 401
+  answer and a log line in the same style. Found in SE-EMBED-CHECK-1.
+- **`data/DEV-ADMIN.txt` held a stale 2FA secret** — closed by SE-NIGHT-3 piece 2
+  (`feat/se-night-3`, PR #8, merged 2026-10-20): `npm run dev:admin` rewrites the file's 2FA part
+  from the stored secret when the account already has 2FA; it never resets or changes that
+  2FA. Run once on 2026-10-20, so the file is current. Found in SE-EMBED-CHECK-1.
 
 - **The chat on another site showed controls it cannot use** — closed by SE-EMBED-CHECK-2
   (PR #7, merged 2026-10-20), from the screenshots of SE-EMBED-CHECK-1:

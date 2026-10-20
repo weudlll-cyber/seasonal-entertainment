@@ -6,7 +6,10 @@
 //              API (the actual app in-process on a random local port):
 //              1. creates it via the bootstrap flow (one-time token held only in memory, sent
 //                 in the x-bootstrap-token header) if no admin exists;
-//              2. turns on its 2FA (required for admins) if it is off.
+//              2. turns on its 2FA (required for admins) if it is off;
+//              3. if its 2FA is already on, rewrites the file's 2FA part from the secret stored
+//                 now (it may have been set up again since the file was written). It only
+//                 reads: devadmin's 2FA is never reset or changed (an authenticator app uses it).
 //              The password never goes to the server: like a browser, the script derives the
 //              auth key from it with the shared crypto helper (docs/AUTH.md, "Login key split").
 //              Password, TOTP secret and recovery codes go ONLY to data/DEV-ADMIN.txt
@@ -22,7 +25,10 @@ import { createApp } from '../server/src/app.js';
 import { readBuildInfo } from '../server/src/buildInfo.js';
 import { ENV_FILE, readConfig } from '../server/src/config.js';
 import { openDatabase } from '../server/src/db/database.js';
-import { codeForStep, stepAt } from '../server/src/twofa/totp.js';
+import { ISSUER } from '../server/src/twofa/routes.js';
+import { openSecret } from '../server/src/twofa/secretBox.js';
+import { getTwoFactor } from '../server/src/twofa/store.js';
+import { codeForStep, otpauthUrl, stepAt } from '../server/src/twofa/totp.js';
 
 const USERNAME = 'devadmin';
 const random = (bytes) => randomBytes(bytes).toString('base64url');
@@ -65,6 +71,39 @@ async function logIn(password) {
   return { answer: await call('/auth/login', { username: USERNAME, authKey }), authKey };
 }
 
+// The file's 2FA part. recoveryCodes: null when they are not known (stored hashed only).
+const TWO_FACTOR_HEADING =
+  'Two-factor authentication (required for admins) is ON for this account.';
+const twoFactorPart = (secret, otpauthLink, recoveryCodes) =>
+  [
+    '',
+    TWO_FACTOR_HEADING,
+    'Add the secret to an authenticator app (manual entry, time-based, 6 digits, 30 s),',
+    'or open the otpauth link on the phone. Each recovery code works once.',
+    `TOTP secret: ${secret}`,
+    `otpauth link: ${otpauthLink}`,
+    recoveryCodes
+      ? `Recovery codes: ${recoveryCodes.join(' ')}`
+      : 'Recovery codes: stored hashed, so not shown again; those from the setup still work once each.',
+    '',
+  ].join('\n');
+
+// 3. 2FA already on: the file gets the secret as stored now, everything above its 2FA part
+// (username, password) kept. Reads the row only; a secret that cannot be used leaves the file.
+async function rewriteStoredSecret() {
+  const { id } = db.prepare('SELECT id FROM users WHERE username = ?').get(USERNAME);
+  const factor = getTwoFactor(db, id);
+  const secret = factor?.enabled ? await openSecret(factor.secret, config.secretKey, id) : null;
+  if (secret === null) {
+    console.log(`The stored 2FA secret of "${USERNAME}" cannot be read; ${file} left as it is.`);
+    return;
+  }
+  const head = readFileSync(file, 'utf8').split(`\n${TWO_FACTOR_HEADING}`)[0].trimEnd();
+  const link = otpauthUrl(secret, USERNAME, ISSUER);
+  writeFileSync(file, `${head}\n${twoFactorPart(secret, link, null)}`, { mode: 0o600 });
+  console.log(`The dev admin already has 2FA; ${file} now holds its stored secret.`);
+}
+
 try {
   // 1. The admin account. loggedIn: a full session exists (not just a pending 2FA login).
   // currentAuthKey: proves the account's password again to start the 2FA setup.
@@ -97,7 +136,7 @@ try {
     const { answer: login, authKey } = await logIn(known);
     currentAuthKey = authKey;
     if (login.status !== 200) throw new Error(`login as ${USERNAME} failed: ${login.status}`);
-    if (login.body.twoFactorRequired) console.log('The dev admin already has 2FA; nothing to do.');
+    if (login.body.twoFactorRequired) await rewriteStoredSecret();
     loggedIn = !login.body.twoFactorRequired;
   } else {
     throw new Error(`bootstrap failed: ${created.status} ${created.body.message}`);
@@ -112,16 +151,7 @@ try {
     if (enable.status !== 200) throw new Error(`2FA enable failed: ${enable.status}`);
     appendFileSync(
       file,
-      [
-        '',
-        'Two-factor authentication (required for admins) is ON for this account.',
-        'Add the secret to an authenticator app (manual entry, time-based, 6 digits, 30 s),',
-        'or open the otpauth link on the phone. Each recovery code works once.',
-        `TOTP secret: ${setup.body.secret}`,
-        `otpauth link: ${setup.body.otpauthUrl}`,
-        `Recovery codes: ${enable.body.recoveryCodes.join(' ')}`,
-        '',
-      ].join('\n')
+      twoFactorPart(setup.body.secret, setup.body.otpauthUrl, enable.body.recoveryCodes)
     );
     console.log(`2FA turned on for "${USERNAME}"; secret and recovery codes added to ${file}`);
   }

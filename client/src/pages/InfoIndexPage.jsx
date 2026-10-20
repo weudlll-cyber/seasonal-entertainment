@@ -2,7 +2,8 @@
 // File:        InfoIndexPage.jsx
 // Path:        client/src/pages/InfoIndexPage.jsx
 // Project:     Seasonal Entertainment
-// Description: /info: the list of published info pages, in the order the admins set.
+// Description: /info: a link to the token prices (/info/prices, docs/BOTS.md), then the list
+//              of published info pages, in the order the admins set.
 // ============================================================
 
 import { useEffect, useState } from 'react';
@@ -23,6 +24,9 @@ export default function InfoIndexPage() {
   return (
     <section className="page">
       <h1>Info</h1>
+      <p>
+        <Link to="/info/prices">Prices and charts</Link> of the four Seasonal Tokens.
+      </p>
       <FormMessage error={error} />
       {pages?.length === 0 && <p>No pages yet.</p>}
       {pages && (

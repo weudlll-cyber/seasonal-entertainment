@@ -5,12 +5,14 @@
 // Description: 2FA (TOTP) secrets encrypted at rest: authenticated encryption with the
 //              project's libsodium helper (shared/crypto.js: secretbox, a fresh nonce each
 //              time) under SECRET_ENCRYPTION_KEY (secretKey.js). Stored as "enc1:" + base64. A
-//              secret that does not open (another key, a changed row) never passes: the caller
-//              gets null and the log says why, without any part of the secret. Recovery codes
+//              secret that does not open (another key, a changed row), or opens to something
+//              that is no TOTP secret (e.g. sealed twice), never passes: the caller gets null
+//              and the log says why, without any part of the secret. Recovery codes
 //              stay hashed (store.js). sealStoredSecrets encrypts rows from before this, once.
 // ============================================================
 
 import { openSealed, sealBytes } from '@seasonal-entertainment/shared/crypto.js';
+import { base32Decode } from './totp.js';
 
 const PREFIX = 'enc1:';
 
@@ -20,7 +22,17 @@ export async function sealSecret(secret, key) {
   return PREFIX + (await sealBytes(new TextEncoder().encode(secret), key));
 }
 
-// The secret, or null when it does not open with this key (logged, with the user's id only).
+// A TOTP secret is non-empty base32 (totp.js); anything else would throw inside the code check.
+function usableTotpSecret(secret) {
+  try {
+    return base32Decode(secret).length > 0;
+  } catch {
+    return false;
+  }
+}
+
+// The secret, or null when it does not open with this key or opens to something that is no
+// TOTP secret (logged, with the user's id only).
 export async function openSecret(stored, key, userId, log = console.error) {
   const bytes = isSealed(stored) ? await openSealed(stored.slice(PREFIX.length), key) : null;
   if (!bytes) {
@@ -30,7 +42,15 @@ export async function openSecret(stored, key, userId, log = console.error) {
     );
     return null;
   }
-  return new TextDecoder().decode(bytes);
+  const secret = new TextDecoder().decode(bytes);
+  if (!usableTotpSecret(secret)) {
+    log(
+      `[2fa] the 2FA secret of user ${userId} cannot be used: it decrypts, but not to a TOTP ` +
+        'secret (encrypted twice, or the row was changed); this login is refused'
+    );
+    return null;
+  }
+  return secret;
 }
 
 // At start: encrypts every secret still stored in plain text (idempotent: sealed rows are

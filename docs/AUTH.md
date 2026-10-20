@@ -196,6 +196,10 @@ member with an **embed token** instead (`server/src/embed/`; SE-NIGHT-2 follow-u
     The code is refused, and the server log says "the 2FA secret of user <id> cannot be
     decrypted: SECRET_ENCRYPTION_KEY is not the key it was stored with", with no part of the
     secret. At start it also counts such rows.
+  - A secret that opens but is no TOTP secret (not base32, e.g. encrypted twice) is refused the
+    same way, with the same answer (401 "That code is not valid.", never a 500) and the log line
+    "the 2FA secret of user <id> cannot be used: it decrypts, but not to a TOTP secret"
+    (`openSecret`, `server/src/twofa/secretBox.js`).
   - Recovery codes stay SHA-256 hashes and work whatever the key, so they remain the way back
     in.
   - **Losing the key** makes every stored 2FA secret unreadable: those accounts sign in with a
@@ -284,7 +288,10 @@ in memory, calls the bootstrap route with it (salt and auth key derived from the
 `data/DEV-ADMIN.txt` (gitignored). Admins need 2FA, so it then turns 2FA on for that account
 through the real API and adds the TOTP secret, its `otpauth://` link and the recovery codes to
 the same file. It also adds a `SESSION_SECRET` to `.env` if missing, so dev logins survive
-restarts. Running it again changes nothing.
+restarts. Run again when the account already has 2FA, it rewrites the file's 2FA part from the
+secret stored now (it may have been set up again since), keeping the username and password; the
+recovery codes are stored hashed and are not shown again. It only reads: the account's 2FA is
+never reset or changed, since an authenticator app uses it.
 
 ## Admin: users and the audit log
 

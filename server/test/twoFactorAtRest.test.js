@@ -6,7 +6,9 @@
 //              secret shown at setup is nowhere in the database; an account enabled before the
 //              encryption (a plain-text row) logs in before and after the start-up migration;
 //              the migration encrypts once and never again; another key refuses the code (not
-//              the recovery codes) with a clear log line, and the migration reports it; the key
+//              the recovery codes) with a clear log line, and the migration reports it; a
+//              secret that decrypts but is no TOTP secret (sealed twice) is refused the same
+//              way, never a 500; the key
 //              is required in production, must be 32 bytes, and development says when it uses
 //              the public development key.
 // ============================================================
@@ -16,7 +18,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/app.js';
 import { readConfig } from '../src/config.js';
 import { DEV_SECRET_KEY, readSecretKey } from '../src/secretKey.js';
-import { sealStoredSecrets } from '../src/twofa/secretBox.js';
+import { sealSecret, sealStoredSecrets } from '../src/twofa/secretBox.js';
 import { codeForStep, stepAt } from '../src/twofa/totp.js';
 import { logIn, proof } from './helpers/accountKeys.js';
 import { ORIGIN, TEST_SECRET_KEY, makeTestApp, registerUser } from './helpers/testApp.js';
@@ -130,6 +132,25 @@ it('another key refuses the code with a clear log line; recovery codes still wor
     unreadable: 1,
   });
   expect(log[0]).toMatch(/1 stored 2FA secrets do not open with SECRET_ENCRYPTION_KEY/);
+});
+
+it('a secret that decrypts but is no TOTP secret (sealed twice) is refused like one that does not open', async () => {
+  t = makeTestApp();
+  const { agent } = await registerUser(t, 'anna', PASSWORD);
+  const { secret, recoveryCodes } = await enable(agent);
+  // What a second migration run once did to a row: the sealed text sealed again.
+  t.db
+    .prepare('UPDATE two_factor SET secret = ?, last_step = 0')
+    .run(await sealSecret(storedSecret(), t.config.secretKey));
+  const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+  const refused = await logInWith(t.app, { code: codeNow(secret) });
+  expect(refused.status).toBe(401); // the same answer as a secret that does not open
+  expect(refused.body.error).toBe('invalid_code');
+  const line = errors.mock.calls.map((c) => c.join(' ')).join('\n');
+  expect(line).toMatch(/\[2fa\] the 2FA secret of user \d+ cannot be used: it decrypts, but not/);
+  expect(line).not.toContain(secret);
+  expect((await logInWith(t.app, { recoveryCode: recoveryCodes[0] })).status).toBe(200);
 });
 
 describe('SECRET_ENCRYPTION_KEY', () => {

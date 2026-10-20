@@ -8,6 +8,7 @@ playwright-report/
 # Screenshots of the manual-style browser checks (looked at, never committed)
 reports/embed-check/
 reports/embed-check-2/
+reports/night-3/
 # Local data: the SQLite database and the dev admin's credentials file
 data/
 # The development call server binary (npm run dev:calls downloads it)
@@ -17,4 +18,8 @@ data/
 .env.*
 # ... except the list of keys (names only, no values), which belongs in the repository.
 !.env.example
+# The site's settings on the server (docs/DEPLOYMENT.md): its secrets, and the local compose
+# additions such as the bots' read-only mounts.
+deploy/site/site.env
+deploy/site/docker-compose.override.yml
 .claude/settings.local.json

@@ -80,6 +80,11 @@ describe('editor', () => {
     expect(bad.status).toBe(400);
     const dup = await agent.post('/api/admin/info').send({ slug: 'faq', title: 'Again', body: '' });
     expect(dup.status).toBe(409);
+    // /info/prices is the site's price chart page (docs/BOTS.md).
+    const reserved = await agent
+      .post('/api/admin/info')
+      .send({ slug: 'prices', title: 'P', body: '' });
+    expect(reserved.status).toBe(400);
     expect(auditActions()).toEqual(['info.create']);
   });
 

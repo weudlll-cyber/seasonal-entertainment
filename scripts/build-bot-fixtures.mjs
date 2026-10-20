@@ -1,0 +1,35 @@
+// ============================================================
+// File:        build-bot-fixtures.mjs
+// Path:        scripts/build-bot-fixtures.mjs
+// Project:     Seasonal Entertainment
+// Description: `npm run dev:bot-fixtures`: builds the two development stand-ins for the
+//              owner's bot databases (server/src/bots/fixtures.js: the bots' exact schemas,
+//              clearly fake seeded data) into data/bot-fixtures/ (gitignored, like all of
+//              data/). `npm run dev` points PRICE_BOT_DB and EVENT_BOT_DB there when they are
+//              not set (docs/BOTS.md). Run again to move the sample week to the current one.
+// ============================================================
+
+import { mkdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { buildEventFixture, buildPriceFixture } from '../server/src/bots/fixtures.js';
+
+export const FIXTURE_DIR = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'data',
+  'bot-fixtures'
+);
+export const FIXTURE_FILES = {
+  PRICE_BOT_DB: path.join(FIXTURE_DIR, 'snapshots.db'),
+  EVENT_BOT_DB: path.join(FIXTURE_DIR, 'stannouncebot.db'),
+};
+
+// Only when run as the script (dev.mjs imports the paths above).
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  if (process.env.NODE_ENV === 'production') throw new Error('bot fixtures are for development');
+  mkdirSync(FIXTURE_DIR, { recursive: true });
+  buildPriceFixture(FIXTURE_FILES.PRICE_BOT_DB);
+  buildEventFixture(FIXTURE_FILES.EVENT_BOT_DB);
+  console.log(`Fake bot data (development only) written to ${FIXTURE_DIR}`);
+}

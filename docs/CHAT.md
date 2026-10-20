@@ -79,6 +79,12 @@ of the module other than `index.js`.
   get **Attach file** (images and PDFs): the file is uploaded first (`POST /api/chat/uploads`)
   and then sent like any attachment; uploaded files are fetched only through the access-checked
   `/api/chat/files/...` (ARCHITECTURE.md, "Chat").
+- **Sending**: the text stays in the field until the server has answered (a refused message is
+  not lost), then the field clears. The live connection often delivers the sender's own message
+  before that answer: it is listed once, since the list keeps one entry per message id
+  (`applyEvent`, `mergeMessages` in `useChatRoom.js`). For that moment the same text is both in
+  the list and in the field, so a test looking for a just-sent message looks inside the message
+  list (`client/src/chat/chatPanel.test.jsx`).
 - **The message list** (`MessageList.jsx`, `useScrollPin.js`) opens at the newest message and
   stays pinned to it while the reader is at or near the bottom (48 px), also when an image or a
   preview card makes the newest message grow; a reader who scrolled up is not moved and gets a

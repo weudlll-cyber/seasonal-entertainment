@@ -107,6 +107,13 @@
   display: grid;
 }
 
+.home__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: auto;
+}
+
 @media (max-width: 999.98px) {
   .home {
     height: auto;

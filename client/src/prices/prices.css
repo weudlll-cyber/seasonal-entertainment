@@ -1,0 +1,192 @@
+/* ============================================================
+   File:        prices.css
+   Path:        client/src/prices/prices.css
+   Project:     Seasonal Entertainment
+   Description: Prices (docs/BOTS.md): the home card's rows with their sparklines, the token
+                picker and range buttons of /info/prices, and the hand-built SVG chart with its
+                hover mark. Only design tokens: each season's line takes its colour token, so
+                light and dark themes follow the site's own.
+   ============================================================ */
+
+.sparkline,
+.price-chart,
+.price-pick {
+  --season: var(--color-text-muted);
+}
+
+.sparkline--spring,
+.price-chart--spring,
+.price-pick--spring {
+  --season: var(--color-spring);
+}
+
+.sparkline--summer,
+.price-chart--summer,
+.price-pick--summer {
+  --season: var(--color-summer);
+}
+
+.sparkline--autumn,
+.price-chart--autumn,
+.price-pick--autumn {
+  --season: var(--color-autumn);
+}
+
+.sparkline--winter,
+.price-chart--winter,
+.price-pick--winter {
+  --season: var(--color-winter);
+}
+
+.sparkline path,
+.price-chart__line {
+  fill: none;
+  stroke: var(--season);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+/* The home card: one row per token. */
+.price-rows {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.price-row {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.price-row img {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.price-row__price {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.price-change {
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-change--up {
+  color: var(--color-success);
+}
+
+.price-change--down {
+  color: var(--color-danger);
+}
+
+/* /info/prices */
+.prices__tokens,
+.prices__ranges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: var(--space-2) 0;
+}
+
+.price-pick {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 8rem;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--season);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.price-pick[aria-pressed='true'],
+.prices__ranges .button[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-active-bg);
+}
+
+/* The picked token keeps its season edge. */
+.price-pick[aria-pressed='true'] {
+  border-left-color: var(--season);
+}
+
+.price-pick span,
+.price-pick small {
+  font-variant-numeric: tabular-nums;
+}
+
+.price-chart {
+  margin: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.price-chart__frame {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-1);
+}
+
+.price-chart__axis,
+.price-chart__times {
+  display: flex;
+  justify-content: space-between;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-chart__axis {
+  flex-direction: column;
+}
+
+.price-chart__times {
+  margin-left: 5.5rem;
+}
+
+.price-chart__plot {
+  position: relative;
+}
+
+.price-chart__svg {
+  display: block;
+  width: 100%;
+  height: 16rem;
+  border-bottom: 1px solid var(--color-border);
+  border-left: 1px solid var(--color-border);
+  touch-action: none;
+}
+
+.price-chart__svg:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* The marked snapshot: a round dot (HTML, so the stretched SVG cannot squash it). */
+.price-chart__mark {
+  position: absolute;
+  width: 0.625rem;
+  height: 0.625rem;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  background: var(--season);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.price-chart__readout {
+  margin-top: var(--space-1);
+  font-variant-numeric: tabular-nums;
+}

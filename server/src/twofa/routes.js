@@ -31,7 +31,7 @@ import {
 } from './store.js';
 import { generateSecret, matchStep, otpauthUrl } from './totp.js';
 
-const ISSUER = 'Seasonal Entertainment';
+export const ISSUER = 'Seasonal Entertainment'; // the name authenticator apps show
 const PENDING_LOGIN_MS = 5 * 60_000;
 
 // Either a 6-digit code or a recovery code, not both missing.
