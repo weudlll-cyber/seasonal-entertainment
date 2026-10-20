@@ -37,21 +37,30 @@ An entry moves from part one to part two only when its branch is merged into `ma
 - **A ratio view between the seasons** — unconfirmed proposal, not decided (e.g. Spring priced
   in Summer).
 - **Call recording** — unconfirmed proposal, not decided. Calls are not recorded (privacy draft).
-- **Linking calls to the events calendar** — unconfirmed proposal, not decided: an event could
-  carry its call, and a call its event.
-
-- Info pages with admin editor
-- Accounts with Discord/Telegram login and 2FA for organisers/admins
-- Bots and group roles
-- Games hub and race-game connection
-- Chat
-- Notifications
-- Admin pages (events calendar editable without code changes)
-- VPS deployment — prepared (SE-NIGHT-2 part 7: image, compose with Caddy, backups, runbook in
-  docs/DEPLOYMENT.md); the deployment itself waits for the owner's domains, VPS access and
-  the backup key pair made on the owner's PC (backups go there, decided 2026-10-19).
+- **Linking calls to events** — unconfirmed proposal, not decided: an event (now kept in the event
+  bot) could carry its call, and a call its event.
+- **Login with Discord or Telegram** — open. Accounts use a username and password, with 2FA
+  required for organisers and admins (closed: SE-NIGHT-1 pieces 2 and 3); logging in with a
+  Discord or Telegram account is not built (for Telegram's recovery codes see above).
+- **Group roles** — open: site roles tied to Discord or Telegram groups are not built. The bots'
+  data is shown (prices, events: SE-NIGHT-3 and SE-BOTS-2).
+- **Race-game connection** — open: the games hub lists the race game as "coming soon"; the game
+  lives in its own repository and is not connected to the site yet.
+- **VPS deployment** — open, the owner's word: prepared (SE-NIGHT-2 part 7: image, compose with
+  Caddy, backups, runbook in docs/DEPLOYMENT.md); the deployment itself waits for the owner's
+  domains, VPS access and the backup key pair made on the owner's PC (backups go there, decided
+  2026-10-19).
 
 ## PART TWO — closed
+
+- **The first roadmap list's finished items** — checked against the tree by SE-BOTS-2
+  (2026-10-20) and moved here: info pages with admin editor (SE-NIGHT-1 piece 5); accounts with
+  2FA for organisers and admins (pieces 2 and 3; Discord/Telegram login stays open); the games
+  hub (piece 7; the race-game connection stays open); chat (piece 8 and the chat work after it);
+  notifications inside the site — unread counters and @mentions (SE-DM-2; operating-system
+  notifications stay a proposal); admin pages (users, audit log, info pages, games, chat rooms,
+  chat media, settings, embedding; the events calendar editor was dropped, events come from the
+  event bot, SE-BOTS-2 part 2).
 
 - **Prices of ETH and POL** — closed by SE-BOTS-2 part 1 (`feat/se-bots-2`, not merged yet;
   owner decision 2026-10-20): the site fetches their history from CoinGecko's free Demo API
