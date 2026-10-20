@@ -10,6 +10,7 @@ reports/embed-check/
 reports/embed-check-2/
 reports/night-3/
 reports/bots-2/
+reports/bots-2b/
 # Local data: the SQLite database and the dev admin's credentials file
 data/
 # The development call server binary (npm run dev:calls downloads it)

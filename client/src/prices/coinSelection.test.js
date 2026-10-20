@@ -3,9 +3,10 @@
 // Path:        client/src/prices/coinSelection.test.js
 // Project:     Seasonal Entertainment
 // Description: Which coins the chart shows (coinSelection.js) and its geometry for several
-//              lines (chartGeometry.js): the address read in button order with Spring as the
-//              fallback; coins without a price never shown; toggling keeps at least one; "All"
-//              and its way back; one scale shared by every line; no line across a gap.
+//              lines (chartGeometry.js): the address read in button order with Spring as
+//              the fallback; coins without a price never shown; toggling keeps at least one;
+//              "All coins" and its way back; one scale shared by every line; no line across
+//              a gap.
 // ============================================================
 
 import { describe, expect, it } from 'vitest';
@@ -39,7 +40,7 @@ describe('picking coins', () => {
     expect(toggleCoin(['eth'], 'eth')).toEqual(['eth']);
   });
 
-  it('"All" shows every available coin; again, the single coin from before', () => {
+  it('"All coins" shows every available coin; again, the single coin from before', () => {
     expect(toggleAll(['eth'], ALL, 'eth')).toEqual(ALL);
     expect(toggleAll(ALL, ALL, 'eth')).toEqual(['eth']);
     // The coin from before is no longer available: the first one is.

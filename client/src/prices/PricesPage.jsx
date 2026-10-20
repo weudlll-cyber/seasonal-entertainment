@@ -5,13 +5,13 @@
 // Description: /info/prices, in the "Seasonal Tokens" section: the four seasons' latest prices
 //              (from the price bot) and a reference row with ETH, POL and BTC (from CoinGecko,
 //              with its attribution), each a button showing price and 24-hour change that
-//              toggles the coin on the one chart; "All" shows every coin and, pressed again, the
-//              single coin shown before. The chosen coins live in the address (?coins=…), so a
-//              link shows the same view (coinSelection.js). The chart covers 24 hours, 7 days,
-//              30 days, a year or everything; then the fair price and the converter with mining
-//              times, as the price bot's /value and /swap (FairPriceTable.jsx, Converter.jsx;
-//              docs/BOTS.md). A source that is not connected says so plainly. timeZone is a prop
-//              so tests can pin it.
+//              toggles the coin on the one chart; "All coins" shows every coin and, pressed
+//              again, the single coin shown before. The chosen coins live in the address
+//              (?coins=…), so a link shows the same view (coinSelection.js). The chart covers
+//              24 hours, 7 days, 30 days, a year or everything; then the fair price and the
+//              converter with mining times, as the price bot's /value and /swap
+//              (FairPriceTable.jsx, Converter.jsx; docs/BOTS.md). A source that is not
+//              connected says so plainly. timeZone is a prop so tests can pin it.
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
@@ -37,7 +37,8 @@ export default function PricesPage({ timeZone = deviceZone() }) {
   const [reference, setReference] = useState(null); // /reference-prices: { connected, prices }
   const [range, setRange] = useState('7d');
   const [histories, setHistories] = useState({}); // "token:range" -> points
-  // The coin "All" goes back to: the one shown alone last (at first: the address's first).
+  // The coin "All coins" goes back to: the one shown alone last (at first: the address's
+  // first).
   const [single, setSingle] = useState(() => parseCoins(params.get('coins'))[0]);
   const asked = useRef(new Set()); // "token:range" already requested: never asked twice
   const [error, setError] = useState(null);
@@ -153,7 +154,8 @@ export default function PricesPage({ timeZone = deviceZone() }) {
             aria-pressed={allShown}
             onClick={() => show(toggleAll(selected, available, single))}
           >
-            All
+            {/* Not just "All": the range buttons below have an "All" of their own. */}
+            All coins
           </button>
         )}
       </div>

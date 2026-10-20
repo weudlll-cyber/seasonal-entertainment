@@ -2,12 +2,13 @@
 // File:        comparisonChart.test.jsx
 // Path:        client/src/prices/comparisonChart.test.jsx
 // Project:     Seasonal Entertainment
-// Description: Several coins on the one chart of /info/prices (PriceChart.jsx, PricesPage.jsx):
-//              the coins from the address and back into it; two or more shown as % change since
-//              the range's start (each coin from its own first point), titled "Comparison", with
-//              a 0 % line and a legend; the read-out gives each coin's price and % change at the
-//              pointed time; the last coin cannot be switched off; "All" and back; a coin without
-//              a price cannot be picked; a gap in a coin's data leaves a gap in its line.
+// Description: Several coins on the one chart of /info/prices (PriceChart.jsx,
+//              PricesPage.jsx): the coins from the address and back into it; two or more
+//              shown as % change since the range's start (each coin from its own first
+//              point), titled "Comparison", with a 0 % line and a legend; the read-out gives
+//              each coin's price and % change at the pointed time; the last coin cannot be
+//              switched off; "All coins" and back; a coin without a price cannot be picked;
+//              a gap in a coin's data leaves a gap in its line.
 // ============================================================
 
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -127,11 +128,11 @@ it('picking coins changes the address; the last coin stays; a coin without price
   expect(coin('Autumn')).toBeDisabled();
 });
 
-it('"All" shows every coin with a price; pressed again, the single coin from before', async () => {
+it('"All coins" shows every coin with a price; pressed again, the single coin from before', async () => {
   showPage('/info/prices?coins=eth');
   await screen.findByRole('img', { name: /^ETH price from/ });
   const all = within(screen.getByRole('group', { name: 'Coins' })).getByRole('button', {
-    name: 'All',
+    name: 'All coins',
   });
   fireEvent.click(all);
   const chart = await screen.findByRole('img', { name: /^Comparison of/ });

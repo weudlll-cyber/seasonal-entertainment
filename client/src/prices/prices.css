@@ -111,6 +111,7 @@
 }
 
 .price-pick[aria-pressed='true'],
+.prices__all[aria-pressed='true'],
 .prices__ranges .button[aria-pressed='true'] {
   border-color: var(--color-accent);
   background: var(--color-active-bg);

@@ -129,8 +129,8 @@ coins the one chart shows (owner request 2026-10-20; `client/src/prices/PriceCha
 `coinSelection.js`):
 
 - At least one coin stays shown; a coin without a price (its source not connected) cannot be
-  picked. **All** shows every coin with a price; pressed again, the coin that was shown on its own
-  before. The range buttons apply to every shown coin.
+  picked. **All coins** (not just "All": the range buttons have one) shows every coin with a
+  price; pressed again, the coin that was shown on its own before. The range buttons apply to every shown coin.
 - **One coin**: its price in US dollars, as before.
 - **Two or more**: titled "Comparison", each coin as % change since its first point in the
   chosen range (so coins of very different prices compare), a dashed 0 % line, and "% change
@@ -246,11 +246,11 @@ sample week to the current one.
 - `client/e2e/prices.spec.js` (real browser, the price answers stubbed): the converter's fields
   are named exactly "Amount", "From" and "To", and Autumn into ETH shows Autumn's mining time only.
 - `client/src/prices/coinSelection.test.js`: the address read in button order with Spring as the
-  fallback, coins without a price never shown, the last coin stays, "All" and back; one scale
+  fallback, coins without a price never shown, the last coin stays, "All coins" and back; one scale
   for several lines, a gap leaves a gap.
 - `client/src/prices/comparisonChart.test.jsx`: two coins as % change with a 0 % line, heading
-  and legend; the read-out per coin; one coin in US dollars; picking writes the address; "All";
-  a coin without price disabled; a data gap leaves a gap in the line.
+  and legend; the read-out per coin; one coin in US dollars; picking writes the address; "All
+  coins"; a coin without price disabled; a data gap leaves a gap in the line.
 - `server/test/droppedTables.test.js`: the old `events` table is dropped on start.
 - `client/e2e/events.spec.js`: the real server reading a fixture event bot; no events editor in
   the admin area.

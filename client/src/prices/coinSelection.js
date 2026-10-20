@@ -4,7 +4,7 @@
 // Project:     Seasonal Entertainment
 // Description: Which coins the chart of /info/prices shows (docs/BOTS.md): read from and written
 //              to the page address (?coins=spring,eth), toggled by the coin buttons with at least
-//              one always left, and "All" with its way back to the single coin shown before.
+//              one always left, and "All coins" with its way back to the single coin shown before.
 //              Coins without a price (a source not connected) are never shown.
 // ============================================================
 
@@ -34,8 +34,8 @@ export function toggleCoin(selected, id) {
   return selected.length > 1 ? selected.filter((s) => s !== id) : selected;
 }
 
-// "All": every available coin; when all are shown already, back to `single` (the coin shown on
-// its own before), or the first available one if that is gone.
+// "All coins": every available coin; when all are shown already, back to `single` (the
+// coin shown on its own before), or the first available one if that is gone.
 export function toggleAll(selected, available, single) {
   if (!available.every((id) => selected.includes(id))) return available;
   return [available.includes(single) ? single : available[0]];
