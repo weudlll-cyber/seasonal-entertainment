@@ -70,7 +70,7 @@ it('ETH and POL: price and 24-hour change, with CoinGecko named beside them', as
     'ETH$2,412.50+1.23 % (24 h)'
   );
   expect(within(row).getByRole('button', { name: /^POL/ })).toHaveTextContent(
-    'POL$0.18−2.00 % (24 h)'
+    'POL$0.1834−2.00 % (24 h)'
   );
   const credit = screen.getByRole('link', { name: 'Powered by CoinGecko API' });
   expect(credit).toHaveAttribute('href', 'https://www.coingecko.com/en/api/');

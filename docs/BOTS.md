@@ -122,6 +122,10 @@ numbers):
   days too over 48 hours. ETH, POL and BTC have none. Results below 1 keep six significant
   digits, so e.g. Spring in BTC (a few hundred-thousandths) stays readable.
 
+Every coin's US-dollar price on the prices page (cards, chart axis, read-out, converter) follows
+one rule (`formatUsd`, `client/src/prices/priceFormat.js`): below $1 at least four significant
+digits (Spring $0.002712, POL $0.09420), from $1 on two decimals (ETH $2,436.58, BTC $82,445.05).
+
 ## The chart: one coin or several
 
 On `/info/prices` the coin buttons (Spring, Summer, Autumn, Winter, ETH, POL, BTC) toggle which

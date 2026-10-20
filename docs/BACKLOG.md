@@ -53,6 +53,11 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **Small prices cut to two decimals** — closed by SE-BOTS-2c (`feat/se-bots-2`, not merged yet;
+  owner request 2026-10-20): POL showed $0.09 where the price bot shows 0.094195. One rule for
+  every coin's price on the prices page now (`formatUsd`): below $1 at least four significant
+  digits ($0.09420), from $1 on two decimals.
+
 - **Several coins on one price chart, BTC, a converter with every coin** — closed by SE-BOTS-2b
   (`feat/se-bots-2`, not merged yet; owner request 2026-10-20): BTC joins ETH and POL as a
   reference coin (CoinGecko `bitcoin`, about 78 calls a day in all); the coin buttons on
