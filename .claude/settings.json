@@ -23,7 +23,6 @@
       "Bash(cp *)",
       "Bash(netstat *)"
     ],
-    "ask": ["Bash(gh pr merge *)", "Bash(git merge *)", "Bash(git branch -D *)"],
     "deny": [
       "Bash(git push --force*)",
       "Bash(git push -f*)",
@@ -32,7 +31,6 @@
       "Bash(git push * +*)",
       "Bash(git push*-d*master*)",
       "Bash(git push*master*-d*)",
-      "Bash(git push * -d *)",
       "Bash(git push * :*)",
       "Bash(git push --mirror*)",
       "Bash(git push * --mirror*)",

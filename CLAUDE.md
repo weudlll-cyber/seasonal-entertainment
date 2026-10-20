@@ -29,9 +29,15 @@ These rules apply to every change in this repository, by people and by agents.
   approved.
 - Always push the working branch, even when it is not being merged.
 - After a branch is merged and the CI run on `master` for the merge commit is green, delete
-  the branch on origin and locally without asking (decided 2026-10-17). `master` is never
+  the branch on origin (`git push origin --delete <branch>`) and locally (`git branch -d`,
+  merged branches only, never `-D`) without asking (decided 2026-10-17). `master` is never
   deleted; `.claude/settings.json` denies it.
 - No force push, no history rewriting.
+- Agents (decided 2026-10-20): `.claude/settings.json` asks for nothing. Merges happen only
+  when a task says the owner approved them; the deny rules (force push, mirror, rebase, amend,
+  `reset --hard`, worktrees, `gh api`, repository edits, deleting `master`, risky `rm`, `.env`
+  reads) stay. Run git and gh steps as single simple commands, not chained with `;`, `&&` or
+  pipes into other tools, so each one matches the allow list on its own.
 
 ## Decisions
 
