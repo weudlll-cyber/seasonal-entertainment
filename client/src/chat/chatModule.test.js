@@ -16,8 +16,8 @@ const moduleDir = path.dirname(fileURLToPath(import.meta.url));
 const srcDir = path.dirname(moduleDir);
 
 // What the module may use from outside: React, the shared chat rules, the account context,
-// the site's API client and its stroke icons (a leaf file: it imports nothing). Nothing from
-// pages, layout or other components.
+// the site's API client, its stroke icons and its never-throwing browser storage (leaf files:
+// they import nothing). Nothing from pages, layout or other components.
 const ALLOWED_OUTSIDE = new Set([
   'react',
   '@seasonal-entertainment/shared/chatRules.js',
@@ -27,6 +27,8 @@ const ALLOWED_OUTSIDE = new Set([
   path.join(srcDir, 'session', 'SessionContext.jsx'),
   path.join(srcDir, 'api', 'http.js'),
   path.join(srcDir, 'app', 'icons.jsx'),
+  // The safety numbers' per-device marks (safetyStore.js).
+  path.join(srcDir, 'app', 'storage.js'),
 ]);
 
 const importsOf = (file) =>

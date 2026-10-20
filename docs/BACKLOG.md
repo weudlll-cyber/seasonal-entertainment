@@ -8,9 +8,6 @@ An entry moves from part one to part two only when its branch is merged into `ma
   file would have to be encrypted in the browser too.
 - **Link previews in direct messages** — open. Left out of v1: the server would have to see the
   link to fetch it; links are plain clickable links.
-- **Safety-number verification** — open. The server hands out public keys, so a compromised server
-  could substitute one (docs/CHAT.md, "Known limit"); two members comparing a safety number
-  outside the site would detect it.
 - **Telegram-login recovery code handling** — open (decided direction 2026-10-17). Recovery codes
   are to apply to future Telegram logins too: such an account has no password to derive a
   wrapping key from (docs/AUTH.md).
@@ -53,6 +50,11 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **Safety-number verification** — closed by SE-NIGHT-4 piece 3 (`feat/se-night-4`, not merged
+  yet): "Verify safety number" in a direct conversation's "…"; both members see the same 12
+  groups of 5 digits (BLAKE2b of the two sorted public keys); "Mark as verified" per device
+  with a "Verified" badge; trust on first use with a key-change notice that removes the mark,
+  sending never blocked (docs/CHAT.md, "Safety numbers").
 - **Speed and phone width** — closed by SE-NIGHT-4 piece 2 (`feat/se-night-4`, not merged
   yet): pages loaded on first use (first JavaScript 293 → 113 KB gzip), hashed files cached for
   a year, smaller brand images, lazy decoration, no layout shift while data arrives, 44px

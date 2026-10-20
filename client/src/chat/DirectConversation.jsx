@@ -8,20 +8,27 @@
 //              the partner's security key changed (older pages too), older messages on reaching
 //              the top (or with "Load older messages"), and the composer. A message made for an
 //              earlier key cannot be read and says so. The partner's messages can be reported
-//              (ReportDirectDialog: shared only with consent).
+//              (ReportDirectDialog: shared only with consent). The header's "…" opens "Verify
+//              safety number" (SafetyNumberDialog); a number marked as verified on this device
+//              shows a "Verified" badge, and a partner key that changed since this device last
+//              saw it a notice above the messages (useSafetyNumber).
 // ============================================================
 
 import { useMemo, useRef, useState } from 'react';
 import ChatComposer from './ChatComposer.jsx';
 import ChatNotice from './ChatNotice.jsx';
 import DirectMessage from './DirectMessage.jsx';
+import MenuButton from './MenuButton.jsx';
 import ReportDirectDialog from './ReportDirectDialog.jsx';
+import SafetyNumberDialog from './SafetyNumberDialog.jsx';
 import { showDirect } from './directView.js';
 import { itemsById, useMediaLibrary } from './mediaLibrary.js';
 import { useDirectConversation } from './useDirectConversation.js';
 import { useOlderOnTop } from './useOlderOnTop.js';
+import { useSafetyNumber } from './useSafetyNumber.js';
 import { useScrollPin } from './useScrollPin.js';
 import './ChatMessage.css';
+import './ChatSafety.css';
 
 // The site's sticker/GIF library by item id (mediaLibrary.js, shared with the picker),
 // loaded once a message uses one; when it cannot load, every item shows as unknown.
@@ -55,6 +62,8 @@ export default function DirectConversation({ partner, me, keyId, privateKey }) {
   const library = useLibraryItems(messages);
   const [reporting, setReporting] = useState(null); // the message being reported
   const [notice, setNotice] = useState(null);
+  const safety = useSafetyNumber(me?.id, partner.id, data?.partnerKey ?? null, privateKey);
+  const [verifying, setVerifying] = useState(false);
 
   async function sendReport(body) {
     const sent = await conversation.report(body);
@@ -76,7 +85,24 @@ export default function DirectConversation({ partner, me, keyId, privateKey }) {
         </button>
         <strong>{name}</strong>
         {data?.partner.online && <span className="chat-online">online</span>}
+        {safety.verified && <span className="chat-safety__badge">Verified</span>}
+        {data?.partnerKey && (
+          <MenuButton
+            items={[{ label: 'Verify safety number', run: () => setVerifying(true) }]}
+            label={`Conversation with ${name}`}
+            buttonLabel={`Actions for the conversation with ${name}`}
+            className="chat-message__more"
+          >
+            <span aria-hidden="true">…</span>
+          </MenuButton>
+        )}
       </div>
+      {/* Trust on first use: this device saw another key before. Sending stays possible. */}
+      {safety.keyChanged && (
+        <p className="chat-safety__notice" role="status">
+          {name}&apos;s security key changed — verify the safety number again
+        </p>
+      )}
       <div className="chat-messages-frame">
         <ol
           ref={list}
@@ -102,7 +128,7 @@ export default function DirectConversation({ partner, me, keyId, privateKey }) {
           {withKeyNotices(messages, data?.partnerKey?.keyId).map((row) =>
             row.notice ? (
               <li key={row.notice} className="chat-note chat-key-notice">
-                {name}&apos;s security key changed
+                {name}&apos;s security key changed — verify the safety number again
               </li>
             ) : (
               <DirectMessage
@@ -123,6 +149,13 @@ export default function DirectConversation({ partner, me, keyId, privateKey }) {
         )}
       </div>
       <ChatNotice error={conversation.error} notice={notice} />
+      {verifying && (
+        <SafetyNumberDialog
+          safety={safety}
+          partnerName={name}
+          onClose={() => setVerifying(false)}
+        />
+      )}
       {reporting && (
         <ReportDirectDialog
           messages={messages}

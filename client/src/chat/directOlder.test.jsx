@@ -129,7 +129,7 @@ it('keeps the order and the key notice inside the older page; a live reload keep
     texts(list_).filter((t) => /oldest hello|key changed|after the key|newest/.test(t));
   const expected = [
     expect.stringContaining('oldest hello'),
-    "zoe's security key changed",
+    "zoe's security key changed — verify the safety number again",
     expect.stringContaining('after the key change'),
     expect.stringContaining('newest from zoe'),
     expect.stringContaining('newest reply'),

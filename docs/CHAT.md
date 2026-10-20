@@ -48,7 +48,9 @@ The module uses nothing else from the page around it. From outside its folder it
 React, the shared chat rules (`@seasonal-entertainment/shared/chatRules.js`), the account context
 (`client/src/session/SessionContext.jsx`), the site's API client (`client/src/api/http.js`) and
 the site's stroke icons (`client/src/app/icons.jsx`, a leaf file without imports; since
-2026-10-18, so the stars and bells match the rest of the site);
+2026-10-18, so the stars and bells match the rest of the site) and the never-throwing browser
+storage (`client/src/app/storage.js`, also a leaf file; since 2026-10-21, for the safety
+numbers' per-device marks);
 `client/src/chat/chatModule.test.js` fails on any other import, and on any page importing a file
 of the module other than `index.js`.
 
@@ -255,10 +257,26 @@ mediaItemId? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh random no
   (`mergeMessages`, shared with the rooms), so a live reload of the newest page keeps them. Only
   the two members of a conversation can page through it, as with the newest page.
 - **Retention**: direct messages follow the same `CHAT_RETENTION_DAYS` as room messages.
-- **Known limit**: the server hands out the public keys. A compromised server could give a member
-  a key of its own instead of the partner's and read what is then sent (an active attack). A
-  safety-number check between two members, to compare keys outside the site, is an open backlog
-  item.
+- **Safety numbers** (decided 2026-10-21): the server hands out the public keys, so a
+  compromised server could give a member a key of its own instead of the partner's and read
+  what is then sent (an active attack). Two members detect that by comparing their safety
+  number outside the site.
+  - **Where**: a conversation's "…" in its header → "Verify safety number"
+    (`SafetyNumberDialog.jsx`), with a plain-English explanation of what to do with it.
+  - **The number**: both public keys (one's own from the private key, the partner's current
+    one) sorted, joined and hashed with BLAKE2b (`crypto_generichash`, 64 bytes); each 5-byte
+    slice gives one group of 5 digits, 12 groups (`safetyNumber` in `shared/crypto.js`). Both
+    members see the same number; a new key on either side makes another one. Made in the
+    browser; no server change.
+  - **Verified**: "Mark as verified" stores the number in this browser
+    (`se.dm.verified.<me>.<partner>`, `chat/safetyStore.js`), never on the server: another
+    device of the same member knows nothing of it. While the current number is the stored one,
+    the header shows "Verified".
+  - **Trust on first use**: this browser remembers the partner's key id
+    (`se.dm.seenKey.<me>.<partner>`). When a conversation opens with another key than last
+    seen here, it shows "<name>'s security key changed — verify the safety number again" and
+    the verified mark is removed. Sending is never blocked. The notices in the message list
+    where the key changed carry the same words.
 
 ## @mentions
 

@@ -6,7 +6,8 @@
 //              sumo, exact version pinned). Used by the browser, the server tests and the
 //              scripts; no home-made cryptography anywhere else. Covers: the login key split
 //              (password -> Argon2id master key -> auth key + wrapping key), sealing a private
-//              key, the optional recovery code, and encrypting direct messages (crypto_box).
+//              key, the optional recovery code, encrypting direct messages (crypto_box), and
+//              the safety number two members compare to check their keys (docs/CHAT.md).
 //              Binary values travel as standard base64 (with padding).
 // ============================================================
 
@@ -24,6 +25,9 @@ const WRAP_CONTEXT = 'se-wrap\0';
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const CODE_GROUPS = 6;
 const CODE_GROUP_LENGTH = 5;
+// Safety number: 12 groups of 5 digits, each from 5 bytes of the hash.
+const SAFETY_GROUPS = 12;
+const SAFETY_DIGITS = 5;
 
 // Every function waits for the WebAssembly module itself, so callers never have to.
 const ready = () => sodium.ready;
@@ -140,4 +144,33 @@ export async function decryptDirect({ nonce, ciphertext }, partnerPublicKey, own
   } catch {
     return null;
   }
+}
+
+// One's own public key, from the private key (X25519 scalar multiplication with the base
+// point): what the partner sees on their side of the safety number.
+export async function publicKeyOf(privateKey) {
+  await ready();
+  return b64(sodium.crypto_scalarmult_base(privateKey));
+}
+
+// The safety number of two members' direct-message keys: the two public keys sorted (so both
+// sides get the same number), joined and hashed with BLAKE2b (crypto_generichash, 64 bytes);
+// each 5-byte slice of the hash gives one group of 5 digits. 2^40 is far above 10^5, so the
+// digits are as good as uniform. Any change of either key changes the number.
+export async function safetyNumber(publicKeyA, publicKeyB) {
+  await ready();
+  const [first, second] = [unb64(publicKeyA), unb64(publicKeyB)].sort((a, b) =>
+    sodium.compare(a, b)
+  );
+  const joined = new Uint8Array(first.length + second.length);
+  joined.set(first);
+  joined.set(second, first.length);
+  const hash = sodium.crypto_generichash(64, joined);
+  const groups = [];
+  for (let g = 0; g < SAFETY_GROUPS; g += 1) {
+    let value = 0;
+    for (let i = 0; i < 5; i += 1) value = value * 256 + hash[g * 5 + i];
+    groups.push(String(value % 10 ** SAFETY_DIGITS).padStart(SAFETY_DIGITS, '0'));
+  }
+  return groups;
 }

@@ -159,9 +159,9 @@ a {
 .chat-page .se-chat {
   flex: 1;
   min-height: 0;
-  /* On the page the chat is a card like every other (the module itself stays opaque in the
-     drawer and on other sites). */
-  --chat-bg: var(--color-card);
+  /* On the page the chat is a card like every other; inside it the module stays opaque (its
+     messages, its dialogs), as in the drawer and on other sites. */
+  background: var(--color-card);
   padding: var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);

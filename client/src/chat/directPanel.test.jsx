@@ -123,7 +123,9 @@ describe('a conversation', () => {
   it('decrypts in the browser, notes the key change and an earlier own key, marks read', async () => {
     const { calls, list } = await open();
     expect(within(list).getByRole('link', { name: 'https://x.example' })).toBeInTheDocument();
-    expect(within(list).getByText("zoe's security key changed")).toBeInTheDocument();
+    expect(
+      within(list).getByText("zoe's security key changed — verify the safety number again")
+    ).toBeInTheDocument();
     expect(within(list).getByText(/made for an earlier key/)).toBeInTheDocument();
     expect(within(list).queryByText('for my old key')).toBeNull();
     await vi.waitFor(() =>
