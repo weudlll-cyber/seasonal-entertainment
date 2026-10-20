@@ -397,7 +397,8 @@ server/
   src/media/               chat media library: schema, store, image validator, files on disk,
                            picker and admin routes, first-start seed
   src/previews/            chat link previews: safe fetching (SSRF rules), meta parsing, cache,
-                           the preview service, moderators' removal route
+                           the preview service, moderators' removal route; fetchImage.js, also
+                           used for the event bot's images
   src/uploads/             chat file uploads: schema, store, processing (type, metadata,
                            thumbnails), access-checked serving, moderators' removal
   seeds/chat-media/        the starter stickers and GIFs (owner's own files, README credits)
@@ -412,8 +413,9 @@ server/
   src/embed/               the chat on approved other sites: the approved list (a setting),
                            embed tokens, their route allow-list, routes (docs/EMBED.md, AUTH.md)
   src/bots/                the owner's bots' databases, read-only: prices, event occurrences,
-                           public routes with a cache; fixtures.js: fake development data
-                           (docs/BOTS.md)
+                           public routes with a cache, the events' images (fetched by the
+                           server); fixtures.js and fixtureNetwork.js: fake development data
+                           and its image host (docs/BOTS.md)
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests
 shared/                    rules used by server and client (accountRules.js, localWeek.js,

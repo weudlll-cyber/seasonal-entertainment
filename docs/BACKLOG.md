@@ -38,8 +38,6 @@ An entry moves from part one to part two only when its branch is merged into `ma
   read-only mounts assumes it (docs/DEPLOYMENT.md, "The owner's bots").
 - **A ratio view between the seasons** — unconfirmed proposal, not decided (e.g. Spring priced
   in Summer).
-- **Event images from the bot** — open, the owner's word: `image_url` is not loaded, since
-  outside images would need a CSP change.
 - **Call recording** — unconfirmed proposal, not decided. Calls are not recorded (privacy draft).
 - **Linking calls to the events calendar** — unconfirmed proposal, not decided: an event could
   carry its call, and a call its event.
@@ -56,6 +54,11 @@ An entry moves from part one to part two only when its branch is merged into `ma
   the backup key pair made on the owner's PC (backups go there, decided 2026-10-19).
 
 ## PART TWO — closed
+
+- **Event images from the bot** — closed by SE-BOTS-2 part 3 (`feat/se-bots-2`, not merged yet;
+  owner decision 2026-10-20): the server fetches each event's image through the link previews'
+  network guard, re-encodes it without metadata, stores it by a hash of its URL and refreshes it
+  at most daily; `/events` and "Up next" show it from this site (docs/BOTS.md, "Event images").
 
 - **Keep or drop the site's own event admin** — closed by SE-BOTS-2 part 2 (`feat/se-bots-2`,
   not merged yet): dropped (owner decision 2026-10-20). Events are kept only in the event bot;

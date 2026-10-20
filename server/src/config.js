@@ -122,6 +122,14 @@ export function readConfig(env = process.env) {
       priceDb: env.PRICE_BOT_DB ? path.resolve(env.PRICE_BOT_DB) : null,
       eventDb: env.EVENT_BOT_DB ? path.resolve(env.EVENT_BOT_DB) : null,
       cacheMs: 5 * 60_000, // answers kept in memory this long
+      // The event bot's images, fetched by this server (bots/images.js), once a day per URL.
+      images: {
+        maxBytes: 2 * 1024 * 1024,
+        maxWidth: 640,
+        timeoutMs: 5000,
+        maxRedirects: 3,
+        userAgent: 'SeasonalEntertainmentEventImages/1.0 (event images for Seasonal Entertainment)',
+      },
     },
     // Timers (session sweep, chat retention). Tests switch them off; not an env key.
     backgroundJobs: true,

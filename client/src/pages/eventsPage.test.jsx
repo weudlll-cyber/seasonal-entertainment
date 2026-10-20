@@ -6,7 +6,8 @@
 //              exactly the visible week, also across the daylight-saving change; each at the
 //              local time with its zone and the UTC time beside it; a canceled one struck
 //              through and saying so; bot text as text, a link only where the server passed
-//              one on; without the bot a plain "not connected" note.
+//              one on; the event's image from this site with its name as alt text, none when the
+//              server has none; without the bot a plain "not connected" note.
 // ============================================================
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -28,10 +29,14 @@ const occurrence = (id, name, start, extra = {}) => ({
   locationLabel: '',
   locationUrl: null,
   status: 'scheduled',
+  image: null,
   ...extra,
 });
 const WEEK = [
-  occurrence(10, 'Monday Quiz', '2026-10-19T18:00:00Z', { locationLabel: 'Quiz channel' }),
+  occurrence(10, 'Monday Quiz', '2026-10-19T18:00:00Z', {
+    locationLabel: 'Quiz channel',
+    image: '/media/bot-images/0123456789abcdef0123456789abcdef.webp?v=1',
+  }),
   occurrence(11, 'Community <b>Call</b>', '2026-10-22T18:30:00Z', {
     locationLabel: 'Voice',
     locationUrl: 'https://example.org/call',
@@ -85,6 +90,18 @@ it('bot text stays text; only a passed-on web link becomes a link, opened safely
   const link = within(thursday).getByRole('link', { name: 'Open Voice' });
   expect(link).toHaveAttribute('href', 'https://example.org/call');
   expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+});
+
+it("shows the event's image from this site, with the event's name as alt text", async () => {
+  showWeek({ thisWeek: { connected: true, occurrences: WEEK } });
+  const monday = await screen.findByRole('region', { name: 'Monday 19 October' });
+  expect(within(monday).getByRole('img', { name: 'Monday Quiz' })).toHaveAttribute(
+    'src',
+    '/media/bot-images/0123456789abcdef0123456789abcdef.webp?v=1'
+  );
+  // An event the server has no image for shows none.
+  const thursday = screen.getByRole('region', { name: 'Thursday 22 October' });
+  expect(within(thursday).queryByRole('img')).toBeNull();
 });
 
 it('asks the bot for the week shown: local Monday to the next local Monday', async () => {

@@ -92,7 +92,7 @@ describe('home', () => {
     const occurrences = [
       occurrence(1, '2026-10-21T12:00:00Z'), // started before now
       occurrence(2, '2026-10-21T18:00:00Z', 'canceled'),
-      occurrence(3, '2026-10-22T09:00:00Z'),
+      { ...occurrence(3, '2026-10-22T09:00:00Z'), image: '/media/bot-images/a.webp?v=1' },
       occurrence(4, '2026-10-23T09:00:00Z'),
       occurrence(5, '2026-10-24T09:00:00Z'),
     ];
@@ -103,6 +103,12 @@ describe('home', () => {
       'Event 3Thursday 22 October, 09:00 UTC',
       'Event 4Friday 23 October, 09:00 UTC',
     ]);
+    // The event's image, small, with its name as alt text; none where the server has none.
+    expect(within(items[0]).getByRole('img', { name: 'Event 3' })).toHaveAttribute(
+      'src',
+      '/media/bot-images/a.webp?v=1'
+    );
+    expect(within(items[1]).queryByRole('img')).toBeNull();
     expect(within(card).getByRole('link', { name: 'All events' })).toHaveAttribute(
       'href',
       '/events'

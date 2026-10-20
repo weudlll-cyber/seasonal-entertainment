@@ -69,8 +69,28 @@ A configured file that cannot be read (missing, locked, being replaced) answers 
   HTML is ever interpreted).
 - A `location_url` becomes a link only if it is `http:` or `https:`; anything else (`tg://…`,
   `javascript:…`) is dropped on the server. Links open with `rel="noopener noreferrer"`.
-- `image_url` is never passed on or loaded: the site loads no outside images, and the CSP stays
-  as it is.
+- `image_url` is never passed on: the **server** fetches the image itself (see "Event images"),
+  the browser loads it from this site only, and the CSP stays as it is.
+
+## Event images
+
+An event's `image_url` (http(s) only) is shown on `/events` and, small, in "Up next", with the
+event's name as alt text (owner decision 2026-10-20; `server/src/bots/images.js`):
+
+- **Fetched by the server, never by the browser**, through the link previews' image fetch
+  (`server/src/previews/fetchImage.js`, handed over by the chat area's `mountChat`) and its
+  network guard (`safeFetch.js`, `ipPolicy.js`):
+  https on port 443 only, every DNS answer a public address (no private, loopback or cloud
+  metadata addresses), redirects checked, 5 seconds, at most 2 MB, a real JPEG, PNG, WebP or GIF.
+  A plain `http://` image is refused like any other.
+- **Re-encoded like uploaded images**: turned upright, every metadata block (EXIF with GPS, XMP,
+  comments) dropped, scaled down to 640 px wide, stored as WebP in the media folder as
+  `bot-images/<first 32 hex digits of the URL's SHA-256>.webp` and served by the public media
+  route (`/media/bot-images/…`; only such exact names, `server/src/chat/mount.js`).
+- **At most once a day per URL**: a missing image is fetched in the background when the event
+  is first shown; afterwards once a day. A failed refresh keeps the image there was. The address
+  carries `?v=<when it was stored>`, so the media route's year-long cache never shows an old one.
+- **A failed or refused image**: the event shows without one; the server log says why, once.
 
 ## Only the bot's events
 
@@ -84,8 +104,6 @@ question per hour) and shows the next two scheduled occurrences that have not st
 - **ETH and POL prices**: the price bot does not store them (it fetches them live and keeps only
   the four seasonal tokens), and the site calls no outside price API. Open owner decision.
 - **A ratio view between seasons** (e.g. Spring in Summer): not built; open owner decision.
-- **Event images**: `image_url` points elsewhere; loading it would need a CSP change. Open owner
-  decision.
 - **Reminders, reactions, announcements, dispatch logs**: bot internals, not read.
 
 ## Development data
@@ -98,7 +116,14 @@ question per hour) and shows the next two scheduled occurrences that have not st
   cent, ±1 % per hour at most);
 - a few weekly `[Sample]` events from two weeks back to four ahead: past ones `done`, one moved
   by two overrides (the later wins), one canceled this week, one inactive (never shown) and one
-  with a non-web link (shown as text).
+  with a non-web link (shown as text);
+- event images: three events name one on the fixture's own host `images.bot-fixtures.test`
+  (drawn into `data/bot-fixtures/images/`), one a plain `http://` image the guard refuses. In
+  development only, the server answers that reserved host from those files
+  (`server/src/bots/fixtureNetwork.js`): the guard stays on, the host gets a public placeholder
+  address and only its connection is dialled locally, as in the link-preview tests. No other
+  host is reached; with a copy of the real bot (no `images/` folder beside it) development uses
+  the real internet.
 
 `npm run dev` points `PRICE_BOT_DB` and `EVENT_BOT_DB` at these files when neither the shell nor
 `.env` sets them. A key set to an empty value in `.env` keeps that bot off, to see the "not
@@ -109,7 +134,8 @@ sample week to the current one.
 
 - `server/test/botData.test.js`: not connected; latest prices, change and sparkline; history per
   range with at most 500 points; never written; the five-minute cache; the rate limit; the
-  event week with overrides, canceled and inactive events, only web links and no image URL; 503
+  event week with overrides, canceled and inactive events, only web links and never the bot's
+  image URL; 503
   for an unreadable file.
 - `client/src/prices/prices.test.jsx`: the home card (prices, change colours, sparklines; the
   marks and the note without the bot); `/info/prices` (token and range asked for, hover and
@@ -118,6 +144,9 @@ sample week to the current one.
   canceled, text only and safe links, the week asked for, "not connected".
 - `client/src/pages/LandingPage.test.jsx`: "Up next" (the next two scheduled occurrences that
   have not started; "not connected").
+- `server/test/botImages.test.js`: an event's image fetched, re-encoded as WebP without
+  metadata, stored by the URL's hash and served from this site; a private address, plain http
+  or a non-image refused; at most once a day.
 - `server/test/droppedTables.test.js`: the old `events` table is dropped on start.
 - `client/e2e/events.spec.js`: the real server reading a fixture event bot; no events editor in
   the admin area.

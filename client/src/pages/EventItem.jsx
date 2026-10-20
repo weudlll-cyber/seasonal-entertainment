@@ -6,7 +6,9 @@
 //              at the viewer's local time with its zone, the UTC time beside it, where it
 //              happens, its description and link. Bot text is untrusted and rendered as text
 //              only; the link is one only if the server passed it on (http or https); a
-//              canceled occurrence is struck through and says "canceled".
+//              canceled occurrence is struck through and says "canceled". The event's image,
+//              when the server has fetched one, comes from this site (/media), never from
+//              elsewhere.
 // ============================================================
 
 import { formatLocal } from '@seasonal-entertainment/shared/localWeek.js';
@@ -15,7 +17,8 @@ const utcTime = (start) => new Date(start).toISOString().slice(11, 16);
 
 // occurrence: one of /api/bot-events' occurrences.
 export default function EventItem({ occurrence, timeZone }) {
-  const { name, start, status, platform, locationLabel, locationUrl, description } = occurrence;
+  const { name, start, status, platform, locationLabel, locationUrl, description, image } =
+    occurrence;
   const local = formatLocal(start, timeZone);
   const canceled = status === 'canceled';
   const where = [platform, locationLabel].filter(Boolean).join(': ');
@@ -35,6 +38,7 @@ export default function EventItem({ occurrence, timeZone }) {
           </a>
         )}
       </span>
+      {image && <img className="event__image" src={image} alt={name} loading="lazy" />}
     </li>
   );
 }

@@ -2,7 +2,8 @@
    File:        EventsPage.css
    Path:        client/src/pages/EventsPage.css
    Project:     Seasonal Entertainment
-   Description: The events week: navigation row, one block per day, time column + details.
+   Description: The events week: navigation row, one block per day, time column + details
+                (+ the event's image when the server has one).
    ============================================================ */
 
 .week-nav {
@@ -67,4 +68,16 @@
 .event__status {
   color: var(--color-danger);
   font-weight: var(--font-weight-strong);
+}
+
+/* An event's image (fetched by the server from the event bot): beside the text, small. */
+.event:has(.event__image) {
+  grid-template-columns: 6rem 1fr auto;
+}
+
+.event__image {
+  width: 8rem;
+  height: auto;
+  border-radius: var(--radius);
+  object-fit: cover;
 }

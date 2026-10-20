@@ -168,7 +168,7 @@ describe('bot events', () => {
     const stream = occurrences.find((o) => o.name === '[Sample] Bot Weekend Stream');
     expect(stream.locationUrl).toBeNull(); // tg://… is not a web address
     expect(stream.locationLabel).toBe('Not a web link');
-    expect(JSON.stringify(occurrences)).not.toContain('never-loaded.png');
+    expect(JSON.stringify(occurrences)).not.toContain('images.bot-fixtures.test');
   });
 
   it('refuses a window that is not one of at most eight days', async () => {

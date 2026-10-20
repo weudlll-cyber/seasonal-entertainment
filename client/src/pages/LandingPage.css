@@ -107,6 +107,20 @@
   display: grid;
 }
 
+/* An "Up next" entry with its event image: a small picture left of name and time. */
+.home__event--image {
+  grid-template-columns: 2.5rem 1fr;
+  column-gap: var(--space-1);
+}
+
+.home__event-image {
+  grid-row: span 2;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius);
+  object-fit: cover;
+}
+
 .home__links {
   display: flex;
   flex-wrap: wrap;

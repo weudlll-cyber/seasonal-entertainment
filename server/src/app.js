@@ -45,13 +45,16 @@ import { adminSettingRoutes } from './settings/adminRoutes.js';
 import { staffTwoFactorGate } from './twofa/gate.js';
 import { twoFactorRoutes } from './twofa/routes.js';
 
-// previewNetwork: how link previews reach the internet (tests replace it); callService: the
-// call service (calls/service.js; tests hand in a stand-in), built from config by default.
+// previewNetwork: how link previews reach the internet (tests replace it); botImageNetwork:
+// how the event bot's images are fetched (tests, and development's fixture,
+// bots/fixtureNetwork.js); callService: the call service (calls/service.js; tests hand in a
+// stand-in), built from config by default.
 export function createApp({
   buildInfo,
   config,
   db,
   previewNetwork,
+  botImageNetwork,
   callService = createCallService(config.calls),
 }) {
   const app = express();
@@ -97,7 +100,7 @@ export function createApp({
   api.use('/admin/audit', adminAuditRoutes(db));
   api.use('/info', infoRoutes(db));
   api.use('/admin/info', adminInfoRoutes(db));
-  const bots = botRoutes(config);
+  const bots = botRoutes(config, chat.images, botImageNetwork);
   api.use('/prices', bots.prices);
   api.use('/bot-events', bots.events);
   api.use('/games', gameRoutes(db));

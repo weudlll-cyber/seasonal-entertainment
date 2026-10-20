@@ -76,10 +76,11 @@ export function UpNextCard({ next, timeZone }) {
         <p className="home__text">No events in the next seven days.</p>
       )}
       <ul className="home__events">
-        {next?.next?.map(({ id, name, start }) => {
+        {next?.next?.map(({ id, name, start, image }) => {
           const local = formatLocal(start, timeZone);
           return (
-            <li key={`${id}-${start}`}>
+            <li key={`${id}-${start}`} className={image ? 'home__event--image' : undefined}>
+              {image && <img className="home__event-image" src={image} alt={name} />}
               <strong>{name}</strong>
               <span className="home__text">
                 {formatDay(start, timeZone)}, {local.time} {local.zone}

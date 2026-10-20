@@ -7,11 +7,12 @@
 //              latest override per occurrence (highest id) replacing start, platform, location
 //              and status where it sets them. The site computes no recurrences of its own. Bot
 //              text stays text; a location URL is passed on only if it is http(s); the image
-//              URL is never passed on (the site loads no outside images).
+//              URL (http(s) only) stays on the server, which fetches the image itself
+//              (images.js).
 // ============================================================
 
 const EFFECTIVE = `
-  SELECT o.id, e.name, e.description, e.category,
+  SELECT o.id, e.name, e.description, e.category, e.image_url AS imageUrl,
     COALESCE(ov.new_start_ts_utc, o.start_ts_utc) AS start,
     COALESCE(ov.new_platform, o.platform) AS platform,
     COALESCE(ov.new_location_url, o.location_url) AS locationUrl,
@@ -63,5 +64,6 @@ export function botOccurrences(db, from, to) {
       locationLabel: row.locationLabel ?? '',
       locationUrl: webUrl(row.locationUrl),
       status: row.status,
+      imageUrl: webUrl(row.imageUrl), // for the server only (routes.js)
     }));
 }
