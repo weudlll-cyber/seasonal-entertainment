@@ -2,7 +2,7 @@
 // File:        schema.js
 // Path:        server/src/reference/schema.js
 // Project:     Seasonal Entertainment
-// Description: Reference prices (ETH and POL, from CoinGecko; docs/BOTS.md, "Reference
+// Description: Reference prices (ETH, POL and BTC, from CoinGecko; docs/BOTS.md, "Reference
 //              prices"), kept in the site's own database: one row per coin and time, in the same
 //              shape as the price bot's snapshots (ts_ms, token, price), so bots/prices.js reads
 //              both. reference_sync remembers when each coin was last fetched completely (once a

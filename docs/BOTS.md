@@ -115,33 +115,60 @@ numbers):
   actual prices ÷ average of 1 / mining rate; a season's fair price = K ÷ its mining rate;
   deviation = (actual − fair) ÷ fair × 100 %; underpriced when actual < fair; ranked by actual ÷
   fair, best buy first. A season mined at half the rate is worth twice as much.
-- **Converter** (`/swap`): an amount of Spring, Summer, Autumn, Winter or ETH (only while ETH is
-  connected, see "Reference prices") into another: converted = amount × price(from) ÷ price(to).
-  Each side that is a season gets its mining time in hours (the from side: the amount entered;
-  the to side: the converted amount) = amount ÷ mining rate, with days too over 48 hours. ETH has
-  none.
+- **Converter** (`/swap`): an amount of Spring, Summer, Autumn, Winter, ETH, POL or BTC (each
+  reference coin only while it is connected, see "Reference prices") into another: converted =
+  amount × price(from) ÷ price(to). Each side that is a season gets its mining time in hours (the
+  from side: the amount entered; the to side: the converted amount) = amount ÷ mining rate, with
+  days too over 48 hours. ETH, POL and BTC have none. Results below 1 keep six significant
+  digits, so e.g. Spring in BTC (a few hundred-thousandths) stays readable.
 
-## Reference prices (ETH and POL, from CoinGecko)
+## The chart: one coin or several
+
+On `/info/prices` the coin buttons (Spring, Summer, Autumn, Winter, ETH, POL, BTC) toggle which
+coins the one chart shows (owner request 2026-10-20; `client/src/prices/PriceChart.jsx`,
+`coinSelection.js`):
+
+- At least one coin stays shown; a coin without a price (its source not connected) cannot be
+  picked. **All** shows every coin with a price; pressed again, the coin that was shown on its own
+  before. The range buttons apply to every shown coin.
+- **One coin**: its price in US dollars, as before.
+- **Two or more**: titled "Comparison", each coin as % change since its first point in the
+  chosen range (so coins of very different prices compare), a dashed 0 % line, and "% change
+  since (start)" above the chart.
+- Each coin has its own colour (the seasons their season colours, ETH, POL and BTC the tokens
+  `--color-coin-eth/pol/btc`, lighter in dark mode) and a legend under the chart.
+- The coins are aligned by time; where a coin's points are more than two days apart it has no
+  data, and its line leaves a gap.
+- Pointing at the chart (or the arrow keys once it has focus) marks a time and reads out each
+  shown coin's price in US dollars there, and its % change when several are shown.
+- The choice lives in the page address (`?coins=spring,eth`), so a link shows the same view;
+  nothing valid there: Spring.
+- Built from the existing chart, geometry (now with one scale for several lines), sparkline and
+  price formats; no chart library.
+
+## Reference prices (ETH, POL and BTC, from CoinGecko)
 
 The price bot keeps no history for ETH and POL, so the **site** fetches it from CoinGecko
-(owner decision 2026-10-20; `server/src/reference/`). Only the server talks to CoinGecko; the
+(owner decision 2026-10-20; `server/src/reference/`), and BTC the same way (owner request
+2026-10-20). Only the server talks to CoinGecko; the
 browser never does, and the CSP is unchanged.
 
-- **Key**: `COINGECKO_API_KEY`, a free Demo key (coingecko.com/en/api → "Demo"). Unset: ETH and
-  POL show as "not connected" and nothing else changes.
+- **Key**: `COINGECKO_API_KEY`, a free Demo key (coingecko.com/en/api → "Demo"). Unset: ETH, POL
+  and BTC show as "not connected" and nothing else changes.
 - **What CoinGecko's documentation and terms said** (read 2026-10-20):
   - Demo base URL `https://api.coingecko.com/api/v3`, the key in the `x-cg-demo-api-key` header
     (the site never puts it in a URL or a log).
   - Coin ids: `ethereum`, and `polygon-ecosystem-token` for POL (ex-MATIC; the same ids the price
-    bot uses).
+    bot uses); `bitcoin` for BTC (checked 2026-10-20 on its CoinGecko page).
   - `/coins/{id}/market_chart`: the Demo plan reaches **365 days** back; without an interval it
     answers hourly points for 2–90 days and daily ones (00:00 UTC) beyond.
   - Rate limit: the pricing page names 100 calls a minute and 10,000 calls a month for the Demo
-    plan. The site makes about **52 calls a day** (about 1,600 a month), one after another with a
-    2.5-second pause, and waits an hour after a failure.
+    plan. With three coins the site makes about **78 calls a day** (3 coins × (2 for the daily
+    refresh + 24 hourly)), about **2,400 a month**: under a quarter of the monthly cap, and never
+    more than 6 calls in one go, 2.5 seconds apart. After a failure that coin waits an hour.
   - **Attribution is required**: "Powered by CoinGecko" (the terms) and a link to CoinGecko (the
     attribution guide). `/info/prices` shows "Powered by CoinGecko API", linked to
-    `https://www.coingecko.com/en/api/`, right beside the ETH and POL prices.
+    `https://www.coingecko.com/en/api/`, right beside the ETH, POL and BTC prices.
   - **Storing**: the terms discourage caching but allow it when the stored data is refreshed at
     least every 24 hours. Nothing in the terms forbids showing the data on the free plan, so it is
     built normally (behind the key).
@@ -153,12 +180,11 @@ browser never does, and the CSP is unchanged.
   - every hour, the last two days (hourly points);
   - `reference_sync` remembers both times, so a restart does not fetch again;
   - a failed fetch keeps the stored prices; the log says so once until it works again.
-- **Shown** on `/info/prices` as a "Reference" row (price, 24-hour change) with the same chart
-  and ranges as the seasons (`all` reaches back a year), and as ETH in the converter. The home
-  price card stays the four seasons only.
+- **Shown** on `/info/prices` as a "Reference" row (price, 24-hour change) on the same chart and
+  ranges as the seasons (`all` reaches back a year), and in the converter. The home price card
+  stays the four seasons only.
 - Routes: `GET /api/reference-prices` and `GET /api/reference-prices/:token?range=`, public,
-  cached for 5 minutes and rate limited like the bots' reads. The converter offers the seasons
-  and ETH, not POL (decided 2026-10-20), although the bot's `/swap` knows POL too.
+  cached for 5 minutes and rate limited like the bots' reads. The converter offers every connected coin (owner request 2026-10-20).
 
 ## What is not shown, and why
 
@@ -219,6 +245,12 @@ sample week to the current one.
   its chart and ranges, ETH in the converter, "not connected", the home card unchanged.
 - `client/e2e/prices.spec.js` (real browser, the price answers stubbed): the converter's fields
   are named exactly "Amount", "From" and "To", and Autumn into ETH shows Autumn's mining time only.
+- `client/src/prices/coinSelection.test.js`: the address read in button order with Spring as the
+  fallback, coins without a price never shown, the last coin stays, "All" and back; one scale
+  for several lines, a gap leaves a gap.
+- `client/src/prices/comparisonChart.test.jsx`: two coins as % change with a 0 % line, heading
+  and legend; the read-out per coin; one coin in US dollars; picking writes the address; "All";
+  a coin without price disabled; a data gap leaves a gap in the line.
 - `server/test/droppedTables.test.js`: the old `events` table is dropped on start.
 - `client/e2e/events.spec.js`: the real server reading a fixture event bot; no events editor in
   the admin area.

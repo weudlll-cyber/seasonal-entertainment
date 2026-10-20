@@ -31,7 +31,7 @@ const SEASONS = {
 const REFERENCE = {
   ok: true,
   connected: true,
-  prices: [card('eth', 2412.5, 0.0123), card('pol', 0.1834, -0.02)],
+  prices: [card('eth', 2412.5, 0.0123), card('pol', 0.1834, -0.02), card('btc', 70250, 0.005)],
 };
 const history = (token, range) => ({
   body: {
@@ -46,7 +46,7 @@ const history = (token, range) => ({
   },
 });
 
-function showPage({ seasons = SEASONS, reference = REFERENCE } = {}) {
+function showPage({ seasons = SEASONS, reference = REFERENCE, path = '/info/prices' } = {}) {
   const calls = mockApi({
     ...GUEST,
     'GET /prices': { body: seasons },
@@ -56,7 +56,7 @@ function showPage({ seasons = SEASONS, reference = REFERENCE } = {}) {
     'GET /reference-prices/eth?range=30d': history('eth', '30d'),
   });
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[path]}>
       <PricesPage timeZone="UTC" />
     </MemoryRouter>
   );
@@ -78,8 +78,7 @@ it('ETH and POL: price and 24-hour change, with CoinGecko named beside them', as
 });
 
 it("ETH's chart with the same range buttons, from the reference prices", async () => {
-  const calls = showPage();
-  fireEvent.click(await screen.findByRole('button', { name: /^ETH/ }));
+  const calls = showPage({ path: '/info/prices?coins=eth' });
   expect(await screen.findByRole('img', { name: /^ETH price from/ })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: '30 days' }));
   await waitFor(() =>
@@ -99,7 +98,7 @@ it('without the key: ETH and POL are not connected; with no seasons either, no c
     seasons: { ok: true, connected: false, prices: [], miningRates: null },
     reference: { ok: true, connected: false, prices: [] },
   });
-  expect(await screen.findByText('ETH and POL are not connected.')).toBeInTheDocument();
+  expect(await screen.findByText('ETH, POL and BTC are not connected.')).toBeInTheDocument();
   expect(screen.queryByRole('img')).toBeNull();
   expect(screen.queryByRole('link', { name: 'Powered by CoinGecko API' })).toBeNull();
 });

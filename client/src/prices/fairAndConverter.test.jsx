@@ -96,12 +96,28 @@ describe('converter', () => {
     expect(screen.getByText('Mining time (Summer): 142.86 hours (6.0 days)')).toBeInTheDocument();
   });
 
-  it('ETH only while its price is connected', async () => {
+  it('reference coins only while they are connected', async () => {
     showPage(RATES);
     await screen.findByRole('table');
     const from = screen.getByLabelText('From');
     expect(within(from).queryByRole('option', { name: 'ETH' })).toBeNull();
-    expect(screen.getByText('ETH is not connected, so only the seasons.')).toBeInTheDocument();
+    expect(within(from).queryByRole('option', { name: 'BTC' })).toBeNull();
+    expect(screen.getByText('Not connected, so not offered: ETH, POL, BTC.')).toBeInTheDocument();
+  });
+
+  it('every connected coin is offered; a tiny BTC amount keeps six significant digits', () => {
+    render(<Converter prices={{ ...PRICES, eth: 2000, pol: 0.2, btc: 70000 }} rates={RATES} />);
+    const to = screen.getByLabelText('To');
+    expect(
+      within(to)
+        .getAllByRole('option')
+        .map((o) => o.textContent)
+    ).toEqual(['Spring', 'Summer', 'Autumn', 'Winter', 'ETH', 'POL', 'BTC']);
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '1000' } });
+    fireEvent.change(screen.getByLabelText('From'), { target: { value: 'spring' } });
+    fireEvent.change(to, { target: { value: 'btc' } });
+    expect(screen.getByText('1,000 Spring ≈ 0.0000571429 BTC')).toBeInTheDocument();
+    expect(screen.queryByText(/Not connected/)).toBeNull();
   });
 
   it('a season into ETH: the season has a mining time, ETH none', () => {

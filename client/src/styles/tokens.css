@@ -14,6 +14,11 @@
   --color-summer: #e06e22;
   --color-autumn: #f9a825;
   --color-winter: #04aaf7;
+  /* The reference coins' lines on the price chart (docs/BOTS.md): apart from the four season
+     colours and from each other; 3:1 or more on the light surfaces, lighter in dark mode. */
+  --color-coin-eth: #6d4fd6;
+  --color-coin-pol: #c0368a;
+  --color-coin-btc: #1f8a7a;
   /* Text and icons on a season colour (the chat button's autumn, ...): 9.2:1 on autumn */
   --color-on-season: #12161c;
   /* The LIVE badge (calls): the same red in both themes, white text 6.6:1. */
@@ -84,6 +89,9 @@
   --color-danger: #ff8a80;
   --color-success: #4acb8a;
   --color-warning-surface: #3a2e10;
+  --color-coin-eth: #a796ff;
+  --color-coin-pol: #f07cc4;
+  --color-coin-btc: #4fd1bd;
   --shadow-raised: 0 8px 28px rgb(0 0 0 / 55%);
   /* Form controls and scrollbars follow the theme */
   color-scheme: dark;

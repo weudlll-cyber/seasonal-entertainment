@@ -27,6 +27,9 @@ set on `:root`; `:root[data-theme='dark']` replaces the colours.
 | `--color-on-season`       | `#12161c` | `#12161c` | icons/text on a season colour (9.2:1 on autumn) |
 | `--color-live`            | `#b42318` | `#b42318` | the red LIVE badge (calls)                      |
 | `--color-on-live`         | `#ffffff` | `#ffffff` | text on the LIVE badge (6.6:1)                  |
+| `--color-coin-eth`        | `#6d4fd6` | `#a796ff` | ETH's line on the price chart (docs/BOTS.md)    |
+| `--color-coin-pol`        | `#c0368a` | `#f07cc4` | POL's line                                      |
+| `--color-coin-btc`        | `#1f8a7a` | `#4fd1bd` | BTC's line                                      |
 
 Season colours (`--color-spring/summer/autumn/winter`) are the same in both themes. Dark values
 were chosen so every text colour keeps WCAG AA (4.5:1) on every surface of its set: lowest pairs

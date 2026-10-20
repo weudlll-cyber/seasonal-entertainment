@@ -6,7 +6,7 @@
 //              seasonal tokens in lower case; docs/BOTS.md): each token's latest price with its
 //              change over 24 hours and the last day's prices for a sparkline, and one token's
 //              history over a range, thinned out to at most HISTORY_POINTS points. The same for
-//              any table of that shape: the site's own ETH and POL prices (reference/) use it.
+//              any table of that shape: the site's own ETH, POL and BTC prices (reference/) use it.
 // ============================================================
 
 export const PRICE_TOKENS = ['spring', 'summer', 'autumn', 'winter'];

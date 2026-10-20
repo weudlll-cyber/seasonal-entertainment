@@ -53,6 +53,13 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **Several coins on one price chart, BTC, a converter with every coin** — closed by SE-BOTS-2b
+  (`feat/se-bots-2`, not merged yet; owner request 2026-10-20): BTC joins ETH and POL as a
+  reference coin (CoinGecko `bitcoin`, about 78 calls a day in all); the coin buttons on
+  `/info/prices` toggle the coins on the one chart, two or more shown as % change since the
+  range's start with a legend, the choice kept in the address; the converter offers every
+  connected coin (docs/BOTS.md, "The chart: one coin or several").
+
 - **The first roadmap list's finished items** — checked against the tree by SE-BOTS-2
   (2026-10-20) and moved here: info pages with admin editor (SE-NIGHT-1 piece 5); accounts with
   2FA for organisers and admins (pieces 2 and 3; Discord/Telegram login stays open); the games

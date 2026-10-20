@@ -58,7 +58,7 @@ describe('home card', () => {
       'Autumn$0.002500 ±0.00 %',
       'Winter$0.002980 —',
     ]);
-    expect(rows[0].querySelector('svg.sparkline--spring path')).not.toBeNull();
+    expect(rows[0].querySelector('svg.sparkline.coin--spring path')).not.toBeNull();
     expect(within(rows[0]).getByText('+4.41 %')).toHaveClass('price-change--up');
     expect(within(rows[1]).getByText('−1.78 %')).toHaveClass('price-change--down');
     expect(screen.getByRole('link', { name: 'Price charts' })).toHaveAttribute(
@@ -101,14 +101,17 @@ describe('/info/prices', () => {
     'GET /prices/winter?range=30d': history('winter', '30d'),
   };
 
-  it('is the route under Seasonal Tokens, and asks for the picked token and range', async () => {
+  it('is the route under Seasonal Tokens, and asks for the picked coins and range', async () => {
     const calls = mockApi(ANSWERS);
     renderAt('/info/prices');
     expect(await screen.findByRole('img', { name: /^Spring price from/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '30 days' }));
     await waitFor(() => expect(calls.map((c) => c.key)).toContain('GET /prices/spring?range=30d'));
+    // Winter joins Spring on the chart, for the same range.
     fireEvent.click(screen.getByRole('button', { name: /^Winter/ }));
-    expect(await screen.findByRole('img', { name: /^Winter price from/ })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('img', { name: /^Comparison of Spring, Winter/ })
+    ).toBeInTheDocument();
     expect(calls.map((c) => c.key)).toContain('GET /prices/winter?range=30d');
     expect(screen.getByRole('button', { name: /^Winter/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '30 days' })).toHaveAttribute('aria-pressed', 'true');

@@ -11,7 +11,7 @@
 
 const BASE = 'https://api.coingecko.com/api/v3';
 // CoinGecko's coin ids (checked 2026-10-20): POL is "polygon-ecosystem-token" (ex-MATIC).
-export const COINS = { eth: 'ethereum', pol: 'polygon-ecosystem-token' };
+export const COINS = { eth: 'ethereum', pol: 'polygon-ecosystem-token', btc: 'bitcoin' };
 
 // Resolves [[ms, price], ...]; throws with a short reason (status, timeout, bad answer).
 // fetchImpl: the global fetch, or a stand-in in tests.

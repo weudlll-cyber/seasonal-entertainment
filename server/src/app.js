@@ -8,7 +8,7 @@
 //              exists, the static client with a fallback to index.html for client routes. No
 //              listen(), so tests drive it directly; app.locals.chat is the chat's handle,
 //              app.locals.calls.start() starts the stale-call job (calls/staleCalls.js),
-//              app.locals.reference.start() the ETH and POL prices job (reference/sync.js).
+//              app.locals.reference.start() the ETH, POL and BTC prices job (reference/sync.js).
 //              The embedded chat on approved foreign sites (embed/) adds its CSP, its token
 //              check and its routes; prices and bot events (bots/) are read-only public reads.
 // ============================================================
@@ -117,7 +117,7 @@ export function createApp({
   api.use('/calls', callStageRoutes(db, config, callService, chat));
   api.use('/calls', callSpotlightRoutes(db, config, callService));
   app.locals.calls = { start: (log) => startStaleCalls(db, config, callService, chat, log) };
-  // The ETH and POL prices job (reference/sync.js): only with a CoinGecko key and timers on.
+  // The ETH, POL and BTC prices job (reference/sync.js): only with a CoinGecko key and timers on.
   app.locals.reference = {
     start: () =>
       config.coingecko && config.backgroundJobs ? createReferenceSync(db, config).start() : null,

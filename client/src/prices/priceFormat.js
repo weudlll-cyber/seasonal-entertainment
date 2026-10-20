@@ -17,10 +17,11 @@ export const TOKENS = [
   { id: 'autumn', name: 'Autumn' },
   { id: 'winter', name: 'Winter' },
 ];
-// The reference row (ETH and POL, from CoinGecko through this server; docs/BOTS.md).
+// The reference row (ETH, POL and BTC, from CoinGecko through this server; docs/BOTS.md).
 export const REFERENCE = [
   { id: 'eth', name: 'ETH' },
   { id: 'pol', name: 'POL' },
+  { id: 'btc', name: 'BTC' },
 ];
 export const RANGES = ['24h', '7d', '30d', '1y', 'all'];
 export const RANGE_LABELS = {

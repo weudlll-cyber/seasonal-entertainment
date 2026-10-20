@@ -4,27 +4,28 @@
 // Project:     Seasonal Entertainment
 // Description: The converter of /info/prices, as the price bot's /swap works it out
 //              (fairPrice.js): an amount of one token in another at their prices, and for each
-//              side that is a season how long mining that many takes. ETH (no mining time) is
-//              offered only while its price is connected; without the mining rates the
-//              conversion still works and the mining times say they are not available.
+//              side that is a season how long mining that many takes. The reference coins ETH,
+//              POL and BTC (no mining time) are offered only while connected; small results keep
+//              six significant digits. Without the mining rates the conversion still works and
+//              the mining times say they are not available.
 // ============================================================
 
 import { useId, useState } from 'react';
 import { convert, formatHours } from './fairPrice.js';
-import { TOKENS } from './priceFormat.js';
+import { REFERENCE, TOKENS } from './priceFormat.js';
 
-const ETH = { id: 'eth', name: 'ETH' };
-
-// A converted amount: four decimals as the bot shows them, more significant digits below 1.
+// A converted amount: four decimals as the bot shows them; below 1 six significant digits, so
+// that e.g. Spring in BTC (a few billionths) stays readable.
 const amountText = (value) =>
   value >= 1
     ? value.toLocaleString('en-US', { maximumFractionDigits: 4 })
     : value.toLocaleString('en-US', { maximumSignificantDigits: 6 });
 
-// prices: { spring, summer, autumn, winter, eth? } in US dollars; rates: tokens mined per hour
-// per season, or null.
+// prices: US dollars per coin (the seasons, and eth, pol, btc while connected); rates: tokens
+// mined per hour per season, or null.
 export default function Converter({ prices, rates }) {
-  const tokens = [...TOKENS, ...(prices.eth ? [ETH] : [])].filter((t) => prices[t.id]);
+  const tokens = [...TOKENS, ...REFERENCE].filter((t) => prices[t.id]);
+  const missing = REFERENCE.filter((t) => !prices[t.id]).map((t) => t.name);
   const [amount, setAmount] = useState('100');
   const [from, setFrom] = useState('summer');
   const [to, setTo] = useState('winter');
@@ -97,7 +98,9 @@ export default function Converter({ prices, rates }) {
           )}
         </div>
       )}
-      {!prices.eth && <p className="prices__note">ETH is not connected, so only the seasons.</p>}
+      {missing.length > 0 && (
+        <p className="prices__note">Not connected, so not offered: {missing.join(', ')}.</p>
+      )}
     </section>
   );
 }

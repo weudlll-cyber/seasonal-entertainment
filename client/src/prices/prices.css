@@ -2,58 +2,47 @@
    File:        prices.css
    Path:        client/src/prices/prices.css
    Project:     Seasonal Entertainment
-   Description: Prices (docs/BOTS.md): the home card's rows with their sparklines, the token
-                picker and range buttons of /info/prices, the hand-built SVG chart with its
-                hover mark, the fair price table and the converter. Only design tokens: each
-                season's line takes its colour token, so light and dark themes follow the
-                site's own.
+   Description: Prices (docs/BOTS.md): the home card's rows with their sparklines, the coin
+                buttons and range buttons of /info/prices, the hand-built SVG chart (one line per
+                coin, the 0 % line, hover marks, legend), the fair price table and the
+                converter. Only design tokens: each coin's colour comes from tokens.css, so light
+                and dark themes follow the site's own.
    ============================================================ */
 
-.sparkline,
-.price-chart,
-.price-pick {
-  --season: var(--color-text-muted);
+/* Each coin's colour, wherever it appears (sparkline, button edge, line, mark, legend): the
+   seasons their season tokens, the reference coins their own (tokens.css, light and dark). */
+.coin--spring {
+  --coin: var(--color-spring);
 }
 
-.sparkline--spring,
-.price-chart--spring,
-.price-pick--spring {
-  --season: var(--color-spring);
+.coin--summer {
+  --coin: var(--color-summer);
 }
 
-.sparkline--summer,
-.price-chart--summer,
-.price-pick--summer {
-  --season: var(--color-summer);
+.coin--autumn {
+  --coin: var(--color-autumn);
 }
 
-.sparkline--autumn,
-.price-chart--autumn,
-.price-pick--autumn {
-  --season: var(--color-autumn);
+.coin--winter {
+  --coin: var(--color-winter);
 }
 
-.sparkline--winter,
-.price-chart--winter,
-.price-pick--winter {
-  --season: var(--color-winter);
+.coin--eth {
+  --coin: var(--color-coin-eth);
 }
 
-/* The reference coins (ETH, POL) are not seasons: the site's accent and its text colour. */
-.price-chart--eth,
-.price-pick--eth {
-  --season: var(--color-accent);
+.coin--pol {
+  --coin: var(--color-coin-pol);
 }
 
-.price-chart--pol,
-.price-pick--pol {
-  --season: var(--color-text-muted);
+.coin--btc {
+  --coin: var(--color-coin-btc);
 }
 
 .sparkline path,
 .price-chart__line {
   fill: none;
-  stroke: var(--season);
+  stroke: var(--coin);
   stroke-width: 2;
   stroke-linejoin: round;
 }
@@ -112,7 +101,7 @@
   min-width: 8rem;
   padding: var(--space-1) var(--space-2);
   border: 1px solid var(--color-border);
-  border-left: 4px solid var(--season);
+  border-left: 4px solid var(--coin);
   border-radius: var(--radius);
   background: var(--color-surface);
   color: var(--color-text);
@@ -127,9 +116,14 @@
   background: var(--color-active-bg);
 }
 
-/* The picked token keeps its season edge. */
+/* A shown coin keeps its colour edge; a coin without a price cannot be picked. */
 .price-pick[aria-pressed='true'] {
-  border-left-color: var(--season);
+  border-left-color: var(--coin);
+}
+
+.price-pick:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .price-pick span,
@@ -193,9 +187,59 @@
   height: 0.625rem;
   border: 2px solid var(--color-surface);
   border-radius: 50%;
-  background: var(--season);
+  background: var(--coin);
   transform: translate(-50%, -50%);
   pointer-events: none;
+}
+
+/* The chart's heading and what its axis measures (US dollars, or % change since …). */
+.price-chart__title {
+  margin: 0;
+  font-size: var(--font-size-lead);
+}
+
+.price-chart__unit {
+  margin: 0 0 var(--space-1);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+/* A comparison's 0 % line. */
+.price-chart__zero {
+  stroke: var(--color-border-strong);
+  stroke-dasharray: 4 4;
+  stroke-width: 1;
+}
+
+.price-chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.price-chart__legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.price-chart__swatch {
+  width: 1rem;
+  height: 0.25rem;
+  border-radius: 999px;
+  background: var(--coin);
+}
+
+.prices__all {
+  margin-top: var(--space-1);
+}
+
+.price-chart__readout ul {
+  margin: 0;
+  padding-left: var(--space-3);
 }
 
 .price-chart__readout {

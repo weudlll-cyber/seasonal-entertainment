@@ -2,12 +2,12 @@
 // File:        sync.js
 // Path:        server/src/reference/sync.js
 // Project:     Seasonal Entertainment
-// Description: Keeps the ETH and POL prices in the site's database (docs/BOTS.md, "Reference
+// Description: Keeps the ETH, POL and BTC prices in the site's database (docs/BOTS.md, "Reference
 //              prices"). Once a day per coin, everything the Demo plan offers is fetched again
 //              (a year of daily points plus 90 days of hourly ones) and replaces what is stored,
 //              and anything older than a year goes: CoinGecko's terms ask stored data to be
 //              refreshed at least every 24 hours. In between, every hour, the last two days.
-//              About 52 calls a day, one after another with a pause; after a failure that coin
+//              About 78 calls a day, one after another with a pause; after a failure that coin
 //              waits an hour, the stored prices stay, and the log says so once until it works.
 // ============================================================
 

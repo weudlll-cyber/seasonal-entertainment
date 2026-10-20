@@ -6,7 +6,8 @@
 //              tests/test_fair_prices.py with their numbers (Summer, mined slowest, has the
 //              highest fair price; fair prices inversely proportional to the rates; under- and
 //              overpriced), the full table for those numbers worked out by hand, a missing
-//              price, and the /swap conversion with both mining times.
+//              price, and the /swap conversion with its mining times: season to season, season
+//              to ETH and to BTC, POL to a season, BTC to ETH.
 // ============================================================
 
 import { describe, expect, it } from 'vitest';
@@ -83,6 +84,25 @@ describe('the converter, as /swap computes it', () => {
     expect(result.converted).toBeCloseTo(0.0025, 12); // 1000 × 0.005 / 2000
     expect(result.hoursFrom).toBeCloseTo(1000 / 60, 10);
     expect(result.hoursTo).toBeNull();
+  });
+
+  it('1000 Spring into BTC: a few hundred-thousandths, Spring mined for 23.8 hours', () => {
+    const result = convert(1000, 'spring', 'btc', { ...PRICES, btc: 70000 }, RATES);
+    expect(result.converted).toBeCloseTo(0.0000571428571, 12); // 1000 × 0.004 / 70000
+    expect(result.hoursFrom).toBeCloseTo(23.8095238, 6); // 1000 / 42
+    expect(result.hoursTo).toBeNull(); // BTC is not mined here
+  });
+
+  it('50 POL into Summer: 3333.33 Summer, mined for 95.24 hours', () => {
+    const result = convert(50, 'pol', 'summer', { ...PRICES, pol: 0.2 }, RATES);
+    expect(result.converted).toBeCloseTo(3333.333333, 5); // 50 × 0.2 / 0.003
+    expect(result.hoursFrom).toBeNull();
+    expect(result.hoursTo).toBeCloseTo(95.2380952, 6); // 3333.33 / 35
+  });
+
+  it('0.5 BTC into ETH: 17.5 ETH, no mining time on either side', () => {
+    const result = convert(0.5, 'btc', 'eth', { ...PRICES, btc: 70000, eth: 2000 }, RATES);
+    expect(result).toEqual({ converted: 17.5, hoursFrom: null, hoursTo: null });
   });
 
   it('without mining rates: no mining times at all', () => {

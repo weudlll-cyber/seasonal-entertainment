@@ -138,7 +138,7 @@ In **`site.env`**:
 | `CALLS_URL`             | `wss://<CALLS_DOMAIN>`                                                                                                                       |
 | `CALLS_API_KEY`         | a key name, e.g. `seasonal`                                                                                                                  |
 | `CALLS_API_SECRET`      | `openssl rand -hex 32` (the same pair goes into `deploy/calls/.env`)                                                                         |
-| `COINGECKO_API_KEY`     | your free CoinGecko Demo key (coingecko.com/en/api): ETH and POL prices on `/info/prices`; empty: "not connected" (docs/BOTS.md)             |
+| `COINGECKO_API_KEY`     | your free CoinGecko Demo key (coingecko.com/en/api): ETH, POL and BTC prices on `/info/prices`; empty: "not connected" (docs/BOTS.md)        |
 | everything else         | empty: the defaults fit (docs/ARCHITECTURE.md, "Runtime configuration")                                                                      |
 
 ### The owner's bots (prices and events, read-only)

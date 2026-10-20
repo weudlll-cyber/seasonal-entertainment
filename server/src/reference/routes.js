@@ -2,12 +2,12 @@
 // File:        routes.js
 // Path:        server/src/reference/routes.js
 // Project:     Seasonal Entertainment
-// Description: Public reads of the reference prices (ETH and POL from CoinGecko, kept in the
-//              site's database by sync.js; docs/BOTS.md, "Reference prices"), guests included:
-//              GET /api/reference-prices (latest price, 24-hour change, sparkline) and GET
-//              /api/reference-prices/:token?range= (history, the same ranges and at most 500
-//              points as the seasons, bots/prices.js). Without COINGECKO_API_KEY: connected:
-//              false. Cached in memory and rate limited like the bots' reads.
+// Description: Public reads of the reference prices (ETH, POL and BTC from CoinGecko, kept in
+//              the site's database by sync.js; docs/BOTS.md, "Reference prices"), guests
+//              included: GET /api/reference-prices (latest price, 24-hour change, sparkline)
+//              and GET /api/reference-prices/:token?range= (history, the same ranges and at
+//              most 500 points as the seasons, bots/prices.js). Without COINGECKO_API_KEY:
+//              connected: false. Cached in memory and rate limited like the bots' reads.
 // ============================================================
 
 import express from 'express';

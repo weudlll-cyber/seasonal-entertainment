@@ -3,18 +3,22 @@
 // Path:        client/src/prices/PricesPage.jsx
 // Project:     Seasonal Entertainment
 // Description: /info/prices, in the "Seasonal Tokens" section: the four seasons' latest prices
-//              (from the price bot) and a reference row with ETH and POL (from CoinGecko, with
-//              its attribution), each a button showing price and 24-hour change; the picked
-//              token's chart over 24 hours, 7 days, 30 days, a year or everything; then the fair
-//              price and the converter with mining times, as the price bot's /value and /swap
-//              (FairPriceTable.jsx, Converter.jsx; docs/BOTS.md). A source that is not connected
-//              says so plainly. timeZone is a prop so tests can pin it.
+//              (from the price bot) and a reference row with ETH, POL and BTC (from CoinGecko,
+//              with its attribution), each a button showing price and 24-hour change that
+//              toggles the coin on the one chart; "All" shows every coin and, pressed again, the
+//              single coin shown before. The chosen coins live in the address (?coins=…), so a
+//              link shows the same view (coinSelection.js). The chart covers 24 hours, 7 days,
+//              30 days, a year or everything; then the fair price and the converter with mining
+//              times, as the price bot's /value and /swap (FairPriceTable.jsx, Converter.jsx;
+//              docs/BOTS.md). A source that is not connected says so plainly. timeZone is a prop
+//              so tests can pin it.
 // ============================================================
 
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router';
 import { api } from '../api/http.js';
 import { FormMessage } from '../components/FormField.jsx';
+import { ALL_COINS, parseCoins, shownCoins, toggleAll, toggleCoin } from './coinSelection.js';
 import Converter from './Converter.jsx';
 import FairPriceTable from './FairPriceTable.jsx';
 import PriceChart from './PriceChart.jsx';
@@ -24,14 +28,18 @@ import './prices.css';
 
 const deviceZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 const isReference = (id) => REFERENCE.some((t) => t.id === id);
+const nameOf = Object.fromEntries([...TOKENS, ...REFERENCE].map((t) => [t.id, t.name]));
 const byId = (answer) => Object.fromEntries((answer?.prices ?? []).map((p) => [p.token, p]));
 
 export default function PricesPage({ timeZone = deviceZone() }) {
+  const [params, setParams] = useSearchParams();
   const [seasons, setSeasons] = useState(null); // /prices: { connected, prices, miningRates }
   const [reference, setReference] = useState(null); // /reference-prices: { connected, prices }
-  const [token, setToken] = useState(null); // the picked token; null: the first one connected
   const [range, setRange] = useState('7d');
-  const [history, setHistory] = useState(null); // { token, range, points }
+  const [histories, setHistories] = useState({}); // "token:range" -> points
+  // The coin "All" goes back to: the one shown alone last (at first: the address's first).
+  const [single, setSingle] = useState(() => parseCoins(params.get('coins'))[0]);
+  const asked = useRef(new Set()); // "token:range" already requested: never asked twice
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -43,24 +51,51 @@ export default function PricesPage({ timeZone = deviceZone() }) {
       .catch(() => setReference({ connected: false, prices: [] }));
   }, []);
 
-  const shownToken = token ?? (seasons?.connected ? 'spring' : reference?.connected ? 'eth' : null);
-  useEffect(() => {
-    if (!shownToken) return;
-    const path = isReference(shownToken) ? 'reference-prices' : 'prices';
-    api(`/${path}/${shownToken}?range=${range}`)
-      .then((data) => {
-        setHistory(data);
-        setError(null);
-      })
-      .catch((err) => setError(err.message));
-  }, [shownToken, range]);
-
   const seasonPrices = byId(seasons);
   const referencePrices = byId(reference);
+  const latest = { ...seasonPrices, ...referencePrices };
+  const available = ALL_COINS.filter((id) => latest[id]);
+  // Nothing is chosen before both answers are in: a link's coins may be among the second.
+  const selected =
+    seasons && reference ? shownCoins(parseCoins(params.get('coins')), available) : [];
+  const selectedKey = selected.join(',');
+
+  useEffect(() => {
+    for (const id of selectedKey ? selectedKey.split(',') : []) {
+      const key = `${id}:${range}`;
+      if (asked.current.has(key)) continue;
+      asked.current.add(key);
+      const path = isReference(id) ? 'reference-prices' : 'prices';
+      api(`/${path}/${id}?range=${range}`)
+        .then((data) => setHistories((known) => ({ ...known, [key]: data.points })))
+        .catch((err) => setError(err.message));
+    }
+  }, [selectedKey, range]);
+
+  // The address keeps the view (replace: picking coins is not a step back in the history).
+  function show(coins) {
+    if (coins.length === 1) setSingle(coins[0]);
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.set('coins', coins.join(','));
+        return next;
+      },
+      { replace: true }
+    );
+  }
+  const onToggle = (id) => show(toggleCoin(selected, id));
+  const allShown = available.length > 0 && available.every((id) => selected.includes(id));
+
+  // The chart once every chosen coin's prices for this range are in.
+  const series = selected.map((id) => ({
+    token: id,
+    name: nameOf[id],
+    points: histories[`${id}:${range}`],
+  }));
+  const ready = series.length > 0 && series.every((s) => s.points);
   const actual = Object.fromEntries(Object.entries(seasonPrices).map(([t, p]) => [t, p.price]));
-  const picked = [...TOKENS, ...REFERENCE].find((t) => t.id === shownToken);
-  // An answer for an earlier pick is not shown while the new one loads.
-  const shown = history?.token === shownToken && history?.range === range ? history : null;
+  const allPrices = Object.fromEntries(Object.entries(latest).map(([t, p]) => [t, p.price]));
 
   return (
     <section className="page prices">
@@ -71,46 +106,58 @@ export default function PricesPage({ timeZone = deviceZone() }) {
       <FormMessage error={error} />
       <p>
         In US dollars, one price per hour. Times are in your time zone (<strong>{timeZone}</strong>
-        ).
+        ). Pick one coin for its price, or several to compare them.
       </p>
-      <h2 className="prices__row-title">Seasons</h2>
-      {seasons?.connected ? (
-        <TokenPicker
-          label="Seasons"
-          tokens={TOKENS}
-          byToken={seasonPrices}
-          picked={shownToken}
-          onPick={setToken}
-        />
-      ) : (
-        seasons && (
-          <p role="status">
-            The price data source is not connected, so there are no prices to show.
-          </p>
-        )
-      )}
-      <h2 className="prices__row-title">Reference</h2>
-      {reference?.connected ? (
-        <>
+      <div role="group" aria-label="Coins">
+        <h2 className="prices__row-title">Seasons</h2>
+        {seasons?.connected ? (
           <TokenPicker
-            label="Reference"
-            tokens={REFERENCE}
-            byToken={referencePrices}
-            picked={shownToken}
-            onPick={setToken}
+            label="Seasons"
+            tokens={TOKENS}
+            byToken={seasonPrices}
+            selected={selected}
+            onToggle={onToggle}
           />
-          {/* CoinGecko's attribution, required for its data, next to that data. */}
-          <p className="prices__note">
-            ETH and POL:{' '}
-            <a href="https://www.coingecko.com/en/api/" target="_blank" rel="noopener noreferrer">
-              Powered by CoinGecko API
-            </a>
-          </p>
-        </>
-      ) : (
-        reference && <p role="status">ETH and POL are not connected.</p>
-      )}
-      {shownToken && (
+        ) : (
+          seasons && (
+            <p role="status">
+              The price data source is not connected, so there are no prices to show.
+            </p>
+          )
+        )}
+        <h2 className="prices__row-title">Reference</h2>
+        {reference?.connected ? (
+          <>
+            <TokenPicker
+              label="Reference"
+              tokens={REFERENCE}
+              byToken={referencePrices}
+              selected={selected}
+              onToggle={onToggle}
+            />
+            {/* CoinGecko's attribution, required for its data, next to that data. */}
+            <p className="prices__note">
+              ETH, POL and BTC:{' '}
+              <a href="https://www.coingecko.com/en/api/" target="_blank" rel="noopener noreferrer">
+                Powered by CoinGecko API
+              </a>
+            </p>
+          </>
+        ) : (
+          reference && <p role="status">ETH, POL and BTC are not connected.</p>
+        )}
+        {available.length > 1 && (
+          <button
+            type="button"
+            className="button button--secondary prices__all"
+            aria-pressed={allShown}
+            onClick={() => show(toggleAll(selected, available, single))}
+          >
+            All
+          </button>
+        )}
+      </div>
+      {selected.length > 0 && (
         <>
           <div className="prices__ranges" role="group" aria-label="Range">
             {RANGES.map((r) => (
@@ -125,25 +172,13 @@ export default function PricesPage({ timeZone = deviceZone() }) {
               </button>
             ))}
           </div>
-          {shown ? (
-            <PriceChart
-              points={shown.points}
-              token={shownToken}
-              name={picked.name}
-              timeZone={timeZone}
-            />
-          ) : (
-            !error && <p>Loading…</p>
-          )}
+          {ready ? <PriceChart series={series} timeZone={timeZone} /> : !error && <p>Loading…</p>}
         </>
       )}
       {seasons?.connected && (
         <>
           <FairPriceTable actual={actual} rates={seasons.miningRates} />
-          <Converter
-            prices={{ ...actual, eth: referencePrices.eth?.price }}
-            rates={seasons.miningRates}
-          />
+          <Converter prices={allPrices} rates={seasons.miningRates} />
         </>
       )}
     </section>

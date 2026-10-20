@@ -2,7 +2,7 @@
 // File:        referencePrices.test.js
 // Path:        server/test/referencePrices.test.js
 // Project:     Seasonal Entertainment
-// Description: ETH and POL from CoinGecko (server/src/reference/, docs/BOTS.md), against a fake
+// Description: ETH, POL and BTC from CoinGecko (server/src/reference/, docs/BOTS.md), against a fake
 //              fetch: without a key both routes say not connected; the first run stores a year
 //              of daily and 90 days of hourly prices per coin (the right coin ids, USD, the key
 //              in the demo header and never in the URL, a pause between calls); the routes then
@@ -35,7 +35,9 @@ function fakeCoinGecko({ fail = false } = {}) {
     calls.push({ url, headers: init.headers });
     if (fail) return { ok: false, status: 429, json: async () => ({}) };
     const days = Number(new URL(url).searchParams.get('days'));
-    const base = url.includes('/coins/ethereum/') ? 2000 : 0.2;
+    const base = { ethereum: 2000, 'polygon-ecosystem-token': 0.2, bitcoin: 70000 }[
+      url.match(/coins\/([^/]+)/)[1]
+    ];
     const step = days > 90 ? DAY : HOUR;
     const prices = [];
     for (let ms = NOW - days * DAY; ms <= clock.now; ms += step) {
@@ -88,6 +90,8 @@ it('the first run stores a year of daily and 90 days of hourly prices per coin, 
     'ethereum:90',
     'polygon-ecosystem-token:365',
     'polygon-ecosystem-token:90',
+    'bitcoin:365',
+    'bitcoin:90',
   ]);
   for (const call of cg.calls) {
     expect(call.url).toMatch(
@@ -96,11 +100,11 @@ it('the first run stores a year of daily and 90 days of hourly prices per coin, 
     expect(call.url).not.toContain(KEY);
     expect(call.headers['x-cg-demo-api-key']).toBe(KEY);
   }
-  expect(sleep.mock.calls).toEqual([[2500], [2500], [2500]]); // a pause between the calls
+  expect(sleep.mock.calls).toEqual([[2500], [2500], [2500], [2500], [2500]]); // a pause between calls
 
   const latest = (await api.get('/api/reference-prices')).body;
   expect(latest.connected).toBe(true);
-  expect(latest.prices.map((p) => p.token)).toEqual(['eth', 'pol']);
+  expect(latest.prices.map((p) => p.token)).toEqual(['eth', 'pol', 'btc']);
   const eth = latest.prices[0];
   expect(eth.at).toBe(NOW);
   expect(eth.change24h).toBeCloseTo(0.01, 6); // 1 % a day
@@ -109,7 +113,7 @@ it('the first run stores a year of daily and 90 days of hourly prices per coin, 
   expect(year[0][0]).toBe(NOW - 365 * DAY);
   expect(year.length).toBeLessThanOrEqual(500);
   expect((await api.get('/api/reference-prices/eth?range=24h')).body.points).toHaveLength(25);
-  expect((await api.get('/api/reference-prices/btc')).status).toBe(404);
+  expect((await api.get('/api/reference-prices/doge')).status).toBe(404);
 });
 
 it('the next hour fetches the last two days only; the next day everything, without old data', async () => {
@@ -123,7 +127,7 @@ it('the next hour fetches the last two days only; the next day everything, witho
 
   clock.now = NOW + HOUR;
   await sync.tick();
-  expect(days(cg.calls)).toEqual(['ethereum:2', 'polygon-ecosystem-token:2']);
+  expect(days(cg.calls)).toEqual(['ethereum:2', 'polygon-ecosystem-token:2', 'bitcoin:2']);
 
   // Something older than a year (e.g. left from before): gone with the next full run.
   t.db
@@ -137,6 +141,8 @@ it('the next hour fetches the last two days only; the next day everything, witho
     'ethereum:90',
     'polygon-ecosystem-token:365',
     'polygon-ecosystem-token:90',
+    'bitcoin:365',
+    'bitcoin:90',
   ]);
   const oldest = t.db.prepare('SELECT MIN(ts_ms) AS ms FROM reference_prices').get().ms;
   expect(oldest).toBeGreaterThanOrEqual(clock.now - 365 * DAY);
@@ -157,18 +163,19 @@ it('a failed fetch keeps the stored prices, logs once, and that coin waits an ho
   });
   clock.now = NOW + HOUR;
   await sync.tick();
-  expect(failing.calls).toHaveLength(2); // one try per coin
+  expect(failing.calls).toHaveLength(3); // one try per coin
   expect(t.db.prepare('SELECT COUNT(*) AS n FROM reference_prices').get().n).toBe(stored);
   expect(log.mock.calls.map((c) => c[0])).toEqual([
     '[reference] CoinGecko eth: status 429; the stored prices stay',
     '[reference] CoinGecko pol: status 429; the stored prices stay',
+    '[reference] CoinGecko btc: status 429; the stored prices stay',
   ]);
   clock.now = NOW + HOUR + 30 * 60_000;
   await sync.tick();
-  expect(failing.calls).toHaveLength(2); // waits an hour after a failure
+  expect(failing.calls).toHaveLength(3); // waits an hour after a failure
   clock.now = NOW + 2 * HOUR + 1;
   await sync.tick();
-  expect(failing.calls).toHaveLength(4);
-  expect(log).toHaveBeenCalledTimes(2); // the same failure is not logged again
-  expect((await ok.api.get('/api/reference-prices')).body.prices).toHaveLength(2);
+  expect(failing.calls).toHaveLength(6);
+  expect(log).toHaveBeenCalledTimes(3); // the same failure is not logged again
+  expect((await ok.api.get('/api/reference-prices')).body.prices).toHaveLength(3);
 });
