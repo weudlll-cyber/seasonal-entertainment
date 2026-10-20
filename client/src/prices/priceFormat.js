@@ -2,8 +2,9 @@
 // File:        priceFormat.js
 // Path:        client/src/prices/priceFormat.js
 // Project:     Seasonal Entertainment
-// Description: The price data's shared pieces on the client (docs/BOTS.md): the four tokens
-//              and the chart ranges as the server names them, and the formats: US dollars with
+// Description: The price data's shared pieces on the client (docs/BOTS.md): the four tokens,
+//              the reference coins and the chart ranges as the server names them, and the
+//              formats: US dollars with
 //              four significant digits below a cent (the tokens trade at fractions of a cent),
 //              cents above; the 24-hour change as a signed percentage; times in the viewer's
 //              local time.
@@ -15,6 +16,11 @@ export const TOKENS = [
   { id: 'summer', name: 'Summer' },
   { id: 'autumn', name: 'Autumn' },
   { id: 'winter', name: 'Winter' },
+];
+// The reference row (ETH and POL, from CoinGecko through this server; docs/BOTS.md).
+export const REFERENCE = [
+  { id: 'eth', name: 'ETH' },
+  { id: 'pol', name: 'POL' },
 ];
 export const RANGES = ['24h', '7d', '30d', '1y', 'all'];
 export const RANGE_LABELS = {

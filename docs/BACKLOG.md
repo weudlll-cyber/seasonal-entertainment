@@ -28,8 +28,6 @@ An entry moves from part one to part two only when its branch is merged into `ma
   Admin → Embedding once the site is live (only exact `https://` origins).
 - **Age key pair for the backups** — open, at deployment: the owner creates it on the PC
   (docs/DEPLOYMENT.md, "Backups"); the VPS gets only the public key.
-- **Prices of ETH and POL** — open, the owner's word: the price bot does not store them, and the
-  site calls no outside price API (docs/BOTS.md). They would need the bot to keep their history.
 - **Event bot admin page inside the site for admins without a second login** — open, waits for
   a change in the bot project: the bot page skips its own login when the site's server supplies
   the bot token, and its API paths can sit under a path prefix (today it calls absolute
@@ -54,6 +52,12 @@ An entry moves from part one to part two only when its branch is merged into `ma
   the backup key pair made on the owner's PC (backups go there, decided 2026-10-19).
 
 ## PART TWO — closed
+
+- **Prices of ETH and POL** — closed by SE-BOTS-2 part 1 (`feat/se-bots-2`, not merged yet;
+  owner decision 2026-10-20): the site fetches their history from CoinGecko's free Demo API
+  (`COINGECKO_API_KEY`, server only), keeps a year of it in its own database, refreshed daily and
+  hourly, and shows ETH and POL as a reference row on `/info/prices` with CoinGecko's attribution
+  (docs/BOTS.md, "Reference prices"). **Owner**: create the Demo key and put it in `site.env`.
 
 - **Fair price and converter with mining time** — closed by SE-BOTS-2 part 4 (`feat/se-bots-2`,
   not merged yet; owner decision 2026-10-20): `/info/prices` shows the price bot's `/value` fair

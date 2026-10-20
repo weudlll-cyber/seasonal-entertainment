@@ -53,37 +53,38 @@ The race game uses 5173 and 4173; this project stays clear of them.
 
 Read from the environment when the process starts, never baked into a build:
 
-| Variable                 | Default                                       | Used by                                                         |
-| ------------------------ | --------------------------------------------- | --------------------------------------------------------------- |
-| `HOST`                   | `127.0.0.1`                                   | server listen address                                           |
-| `PORT`                   | `3800`                                        | server listen port                                              |
-| `CLIENT_DIST`            | `client/dist`                                 | folder of the built client the server serves                    |
-| `COMMIT_SHA`             | output of `git rev-parse`                     | commit reported by `/api/health`                                |
-| `CLIENT_PORT`            | `5380`                                        | Vite dev server port                                            |
-| `API_ORIGIN`             | `http://127.0.0.1:3800`                       | where the Vite dev server forwards `/api` and `/ws`             |
-| `NODE_ENV`               | (unset)                                       | `production`: Secure cookies, no dev defaults (DEPLOYMENT.md)   |
-| `DATABASE_PATH`          | `data/seasonal.db`                            | SQLite file                                                     |
-| `SESSION_SECRET`         | random per start (dev)                        | signs session cookies; required in production                   |
-| `SECRET_ENCRYPTION_KEY`  | public development key (dev)                  | encrypts 2FA secrets at rest; required in production (AUTH.md)  |
-| `BOOTSTRAP_TOKEN`        | (unset)                                       | one-time first-admin creation (AUTH.md)                         |
-| `PUBLIC_ORIGIN`          | from the Host header (required in production) | own origin for CSRF/WebSocket origin checks                     |
-| `TRUST_PROXY`            | `0` (must be set explicitly in production)    | number of reverse proxies in front                              |
-| `COOKIE_SECURE`          | `true` in production                          | Secure session cookie                                           |
-| `CSRF_STRICT`            | `true`                                        | refuse state changes without Origin/Referer                     |
-| `BCRYPT_COST`            | `12`                                          | password hashing cost (4–15)                                    |
-| `REQUIRE_STAFF_2FA`      | `true`                                        | organisers/admins must use 2FA; `false` only outside production |
-| `CHAT_RETENTION_DAYS`    | `90`                                          | chat messages older than this are deleted                       |
-| `MEDIA_DIR`              | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`      |
-| `LINK_PREVIEWS`          | `true`                                        | `false` switches chat link previews off                         |
-| `CALLS_URL`              | (unset: Calls off)                            | call service origin, `wss://...` (docs/CALLS.md)                |
-| `CALLS_API_KEY`          | (unset)                                       | call service API key; set with the other two or none            |
-| `CALLS_API_SECRET`       | (unset)                                       | call service API secret; production: no dev pair, 32+ chars     |
-| `BACKUP_DIR`             | (unset)                                       | where `scripts/backup.mjs` writes backups (DEPLOYMENT.md)       |
-| `BACKUP_ENCRYPTION`      | `on`                                          | encrypt backups with age (`off`: plain folders)                 |
-| `BACKUP_RECIPIENT`       | (unset; required while encryption is on)      | the owner's age public key (`age1…`) the backups are for        |
-| `PRICE_BOT_DB`           | (unset: prices off)                           | the price bot's `snapshots.db`, read-only (docs/BOTS.md)        |
-| `EVENT_BOT_DB`           | (unset: bot events off)                       | the event bot's database, read-only (docs/BOTS.md)              |
-| `PRICE_BOT_MINING_RATES` | (unset: no fair price, no mining times)       | the price bot's `mining_rates.json`, read-only (docs/BOTS.md)   |
+| Variable                 | Default                                       | Used by                                                               |
+| ------------------------ | --------------------------------------------- | --------------------------------------------------------------------- |
+| `HOST`                   | `127.0.0.1`                                   | server listen address                                                 |
+| `PORT`                   | `3800`                                        | server listen port                                                    |
+| `CLIENT_DIST`            | `client/dist`                                 | folder of the built client the server serves                          |
+| `COMMIT_SHA`             | output of `git rev-parse`                     | commit reported by `/api/health`                                      |
+| `CLIENT_PORT`            | `5380`                                        | Vite dev server port                                                  |
+| `API_ORIGIN`             | `http://127.0.0.1:3800`                       | where the Vite dev server forwards `/api` and `/ws`                   |
+| `NODE_ENV`               | (unset)                                       | `production`: Secure cookies, no dev defaults (DEPLOYMENT.md)         |
+| `DATABASE_PATH`          | `data/seasonal.db`                            | SQLite file                                                           |
+| `SESSION_SECRET`         | random per start (dev)                        | signs session cookies; required in production                         |
+| `SECRET_ENCRYPTION_KEY`  | public development key (dev)                  | encrypts 2FA secrets at rest; required in production (AUTH.md)        |
+| `BOOTSTRAP_TOKEN`        | (unset)                                       | one-time first-admin creation (AUTH.md)                               |
+| `PUBLIC_ORIGIN`          | from the Host header (required in production) | own origin for CSRF/WebSocket origin checks                           |
+| `TRUST_PROXY`            | `0` (must be set explicitly in production)    | number of reverse proxies in front                                    |
+| `COOKIE_SECURE`          | `true` in production                          | Secure session cookie                                                 |
+| `CSRF_STRICT`            | `true`                                        | refuse state changes without Origin/Referer                           |
+| `BCRYPT_COST`            | `12`                                          | password hashing cost (4–15)                                          |
+| `REQUIRE_STAFF_2FA`      | `true`                                        | organisers/admins must use 2FA; `false` only outside production       |
+| `CHAT_RETENTION_DAYS`    | `90`                                          | chat messages older than this are deleted                             |
+| `MEDIA_DIR`              | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`            |
+| `LINK_PREVIEWS`          | `true`                                        | `false` switches chat link previews off                               |
+| `CALLS_URL`              | (unset: Calls off)                            | call service origin, `wss://...` (docs/CALLS.md)                      |
+| `CALLS_API_KEY`          | (unset)                                       | call service API key; set with the other two or none                  |
+| `CALLS_API_SECRET`       | (unset)                                       | call service API secret; production: no dev pair, 32+ chars           |
+| `BACKUP_DIR`             | (unset)                                       | where `scripts/backup.mjs` writes backups (DEPLOYMENT.md)             |
+| `BACKUP_ENCRYPTION`      | `on`                                          | encrypt backups with age (`off`: plain folders)                       |
+| `BACKUP_RECIPIENT`       | (unset; required while encryption is on)      | the owner's age public key (`age1…`) the backups are for              |
+| `PRICE_BOT_DB`           | (unset: prices off)                           | the price bot's `snapshots.db`, read-only (docs/BOTS.md)              |
+| `EVENT_BOT_DB`           | (unset: bot events off)                       | the event bot's database, read-only (docs/BOTS.md)                    |
+| `PRICE_BOT_MINING_RATES` | (unset: no fair price, no mining times)       | the price bot's `mining_rates.json`, read-only (docs/BOTS.md)         |
+| `COINGECKO_API_KEY`      | (unset: ETH and POL not connected)            | CoinGecko Demo key: the server fetches ETH/POL history (docs/BOTS.md) |
 
 The server loads `.env` from the repository root if present; real environment variables win.
 `.env.example` lists every key the server reads, by name with a comment and no value;
@@ -413,6 +414,8 @@ server/
   src/settings/            admin-editable site settings: definitions, store, admin routes
   src/embed/               the chat on approved other sites: the approved list (a setting),
                            embed tokens, their route allow-list, routes (docs/EMBED.md, AUTH.md)
+  src/reference/           ETH and POL prices from CoinGecko: schema, the API call, the daily
+                           and hourly job, public routes (docs/BOTS.md, "Reference prices")
   src/bots/                the owner's bots' databases, read-only: prices, event occurrences,
                            public routes with a cache, the events' images (fetched by the
                            server); fixtures.js and fixtureNetwork.js: fake development data

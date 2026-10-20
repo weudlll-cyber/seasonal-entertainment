@@ -7,7 +7,8 @@
 //              with the call service built from config) and, when a built client
 //              exists, the static client with a fallback to index.html for client routes. No
 //              listen(), so tests drive it directly; app.locals.chat is the chat's handle,
-//              app.locals.calls.start() starts the stale-call job (calls/staleCalls.js).
+//              app.locals.calls.start() starts the stale-call job (calls/staleCalls.js),
+//              app.locals.reference.start() the ETH and POL prices job (reference/sync.js).
 //              The embedded chat on approved foreign sites (embed/) adds its CSP, its token
 //              check and its routes; prices and bot events (bots/) are read-only public reads.
 // ============================================================
@@ -17,6 +18,8 @@ import path from 'node:path';
 import express from 'express';
 import { bootstrapRoutes } from './accounts/bootstrap.js';
 import { botRoutes } from './bots/routes.js';
+import { referenceRoutes } from './reference/routes.js';
+import { createReferenceSync } from './reference/sync.js';
 import { adminAuditRoutes } from './admin/auditRoutes.js';
 import { callJoinRoutes } from './calls/joinRoutes.js';
 import { callRoutes } from './calls/routes.js';
@@ -103,6 +106,7 @@ export function createApp({
   const bots = botRoutes(config, chat.images, botImageNetwork);
   api.use('/prices', bots.prices);
   api.use('/bot-events', bots.events);
+  api.use('/reference-prices', referenceRoutes(db, config));
   api.use('/games', gameRoutes(db));
   api.use('/admin/games', adminGameRoutes(db));
   api.use('/admin/settings', adminSettingRoutes(db));
@@ -113,6 +117,11 @@ export function createApp({
   api.use('/calls', callStageRoutes(db, config, callService, chat));
   api.use('/calls', callSpotlightRoutes(db, config, callService));
   app.locals.calls = { start: (log) => startStaleCalls(db, config, callService, chat, log) };
+  // The ETH and POL prices job (reference/sync.js): only with a CoinGecko key and timers on.
+  app.locals.reference = {
+    start: () =>
+      config.coingecko && config.backgroundJobs ? createReferenceSync(db, config).start() : null,
+  };
 
   // Unknown API paths answer JSON, never the HTML page.
   api.use((_req, res) => sendError(res, 404, 'not_found', 'No such API endpoint.'));

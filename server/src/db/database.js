@@ -20,6 +20,7 @@ import { INFO_SCHEMA } from '../info/schema.js';
 import { KEYS_SCHEMA } from '../keys/schema.js';
 import { MEDIA_SCHEMA } from '../media/schema.js';
 import { PREVIEW_SCHEMA } from '../previews/schema.js';
+import { REFERENCE_SCHEMA } from '../reference/schema.js';
 import { SETTINGS_SCHEMA } from '../settings/schema.js';
 import { UPLOAD_SCHEMA } from '../uploads/schema.js';
 import { TWO_FACTOR_SCHEMA } from '../twofa/schema.js';
@@ -37,6 +38,7 @@ const SCHEMAS = [
   CHAT_SCHEMA,
   UPLOAD_SCHEMA,
   SETTINGS_SCHEMA,
+  REFERENCE_SCHEMA,
   CALLS_SCHEMA,
   EMBED_SCHEMA,
 ];

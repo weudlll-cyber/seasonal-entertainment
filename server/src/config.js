@@ -133,6 +133,11 @@ export function readConfig(env = process.env) {
         userAgent: 'SeasonalEntertainmentEventImages/1.0 (event images for Seasonal Entertainment)',
       },
     },
+    // ETH and POL prices from CoinGecko's free Demo API (reference/, docs/BOTS.md); null:
+    // they show as not connected. Calls are spaced by gapMs (about 52 a day in all).
+    coingecko: env.COINGECKO_API_KEY
+      ? { apiKey: env.COINGECKO_API_KEY, timeoutMs: 10_000, gapMs: 2500 }
+      : null,
     // Timers (session sweep, chat retention). Tests switch them off; not an env key.
     backgroundJobs: true,
     rateLimits: {

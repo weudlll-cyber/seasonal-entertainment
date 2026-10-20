@@ -121,10 +121,47 @@ numbers):
   the to side: the converted amount) = amount ÷ mining rate, with days too over 48 hours. ETH has
   none.
 
+## Reference prices (ETH and POL, from CoinGecko)
+
+The price bot keeps no history for ETH and POL, so the **site** fetches it from CoinGecko
+(owner decision 2026-10-20; `server/src/reference/`). Only the server talks to CoinGecko; the
+browser never does, and the CSP is unchanged.
+
+- **Key**: `COINGECKO_API_KEY`, a free Demo key (coingecko.com/en/api → "Demo"). Unset: ETH and
+  POL show as "not connected" and nothing else changes.
+- **What CoinGecko's documentation and terms said** (read 2026-10-20):
+  - Demo base URL `https://api.coingecko.com/api/v3`, the key in the `x-cg-demo-api-key` header
+    (the site never puts it in a URL or a log).
+  - Coin ids: `ethereum`, and `polygon-ecosystem-token` for POL (ex-MATIC; the same ids the price
+    bot uses).
+  - `/coins/{id}/market_chart`: the Demo plan reaches **365 days** back; without an interval it
+    answers hourly points for 2–90 days and daily ones (00:00 UTC) beyond.
+  - Rate limit: the pricing page names 100 calls a minute and 10,000 calls a month for the Demo
+    plan. The site makes about **52 calls a day** (about 1,600 a month), one after another with a
+    2.5-second pause, and waits an hour after a failure.
+  - **Attribution is required**: "Powered by CoinGecko" (the terms) and a link to CoinGecko (the
+    attribution guide). `/info/prices` shows "Powered by CoinGecko API", linked to
+    `https://www.coingecko.com/en/api/`, right beside the ETH and POL prices.
+  - **Storing**: the terms discourage caching but allow it when the stored data is refreshed at
+    least every 24 hours. Nothing in the terms forbids showing the data on the free plan, so it is
+    built normally (behind the key).
+- **Stored** in the site's database (`reference_prices`, the same shape as the bot's
+  `snapshots`, so the same latest-price and history code reads both):
+  - once a day per coin, everything again: a year of daily points and 90 days of hourly ones
+    replace what is stored, and anything older than a year is deleted (so every stored price is
+    at most a day old as stored data, as the terms ask);
+  - every hour, the last two days (hourly points);
+  - `reference_sync` remembers both times, so a restart does not fetch again;
+  - a failed fetch keeps the stored prices; the log says so once until it works again.
+- **Shown** on `/info/prices` as a "Reference" row (price, 24-hour change) with the same chart
+  and ranges as the seasons (`all` reaches back a year), and as ETH in the converter. The home
+  price card stays the four seasons only.
+- Routes: `GET /api/reference-prices` and `GET /api/reference-prices/:token?range=`, public,
+  cached for 5 minutes and rate limited like the bots' reads. The converter offers the seasons
+  and ETH, not POL (decided 2026-10-20), although the bot's `/swap` knows POL too.
+
 ## What is not shown, and why
 
-- **ETH and POL prices**: the price bot does not store them (it fetches them live and keeps only
-  the four seasonal tokens), and the site calls no outside price API. Open owner decision.
 - **A ratio view between seasons** (e.g. Spring in Summer): not built; open owner decision.
 - **Reminders, reactions, announcements, dispatch logs**: bot internals, not read.
 
@@ -175,6 +212,11 @@ sample week to the current one.
   numbers, the whole table worked out by hand, a missing price, the conversions and hours.
 - `client/src/prices/fairAndConverter.test.jsx`: the table and the converter on the page; ETH
   only while connected; without the mining rates.
+- `server/test/referencePrices.test.js`: not connected without a key; the first run (coin ids,
+  USD, the key only in the header, the pause), the next hour, the next day without data over a
+  year old; a failure keeps the prices, logs once and waits an hour.
+- `client/src/prices/referencePrices.test.jsx`: the reference row with CoinGecko's attribution,
+  its chart and ranges, ETH in the converter, "not connected", the home card unchanged.
 - `server/test/droppedTables.test.js`: the old `events` table is dropped on start.
 - `client/e2e/events.spec.js`: the real server reading a fixture event bot; no events editor in
   the admin area.

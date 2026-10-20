@@ -39,6 +39,17 @@
   --season: var(--color-winter);
 }
 
+/* The reference coins (ETH, POL) are not seasons: the site's accent and its text colour. */
+.price-chart--eth,
+.price-pick--eth {
+  --season: var(--color-accent);
+}
+
+.price-chart--pol,
+.price-pick--pol {
+  --season: var(--color-text-muted);
+}
+
 .sparkline path,
 .price-chart__line {
   fill: none;
@@ -190,6 +201,12 @@
 .price-chart__readout {
   margin-top: var(--space-1);
   font-variant-numeric: tabular-nums;
+}
+
+/* The two rows (seasons, reference) each under a small title. */
+.prices__row-title {
+  margin: var(--space-3) 0 0;
+  font-size: var(--font-size-lead);
 }
 
 /* The fair price table and the converter (FairPriceTable.jsx, Converter.jsx). */

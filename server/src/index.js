@@ -6,8 +6,9 @@
 //              database, encrypts any 2FA secret still stored in plain text (twofa/secretBox.js),
 //              adds first-start content, builds the app (in development with the fake event
 //              bot's image files, bots/fixtureNetwork.js), starts the chat (its own
-//              first-start content and retention job) and the stale-call job, starts listening
-//              and attaches the chat WebSocket.
+//              first-start content and retention job), the stale-call job and the ETH/POL
+//              prices job (with a CoinGecko key), starts listening and attaches the chat
+//              WebSocket.
 // ============================================================
 
 import { existsSync } from 'node:fs';
@@ -42,6 +43,7 @@ const botImageNetwork =
 const app = createApp({ buildInfo, config, db, botImageNetwork });
 await app.locals.chat.start();
 app.locals.calls.start();
+app.locals.reference.start();
 
 const server = app.listen(config.port, config.host, () => {
   console.log(
