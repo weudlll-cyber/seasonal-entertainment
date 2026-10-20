@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import {
   buildEventFixture,
   buildEventImages,
+  buildMiningRates,
   buildPriceFixture,
 } from '../server/src/bots/fixtures.js';
 
@@ -26,6 +27,7 @@ export const FIXTURE_DIR =
 export const FIXTURE_FILES = {
   PRICE_BOT_DB: path.join(FIXTURE_DIR, 'snapshots.db'),
   EVENT_BOT_DB: path.join(FIXTURE_DIR, 'stannouncebot.db'),
+  PRICE_BOT_MINING_RATES: path.join(FIXTURE_DIR, 'mining_rates.json'),
 };
 
 // Only when run as the script (dev.mjs imports the paths above).
@@ -33,6 +35,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   if (process.env.NODE_ENV === 'production') throw new Error('bot fixtures are for development');
   mkdirSync(FIXTURE_DIR, { recursive: true });
   buildPriceFixture(FIXTURE_FILES.PRICE_BOT_DB);
+  buildMiningRates(FIXTURE_FILES.PRICE_BOT_MINING_RATES);
   buildEventFixture(FIXTURE_FILES.EVENT_BOT_DB);
   // Beside the event database: where the development server's fixture network serves them.
   await buildEventImages(path.join(FIXTURE_DIR, 'images'));

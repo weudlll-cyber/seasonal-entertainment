@@ -152,10 +152,12 @@ services:
   site:
     volumes:
       - /var/lib/stpricebot/snapshots.db:/bots/snapshots.db:ro
+      - /var/lib/stpricebot/mining_rates.json:/bots/mining_rates.json:ro
       - /var/lib/stannouncebot/stannouncebot.db:/bots/stannouncebot.db:ro
 ```
 
-and in **`site.env`**: `PRICE_BOT_DB=/bots/snapshots.db`, `EVENT_BOT_DB=/bots/stannouncebot.db`.
+and in **`site.env`**: `PRICE_BOT_DB=/bots/snapshots.db`,
+`PRICE_BOT_MINING_RATES=/bots/mining_rates.json`, `EVENT_BOT_DB=/bots/stannouncebot.db`.
 Leave a key empty to keep that feature off (the pages then say the data source is not connected).
 
 - Both files must exist on the host **before** `docker compose up`: Docker creates a missing bind

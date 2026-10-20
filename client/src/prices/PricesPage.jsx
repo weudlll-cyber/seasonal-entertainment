@@ -4,15 +4,19 @@
 // Project:     Seasonal Entertainment
 // Description: /info/prices, in the "Seasonal Tokens" section: the four tokens' latest prices
 //              (a token picker showing price and 24-hour change) and the picked token's chart
-//              over 24 hours, 7 days, 30 days, a year or everything (docs/BOTS.md). The data
-//              is the price bot's, read by the server; without it the page says so plainly.
-//              timeZone is a prop so tests can pin it.
+//              over 24 hours, 7 days, 30 days, a year or everything (docs/BOTS.md); then the
+//              fair price and the converter with mining times, as the price bot's /value and
+//              /swap (FairPriceTable.jsx, Converter.jsx). The data is the price bot's, read by
+//              the server; without it the page says so plainly. timeZone is a prop so tests
+//              can pin it.
 // ============================================================
 
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { api } from '../api/http.js';
 import { FormMessage } from '../components/FormField.jsx';
+import Converter from './Converter.jsx';
+import FairPriceTable from './FairPriceTable.jsx';
 import PriceChart from './PriceChart.jsx';
 import {
   RANGES,
@@ -50,6 +54,7 @@ export default function PricesPage({ timeZone = deviceZone() }) {
   }, [latest, token, range]);
 
   const byToken = Object.fromEntries((latest?.prices ?? []).map((p) => [p.token, p]));
+  const actual = Object.fromEntries((latest?.prices ?? []).map((p) => [p.token, p.price]));
   const picked = TOKENS.find((t) => t.id === token);
   // An answer for an earlier pick is not shown while the new one loads.
   const shown = history?.token === token && history?.range === range ? history : null;
@@ -110,6 +115,8 @@ export default function PricesPage({ timeZone = deviceZone() }) {
           ) : (
             !error && <p>Loading…</p>
           )}
+          <FairPriceTable actual={actual} rates={latest.miningRates} />
+          <Converter prices={actual} rates={latest.miningRates} />
         </>
       )}
     </section>

@@ -55,6 +55,12 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **Fair price and converter with mining time** — closed by SE-BOTS-2 part 4 (`feat/se-bots-2`,
+  not merged yet; owner decision 2026-10-20): `/info/prices` shows the price bot's `/value` fair
+  price table and its `/swap` converter with mining times, from the bot's `mining_rates.json`
+  (`PRICE_BOT_MINING_RATES`, read-only); the arithmetic is ported with the bot's own test numbers
+  (docs/BOTS.md, "Fair price and converter").
+
 - **Event images from the bot** — closed by SE-BOTS-2 part 3 (`feat/se-bots-2`, not merged yet;
   owner decision 2026-10-20): the server fetches each event's image through the link previews'
   network guard, re-encodes it without metadata, stores it by a hash of its URL and refreshes it

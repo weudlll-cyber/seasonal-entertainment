@@ -3,7 +3,8 @@
 // Path:        server/src/bots/routes.js
 // Project:     Seasonal Entertainment
 // Description: Public reads of the owner's bot data (docs/BOTS.md), guests included:
-//              GET /api/prices (latest prices, 24-hour change, sparkline), GET
+//              GET /api/prices (latest prices, 24-hour change, sparkline, and the price bot's
+//              mining rates for the fair price and the converter, miningRates.js), GET
 //              /api/prices/:token?range= (history: 24h, 7d, 30d, 1y, all; at most 500 points)
 //              and GET /api/bot-events?from=&to= (the event bot's occurrences in a window of at
 //              most eight days), each with its event's image on this site when there is one
@@ -18,6 +19,7 @@ import { makeLimiter } from '../http/rateLimit.js';
 import { cachedRead, readBotDb } from './botDb.js';
 import { botOccurrences } from './events.js';
 import { createBotImages } from './images.js';
+import { readMiningRates } from './miningRates.js';
 import { PRICE_RANGES, PRICE_TOKENS, latestPrices, priceHistory } from './prices.js';
 
 const MAX_WINDOW_MS = 8 * 24 * 60 * 60_000; // a week in any time zone, with room for DST
@@ -25,7 +27,7 @@ const MAX_WINDOW_MS = 8 * 24 * 60 * 60_000; // a week in any time zone, with roo
 // chatImages: the chat area's image fetch and media address (chat/mount.js); imageNetwork:
 // how event images are fetched (bots/images.js), the real internet when undefined.
 export function botRoutes(config, chatImages, imageNetwork) {
-  const { priceDb, eventDb, cacheMs } = config.bots;
+  const { priceDb, eventDb, miningRates: ratesFile, cacheMs } = config.bots;
   const cached = cachedRead(cacheMs);
   const images = createBotImages(config, chatImages, imageNetwork);
   const limit = makeLimiter(config.rateLimits.botRead);
@@ -41,10 +43,33 @@ export function botRoutes(config, chatImages, imageNetwork) {
     }
   }
 
+  // The mining rates, re-read at most every cacheMs (5 minutes); null when not configured,
+  // missing or invalid. The reason is logged once per reason, not on every read.
+  let lastProblem = null;
+  const miningRates = () =>
+    ratesFile
+      ? cached('mining-rates', () => {
+          try {
+            const rates = readMiningRates(ratesFile);
+            lastProblem = null;
+            return rates;
+          } catch (err) {
+            if (err.message !== lastProblem) console.error(`[bots] ${ratesFile}: ${err.message}`);
+            lastProblem = err.message;
+            return null;
+          }
+        })
+      : null;
+
   const prices = express.Router();
   prices.get('/', allow('public'), limit, (_req, res) => {
-    if (!priceDb) return res.json({ ok: true, connected: false, prices: [] });
-    answer(res, priceDb, 'latest', latestPrices, (list) => ({ prices: list }));
+    if (!priceDb) {
+      return res.json({ ok: true, connected: false, prices: [], miningRates: miningRates() });
+    }
+    answer(res, priceDb, 'latest', latestPrices, (list) => ({
+      prices: list,
+      miningRates: miningRates(),
+    }));
   });
   prices.get('/:token', allow('public'), limit, (req, res) => {
     const { token } = req.params;

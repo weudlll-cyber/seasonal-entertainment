@@ -56,7 +56,12 @@ const MONDAY = Date.parse('2026-10-19T00:00:00Z');
 
 it('unset keys: every read says the data source is not connected', async () => {
   const api = appWith({ priceDb: null, eventDb: null });
-  expect((await api.get('/api/prices')).body).toEqual({ ok: true, connected: false, prices: [] });
+  expect((await api.get('/api/prices')).body).toEqual({
+    ok: true,
+    connected: false,
+    prices: [],
+    miningRates: null,
+  });
   expect((await api.get('/api/prices/spring?range=7d')).body).toMatchObject({
     connected: false,
     points: [],

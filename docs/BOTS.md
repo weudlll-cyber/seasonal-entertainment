@@ -4,10 +4,11 @@ The site shows data that two of the owner's bots already collect (SE-NIGHT-3, 20
 bots live in the private repository `weudlll-cyber/Seasonal-tokens`; the site only **reads**
 their SQLite files and never talks to the bots themselves.
 
-| Bot             | Its file on the VPS                       | Config key     | What the site shows                                      |
-| --------------- | ----------------------------------------- | -------------- | -------------------------------------------------------- |
-| `stpricebot`    | `/var/lib/stpricebot/snapshots.db`        | `PRICE_BOT_DB` | the home card's prices, the charts at `/info/prices`     |
-| `stannouncebot` | `/var/lib/stannouncebot/stannouncebot.db` | `EVENT_BOT_DB` | `/events` and the home page's "Up next": the only events |
+| Bot             | Its file on the VPS                       | Config key               | What the site shows                                      |
+| --------------- | ----------------------------------------- | ------------------------ | -------------------------------------------------------- |
+| `stpricebot`    | `/var/lib/stpricebot/snapshots.db`        | `PRICE_BOT_DB`           | the home card's prices, the charts at `/info/prices`     |
+| `stannouncebot` | `/var/lib/stannouncebot/stannouncebot.db` | `EVENT_BOT_DB`           | `/events` and the home page's "Up next": the only events |
+| `stpricebot`    | `/var/lib/stpricebot/mining_rates.json`   | `PRICE_BOT_MINING_RATES` | the fair price and the converter's mining times          |
 
 Each key is a file path. **Unset, that feature is off** and the page says plainly that the
 data source is not connected: the home card shows the season marks and "Prices: the data source
@@ -99,6 +100,27 @@ its admin editor and its seeded schedule are gone, so there is no duplicate betw
 more. "Up next" on the home page asks for the next seven days from the full hour (one cached
 question per hour) and shows the next two scheduled occurrences that have not started.
 
+## Fair price and converter
+
+On `/info/prices`, below the chart, exactly as the price bot's `/value` and `/swap` work them
+out (owner decision 2026-10-20; `client/src/prices/fairPrice.js`, ported with the bot's own test
+numbers):
+
+- **Mining rates**: the price bot's `mining_rates.json` in its runtime folder (`ST_RUNTIME_DIR`,
+  next to `snapshots.db`), tokens mined per hour per season, e.g. `{"Spring": 42.0, …}`. Read
+  read-only and re-read at most every 5 minutes (`server/src/bots/miningRates.js`), as the bot's
+  `load_mine_rates` accepts it: every season there with a rate above 0. Unset, missing or
+  invalid: the fair price table and the mining times say the mining rates are not available.
+- **Fair price** (`compute_fair_prices`): over the seasons that have a price, K = average of the
+  actual prices ÷ average of 1 / mining rate; a season's fair price = K ÷ its mining rate;
+  deviation = (actual − fair) ÷ fair × 100 %; underpriced when actual < fair; ranked by actual ÷
+  fair, best buy first. A season mined at half the rate is worth twice as much.
+- **Converter** (`/swap`): an amount of Spring, Summer, Autumn, Winter or ETH (only while ETH is
+  connected, see "Reference prices") into another: converted = amount × price(from) ÷ price(to).
+  Each side that is a season gets its mining time in hours (the from side: the amount entered;
+  the to side: the converted amount) = amount ÷ mining rate, with days too over 48 hours. ETH has
+  none.
+
 ## What is not shown, and why
 
 - **ETH and POL prices**: the price bot does not store them (it fetches them live and keeps only
@@ -113,7 +135,7 @@ question per hour) and shows the next two scheduled occurrences that have not st
 **clearly fake, seeded** data into `data/bot-fixtures/` (gitignored, like all of `data/`):
 
 - a year of hourly prices for the four tokens (a seeded random walk around a few tenths of a US
-  cent, ±1 % per hour at most);
+  cent, ±1 % per hour at most), and fake mining rates (`mining_rates.json`: 40, 30, 60, 50);
 - a few weekly `[Sample]` events from two weeks back to four ahead: past ones `done`, one moved
   by two overrides (the later wins), one canceled this week, one inactive (never shown) and one
   with a non-web link (shown as text);
@@ -147,6 +169,12 @@ sample week to the current one.
 - `server/test/botImages.test.js`: an event's image fetched, re-encoded as WebP without
   metadata, stored by the URL's hash and served from this site; a private address, plain http
   or a non-image refused; at most once a day.
+- `server/test/botMiningRates.test.js`: the bot's file format; a missing season or a rate of 0
+  (the bot's own loader tests) not available; re-read at most every 5 minutes.
+- `client/src/prices/fairPrice.test.js`: the bot's `test_fair_prices.py` cases with their
+  numbers, the whole table worked out by hand, a missing price, the conversions and hours.
+- `client/src/prices/fairAndConverter.test.jsx`: the table and the converter on the page; ETH
+  only while connected; without the mining rates.
 - `server/test/droppedTables.test.js`: the old `events` table is dropped on start.
 - `client/e2e/events.spec.js`: the real server reading a fixture event bot; no events editor in
   the admin area.

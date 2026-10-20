@@ -6,7 +6,8 @@
 //              two bot databases with the bots' exact schemas (weudlll-cyber/Seasonal-tokens:
 //              stpricebot helpers/snapshots.py, stannouncebot db/schema.sql; only the tables
 //              the site reads) and clearly fake, seeded sample data. Prices: hourly snapshots of
-//              the four seasonal tokens with a seeded random walk. Events: a few weekly events
+//              the four seasonal tokens with a seeded random walk, and fake mining rates
+//              (buildMiningRates). Events: a few weekly events
 //              around `now`, past ones done, one moved by an override (two overrides, the later
 //              wins), one canceled this week, one inactive and one with a non-web link; three
 //              with an image on the fixture's own image host (buildEventImages draws them), one
@@ -14,7 +15,7 @@
 //              docs/BOTS.md, "Development data".
 // ============================================================
 
-import { mkdirSync, rmSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 import sharp from 'sharp';
@@ -66,6 +67,13 @@ export function buildPriceFixture(
     });
   })();
   db.close();
+}
+
+// The price bot's mining_rates.json, in its own format (season names capitalised, tokens mined
+// per hour). Fake, round numbers: not the real rates.
+export function buildMiningRates(file) {
+  const rates = { Spring: 40, Summer: 30, Autumn: 60, Winter: 50 };
+  writeFileSync(file, `${JSON.stringify(rates, null, 2)}\n`);
 }
 
 const EVENT_TABLES = `

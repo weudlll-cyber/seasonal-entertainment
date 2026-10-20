@@ -3,9 +3,10 @@
    Path:        client/src/prices/prices.css
    Project:     Seasonal Entertainment
    Description: Prices (docs/BOTS.md): the home card's rows with their sparklines, the token
-                picker and range buttons of /info/prices, and the hand-built SVG chart with its
-                hover mark. Only design tokens: each season's line takes its colour token, so
-                light and dark themes follow the site's own.
+                picker and range buttons of /info/prices, the hand-built SVG chart with its
+                hover mark, the fair price table and the converter. Only design tokens: each
+                season's line takes its colour token, so light and dark themes follow the
+                site's own.
    ============================================================ */
 
 .sparkline,
@@ -189,4 +190,48 @@
 .price-chart__readout {
   margin-top: var(--space-1);
   font-variant-numeric: tabular-nums;
+}
+
+/* The fair price table and the converter (FairPriceTable.jsx, Converter.jsx). */
+.prices__section {
+  margin-top: var(--space-4);
+}
+
+.prices__note {
+  color: var(--color-text-muted);
+}
+
+.fair-table {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.fair-table th,
+.fair-table td {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.converter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2);
+}
+
+.converter input,
+.converter select {
+  min-height: 2.5rem;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.converter__result ul {
+  margin: 0;
+  padding-left: var(--space-3);
 }
