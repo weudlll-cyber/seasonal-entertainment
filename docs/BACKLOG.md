@@ -56,7 +56,7 @@ An entry moves from part one to part two only when its branch is merged into `ma
 ## PART TWO — closed
 
 - **Own room message seen twice in the chat on another site** — closed by SE-NIGHT-3 piece 4
-  (`feat/se-night-3`, PR #8, not merged yet): not shown twice. The browser check's
+  (`feat/se-night-3`, PR #8, merged 2026-10-20): not shown twice. The browser check's
   `getByText` also matched the composer's field, which still holds the text until the send is
   answered, while the live push had already listed the message. Reproduced every time with
   the answer held back and in 2 of 30 natural runs; never twice in the list. The client tests
@@ -64,17 +64,17 @@ An entry moves from part one to part two only when its branch is merged into `ma
   push-before-answer case (docs/CHAT.md, "Sending").
 
 - **Prices and events from the owner's bots** — closed by SE-NIGHT-3 piece 3 (`feat/se-night-3`,
-  PR #8, not merged yet): read-only reads of the price and event bots' SQLite files
+  PR #8, merged 2026-10-20): read-only reads of the price and event bots' SQLite files
   (`PRICE_BOT_DB`, `EVENT_BOT_DB`, docs/BOTS.md); a price card on the home page, charts at
   `/info/prices`, the bot's occurrences on `/events`; fake fixture data for development. The
   part-one entry "Bots and group roles" stays open for the group roles.
 
 - **A 2FA secret that decrypts but cannot be used answered 500** — closed by SE-NIGHT-3 piece 2
-  (`feat/se-night-3`, PR #8, not merged yet): `openSecret` (`server/src/twofa/secretBox.js`)
+  (`feat/se-night-3`, PR #8, merged 2026-10-20): `openSecret` (`server/src/twofa/secretBox.js`)
   refuses such a secret (e.g. encrypted twice) like one that does not decrypt: the same 401
   answer and a log line in the same style. Found in SE-EMBED-CHECK-1.
 - **`data/DEV-ADMIN.txt` held a stale 2FA secret** — closed by SE-NIGHT-3 piece 2
-  (`feat/se-night-3`, PR #8, not merged yet): `npm run dev:admin` rewrites the file's 2FA part
+  (`feat/se-night-3`, PR #8, merged 2026-10-20): `npm run dev:admin` rewrites the file's 2FA part
   from the stored secret when the account already has 2FA; it never resets or changes that
   2FA. Run once on 2026-10-20, so the file is current. Found in SE-EMBED-CHECK-1.
 
