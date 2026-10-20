@@ -12,6 +12,7 @@
 //              after a member's key pair was made, the recovery-code offer opens over the page.
 // ============================================================
 
+import { Suspense } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import { useKeys } from '../keys/KeyContext.jsx';
 import RecoveryOffer from '../keys/RecoveryOffer.jsx';
@@ -41,7 +42,10 @@ export default function Layout() {
             <Link to="/account#two-factor">Set it up now</Link>.
           </p>
         )}
-        <Outlet />
+        {/* A page loaded on first use (App.jsx) leaves the shell standing while it arrives. */}
+        <Suspense>
+          <Outlet />
+        </Suspense>
       </main>
       {chatButton && <ChatDrawer />}
       {offerRecovery && <RecoveryOffer />}

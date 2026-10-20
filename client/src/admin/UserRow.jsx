@@ -68,21 +68,26 @@ export default function UserRow({ user, onChanged }) {
         </select>
       </td>
       <td>
-        <input
-          type="checkbox"
-          aria-label={label('Can start games')}
-          checked={user.canStartGames || user.role === 'admin'}
-          disabled={user.role === 'admin'}
-          onChange={(e) => change('can-start-games', { value: e.target.checked })}
-        />
+        {/* The label adds no text (the box has its own name): it makes the target 44px. */}
+        <label className="table-check">
+          <input
+            type="checkbox"
+            aria-label={label('Can start games')}
+            checked={user.canStartGames || user.role === 'admin'}
+            disabled={user.role === 'admin'}
+            onChange={(e) => change('can-start-games', { value: e.target.checked })}
+          />
+        </label>
       </td>
       <td>
-        <input
-          type="checkbox"
-          aria-label={label('Locked')}
-          checked={user.locked}
-          onChange={(e) => change('lock', { locked: e.target.checked })}
-        />
+        <label className="table-check">
+          <input
+            type="checkbox"
+            aria-label={label('Locked')}
+            checked={user.locked}
+            onChange={(e) => change('lock', { locked: e.target.checked })}
+          />
+        </label>
       </td>
       <td>
         {resetting ? (

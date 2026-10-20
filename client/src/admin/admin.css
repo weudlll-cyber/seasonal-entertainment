@@ -32,6 +32,12 @@
   align-items: center;
 }
 
+/* The row's small text buttons (the info pages' ↑ and ↓): a full 44px target each. */
+.admin-row-actions .link-button {
+  min-width: var(--hit-target);
+  min-height: var(--hit-target);
+}
+
 .admin-json {
   font-size: 0.8125rem;
   white-space: pre-wrap;

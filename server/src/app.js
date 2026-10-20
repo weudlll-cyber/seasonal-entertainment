@@ -4,9 +4,9 @@
 // Project:     Seasonal Entertainment
 // Description: Builds the Express app: security headers, CSRF origin check, sessions, the
 //              JSON API under /api (the chat area through mountChat; calls, docs/CALLS.md,
-//              with the call service built from config) and, when a built client
-//              exists, the static client with a fallback to index.html for client routes. No
-//              listen(), so tests drive it directly; app.locals.chat is the chat's handle,
+//              with the call service built from config) and, when a built client exists, the
+//              static client (hashed assets/ cached for a year) with a fallback to index.html
+//              for client routes. No listen(), so tests drive it directly; app.locals.chat is the chat's handle,
 //              app.locals.calls.start() starts the stale-call job (calls/staleCalls.js),
 //              app.locals.reference.start() the ETH, POL and BTC prices job (reference/sync.js).
 //              The embedded chat on approved foreign sites (embed/) adds its CSP, its token
@@ -129,6 +129,13 @@ export function createApp({
 
   // One process in production: the same server hands out the built client.
   if (existsSync(config.clientDist)) {
+    // Vite names every file in assets/ by a hash of its content: a changed file gets a new
+    // name, so browsers may keep these for a year without asking again (docs/DESIGN.md,
+    // "Speed"). Everything else (index.html, /brand/, theme-init.js) is checked on each visit.
+    app.use(
+      '/assets',
+      express.static(path.join(config.clientDist, 'assets'), { immutable: true, maxAge: '365d' })
+    );
     app.use(express.static(config.clientDist));
     // Any other GET is a client route (/events, /info/faq, ...): the client decides, and
     // shows its own 404 page for paths it does not know.

@@ -16,8 +16,11 @@ import { EMBLEM, QUARTERS, SEASON_ICONS } from '../brand/brand.js';
 import { formatChange, formatUsd, TOKENS } from '../prices/priceFormat.js';
 import './priceTiles.css';
 
-// A box's faint logo part: decoration behind its content.
-const Wash = ({ src }) => <img className="home__wash" src={src} alt="" aria-hidden="true" />;
+// A box's faint logo part: decoration behind its content; lazy, as on a phone most boxes start
+// below the fold.
+const Wash = ({ src }) => (
+  <img className="home__wash" src={src} alt="" aria-hidden="true" loading="lazy" />
+);
 
 export function FeaturedGameCard({ game }) {
   return (
@@ -73,7 +76,7 @@ export function UpNextCard({ next, timeZone }) {
             <li key={`${id}-${start}`}>
               {/* The event's own image when it has one, else a dot in a season colour. */}
               {image ? (
-                <img className="home__event-image" src={image} alt={name} />
+                <img className="home__event-image" src={image} alt={name} loading="lazy" />
               ) : (
                 <span className="home__event-dot" aria-hidden="true" />
               )}

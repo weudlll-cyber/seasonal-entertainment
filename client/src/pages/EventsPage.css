@@ -86,6 +86,14 @@
   color: var(--color-text-muted);
 }
 
+/* The event's own link: on a line of its own, a full 44px target. */
+.event__body a {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-height: var(--hit-target);
+}
+
 /* An event bot occurrence that was canceled: struck through, its status in words. */
 .event--canceled .event__body {
   color: var(--color-text-muted);
@@ -106,4 +114,17 @@
   height: auto;
   border-radius: var(--radius);
   object-fit: cover;
+}
+
+/* Phones: a narrower time column, and the image under the text instead of beside it. */
+@media (max-width: 599.98px) {
+  .event,
+  .event:has(.event__image) {
+    grid-template-columns: 4.5rem 1fr;
+  }
+
+  .event__image {
+    grid-column: 2;
+    width: 6rem;
+  }
 }

@@ -141,6 +141,9 @@
 }
 
 .home__card-head a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit-target);
   font-weight: var(--font-weight-strong);
 }
 
@@ -289,6 +292,17 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: none;
   }
+
+  /* Stacked, the boxes take their content's height; their room is kept from the start, so
+     nothing below jumps when the game and the events arrive (layout shift, docs/DESIGN.md,
+     "Speed"). */
+  .home__game {
+    min-height: 15rem;
+  }
+
+  .home__upnext {
+    min-height: 12.5rem;
+  }
 }
 
 @media (max-width: 599.98px) {
@@ -299,6 +313,20 @@
   .home__banner {
     gap: var(--space-1);
     padding: 0 var(--space-2);
+  }
+
+  /* The emblem and the lettering both fit a 360px phone. */
+  .home__emblem {
+    height: 62%;
+  }
+
+  .home__lettering {
+    font-size: 2rem;
+  }
+
+  .home__lettering-sub {
+    font-size: 0.8125rem;
+    letter-spacing: 0.2em;
   }
 
   .home__card {

@@ -141,6 +141,11 @@
 }
 
 .sidebar__legal a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--hit-target);
+  min-height: var(--hit-target);
   color: var(--color-text-muted);
 }
 

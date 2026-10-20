@@ -57,7 +57,7 @@ Read from the environment when the process starts, never baked into a build:
 | ------------------------ | --------------------------------------------- | ------------------------------------------------------------------------- |
 | `HOST`                   | `127.0.0.1`                                   | server listen address                                                     |
 | `PORT`                   | `3800`                                        | server listen port                                                        |
-| `CLIENT_DIST`            | `client/dist`                                 | folder of the built client the server serves                              |
+| `CLIENT_DIST`            | `client/dist`                                 | folder of the built client the server serves (`assets/` cached a year)    |
 | `COMMIT_SHA`             | output of `git rev-parse`                     | commit reported by `/api/health`                                          |
 | `CLIENT_PORT`            | `5380`                                        | Vite dev server port                                                      |
 | `API_ORIGIN`             | `http://127.0.0.1:3800`                       | where the Vite dev server forwards `/api` and `/ws`                       |

@@ -4,10 +4,11 @@
 // Project:     Seasonal Entertainment
 // Description: Guards the security headers on API and page responses, who may frame what
 //              (frame-ancestors 'self' for the embedded chat under /embed/ only, 'none'
-//              elsewhere), and the client-route fallback that serves index.html for deep links.
+//              elsewhere), the client-route fallback that serves index.html for deep links, and
+//              the caching of the built client: hashed assets/ for a year, the rest checked.
 // ============================================================
 
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -85,5 +86,17 @@ describe('client-route fallback', () => {
     const res = await t.client().get('/api/nope');
     expect(res.status).toBe(404);
     expect(res.body).toMatchObject({ ok: false, error: 'not_found' });
+  });
+});
+
+describe('caching of the built client', () => {
+  it('keeps hashed assets for a year; the page itself is checked on every visit', async () => {
+    mkdirSync(path.join(clientDist, 'assets'));
+    writeFileSync(path.join(clientDist, 'assets', 'index-Ab12Cd34.js'), 'export {};');
+    const asset = await t.client().get('/assets/index-Ab12Cd34.js');
+    expect(asset.status).toBe(200);
+    expect(asset.headers['cache-control']).toBe('public, max-age=31536000, immutable');
+    const page = await t.client().get('/events');
+    expect(page.headers['cache-control']).not.toContain('immutable');
   });
 });

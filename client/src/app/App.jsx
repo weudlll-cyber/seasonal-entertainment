@@ -5,34 +5,19 @@
 // Description: The client's route table inside the session provider. Every page renders
 //              inside Layout, except the embedded chat (/embed/chat, no site shell, for an
 //              iframe) and its login popup (/embed-login; docs/EMBED.md); unknown paths show
-//              the 404 page. The router itself is
+//              the 404 page. Heavier pages are loaded on first use (lazy). The router itself is
 //              supplied by main.jsx (or a test).
 // ============================================================
 
 import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
-import AdminAuditPage from '../admin/AdminAuditPage.jsx';
-import AdminChatMediaPage from '../admin/AdminChatMediaPage.jsx';
-import AdminChatPage from '../admin/AdminChatPage.jsx';
-import AdminGamesPage from '../admin/AdminGamesPage.jsx';
-import AdminInfoListPage from '../admin/AdminInfoListPage.jsx';
-import AdminSettingsPage from '../admin/AdminSettingsPage.jsx';
-import AdminLayout from '../admin/AdminLayout.jsx';
-import AdminUsersPage from '../admin/AdminUsersPage.jsx';
-import InfoEditorPage from '../admin/InfoEditorPage.jsx';
-import AdminEmbeddingPage from '../admin/AdminEmbeddingPage.jsx';
-import EmbedChatPage from '../embed/EmbedChatPage.jsx';
-import EmbedLoginPage from '../embed/EmbedLoginPage.jsx';
 import { KeyProvider } from '../keys/KeyContext.jsx';
 import AccountPage from '../pages/AccountPage.jsx';
-import CallPage from '../pages/CallPage.jsx';
 import CallsPage from '../pages/CallsPage.jsx';
-import PricesPage from '../prices/PricesPage.jsx';
 import ChatPage from '../pages/ChatPage.jsx';
 import EventsPage from '../pages/EventsPage.jsx';
 import GamesPage from '../pages/GamesPage.jsx';
 import InfoIndexPage from '../pages/InfoIndexPage.jsx';
-import InfoPage from '../pages/InfoPage.jsx';
 import LandingPage from '../pages/LandingPage.jsx';
 import LoginPage from '../pages/LoginPage.jsx';
 import NotFoundPage from '../pages/NotFoundPage.jsx';
@@ -41,6 +26,26 @@ import RequireUser from '../session/RequireUser.jsx';
 import { SessionProvider } from '../session/SessionContext.jsx';
 import { ThemeProvider } from '../theme/ThemeContext.jsx';
 import Layout from './Layout.jsx';
+
+// Loaded when first opened, each as its own chunk, so the first page of a visit does not wait
+// for them (docs/DESIGN.md, "Speed"): the call page with the call service's client, the
+// prices page with its chart, info pages with the Markdown renderer, the admin area and the
+// embedded chat. Layout and AdminLayout hold the Suspense boundaries around their outlets.
+const AdminAuditPage = lazy(() => import('../admin/AdminAuditPage.jsx'));
+const AdminChatMediaPage = lazy(() => import('../admin/AdminChatMediaPage.jsx'));
+const AdminChatPage = lazy(() => import('../admin/AdminChatPage.jsx'));
+const AdminEmbeddingPage = lazy(() => import('../admin/AdminEmbeddingPage.jsx'));
+const AdminGamesPage = lazy(() => import('../admin/AdminGamesPage.jsx'));
+const AdminInfoListPage = lazy(() => import('../admin/AdminInfoListPage.jsx'));
+const AdminLayout = lazy(() => import('../admin/AdminLayout.jsx'));
+const AdminSettingsPage = lazy(() => import('../admin/AdminSettingsPage.jsx'));
+const AdminUsersPage = lazy(() => import('../admin/AdminUsersPage.jsx'));
+const CallPage = lazy(() => import('../pages/CallPage.jsx'));
+const EmbedChatPage = lazy(() => import('../embed/EmbedChatPage.jsx'));
+const EmbedLoginPage = lazy(() => import('../embed/EmbedLoginPage.jsx'));
+const InfoEditorPage = lazy(() => import('../admin/InfoEditorPage.jsx'));
+const InfoPage = lazy(() => import('../pages/InfoPage.jsx'));
+const PricesPage = lazy(() => import('../prices/PricesPage.jsx'));
 
 // Test-only pages: routed by the Vite dev server only. In a production build DEV is false, so
 // these and the pages' code are left out entirely.
@@ -57,8 +62,23 @@ export default function App() {
       <SessionProvider>
         <KeyProvider>
           <Routes>
-            <Route path="embed/chat" element={<EmbedChatPage />} />
-            <Route path="embed-login" element={<EmbedLoginPage />} />
+            {/* Outside the shell: their own boundaries; nothing shows for the moment it loads. */}
+            <Route
+              path="embed/chat"
+              element={
+                <Suspense>
+                  <EmbedChatPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="embed-login"
+              element={
+                <Suspense>
+                  <EmbedLoginPage />
+                </Suspense>
+              }
+            />
             <Route element={<Layout />}>
               <Route index element={<LandingPage />} />
               <Route path="info" element={<InfoIndexPage />} />

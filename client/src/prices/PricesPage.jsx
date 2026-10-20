@@ -121,7 +121,9 @@ export default function PricesPage({ timeZone = deviceZone() }) {
       </p>
       <div role="group" aria-label="Coins">
         <h2 className="prices__row-title">Seasons</h2>
-        {seasons?.connected ? (
+        {/* While loading (null) the buttons stand empty and disabled, keeping their room, so
+            nothing below jumps when the prices arrive (docs/DESIGN.md, "Speed"). */}
+        {seasons === null || seasons.connected ? (
           <TokenPicker
             label="Seasons"
             tokens={TOKENS}
@@ -130,14 +132,12 @@ export default function PricesPage({ timeZone = deviceZone() }) {
             onToggle={onToggle}
           />
         ) : (
-          seasons && (
-            <p role="status">
-              The price data source is not connected, so there are no prices to show.
-            </p>
-          )
+          <p role="status">
+            The price data source is not connected, so there are no prices to show.
+          </p>
         )}
         <h2 className="prices__row-title">Reference</h2>
-        {reference?.connected ? (
+        {reference === null || reference.connected ? (
           <>
             <TokenPicker
               label="Reference"
@@ -147,7 +147,7 @@ export default function PricesPage({ timeZone = deviceZone() }) {
               onToggle={onToggle}
             />
             {/* CoinGecko's attribution, required for its data, next to that data. */}
-            <p className="prices__note">
+            <p className="prices__note" hidden={!reference}>
               ETH, POL and BTC:{' '}
               <a href="https://www.coingecko.com/en/api/" target="_blank" rel="noopener noreferrer">
                 Powered by CoinGecko API
@@ -155,7 +155,7 @@ export default function PricesPage({ timeZone = deviceZone() }) {
             </p>
           </>
         ) : (
-          reference && <p role="status">ETH, POL and BTC are not connected.</p>
+          <p role="status">ETH, POL and BTC are not connected.</p>
         )}
         {available.length > 1 && (
           <button

@@ -31,12 +31,15 @@ mkdirSync(out, { recursive: true });
 
 // [file, crop box (left, top, right, bottom) in the source's pixels or null, largest width]
 const IMAGES = [
-  ['logo.webp', null, 640],
-  ['emblem.webp', [0, 0, 1254, 1000], 640],
-  ['quarter-games.webp', [0, 0, 620, 537], 720], // controller, top left
-  ['quarter-chat.webp', [632, 0, 1254, 537], 720], // circle of people, top right
-  ['quarter-events.webp', [0, 545, 620, 1000], 720], // football and basketball, bottom left
-  ['quarter-calls.webp', [632, 545, 1254, 1000], 720], // play button, bottom right
+  // Twice their largest size on the page: the logo 160 px wide on the login card, the emblem
+  // 206 px in the home banner. The quarters show faint (16-26 %) at up to 360 px, where one
+  // pixel per pixel is enough (docs/DESIGN.md, "Speed").
+  ['logo.webp', null, 320],
+  ['emblem.webp', [0, 0, 1254, 1000], 420],
+  ['quarter-games.webp', [0, 0, 620, 537], 400], // controller, top left
+  ['quarter-chat.webp', [632, 0, 1254, 537], 400], // circle of people, top right
+  ['quarter-events.webp', [0, 545, 620, 1000], 400], // football and basketball, bottom left
+  ['quarter-calls.webp', [632, 545, 1254, 1000], 400], // play button, bottom right
 ];
 
 for (const [file, box, maxWidth] of IMAGES) {

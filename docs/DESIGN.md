@@ -60,20 +60,47 @@ transparent; the source is only read) by `scripts/build-brand-images.mjs`, with 
 of `docs/design/se-style/README.md`, each trimmed to its content, scaled down and saved as WebP
 with transparency into `client/public/brand/`:
 
-| File                  | What                                          | Size              |
-| --------------------- | --------------------------------------------- | ----------------- |
-| `logo.webp`           | the full logo with lettering                  | 640 × 674, 124 KB |
-| `emblem.webp`         | the round emblem without lettering            | 640 × 570, 94 KB  |
-| `quarter-games.webp`  | top left: controller (Games)                  | 546 × 462, 49 KB  |
-| `quarter-chat.webp`   | top right: circle of people (Chat)            | 471 × 462, 34 KB  |
-| `quarter-events.webp` | bottom left: football and basketball (Events) | 451 × 443, 47 KB  |
-| `quarter-calls.webp`  | bottom right: play button (Calls)             | 471 × 443, 40 KB  |
-| `season-pattern.webp` | one tile of the four season marks (banners)   | 464 × 232, 21 KB  |
+| File                  | What                                          | Size             |
+| --------------------- | --------------------------------------------- | ---------------- |
+| `logo.webp`           | the full logo with lettering                  | 320 × 337, 47 KB |
+| `emblem.webp`         | the round emblem without lettering            | 420 × 374, 52 KB |
+| `quarter-games.webp`  | top left: controller (Games)                  | 400 × 338, 33 KB |
+| `quarter-chat.webp`   | top right: circle of people (Chat)            | 400 × 392, 28 KB |
+| `quarter-events.webp` | bottom left: football and basketball (Events) | 400 × 393, 40 KB |
+| `quarter-calls.webp`  | bottom right: play button (Calls)             | 400 × 376, 33 KB |
+| `season-pattern.webp` | one tile of the four season marks (banners)   | 464 × 232, 21 KB |
 
 The pattern tile is drawn from the repo's own season marks (`client/src/assets/seasons/`), two
 rows of four, the second shifted by two. `client/src/brand/brand.js` is the one place that names
 these files and which quarter belongs to which section. The font stays Luxora Grotesk, and the
 CSP is unchanged (all images are the site's own).
+
+## Speed
+
+Measured on the production build, and kept by `client/e2e/speed.spec.js` and
+`client/src/brand/brandImages.test.js` (decided 2026-10-21):
+
+- **Pages loaded on first use** (`React.lazy` in `App.jsx`): the call page (with the call
+  service's client), the prices page, info pages (with the Markdown renderer), the admin area
+  and the embedded chat each come as their own chunk. `Layout` and `AdminLayout` hold the
+  `Suspense` boundaries, so the shell stays while a page arrives. The JavaScript every page
+  loads first went from 293 KB to 113 KB (gzip).
+- **Hashed files are kept a year**: everything in `assets/` is named by its content, so the
+  server sends it with `Cache-Control: public, max-age=31536000, immutable`
+  (`server/src/app.js`). The page itself, `/brand/` and `theme-init.js` are checked on every
+  visit.
+- **Image sizes**: each brand image is at most twice its largest size on the page (the faint
+  quarters once, as they show at 16–26 %), and at most 60 KB. The faint images on the home
+  boxes, game card pictures and event pictures load lazily.
+- **No jumping while data arrives**: on narrow screens the featured game and "Up next" keep
+  their room from the start, and on the prices page the coin buttons stand empty and disabled
+  until their prices arrive. A late answer moves nothing below (layout shift under 0.05).
+- **Fonts**: `font-display: swap`, unchanged. Preloading the four faces was measured and made
+  the first paint later (464 vs 400 ms) without a gain in layout shift, so it was left out.
+- **Touch targets**: every control is at least 44 × 44 px, also on a phone. A checkbox counts
+  by its label: in a table the label is an empty 44px square around the box. Inline links in
+  running text are exempt (WCAG 2.5.8). The 390 × 844 and 768 × 1024 checks found no page
+  wider than the window.
 
 ## Theme logic
 

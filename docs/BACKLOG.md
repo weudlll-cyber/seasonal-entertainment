@@ -53,6 +53,10 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **Speed and phone width** — closed by SE-NIGHT-4 piece 2 (`feat/se-night-4`, not merged
+  yet): pages loaded on first use (first JavaScript 293 → 113 KB gzip), hashed files cached for
+  a year, smaller brand images, lazy decoration, no layout shift while data arrives, 44px
+  touch targets on every page at phone width (docs/DESIGN.md, "Speed").
 - **SE-REDESIGN-1 — the SE style** — closed by SE-NIGHT-4 piece 1 (`feat/se-night-4`, not merged
   yet; reference approved 2026-10-20, kept in `docs/design/se-style/`): new tokens (the four
   token colours, glows over warm white or night blue, the seasons' sidebar gradient,

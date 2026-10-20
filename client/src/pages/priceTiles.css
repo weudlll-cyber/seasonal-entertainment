@@ -95,6 +95,33 @@
   height: 48px;
 }
 
+/* Two narrow tiles side by side: the mark moves up beside the name, smaller, so the price
+   below has the tile's full width. */
+@media (max-width: 599.98px) {
+  .price-tile__name {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+  }
+
+  .price-tile__price {
+    font-size: 1.125rem;
+  }
+
+  .price-tile__mark {
+    top: 0.875rem;
+    right: 0.875rem;
+    bottom: auto;
+    width: 40px;
+    height: 40px;
+  }
+
+  .price-tile__mark img {
+    width: 30px;
+    height: 30px;
+  }
+}
+
 @media (max-width: 999.98px) {
   .price-tiles {
     grid-template-columns: repeat(2, minmax(0, 1fr));

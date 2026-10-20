@@ -66,7 +66,8 @@ function showPage({ seasons = SEASONS, reference = REFERENCE, path = '/info/pric
 it('ETH and POL: price and 24-hour change, with CoinGecko named beside them', async () => {
   showPage();
   const row = await screen.findByRole('group', { name: 'Reference' });
-  expect(within(row).getByRole('button', { name: /^ETH/ })).toHaveTextContent(
+  // The buttons stand empty while the prices load; then they fill.
+  expect(await within(row).findByRole('button', { name: /^ETH\$/ })).toHaveTextContent(
     'ETH$2,412.50+1.23 % (24 h)'
   );
   expect(within(row).getByRole('button', { name: /^POL/ })).toHaveTextContent(
@@ -88,7 +89,7 @@ it("ETH's chart with the same range buttons, from the reference prices", async (
 
 it('the converter offers ETH while it is connected', async () => {
   showPage();
-  await screen.findByRole('group', { name: 'Reference' });
+  await screen.findByRole('button', { name: /^ETH\$/ });
   expect(within(screen.getByLabelText('To')).getByRole('option', { name: 'ETH' })).toBeTruthy();
   expect(screen.queryByText('ETH is not connected, so only the seasons.')).toBeNull();
 });

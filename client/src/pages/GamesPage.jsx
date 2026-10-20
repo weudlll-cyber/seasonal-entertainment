@@ -43,7 +43,13 @@ export default function GamesPage() {
         {games?.map((game) => (
           <li key={game.id} className="game-card">
             <div className="game-card__band">
-              <img src={GAME_IMAGE_FILES[game.image]} alt="" width="150" height="150" />
+              <img
+                src={GAME_IMAGE_FILES[game.image]}
+                alt=""
+                width="150"
+                height="150"
+                loading="lazy"
+              />
             </div>
             <div className="game-card__body">
               <p className={`game-card__status game-card__status--${game.status}`}>

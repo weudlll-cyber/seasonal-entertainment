@@ -89,8 +89,9 @@
 .se-chat .chat-message__more {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  /* The full touch target (44px), on any host. */
+  width: var(--hit-target, 44px);
+  height: var(--hit-target, 44px);
   border: 1px solid var(--chat-border);
   border-radius: var(--chat-radius);
   background: var(--chat-bg);
@@ -157,6 +158,14 @@
 .se-chat .chat-file {
   display: inline-flex;
   margin: 0.25rem 0;
+}
+
+/* However small the picture, its link is a full touch target. */
+.se-chat .chat-file--image {
+  align-items: center;
+  justify-content: center;
+  min-width: var(--hit-target, 44px);
+  min-height: var(--hit-target, 44px);
 }
 
 .se-chat .chat-file--image img {

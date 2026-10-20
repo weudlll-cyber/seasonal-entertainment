@@ -2,9 +2,11 @@
 // File:        AdminLayout.jsx
 // Path:        client/src/admin/AdminLayout.jsx
 // Project:     Seasonal Entertainment
-// Description: Frame of the admin area: heading, section navigation, the routed section.
+// Description: Frame of the admin area: heading, section navigation, the routed section
+//              (each loaded on first use, App.jsx: the frame stays while it arrives).
 // ============================================================
 
+import { Suspense } from 'react';
 import { NavLink, Outlet } from 'react-router';
 import { ADMIN_NAV } from '../app/navigation.js';
 import './admin.css';
@@ -22,7 +24,9 @@ export default function AdminLayout() {
           ))}
         </ul>
       </nav>
-      <Outlet />
+      <Suspense>
+        <Outlet />
+      </Suspense>
     </section>
   );
 }
