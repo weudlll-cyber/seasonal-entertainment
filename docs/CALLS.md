@@ -104,6 +104,26 @@ Generate a production pair on the call server with
   both lists show the bot's events only. The home's Next call box shows only with a live or
   planned call (docs/DESIGN.md, "Home"). Tests: `client/src/pages/LandingPage.test.jsx`,
   `eventsPage.test.jsx`, `homeLive.test.jsx` and `client/e2e/layout.spec.js`.
+- **Linked to a bot event** (decided 2026-10-22): when creating a call, or later on a planned
+  call's card on the Calls page, an organiser may pick one of the event bot's upcoming
+  occurrences (the next 30 days, scheduled only; `GET /api/calls/bot-occurrences`, organisers
+  and admins) or "No event". The picker reads the bot's file read-only through the existing
+  reader (`server/src/bots/events.js`). The link is kept on the site's side only, as the call's
+  `bot_occurrence_id` and `bot_occurrence_start` (`server/src/calls/eventLink.js`). It is set
+  by `POST /api/calls { botOccurrenceId }` and changed by `PUT /api/calls/:id/event
+{ botOccurrenceId | null }` (planned calls only, audited as `call.event`). An occurrence that
+  is not one of the upcoming ones is refused (`unknown_event`).
+  - **Shown**: in "Up next" and on `/events`, the linked occurrence offers "Listen on this
+    site" (to the call's page), and the call is not listed a second time; while the call is
+    live, the event shows "Live now". The match is by the occurrence's id **and** start
+    (`withCalls` in `client/src/calls/callEntries.js`), from the Calls page's own answer, so a
+    viewer sees the link only for the live and planned calls the Calls page shows them. The
+    call's page names the event ("Event: <name>"; `GET /api/calls/:id` answers `event`).
+  - **The bot changes its mind**: if the occurrence disappears or moves, the call keeps its own
+    time and simply loses the link display, with no error. It is then listed as itself, and
+    its page names no event. An unreadable bot file counts the same (logged).
+  - Tests: `server/test/callEventLink.test.js`; `LandingPage.test.jsx`, `eventsPage.test.jsx`,
+    `callsPage.test.jsx`, `callPage.test.jsx`.
 - **Calendar file** (decided 2026-10-21): every planned call (scheduled, with a planned time)
   has `GET /api/calls/:id/calendar.ics` for everyone, guests included (`allow('public')`, as the
   list; rate limit `callCalendar` per address, 60 a minute). `text/calendar` as a download

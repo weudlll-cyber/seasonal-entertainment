@@ -34,8 +34,6 @@ An entry moves from part one to part two only when its branch is merged into `ma
 - **Info page texts** — open, the owner's word: all twelve info pages are drafts; Imprint and
   Privacy need the owner's details.
 - **Call recording** — unconfirmed proposal, not decided. Calls are not recorded (privacy draft).
-- **Linking calls to events** — unconfirmed proposal, not decided: an event (now kept in the event
-  bot) could carry its call, and a call its event.
 - **Login with Discord or Telegram** — open. Accounts use a username and password, with 2FA
   required for organisers and admins (closed: SE-NIGHT-1 pieces 2 and 3); logging in with a
   Discord or Telegram account is not built (for Telegram's recovery codes see above).
@@ -61,6 +59,11 @@ An entry moves from part one to part two only when its branch is merged into `ma
   - **Sessions** — signed-in sessions end after 7 days without use, renewed by every request
     at most once a minute (docs/AUTH.md, "Sessions").
 - **A ratio view between the seasons** — not wanted (owner decision 2026-10-22).
+- **Linking calls to events** — closed by SE-NIGHT-5 piece 2 (`feat/se-night-5`, not merged
+  yet; owner decision 2026-10-22): an organiser links a planned call to one of the event bot's
+  next 30 days' occurrences; that event offers "Listen on this site" in "Up next" and on
+  `/events` instead of a second entry, and the call's page names the event; a vanished or moved
+  occurrence just loses the link (docs/CALLS.md, "Linked to a bot event").
 
 - **SE-UPNEXT-CALLS-1 — "Up next" lists site calls too; the Next call box only with a call** —
   on `feat/se-upnext-calls-1` (not merged yet; owner request 2026-10-21): the home's "Up next"

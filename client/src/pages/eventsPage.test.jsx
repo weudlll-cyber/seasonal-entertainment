@@ -165,3 +165,33 @@ it('without the event bot, says plainly that the calendar is not connected', asy
   ).toBeInTheDocument();
   expect(screen.queryByText('No events this week.')).toBeNull();
 });
+
+it('a call linked to an event of the week is not listed twice; the event offers it', async () => {
+  showWeek({
+    thisWeek: { connected: true, occurrences: WEEK },
+    calls: {
+      configured: true,
+      calls: {
+        live: [],
+        upcoming: [
+          {
+            id: 7,
+            title: 'Town hall',
+            status: 'scheduled',
+            scheduledFor: '2026-10-22T18:30:00Z',
+            botOccurrenceId: 11,
+            botOccurrenceStart: Date.parse('2026-10-22T18:30:00Z'),
+          },
+        ],
+        recent: [],
+      },
+    },
+  });
+  const thursday = await screen.findByRole('region', { name: 'Thursday 22 October' });
+  expect(within(thursday).getAllByRole('listitem')).toHaveLength(1);
+  expect(within(thursday).getByRole('link', { name: 'Listen on this site' })).toHaveAttribute(
+    'href',
+    '/calls/7'
+  );
+  expect(screen.queryByText('Town hall')).toBeNull();
+});

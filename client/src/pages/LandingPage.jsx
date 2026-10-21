@@ -6,7 +6,8 @@
 //              emblem, the lettering and the greeting (with the username when signed in), then
 //              a grid that fits the main column at 1280 x 720 without scrolling: the featured
 //              game and "Up next": the next two of the event bot's occurrences (/api/bot-events)
-//              and the site's live and planned calls (callEntries.js) in time order, the four
+//              and the site's live and planned calls (callEntries.js) in time order (a call
+//              linked to a listed bot event rides on it: "Listen on this site"), the four
 //              season price tiles (/api/prices, docs/BOTS.md), then Community (live:
 //              CommunityCard.jsx), the next call (only when one is live or planned:
 //              NextCallCard.jsx; else the fair-price box takes its column) and the way to the
@@ -17,7 +18,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/http.js';
 import { deviceZone } from '../app/dates.js';
-import { byStart, callEntries } from '../calls/callEntries.js';
+import { withCalls } from '../calls/callEntries.js';
 import { useCalls } from '../calls/useCalls.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { EMBLEM } from '../brand/brand.js';
@@ -51,7 +52,7 @@ async function upNext({ from, to }) {
 // them as live or upcoming. The bot's note (not connected, failed) stays beside the calls.
 function merged(next, calls, to) {
   if (!next) return null; // the bot's answer is still loading
-  const entries = [...(next.next ?? []), ...callEntries(calls, { to })].sort(byStart);
+  const entries = withCalls(next.next ?? [], calls, { to });
   return { ...next, next: entries.slice(0, UP_NEXT_COUNT) };
 }
 

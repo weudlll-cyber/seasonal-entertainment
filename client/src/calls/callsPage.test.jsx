@@ -187,6 +187,7 @@ it('organisers create, start and end calls', async () => {
     'POST /calls': { status: 201, body: { ok: true } },
     'POST /calls/2/start': { body: { ok: true } },
     'POST /calls/1/end': { body: { ok: true } },
+    'GET /calls/bot-occurrences': { body: { ok: true, occurrences: [] } },
   });
   await renderApp('/calls');
   const form = await screen.findByRole('form', { name: 'New call' });
@@ -201,6 +202,7 @@ it('organisers create, start and end calls', async () => {
     title: 'Q&A',
     description: '',
     scheduledFor: new Date('2026-10-20T19:30').toISOString(),
+    botOccurrenceId: null,
   });
 
   fireEvent.click(screen.getByRole('button', { name: 'Start Race night' }));
@@ -231,4 +233,32 @@ it('without a call service: "not configured" for admins, no Calls item for other
   // The summary has answered (configured: false), and still no item.
   await new Promise((resolve) => setTimeout(resolve, 50));
   expect(screen.queryByRole('link', { name: /^Calls/ })).toBeNull();
+});
+
+it("organisers link a new call and a planned one to the event bot's occurrences", async () => {
+  const quiz = { id: 41, name: 'Bot Quiz Night', start: Date.parse('2026-10-27T19:00:00Z') };
+  const calls = mockApi({
+    ...signedIn({ username: 'olga', role: 'organiser' }),
+    ...configured(false, true),
+    'GET /calls/bot-occurrences': { body: { ok: true, occurrences: [quiz] } },
+    'POST /calls': { status: 201, body: { ok: true } },
+    'PUT /calls/2/event': { body: { ok: true } },
+  });
+  await renderApp('/calls');
+  const form = await screen.findByRole('form', { name: 'New call' });
+  const picker = within(form).getByLabelText('Event of the event bot (optional)');
+  await within(picker).findByRole('option', { name: /^Bot Quiz Night — / });
+  fireEvent.change(within(form).getByLabelText('Title'), { target: { value: 'Quiz call' } });
+  fireEvent.change(picker, { target: { value: '41' } });
+  fireEvent.click(within(form).getByRole('button', { name: 'Create call' }));
+  await vi.waitFor(() =>
+    expect(calls.find((c) => c.key === 'POST /calls')?.body.botOccurrenceId).toBe(41)
+  );
+  // A planned call's card: its own picker; choosing sends the link at once.
+  fireEvent.change(screen.getByLabelText('Event of Race night'), { target: { value: '41' } });
+  await vi.waitFor(() =>
+    expect(calls.find((c) => c.key === 'PUT /calls/2/event')?.body).toEqual({
+      botOccurrenceId: 41,
+    })
+  );
 });

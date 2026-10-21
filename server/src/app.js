@@ -25,6 +25,7 @@ import { adminAuditRoutes } from './admin/auditRoutes.js';
 import { callJoinRoutes } from './calls/joinRoutes.js';
 import { callReminderRoutes } from './calls/reminderRoutes.js';
 import { sendCallReminders, startCallReminders } from './calls/reminders.js';
+import { callEventRoutes } from './calls/eventRoutes.js';
 import { callRoutes } from './calls/routes.js';
 import { callSpotlightRoutes } from './calls/spotlightRoutes.js';
 import { callStageRoutes } from './calls/stageRoutes.js';
@@ -122,6 +123,8 @@ export function createApp({
   // Call reminders reach a member's open pages over the chat's live connection.
   const notifyMember = chat.notify.member;
   const remindNow = () => sendCallReminders(db, notifyMember);
+  // Before callRoutes: its /:id would take /bot-occurrences.
+  api.use('/calls', callEventRoutes(db, config, callService, chat));
   api.use('/calls', callRoutes(db, config, callService, chat, remindNow));
   api.use('/calls', callReminderRoutes(db, config, callService));
   api.use('/calls', callJoinRoutes(db, config, callService, chat));

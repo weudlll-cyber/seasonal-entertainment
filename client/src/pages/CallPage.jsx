@@ -8,7 +8,8 @@
 //              call's chat on the right (CallChat: collapsible to a slim tab). On narrow
 //              screens the chat opens as a drawer over the page. The sidebar is an icon rail
 //              here (Layout, Sidebar). Sound starts only after "Join call" (browsers need a
-//              click before they play sound). Not live: what is the case, and the chat.
+//              click before they play sound). Not live: what is the case, and the chat. A call
+//              linked to an event bot occurrence names that event (docs/CALLS.md).
 // ============================================================
 
 import { useEffect, useState } from 'react';
@@ -63,6 +64,7 @@ export default function CallPage() {
           {info.status === 'live' && `Started ${formatWhen(info.startedAt)}`}
           {info.status === 'scheduled' && 'This call has not started yet.'}
           {info.status === 'ended' && 'This call has ended.'}
+          {info.event && ` · Event: ${info.event.name}`}
           {joined && ` · ${speakers} speaking · ${live.people.length - speakers} listening`}
         </p>
         <button

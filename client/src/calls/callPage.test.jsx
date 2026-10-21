@@ -189,3 +189,18 @@ it('guests get no hand; calls that are not live offer no Join', async () => {
   expect(await screen.findByText('This call has not started yet.')).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Join call' })).toBeNull();
 });
+
+it('a call linked to a bot event names the event; one without names none', async () => {
+  const linked = { ...answers('scheduled') };
+  linked['GET /calls/7'] = {
+    body: { ok: true, call: { ...CALL('scheduled'), event: { name: 'Bot Quiz Night' } } },
+  };
+  mockApi({ ...GUEST, ...linked });
+  const view = await renderApp('/calls/7');
+  expect(await screen.findByText(/Event: Bot Quiz Night/)).toBeInTheDocument();
+  view.unmount();
+  mockApi({ ...GUEST, ...answers('scheduled') });
+  await renderApp('/calls/7');
+  await screen.findByText(/This call has not started yet/);
+  expect(screen.queryByText(/Event:/)).toBeNull();
+});

@@ -56,7 +56,7 @@ export function FeaturedGameCard({ game }) {
   );
 }
 
-// next: { connected | failed, next: the bot's occurrences and the site's calls (callEntries.js),
+// next: { connected | failed, next: the bot's occurrences and the site's calls (withCalls),
 // soonest first }; null while loading.
 export function UpNextCard({ next, timeZone }) {
   return (
@@ -86,7 +86,9 @@ export function UpNextCard({ next, timeZone }) {
   );
 }
 
-function BotEntry({ entry: { name, start, image }, timeZone }) {
+// A bot event; with a call linked to it (listen), "Listen on this site" and, while that call
+// is live, "Live now" instead of the date.
+function BotEntry({ entry: { name, start, image, listen }, timeZone }) {
   return (
     <li>
       {/* The event's own image when it has one, else a dot in a season colour. */}
@@ -96,7 +98,15 @@ function BotEntry({ entry: { name, start, image }, timeZone }) {
         <span className="home__event-dot" aria-hidden="true" />
       )}
       <strong>{name}</strong>
-      <span className="home__text">{formatWhen(start, timeZone)}</span>
+      <span className="home__text">
+        {listen?.live ? 'Live now' : formatWhen(start, timeZone)}
+        {listen && (
+          <>
+            {' · '}
+            <Link to={`/calls/${listen.id}`}>Listen on this site</Link>
+          </>
+        )}
+      </span>
     </li>
   );
 }

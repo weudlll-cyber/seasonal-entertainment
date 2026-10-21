@@ -224,3 +224,65 @@ describe('home: site calls', () => {
     expect(await screen.findByRole('region', { name: 'Next call' })).toHaveTextContent('Q&A');
   });
 });
+
+describe('home: calls linked to bot events', () => {
+  const linked = (id, status, occurrenceStart, times) =>
+    call(id, 'Town hall', status, {
+      botOccurrenceId: 3,
+      botOccurrenceStart: Date.parse(occurrenceStart),
+      ...times,
+    });
+
+  it('the linked event offers "Listen on this site"; the call is not listed twice', async () => {
+    home({
+      bot: { connected: true, occurrences: [occurrence(3, '2026-10-22T09:00:00Z')] },
+      calls: configured({
+        upcoming: [
+          linked(7, 'scheduled', '2026-10-22T09:00:00Z', { scheduledFor: '2026-10-22T09:00:00Z' }),
+        ],
+      }),
+    });
+    expect(await upNextItems()).toEqual([
+      'Event 3Thursday 22 October, 09:00 UTC · Listen on this site',
+    ]);
+    expect(screen.getByRole('link', { name: 'Listen on this site' })).toHaveAttribute(
+      'href',
+      '/calls/7'
+    );
+  });
+
+  it('while the linked call is live, the event says "Live now"', async () => {
+    home({
+      bot: { connected: true, occurrences: [occurrence(3, '2026-10-22T09:00:00Z')] },
+      calls: configured({
+        live: [linked(7, 'live', '2026-10-22T09:00:00Z', { startedAt: '2026-10-21T12:30:00Z' })],
+      }),
+    });
+    expect(await upNextItems()).toEqual(['Event 3Live now · Listen on this site']);
+  });
+
+  it('an event that moved loses its call: the call is listed as itself', async () => {
+    home({
+      bot: { connected: true, occurrences: [occurrence(3, '2026-10-22T11:00:00Z')] },
+      calls: configured({
+        upcoming: [
+          linked(7, 'scheduled', '2026-10-22T09:00:00Z', { scheduledFor: '2026-10-22T09:00:00Z' }),
+        ],
+      }),
+    });
+    expect(await upNextItems()).toEqual([
+      'Town hallThursday 22 October, 09:00 UTC',
+      'Event 3Thursday 22 October, 11:00 UTC',
+    ]);
+    expect(screen.queryByRole('link', { name: 'Listen on this site' })).toBeNull();
+  });
+
+  it('a guest sees "Listen on this site" only for calls the Calls page shows them', async () => {
+    // An ended call is in the guest's answer only under "recent", never as live or planned.
+    home({
+      bot: { connected: true, occurrences: [occurrence(3, '2026-10-22T09:00:00Z')] },
+      calls: configured({ recent: [linked(7, 'ended', '2026-10-22T09:00:00Z')] }),
+    });
+    expect(await upNextItems()).toEqual(['Event 3Thursday 22 October, 09:00 UTC']);
+  });
+});

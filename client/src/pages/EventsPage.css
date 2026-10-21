@@ -112,6 +112,11 @@
   font-weight: var(--font-weight-strong);
 }
 
+/* A linked site call is live (EventItem.jsx). */
+.event__live {
+  font-weight: var(--font-weight-strong);
+}
+
 /* An event's image (fetched by the server from the event bot): beside the text, small. */
 .event:has(.event__image) {
   grid-template-columns: 6rem 1fr auto;
