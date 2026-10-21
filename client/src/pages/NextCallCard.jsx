@@ -4,8 +4,9 @@
 // Project:     Seasonal Entertainment
 // Description: The home page's "Next call" box (docs/DESIGN.md, "Home"), with the play-button
 //              quarter: from the same GET /api/calls answer as the Calls page — a live call
-//              first ("Live now" and "Listen", guests too), else the next planned one (title,
-//              local date and time, its page, "Add to calendar" and the member's reminder:
+//              first ("Live now" and "Listen", guests too), else the next planned one (its title
+//              wrapped, never cut — clamped only after 3 lines, the full title as the link's name
+//              and tooltip; local date and time; "Add to calendar" and the member's reminder:
 //              CallActions.jsx), else one friendly line and the way to the Calls page.
 // ============================================================
 
@@ -15,10 +16,13 @@ import { QUARTERS } from '../brand/brand.js';
 import CallActions from '../calls/CallActions.jsx';
 import { Wash } from './homeCards.jsx';
 
-// As "Up next" writes a time: "Thursday 22 October, 20:30 CEST" (shared/localWeek.js).
+const NBSP = String.fromCharCode(0xa0); // a non-breaking space
+
+// As "Up next" writes a time: "Thursday 22 October, 20:30 CEST" (shared/localWeek.js); a
+// non-breaking space keeps the zone with its time when the line wraps.
 function when(iso, timeZone) {
   const local = formatLocal(Date.parse(iso), timeZone);
-  return `${formatDay(Date.parse(iso), timeZone)}, ${local.time} ${local.zone}`;
+  return `${formatDay(Date.parse(iso), timeZone)}, ${local.time}${NBSP}${local.zone}`;
 }
 
 // calls: the /api/calls answer ({ configured, calls, reminders }), or null while loading or
@@ -48,7 +52,10 @@ export default function NextCallCard({ calls, timeZone }) {
       {!live && next && (
         <>
           <h2 className="home__call-title">
-            <Link to={`/calls/${next.id}`}>{next.title}</Link>
+            {/* Wraps, clamped after 3 lines: the full title is the link's name and tooltip. */}
+            <Link to={`/calls/${next.id}`} aria-label={next.title} title={next.title}>
+              {next.title}
+            </Link>
           </h2>
           <p className="home__text">
             {next.scheduledFor ? when(next.scheduledFor, timeZone) : 'The time is not set yet.'}

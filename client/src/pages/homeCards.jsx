@@ -157,7 +157,9 @@ export function FairPriceCard({ prices }) {
       {icons}
       <span className="home__fair-text">
         <strong className="home__fair-title">
-          Fair price &amp; charts <span aria-hidden="true">→</span>
+          {/* A non-breaking space keeps the arrow beside the title's last word. */}
+          Fair price &amp; charts&nbsp;
+          <span aria-hidden="true">→</span>
         </strong>
         <span className="home__text">Fair prices, charts and a converter for every coin.</span>
       </span>

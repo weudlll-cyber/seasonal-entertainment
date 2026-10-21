@@ -7,8 +7,9 @@
 //              new count, a hidden message gone), nothing while the server says the room is not
 //              public, and only the count and the button when the newest message is more than
 //              24 hours old. Next call: a live call with "Listen", else the next planned one with
-//              its time and "Add to calendar" (plus "Remind me" for members only), else a
-//              friendly line.
+//              its time and "Add to calendar" (plus "Remind me" for members only; a long title
+//              complete as the link's text, name and tooltip; the zone kept with its time), else
+//              a friendly line.
 // ============================================================
 
 import { act, render, screen, within } from '@testing-library/react';
@@ -143,6 +144,24 @@ describe('Next call box', () => {
     expect(
       await screen.findByRole('button', { name: 'Remind me of Q&A on this site' })
     ).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('a long title is never cut: the whole title is the text, name and tooltip of its link', () => {
+    const title = 'Seasonal Tokens community call: the four seasons explained';
+    mockApi(GUEST);
+    inRouter(
+      <NextCallCard
+        calls={answer({ upcoming: [call(6, title, 'scheduled', '2026-10-22T18:30:00Z')] })}
+        timeZone="Europe/Vienna"
+      />
+    );
+    const link = screen.getByRole('link', { name: title });
+    expect(link).toHaveTextContent(title);
+    expect(link).toHaveAttribute('title', title);
+    // The zone stays with its time: a non-breaking space between them (the matcher itself
+    // treats it as a space, so the raw text is checked).
+    const date = screen.getByText(/20:30\sCEST$/);
+    expect(date.textContent).toContain(`20:30${String.fromCharCode(0xa0)}CEST`);
   });
 
   it('nothing planned: one friendly line and the way to the Calls page', () => {

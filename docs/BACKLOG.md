@@ -65,6 +65,11 @@ An entry moves from part one to part two only when its branch is merged into `ma
 - **SE-HOME-LIVE-1 part 5 — empty Calls lists and the wide prices page** — closed by
   `feat/se-home-live-1` (not merged yet): cards instead of "None."; the prices page in the wide
   column with fair price and converter side by side from 1100px (docs/DESIGN.md).
+- **SE-HOME-LIVE-1 follow-up (owner review 2026-10-21)** — on `feat/se-home-live-1` (not merged
+  yet): the Next call title wraps instead of being cut (full title as name and tooltip), the
+  zone stays with its time; the home's end clears the chat button and no box is cut (the home
+  scrolls when its content needs it); Fair price's marks in one row with the arrow beside the
+  title; the fair price table never sticks out, all rows equal, scrolling inside below 1100px.
 - **Security check (SE-NIGHT-4 piece 4)** — closed by SE-NIGHT-4 piece 4 (`feat/se-night-4`,
   not merged yet): no known vulnerabilities (npm audit), react-router 8.4.0 → 8.5.0; salt
   requests and every `/api` read limited per IP; link-preview failures logged by host only.

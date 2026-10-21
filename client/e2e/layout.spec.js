@@ -4,7 +4,9 @@
 // Project:     Seasonal Entertainment
 // Description: The app shell in a real browser (docs/DESIGN.md): at 1440 x 900, 1280 x 720 and
 //              1920 x 1080 the window never scrolls on any main page and the sidebar is shown;
-//              Home fits its main column without scrolling. At 390 x 844 (phone): no window
+//              Home's boxes are never cut, and at the end of its scroll the last row clears the
+//              floating chat button (replaced "Home fits without scrolling", 2026-10-21). At
+//              390 x 844 (phone): no window
 //              scroll, a top bar, and the navigation drawer opens and closes (close button,
 //              Escape, following a link), with focus going in and back. The chat button shows
 //              exactly on the pages that have no chat of their own (not /chat, not /admin); at
@@ -42,10 +44,28 @@ const windowFits = (page) =>
       (element) => element.scrollHeight <= window.innerHeight
     )
   );
-const mainFits = (page) =>
+// Scrolled to the end: the lowest home box's bottom and the chat button's top, and any box whose
+// own content (not its faint logo part, which overflows on purpose) reaches past its edge.
+const homeEnd = (page) =>
   page.evaluate(() => {
     const main = document.querySelector('main');
-    return main.scrollHeight <= main.clientHeight;
+    main.scrollTo(0, main.scrollHeight);
+    const boxes = [...document.querySelectorAll('.home__grid > *')];
+    const cut = boxes.filter((box) => {
+      const edge = box.getBoundingClientRect().bottom;
+      return [...box.querySelectorAll('*')].some(
+        (el) =>
+          !el.closest('.home__wash') &&
+          getComputedStyle(el).position !== 'absolute' &&
+          el.getClientRects().length > 0 &&
+          el.getBoundingClientRect().bottom > edge + 1
+      );
+    });
+    return {
+      lastBottom: Math.max(...boxes.map((box) => box.getBoundingClientRect().bottom)),
+      launcherTop: document.querySelector('.chat-launcher').getBoundingClientRect().top,
+      cut: cut.map((box) => box.getAttribute('aria-label') ?? box.className),
+    };
   });
 
 for (const [width, height] of DESKTOP) {
@@ -70,11 +90,13 @@ for (const [width, height] of DESKTOP) {
       });
     }
 
-    test('Home fits its main column without scrolling', async ({ page }) => {
+    test('Home: no box cut, and its end clears the chat button', async ({ page }) => {
       await page.goto('/');
       await expect(page.getByRole('region', { name: 'Up next' }).getByRole('link')).toBeVisible();
       await page.waitForLoadState('networkidle');
-      expect(await mainFits(page)).toBe(true);
+      const end = await homeEnd(page);
+      expect(end.cut).toEqual([]);
+      expect(end.lastBottom).toBeLessThanOrEqual(end.launcherTop);
     });
   });
 }

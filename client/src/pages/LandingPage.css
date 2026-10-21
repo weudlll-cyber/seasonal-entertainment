@@ -5,9 +5,10 @@
    Description: Home in the SE style (docs/DESIGN.md, "Home"): the banner, then a four-column
                 grid: featured game and "Up next" (two columns each), the four season price
                 tiles in one row (priceTiles.css), then Community, Next call and the fair-price
-                box (homeBottomRow.css). From 1000px wide the page
-                fits 1280 x 720 without scrolling; narrower, the boxes stack two columns wide
-                and the main column scrolls.
+                box (homeBottomRow.css). From 1000px wide the rows fill the window when there is
+                room and keep their content's height when there is not (the column then
+                scrolls); narrower, the boxes stack two columns wide. The end of the page stays
+                clear of the floating chat button.
    ============================================================ */
 
 .home {
@@ -15,9 +16,11 @@
   grid-template-rows: auto minmax(0, 1fr);
   gap: var(--space-2);
   max-width: 80rem;
-  height: 100%;
+  min-height: 100%;
   margin: 0 auto;
-  padding: 1.25rem var(--space-3) var(--space-3);
+  /* The bottom keeps clear of the floating chat button: its size plus its distance from the
+     window's edge (ChatDrawer.css) plus a gap, so the last row is never under it. */
+  padding: 1.25rem var(--space-3) calc(var(--chat-launcher-size) + var(--space-3) + var(--space-1));
 }
 
 /* The banner: emblem, the logo's lettering and the greeting, on night blue. Its height
@@ -73,8 +76,9 @@
 .home__grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  /* The bottom row holds the most text (messages, the next call with its actions). */
-  grid-template-rows: minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 1.2fr);
+  /* The rows share the room in these proportions, but never below their content (a box is
+     never cut); the bottom row holds the most text (messages, the next call's actions). */
+  grid-template-rows: minmax(min-content, 1fr) minmax(min-content, 0.8fr) minmax(min-content, 1.2fr);
   gap: var(--space-2);
   min-height: 0;
 }
@@ -233,10 +237,6 @@
 }
 
 @media (max-width: 999.98px) {
-  .home {
-    height: auto;
-  }
-
   .home__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: none;
@@ -256,7 +256,8 @@
 
 @media (max-width: 599.98px) {
   .home {
-    padding: var(--space-2);
+    padding: var(--space-2) var(--space-2)
+      calc(var(--chat-launcher-size) + var(--space-3) + var(--space-1));
   }
 
   .home__banner {

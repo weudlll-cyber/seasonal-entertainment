@@ -15,8 +15,8 @@
   z-index: 20;
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 56px;
+  width: var(--chat-launcher-size);
+  height: var(--chat-launcher-size);
   border: 0;
   border-radius: 50%;
   background: var(--color-autumn);

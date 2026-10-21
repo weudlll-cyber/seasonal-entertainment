@@ -153,8 +153,14 @@ the 44px hit target; keyboard focus always shows a ring in the accent colour. Ev
 this background, sidebar, cards and buttons (info, login, register, account, admin, embed, the
 call stage, 404).
 
-**Home** (`LandingPage.jsx`, `homeCards.jsx`; reference `StyleBlocks2.dc.html`) fits the main
-column at 1280 x 720 without scrolling. Real data only.
+**Home** (`LandingPage.jsx`, `homeCards.jsx`; reference `StyleBlocks2.dc.html`). Real data only.
+From 1000px wide its rows fill the main column when there is room (1920 x 1080: no scrolling)
+and keep at least their content's height when there is not; the column then scrolls. No box is
+ever cut (2026-10-21; this replaced "fits 1280 x 720 without scrolling" of 2026-10-17, once the
+bottom row held live messages and a call's actions). The page's end keeps clear of the floating
+chat button: its bottom space is the button's size (`--chat-launcher-size`), its distance from
+the window's edge and a gap; `client/e2e/layout.spec.js` checks both at 1440 x 900, 1280 x 720
+and 1920 x 1080.
 
 1. **Banner**: night blue (`--banner-background`) with the faint season pattern
    (`client/src/brand/seasonPattern.css`), the emblem, "SEASONAL" in the logo's gradient
@@ -171,13 +177,17 @@ column at 1280 x 720 without scrolling. Real data only.
      colour and the newest 3 messages of General, live (docs/CHAT.md, "Community box"); only
      the count and "Open the chat" when the newest message is over a day old.
    - **Next call** (one column; `NextCallCard.jsx`): a live call ("Live now", Listen), else the
-     next planned one (title on one line, local day and time, "Add to calendar", and "Remind
-     me" for members), else a friendly line and "All calls". Not shown while calls are not set
+     next planned one (title wrapped, never cut with an ellipsis before 3 lines, then clamped,
+     the full title the link's name and tooltip; local day and time, the zone kept with its
+     time by a non-breaking space; "Add to calendar", and "Remind me" for members), else a
+     friendly line and "All calls". Not shown while calls are not set
      up; then Fair price takes its column.
    - **Fair price & charts** (one column; to `/info/prices`; without the price bot a plain note
-     and the link to the info section).
+     and the link to the info section): the four marks in one row, the arrow beside the
+     title's last word.
 
-   The bottom row is the tallest (rows 1 : 0.8 : 1.2): it holds the most text.
+   The bottom row is the tallest (rows 1 : 0.8 : 1.2 where there is room): it holds the most
+   text.
 
 Faint logo images behind the boxes (`--wash-home`): Featured the controller quarter, Up next the
 balls quarter, Community the people quarter, Next call the play button, Fair price the emblem.
@@ -203,7 +213,9 @@ the controller; Events: the balls; Chat: the people; Calls: the play button.
 **Prices page** (`/info/prices`): the wide column like Games and Calls (2026-10-21), the title on
 a smaller night-blue banner with the season pattern and the four season marks on white discs;
 the coin cards wrap in rows; from 1100px the fair price table and the converter stand side by
-side, below that stacked (a wide table scrolls inside its section, never the page).
+side — the table's column at least as wide as the table, the converter taking the rest — below
+that stacked. Every table cell stays on one line, so all rows have the same height; narrower, the
+table scrolls inside its section, never the page.
 
 **Login and registration**: the card shows the full logo in light mode and the emblem in dark
 mode (`client/src/brand/FormLogo.jsx`; the dark lettering would vanish on night blue), but not

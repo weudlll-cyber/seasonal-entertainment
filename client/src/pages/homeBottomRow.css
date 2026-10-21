@@ -35,7 +35,7 @@
   color: var(--color-community);
 }
 
-/* The fair-price box (one column): the four marks above its title and line. */
+/* The fair-price box (one column): the four marks in one row above its title and line. */
 .home__fair {
   grid-column: span 1;
   justify-content: center;
@@ -47,7 +47,7 @@
 .home__icons {
   display: grid;
   flex: none;
-  grid-template-columns: repeat(2, 30px);
+  grid-template-columns: repeat(4, 30px);
   gap: 6px;
 }
 
@@ -126,13 +126,16 @@
 }
 
 .home__call-title {
-  /* One line, never squeezed by the box (it would cut the letters): ellipsis instead. */
+  /* Never squeezed by the box (it would cut the letters): the title wraps, at most 3 lines,
+     then it is clamped (the full title stays the link's name and tooltip). */
+  display: -webkit-box;
   flex: none;
   overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   font-size: 1.375rem;
   line-height: 1.15;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .home__call-title a {

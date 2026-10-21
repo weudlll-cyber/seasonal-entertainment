@@ -99,6 +99,8 @@
   --sidebar-width: 248px;
   /* The sidebar as an icon rail (a call page). */
   --rail-width: 4.5rem;
+  /* The floating chat button (ChatDrawer.css); pages keep their end clear of it. */
+  --chat-launcher-size: 56px;
 
   /* Spacing */
   --space-1: 0.5rem;
