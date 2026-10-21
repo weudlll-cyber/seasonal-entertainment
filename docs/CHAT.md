@@ -66,6 +66,17 @@ of the module other than `index.js`.
   receives only its own. The socket reconnects after a drop and closes right after the render
   in which the last panel left (a panel that comes straight back, as under React's StrictMode,
   reuses it).
+- **Connection limits** (security check 2026-10-22): at most 5 open connections per member
+  account, counting every tab, the chat drawer and chats embedded on other sites together, and
+  at most 20 per address for guests without an account (`CHAT_MAX_CONNECTIONS_PER_MEMBER`,
+  `CHAT_MAX_GUEST_CONNECTIONS_PER_IP`). The address is the one our own proxies forwarded
+  (`TRUST_PROXY` hops, as for the rate limits). One more is accepted and closed at once with
+  close code 4008 (`server/src/chat/socket.js`), so the browser can tell it from a network drop.
+  The page then shows "You have the chat open in too many windows (at most 5). Close one and
+  try again." in the chat area (`ConnectionLimitNotice.jsx`). It does not retry in a loop: it
+  tries again when the reader presses "Try again", or when another tab of the same browser
+  closes its connection (a `BroadcastChannel` message). Tests: `server/test/chatLimits.test.js`,
+  `client/src/chat/connectionLimit.test.jsx`.
 - **Account changes** (login, logout, switching account) while a panel stays on the page: the
   server knows a socket's reader only from the session cookie at connect time, so the panel
   tells the connection the new account (`connectAs`), which drops the old socket and opens a

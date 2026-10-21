@@ -99,6 +99,10 @@ export function readConfig(env = process.env) {
         member: { windowMs: 10_000, max: 5 },
         guest: { windowMs: 10_000, max: 2 },
       },
+      // Open live connections (security check 2026-10-22): per member account, all tabs, the
+      // drawer and embedded chats together; per address for guests without an account.
+      maxConnectionsPerMember: readInt(env, 'CHAT_MAX_CONNECTIONS_PER_MEMBER', 5, 1, 100),
+      maxGuestConnectionsPerIp: readInt(env, 'CHAT_MAX_GUEST_CONNECTIONS_PER_IP', 20, 1, 1000),
     },
     // Link previews in the chat (decided 2026-10-17). Only LINK_PREVIEWS is an env key.
     linkPreviews: {

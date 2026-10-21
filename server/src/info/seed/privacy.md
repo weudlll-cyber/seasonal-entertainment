@@ -19,7 +19,7 @@ This list describes what the website's software actually stores.
   of birth is asked for.
 - **Your login session**: a cookie holding a random session number, and on the server the
   matching session record (which account it belongs to). It ends when you log out, when your
-  password changes, or after 30 days.
+  password changes, or after 7 days without use.
 - **Two-factor authentication** (if you turn it on): the secret your authenticator app uses,
   and your recovery codes as one-way hashes. Deleted when you turn two-factor authentication
   off.

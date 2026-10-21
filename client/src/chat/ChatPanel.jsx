@@ -3,7 +3,8 @@
 // Path:        client/src/chat/ChatPanel.jsx
 // Project:     Seasonal Entertainment
 // Description: The chat module's one public component (docs/CHAT.md): a room's live messages,
-//              per-message actions and the composer, for whoever is signed in (or a guest).
+//              per-message actions and the composer, for whoever is signed in (or a guest);
+//              the connection-limit line when the live connection was refused (too many).
 //              Self-contained: data, the shared live connection and styles live in this
 //              folder; it needs only its props and the site's account context.
 // ============================================================
@@ -11,6 +12,7 @@
 import { useSession } from '../session/SessionContext.jsx';
 import ChatComposer from './ChatComposer.jsx';
 import ChatNotice from './ChatNotice.jsx';
+import ConnectionLimitNotice from './ConnectionLimitNotice.jsx';
 import MessageList from './MessageList.jsx';
 import RoomTabs from './RoomTabs.jsx';
 import { useChatRoom } from './useChatRoom.js';
@@ -58,6 +60,7 @@ export default function ChatPanel({
           onAction={chat.act}
           onSeen={chat.markSeen}
         />
+        <ConnectionLimitNotice />
         <ChatNotice error={chat.error} notice={chat.notice} />
         {current?.canWrite ? (
           !user && guestPrompt ? (

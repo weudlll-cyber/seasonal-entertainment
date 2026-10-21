@@ -31,8 +31,8 @@ An entry moves from part one to part two only when its branch is merged into `ma
   `/api/...`, which collide with the site's `/api`).
 - **Site and bots on the same VPS** — open, the owner's word: reading the bots' files through
   read-only mounts assumes it (docs/DEPLOYMENT.md, "The owner's bots").
-- **A ratio view between the seasons** — unconfirmed proposal, not decided (e.g. Spring priced
-  in Summer).
+- **Info page texts** — open, the owner's word: all twelve info pages are drafts; Imprint and
+  Privacy need the owner's details.
 - **Call recording** — unconfirmed proposal, not decided. Calls are not recorded (privacy draft).
 - **Linking calls to events** — unconfirmed proposal, not decided: an event (now kept in the event
   bot) could carry its call, and a call its event.
@@ -49,6 +49,18 @@ An entry moves from part one to part two only when its branch is merged into `ma
   2026-10-19).
 
 ## PART TWO — closed
+
+- **Security check findings (owner decision 2026-10-22)** — closed by SE-NIGHT-5 piece 1
+  (`feat/se-night-5`, not merged yet), each with its outcome:
+  - **WebSocket connection limit** — built: at most 5 open chat connections per member account,
+    20 per address for guests; a refused one is told so and does not retry in a loop
+    (docs/CHAT.md, "Connection limits").
+  - **A limit on `/media`** — not built.
+  - **A limit on the admin password reset** — not built.
+  - **In-memory rate limits resetting on a restart** — accepted.
+  - **Sessions** — signed-in sessions end after 7 days without use, renewed by every request
+    at most once a minute (docs/AUTH.md, "Sessions").
+- **A ratio view between the seasons** — not wanted (owner decision 2026-10-22).
 
 - **SE-UPNEXT-CALLS-1 — "Up next" lists site calls too; the Next call box only with a call** —
   on `feat/se-upnext-calls-1` (not merged yet; owner request 2026-10-21): the home's "Up next"

@@ -9,7 +9,8 @@
 //              A socket of the embedded chat on a foreign site (embed/) holds an embed token
 //              instead of a session: it is closed as soon as that token no longer works. The
 //              number of members shown online goes to the readers of "general" whenever it
-//              changes (the home page's Community box).
+//              changes (the home page's Community box). It also counts the open sockets per
+//              account and per guest address, for the connection limits (socket.js).
 // ============================================================
 
 import { WebSocket } from 'ws';
@@ -32,8 +33,9 @@ export class ChatHub {
     this.onlineShown = null; // the online count last pushed
   }
 
-  add(socket, sessionId, sessionData) {
-    this.sessions.set(socket, { id: sessionId, data: sessionData });
+  // ip: the client's address (counts guests' sockets for the connection limit).
+  add(socket, sessionId, sessionData, ip) {
+    this.sessions.set(socket, { id: sessionId, data: sessionData, ip });
     if (sessionData.userId !== undefined) this.announceOnline();
   }
 
@@ -53,6 +55,18 @@ export class ChatHub {
     this.onlineShown = count;
     const general = findRoomBySlug(this.db, 'general');
     if (general) this.broadcast(general.id, { type: 'online', count });
+  }
+
+  // Open sockets of one account (userId), or of guests from one address (ip), whatever
+  // the page: tabs, the chat drawer and embedded chats all count.
+  countOpen({ userId, ip }) {
+    let count = 0;
+    for (const session of this.sessions.values()) {
+      const own = session.data.userId;
+      if (userId !== undefined ? own === userId : own === undefined && session.ip === ip)
+        count += 1;
+    }
+    return count;
   }
 
   // The socket's viewer as of now; a socket whose account no longer qualifies is closed.

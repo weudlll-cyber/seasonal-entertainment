@@ -5,7 +5,8 @@
 // Description: Test helper: a stand-in for the browser's WebSocket. Records every socket made
 //              (FakeSocket.all), the subprotocols it offered, what each sent, and whether it
 //              was closed; opens on the next
-//              timer tick like a real one; push() delivers a server event to the page.
+//              timer tick like a real one; push() delivers a server event to the page;
+//              closeByServer(code) closes it as the server would, with a close code.
 //              Install with vi.stubGlobal('WebSocket', FakeSocket) after FakeSocket.reset().
 // ============================================================
 
@@ -40,6 +41,11 @@ export class FakeSocket {
     this.closed = true;
     this.readyState = 3;
     this.onclose?.();
+  }
+
+  closeByServer(code) {
+    this.readyState = 3;
+    act(() => this.onclose?.({ code }));
   }
 
   push(event) {

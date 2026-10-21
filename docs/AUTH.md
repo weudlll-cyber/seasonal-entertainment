@@ -95,8 +95,17 @@ rate limit, the lockout, locked accounts, the session epoch.
 ## Sessions
 
 - Server-side, in the SQLite database (table `sessions`, created by the session store). The
-  browser holds only the cookie: `HttpOnly`, `SameSite=Lax`, path `/`, 30 days, `Secure` when
+  browser holds only the cookie: `HttpOnly`, `SameSite=Lax`, path `/`, `Secure` when
   `COOKIE_SECURE` (default: on in production). Name `__Host-se.sid` when Secure, else `se.sid`.
+- **7 days without use** (decided 2026-10-22): a signed-in session ends after 7 days in which it
+  was not used. Every authenticated request renews it to 7 days from then: the session's
+  `usedAt` stamp, the stored expiry and the cookie's. To spare a database write per request,
+  it renews at most once a minute (`renewSession` in `server/src/http/session.js`; the
+  store's own per-request "touch" is switched off). A session whose `usedAt` is more than 7
+  days old is refused even if its record still exists (`sessionUser`, also used by the chat
+  WebSocket). Signed-in sessions from the earlier 30-day rule are capped at 7 days from the
+  server's start. A guest's session, which only holds a guest name (docs/CHAT.md), keeps
+  30 days. Tests: `server/test/sessionIdle.test.js`.
 - **Login** regenerates the session id (no fixation) and stamps it with the account's
   **session epoch** _(race game)_. Wrong username and wrong password give the same
   `401 invalid_credentials`. A locked account answers `403 account_locked`, but only to someone
