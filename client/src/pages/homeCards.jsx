@@ -3,8 +3,10 @@
 // Path:        client/src/pages/homeCards.jsx
 // Project:     Seasonal Entertainment
 // Description: The boxes of the home page in the SE style (docs/DESIGN.md, "Home"), all from
-//              real data: the featured game (the first game of the games list), the event bot's
-//              next two occurrences, the four season price tiles (price bot, docs/BOTS.md) and
+//              real data: the featured game (the first game of the games list), "Up next" (the
+//              event bot's occurrences and the site's calls, merged by LandingPage.jsx; a call
+//              with the calls quarter, linking to its page), the four season price tiles (price
+//              bot, docs/BOTS.md) and
 //              the link to the fair prices and charts; the faint logo part (Wash) the boxes
 //              share. Community and Next call have files of their own (CommunityCard.jsx,
 //              NextCallCard.jsx). Each box but the tiles carries a faint part of the logo.
@@ -54,7 +56,8 @@ export function FeaturedGameCard({ game }) {
   );
 }
 
-// next: { connected, next: the bot's occurrences } or { failed }; null while loading.
+// next: { connected | failed, next: the bot's occurrences and the site's calls (callEntries.js),
+// soonest first }; null while loading.
 export function UpNextCard({ next, timeZone }) {
   return (
     <section className="card home__card home__upnext" aria-label="Up next">
@@ -71,20 +74,47 @@ export function UpNextCard({ next, timeZone }) {
         <p className="home__text">No events in the next seven days.</p>
       )}
       <ul className="home__events">
-        {next?.next?.map(({ id, name, start, image }) => (
-          <li key={`${id}-${start}`}>
-            {/* The event's own image when it has one, else a dot in a season colour. */}
-            {image ? (
-              <img className="home__event-image" src={image} alt={name} loading="lazy" />
-            ) : (
-              <span className="home__event-dot" aria-hidden="true" />
-            )}
-            <strong>{name}</strong>
-            <span className="home__text">{formatWhen(start, timeZone)}</span>
-          </li>
-        ))}
+        {next?.next?.map((entry) =>
+          entry.call ? (
+            <CallEntry key={`call-${entry.id}`} entry={entry} timeZone={timeZone} />
+          ) : (
+            <BotEntry key={`${entry.id}-${entry.start}`} entry={entry} timeZone={timeZone} />
+          )
+        )}
       </ul>
     </section>
+  );
+}
+
+function BotEntry({ entry: { name, start, image }, timeZone }) {
+  return (
+    <li>
+      {/* The event's own image when it has one, else a dot in a season colour. */}
+      {image ? (
+        <img className="home__event-image" src={image} alt={name} loading="lazy" />
+      ) : (
+        <span className="home__event-dot" aria-hidden="true" />
+      )}
+      <strong>{name}</strong>
+      <span className="home__text">{formatWhen(start, timeZone)}</span>
+    </li>
+  );
+}
+
+// A site call: the calls quarter as its picture, its title leading to its page.
+function CallEntry({ entry: { id, name, start, live }, timeZone }) {
+  return (
+    <li>
+      <img className="home__event-image" src={QUARTERS.calls} alt="" loading="lazy" />
+      {/* One line (ellipsis), so a long title never pushes the box past the window; the
+          whole title stays the link's text and is its tooltip. */}
+      <strong className="home__event-name">
+        <Link to={`/calls/${id}`} title={name}>
+          {name}
+        </Link>
+      </strong>
+      <span className="home__text">{live ? 'Live now' : formatWhen(start, timeZone)}</span>
+    </li>
   );
 }
 

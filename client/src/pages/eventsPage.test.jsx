@@ -2,7 +2,9 @@
 // File:        eventsPage.test.jsx
 // Path:        client/src/pages/eventsPage.test.jsx
 // Project:     Seasonal Entertainment
-// Description: /events shows only the event bot's occurrences (docs/BOTS.md): asked for
+// Description: /events shows the event bot's occurrences (docs/BOTS.md) and the site's live and
+//              planned calls of the week (as the Calls page answers; a call linking to its page,
+//              with the calls quarter), in time order. The bot's occurrences: asked for
 //              exactly the visible week, also across the daylight-saving change; each at the
 //              local time with its zone and the UTC time beside it; a canceled one struck
 //              through and saying so; bot text as text, a link only where the server passed
@@ -11,8 +13,10 @@
 // ============================================================
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import { expect, it } from 'vitest';
-import { mockApi } from '../test/mockApi.js';
+import { SessionProvider } from '../session/SessionContext.jsx';
+import { GUEST, mockApi } from '../test/mockApi.js';
 import EventsPage from './EventsPage.jsx';
 
 // Monday 19 October 00:00 in Berlin (CEST) to Monday 26 October 00:00 (CET, an hour longer).
@@ -48,16 +52,53 @@ const WEEK = [
   }),
 ];
 
+// answers.calls: the GET /api/calls answer (calls not set up unless given).
 function showWeek(answers) {
   const calls = mockApi({
+    ...GUEST,
     [`GET /bot-events?from=${FROM}&to=${TO}`]: { body: { ok: true, ...answers.thisWeek } },
     [`GET /bot-events?from=${TO}&to=${NEXT}`]: {
       body: { ok: true, connected: true, ...answers.nextWeek },
     },
+    'GET /calls': { body: { ok: true, configured: false, ...answers.calls } },
   });
-  render(<EventsPage timeZone="Europe/Berlin" now={Date.parse('2026-10-21T12:00:00Z')} />);
+  render(
+    <MemoryRouter>
+      <SessionProvider>
+        <EventsPage timeZone="Europe/Berlin" now={Date.parse('2026-10-21T12:00:00Z')} />
+      </SessionProvider>
+    </MemoryRouter>
+  );
   return calls;
 }
+
+it("shows the site's planned call among the bot's events, in time order", async () => {
+  const planned = (id, title, scheduledFor) => ({ id, title, status: 'scheduled', scheduledFor });
+  showWeek({
+    thisWeek: { connected: true, occurrences: WEEK },
+    calls: {
+      configured: true,
+      calls: {
+        live: [],
+        // Thursday 20:00 CEST, before the bot's 20:30; the other one is next week.
+        upcoming: [
+          planned(7, 'Town hall', '2026-10-22T18:00:00Z'),
+          planned(8, 'Later', '2026-10-27T18:00:00Z'),
+        ],
+        recent: [],
+      },
+    },
+  });
+  const thursday = await screen.findByRole('region', { name: 'Thursday 22 October' });
+  const [call, bot] = within(thursday).getAllByRole('listitem');
+  expect(within(call).getByRole('link', { name: 'Town hall' })).toHaveAttribute('href', '/calls/7');
+  expect(call.textContent.replace(/\s/g, ' ')).toContain(
+    'Community call on this site, Thursday 22 October, 20:00 CEST'
+  );
+  expect(call.querySelector('img')).toHaveAttribute('src', '/brand/quarter-calls.webp');
+  expect(bot).toHaveTextContent('Community <b>Call</b>');
+  expect(screen.queryByText('Later')).toBeNull();
+});
 
 it('the week at local times with the zone and UTC beside them, across the DST change', async () => {
   showWeek({
@@ -110,7 +151,7 @@ it('asks the bot for the week shown: local Monday to the next local Monday', asy
   fireEvent.click(screen.getByRole('button', { name: 'Next week →' }));
   await screen.findByText('Week of Monday 26 October');
   // The DST week is 169 hours long; the next one, CET throughout, exactly seven days.
-  expect(calls.map((c) => c.key)).toEqual([
+  expect(calls.map((c) => c.key).filter((key) => key.includes('bot-events'))).toEqual([
     `GET /bot-events?from=${FROM}&to=${TO}`,
     `GET /bot-events?from=${TO}&to=${NEXT}`,
   ]);

@@ -50,6 +50,13 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **SE-UPNEXT-CALLS-1 — "Up next" lists site calls too; the Next call box only with a call** —
+  on `feat/se-upnext-calls-1` (not merged yet; owner request 2026-10-21): the home's "Up next"
+  and `/events` show the site's live and planned calls among the event bot's occurrences by
+  start time, from the Calls page's own answer (docs/CALLS.md, "In the event lists"); the Next
+  call box shows only with a live or planned call, else Fair price takes its column; home still
+  fits from 1280 x 720 in both cases (docs/DESIGN.md, "Home").
+
 - **SE-HOME-LIVE-1 part 1 — "Next call" box on the home page** — closed by `feat/se-home-live-1`
   (not merged yet; owner request 2026-10-21): a live call with Listen, else the next planned one
   with its time, else a friendly line; the calls quarter behind it (docs/DESIGN.md, "Home").

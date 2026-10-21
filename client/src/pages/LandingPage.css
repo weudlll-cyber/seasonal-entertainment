@@ -203,6 +203,14 @@
   border-top: 1px solid var(--color-border);
 }
 
+/* A site call's title in "Up next": one line, the rest as an ellipsis (homeCards.jsx). */
+.home__event-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .home__event-image,
 .home__event-dot {
   grid-row: span 2;
