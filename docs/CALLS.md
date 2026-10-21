@@ -94,7 +94,9 @@ Generate a production pair on the call server with
   (`client/src/calls/useCalls.js`, also behind the home's Next call box), so a viewer sees
   exactly the calls the Calls page shows them; ended calls are not listed. A call entry has the
   title linking to `/calls/<id>`, its date in the site's format (docs/DESIGN.md, "Dates") or
-  "Live now", and the calls quarter as its picture (`/events`: `CallEventItem.jsx`). A live
+  "Live now", and the calls quarter as its picture. On `/events` (`CallEventItem.jsx`) the
+  day's heading and the time column carry the date, so its line just says "Community call on
+  this site" (or "Live now"). A live
   call is placed at its start; a planned call without a time has no place in a list by time
   (the Calls page and the Next call box still show it). "Up next" covers its seven days, and a
   planned call whose time has passed but that has not started comes first, as the Calls page

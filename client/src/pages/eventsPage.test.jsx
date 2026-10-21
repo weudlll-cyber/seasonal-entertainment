@@ -92,9 +92,10 @@ it("shows the site's planned call among the bot's events, in time order", async 
   const thursday = await screen.findByRole('region', { name: 'Thursday 22 October' });
   const [call, bot] = within(thursday).getAllByRole('listitem');
   expect(within(call).getByRole('link', { name: 'Town hall' })).toHaveAttribute('href', '/calls/7');
-  expect(call.textContent.replace(/\s/g, ' ')).toContain(
-    'Community call on this site, Thursday 22 October, 20:00 CEST'
-  );
+  // The date is the day's heading and the time column; the line does not repeat it.
+  expect(within(call).getByText('Community call on this site')).toBeInTheDocument();
+  expect(call).toHaveTextContent('20:00 CEST');
+  expect(call).not.toHaveTextContent('22 October');
   expect(call.querySelector('img')).toHaveAttribute('src', '/brand/quarter-calls.webp');
   expect(bot).toHaveTextContent('Community <b>Call</b>');
   expect(screen.queryByText('Later')).toBeNull();

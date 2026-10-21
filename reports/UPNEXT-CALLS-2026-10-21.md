@@ -92,3 +92,34 @@ repository answered on 5390.
 | `docs/ARCHITECTURE.md`                  | 536 → 538 |
 | `docs/BACKLOG.md`                       | 308 → 315 |
 | `.gitignore`                            | 29 → 30   |
+
+## Fix before the merge (owner review 2026-10-21)
+
+On the events page, a site call's entry showed an empty line between its title and its text,
+and the text repeated the date.
+
+- **Text**: the line is now just "Community call on this site" ("Live now" for a live call).
+  The day's heading and the time column already carry the date.
+- **Empty line**: it had two causes.
+  - The bot's own link ("Open …") gets a 44px line, and that rule also caught the call's title
+    link. The rule now applies only to links directly in the entry's text
+    (`.event__body > a`).
+  - The entry's text grid spread its two lines over the height of the taller calls quarter. A
+    call's lines now stay together at the top (`.event--call .event__body`). Bot entries are
+    unchanged.
+- **Test**: `eventsPage.test.jsx` expects the line "Community call on this site", the time in
+  the time column, and no repeated date. It went red once with the date put back into the line.
+
+| File                              | What                                                                                                                                                                                 |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 06-events-call-fix-1440-light.png | Events page at 1440 x 900, light, after the fix: the call's title and "Community call on this site" with no empty line between; the date only in the day heading and the time column |
+
+Temporary data: the screenshot's planned call was ended and deleted with its chat room. The
+dev database again holds only the ended "Testall" call.
+
+| File                                   | Lines     |
+| -------------------------------------- | --------- |
+| `client/src/pages/CallEventItem.jsx`   | 35 → 33   |
+| `client/src/pages/EventsPage.css`      | 130 → 138 |
+| `client/src/pages/eventsPage.test.jsx` | 166 → 167 |
+| `docs/CALLS.md`                        | 404 → 406 |
