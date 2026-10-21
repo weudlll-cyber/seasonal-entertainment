@@ -72,7 +72,8 @@ with transparency into `client/public/brand/`:
 
 The pattern tile is drawn from the repo's own season marks (`client/src/assets/seasons/`), two
 rows of four, the second shifted by two. `client/src/brand/brand.js` is the one place that names
-these files and which quarter belongs to which section. The font stays Luxora Grotesk, and the
+these files and which quarter belongs to which section. The font stays Luxora Grotesk (headings
+in Bold, `--font-weight-heading` 700, decided 2026-10-21; Heavy before), and the
 CSP is unchanged (all images are the site's own).
 
 ## Speed

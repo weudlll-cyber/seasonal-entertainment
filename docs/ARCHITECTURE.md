@@ -462,16 +462,16 @@ The logo images (`client/public/brand/`) are cut from the owner's logo by
 `scripts/build-brand-images.mjs`; their sources and crop boxes are in docs/DESIGN.md, "Brand
 images". Copied from the owner's Seasonal Token folder and renamed to lowercase:
 
-| In the repo                            | Original file                                  |
-| -------------------------------------- | ---------------------------------------------- |
-| `assets/seasonal-tokens.svg` (favicon) | `Seasonal_Tokens-02.svg`                       |
-| `assets/seasons/source/spring.svg`     | `Spring_Season-02.svg`                         |
-| `assets/seasons/source/summer.svg`     | `Summer_Season-02.svg`                         |
-| `assets/seasons/source/autumn.svg`     | `Autumn.svg`                                   |
-| `assets/seasons/source/winter.svg`     | `Winter_Season-02.svg`                         |
-| `assets/fonts/luxora-grotesk-*.woff2`  | the six `.otf` files, converted with fontTools |
+| In the repo                            | Original file                                                                         |
+| -------------------------------------- | ------------------------------------------------------------------------------------- |
+| `assets/seasonal-tokens.svg` (favicon) | `Seasonal_Tokens-02.svg`                                                              |
+| `assets/seasons/source/spring.svg`     | `Spring_Season-02.svg`                                                                |
+| `assets/seasons/source/summer.svg`     | `Summer_Season-02.svg`                                                                |
+| `assets/seasons/source/autumn.svg`     | `Autumn.svg`                                                                          |
+| `assets/seasons/source/winter.svg`     | `Winter_Season-02.svg`                                                                |
+| `assets/fonts/luxora-grotesk-*.woff2`  | five of the `.otf` files, converted with fontTools (Heavy dropped 2026-10-21: unused) |
 
-Font weights: Book 400 (body), Regular 500, Bold 700, Heavy 900 (headings), Italic 400 italic,
+Font weights: Book 400 (body), Regular 500, Bold 700 (also headings), Italic 400 italic,
 Light Italic 300 italic. Book and Regular both carry weight 400 inside the files; Regular is
 mapped to 500 so both remain usable.
 

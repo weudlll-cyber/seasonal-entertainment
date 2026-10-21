@@ -74,6 +74,9 @@ An entry moves from part one to part two only when its branch is merged into `ma
   merged yet): home fits the window again from 1280 x 720 (a lower banner, tighter spacing, the
   Next call buttons as icons in one row, its title in 2 lines), no box cut, nothing under the
   chat button; one date format everywhere (`formatDateTime`, docs/DESIGN.md, "Dates").
+- **SE-HOME-LIVE-1 final step (owner decision 2026-10-21)** — on `feat/se-home-live-1` (not
+  merged yet): headings in Luxora Grotesk Bold instead of Heavy (`--font-weight-heading` 700);
+  the unused Heavy face and its font file removed.
 - **Security check (SE-NIGHT-4 piece 4)** — closed by SE-NIGHT-4 piece 4 (`feat/se-night-4`,
   not merged yet): no known vulnerabilities (npm audit), react-router 8.4.0 → 8.5.0; salt
   requests and every `/api` read limited per IP; link-preview failures logged by host only.
