@@ -50,6 +50,10 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **Security check (SE-NIGHT-4 piece 4)** — closed by SE-NIGHT-4 piece 4 (`feat/se-night-4`,
+  not merged yet): no known vulnerabilities (npm audit), react-router 8.4.0 → 8.5.0; salt
+  requests and every `/api` read limited per IP; link-preview failures logged by host only.
+  Design questions are on the morning sheet (reports/NIGHT-2026-10-21.md).
 - **Safety-number verification** — closed by SE-NIGHT-4 piece 3 (`feat/se-night-4`, not merged
   yet): "Verify safety number" in a direct conversation's "…"; both members see the same 12
   groups of 5 digits (BLAKE2b of the two sorted public keys); "Mark as verified" per device

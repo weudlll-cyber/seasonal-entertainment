@@ -32,6 +32,7 @@ export function loginRoutes(db, config, view) {
   const router = express.Router();
   const limits = config.rateLimits;
   const perIp = makeLimiter(limits.login, { failedOnly: true });
+  const saltsPerIp = makeLimiter(limits.prelogin);
   // Also per username, so many addresses cannot keep trying one account. Keyed on the name as
   // typed (case-insensitive, like usernames), existing or not, so a 429 reveals nothing.
   const perName = makeLimiter(limits.loginAccount, {
@@ -55,8 +56,9 @@ export function loginRoutes(db, config, view) {
   }
 
   // Same limiters as the login itself: while a name or address is blocked from logging in,
-  // it gets no salts either. Answers never fail, so they never count towards the limit.
-  router.post('/prelogin', allow('public'), perIp, perName, (req, res) => {
+  // it gets no salts either. Answers never fail, so they never count towards those; their
+  // own per-IP limit counts every request.
+  router.post('/prelogin', allow('public'), saltsPerIp, perIp, perName, (req, res) => {
     const input = validBody(req, res, { username: required('Username', 100) });
     if (!input) return;
     res.json({

@@ -53,7 +53,8 @@ registration, password change, unlock or recovery runs, its button reads **Check
   and does not change between requests. (In development without a `SESSION_SECRET` the secret is
   random per start, so fake salts change on restart; production requires the setting.) The route
   shares the login's rate limiters: while a name or address is blocked from logging in, it gets no
-  salts either; its own answers never fail and so never count.
+  salts either; its own answers never fail and so never count there. Its own limit per IP counts
+  every request (60 per 15 minutes; since 2026-10-21).
 - **Login**: `POST /api/auth/login { username, authKey }`. Every other place a password is entered
   sends the same way: registration (`salt`, `authKey`), own password change (`currentAuthKey`,
   `newSalt`, `newAuthKey`), 2FA setup and disable (`authKey` for "current password"), the admin's
@@ -244,16 +245,21 @@ rule (`selfOrigin()` in `server/src/http/csrf.js`): the full origin, scheme incl
 
 All answer `429 too_many_attempts`. Numbers are in `server/src/config.js` (`rateLimits`).
 
-| Route                  | Window | Limit | Keyed on | Counts          |
-| ---------------------- | ------ | ----- | -------- | --------------- |
-| `POST /api/auth/login` | 15 min | 10    | IP       | failed attempts |
-| `POST /api/auth/login` | 15 min | 10    | username | failed attempts |
+| Route                      | Window | Limit | Keyed on | Counts          |
+| -------------------------- | ------ | ----- | -------- | --------------- |
+| `POST /api/auth/login`     | 15 min | 10    | IP       | failed attempts |
+| `POST /api/auth/login`     | 15 min | 10    | username | failed attempts |
+| `POST /api/auth/prelogin`  | 15 min | 60    | IP       | every request   |
+| `POST /api/auth/register`  | 1 h    | 5     | IP       | every attempt   |
+| `POST /api/auth/password`  | 15 min | 5     | account  | failed attempts |
+| `POST /api/auth/bootstrap` | 1 h    | 10    | IP       | every attempt   |
+| every `GET` under `/api`   | 1 min  | 1200  | IP       | every request   |
 
-`POST /api/auth/prelogin` shares the two login limiters above
-(the same counters): a blocked name or address gets neither salts nor logins.
-| `POST /api/auth/register` | 1 h | 5 | IP | every attempt |
-| `POST /api/auth/password` | 15 min | 5 | account | failed attempts |
-| `POST /api/auth/bootstrap` | 1 h | 10 | IP | every attempt |
+`POST /api/auth/prelogin` also shares the two login limiters above (the same counters): a blocked
+name or address gets neither salts nor logins. The limit on every read (since 2026-10-21) covers
+the public reads that have no limit of their own (session, info, games, calls, chat rooms and
+messages, files, the embed check); a page load makes a handful, so only a flood meets it. Routes
+with their own limits (bots' reads, member search) keep them as well.
 
 The password-change limit keys on the account, not the IP _(race game)_: people behind one
 address must not lock each other out. Login is limited twice: per IP, and per username as typed

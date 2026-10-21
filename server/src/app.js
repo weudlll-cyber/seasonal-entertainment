@@ -42,6 +42,7 @@ import { infoRoutes } from './info/routes.js';
 import { keyRoutes } from './keys/routes.js';
 import { csrfGuard } from './http/csrf.js';
 import { errorHandler, sendError } from './http/errors.js';
+import { makeLimiter } from './http/rateLimit.js';
 import { securityHeaders } from './http/securityHeaders.js';
 import { currentUser, sessionMiddleware } from './http/session.js';
 import { adminSettingRoutes } from './settings/adminRoutes.js';
@@ -70,6 +71,9 @@ export function createApp({
 
   const api = express.Router();
   api.use(express.json({ limit: '100kb' }));
+  // Every read under /api per IP; writes have their own, stricter limits per route.
+  const readsPerIp = makeLimiter(config.rateLimits.apiRead);
+  api.use((req, res, next) => (req.method === 'GET' ? readsPerIp(req, res, next) : next()));
   api.use(csrfGuard(config));
   // One session middleware for HTTP and the chat WebSocket upgrade.
   const sessions = sessionMiddleware(db, config);
