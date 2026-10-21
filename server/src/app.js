@@ -74,6 +74,9 @@ export function createApp({
   app.use(securityHeaders(config, embedOrigins));
 
   const api = express.Router();
+  // Direct messages may carry a link preview's small image inside the ciphertext (docs/CHAT.md):
+  // their own, larger limit, parsed before the general one (which then skips the body).
+  api.use('/chat/direct', express.json({ limit: '160kb' }));
   api.use(express.json({ limit: '100kb' }));
   // Every read under /api per IP; writes have their own, stricter limits per route.
   const readsPerIp = makeLimiter(config.rateLimits.apiRead);

@@ -37,7 +37,7 @@ import {
   createUser,
   publicUser,
   setPasswordHash,
-  setShowOnline,
+  setPrivacy,
 } from './userStore.js';
 
 // chatSessions: the chat handle's sessions interface (chat/mount.js).
@@ -118,15 +118,22 @@ export function accountRoutes(db, config, chatSessions) {
     res.json({ ok: true });
   });
 
-  // "Show when I'm online": the member's own setting only (the account comes from the
-  // session). The change takes effect at once: open chat lists hear "presence" and reload.
+  // The member's own privacy switches, any of them per request (the account comes from the
+  // session): "Show when I'm online" takes effect at once (open chat lists hear "presence"
+  // and reload); "Link previews in direct messages" is read by the member's browser.
   router.put('/privacy', allow('member'), (req, res) => {
+    const flag = (name) => (v) =>
+      v === undefined || typeof v === 'boolean' ? null : `${name} must be true or false.`;
     const input = validBody(req, res, {
-      showOnline: (v) => (typeof v === 'boolean' ? null : 'showOnline must be true or false.'),
+      showOnline: flag('showOnline'),
+      dmLinkPreviews: flag('dmLinkPreviews'),
     });
     if (!input) return;
-    setShowOnline(db, req.user.id, input.showOnline);
-    chatSessions.presenceChanged();
+    if (input.showOnline === undefined && input.dmLinkPreviews === undefined) {
+      return sendError(res, 400, 'invalid_input', 'Name a setting to change.');
+    }
+    setPrivacy(db, req.user.id, input);
+    if (input.showOnline !== undefined) chatSessions.presenceChanged();
     res.json({ ok: true });
   });
 

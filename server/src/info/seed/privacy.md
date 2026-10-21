@@ -36,6 +36,13 @@ This list describes what the website's software actually stores.
   used, and when, and cannot read the content; moderators and admins cannot read it either. It
   also stores how far each of you has read a conversation (for the unread mark). Deleted after the
   chat retention period (90 days), like room messages.
+- **Link previews in private messages**: when you write a link in a private message, your
+  browser asks this site for a preview card (title, description, a small picture) of that link.
+  The site fetches the linked page for you but keeps neither the card nor the link, does not log
+  it, and does not record that you asked; it only counts how many previews your account asked
+  for, against abuse. The card is sent end-to-end encrypted with your message, so the recipient's
+  browser never contacts the linked site. You can remove a card before sending, or turn link
+  previews in private messages off on your account page.
 - **Reports of a private message**: the reason, who reported whom, and when. Only if you tick
   "Share the selected messages with the moderators" are copies of the messages you selected sent
   along — as your browser shows them — so the moderators can judge the report. Every time a

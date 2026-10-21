@@ -2,8 +2,9 @@
 // File:        PreviewCard.jsx
 // Path:        client/src/chat/PreviewCard.jsx
 // Project:     Seasonal Entertainment
-// Description: The compact link preview under a chat message: image (fetched and stored by the
-//              server, so it loads from this site), site name, title as the link, description.
+// Description: The compact link preview under a chat message: image (in a room fetched and
+//              stored by the server, so it loads from this site; in a direct message inline
+//              data inside the encrypted message), site name, title as the link, description.
 //              All text arrives as plain text and is rendered as text, never as HTML.
 // ============================================================
 

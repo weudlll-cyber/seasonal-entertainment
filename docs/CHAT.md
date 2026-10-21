@@ -244,7 +244,7 @@ open nor send them. Any member can write to any member.
   unlocked key on the device, the Direct tab shows "Unlock private messages" (see "Keys and the
   recovery code").
 - **Encryption** (in the browser, `shared/crypto.js`): message = `crypto_box_easy(JSON { text,
-mediaItemId? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh random nonce each time.
+mediaItemId?, preview? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh random nonce each time.
   Either side opens it with the other's public key and its own private key. The server stores
   ciphertext, nonce, sender and recipient ids, both key ids and the time (`direct_messages`) and
   pushes each new message over the existing WebSocket to both members' open sockets (no
@@ -252,8 +252,35 @@ mediaItemId? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh random no
 - **What a message can hold (v1, decided 2026-10-18)**: text, emoji, and stickers/GIFs from the
   site's library (the library id travels inside the ciphertext; the browser loads the public
   library file, `GET /api/chat/media`, once per page and shares it with the picker:
-  `client/src/chat/mediaLibrary.js`, SE-NIGHT-2 part 5). **No file uploads and no link previews** in direct messages; links are plain
-  clickable links. Both are open backlog items.
+  `client/src/chat/mediaLibrary.js`, SE-NIGHT-2 part 5), and a link preview card (below).
+  The ciphertext may be up to 120,000 base64 characters (`CIPHERTEXT_MAX`), and
+  `/api/chat/direct` takes bodies up to 160 kB (its own JSON parser, before the general 100 kB
+  one), for the card's small image.
+- **Link previews in direct messages** (decided 2026-10-22): while a member writes, their
+  browser sends the first https link of the draft to `POST /api/chat/direct/preview { url }`, a
+  moment after typing stops (`client/src/chat/useDirectLinkPreview.js`).
+  - **The route** (`server/src/previews/directPreview.js`, members only) uses the room
+    previews' fetcher (`fetchPreview.js`, `safeFetch`'s network guard). It answers the title,
+    description, site name and an optional image re-encoded by the server: WebP at most 320px
+    wide and 50 KB (lower quality, then narrower, else no image), as a data URL.
+  - **It keeps nothing**: no cache row, no file, no database write, and no log line, not even
+    the host of a failing link. Nothing records which account asked for which link: only the
+    per-account rate-limit counter (`linkPreviews.perUser`, plus the site-wide `overall`).
+  - **The card**: the writer sees it in the composer above the field and can remove it (×,
+    "Remove link preview"); then no card is sent for that link. One card per message, the
+    first link's. It travels inside the encrypted message (`preview` in the payload), so the
+    server sees only ciphertext.
+  - **The recipient's browser never contacts the linked site**: it shows a card only as the
+    sender's browser makes it (`safePreview`): an https link, plain text, and an image only as
+    inline `data:image/webp;base64` (anything else is dropped). Clicking the link is the
+    reader's own choice.
+  - **Account setting** "Link previews in direct messages" (account page, Privacy; on by
+    default; `users.dm_link_previews`, `PUT /api/auth/privacy { dmLinkPreviews }`). Off, the
+    browser makes no preview request at all; the route refuses one too (`403 previews_off`).
+    `LINK_PREVIEWS=false` switches the route off with the room previews.
+  - Tests: `server/test/directPreview.test.js`, `client/src/chat/directLinkPreview.test.jsx`,
+    `client/src/components/privacySettings.test.jsx`.
+- **File uploads** in direct messages are an open backlog item.
 - **Rules** (`server/src/chat/directRoutes.js`): the same mute/ban and the same per-sender rate
   limit as room messages (one shared limiter); a locked account has no session. The partner must
   have a key; both key ids must be the current ones, else `409 key_changed` with the partner's

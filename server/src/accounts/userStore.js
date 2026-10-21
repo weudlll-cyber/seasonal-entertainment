@@ -8,7 +8,8 @@
 // ============================================================
 
 const COLUMNS = `id, username, email, role, can_start_games AS canStartGames, locked,
-  session_epoch AS sessionEpoch, show_online AS showOnline, created_at AS createdAt`;
+  session_epoch AS sessionEpoch, show_online AS showOnline, dm_link_previews AS dmLinkPreviews,
+  created_at AS createdAt`;
 
 function toUser(row) {
   if (!row) return null;
@@ -17,6 +18,7 @@ function toUser(row) {
     canStartGames: row.canStartGames === 1,
     locked: row.locked === 1,
     showOnline: row.showOnline === 1,
+    dmLinkPreviews: row.dmLinkPreviews === 1,
   };
 }
 
@@ -93,9 +95,13 @@ export function bumpSessionEpoch(db, id) {
     .get(id).e;
 }
 
-// "Show when I'm online" (the member's own setting).
-export function setShowOnline(db, id, show) {
-  db.prepare('UPDATE users SET show_online = ? WHERE id = ?').run(show ? 1 : 0, id);
+// The member's own privacy switches; each given one is stored (true/false), others stay.
+const PRIVACY_COLUMNS = { showOnline: 'show_online', dmLinkPreviews: 'dm_link_previews' };
+export function setPrivacy(db, id, settings) {
+  for (const [key, column] of Object.entries(PRIVACY_COLUMNS)) {
+    if (settings[key] === undefined) continue;
+    db.prepare(`UPDATE users SET ${column} = ? WHERE id = ?`).run(settings[key] ? 1 : 0, id);
+  }
 }
 
 // Of these account ids, the ones that let others see them online.
@@ -125,5 +131,6 @@ export function publicUser(user) {
     role: user.role,
     canStartGames: user.canStartGames || user.role === 'admin',
     showOnline: user.showOnline,
+    dmLinkPreviews: user.dmLinkPreviews,
   };
 }

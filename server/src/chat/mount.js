@@ -15,6 +15,7 @@ import { MEDIA_URL_PREFIX, mediaUrl } from '../media/files.js';
 import { mediaRoutes } from '../media/routes.js';
 import { seedChatMedia } from '../media/seed.js';
 import { fetchImage } from '../previews/fetchImage.js';
+import { directPreviewRoutes } from '../previews/directPreview.js';
 import { previewModerationRoutes } from '../previews/routes.js';
 import { createPreviewService } from '../previews/service.js';
 import { uploadRoutes } from '../uploads/routes.js';
@@ -60,6 +61,8 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
   api.use('/chat/favourites', favouriteRoutes(db, hub));
   api.use('/chat', unreadRoutes(db, hub));
   api.use('/chat', memberRoutes(db, config, hub));
+  // Before directRoutes: its /:id would take /preview.
+  api.use('/chat/direct', directPreviewRoutes(config, previewNetwork));
   api.use('/chat/direct', directRoutes(db, hub, allowMessage));
   const reports = directReportRoutes(db, config);
   api.use('/chat/direct', reports.member);
