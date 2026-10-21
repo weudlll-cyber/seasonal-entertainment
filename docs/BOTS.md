@@ -100,7 +100,10 @@ event's name as alt text (owner decision 2026-10-20; `server/src/bots/images.js`
 Events are kept **only in the event bot** (decided 2026-10-20): the site's own events calendar,
 its admin editor and its seeded schedule are gone, so there is no duplicate between the two any
 more. "Up next" on the home page asks for the next seven days from the full hour (one cached
-question per hour) and shows the next two scheduled occurrences that have not started.
+question per hour) and shows the next two scheduled occurrences that have not started. The
+site's own live and planned calls are listed beside them in "Up next" and on `/events`, by start
+time (2026-10-21; docs/CALLS.md, "In the event lists"); they are calls, not events, and nothing
+of the bot's data changes.
 
 ## Fair price and converter
 
@@ -232,9 +235,11 @@ sample week to the current one.
   coin's chart; without the bot no prices or links, and the note); `/info/prices` (token and range asked for, hover and
   arrow keys read a price at local time; "not connected"); the formats.
 - `client/src/pages/eventsPage.test.jsx`: the bot week at local times across daylight saving,
-  canceled, text only and safe links, the week asked for, "not connected".
+  canceled, text only and safe links, the week asked for, "not connected"; a site call of the
+  week among the bot's events.
 - `client/src/pages/LandingPage.test.jsx`: "Up next" (the next two scheduled occurrences that
-  have not started; "not connected").
+  have not started; "not connected"; merged with the site's calls by time, live and planned
+  only; bot events only while calls are not set up).
 - `server/test/botImages.test.js`: an event's image fetched, re-encoded as WebP without
   metadata, stored by the URL's hash and served from this site; a private address, plain http
   or a non-image refused; at most once a day.

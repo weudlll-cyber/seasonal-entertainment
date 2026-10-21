@@ -5,15 +5,20 @@
 // Description: Home in the SE style (docs/DESIGN.md, "Home"): the night-blue banner with the
 //              emblem, the lettering and the greeting (with the username when signed in), then
 //              a grid that fits the main column at 1280 x 720 without scrolling: the featured
-//              game and the event bot's next two occurrences (/api/bot-events), the four season
-//              price tiles (/api/prices, docs/BOTS.md), then Community (live: CommunityCard.jsx),
-//              the next call (/api/calls, as the Calls page: NextCallCard.jsx) and the way to
-//              the fair prices and charts (homeCards.jsx). Real data only.
+//              game and "Up next": the next two of the event bot's occurrences (/api/bot-events)
+//              and the site's live and planned calls (callEntries.js) in time order, the four
+//              season price tiles (/api/prices, docs/BOTS.md), then Community (live:
+//              CommunityCard.jsx), the next call (only when one is live or planned:
+//              NextCallCard.jsx; else the fair-price box takes its column) and the way to the
+//              fair prices and charts (homeCards.jsx). Calls: /api/calls, as the Calls page
+//              (useCalls.js). Real data only.
 // ============================================================
 
 import { useEffect, useState } from 'react';
 import { api } from '../api/http.js';
 import { deviceZone } from '../app/dates.js';
+import { byStart, callEntries } from '../calls/callEntries.js';
+import { useCalls } from '../calls/useCalls.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { EMBLEM } from '../brand/brand.js';
 import CommunityCard from './CommunityCard.jsx';
@@ -24,23 +29,39 @@ import './LandingPage.css';
 import './homeBottomRow.css';
 
 const HOUR_MS = 60 * 60_000;
+const UP_NEXT_COUNT = 2;
 
-// The event bot's next two occurrences that still take place: { connected, next }.
-async function upNext() {
+// The seven days "Up next" covers, from the full hour, so every visitor in that hour asks the
+// bot the same (server-cached) question.
+function upNextRange() {
+  const from = Math.floor(Date.now() / HOUR_MS) * HOUR_MS;
+  return { from, to: from + 7 * 24 * HOUR_MS };
+}
+
+// The event bot's occurrences in the window that still take place: { connected, next }.
+async function upNext({ from, to }) {
   const now = Date.now();
-  // From the full hour, so every visitor in that hour asks the same (server-cached) question.
-  const from = Math.floor(now / HOUR_MS) * HOUR_MS;
-  const data = await api(`/bot-events?from=${from}&to=${from + 7 * 24 * HOUR_MS}`);
+  const data = await api(`/bot-events?from=${from}&to=${to}`);
   const next = data.occurrences.filter((o) => o.start >= now && o.status === 'scheduled');
-  return { connected: data.connected, next: next.slice(0, 2) };
+  return { connected: data.connected, next };
+}
+
+// "Up next": the bot's occurrences and the site's calls up to the window's end, soonest first.
+// Live calls and planned ones whose time has passed come first: the Calls page still lists
+// them as live or upcoming. The bot's note (not connected, failed) stays beside the calls.
+function merged(next, calls, to) {
+  if (!next) return null; // the bot's answer is still loading
+  const entries = [...(next.next ?? []), ...callEntries(calls, { to })].sort(byStart);
+  return { ...next, next: entries.slice(0, UP_NEXT_COUNT) };
 }
 
 export default function LandingPage({ timeZone = deviceZone() }) {
   const { user } = useSession();
   const [game, setGame] = useState(undefined); // undefined: loading; null: no games
+  const [range] = useState(upNextRange); // fixed while the page is open
   const [next, setNext] = useState(null); // upNext()'s answer; null while loading
   const [prices, setPrices] = useState(null); // null while loading or when it failed
-  const [calls, setCalls] = useState(null); // GET /api/calls, as the Calls page; null: none
+  const calls = useCalls(); // as the Calls page; null while loading or failed
   const userId = user?.id;
 
   // Visible games depend on who is signed in (members-only cards).
@@ -51,17 +72,10 @@ export default function LandingPage({ timeZone = deviceZone() }) {
   }, [userId]);
 
   useEffect(() => {
-    upNext()
+    upNext(range)
       .then(setNext)
       .catch(() => setNext({ failed: true }));
-  }, []);
-
-  // The calls and the member's reminders depend on who is signed in.
-  useEffect(() => {
-    api('/calls')
-      .then(setCalls)
-      .catch(() => setCalls(null));
-  }, [userId]);
+  }, [range]);
 
   useEffect(() => {
     api('/prices')
@@ -88,7 +102,7 @@ export default function LandingPage({ timeZone = deviceZone() }) {
       </div>
       <div className="home__grid">
         <FeaturedGameCard game={game} />
-        <UpNextCard next={next} timeZone={timeZone} />
+        <UpNextCard next={merged(next, calls, range.to)} timeZone={timeZone} />
         <PriceTiles prices={prices} />
         <CommunityCard />
         <NextCallCard calls={calls} timeZone={timeZone} />

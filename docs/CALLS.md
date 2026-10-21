@@ -88,6 +88,22 @@ Generate a production pair on the call server with
 - **Empty lists** (2026-10-21): an empty "Live now", "Upcoming" or "Recent" shows a card in the
   page's style ("No call is live right now", "No call is planned yet — organisers announce them
   here", "No calls yet"), never a bare "None.".
+- **In the event lists** (2026-10-21): the home page's "Up next" and `/events` show the site's
+  live and planned calls among the event bot's occurrences, by start time
+  (`client/src/calls/callEntries.js`). Both read the Calls page's own `GET /api/calls` answer
+  (`client/src/calls/useCalls.js`, also behind the home's Next call box), so a viewer sees
+  exactly the calls the Calls page shows them; ended calls are not listed. A call entry has the
+  title linking to `/calls/<id>`, its date in the site's format (docs/DESIGN.md, "Dates") or
+  "Live now", and the calls quarter as its picture. On `/events` (`CallEventItem.jsx`) the
+  day's heading and the time column carry the date, so its line just says "Community call on
+  this site" (or "Live now"). A live
+  call is placed at its start; a planned call without a time has no place in a list by time
+  (the Calls page and the Next call box still show it). "Up next" covers its seven days, and a
+  planned call whose time has passed but that has not started comes first, as the Calls page
+  still lists it; `/events` shows the calls of the week on screen. While calls are not set up,
+  both lists show the bot's events only. The home's Next call box shows only with a live or
+  planned call (docs/DESIGN.md, "Home"). Tests: `client/src/pages/LandingPage.test.jsx`,
+  `eventsPage.test.jsx`, `homeLive.test.jsx` and `client/e2e/layout.spec.js`.
 - **Calendar file** (decided 2026-10-21): every planned call (scheduled, with a planned time)
   has `GET /api/calls/:id/calendar.ics` for everyone, guests included (`allow('public')`, as the
   list; rate limit `callCalendar` per address, 60 a minute). `text/calendar` as a download

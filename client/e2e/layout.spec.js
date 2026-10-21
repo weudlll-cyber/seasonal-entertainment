@@ -4,9 +4,11 @@
 // Project:     Seasonal Entertainment
 // Description: The app shell in a real browser (docs/DESIGN.md): at 1440 x 900, 1280 x 720 and
 //              1920 x 1080 the window never scrolls on any main page and the sidebar is shown;
-//              Home, at its fullest (a planned call with a long title, 3 messages), fits the
-//              window without scrolling, no box is cut and nothing in a box lies under the
-//              floating chat button (owner decision 2026-10-17, confirmed 2026-10-21). At
+//              Home, at its fullest (a planned call with a long title, in "Up next" and the Next
+//              call box, 3 messages) and with no call (no Next call box, the fair-price box
+//              wider), fits the window without scrolling, no box is cut and nothing in a box
+//              lies under the floating chat button (owner decision 2026-10-17, confirmed
+//              2026-10-21). At
 //              390 x 844 (phone): no window
 //              scroll, a top bar, and the navigation drawer opens and closes (close button,
 //              Escape, following a link), with focus going in and back. The chat button shows
@@ -97,8 +99,9 @@ const homeState = (page) =>
   });
 
 // The fullest home, whatever other specs do meanwhile (they start their own calls): a planned
-// call with a 58-character title and the longest date (with the year), both of its buttons (as
-// the run's admin), and 3 recent messages in General — answered here, as prices.spec.js does.
+// call with a 58-character title and the longest date (with the year), first in "Up next" and
+// in the Next call box with both of its buttons (as the run's admin), and 3 recent messages in
+// General — answered here, as prices.spec.js does. withCall false: no live or planned call.
 const CALL = {
   id: 999,
   title: 'Seasonal Tokens community call: the four seasons explained',
@@ -106,14 +109,14 @@ const CALL = {
   description: '',
   scheduledFor: '2000-01-01T19:00:00.000Z',
 };
-async function fullestHome(page) {
+async function fullestHome(page, withCall) {
   await page.route('**/api/calls', (route) =>
     route.fulfill({
       json: {
         ok: true,
         configured: true,
         canManage: true,
-        calls: { live: [], upcoming: [CALL], recent: [] },
+        calls: { live: [], upcoming: withCall ? [CALL] : [], recent: [] },
         reminders: [],
       },
     })
@@ -164,17 +167,31 @@ for (const [width, height] of DESKTOP) {
       });
     }
 
-    test('Home fits without scrolling, no box cut, nothing under the chat button', async ({
+    test('Home with a call fits without scrolling, no box cut, nothing under the chat button', async ({
       page,
     }) => {
-      await fullestHome(page);
+      await fullestHome(page, true);
       await page.goto('/');
-      await expect(page.getByRole('region', { name: 'Up next' }).getByRole('link')).toBeVisible();
+      await expect(
+        page.getByRole('region', { name: 'Up next' }).getByRole('link', { name: CALL.title })
+      ).toBeVisible();
       await expect(
         page.getByRole('button', { name: /^Remind me of Seasonal Tokens/ })
       ).toBeVisible();
       await expect(page.getByText('See you at the community call!')).toBeVisible();
       await page.waitForLoadState('networkidle');
+      expect(await homeState(page)).toEqual({ scrolls: false, cut: [], underLauncher: [] });
+    });
+
+    test('Home without a call: no Next call box, still fits, nothing cut or under the button', async ({
+      page,
+    }) => {
+      await fullestHome(page, false);
+      await page.goto('/');
+      await expect(page.getByText('See you at the community call!')).toBeVisible();
+      await expect(page.locator('.home__fair')).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      await expect(page.getByRole('region', { name: 'Next call' })).toHaveCount(0);
       expect(await homeState(page)).toEqual({ scrolls: false, cut: [], underLauncher: [] });
     });
   });

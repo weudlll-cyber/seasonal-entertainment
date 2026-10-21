@@ -142,7 +142,9 @@ these rules. Imprint and Privacy are drafts with `[TO BE FILLED BY OWNER]` place
 Events come **only from the owner's event bot** (decided 2026-10-20; docs/BOTS.md): the site
 reads its occurrences read-only and has no events table or editor of its own (the old `events`
 table is dropped on start, `server/src/db/database.js`). `/events` shows one week, Monday to
-Sunday **in the viewer's time zone**, and the home page's "Up next" the next two occurrences.
+Sunday **in the viewer's time zone**, and the home page's "Up next" the next two occurrences;
+both list the site's live and planned calls beside them by time (docs/CALLS.md, "In the event
+lists").
 `shared/localWeek.js` finds the local week and formats days and times in that zone (`/events`
 shows the local time, the zone's name and the UTC time). Weeks that contain a daylight-saving
 change are 167 or 169 hours long; `shared/localWeek.test.js` pins that with the European change

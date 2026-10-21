@@ -5,7 +5,8 @@
    Description: The home page's bottom row (docs/DESIGN.md, "Home"): Community (two columns,
                 night blue, live: CommunityCard.jsx), Next call (one column, NextCallCard.jsx)
                 and the fair-price box (one column, its content kept left of the floating chat
-                button). Without calls set up, the fair-price box takes the Next call's column.
+                button). Without a live or planned call (or without calls set up) there is no
+                Next call box, and the fair-price box takes its column.
    ============================================================ */
 
 /* Community: night blue with white text in both themes. */
@@ -154,6 +155,7 @@
   text-decoration: none;
 }
 
+/* No Next call box: the fair-price box takes its column too. */
 .home__grid:not(:has(.home__next-call)) .home__fair {
   grid-column: span 2;
 }

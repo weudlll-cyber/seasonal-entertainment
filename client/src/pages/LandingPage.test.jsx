@@ -5,8 +5,11 @@
 // Description: Guards the home page: the greeting (with the username when signed in), the
 //              featured game from the games data (a "Coming soon" badge only when the data says
 //              so), the event bot's next two occurrences that still take place (or "not
-//              connected"), the four season tiles in calendar order with their marks, and the
-//              Community box leading to the chat. Prices themselves: prices.test.jsx.
+//              connected"), merged in time order with the site's live and planned calls (the
+//              Calls page's answer, never an ended call; each linking to its page, a live one
+//              "Live now"), the Next call box only with a live or planned call, the four season
+//              tiles in calendar order with their marks, and the Community box leading to the
+//              chat. Prices themselves: prices.test.jsx.
 // ============================================================
 
 import { render, screen, within } from '@testing-library/react';
@@ -45,11 +48,13 @@ function home({
   session = GUEST,
   games = [game()],
   bot = { connected: true, occurrences: [] },
+  calls = { configured: false },
 } = {}) {
-  mockApi({
+  const sent = mockApi({
     ...session,
     'GET /games': { body: { ok: true, games } },
     [UP_NEXT]: { body: { ok: true, ...bot } },
+    'GET /calls': { body: { ok: true, reminders: [], ...calls } },
   });
   render(
     <MemoryRouter>
@@ -58,7 +63,24 @@ function home({
       </SessionProvider>
     </MemoryRouter>
   );
+  return sent;
 }
+// A GET /api/calls answer with calls set up; call(): one call of its lists.
+const configured = (lists) => ({
+  configured: true,
+  calls: { live: [], upcoming: [], recent: [], ...lists },
+});
+const call = (id, title, status, times = {}) => ({
+  id,
+  title,
+  status,
+  scheduledFor: null,
+  ...times,
+});
+const upNextItems = async () =>
+  (await within(screen.getByRole('region', { name: 'Up next' })).findAllByRole('listitem')).map(
+    (i) => i.textContent.replace(/\s/g, ' ')
+  );
 
 describe('home', () => {
   it('greets guests generally and members by name', async () => {
@@ -144,5 +166,61 @@ describe('home', () => {
       'href',
       '/chat'
     );
+  });
+});
+
+describe('home: site calls', () => {
+  it("Up next merges the site's planned call with the bot's events in time order", async () => {
+    const planned = call(7, 'Town hall', 'scheduled', { scheduledFor: '2026-10-22T18:30:00Z' });
+    home({
+      bot: {
+        connected: true,
+        occurrences: [occurrence(3, '2026-10-22T09:00:00Z'), occurrence(4, '2026-10-23T09:00:00Z')],
+      },
+      calls: configured({ upcoming: [planned] }),
+    });
+    expect(await upNextItems()).toEqual([
+      'Event 3Thursday 22 October, 09:00 UTC',
+      'Town hallThursday 22 October, 18:30 UTC',
+    ]);
+    const card = screen.getByRole('region', { name: 'Up next' });
+    const link = within(card).getByRole('link', { name: 'Town hall' });
+    expect(link).toHaveAttribute('href', '/calls/7');
+    expect(link).toHaveAttribute('title', 'Town hall'); // the whole title, however it is cut
+    // The calls quarter is the call's picture.
+    const picture = within(card).getAllByRole('listitem')[1].querySelector('img');
+    expect(picture).toHaveAttribute('src', '/brand/quarter-calls.webp');
+  });
+
+  it("a guest sees just the live and planned calls of the Calls page's answer", async () => {
+    const sent = home({
+      bot: { connected: true, occurrences: [occurrence(3, '2026-10-24T09:00:00Z')] },
+      calls: configured({
+        live: [call(1, 'On air', 'live', { startedAt: '2026-10-21T12:00:00Z' })],
+        upcoming: [call(2, 'No time yet', 'scheduled')],
+        recent: [call(3, 'Ended call', 'ended', { endedAt: '2026-10-21T11:00:00Z' })],
+      }),
+    });
+    expect(await upNextItems()).toEqual([
+      'On airLive now',
+      'Event 3Saturday 24 October, 09:00 UTC',
+    ]);
+    // From the Calls page's own request, as a guest: no second way to the calls.
+    expect(sent.map((c) => c.key).filter((k) => k.includes('calls'))).toEqual(['GET /calls']);
+    expect(screen.queryByText('Ended call')).toBeNull();
+  });
+
+  it("calls not set up: Up next shows the bot's events only, and no Next call box", async () => {
+    home({ bot: { connected: true, occurrences: [occurrence(3, '2026-10-22T09:00:00Z')] } });
+    expect(await upNextItems()).toEqual(['Event 3Thursday 22 October, 09:00 UTC']);
+    expect(screen.queryByRole('region', { name: 'Next call' })).toBeNull();
+  });
+
+  it('the Next call box only with a live or planned call', async () => {
+    home({ calls: configured({ recent: [call(3, 'Ended call', 'ended')] }) });
+    await screen.findByText('No events in the next seven days.');
+    expect(screen.queryByRole('region', { name: 'Next call' })).toBeNull();
+    home({ calls: configured({ upcoming: [call(2, 'Q&A', 'scheduled')] }) });
+    expect(await screen.findByRole('region', { name: 'Next call' })).toHaveTextContent('Q&A');
   });
 });

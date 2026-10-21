@@ -5,9 +5,10 @@
 // Description: The home page's "Next call" box (docs/DESIGN.md, "Home"), with the play-button
 //              quarter: from the same GET /api/calls answer as the Calls page — a live call
 //              first ("Live now" and "Listen", guests too), else the next planned one (its title
-//              wrapped, never cut — clamped only after 3 lines, the full title as the link's name
+//              wrapped, never cut — clamped only after 2 lines, the full title as the link's name
 //              and tooltip; local date and time; "Add to calendar" and the member's reminder:
-//              CallActions.jsx), else one friendly line and the way to the Calls page.
+//              CallActions.jsx). With neither the box is not shown, and the fair-price box takes
+//              its column (homeBottomRow.css).
 // ============================================================
 
 import { Link } from 'react-router';
@@ -17,11 +18,13 @@ import CallActions from '../calls/CallActions.jsx';
 import { Wash } from './homeCards.jsx';
 
 // calls: the /api/calls answer ({ configured, calls, reminders }), or null while loading or
-// failed. Nothing at all while calls are not set up. timeZone: the viewer's (LandingPage).
+// failed. Nothing at all while calls are not set up or none is live or planned. timeZone: the
+// viewer's (LandingPage).
 export default function NextCallCard({ calls, timeZone }) {
   if (!calls?.configured) return null;
   const live = calls.calls.live[0];
   const next = calls.calls.upcoming[0];
+  if (!live && !next) return null;
   return (
     <section className="card home__card home__next-call" aria-label="Next call">
       <Wash src={QUARTERS.calls} />
@@ -40,10 +43,10 @@ export default function NextCallCard({ calls, timeZone }) {
           </p>
         </>
       )}
-      {!live && next && (
+      {!live && (
         <>
           <h2 className="home__call-title">
-            {/* Wraps, clamped after 3 lines: the full title is the link's name and tooltip. */}
+            {/* Wraps, clamped after 2 lines: the full title is the link's name and tooltip. */}
             <Link to={`/calls/${next.id}`} aria-label={next.title} title={next.title}>
               {next.title}
             </Link>
@@ -54,14 +57,6 @@ export default function NextCallCard({ calls, timeZone }) {
               : 'The time is not set yet.'}
           </p>
           <CallActions call={next} reminded={calls.reminders?.includes(next.id)} compact />
-        </>
-      )}
-      {!live && !next && (
-        <>
-          <p className="home__text">No call is planned yet. Organisers announce them here.</p>
-          <p>
-            <Link to="/calls">All calls</Link>
-          </p>
         </>
       )}
     </section>

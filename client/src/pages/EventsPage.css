@@ -3,7 +3,8 @@
    Path:        client/src/pages/EventsPage.css
    Project:     Seasonal Entertainment
    Description: The events week: navigation row, one card per day, time column, a bar in a
-                season colour (in turn) + details (+ the event's image when the server has one).
+                season colour (in turn) + details (+ the event's image when the server has one;
+                a site call's lines kept together beside the calls quarter).
    ============================================================ */
 
 .week-nav {
@@ -86,12 +87,19 @@
   color: var(--color-text-muted);
 }
 
-/* The event's own link: on a line of its own, a full 44px target. */
-.event__body a {
+/* The event's own link: on a line of its own, a full 44px target. Only the bot's link there,
+   not a site call's title link inside its heading line (CallEventItem.jsx). */
+.event__body > a {
   display: inline-flex;
   align-items: center;
   justify-self: start;
   min-height: var(--hit-target);
+}
+
+/* A site call (CallEventItem.jsx): its two lines stay together at the top, even beside the
+   taller calls quarter (a grid would spread them over the picture's height). */
+.event--call .event__body {
+  align-content: start;
 }
 
 /* An event bot occurrence that was canceled: struck through, its status in words. */

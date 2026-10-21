@@ -179,9 +179,10 @@ call stage, 404).
 
 **Home** (`LandingPage.jsx`, `homeCards.jsx`; reference `StyleBlocks2.dc.html`). Real data only.
 **From 1000px wide, home fits the window without scrolling from 1280 x 720 on** (owner decision
-2026-10-17, confirmed 2026-10-21), also at its fullest: a planned call with a long title, a
-member's two call buttons, 3 Community messages. **No box is ever cut**, and **nothing a box
-shows lies under the floating chat button**. `client/e2e/layout.spec.js` checks all three at
+2026-10-17, confirmed 2026-10-21), also at its fullest: a planned call with a long title (in
+"Up next" and in Next call), a member's two call buttons, 3 Community messages; and with no
+call (no Next call box). **No box is ever cut**, and **nothing a box shows lies under the
+floating chat button**. `client/e2e/layout.spec.js` checks all three, in both cases, at
 1280 x 720, 1440 x 900 and 1920 x 1080. Below 1000px the page stacks and scrolls.
 
 To make room (2026-10-21), in this order:
@@ -195,6 +196,9 @@ To make room (2026-10-21), in this order:
   two need 289px where the box has 190px at 1280 x 720;
 - **d)** the Next call title clamped at 2 lines.
 
+A site call's title in "Up next" stays on one line, the rest an ellipsis (the whole title its
+link's text and tooltip; 2026-10-21): wrapped, the long title cut "Up next" at 1280 x 720.
+
 With all four, the top row gets a little more of the height than the bottom one (rows 1.05 :
 0.8 : 1.15) for "Up next"'s two pictured events.
 
@@ -206,8 +210,11 @@ the button's size (`--chat-launcher-size`, also used by `ChatDrawer.css`) plus a
    lettering, "ENTERTAINMENT" in white, and the greeting as the page's `h1` (with the username
    when signed in). Its height follows the window (120–190px).
 2. **Featured game** (the first game of the games data; a "Coming soon" badge only when its
-   status says so) and **Up next** (the event bot's next two occurrences; a dot in the season
-   colours in turn, or the event's own image) side by side.
+   status says so) and **Up next** side by side. Up next (2026-10-21): the next two of the
+   event bot's occurrences and the site's live and planned calls together, by start time
+   (docs/CALLS.md, "In the event lists"). A bot event shows a dot in the season colours in turn,
+   or its own image; a call shows the calls quarter, its title linking to its page, and its
+   date, or "Live now".
 3. The **four season price tiles in one row**: each in its solid token colour with dark text,
    the name, the price large, the 24-hour change; the season mark 48px in a white 62px circle at
    the bottom right. With prices each tile opens its coin's chart (`/info/prices?coins=<id>`).
@@ -218,9 +225,9 @@ the button's size (`--chat-launcher-size`, also used by `ChatDrawer.css`) plus a
    - **Next call** (one column; `NextCallCard.jsx`): a live call ("Live now", Listen), else the
      next planned one (title wrapped, never cut with an ellipsis before 2 lines, then clamped,
      the full title the link's name and tooltip; its date in the site's one format; "Add to
-     calendar", and "Remind me" for members, as icon buttons), else a friendly line and "All
-     calls". Not shown while calls are not set
-     up; then Fair price takes its column.
+     calendar", and "Remind me" for members, as icon buttons). **Only when a call is live or
+     planned** (2026-10-21): with none, or while calls are not set up, the box is not shown and
+     Fair price takes its column.
    - **Fair price & charts** (one column; to `/info/prices`; without the price bot a plain note
      and the link to the info section): the four marks in one row, the arrow beside the
      title's last word.

@@ -9,7 +9,7 @@
 //              24 hours old. Next call: a live call with "Listen", else the next planned one with
 //              its time and "Add to calendar" (plus "Remind me" for members only; a long title
 //              complete as the link's text, name and tooltip; the zone kept with its time), else
-//              a friendly line.
+//              no box at all.
 // ============================================================
 
 import { act, render, screen, within } from '@testing-library/react';
@@ -164,10 +164,9 @@ describe('Next call box', () => {
     expect(date.textContent).toContain(`20:30${String.fromCharCode(0xa0)}CEST`);
   });
 
-  it('nothing planned: one friendly line and the way to the Calls page', () => {
+  it('nothing live or planned: no box at all (only ended calls)', () => {
     mockApi(GUEST);
-    inRouter(<NextCallCard calls={answer({})} />);
-    expect(screen.getByText(/No call is planned yet/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'All calls' })).toHaveAttribute('href', '/calls');
+    inRouter(<NextCallCard calls={answer({ recent: [call(3, 'Ended call', 'ended')] })} />);
+    expect(screen.queryByRole('region', { name: 'Next call' })).toBeNull();
   });
 });
