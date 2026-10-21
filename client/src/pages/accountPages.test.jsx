@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: Guards the Register, Login and Account pages: client-side rules (age
 //              checkbox), server errors shown, redirects (including no open redirect), the
-//              guard on /account and the password change. No password ever leaves the
+//              guard on /account and the password change. The login card shows the logo (the full
+//              logo for light mode, the emblem for dark), but not in the chat's login popup. No password ever leaves the
 //              browser: requests carry salts and auth keys only (docs/AUTH.md).
 // ============================================================
 
@@ -132,6 +133,20 @@ describe('Login page', () => {
     ...GUEST,
     ...PRELOGIN,
     'POST /auth/login': { status, body },
+  });
+
+  it("shows the logo on the card, but not in the chat's login popup", async () => {
+    mockApi(login(401, {}));
+    const { unmount } = renderAt('/login');
+    const form = (await screen.findByRole('button', { name: 'Log in' })).closest('form');
+    expect([...form.querySelectorAll('.form-logo')].map((img) => img.getAttribute('src'))).toEqual([
+      '/brand/logo.webp',
+      '/brand/emblem.webp',
+    ]);
+    unmount();
+    renderAt('/login?next=%2Fembed-login%3Forigin%3Dhttps%253A%252F%252Fgame.example');
+    const popup = (await screen.findByRole('button', { name: 'Log in' })).closest('form');
+    expect(popup.querySelector('.form-logo')).toBeNull();
   });
 
   it('shows the error for wrong credentials', async () => {

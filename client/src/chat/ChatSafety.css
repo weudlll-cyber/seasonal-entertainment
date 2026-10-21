@@ -1,0 +1,51 @@
+/* ============================================================
+   File:        ChatSafety.css
+   Path:        client/src/chat/ChatSafety.css
+   Project:     Seasonal Entertainment
+   Description: Safety numbers in a direct conversation (docs/CHAT.md): the "Verified" badge
+                and the "…" menu in the header, the key-change notice, and the number's 12
+                groups in the dialog (SafetyNumberDialog.jsx). Under the .se-chat root like
+                every module style.
+   ============================================================ */
+
+.se-chat .chat-safety__badge {
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--chat-success);
+  border-radius: 999px;
+  color: var(--chat-success);
+  font-size: 0.75rem;
+  font-weight: var(--chat-strong);
+}
+
+/* The header's "…" sits at its far end. */
+.se-chat .chat-direct__header .chat-menu {
+  margin-left: auto;
+}
+
+.se-chat .chat-safety__notice {
+  margin: 0;
+  padding: var(--chat-space-1);
+  border-left: 4px solid var(--chat-danger);
+  font-weight: var(--chat-strong);
+}
+
+/* Three groups per row, figures of one width, so the columns line up for comparing. */
+.se-chat .chat-safety__number {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: start;
+  gap: 0.25rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--chat-strong);
+  letter-spacing: 0.08em;
+}
+
+.se-chat .chat-safety__done {
+  margin: 0;
+  color: var(--chat-success);
+  font-weight: var(--chat-strong);
+}

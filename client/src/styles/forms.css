@@ -13,7 +13,19 @@
   padding: var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  background: var(--color-surface);
+  background: var(--color-card);
+}
+
+/* The logo on the login and registration cards (FormLogo.jsx): one per theme. */
+.form-logo {
+  justify-self: center;
+  width: 160px;
+  height: auto;
+}
+
+:root[data-theme='dark'] .form-logo--light,
+:root:not([data-theme='dark']) .form-logo--dark {
+  display: none;
 }
 
 .form-field,
@@ -53,28 +65,59 @@
   color: var(--color-text);
 }
 
+/* A checkbox with its text: the whole label is the 44px target (the box alone is small). */
 .form-check {
   display: flex;
   gap: var(--space-1);
-  align-items: flex-start;
+  align-items: center;
+  min-height: var(--hit-target);
 }
 
+.form-check input,
+.table-check input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+}
+
+/* A checkbox in a table row (no visible text): its label is an empty 44px square around it. */
+.table-check {
+  display: inline-grid;
+  place-items: center;
+  min-width: var(--hit-target);
+  min-height: var(--hit-target);
+  cursor: pointer;
+}
+
+/* Fields inside a table (the admin lists' role choice) keep the full target height too. */
+.table select {
+  min-height: var(--hit-target);
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+/* The primary button: a solid pill (dark on light, light on dark). */
 .button {
   min-height: var(--hit-target);
   font: inherit;
   font-weight: var(--font-weight-strong);
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-text);
-  border-radius: var(--radius);
-  background: var(--color-text);
-  color: var(--color-background);
+  padding: var(--space-1) 1.25rem;
+  border: 1px solid var(--color-solid);
+  border-radius: var(--radius-pill);
+  background: var(--color-solid);
+  color: var(--color-on-solid);
   cursor: pointer;
   justify-self: start;
 }
 
-/* An outlined button for secondary actions next to a main one. */
+/* A light pill for secondary actions next to a main one. */
 .button--secondary {
-  background: transparent;
+  border-color: var(--color-border);
+  background: var(--color-glass);
   color: var(--color-text);
 }
 
@@ -99,8 +142,7 @@
   color: var(--color-success);
 }
 
-/* A button that looks like a link (secondary choices inside a form). */
-/* A square button holding one icon (theme toggle, menu, close): a full hit target. */
+/* A round button holding one icon (theme toggle, menu, close): a full hit target. */
 .icon-button {
   display: inline-grid;
   place-items: center;
@@ -108,12 +150,13 @@
   height: var(--hit-target);
   padding: 0;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+  background: var(--color-glass);
   color: var(--color-text);
   cursor: pointer;
 }
 
+/* A button that looks like a link (secondary choices inside a form). */
 .link-button {
   font: inherit;
   padding: 0;

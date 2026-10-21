@@ -6,12 +6,14 @@
 //              message list scrolls and the composer stays at the bottom. Members also get the
 //              Direct section (private messages, end to end encrypted) as a second tab; "Send
 //              private message" in a name menu switches to it. Everything chat lives in the
-//              chat module (client/src/chat, docs/CHAT.md).
+//              chat module (client/src/chat, docs/CHAT.md). SE style: the Chat header with the
+//              circle-of-people quarter.
 // ============================================================
 
 import { useEffect, useState } from 'react';
 import ChatTabs from '../app/ChatTabs.jsx';
 import DirectTab from '../app/DirectTab.jsx';
+import PageHeader from '../brand/PageHeader.jsx';
 import { ChatPanel, onDirectRequest, useUnread } from '../chat/index.js';
 import { useSession } from '../session/SessionContext.jsx';
 
@@ -24,7 +26,11 @@ export default function ChatPage() {
   const shown = user ? tab : 'rooms';
   return (
     <section className="chat-page">
-      <h1 className="chat-page__title">Chat</h1>
+      <PageHeader
+        quarter="chat"
+        title="Chat"
+        lead="Talk with the community: rooms and private messages."
+      />
       {user && (
         <ChatTabs
           value={shown}

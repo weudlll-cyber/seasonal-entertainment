@@ -6,7 +6,7 @@
 //              lines of points [x, y] in data units scaled into one box on shared scales (y grows
 //              downwards in SVG, so higher values sit higher), the path through a line, broken
 //              where the data has a gap, and the point nearest a position. Used by the
-//              sparkline and the chart alike.
+//              chart of /info/prices.
 // ============================================================
 
 // box: { width, height, pad } in SVG units. lines: [[x, y], ...] each. Returns per line its
@@ -32,12 +32,6 @@ export function scaleSeries(lines, { width, height, pad = 0 }) {
     sy,
     xAt,
   };
-}
-
-// One line on its own scales (the sparkline): { coords, minY, maxY }.
-export function scalePoints(points, box) {
-  const { lines, minY, maxY } = scaleSeries([points], box);
-  return { coords: lines[0], minY, maxY };
 }
 
 // The path through the coordinates; `breaks` (indexes) start a new piece, leaving a gap.

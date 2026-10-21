@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: Guards the app shell: the sidebar's main navigation (with the current page
 //              marked), legal links, the account card for guests and members, the Admin item
-//              for admins only, the home page on "/" and the 404 page, both inside the shell.
+//              for admins only, the season dots of Games, Events and Chat (their logo quarters'
+//              colours), the home page on "/" and the 404 page, both inside the shell.
 // ============================================================
 
 import { render, screen, within } from '@testing-library/react';
@@ -55,6 +56,17 @@ describe('app shell', () => {
       'page'
     );
     expect(within(nav).getByRole('link', { name: 'Home' })).not.toHaveAttribute('aria-current');
+  });
+
+  it("Games, Events and Chat end in their logo quarter's season dot; Home has none", () => {
+    renderAt('/');
+    const nav = screen.getByRole('navigation', { name: 'Main' });
+    const dotOf = (name) =>
+      within(nav).getByRole('link', { name }).querySelector('.nav-item__dot')?.className;
+    expect(['Games', 'Events', 'Chat'].map(dotOf)).toEqual(
+      ['spring', 'summer', 'autumn'].map((s) => `nav-item__dot nav-item__dot--${s}`)
+    );
+    expect(dotOf('Home')).toBeUndefined();
   });
 
   it('shows Imprint and Privacy', () => {

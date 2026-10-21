@@ -11,12 +11,14 @@
 //              24 hours, 7 days, 30 days, a year or everything; then the fair price and the
 //              converter with mining times, as the price bot's /value and /swap
 //              (FairPriceTable.jsx, Converter.jsx; docs/BOTS.md). A source that is not
-//              connected says so plainly. timeZone is a prop so tests can pin it.
+//              connected says so plainly. timeZone is a prop so tests can pin it. SE style: the
+//              title on a small night-blue banner with the season pattern and the four marks.
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { api } from '../api/http.js';
+import { SEASON_ICONS } from '../brand/brand.js';
 import { FormMessage } from '../components/FormField.jsx';
 import { ALL_COINS, parseCoins, shownCoins, toggleAll, toggleCoin } from './coinSelection.js';
 import Converter from './Converter.jsx';
@@ -24,6 +26,7 @@ import FairPriceTable from './FairPriceTable.jsx';
 import PriceChart from './PriceChart.jsx';
 import { RANGES, RANGE_LABELS, REFERENCE, TOKENS } from './priceFormat.js';
 import TokenPicker from './TokenPicker.jsx';
+import '../brand/seasonPattern.css';
 import './prices.css';
 
 const deviceZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -103,7 +106,14 @@ export default function PricesPage({ timeZone = deviceZone() }) {
       <p>
         <Link to="/info">Seasonal Tokens</Link>
       </p>
-      <h1>Prices</h1>
+      <div className="prices__banner season-pattern">
+        <span className="prices__marks" aria-hidden="true">
+          {TOKENS.map(({ id }) => (
+            <img key={id} src={SEASON_ICONS[id]} alt="" width="40" height="40" />
+          ))}
+        </span>
+        <h1>Prices</h1>
+      </div>
       <FormMessage error={error} />
       <p>
         In US dollars, one price per hour. Times are in your time zone (<strong>{timeZone}</strong>
@@ -111,7 +121,9 @@ export default function PricesPage({ timeZone = deviceZone() }) {
       </p>
       <div role="group" aria-label="Coins">
         <h2 className="prices__row-title">Seasons</h2>
-        {seasons?.connected ? (
+        {/* While loading (null) the buttons stand empty and disabled, keeping their room, so
+            nothing below jumps when the prices arrive (docs/DESIGN.md, "Speed"). */}
+        {seasons === null || seasons.connected ? (
           <TokenPicker
             label="Seasons"
             tokens={TOKENS}
@@ -120,14 +132,12 @@ export default function PricesPage({ timeZone = deviceZone() }) {
             onToggle={onToggle}
           />
         ) : (
-          seasons && (
-            <p role="status">
-              The price data source is not connected, so there are no prices to show.
-            </p>
-          )
+          <p role="status">
+            The price data source is not connected, so there are no prices to show.
+          </p>
         )}
         <h2 className="prices__row-title">Reference</h2>
-        {reference?.connected ? (
+        {reference === null || reference.connected ? (
           <>
             <TokenPicker
               label="Reference"
@@ -137,7 +147,7 @@ export default function PricesPage({ timeZone = deviceZone() }) {
               onToggle={onToggle}
             />
             {/* CoinGecko's attribution, required for its data, next to that data. */}
-            <p className="prices__note">
+            <p className="prices__note" hidden={!reference}>
               ETH, POL and BTC:{' '}
               <a href="https://www.coingecko.com/en/api/" target="_blank" rel="noopener noreferrer">
                 Powered by CoinGecko API
@@ -145,7 +155,7 @@ export default function PricesPage({ timeZone = deviceZone() }) {
             </p>
           </>
         ) : (
-          reference && <p role="status">ETH, POL and BTC are not connected.</p>
+          <p role="status">ETH, POL and BTC are not connected.</p>
         )}
         {available.length > 1 && (
           <button

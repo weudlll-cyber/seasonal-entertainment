@@ -6,3 +6,5 @@ playwright-report/
 package-lock.json
 LICENSE
 *.svg
+# The owner's design reference (docs/design/se-style/): kept exactly as approved.
+docs/design/

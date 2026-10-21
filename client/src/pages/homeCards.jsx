@@ -2,60 +2,50 @@
 // File:        homeCards.jsx
 // Path:        client/src/pages/homeCards.jsx
 // Project:     Seasonal Entertainment
-// Description: The three cards of the home page's bento grid, all from real data: the
-//              featured game (the first game of the games list), the event bot's next two
-//              occurrences, and
-//              Seasonal Tokens: each season's price, 24-hour change and a sparkline from the
-//              price bot (docs/BOTS.md), or the four season marks while there are no prices;
-//              linking to the price charts and the info section.
+// Description: The boxes of the home page in the SE style (docs/DESIGN.md, "Home"), all from
+//              real data: the featured game (the first game of the games list), the event bot's
+//              next two occurrences, the four season price tiles (price bot, docs/BOTS.md), the
+//              Community box and the link to the fair prices and charts. Each box but the tiles
+//              carries a faint part of the logo (a quarter, or the emblem).
 // ============================================================
 
 import { Link } from 'react-router';
 import { formatDay, formatLocal } from '@seasonal-entertainment/shared/localWeek.js';
 import { GAME_STATUS_LABELS } from '@seasonal-entertainment/shared/gameRules.js';
-import springMark from '../assets/seasons/spring.svg';
-import summerMark from '../assets/seasons/summer.svg';
-import autumnMark from '../assets/seasons/autumn.svg';
-import winterMark from '../assets/seasons/winter.svg';
-import { GAME_IMAGE_FILES } from '../games/gameImages.js';
-import { changeClass, formatChange, formatUsd } from '../prices/priceFormat.js';
-import Sparkline from '../prices/Sparkline.jsx';
-import '../prices/prices.css';
+import { EMBLEM, QUARTERS, SEASON_ICONS } from '../brand/brand.js';
+import { formatChange, formatUsd, TOKENS } from '../prices/priceFormat.js';
+import './priceTiles.css';
 
-// Calendar order; `id` picks the season colour token in LandingPage.css.
-const SEASONS = [
-  { id: 'spring', name: 'Spring', mark: springMark },
-  { id: 'summer', name: 'Summer', mark: summerMark },
-  { id: 'autumn', name: 'Autumn', mark: autumnMark },
-  { id: 'winter', name: 'Winter', mark: winterMark },
-];
+// A box's faint logo part: decoration behind its content; lazy, as on a phone most boxes start
+// below the fold.
+const Wash = ({ src }) => (
+  <img className="home__wash" src={src} alt="" aria-hidden="true" loading="lazy" />
+);
 
 export function FeaturedGameCard({ game }) {
   return (
     <section className="card home__card home__game" aria-label="Featured game">
+      <Wash src={QUARTERS.games} />
       <p className="home__eyebrow">Featured game</p>
       {game && (
         <>
-          <img
-            className="home__game-image"
-            src={GAME_IMAGE_FILES[game.image]}
-            alt=""
-            width="160"
-            height="160"
-          />
-          <h2>{game.name}</h2>
           {/* A badge only when the data says so. */}
           {game.status === 'coming_soon' && (
             <span className="home__badge">{GAME_STATUS_LABELS.coming_soon}</span>
           )}
+          <h2 className="home__game-name">{game.name}</h2>
           <p className="home__text">{game.description}</p>
-          {game.status === 'available' ? (
-            <Link className="button" to={game.path}>
-              Play {game.name}
-            </Link>
-          ) : (
-            <Link to="/games">All games</Link>
-          )}
+          <p className="home__actions">
+            {game.status === 'available' ? (
+              <Link className="button" to={game.path}>
+                Play {game.name}
+              </Link>
+            ) : (
+              <Link className="button" to="/games">
+                All games
+              </Link>
+            )}
+          </p>
         </>
       )}
       {game === null && <p className="home__text">No games yet.</p>}
@@ -66,8 +56,12 @@ export function FeaturedGameCard({ game }) {
 // next: { connected, next: the bot's occurrences } or { failed }; null while loading.
 export function UpNextCard({ next, timeZone }) {
   return (
-    <section className="card home__card" aria-label="Up next">
-      <p className="home__eyebrow">Up next</p>
+    <section className="card home__card home__upnext" aria-label="Up next">
+      <Wash src={QUARTERS.events} />
+      <div className="home__card-head">
+        <h2>Up next</h2>
+        <Link to="/events">All events</Link>
+      </div>
       {next?.connected === false && (
         <p className="home__text">The event calendar is not connected.</p>
       )}
@@ -79,8 +73,13 @@ export function UpNextCard({ next, timeZone }) {
         {next?.next?.map(({ id, name, start, image }) => {
           const local = formatLocal(start, timeZone);
           return (
-            <li key={`${id}-${start}`} className={image ? 'home__event--image' : undefined}>
-              {image && <img className="home__event-image" src={image} alt={name} />}
+            <li key={`${id}-${start}`}>
+              {/* The event's own image when it has one, else a dot in a season colour. */}
+              {image ? (
+                <img className="home__event-image" src={image} alt={name} loading="lazy" />
+              ) : (
+                <span className="home__event-dot" aria-hidden="true" />
+              )}
               <strong>{name}</strong>
               <span className="home__text">
                 {formatDay(start, timeZone)}, {local.time} {local.zone}
@@ -89,52 +88,93 @@ export function UpNextCard({ next, timeZone }) {
           );
         })}
       </ul>
-      <Link to="/events">All events</Link>
     </section>
   );
 }
 
 // prices: the /api/prices answer ({ connected, prices }), or null while loading or failed.
-export function TokensCard({ prices }) {
+// One tile per season in its token colour; with prices each opens that coin's chart.
+export function PriceTiles({ prices }) {
   const byToken = Object.fromEntries((prices?.prices ?? []).map((p) => [p.token, p]));
   return (
-    <section className="card home__card" aria-label="Seasonal Tokens">
-      <p className="home__eyebrow">Seasonal Tokens</p>
-      {prices?.connected ? (
-        <ul className="price-rows" aria-label="Prices in US dollars">
-          {SEASONS.map((season) => {
-            const price = byToken[season.id];
-            return (
-              <li key={season.id} className="price-row">
-                <img src={season.mark} alt="" width="28" height="28" />
-                <strong>{season.name}</strong>
-                <span className="price-row__price">
-                  {formatUsd(price?.price)}{' '}
-                  <span className={changeClass(price?.change24h)}>
-                    {formatChange(price?.change24h)}
-                  </span>
-                </span>
-                <Sparkline values={price?.spark} token={season.id} />
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <ul className="landing__seasons" aria-label="The four seasons">
-          {SEASONS.map((season) => (
-            <li key={season.id} className={`landing__season landing__season--${season.id}`}>
-              <img src={season.mark} alt={`${season.name} season mark`} width="96" height="96" />
+    <section className="home__tiles" aria-label="Seasonal Tokens">
+      <ul className="price-tiles" aria-label="Prices in US dollars">
+        {TOKENS.map(({ id, name }) => {
+          const price = byToken[id];
+          const content = (
+            <>
+              <span className="price-tile__name">{name}</span>
+              <span className="price-tile__price">{formatUsd(price?.price)}</span>
+              <span className="price-tile__change">{formatChange(price?.change24h)} · 24 h</span>
+              <span className="price-tile__mark">
+                <img src={SEASON_ICONS[id]} alt="" width="48" height="48" />
+              </span>
+            </>
+          );
+          return (
+            <li key={id} className={`price-tile price-tile--${id}`}>
+              {prices?.connected ? (
+                <Link className="price-tile__body" to={`/info/prices?coins=${id}`}>
+                  {content}
+                </Link>
+              ) : (
+                <div className="price-tile__body">{content}</div>
+              )}
             </li>
-          ))}
-        </ul>
-      )}
-      {prices && !prices.connected && (
-        <p className="home__text">Prices: the data source is not connected.</p>
-      )}
-      <p className="home__links">
-        {prices?.connected && <Link to="/info/prices">Price charts</Link>}
-        <Link to="/info">About Seasonal Tokens</Link>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+export function CommunityCard() {
+  return (
+    <section className="home__card home__community" aria-label="Community">
+      <Wash src={QUARTERS.chat} />
+      <h2>Community</h2>
+      <p>Talk with the Seasonal Tokens community: rooms, private messages and live calls.</p>
+      <p className="home__actions">
+        <Link className="button home__on-navy" to="/chat">
+          Open the chat
+        </Link>
       </p>
     </section>
+  );
+}
+
+// The way to the prices page (fair price, charts, converter); a plain note without prices.
+export function FairPriceCard({ prices }) {
+  const icons = (
+    <span className="home__icons" aria-hidden="true">
+      {TOKENS.map(({ id }) => (
+        <img key={id} src={SEASON_ICONS[id]} alt="" width="30" height="30" />
+      ))}
+    </span>
+  );
+  if (!prices?.connected) {
+    return (
+      <section className="card home__card home__fair" aria-label="Prices">
+        <Wash src={EMBLEM} />
+        {icons}
+        <p className="home__text">
+          {/* null: still loading, or the request failed; then only the link. */}
+          {prices && 'Prices: the data source is not connected. '}
+          <Link to="/info">About Seasonal Tokens</Link>
+        </p>
+      </section>
+    );
+  }
+  return (
+    <Link className="card home__card home__fair" to="/info/prices">
+      <Wash src={EMBLEM} />
+      {icons}
+      <span className="home__fair-text">
+        <strong className="home__fair-title">
+          Fair price &amp; charts <span aria-hidden="true">→</span>
+        </strong>
+        <span className="home__text">Fair prices, charts and a converter for every coin.</span>
+      </span>
+    </Link>
   );
 }

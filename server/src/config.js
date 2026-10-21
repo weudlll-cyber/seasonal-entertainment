@@ -142,6 +142,9 @@ export function readConfig(env = process.env) {
     backgroundJobs: true,
     rateLimits: {
       login: { windowMs: 15 * 60_000, max: 10 }, // failed attempts per IP
+      // Salt requests per IP, all counted: they never fail, so the login limits above alone
+      // would never stop them (a login takes one).
+      prelogin: { windowMs: 15 * 60_000, max: 60 },
       loginAccount: { windowMs: 15 * 60_000, max: 10 }, // failed attempts per username
       register: { windowMs: 60 * 60_000, max: 5 }, // registrations per IP
       passwordChange: { windowMs: 15 * 60_000, max: 5 }, // failed attempts per user
@@ -158,6 +161,9 @@ export function readConfig(env = process.env) {
       callAction: { windowMs: 60_000, max: 60 }, // hands, stage, mute, spotlight per account
       embedToken: { windowMs: 60 * 60_000, max: 30 }, // embed tokens per member (login popup)
       botRead: { windowMs: 60_000, max: 120 }, // price and bot-event reads per IP
+      // Every GET under /api per IP (the public reads had none of their own): far above what
+      // pages ask for (a page load makes a handful), so only a flood meets it.
+      apiRead: { windowMs: 60_000, max: 1200 },
     },
   };
   if (isProduction) checkProduction(env, config);

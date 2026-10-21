@@ -6,7 +6,9 @@
 //              deterministic per password and salt and gives two different keys; seals open
 //              only with their key and never repeat a nonce; recovery codes have their grouped
 //              format and are typed back in any case; direct messages open for both sides and
-//              for nobody else.
+//              for nobody else; the safety number is the same on both sides, has 12 groups of
+//              5 digits and changes when either key changes; a public key follows from its
+//              private key.
 // ============================================================
 
 import sodiumModule from 'libsodium-wrappers-sumo';
@@ -21,6 +23,8 @@ import {
   newSalt,
   normaliseRecoveryCode,
   openSealed,
+  publicKeyOf,
+  safetyNumber,
   sealBytes,
 } from './crypto.js';
 import { base64Length, boundedBase64, exactBytes } from './cryptoFormat.js';
@@ -107,6 +111,29 @@ describe('direct messages', () => {
     expect(await decryptDirect(sent, anna.publicKey, eve.privateKey)).toBeNull();
     const again = await encryptDirect(payload, ben.publicKey, anna.privateKey);
     expect(again.nonce).not.toBe(sent.nonce);
+  });
+});
+
+describe('safety numbers', () => {
+  it('are the same on both sides: 12 groups of 5 digits', async () => {
+    const [anna, ben] = [await newKeyPair(), await newKeyPair()];
+    const annaSees = await safetyNumber(anna.publicKey, ben.publicKey);
+    const benSees = await safetyNumber(ben.publicKey, anna.publicKey);
+    expect(annaSees).toEqual(benSees);
+    expect(annaSees).toHaveLength(12);
+    for (const group of annaSees) expect(group).toMatch(/^\d{5}$/);
+  });
+
+  it("change when either member's key changes", async () => {
+    const [anna, ben, annaNew, benNew] = await Promise.all([1, 2, 3, 4].map(() => newKeyPair()));
+    const before = await safetyNumber(anna.publicKey, ben.publicKey);
+    expect(await safetyNumber(annaNew.publicKey, ben.publicKey)).not.toEqual(before);
+    expect(await safetyNumber(anna.publicKey, benNew.publicKey)).not.toEqual(before);
+  });
+
+  it('use the public key that belongs to the private key', async () => {
+    const anna = await newKeyPair();
+    expect(await publicKeyOf(anna.privateKey)).toBe(anna.publicKey);
   });
 });
 

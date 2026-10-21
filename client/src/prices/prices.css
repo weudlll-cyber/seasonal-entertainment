@@ -2,14 +2,14 @@
    File:        prices.css
    Path:        client/src/prices/prices.css
    Project:     Seasonal Entertainment
-   Description: Prices (docs/BOTS.md): the home card's rows with their sparklines, the coin
+   Description: Prices (docs/BOTS.md): the page's banner, the coin colours, the coin
                 buttons and range buttons of /info/prices, the hand-built SVG chart (one line per
                 coin, the 0 % line, hover marks, legend), the fair price table and the
                 converter. Only design tokens: each coin's colour comes from tokens.css, so light
                 and dark themes follow the site's own.
    ============================================================ */
 
-/* Each coin's colour, wherever it appears (sparkline, button edge, line, mark, legend): the
+/* Each coin's colour, wherever it appears (button edge, line, mark, legend): the
    seasons their season tokens, the reference coins their own (tokens.css, light and dark). */
 .coin--spring {
   --coin: var(--color-spring);
@@ -39,38 +39,11 @@
   --coin: var(--color-coin-btc);
 }
 
-.sparkline path,
 .price-chart__line {
   fill: none;
   stroke: var(--coin);
   stroke-width: 2;
   stroke-linejoin: round;
-}
-
-/* The home card: one row per token. */
-.price-rows {
-  display: grid;
-  gap: 0.25rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.price-row {
-  display: grid;
-  grid-template-columns: 1.75rem minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.price-row img {
-  width: 1.75rem;
-  height: 1.75rem;
-}
-
-.price-row__price {
-  font-variant-numeric: tabular-nums;
-  text-align: right;
 }
 
 .price-change {
@@ -86,7 +59,36 @@
   color: var(--color-danger);
 }
 
-/* /info/prices */
+/* /info/prices: the title on a small banner (seasonPattern.css) with the four marks. */
+.prices__banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  margin-bottom: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+}
+
+.prices__banner h1 {
+  margin: 0;
+  font-size: var(--font-size-title);
+}
+
+/* Each mark on a white disc, as on the home tiles. */
+.prices__marks {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.prices__marks img {
+  width: 52px;
+  height: 52px;
+  padding: 6px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 88%);
+}
+
 .prices__tokens,
 .prices__ranges {
   display: flex;
@@ -284,7 +286,7 @@
 
 .converter input,
 .converter select {
-  min-height: 2.5rem;
+  min-height: var(--hit-target);
   padding: 0 var(--space-1);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius);

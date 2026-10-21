@@ -5,7 +5,8 @@
 // Description: Guards login protection that must hold behind a reverse proxy: production
 //              refuses to start without TRUST_PROXY and PUBLIC_ORIGIN, and failed logins are
 //              limited per username as well as per IP, with the same answers whether the
-//              username exists or not.
+//              username exists or not. Salt requests (prelogin) and all reads under /api have
+//              per-IP limits that count every request.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -33,6 +34,27 @@ describe('production start', () => {
   it('starts with both set (TRUST_PROXY=0 is an explicit "no proxy")', () => {
     const config = readConfig({ ...prod, TRUST_PROXY: '0', PUBLIC_ORIGIN: 'https://se.example' });
     expect(config).toMatchObject({ trustProxy: 0, publicOrigin: 'https://se.example' });
+  });
+});
+
+describe('limits that count every request', () => {
+  it('salt requests per IP, though they never fail', async () => {
+    t = makeTestApp({ rateLimits: { prelogin: { windowMs: 60_000, max: 2 } } });
+    const ask = () => t.client().post('/api/auth/prelogin').send({ username: 'anyone' });
+    expect((await ask()).status).toBe(200);
+    expect((await ask()).status).toBe(200);
+    const third = await ask();
+    expect(third.status).toBe(429);
+    expect(third.body.error).toBe('too_many_attempts');
+  });
+
+  it('reads under /api per IP, the public ones included; writes are not counted', async () => {
+    t = makeTestApp({ rateLimits: { apiRead: { windowMs: 60_000, max: 2 } } });
+    const client = t.client();
+    expect((await client.get('/api/health')).status).toBe(200);
+    expect((await client.get('/api/games')).status).toBe(200);
+    expect((await client.get('/api/info')).status).toBe(429);
+    expect((await client.post('/api/auth/prelogin').send({ username: 'x' })).status).toBe(200);
   });
 });
 

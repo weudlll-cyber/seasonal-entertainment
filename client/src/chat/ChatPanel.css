@@ -34,6 +34,7 @@
 
 /* The module's own controls: they do not rely on the host page's button styles. */
 .se-chat .chat-button {
+  min-height: var(--hit-target, 44px);
   font: inherit;
   font-weight: var(--chat-strong);
   padding: var(--chat-space-1) var(--chat-space-2);

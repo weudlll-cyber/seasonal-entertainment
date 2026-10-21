@@ -2,8 +2,9 @@
 // File:        Sidebar.jsx
 // Path:        client/src/app/Sidebar.jsx
 // Project:     Seasonal Entertainment
-// Description: The site's navigation (docs/DESIGN.md, "Shell"). From 760px a 232px sidebar:
-//              brand, main items with icons (Calls with its LIVE badge after Chat), the admin
+// Description: The site's navigation (docs/DESIGN.md, "Shell"). From 760px a 248px sidebar:
+//              the emblem and wordmark, main items as pills with icons and their quarter's
+//              season dot (Calls with its LIVE badge after Chat), the admin
 //              item behind a divider, the account card with the theme toggle, legal links. On
 //              a call page (rail) it is an icon rail with tooltips and a LIVE dot, expanded by
 //              its menu button or, as an overlay, by pointing or keyboard focus (useRail.js).
@@ -14,7 +15,7 @@
 
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router';
-import logo from '../assets/seasonal-entertainment.jpg';
+import { EMBLEM } from '../brand/brand.js';
 import { useSession } from '../session/SessionContext.jsx';
 import ThemeToggle from '../theme/ThemeToggle.jsx';
 import AccountCard from './AccountCard.jsx';
@@ -36,8 +37,9 @@ function NavItem({ item, label, extra = null }) {
       {/* React Router marks "/" only on the home page itself, the others on their section. */}
       <NavLink to={item.to} className="nav-item" aria-label={label} title={item.label}>
         <Icon name={item.icon} />
-        <span>{item.label}</span>
+        <span className="nav-item__label">{item.label}</span>
         {extra}
+        {item.dot && <span className={`nav-item__dot nav-item__dot--${item.dot}`} />}
       </NavLink>
     </li>
   );
@@ -111,7 +113,7 @@ export default function Sidebar({ rail = false }) {
           </button>
         )}
         <Link to="/" className="sidebar__brand" aria-label="Seasonal Entertainment, home">
-          <img src={logo} alt="" width="40" height="40" />
+          <img src={EMBLEM} alt="" width="50" height="40" />
           <span className="sidebar__wordmark" aria-hidden="true">
             <span>SEASONAL</span>
             <span>ENTERTAINMENT</span>

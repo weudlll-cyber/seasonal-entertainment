@@ -5,8 +5,8 @@
 // Description: Guards the home page: the greeting (with the username when signed in), the
 //              featured game from the games data (a "Coming soon" badge only when the data says
 //              so), the event bot's next two occurrences that still take place (or "not
-//              connected"), and the Seasonal Tokens card with the four season marks linking to
-//              the info section.
+//              connected"), the four season tiles in calendar order with their marks, and the
+//              Community box leading to the chat. Prices themselves: prices.test.jsx.
 // ============================================================
 
 import { render, screen, within } from '@testing-library/react';
@@ -125,21 +125,24 @@ describe('home', () => {
     expect(await screen.findByText('The event calendar is not connected.')).toBeInTheDocument();
   });
 
-  it('shows the four season marks in calendar order, linking to the info section', () => {
+  it('shows the four season tiles in calendar order, each with its mark', () => {
     home();
     const card = screen.getByRole('region', { name: 'Seasonal Tokens' });
-    const marks = within(within(card).getByRole('list', { name: 'The four seasons' })).getAllByRole(
-      'img'
+    const tiles = within(card).getAllByRole('listitem');
+    expect(tiles.map((tile) => tile.className)).toEqual(
+      ['spring', 'summer', 'autumn', 'winter'].map((id) => `price-tile price-tile--${id}`)
     );
-    expect(marks.map((img) => img.getAttribute('alt'))).toEqual([
-      'Spring season mark',
-      'Summer season mark',
-      'Autumn season mark',
-      'Winter season mark',
-    ]);
-    expect(within(card).getByRole('link', { name: 'About Seasonal Tokens' })).toHaveAttribute(
+    expect(tiles.map((tile) => tile.querySelector('.price-tile__mark img').src)).toEqual(
+      ['spring', 'summer', 'autumn', 'winter'].map((id) => expect.stringContaining(id))
+    );
+  });
+
+  it('the Community box leads to the chat', () => {
+    home();
+    const card = screen.getByRole('region', { name: 'Community' });
+    expect(within(card).getByRole('link', { name: 'Open the chat' })).toHaveAttribute(
       'href',
-      '/info'
+      '/chat'
     );
   });
 });

@@ -2,16 +2,26 @@
 // File:        LandingPage.jsx
 // Path:        client/src/pages/LandingPage.jsx
 // Project:     Seasonal Entertainment
-// Description: Home: a greeting (with the username when signed in) and a bento grid that
-//              fits the main column at 1280 x 720 without scrolling: the featured game, the
-//              event bot's next two occurrences (/api/bot-events), Seasonal Tokens with the
-//              prices (homeCards.jsx; /api/prices, docs/BOTS.md). Real data only.
+// Description: Home in the SE style (docs/DESIGN.md, "Home"): the night-blue banner with the
+//              emblem, the lettering and the greeting (with the username when signed in), then
+//              a grid that fits the main column at 1280 x 720 without scrolling: the featured
+//              game and the event bot's next two occurrences (/api/bot-events), the four season
+//              price tiles (/api/prices, docs/BOTS.md), Community and the way to the fair prices
+//              and charts (homeCards.jsx). Real data only.
 // ============================================================
 
 import { useEffect, useState } from 'react';
 import { api } from '../api/http.js';
 import { useSession } from '../session/SessionContext.jsx';
-import { FeaturedGameCard, TokensCard, UpNextCard } from './homeCards.jsx';
+import { EMBLEM } from '../brand/brand.js';
+import {
+  CommunityCard,
+  FairPriceCard,
+  FeaturedGameCard,
+  PriceTiles,
+  UpNextCard,
+} from './homeCards.jsx';
+import '../brand/seasonPattern.css';
 import './LandingPage.css';
 
 const deviceZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -55,14 +65,27 @@ export default function LandingPage({ timeZone = deviceZone() }) {
 
   return (
     <div className="home">
-      <div className="home__header">
-        <h1>{user ? `Welcome back, ${user.username}` : 'Welcome to Seasonal Entertainment'}</h1>
-        <p className="home__text">Games, community and everything around Seasonal Tokens.</p>
+      <div className="home__banner season-pattern">
+        <img className="home__emblem" src={EMBLEM} alt="" width="206" height="166" />
+        <div className="home__banner-text">
+          {/* The lettering is the logo's (read as the greeting's context, not twice). */}
+          <span className="home__lettering" aria-hidden="true">
+            SEASONAL
+          </span>
+          <span className="home__lettering-sub" aria-hidden="true">
+            ENTERTAINMENT
+          </span>
+          <h1 className="home__greeting">
+            {user ? `Welcome back, ${user.username}` : 'Welcome to Seasonal Entertainment'}
+          </h1>
+        </div>
       </div>
       <div className="home__grid">
         <FeaturedGameCard game={game} />
         <UpNextCard next={next} timeZone={timeZone} />
-        <TokensCard prices={prices} />
+        <PriceTiles prices={prices} />
+        <CommunityCard />
+        <FairPriceCard prices={prices} />
       </div>
     </div>
   );

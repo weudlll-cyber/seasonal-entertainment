@@ -6,7 +6,7 @@
 //              is stored, the server previews its first https link and pushes the card to the
 //              room. Cached per URL (config: cacheHours), one fetch per URL at a time, limited
 //              per user and overall; can be switched off (LINK_PREVIEWS=false). Failures are
-//              silent: the message simply has no card.
+//              silent: the message simply has no card (the log names only the link's host).
 // ============================================================
 
 import { firstHttpsLink } from '@seasonal-entertainment/shared/chatRules.js';
@@ -61,7 +61,8 @@ export function createPreviewService(db, config, hub, network = realNetwork) {
         hub.broadcast(shown.roomId, { type: 'preview', id: shown.id, preview: shown.preview });
       }
     } catch (err) {
-      console.warn(`[previews] ${url}: ${err.message}`);
+      // The host only: a link's path or query may carry someone's token.
+      console.warn(`[previews] ${URL.parse(url)?.host ?? 'a link'}: ${err.message}`);
     }
   }
 

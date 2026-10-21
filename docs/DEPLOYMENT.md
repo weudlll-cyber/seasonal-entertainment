@@ -413,7 +413,10 @@ Then delete `$HOME\restore.tar` on the PC too: decrypted, it is the whole databa
 form.
 
 `--check` verifies the checksum, the SQLite integrity and the media count without touching
-anything. The restore refuses existing data without `--force`. With it, the current database
+anything. The restore refuses existing data without `--force`. On a **new VPS** that is always
+the case: the first start already made a database with the starting content (section 4), so a
+restore there needs `--force` too, and that starting content is what gets moved aside (seen in
+the dry run of 2026-10-21). With it, the current database
 (with its `-wal`/`-shm` files) and media folder are **moved aside** to `….before-restore-<time>`
 in the volume, never deleted. Delete those by hand once the restored site looks right. A restore
 drill now and then (into a scratch VPS or a copy of the volume) is the only proof a backup works.

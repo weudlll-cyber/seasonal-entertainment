@@ -8,11 +8,13 @@
 //              key derived from it are sent (session/credentials.js). The new member's key pair
 //              for private messages is made right away (keys/), and the recovery code offered.
 //              Afterwards it returns to the page that sent the visitor (?next=, e.g. the
-//              embedded chat's login popup), like the login page (session/nextPage.js).
+//              embedded chat's login popup), like the login page (session/nextPage.js). The card
+//              shows the logo (FormLogo.jsx), except in the chat's login popup.
 // ============================================================
 
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
+import FormLogo from '../brand/FormLogo.jsx';
 import {
   MINIMUM_AGE,
   PASSWORD_MIN,
@@ -25,7 +27,7 @@ import { api } from '../api/http.js';
 import { FormField, FormMessage } from '../components/FormField.jsx';
 import { useKeys } from '../keys/KeyContext.jsx';
 import { keysForNewPassword } from '../session/credentials.js';
-import { safeNext, withNext } from '../session/nextPage.js';
+import { inEmbedLoginFlow, safeNext, withNext } from '../session/nextPage.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { BusyButton } from '../components/BusyButton.jsx';
 
@@ -73,6 +75,8 @@ export default function RegisterPage() {
     <section className="page">
       <h1>Register</h1>
       <form className="form" onSubmit={onSubmit} noValidate>
+        {/* Not in the chat's small login popup: there the fields come first. */}
+        {!inEmbedLoginFlow(params) && <FormLogo />}
         <FormField
           label="Username"
           name="username"

@@ -25,3 +25,4 @@ data/
 deploy/site/site.env
 deploy/site/docker-compose.override.yml
 .claude/settings.local.json
+reports/redesign/
