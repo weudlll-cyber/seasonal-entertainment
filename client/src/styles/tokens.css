@@ -80,11 +80,12 @@
   --color-scrim: rgb(0 0 0 / 40%);
   color-scheme: light;
 
-  /* Typography: Heavy for headings, Book for body (faces declared in fonts.css) */
+  /* Typography: Bold for headings (decided 2026-10-21; Heavy before), Book for body (faces
+     declared in fonts.css) */
   --font-family: 'Luxora Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-weight-body: 400;
   --font-weight-strong: 700;
-  --font-weight-heading: 900;
+  --font-weight-heading: 700;
   --font-size-body: 1rem;
   --font-size-lead: clamp(1.05rem, 0.95rem + 0.5vw, 1.25rem);
   --font-size-title: clamp(1.8rem, 1.2rem + 1.8vw, 2.75rem);
@@ -99,6 +100,8 @@
   --sidebar-width: 248px;
   /* The sidebar as an icon rail (a call page). */
   --rail-width: 4.5rem;
+  /* The floating chat button (ChatDrawer.css); pages keep their end clear of it. */
+  --chat-launcher-size: 56px;
 
   /* Spacing */
   --space-1: 0.5rem;

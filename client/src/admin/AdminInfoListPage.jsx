@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { api } from '../api/http.js';
+import { formatWhen } from '../app/dates.js';
 import { FormMessage } from '../components/FormField.jsx';
 
 export default function AdminInfoListPage() {
@@ -62,7 +63,7 @@ export default function AdminInfoListPage() {
                 <td>/info/{page.slug}</td>
                 <td>{page.status}</td>
                 <td>
-                  {page.updatedAt.slice(0, 10)} {page.updatedBy}
+                  {formatWhen(page.updatedAt)} {page.updatedBy}
                 </td>
                 <td className="admin-row-actions">
                   <button

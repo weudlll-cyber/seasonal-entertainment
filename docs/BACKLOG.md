@@ -50,6 +50,33 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **SE-HOME-LIVE-1 part 1 — "Next call" box on the home page** — closed by `feat/se-home-live-1`
+  (not merged yet; owner request 2026-10-21): a live call with Listen, else the next planned one
+  with its time, else a friendly line; the calls quarter behind it (docs/DESIGN.md, "Home").
+- **SE-HOME-LIVE-1 part 2 — "Add to calendar"** — closed by `feat/se-home-live-1` (not merged
+  yet): an RFC 5545 file per planned call for everyone, on the Calls page and in the Next call
+  box (docs/CALLS.md, "Calendar file").
+- **SE-HOME-LIVE-1 part 3 — "Remind me on this site"** — closed by `feat/se-home-live-1` (not
+  merged yet): members' reminders, notices 10 minutes before and when live on every open page,
+  once per kind (docs/CALLS.md, "Reminders").
+- **SE-HOME-LIVE-1 part 4 — live Community box** — closed by `feat/se-home-live-1` (not merged
+  yet): the online count and the newest messages of General, live; the 24-hour rule (docs/CHAT.md,
+  "Community box").
+- **SE-HOME-LIVE-1 part 5 — empty Calls lists and the wide prices page** — closed by
+  `feat/se-home-live-1` (not merged yet): cards instead of "None."; the prices page in the wide
+  column with fair price and converter side by side from 1100px (docs/DESIGN.md).
+- **SE-HOME-LIVE-1 follow-up (owner review 2026-10-21)** — on `feat/se-home-live-1` (not merged
+  yet): the Next call title wraps instead of being cut (full title as name and tooltip), the
+  zone stays with its time; the home's end clears the chat button and no box is cut (the home
+  scrolls when its content needs it); Fair price's marks in one row with the arrow beside the
+  title; the fair price table never sticks out, all rows equal, scrolling inside below 1100px.
+- **SE-HOME-LIVE-1 follow-up 2 (owner decision 2026-10-21)** — on `feat/se-home-live-1` (not
+  merged yet): home fits the window again from 1280 x 720 (a lower banner, tighter spacing, the
+  Next call buttons as icons in one row, its title in 2 lines), no box cut, nothing under the
+  chat button; one date format everywhere (`formatDateTime`, docs/DESIGN.md, "Dates").
+- **SE-HOME-LIVE-1 final step (owner decision 2026-10-21)** — on `feat/se-home-live-1` (not
+  merged yet): headings in Luxora Grotesk Bold instead of Heavy (`--font-weight-heading` 700);
+  the unused Heavy face and its font file removed.
 - **Security check (SE-NIGHT-4 piece 4)** — closed by SE-NIGHT-4 piece 4 (`feat/se-night-4`,
   not merged yet): no known vulnerabilities (npm audit), react-router 8.4.0 → 8.5.0; salt
   requests and every `/api` read limited per IP; link-preview failures logged by host only.

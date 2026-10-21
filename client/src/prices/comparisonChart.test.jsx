@@ -16,6 +16,10 @@ import { MemoryRouter, useLocation } from 'react-router';
 import { expect, it } from 'vitest';
 import { GUEST, mockApi } from '../test/mockApi.js';
 import PricesPage from './PricesPage.jsx';
+import { formatWhen } from '../app/dates.js';
+
+// The site's one date format (app/dates.js), with plain spaces as the matchers compare text.
+const at = (iso, zone) => formatWhen(iso, zone).replace(/\s/g, ' ');
 
 const HOUR = 60 * 60_000;
 const T0 = Date.parse('2026-10-20T12:00:00Z');
@@ -78,7 +82,9 @@ it('two coins from the address: % change since the start, a 0 % line and a legen
   showPage('/info/prices?coins=spring,eth');
   const chart = await screen.findByRole('img', { name: /^Comparison of Spring, ETH: % change/ });
   expect(screen.getByRole('heading', { name: 'Comparison' })).toBeInTheDocument();
-  expect(screen.getByText('% change since 20 Oct 2026, 12:00')).toBeInTheDocument();
+  expect(
+    screen.getByText(`% change since ${at('2026-10-20T12:00:00Z', 'UTC')}`)
+  ).toBeInTheDocument();
   // The axis runs from ETH's −5 % to Spring's +20 %: each coin from its own first point.
   expect(screen.getByText('+20.00 %')).toBeInTheDocument();
   expect(screen.getByText('−5.00 %')).toBeInTheDocument();
@@ -98,7 +104,9 @@ it("the read-out: each coin's price in US dollars and its % change at the pointe
   showPage('/info/prices?coins=spring,eth');
   const chart = await screen.findByRole('img', { name: /^Comparison/ });
   fireEvent.keyDown(chart, { key: 'End' });
-  const readout = screen.getByText(/^At 20 Oct 2026, 14:00/).closest('figcaption');
+  const readout = screen
+    .getByText((text) => text.startsWith(`At ${at('2026-10-20T14:00:00Z', 'UTC')}`))
+    .closest('figcaption');
   expect(
     within(readout)
       .getAllByRole('listitem')

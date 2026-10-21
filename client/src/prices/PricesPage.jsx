@@ -12,12 +12,15 @@
 //              converter with mining times, as the price bot's /value and /swap
 //              (FairPriceTable.jsx, Converter.jsx; docs/BOTS.md). A source that is not
 //              connected says so plainly. timeZone is a prop so tests can pin it. SE style: the
-//              title on a small night-blue banner with the season pattern and the four marks.
+//              title on a small night-blue banner with the season pattern and the four marks;
+//              the page uses the wide column, and from 1100px the fair price and the converter
+//              stand side by side (prices.css).
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { api } from '../api/http.js';
+import { deviceZone } from '../app/dates.js';
 import { SEASON_ICONS } from '../brand/brand.js';
 import { FormMessage } from '../components/FormField.jsx';
 import { ALL_COINS, parseCoins, shownCoins, toggleAll, toggleCoin } from './coinSelection.js';
@@ -29,7 +32,6 @@ import TokenPicker from './TokenPicker.jsx';
 import '../brand/seasonPattern.css';
 import './prices.css';
 
-const deviceZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 const isReference = (id) => REFERENCE.some((t) => t.id === id);
 const nameOf = Object.fromEntries([...TOKENS, ...REFERENCE].map((t) => [t.id, t.name]));
 const byId = (answer) => Object.fromEntries((answer?.prices ?? []).map((p) => [p.token, p]));
@@ -102,7 +104,7 @@ export default function PricesPage({ timeZone = deviceZone() }) {
   const allPrices = Object.fromEntries(Object.entries(latest).map(([t, p]) => [t, p.price]));
 
   return (
-    <section className="page prices">
+    <section className="page page--wide prices">
       <p>
         <Link to="/info">Seasonal Tokens</Link>
       </p>
@@ -188,10 +190,10 @@ export default function PricesPage({ timeZone = deviceZone() }) {
         </>
       )}
       {seasons?.connected && (
-        <>
+        <div className="prices__tools">
           <FairPriceTable actual={actual} rates={seasons.miningRates} />
           <Converter prices={allPrices} rates={seasons.miningRates} />
-        </>
+        </div>
       )}
     </section>
   );

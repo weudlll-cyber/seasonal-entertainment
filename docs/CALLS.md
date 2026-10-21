@@ -85,6 +85,41 @@ Generate a production pair on the call server with
   at the moment the call is created (decided 2026-10-18). It is **unlisted** (not in the room
   lists or the unread counters) and becomes **read-only** when the call ends; its messages
   follow the normal retention (docs/CHAT.md, "Server").
+- **Empty lists** (2026-10-21): an empty "Live now", "Upcoming" or "Recent" shows a card in the
+  page's style ("No call is live right now", "No call is planned yet — organisers announce them
+  here", "No calls yet"), never a bare "None.".
+- **Calendar file** (decided 2026-10-21): every planned call (scheduled, with a planned time)
+  has `GET /api/calls/:id/calendar.ics` for everyone, guests included (`allow('public')`, as the
+  list; rate limit `callCalendar` per address, 60 a minute). `text/calendar` as a download
+  (`seasonal-call-<id>.ics`), RFC 5545 (`server/src/calls/calendar.js`): a stable UID per call
+  (`call-<id>@<site host>`), DTSTAMP, DTSTART and DTEND in UTC (calls have no planned end:
+  start + 60 minutes), SUMMARY the title, DESCRIPTION the description and the call page's
+  address (from `PUBLIC_ORIGIN`, as the CSRF check uses it), one display alarm 15 minutes
+  before. Text is escaped (backslash, semicolon, comma, line breaks) and lines over 75 octets
+  folded. Nothing that the Calls page does not show. "Add to calendar" sits beside each planned
+  call on the Calls page and in the home page's "Next call" box
+  (`client/src/calls/CallActions.jsx`).
+- **Reminders** ("Remind me on this site", members only; decided 2026-10-21): a toggle beside
+  "Add to calendar" stores a reminder for (member, call) (`PUT` / `DELETE
+/api/calls/:id/reminder`, `allow('member')`, rate limit `callAction`; table `call_reminders`).
+  `GET /api/calls` names the member's reminded calls (`reminders`). A reminder goes when the
+  member turns it off, when the call ends (`endCall.js`) and with the account or call
+  (cascades). Guests see no toggle.
+  - **The notices**: 10 minutes before a reminded call's planned start ("<title> starts in 10
+    minutes") and when it goes live ("<title> is live now"), every open page of the member shows
+    a notice with **Listen** and **Dismiss** at the top of the main column
+    (`client/src/calls/CallNotices.jsx`). The server pushes it as a personal event
+    (`callReminder`) over the chat's live connection (`chat.notify.member`, docs/CHAT.md); there
+    is no polling.
+  - **Once per kind**: each kind is marked in `call_reminders` (`soon_sent_at`, `live_sent_at`)
+    only once it reached an open page, so a member who opens the site within the window still
+    gets it, and a restart never repeats one. Dismissing in one tab dismisses it in the others
+    (browser storage `se.callNotice.<call>.<kind>`). Nothing shows on that call's own page.
+  - **The job** (`server/src/calls/reminders.js`, like the stale-call job): at server start,
+    every 30 seconds, and a round at once when a call is started. Off when `backgroundJobs` is
+    off.
+  - The site had no general on-site notification before; the notices use the shell's banner
+    style (`.banner`, as the staff 2FA banner) and the chat's existing personal-event push.
 - **Settings** (Admin → Settings, `/api/admin/settings`, audited `setting.change`): speakers on
   stage at most (default 10, 1–25) and participants per call at most (default 250, 2–1000;
   the call service's UDP range is sized for 250).

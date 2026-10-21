@@ -31,7 +31,10 @@ describe('public info pages', () => {
     });
     renderAt('/info');
     fireEvent.click(await screen.findByRole('link', { name: 'FAQ' }));
-    expect(await screen.findByRole('heading', { level: 2 })).toHaveTextContent('First question');
+    // By name: the page itself loads on first use (lazy), so wait for its own heading.
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'First question' })
+    ).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('FAQ');
   });
 

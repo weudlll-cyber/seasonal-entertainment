@@ -4,21 +4,22 @@
 // Project:     Seasonal Entertainment
 // Description: The boxes of the home page in the SE style (docs/DESIGN.md, "Home"), all from
 //              real data: the featured game (the first game of the games list), the event bot's
-//              next two occurrences, the four season price tiles (price bot, docs/BOTS.md), the
-//              Community box and the link to the fair prices and charts. Each box but the tiles
-//              carries a faint part of the logo (a quarter, or the emblem).
+//              next two occurrences, the four season price tiles (price bot, docs/BOTS.md) and
+//              the link to the fair prices and charts; the faint logo part (Wash) the boxes
+//              share. Community and Next call have files of their own (CommunityCard.jsx,
+//              NextCallCard.jsx). Each box but the tiles carries a faint part of the logo.
 // ============================================================
 
 import { Link } from 'react-router';
-import { formatDay, formatLocal } from '@seasonal-entertainment/shared/localWeek.js';
 import { GAME_STATUS_LABELS } from '@seasonal-entertainment/shared/gameRules.js';
+import { formatWhen } from '../app/dates.js';
 import { EMBLEM, QUARTERS, SEASON_ICONS } from '../brand/brand.js';
 import { formatChange, formatUsd, TOKENS } from '../prices/priceFormat.js';
 import './priceTiles.css';
 
 // A box's faint logo part: decoration behind its content; lazy, as on a phone most boxes start
 // below the fold.
-const Wash = ({ src }) => (
+export const Wash = ({ src }) => (
   <img className="home__wash" src={src} alt="" aria-hidden="true" loading="lazy" />
 );
 
@@ -70,23 +71,18 @@ export function UpNextCard({ next, timeZone }) {
         <p className="home__text">No events in the next seven days.</p>
       )}
       <ul className="home__events">
-        {next?.next?.map(({ id, name, start, image }) => {
-          const local = formatLocal(start, timeZone);
-          return (
-            <li key={`${id}-${start}`}>
-              {/* The event's own image when it has one, else a dot in a season colour. */}
-              {image ? (
-                <img className="home__event-image" src={image} alt={name} loading="lazy" />
-              ) : (
-                <span className="home__event-dot" aria-hidden="true" />
-              )}
-              <strong>{name}</strong>
-              <span className="home__text">
-                {formatDay(start, timeZone)}, {local.time} {local.zone}
-              </span>
-            </li>
-          );
-        })}
+        {next?.next?.map(({ id, name, start, image }) => (
+          <li key={`${id}-${start}`}>
+            {/* The event's own image when it has one, else a dot in a season colour. */}
+            {image ? (
+              <img className="home__event-image" src={image} alt={name} loading="lazy" />
+            ) : (
+              <span className="home__event-dot" aria-hidden="true" />
+            )}
+            <strong>{name}</strong>
+            <span className="home__text">{formatWhen(start, timeZone)}</span>
+          </li>
+        ))}
       </ul>
     </section>
   );
@@ -128,21 +124,6 @@ export function PriceTiles({ prices }) {
   );
 }
 
-export function CommunityCard() {
-  return (
-    <section className="home__card home__community" aria-label="Community">
-      <Wash src={QUARTERS.chat} />
-      <h2>Community</h2>
-      <p>Talk with the Seasonal Tokens community: rooms, private messages and live calls.</p>
-      <p className="home__actions">
-        <Link className="button home__on-navy" to="/chat">
-          Open the chat
-        </Link>
-      </p>
-    </section>
-  );
-}
-
 // The way to the prices page (fair price, charts, converter); a plain note without prices.
 export function FairPriceCard({ prices }) {
   const icons = (
@@ -171,7 +152,9 @@ export function FairPriceCard({ prices }) {
       {icons}
       <span className="home__fair-text">
         <strong className="home__fair-title">
-          Fair price &amp; charts <span aria-hidden="true">→</span>
+          {/* A non-breaking space keeps the arrow beside the title's last word. */}
+          Fair price &amp; charts&nbsp;
+          <span aria-hidden="true">→</span>
         </strong>
         <span className="home__text">Fair prices, charts and a converter for every coin.</span>
       </span>

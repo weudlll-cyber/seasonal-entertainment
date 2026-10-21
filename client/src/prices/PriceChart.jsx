@@ -13,7 +13,8 @@
 
 import { useState } from 'react';
 import { gapsIn, linePath, nearestIndex, scaleSeries } from './chartGeometry.js';
-import { formatChange, formatPriceTime, formatUsd } from './priceFormat.js';
+import { formatWhen } from '../app/dates.js';
+import { formatChange, formatUsd } from './priceFormat.js';
 
 const BOX = { width: 640, height: 260, pad: 12 };
 const STEP_KEYS = { ArrowLeft: -1, ArrowRight: 1 };
@@ -34,7 +35,7 @@ export default function PriceChart({ series, timeZone }) {
   );
   if (timeline.length < 2) return <p>Not enough prices in this range yet.</p>;
   const scaled = scaleSeries(values, BOX);
-  const time = (ms) => formatPriceTime(ms, timeZone);
+  const time = (ms) => formatWhen(ms, timeZone);
   const at = marked === null ? null : timeline[Math.min(marked, timeline.length - 1)];
   // Each coin's point at the marked time: its nearest, unless it has no data around then.
   const pointsAt = (ms) =>

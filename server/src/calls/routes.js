@@ -7,7 +7,8 @@
 //              admins — create (with its unlisted chat room), start (opens the room on the call
 //              service), end (endCall.js: closes that room, which disconnects everyone, and
 //              makes the chat read-only). Every management action is audited and rate-limited
-//              per account.
+//              per account. The listing names a member's reminded calls (reminders.js); a call
+//              going live starts a reminder round at once (remindNow).
 // ============================================================
 
 import express from 'express';
@@ -18,6 +19,7 @@ import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { required, validBody } from '../http/validate.js';
 import { getSetting } from '../settings/store.js';
+import { reminderCallIds } from './reminders.js';
 import { endCall } from './endCall.js';
 import { callSteps } from './middleware.js';
 import { createCall, findCall, listCalls, anyCallLive, markLive, setChatRoom } from './store.js';
@@ -45,8 +47,9 @@ const shown = (call, chat) => {
 const canManage = (req) =>
   Boolean(req.user) && roleAtLeast(req.user.role, 'organiser') && !req.staffRefusal;
 
-// service: the call service (service.js) or null when not configured; chat: mountChat's handle.
-export function callRoutes(db, config, service, chat) {
+// service: the call service (service.js) or null when not configured; chat: mountChat's handle;
+// remindNow(): one reminder round (reminders.js), so "is live now" arrives without waiting.
+export function callRoutes(db, config, service, chat, remindNow) {
   const router = express.Router();
   const perUser = makeLimiter(config.rateLimits.callManage, {
     keyGenerator: (req) => `user:${req.user.id}`,
@@ -71,7 +74,15 @@ export function callRoutes(db, config, service, chat) {
     const calls = Object.fromEntries(
       Object.entries(lists).map(([key, list]) => [key, list.map((c) => shown(c, chat))])
     );
-    res.json({ ok: true, configured: Boolean(service), canManage: canManage(req), calls });
+    // The member's own reminders (the "Remind me" toggles); guests have none.
+    const reminders = req.user ? reminderCallIds(db, req.user.id) : [];
+    res.json({
+      ok: true,
+      configured: Boolean(service),
+      canManage: canManage(req),
+      calls,
+      reminders,
+    });
   });
 
   router.get('/:id', allow('public'), configured, loadCall, (req, res) => {
@@ -109,6 +120,7 @@ export function callRoutes(db, config, service, chat) {
       return sendError(res, 409, 'wrong_status', 'Only a scheduled call can be started.');
     }
     audit(req, 'call.start', req.call);
+    remindNow();
     res.json({ ok: true, call: shown(findCall(db, req.call.id), chat) });
   });
 

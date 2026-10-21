@@ -4,11 +4,12 @@
 // Project:     Seasonal Entertainment
 // Description: The one way a call ends, for an organiser's "End call" (routes.js) and for the
 //              stale-call job (staleCalls.js) alike: status ended, the call service's room
-//              closed (which disconnects everyone), the call's chat room read-only, an audit
-//              entry naming who ended it.
+//              closed (which disconnects everyone), the call's chat room read-only, its
+//              reminders removed (reminders.js), an audit entry naming who ended it.
 // ============================================================
 
 import { recordAudit } from '../audit/auditLog.js';
+import { removeCallReminders } from './reminders.js';
 import { markEnded } from './store.js';
 
 // The audit actor of what the site does by itself (no account).
@@ -21,6 +22,7 @@ export async function endCall(db, service, chat, call, actor) {
   // After the status change: nobody can join any more while the room closes.
   await service.closeRoom(call.roomName);
   if (call.chatRoomId) chat.rooms.close(call.chatRoomId);
+  removeCallReminders(db, call.id);
   recordAudit(db, actor, {
     action: 'call.end',
     targetType: 'call',

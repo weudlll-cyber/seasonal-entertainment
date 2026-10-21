@@ -5,13 +5,15 @@
 // Description: /calls and the sidebar's Calls item (docs/CALLS.md): live, upcoming and recent
 //              calls; organisers create, start and end calls there (members see no controls);
 //              without a call service admins see "not configured" and everyone else no Calls
-//              item; the item shows the LIVE badge while a call is live; with nothing live, the
-//              page says so on a card ("No call is live right now"); the Calls header and the
-//              item's Winter dot.
+//              item; the item shows the LIVE badge while a call is live; every empty list says
+//              so on a card, never a bare "None."; the Calls header and the item's Winter dot; a
+//              planned call offers "Add to calendar" to everyone and "Remind me on this site"
+//              to members, which sets and removes the reminder; dates in the site's one English
+//              format even under a German browser.
 // ============================================================
 
 import { fireEvent, screen, within } from '@testing-library/react';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
 import { renderApp } from '../test/renderApp.jsx';
 
@@ -35,6 +37,113 @@ const LISTS = {
 const configured = (live, canManage) => ({
   'GET /calls/summary': { body: { ok: true, configured: true, live } },
   'GET /calls': { body: { ok: true, configured: true, canManage, calls: LISTS } },
+});
+
+it('every empty list shows its card, never "None."', async () => {
+  mockApi({
+    ...GUEST,
+    'GET /calls/summary': { body: { ok: true, configured: true, live: false } },
+    'GET /calls': {
+      body: {
+        ok: true,
+        configured: true,
+        canManage: false,
+        calls: { live: [], upcoming: [], recent: [] },
+      },
+    },
+  });
+  await renderApp('/calls');
+  expect(
+    await within(await section('Upcoming')).findByText('No call is planned yet')
+  ).toBeVisible();
+  expect(within(await section('Recent')).getByText('No calls yet')).toBeVisible();
+  expect(screen.queryByText('None.')).toBeNull();
+});
+
+it('a planned call: the calendar file for everyone, the reminder toggle for members', async () => {
+  const planned = CALL(2, 'Race night', 'scheduled', { scheduledFor: '2026-10-25T18:00:00Z' });
+  const lists = (reminders) => ({
+    'GET /calls/summary': { body: { ok: true, configured: true, live: false } },
+    'GET /calls': {
+      body: {
+        ok: true,
+        configured: true,
+        canManage: false,
+        calls: { live: [], upcoming: [planned], recent: [] },
+        reminders,
+      },
+    },
+  });
+  mockApi({ ...GUEST, ...lists([]) });
+  const view = await renderApp('/calls');
+  expect(await screen.findByRole('link', { name: 'Add Race night to calendar' })).toHaveAttribute(
+    'href',
+    '/api/calls/2/calendar.ics'
+  );
+  expect(screen.queryByRole('button', { name: /Remind me/ })).toBeNull();
+  view.unmount();
+
+  const calls = mockApi({
+    ...signedIn({ username: 'mia', role: 'member' }),
+    ...lists([]),
+    'PUT /calls/2/reminder': { body: { ok: true, reminder: true } },
+    'DELETE /calls/2/reminder': { body: { ok: true, reminder: false } },
+  });
+  await renderApp('/calls');
+  const toggle = await screen.findByRole('button', {
+    name: 'Remind me of Race night on this site',
+  });
+  expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  fireEvent.click(toggle);
+  await vi.waitFor(() => expect(toggle).toHaveAttribute('aria-pressed', 'true'));
+  fireEvent.click(toggle);
+  await vi.waitFor(() => expect(toggle).toHaveAttribute('aria-pressed', 'false'));
+  expect(calls.map((c) => c.key)).toEqual(
+    expect.arrayContaining(['PUT /calls/2/reminder', 'DELETE /calls/2/reminder'])
+  );
+});
+
+it("dates are the site's English format, also in a German browser", async () => {
+  // A German browser: every date format without an explicit language comes out German.
+  const RealFormat = Intl.DateTimeFormat;
+  const realToLocale = Date.prototype.toLocaleString;
+  const format = vi
+    .spyOn(Intl, 'DateTimeFormat')
+    .mockImplementation(function german(locale, options) {
+      return new RealFormat(locale ?? 'de-DE', options);
+    });
+  const toLocale = vi
+    .spyOn(Date.prototype, 'toLocaleString')
+    .mockImplementation(function german(locale, options) {
+      return realToLocale.call(this, locale ?? 'de-DE', options);
+    });
+  try {
+    const planned = CALL(2, 'Race night', 'scheduled', { scheduledFor: '2026-10-25T12:00:00Z' });
+    const ended = CALL(3, 'Launch', 'ended', { endedAt: '2026-10-18T12:00:00Z' });
+    mockApi({
+      ...GUEST,
+      'GET /calls/summary': { body: { ok: true, configured: true, live: false } },
+      'GET /calls': {
+        body: {
+          ok: true,
+          configured: true,
+          canManage: false,
+          calls: { live: [], upcoming: [planned], recent: [ended] },
+        },
+      },
+    });
+    await renderApp('/calls');
+    const upcoming = await section('Upcoming');
+    expect(within(upcoming).getByText(/^Planned for /)).toHaveTextContent(
+      /^Planned for Sunday 25 October, \d\d:\d\d \S+$/
+    );
+    expect(within(await section('Recent')).getByText(/^Ended /)).toHaveTextContent(
+      /^Ended Sunday 18 October, \d\d:\d\d \S+$/
+    );
+  } finally {
+    format.mockRestore();
+    toLocale.mockRestore();
+  }
 });
 
 const section = (name) => screen.findByRole('region', { name });

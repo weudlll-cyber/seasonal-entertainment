@@ -11,6 +11,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/http.js';
+import { formatWhen } from '../app/dates.js';
 import { FormMessage } from '../components/FormField.jsx';
 
 export const SHARED_LABEL =
@@ -43,8 +44,7 @@ function SharedCopies({ reportId }) {
       <ul aria-label="Shared messages">
         {copies.map((c) => (
           <li key={c.messageId}>
-            <strong>{c.author}</strong> ({c.sentAt.slice(0, 16).replace('T', ' ')} UTC):{' '}
-            {c.text || '(sticker or GIF)'}
+            <strong>{c.author}</strong> ({formatWhen(c.sentAt)}): {c.text || '(sticker or GIF)'}
           </li>
         ))}
       </ul>

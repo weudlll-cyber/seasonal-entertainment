@@ -10,10 +10,12 @@
 //              login popup (?next=/embed-login…) gets the chat button and drawer (ChatDrawer).
 //              On a call page the sidebar is an icon rail (more room for the stage). Right
 //              after a member's key pair was made, the recovery-code offer opens over the page.
+//              Members' call reminders show at the top of the main column (CallNotices).
 // ============================================================
 
 import { Suspense } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
+import CallNotices from '../calls/CallNotices.jsx';
 import { useKeys } from '../keys/KeyContext.jsx';
 import RecoveryOffer from '../keys/RecoveryOffer.jsx';
 import { inEmbedLoginFlow } from '../session/nextPage.js';
@@ -42,6 +44,7 @@ export default function Layout() {
             <Link to="/account#two-factor">Set it up now</Link>.
           </p>
         )}
+        {user && <CallNotices />}
         {/* A page loaded on first use (App.jsx) leaves the shell standing while it arrives. */}
         <Suspense>
           <Outlet />

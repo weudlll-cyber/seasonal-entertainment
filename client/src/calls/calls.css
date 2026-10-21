@@ -2,8 +2,9 @@
    File:        calls.css
    Path:        client/src/calls/calls.css
    Project:     Seasonal Entertainment
-   Description: The /calls page: its sections, the "No call is live right now" card and the
-                call cards (live ones marked).
+   Description: The /calls page: its sections, the cards of an empty list, the call cards (live
+                ones marked) and a planned call's actions (CallActions.jsx: also in the home
+                page's Next call box).
    ============================================================ */
 
 .calls-section h2 {
@@ -26,6 +27,33 @@
   margin-bottom: 0.375rem;
   font-size: 1.625rem;
   font-weight: var(--font-weight-heading);
+}
+
+.call-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.call-actions .button {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+/* The reminder notices (CallNotices.jsx): the shell's banner with its two buttons. */
+.call-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+}
+
+.call-notice .button {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
 }
 
 .call-list {

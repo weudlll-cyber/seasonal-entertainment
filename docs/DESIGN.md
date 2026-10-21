@@ -72,7 +72,8 @@ with transparency into `client/public/brand/`:
 
 The pattern tile is drawn from the repo's own season marks (`client/src/assets/seasons/`), two
 rows of four, the second shifted by two. `client/src/brand/brand.js` is the one place that names
-these files and which quarter belongs to which section. The font stays Luxora Grotesk, and the
+these files and which quarter belongs to which section. The font stays Luxora Grotesk (headings
+in Bold, `--font-weight-heading` 700, decided 2026-10-21; Heavy before), and the
 CSP is unchanged (all images are the site's own).
 
 ## Speed
@@ -101,6 +102,29 @@ Measured on the production build, and kept by `client/e2e/speed.spec.js` and
   by its label: in a table the label is an empty 44px square around the box. Inline links in
   running text are exempt (WCAG 2.5.8). The 390 × 844 and 768 × 1024 checks found no page
   wider than the window.
+
+## Dates
+
+Every date the site shows has one format (decided 2026-10-21), the one "Up next" had: weekday,
+day, month, 24-hour time and time zone, in English, e.g. "Thursday 22 October, 20:30 CEST" — the
+year only when it is not the current one ("Friday 31 December 2027, 23:00 CET"). A non-breaking
+space keeps the zone with its time.
+
+- **One formatter**: `formatDateTime(instant, timeZone, now)` in `shared/localWeek.js`, built
+  from the existing `formatDay` and `formatLocal`; in the browser `formatWhen(instant)` from
+  `client/src/app/dates.js` (the device's time zone, `deviceZone()`). No date is written with
+  the browser's own language (no `toLocaleString` for dates).
+- **Where**:
+  - the home page's "Up next" and Next call;
+  - the Calls page (planned, started, ended);
+  - a call's page ("Started …");
+  - the prices chart (axis, read-out, "% change since");
+  - the admin lists: the audit log, chat sanctions ("until …"), shared copies of reported
+    private messages, info pages' last change.
+- **Unchanged**: time-only stamps (chat messages, the Community box: "17:00"), and the events
+  page, whose day headings ("Monday 19 October") and times already are this format split into
+  a heading and a column (with the UTC time in brackets).
+- `client/src/calls/callsPage.test.jsx` checks the Calls page under a German browser locale.
 
 ## Theme logic
 
@@ -153,8 +177,29 @@ the 44px hit target; keyboard focus always shows a ring in the accent colour. Ev
 this background, sidebar, cards and buttons (info, login, register, account, admin, embed, the
 call stage, 404).
 
-**Home** (`LandingPage.jsx`, `homeCards.jsx`; reference `StyleBlocks2.dc.html`) fits the main
-column at 1280 x 720 without scrolling. Real data only.
+**Home** (`LandingPage.jsx`, `homeCards.jsx`; reference `StyleBlocks2.dc.html`). Real data only.
+**From 1000px wide, home fits the window without scrolling from 1280 x 720 on** (owner decision
+2026-10-17, confirmed 2026-10-21), also at its fullest: a planned call with a long title, a
+member's two call buttons, 3 Community messages. **No box is ever cut**, and **nothing a box
+shows lies under the floating chat button**. `client/e2e/layout.spec.js` checks all three at
+1280 x 720, 1440 x 900 and 1920 x 1080. Below 1000px the page stacks and scrolls.
+
+To make room (2026-10-21), in this order:
+
+- **a)** a lower banner: 15 % of the window, 96–160px, its lettering scaled with that height
+  (the emblem is a share of it), the greeting unchanged;
+- **b)** tighter spacing from the tokens: `--space-1` between the boxes, `--space-2` /
+  `--space-3` inside them;
+- **c)** in Next call, "Add to calendar" and "Remind me on this site" side by side as round icon
+  buttons (calendar, bell; their full names as accessible names and tooltips): as text pills the
+  two need 289px where the box has 190px at 1280 x 720;
+- **d)** the Next call title clamped at 2 lines.
+
+With all four, the top row gets a little more of the height than the bottom one (rows 1.05 :
+0.8 : 1.15) for "Up next"'s two pictured events.
+
+The bottom-right box (Fair price) keeps its content left of the chat button: its right padding is
+the button's size (`--chat-launcher-size`, also used by `ChatDrawer.css`) plus a gap.
 
 1. **Banner**: night blue (`--banner-background`) with the faint season pattern
    (`client/src/brand/seasonPattern.css`), the emblem, "SEASONAL" in the logo's gradient
@@ -166,12 +211,25 @@ column at 1280 x 720 without scrolling. Real data only.
 3. The **four season price tiles in one row**: each in its solid token colour with dark text,
    the name, the price large, the 24-hour change; the season mark 48px in a white 62px circle at
    the bottom right. With prices each tile opens its coin's chart (`/info/prices?coins=<id>`).
-4. **Community** (the night-blue box, leading to the chat) and **Fair price & charts** (to
-   `/info/prices`; without the price bot a plain note and the link to the info section).
+4. The bottom row (2026-10-21, `homeBottomRow.css`):
+   - **Community** (two columns, night blue; `CommunityCard.jsx`): "● N online" in the Spring
+     colour and the newest 3 messages of General, live (docs/CHAT.md, "Community box"); only
+     the count and "Open the chat" when the newest message is over a day old.
+   - **Next call** (one column; `NextCallCard.jsx`): a live call ("Live now", Listen), else the
+     next planned one (title wrapped, never cut with an ellipsis before 2 lines, then clamped,
+     the full title the link's name and tooltip; its date in the site's one format; "Add to
+     calendar", and "Remind me" for members, as icon buttons), else a friendly line and "All
+     calls". Not shown while calls are not set
+     up; then Fair price takes its column.
+   - **Fair price & charts** (one column; to `/info/prices`; without the price bot a plain note
+     and the link to the info section): the four marks in one row, the arrow beside the
+     title's last word.
+
+   The bottom row holds the most text.
 
 Faint logo images behind the boxes (`--wash-home`): Featured the controller quarter, Up next the
-balls quarter, Community the people quarter, Fair price the emblem. Below 1000px the boxes stack
-two columns wide (tiles two by two) and the main column scrolls.
+balls quarter, Community the people quarter, Next call the play button, Fair price the emblem.
+Below 1000px the boxes stack two columns wide (tiles two by two) and the main column scrolls.
 
 **Sub pages** (`client/src/brand/PageHeader.jsx`; reference `StyleSubpages.dc.html`): the header
 has the section's quarter (64 × 56px) beside the title and a one-line lead, and the same quarter
@@ -182,12 +240,20 @@ the controller; Events: the balls; Chat: the people; Calls: the play button.
   a pill above the name.
 - **Events**: each day a card; each event has a bar in the season colours in turn beside its
   time.
-- **Calls**: with nothing live, a "No call is live right now" card under "Live now".
+- **Calls**: an empty list shows a card in the page's style instead of "None." ("No call is
+  live right now", "No call is planned yet", "No calls yet"); a planned call has "Add to
+  calendar" and, for members, "Remind me on this site" as secondary pills.
+- **Call notices** (members' reminders, docs/CALLS.md): at the top of the main column in the
+  shell's banner style, the text with **Listen** (primary) and **Dismiss** (secondary).
 - **Chat page**: the full chat fills the main column as one card, rooms on its left; only the
   message list scrolls and the composer stays at the bottom.
 
-**Prices page** (`/info/prices`): the title on a smaller night-blue banner with the season
-pattern and the four season marks on white discs.
+**Prices page** (`/info/prices`): the wide column like Games and Calls (2026-10-21), the title on
+a smaller night-blue banner with the season pattern and the four season marks on white discs;
+the coin cards wrap in rows; from 1100px the fair price table and the converter stand side by
+side — the table's column at least as wide as the table, the converter taking the rest — below
+that stacked. Every table cell stays on one line, so all rows have the same height; narrower, the
+table scrolls inside its section, never the page.
 
 **Login and registration**: the card shows the full logo in light mode and the emblem in dark
 mode (`client/src/brand/FormLogo.jsx`; the dark lettering would vanish on night blue), but not

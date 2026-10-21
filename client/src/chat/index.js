@@ -8,7 +8,9 @@
 //              view (DirectPanel) and onDirectRequest (a name menu asked for a conversation);
 //              the unread counters (useUnread, UnreadCount); for a host's own panels a small
 //              keyboard menu (MenuButton) and the new-message count of a hidden room
-//              (useNewMessageCount).
+//              (useNewMessageCount); the member's own live events for other areas of the site
+//              (usePersonalEvents: call reminders) and a room's newest messages with the online
+//              count (useRoomGlimpse: the home page's Community box).
 //              Pages import only from here; everything else in this folder is internal
 //              (docs/CHAT.md).
 // ============================================================
@@ -24,3 +26,5 @@ export { default as RoomStar } from './RoomStar.jsx';
 export { useChatRooms } from './useChatRooms.js';
 export { default as MenuButton } from './MenuButton.jsx';
 export { useNewMessageCount } from './useNewMessageCount.js';
+export { usePersonalEvents } from './usePersonalEvents.js';
+export { useRoomGlimpse } from './useRoomGlimpse.js';

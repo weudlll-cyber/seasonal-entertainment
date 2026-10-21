@@ -3,7 +3,9 @@
    Path:        client/src/styles/fonts.css
    Project:     Seasonal Entertainment
    Description: @font-face rules for Luxora Grotesk (woff2, converted from the original .otf
-                files). Browsers download a face only when a style actually uses it.
+                files): Book, Regular, Bold, Italic and Light Italic. Browsers download a face
+                only when a style actually uses it. Headings are Bold (decided 2026-10-21), so
+                the Heavy face is no longer shipped.
    ============================================================ */
 
 /* Book and Regular both declare weight 400 inside the font files; Regular is mapped to 500
@@ -28,14 +30,6 @@
   font-family: 'Luxora Grotesk';
   src: url('../assets/fonts/luxora-grotesk-bold.woff2') format('woff2');
   font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Luxora Grotesk';
-  src: url('../assets/fonts/luxora-grotesk-heavy.woff2') format('woff2');
-  font-weight: 900;
   font-style: normal;
   font-display: swap;
 }

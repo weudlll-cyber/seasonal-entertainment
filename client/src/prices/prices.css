@@ -256,23 +256,44 @@
   font-size: var(--font-size-lead);
 }
 
-/* The fair price table and the converter (FairPriceTable.jsx, Converter.jsx). */
+/* The fair price table and the converter (FairPriceTable.jsx, Converter.jsx): stacked, side by
+   side from 1100px — the table's column then at least as wide as the table (never sticking out),
+   the converter taking the rest (its fields wrap). Narrower, a section never pushes the page
+   wider: the table scrolls inside its section. */
+.prices__tools {
+  display: grid;
+  column-gap: var(--space-4);
+}
+
+@media (min-width: 1100px) {
+  .prices__tools {
+    grid-template-columns: minmax(min-content, 1.3fr) minmax(12rem, 1fr);
+    column-gap: var(--space-3);
+    align-items: start;
+  }
+}
+
 .prices__section {
+  min-width: 0;
   margin-top: var(--space-4);
+  overflow-x: auto;
 }
 
 .prices__note {
   color: var(--color-text-muted);
 }
 
+/* Every cell on one line, so all rows have the same height. */
 .fair-table {
   border-collapse: collapse;
+  font-size: 0.9375rem;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .fair-table th,
 .fair-table td {
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-1) 0.5rem;
   border-bottom: 1px solid var(--color-border);
   text-align: left;
 }
@@ -284,8 +305,15 @@
   gap: var(--space-2);
 }
 
+/* The amount field may shrink with a narrow column (beside the fair price table). */
+.converter .form-field {
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+
 .converter input,
 .converter select {
+  width: 100%;
   min-height: var(--hit-target);
   padding: 0 var(--space-1);
   border: 1px solid var(--color-border-strong);
