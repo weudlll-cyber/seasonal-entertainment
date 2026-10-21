@@ -5,8 +5,9 @@
 // Description: /calls: live calls on top, then upcoming and recent ones (docs/CALLS.md).
 //              Organisers and admins create, start and end calls here. Without a call service
 //              admins see "not configured"; the sidebar hides Calls from everyone else then.
-//              SE style: the Calls header with the play-button quarter; with nothing live, a
-//              "No call is live right now" card.
+//              SE style: the Calls header with the play-button quarter; an empty list shows a
+//              friendly card instead (never a bare "None."). Planned calls offer "Add to
+//              calendar" and, to members, "Remind me on this site" (CallActions.jsx).
 // ============================================================
 
 import { useEffect, useState } from 'react';
@@ -25,6 +26,15 @@ const SECTIONS = [
   ['upcoming', 'Upcoming'],
   ['recent', 'Recent'],
 ];
+// What an empty section says: [title, line].
+const EMPTY = {
+  live: [
+    'No call is live right now',
+    'When an organiser starts a community call, it shows up here.',
+  ],
+  upcoming: ['No call is planned yet', 'Organisers announce the next community calls here.'],
+  recent: ['No calls yet', 'Calls that have ended show up here.'],
+};
 
 export default function CallsPage() {
   const { user } = useSession();
@@ -81,19 +91,20 @@ export default function CallsPage() {
         SECTIONS.map(([key, title]) => (
           <section key={key} aria-label={title} className="calls-section">
             <h2>{title}</h2>
-            {data.calls[key].length === 0 && key === 'live' ? (
+            {data.calls[key].length === 0 ? (
               <div className="card calls-none">
-                <p className="calls-none__title">No call is live right now</p>
-                <p className="calls-section__empty">
-                  When an organiser starts a community call, it shows up here.
-                </p>
+                <p className="calls-none__title">{EMPTY[key][0]}</p>
+                <p className="calls-section__empty">{EMPTY[key][1]}</p>
               </div>
-            ) : data.calls[key].length === 0 ? (
-              <p className="calls-section__empty">None.</p>
             ) : (
               <ul className="call-list">
                 {data.calls[key].map((call) => (
-                  <CallCard key={call.id} call={call} onAction={data.canManage ? act : null} />
+                  <CallCard
+                    key={call.id}
+                    call={call}
+                    reminded={data.reminders?.includes(call.id)}
+                    onAction={data.canManage ? act : null}
+                  />
                 ))}
               </ul>
             )}

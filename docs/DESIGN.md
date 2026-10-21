@@ -166,12 +166,22 @@ column at 1280 x 720 without scrolling. Real data only.
 3. The **four season price tiles in one row**: each in its solid token colour with dark text,
    the name, the price large, the 24-hour change; the season mark 48px in a white 62px circle at
    the bottom right. With prices each tile opens its coin's chart (`/info/prices?coins=<id>`).
-4. **Community** (the night-blue box, leading to the chat) and **Fair price & charts** (to
-   `/info/prices`; without the price bot a plain note and the link to the info section).
+4. The bottom row (2026-10-21, `homeBottomRow.css`):
+   - **Community** (two columns, night blue; `CommunityCard.jsx`): "● N online" in the Spring
+     colour and the newest 3 messages of General, live (docs/CHAT.md, "Community box"); only
+     the count and "Open the chat" when the newest message is over a day old.
+   - **Next call** (one column; `NextCallCard.jsx`): a live call ("Live now", Listen), else the
+     next planned one (title on one line, local day and time, "Add to calendar", and "Remind
+     me" for members), else a friendly line and "All calls". Not shown while calls are not set
+     up; then Fair price takes its column.
+   - **Fair price & charts** (one column; to `/info/prices`; without the price bot a plain note
+     and the link to the info section).
+
+   The bottom row is the tallest (rows 1 : 0.8 : 1.2): it holds the most text.
 
 Faint logo images behind the boxes (`--wash-home`): Featured the controller quarter, Up next the
-balls quarter, Community the people quarter, Fair price the emblem. Below 1000px the boxes stack
-two columns wide (tiles two by two) and the main column scrolls.
+balls quarter, Community the people quarter, Next call the play button, Fair price the emblem.
+Below 1000px the boxes stack two columns wide (tiles two by two) and the main column scrolls.
 
 **Sub pages** (`client/src/brand/PageHeader.jsx`; reference `StyleSubpages.dc.html`): the header
 has the section's quarter (64 × 56px) beside the title and a one-line lead, and the same quarter
@@ -182,12 +192,18 @@ the controller; Events: the balls; Chat: the people; Calls: the play button.
   a pill above the name.
 - **Events**: each day a card; each event has a bar in the season colours in turn beside its
   time.
-- **Calls**: with nothing live, a "No call is live right now" card under "Live now".
+- **Calls**: an empty list shows a card in the page's style instead of "None." ("No call is
+  live right now", "No call is planned yet", "No calls yet"); a planned call has "Add to
+  calendar" and, for members, "Remind me on this site" as secondary pills.
+- **Call notices** (members' reminders, docs/CALLS.md): at the top of the main column in the
+  shell's banner style, the text with **Listen** (primary) and **Dismiss** (secondary).
 - **Chat page**: the full chat fills the main column as one card, rooms on its left; only the
   message list scrolls and the composer stays at the bottom.
 
-**Prices page** (`/info/prices`): the title on a smaller night-blue banner with the season
-pattern and the four season marks on white discs.
+**Prices page** (`/info/prices`): the wide column like Games and Calls (2026-10-21), the title on
+a smaller night-blue banner with the season pattern and the four season marks on white discs;
+the coin cards wrap in rows; from 1100px the fair price table and the converter stand side by
+side, below that stacked (a wide table scrolls inside its section, never the page).
 
 **Login and registration**: the card shows the full logo in light mode and the emblem in dark
 mode (`client/src/brand/FormLogo.jsx`; the dark lettering would vanish on night blue), but not

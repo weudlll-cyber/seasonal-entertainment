@@ -4,9 +4,10 @@
 // Project:     Seasonal Entertainment
 // Description: The boxes of the home page in the SE style (docs/DESIGN.md, "Home"), all from
 //              real data: the featured game (the first game of the games list), the event bot's
-//              next two occurrences, the four season price tiles (price bot, docs/BOTS.md), the
-//              Community box and the link to the fair prices and charts. Each box but the tiles
-//              carries a faint part of the logo (a quarter, or the emblem).
+//              next two occurrences, the four season price tiles (price bot, docs/BOTS.md) and
+//              the link to the fair prices and charts; the faint logo part (Wash) the boxes
+//              share. Community and Next call have files of their own (CommunityCard.jsx,
+//              NextCallCard.jsx). Each box but the tiles carries a faint part of the logo.
 // ============================================================
 
 import { Link } from 'react-router';
@@ -18,7 +19,7 @@ import './priceTiles.css';
 
 // A box's faint logo part: decoration behind its content; lazy, as on a phone most boxes start
 // below the fold.
-const Wash = ({ src }) => (
+export const Wash = ({ src }) => (
   <img className="home__wash" src={src} alt="" aria-hidden="true" loading="lazy" />
 );
 
@@ -124,21 +125,6 @@ export function PriceTiles({ prices }) {
           );
         })}
       </ul>
-    </section>
-  );
-}
-
-export function CommunityCard() {
-  return (
-    <section className="home__card home__community" aria-label="Community">
-      <Wash src={QUARTERS.chat} />
-      <h2>Community</h2>
-      <p>Talk with the Seasonal Tokens community: rooms, private messages and live calls.</p>
-      <p className="home__actions">
-        <Link className="button home__on-navy" to="/chat">
-          Open the chat
-        </Link>
-      </p>
     </section>
   );
 }

@@ -93,7 +93,10 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
       ended: (sessionId) => hub.disconnectSession(sessionId),
       accountChanged: (userId, keepSessionId) => hub.disconnectUser(userId, keepSessionId),
       // A member showed or hid their online status: open lists reload their presence.
-      presenceChanged: () => hub.sendToMembers({ type: 'presence' }),
+      presenceChanged: () => {
+        hub.sendToMembers({ type: 'presence' });
+        hub.announceOnline();
+      },
       // Embed tokens ended (embed/): { tokenId } | { origin } | { userId } — their sockets close.
       embedRevoked: (which) => hub.disconnectEmbeds(which),
     },
@@ -105,6 +108,9 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
       createUnlisted: (room) => createUnlistedRoom(db, room),
       close: (id) => closeRoom(db, id),
     },
+    // For areas that tell a member something live (call reminders, calls/reminders.js): an
+    // event to every open page of that account; returns how many got it.
+    notify: { member: (userId, event) => hub.sendToUser(userId, event) },
     // For areas that let chat users in (a call, calls/): who is asking — an account, or a
     // guest with their chat identity (given now if needed; null after answering 503) — and
     // their chat sanction (mute or ban), if any.

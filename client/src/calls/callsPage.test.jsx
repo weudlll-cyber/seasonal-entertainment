@@ -5,13 +5,14 @@
 // Description: /calls and the sidebar's Calls item (docs/CALLS.md): live, upcoming and recent
 //              calls; organisers create, start and end calls there (members see no controls);
 //              without a call service admins see "not configured" and everyone else no Calls
-//              item; the item shows the LIVE badge while a call is live; with nothing live, the
-//              page says so on a card ("No call is live right now"); the Calls header and the
-//              item's Winter dot.
+//              item; the item shows the LIVE badge while a call is live; every empty list says
+//              so on a card, never a bare "None."; the Calls header and the item's Winter dot; a
+//              planned call offers "Add to calendar" to everyone and "Remind me on this site"
+//              to members, which sets and removes the reminder.
 // ============================================================
 
 import { fireEvent, screen, within } from '@testing-library/react';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
 import { renderApp } from '../test/renderApp.jsx';
 
@@ -35,6 +36,70 @@ const LISTS = {
 const configured = (live, canManage) => ({
   'GET /calls/summary': { body: { ok: true, configured: true, live } },
   'GET /calls': { body: { ok: true, configured: true, canManage, calls: LISTS } },
+});
+
+it('every empty list shows its card, never "None."', async () => {
+  mockApi({
+    ...GUEST,
+    'GET /calls/summary': { body: { ok: true, configured: true, live: false } },
+    'GET /calls': {
+      body: {
+        ok: true,
+        configured: true,
+        canManage: false,
+        calls: { live: [], upcoming: [], recent: [] },
+      },
+    },
+  });
+  await renderApp('/calls');
+  expect(
+    await within(await section('Upcoming')).findByText('No call is planned yet')
+  ).toBeVisible();
+  expect(within(await section('Recent')).getByText('No calls yet')).toBeVisible();
+  expect(screen.queryByText('None.')).toBeNull();
+});
+
+it('a planned call: the calendar file for everyone, the reminder toggle for members', async () => {
+  const planned = CALL(2, 'Race night', 'scheduled', { scheduledFor: '2026-10-25T18:00:00Z' });
+  const lists = (reminders) => ({
+    'GET /calls/summary': { body: { ok: true, configured: true, live: false } },
+    'GET /calls': {
+      body: {
+        ok: true,
+        configured: true,
+        canManage: false,
+        calls: { live: [], upcoming: [planned], recent: [] },
+        reminders,
+      },
+    },
+  });
+  mockApi({ ...GUEST, ...lists([]) });
+  const view = await renderApp('/calls');
+  expect(await screen.findByRole('link', { name: 'Add Race night to calendar' })).toHaveAttribute(
+    'href',
+    '/api/calls/2/calendar.ics'
+  );
+  expect(screen.queryByRole('button', { name: /Remind me/ })).toBeNull();
+  view.unmount();
+
+  const calls = mockApi({
+    ...signedIn({ username: 'mia', role: 'member' }),
+    ...lists([]),
+    'PUT /calls/2/reminder': { body: { ok: true, reminder: true } },
+    'DELETE /calls/2/reminder': { body: { ok: true, reminder: false } },
+  });
+  await renderApp('/calls');
+  const toggle = await screen.findByRole('button', {
+    name: 'Remind me of Race night on this site',
+  });
+  expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  fireEvent.click(toggle);
+  await vi.waitFor(() => expect(toggle).toHaveAttribute('aria-pressed', 'true'));
+  fireEvent.click(toggle);
+  await vi.waitFor(() => expect(toggle).toHaveAttribute('aria-pressed', 'false'));
+  expect(calls.map((c) => c.key)).toEqual(
+    expect.arrayContaining(['PUT /calls/2/reminder', 'DELETE /calls/2/reminder'])
+  );
 });
 
 const section = (name) => screen.findByRole('region', { name });

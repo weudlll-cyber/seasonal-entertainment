@@ -6,23 +6,21 @@
 //              emblem, the lettering and the greeting (with the username when signed in), then
 //              a grid that fits the main column at 1280 x 720 without scrolling: the featured
 //              game and the event bot's next two occurrences (/api/bot-events), the four season
-//              price tiles (/api/prices, docs/BOTS.md), Community and the way to the fair prices
-//              and charts (homeCards.jsx). Real data only.
+//              price tiles (/api/prices, docs/BOTS.md), then Community (live: CommunityCard.jsx),
+//              the next call (/api/calls, as the Calls page: NextCallCard.jsx) and the way to
+//              the fair prices and charts (homeCards.jsx). Real data only.
 // ============================================================
 
 import { useEffect, useState } from 'react';
 import { api } from '../api/http.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { EMBLEM } from '../brand/brand.js';
-import {
-  CommunityCard,
-  FairPriceCard,
-  FeaturedGameCard,
-  PriceTiles,
-  UpNextCard,
-} from './homeCards.jsx';
+import CommunityCard from './CommunityCard.jsx';
+import { FairPriceCard, FeaturedGameCard, PriceTiles, UpNextCard } from './homeCards.jsx';
+import NextCallCard from './NextCallCard.jsx';
 import '../brand/seasonPattern.css';
 import './LandingPage.css';
+import './homeBottomRow.css';
 
 const deviceZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 const HOUR_MS = 60 * 60_000;
@@ -42,6 +40,7 @@ export default function LandingPage({ timeZone = deviceZone() }) {
   const [game, setGame] = useState(undefined); // undefined: loading; null: no games
   const [next, setNext] = useState(null); // upNext()'s answer; null while loading
   const [prices, setPrices] = useState(null); // null while loading or when it failed
+  const [calls, setCalls] = useState(null); // GET /api/calls, as the Calls page; null: none
   const userId = user?.id;
 
   // Visible games depend on who is signed in (members-only cards).
@@ -56,6 +55,13 @@ export default function LandingPage({ timeZone = deviceZone() }) {
       .then(setNext)
       .catch(() => setNext({ failed: true }));
   }, []);
+
+  // The calls and the member's reminders depend on who is signed in.
+  useEffect(() => {
+    api('/calls')
+      .then(setCalls)
+      .catch(() => setCalls(null));
+  }, [userId]);
 
   useEffect(() => {
     api('/prices')
@@ -85,6 +91,7 @@ export default function LandingPage({ timeZone = deviceZone() }) {
         <UpNextCard next={next} timeZone={timeZone} />
         <PriceTiles prices={prices} />
         <CommunityCard />
+        <NextCallCard calls={calls} timeZone={timeZone} />
         <FairPriceCard prices={prices} />
       </div>
     </div>

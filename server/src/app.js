@@ -7,7 +7,8 @@
 //              with the call service built from config) and, when a built client exists, the
 //              static client (hashed assets/ cached for a year) with a fallback to index.html
 //              for client routes. No listen(), so tests drive it directly; app.locals.chat is the chat's handle,
-//              app.locals.calls.start() starts the stale-call job (calls/staleCalls.js),
+//              app.locals.calls.start() starts the stale-call and reminder jobs
+//              (calls/staleCalls.js, calls/reminders.js),
 //              app.locals.reference.start() the ETH, POL and BTC prices job (reference/sync.js).
 //              The embedded chat on approved foreign sites (embed/) adds its CSP, its token
 //              check and its routes; prices and bot events (bots/) are read-only public reads.
@@ -22,6 +23,8 @@ import { referenceRoutes } from './reference/routes.js';
 import { createReferenceSync } from './reference/sync.js';
 import { adminAuditRoutes } from './admin/auditRoutes.js';
 import { callJoinRoutes } from './calls/joinRoutes.js';
+import { callReminderRoutes } from './calls/reminderRoutes.js';
+import { sendCallReminders, startCallReminders } from './calls/reminders.js';
 import { callRoutes } from './calls/routes.js';
 import { callSpotlightRoutes } from './calls/spotlightRoutes.js';
 import { callStageRoutes } from './calls/stageRoutes.js';
@@ -116,11 +119,24 @@ export function createApp({
   api.use('/admin/settings', adminSettingRoutes(db));
   api.use('/embed', embedRoutes(db, config, embedOrigins, chat.sessions));
   api.use('/admin/embed-origins', adminEmbedRoutes(db, config, embedOrigins, chat.sessions));
-  api.use('/calls', callRoutes(db, config, callService, chat));
+  // Call reminders reach a member's open pages over the chat's live connection.
+  const notifyMember = chat.notify.member;
+  const remindNow = () => sendCallReminders(db, notifyMember);
+  api.use('/calls', callRoutes(db, config, callService, chat, remindNow));
+  api.use('/calls', callReminderRoutes(db, config, callService));
   api.use('/calls', callJoinRoutes(db, config, callService, chat));
   api.use('/calls', callStageRoutes(db, config, callService, chat));
   api.use('/calls', callSpotlightRoutes(db, config, callService));
-  app.locals.calls = { start: (log) => startStaleCalls(db, config, callService, chat, log) };
+  // start() returns the function that stops both jobs, or null when neither runs.
+  app.locals.calls = {
+    start: (log) => {
+      const stops = [
+        startStaleCalls(db, config, callService, chat, log),
+        callService ? startCallReminders(db, config, notifyMember, log) : null,
+      ].filter(Boolean);
+      return stops.length ? () => stops.forEach((stop) => stop()) : null;
+    },
+  };
   // The ETH, POL and BTC prices job (reference/sync.js): only with a CoinGecko key and timers on.
   app.locals.reference = {
     start: () =>

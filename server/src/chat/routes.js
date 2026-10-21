@@ -8,7 +8,9 @@
 //              may be sent: messageInput.js; mute/ban, per-sender rate limit, per-IP limits
 //              for guests; a guest gets a unique guest name on the first message or report),
 //              and reporting
-//              a message (its preview then shows to moderators only until reviewed).
+//              a message (its preview then shows to moderators only until reviewed); the glimpse
+//              of the public room "general" for the home page's Community box (how many members
+//              are shown online, only the number, and its newest messages).
 //              New messages are pushed live; a member's first https link gets a preview
 //              card (previews/).
 // ============================================================
@@ -24,7 +26,7 @@ import { readMessageInput } from './messageInput.js';
 import { roomLoader } from './roomLoader.js';
 import { ensureGuest } from './guestIdentity.js';
 import { refuseSanctioned } from './sanctionRefusal.js';
-import { activeSanction, findRoom, listRooms, reportMessage } from './store.js';
+import { activeSanction, findRoom, findRoomBySlug, listRooms, reportMessage } from './store.js';
 import { canRead, canWrite, chatViewer, isModerator } from './viewer.js';
 
 // Per-IP limits that apply to guests only: members are limited per account, and people
@@ -39,6 +41,10 @@ const forGuests =
 
 // previews: the link-preview service (previews/service.js); allowMessage: the per-sender
 // rate limit, shared with direct messages (senderLimit.js, mount.js).
+// The Community box's room and how many of its newest messages it shows.
+const GLIMPSE_ROOM = 'general';
+const GLIMPSE_COUNT = 3;
+
 export function chatRoutes(db, config, hub, previews, allowMessage) {
   const router = express.Router();
   const guestPostsPerIp = forGuests(makeLimiter(config.rateLimits.chatGuestPost));
@@ -47,6 +53,21 @@ export function chatRoutes(db, config, hub, previews, allowMessage) {
   });
 
   const loadRoom = roomLoader(db);
+
+  // The home page's Community box, for everyone: the number of members shown online
+  // (hub.onlineUserIds: their own setting respected) and the newest messages of "general" —
+  // only while everyone may read that room, never a hidden message (not even for moderators).
+  router.get('/glimpse', allow('public'), (_req, res) => {
+    const general = findRoomBySlug(db, GLIMPSE_ROOM);
+    const open = general?.readAccess === 'everyone';
+    const messages = open ? listMessages(db, general, { limit: GLIMPSE_COUNT }) : [];
+    res.json({
+      ok: true,
+      online: hub.onlineUserIds().size,
+      room: open ? GLIMPSE_ROOM : null,
+      messages,
+    });
+  });
 
   // ?include=<slug>: also an unlisted room (a call's chat) when this viewer may read it.
   router.get('/rooms', allow('public'), (req, res) => {

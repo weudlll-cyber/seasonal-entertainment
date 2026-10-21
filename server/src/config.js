@@ -159,6 +159,7 @@ export function readConfig(env = process.env) {
       callManage: { windowMs: 60_000, max: 30 }, // call management actions per organiser
       callJoin: { windowMs: 60_000, max: 30 }, // call joins per IP (guests have no account)
       callAction: { windowMs: 60_000, max: 60 }, // hands, stage, mute, spotlight per account
+      callCalendar: { windowMs: 60_000, max: 60 }, // calendar files per IP (guests too)
       embedToken: { windowMs: 60 * 60_000, max: 30 }, // embed tokens per member (login popup)
       botRead: { windowMs: 60_000, max: 120 }, // price and bot-event reads per IP
       // Every GET under /api per IP (the public reads had none of their own): far above what

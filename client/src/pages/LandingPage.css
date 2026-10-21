@@ -4,7 +4,8 @@
    Project:     Seasonal Entertainment
    Description: Home in the SE style (docs/DESIGN.md, "Home"): the banner, then a four-column
                 grid: featured game and "Up next" (two columns each), the four season price
-                tiles in one row (priceTiles.css), Community and the fair-price box. From 1000px wide the page
+                tiles in one row (priceTiles.css), then Community, Next call and the fair-price
+                box (homeBottomRow.css). From 1000px wide the page
                 fits 1280 x 720 without scrolling; narrower, the boxes stack two columns wide
                 and the main column scrolls.
    ============================================================ */
@@ -72,7 +73,8 @@
 .home__grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-template-rows: minmax(0, 1.15fr) minmax(0, 0.8fr) minmax(0, 0.9fr);
+  /* The bottom row holds the most text (messages, the next call with its actions). */
+  grid-template-rows: minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 1.2fr);
   gap: var(--space-2);
   min-height: 0;
 }
@@ -228,59 +230,6 @@
 
 .home__events li:nth-child(4n + 4) .home__event-dot {
   background: var(--color-autumn);
-}
-
-/* Community: night blue with white text in both themes. */
-.home__community {
-  border-radius: var(--radius-card);
-  background: var(--color-community);
-  color: var(--color-on-banner);
-}
-
-.home__community p:not(.home__actions) {
-  color: var(--color-on-banner-muted);
-}
-
-.home__community .home__wash {
-  top: -40px;
-  right: -30px;
-  width: 300px;
-  height: 270px;
-  margin-top: 0;
-  opacity: 0.24;
-}
-
-/* On night blue the primary button is light in both themes. */
-.home__on-navy {
-  border-color: var(--color-on-banner);
-  background: var(--color-on-banner);
-  color: var(--color-community);
-}
-
-/* The fair-price box: the four marks, then its title and line. */
-.home__fair {
-  flex-direction: row;
-  align-items: center;
-  gap: 1.375rem;
-  color: var(--color-text);
-  text-decoration: none;
-}
-
-.home__icons {
-  display: grid;
-  flex: none;
-  grid-template-columns: repeat(2, 30px);
-  gap: 6px;
-}
-
-.home__fair-text {
-  display: grid;
-  gap: 0.25rem;
-}
-
-.home__fair-title {
-  font-size: 1.375rem;
-  font-weight: var(--font-weight-heading);
 }
 
 @media (max-width: 999.98px) {

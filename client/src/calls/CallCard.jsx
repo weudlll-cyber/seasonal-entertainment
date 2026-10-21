@@ -4,11 +4,13 @@
 // Project:     Seasonal Entertainment
 // Description: One call in the /calls list: title, LIVE mark, when (planned, started or
 //              ended, in the browser's local time), description, who created it, a link to
-//              the call's page; for organisers and admins the Start / End button its status
+//              the call's page; for a planned call "Add to calendar" and the member's reminder
+//              (CallActions.jsx); for organisers and admins the Start / End button its status
 //              allows.
 // ============================================================
 
 import { Link } from 'react-router';
+import CallActions from './CallActions.jsx';
 import LiveBadge from './LiveBadge.jsx';
 
 const when = (iso) =>
@@ -20,8 +22,9 @@ function timeLine(call) {
   return call.scheduledFor ? `Planned for ${when(call.scheduledFor)}` : 'Not planned yet';
 }
 
-// onAction(call, 'start' | 'end'): only passed to organisers and admins.
-export default function CallCard({ call, onAction }) {
+// reminded: this member has a reminder for it; onAction(call, 'start' | 'end'): only passed
+// to organisers and admins.
+export default function CallCard({ call, reminded, onAction }) {
   return (
     <li className={`call-card call-card--${call.status}`}>
       <h3 className="call-card__title">
@@ -36,6 +39,7 @@ export default function CallCard({ call, onAction }) {
           {call.status === 'live' ? `Open ${call.title}` : `Details of ${call.title}`}
         </Link>
       </p>
+      <CallActions call={call} reminded={reminded} />
       {onAction && call.status !== 'ended' && (
         <div className="call-card__actions">
           {call.status === 'scheduled' && (

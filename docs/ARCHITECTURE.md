@@ -372,7 +372,8 @@ client/                    React + Vite client
   src/styles/              tokens.css (all design tokens, light and dark), fonts.css, base.css
   src/theme/               light/dark theme: rule, provider, toggle (docs/DESIGN.md)
   src/calls/               community calls: /calls list, call form and card, LIVE badge,
-                           the sidebar's calls summary; the call page's parts (stage, speaker
+                           the sidebar's calls summary, a planned call's actions (calendar
+                           file, reminder), the members' reminder notices; the call page's parts (stage, speaker
                            tiles, listeners, controls, media), its live connection
                            (useCallRoom, livekit-client) and its rules (stageModel)
   src/keys/                a member's key pair in the browser: provider, device copy
@@ -415,8 +416,9 @@ server/
   src/config.js            environment configuration
   src/calls/               community calls (docs/CALLS.md): call service configuration, the
                            call service adapter, schema, store, participants, grants and join
-                           tokens, spotlight rule, routes (management, join, stage, spotlight),
-                           ending a call and the stale-call job
+                           tokens, spotlight rule, routes (management, join, stage, spotlight,
+                           calendar file and reminders), ending a call, the stale-call job and
+                           the reminder job
   src/settings/            admin-editable site settings: definitions, store, admin routes
   src/embed/               the chat on approved other sites: the approved list (a setting),
                            embed tokens, their route allow-list, routes (docs/EMBED.md, AUTH.md)

@@ -7,7 +7,10 @@
 //              chat room (an unlisted chat room, read-only once the call ends), the name of
 //              its room on the call service, who is in the spotlight (spotlight.js) and since
 //              when a live call's room has been missing on the call service (staleCalls.js).
-//              Participants: one per call and person (participants.js). migrateCalls() brings
+//              Participants: one per call and person (participants.js). Reminders: a member's
+//              "Remind me on this site" with when each notice was delivered (reminders.js; a
+//              new table, so CREATE TABLE IF NOT EXISTS adds it to an older database, SE-HOME-
+//              LIVE-1). migrateCalls() brings
 //              an older calls table up (columns that came later: the spotlight, SE-CALLS-2;
 //              room_missing_since, SE-NIGHT-2).
 // ============================================================
@@ -47,6 +50,15 @@ CREATE UNIQUE INDEX IF NOT EXISTS call_participants_user
   ON call_participants (call_id, user_id) WHERE user_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS call_participants_guest
   ON call_participants (call_id, guest_id) WHERE guest_id IS NOT NULL;
+CREATE TABLE IF NOT EXISTS call_reminders (
+  user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  call_id      INTEGER NOT NULL REFERENCES calls(id) ON DELETE CASCADE,
+  created_at   TEXT    NOT NULL,
+  soon_sent_at TEXT,
+  live_sent_at TEXT,
+  PRIMARY KEY (user_id, call_id)
+);
+CREATE INDEX IF NOT EXISTS call_reminders_by_call ON call_reminders (call_id);
 `;
 
 // CREATE TABLE IF NOT EXISTS skips a table that exists already: a calls table made before the

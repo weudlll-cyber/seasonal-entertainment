@@ -1,0 +1,145 @@
+/* ============================================================
+   File:        homeBottomRow.css
+   Path:        client/src/pages/homeBottomRow.css
+   Project:     Seasonal Entertainment
+   Description: The home page's bottom row (docs/DESIGN.md, "Home"): Community (two columns,
+                night blue, live: CommunityCard.jsx), Next call (one column, NextCallCard.jsx)
+                and the fair-price box (one column). Without calls set up, the fair-price box
+                takes the Next call's column too.
+   ============================================================ */
+
+/* Community: night blue with white text in both themes. */
+.home__community {
+  border-radius: var(--radius-card);
+  background: var(--color-community);
+  color: var(--color-on-banner);
+}
+
+.home__community p:not(.home__actions) {
+  color: var(--color-on-banner-muted);
+}
+
+.home__community .home__wash {
+  top: -40px;
+  right: -30px;
+  width: 300px;
+  height: 270px;
+  margin-top: 0;
+  opacity: 0.24;
+}
+
+/* On night blue the primary button is light in both themes. */
+.home__on-navy {
+  border-color: var(--color-on-banner);
+  background: var(--color-on-banner);
+  color: var(--color-community);
+}
+
+/* The fair-price box (one column): the four marks above its title and line. */
+.home__fair {
+  grid-column: span 1;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.home__icons {
+  display: grid;
+  flex: none;
+  grid-template-columns: repeat(2, 30px);
+  gap: 6px;
+}
+
+.home__fair-text {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.home__fair-title {
+  font-size: 1.375rem;
+  font-weight: var(--font-weight-heading);
+}
+
+.home__online {
+  /* The Spring colour: 6.0:1 on the Community blue (light), 7.7:1 (dark). */
+  color: var(--color-spring);
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-strong);
+}
+
+/* The newest messages: an initial in a season colour, name and text, the time at the end. */
+.home__messages {
+  display: grid;
+  gap: 0.375rem;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+}
+
+.home__messages li {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.home__messages span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home__said,
+.home__messages time {
+  color: var(--color-on-banner-muted);
+}
+
+.home__messages time {
+  font-size: 0.8125rem;
+}
+
+.home__initial {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--color-autumn);
+  color: var(--color-on-season);
+  font-weight: var(--font-weight-heading);
+}
+
+.home__messages li:nth-child(3n + 2) .home__initial {
+  background: var(--color-spring);
+}
+
+.home__messages li:nth-child(3n + 3) .home__initial {
+  background: var(--color-winter);
+}
+
+/* Next call: one column; the play-button quarter behind it. */
+.home__next-call {
+  grid-column: span 1;
+}
+
+.home__call-title {
+  /* One line, never squeezed by the box (it would cut the letters): ellipsis instead. */
+  flex: none;
+  overflow: hidden;
+  font-size: 1.375rem;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home__call-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.home__grid:not(:has(.home__next-call)) .home__fair {
+  grid-column: span 2;
+}

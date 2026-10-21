@@ -3,9 +3,9 @@
 // Path:        client/src/chat/usePersonalEvents.js
 // Project:     Seasonal Entertainment
 // Description: Runs `handler(event)` for every event of the signed-in member's own (new direct
-//              messages, room activity, own reads; connection.js), with the live connection
-//              following the account. Shared by the direct-message views and the unread
-//              counters.
+//              messages, room activity, own reads, call reminders; connection.js), with the live
+//              connection following the account. Shared by the direct-message views, the unread
+//              counters and (through index.js) the site's call notices.
 // ============================================================
 
 import { useEffect } from 'react';

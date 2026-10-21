@@ -10,7 +10,8 @@
 //              account (login, logout, switch) opens a fresh connection (connectAs). Events
 //              for the account itself need no subscription — new direct messages, activity in a
 //              readable room, the member's own reads and mutes (the unread counters), someone's
-//              changed online visibility ("presence") — and
+//              changed online visibility ("presence"), a call reminder of the site's
+//              ("callReminder", calls/CallNotices.jsx) — and
 //              joinPersonal() hands them on. The chat embedded on an approved foreign site has
 //              no cookie there: it offers its embed token as a subprotocol (api/http.js), and when
 //              that socket closes, asks whether the token still works (if not, it is dropped).
@@ -22,7 +23,8 @@ const RECONNECT_MS = 3000;
 // An unused socket is closed after the current render, not during it: a panel that leaves and
 // comes straight back (React's StrictMode remounts every effect in development) reuses it.
 const listeners = new Map(); // room slug -> Set of event handlers
-const PERSONAL = new Set(['direct', 'activity', 'read', 'muted', 'presence']); // events for the account itself
+// Events for the account itself.
+const PERSONAL = new Set(['direct', 'activity', 'read', 'muted', 'presence', 'callReminder']);
 const personal = new Set(); // their handlers
 let socket = null;
 let retry = null;

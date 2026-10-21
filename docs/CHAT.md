@@ -39,7 +39,10 @@ passes the member's unlocked key and shows the unlock step while there is none) 
 **`<MenuButton items label buttonLabel className>`** (the module's small keyboard menu: arrows,
 Escape, Tab; an item with `confirm` asks first — the call stage uses it for its speaker menu) and
 **`useNewMessageCount(room, counting)`** (messages that arrived in a room while counting — a
-collapsed call chat, whose unlisted room is not in the unread counters).
+collapsed call chat, whose unlisted room is not in the unread counters),
+**`usePersonalEvents(handler)`** (the signed-in member's own live events on the one connection;
+the site's call reminders, `callReminder`, docs/CALLS.md), **`useRoomGlimpse()`** (the
+Community box, below) and
 **`onDirectRequest(callback)`** (a name menu asked for a conversation: the host brings its Direct
 tab forward). The module encrypts and decrypts with `shared/crypto.js`, the only other outside
 import it is allowed.
@@ -329,7 +332,25 @@ beside favourite members, in the Direct list and conversation, and in "Find a me
   out. Their own view of others does not change.
 - **Live**: a change is pushed as "presence" to every member's open sockets; open lists (the
   favourites, the Direct list) reload their online marks at once.
-- There are no room online lists or presence counts; if they come, they must use the same place.
+- There are no room online lists. The one count — the home page's Community box, "● N online"
+  (2026-10-21) — uses the same place: only the number leaves the server, never who.
+
+## Community box (home page)
+
+The home page shows a glimpse of the public room "general" (decided 2026-10-21): "● N online" and
+its newest 3 messages (name, short text, time), then "Open the chat".
+
+- **Server**: `GET /api/chat/glimpse` (public): `{ online, room, messages }`. Messages only while
+  "general" may be read by everyone (`room` is then `"general"`, else `null` and no messages),
+  never a hidden one, not even for moderators. Never another room, never direct messages. When
+  the online count changes (a member connects or leaves, or shows or hides their status), the
+  hub pushes `{ type: 'online', count }` to the readers of "general".
+- **Client**: the module's **`useRoomGlimpse()`** (`index.js`): the glimpse, kept live on the one
+  connection — a new message added (only while `room` is set), a hidden one makes it ask again,
+  a new count replaces the old. The box (`client/src/pages/CommunityCard.jsx`) shows text only:
+  an attachment as `[image]` (stickers, pictures), `[GIF]` or `[file]`.
+- **24-hour rule**: when the newest message is more than 24 hours old, the box shows only the
+  count and "Open the chat".
 
 ## Reporting a direct message
 
@@ -366,6 +387,8 @@ const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork });
 // chat.sessions.ended(sessionId)                 logout: close that session's sockets
 // chat.sessions.accountChanged(userId, keepSid)  role, lock, password, 2FA: close the account's sockets
 // chat.sessions.presenceChanged()                 someone showed or hid their online status
+// chat.notify.member(userId, event)              an event to every open page of a member
+//                                                (call reminders); returns how many got it
 // chat.rooms.createUnlisted(room)               a room of another area (a call's chat), unlisted
 // chat.rooms.close(id)                           that room becomes read-only for everyone
 // chat.rooms.find(id) / findBySlug(slug)          read a room

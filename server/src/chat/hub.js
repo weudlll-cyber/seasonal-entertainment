@@ -7,13 +7,15 @@
 //              are never cached: every subscribe and every push checks the account as it is
 //              now. Account changes (logout, lock, role, password, 2FA) also close the sockets.
 //              A socket of the embedded chat on a foreign site (embed/) holds an embed token
-//              instead of a session: it is closed as soon as that token no longer works.
+//              instead of a session: it is closed as soon as that token no longer works. The
+//              number of members shown online goes to the readers of "general" whenever it
+//              changes (the home page's Community box).
 // ============================================================
 
 import { WebSocket } from 'ws';
 import { idsShowingOnline } from '../accounts/userStore.js';
 import { tokenStillActive } from '../embed/tokens.js';
-import { findRoom } from './store.js';
+import { findRoom, findRoomBySlug } from './store.js';
 import { canRead, sessionViewer } from './viewer.js';
 
 // Close code from the private range: the client reconnects and is judged afresh.
@@ -27,15 +29,30 @@ export class ChatHub {
     this.embedOrigins = embedOrigins;
     this.sessions = new Map(); // socket -> { id, data } of its session at connect time
     this.rooms = new Map(); // room id -> Set of sockets
+    this.onlineShown = null; // the online count last pushed
   }
 
   add(socket, sessionId, sessionData) {
     this.sessions.set(socket, { id: sessionId, data: sessionData });
+    if (sessionData.userId !== undefined) this.announceOnline();
   }
 
   remove(socket) {
+    const member = this.sessions.get(socket)?.data.userId !== undefined;
     this.sessions.delete(socket);
     for (const sockets of this.rooms.values()) sockets.delete(socket);
+    if (member) this.announceOnline();
+  }
+
+  // The online count, to everyone reading "general", when it changed (a member came, left,
+  // or showed or hid their status). Only the number: who is online stays as private as before.
+  announceOnline() {
+    if (!this.db.open) return; // sockets closing while the server shuts down
+    const count = this.onlineUserIds().size;
+    if (count === this.onlineShown) return;
+    this.onlineShown = count;
+    const general = findRoomBySlug(this.db, 'general');
+    if (general) this.broadcast(general.id, { type: 'online', count });
   }
 
   // The socket's viewer as of now; a socket whose account no longer qualifies is closed.
@@ -80,13 +97,19 @@ export class ChatHub {
   }
 
   // To every open socket of one account (direct messages need no subscription). Rights are
-  // checked as for room pushes: a socket whose account no longer qualifies is closed.
+  // checked as for room pushes: a socket whose account no longer qualifies is closed. Returns
+  // how many sockets got it (call reminders count as delivered only then).
   sendToUser(userId, event) {
     const text = JSON.stringify(event);
+    let sent = 0;
     for (const [socket, session] of this.sessions) {
       if (session.data.userId !== userId || socket.readyState !== WebSocket.OPEN) continue;
-      if (this.viewerOf(socket)?.user?.id === userId) socket.send(text);
+      if (this.viewerOf(socket)?.user?.id === userId) {
+        socket.send(text);
+        sent += 1;
+      }
     }
+    return sent;
   }
 
   // To every account socket whose member may read `room` right now, subscribed or not (the
