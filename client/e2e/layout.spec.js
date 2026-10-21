@@ -4,8 +4,9 @@
 // Project:     Seasonal Entertainment
 // Description: The app shell in a real browser (docs/DESIGN.md): at 1440 x 900, 1280 x 720 and
 //              1920 x 1080 the window never scrolls on any main page and the sidebar is shown;
-//              Home's boxes are never cut, and at the end of its scroll the last row clears the
-//              floating chat button (replaced "Home fits without scrolling", 2026-10-21). At
+//              Home, at its fullest (a planned call with a long title, 3 messages), fits the
+//              window without scrolling, no box is cut and nothing in a box lies under the
+//              floating chat button (owner decision 2026-10-17, confirmed 2026-10-21). At
 //              390 x 844 (phone): no window
 //              scroll, a top bar, and the navigation drawer opens and closes (close button,
 //              Escape, following a link), with focus going in and back. The chat button shows
@@ -44,29 +45,102 @@ const windowFits = (page) =>
       (element) => element.scrollHeight <= window.innerHeight
     )
   );
-// Scrolled to the end: the lowest home box's bottom and the chat button's top, and any box whose
-// own content (not its faint logo part, which overflows on purpose) reaches past its edge.
-const homeEnd = (page) =>
+// The home page as it is: whether its column scrolls, any box whose own content (not its faint
+// logo part, which overflows on purpose) reaches past its edge, and anything a visitor sees in a
+// box that lies under the floating chat button.
+const homeState = (page) =>
   page.evaluate(() => {
     const main = document.querySelector('main');
-    main.scrollTo(0, main.scrollHeight);
     const boxes = [...document.querySelectorAll('.home__grid > *')];
-    const cut = boxes.filter((box) => {
-      const edge = box.getBoundingClientRect().bottom;
-      return [...box.querySelectorAll('*')].some(
+    const seen = (box) =>
+      [...box.querySelectorAll('*')].filter(
         (el) =>
           !el.closest('.home__wash') &&
           getComputedStyle(el).position !== 'absolute' &&
-          el.getClientRects().length > 0 &&
-          el.getBoundingClientRect().bottom > edge + 1
+          el.getClientRects().length > 0
       );
-    });
+    const name = (box) => box.getAttribute('aria-label') ?? box.className;
+    const launcher = document.querySelector('.chat-launcher').getBoundingClientRect();
+    const under = (el) => {
+      const b = el.getBoundingClientRect();
+      return (
+        b.right > launcher.left &&
+        b.left < launcher.right &&
+        b.bottom > launcher.top &&
+        b.top < launcher.bottom
+      );
+    };
     return {
-      lastBottom: Math.max(...boxes.map((box) => box.getBoundingClientRect().bottom)),
-      launcherTop: document.querySelector('.chat-launcher').getBoundingClientRect().top,
-      cut: cut.map((box) => box.getAttribute('aria-label') ?? box.className),
+      scrolls: main.scrollHeight > main.clientHeight,
+      // Cut: reaching past the box, or past any part inside it that clips (a list that hides
+      // its overflow would otherwise cut a message without the box noticing).
+      cut: boxes
+        .filter((box) =>
+          seen(box).some((el) => {
+            const bottom = el.getBoundingClientRect().bottom;
+            for (let up = el.parentElement; up && up !== box.parentElement; up = up.parentElement) {
+              // A title clamped after its lines hides the rest on purpose (ellipsis).
+              if (getComputedStyle(up).webkitLineClamp !== 'none') return false;
+              const clips = getComputedStyle(up).overflowY !== 'visible' || up === box;
+              if (clips && bottom > up.getBoundingClientRect().bottom + 1) return true;
+            }
+            return false;
+          })
+        )
+        .map(name),
+      underLauncher: boxes.flatMap((box) =>
+        seen(box)
+          .filter((el) => el.matches('a, button, p, h2, span, strong, li, img, time') && under(el))
+          .map((el) => `${name(box)}: ${el.textContent.trim().slice(0, 30)}`)
+      ),
     };
   });
+
+// The fullest home, whatever other specs do meanwhile (they start their own calls): a planned
+// call with a 58-character title and the longest date (with the year), both of its buttons (as
+// the run's admin), and 3 recent messages in General — answered here, as prices.spec.js does.
+const CALL = {
+  id: 999,
+  title: 'Seasonal Tokens community call: the four seasons explained',
+  status: 'scheduled',
+  description: '',
+  scheduledFor: '2000-01-01T19:00:00.000Z',
+};
+async function fullestHome(page) {
+  await page.route('**/api/calls', (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        configured: true,
+        canManage: true,
+        calls: { live: [], upcoming: [CALL], recent: [] },
+        reminders: [],
+      },
+    })
+  );
+  const message = (id, body) => ({
+    id,
+    author: 'e2eadmin',
+    body,
+    kind: 'text',
+    file: null,
+    createdAt: new Date().toISOString(),
+  });
+  await page.route('**/api/chat/glimpse', (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        online: 3,
+        room: 'general',
+        messages: [
+          message(1, 'Battles start soon — who is in?'),
+          message(2, 'Spring looks cheap again today.'),
+          message(3, 'See you at the community call!'),
+        ],
+      },
+    })
+  );
+}
 
 for (const [width, height] of DESKTOP) {
   test.describe(`${width} x ${height}`, () => {
@@ -90,13 +164,18 @@ for (const [width, height] of DESKTOP) {
       });
     }
 
-    test('Home: no box cut, and its end clears the chat button', async ({ page }) => {
+    test('Home fits without scrolling, no box cut, nothing under the chat button', async ({
+      page,
+    }) => {
+      await fullestHome(page);
       await page.goto('/');
       await expect(page.getByRole('region', { name: 'Up next' }).getByRole('link')).toBeVisible();
+      await expect(
+        page.getByRole('button', { name: /^Remind me of Seasonal Tokens/ })
+      ).toBeVisible();
+      await expect(page.getByText('See you at the community call!')).toBeVisible();
       await page.waitForLoadState('networkidle');
-      const end = await homeEnd(page);
-      expect(end.cut).toEqual([]);
-      expect(end.lastBottom).toBeLessThanOrEqual(end.launcherTop);
+      expect(await homeState(page)).toEqual({ scrolls: false, cut: [], underLauncher: [] });
     });
   });
 }

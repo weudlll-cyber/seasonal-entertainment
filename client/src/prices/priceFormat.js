@@ -6,8 +6,8 @@
 //              the reference coins and the chart ranges as the server names them, and the
 //              formats: one rule for every coin's US-dollar price (at least four significant
 //              digits below $1, so the seasons' fractions of a cent and POL's cents stay
-//              readable; two decimals from $1 on); the 24-hour change as a signed percentage;
-//              times in the viewer's local time.
+//              readable; two decimals from $1 on); the 24-hour change as a signed percentage.
+//              Times use the site's one date format (app/dates.js).
 // ============================================================
 
 // Calendar order, as on the home page; `id` is the bot's token name and the colour token.
@@ -55,17 +55,3 @@ export function formatChange(change) {
 // The change's colour class (prices.css): up green, down red, none or flat plain.
 export const changeClass = (change) =>
   `price-change${change > 0 ? ' price-change--up' : change < 0 ? ' price-change--down' : ''}`;
-
-// A snapshot time in the viewer's zone, always with its date (a day's chart starts and ends at
-// the same hour).
-export function formatPriceTime(ms, timeZone) {
-  return new Intl.DateTimeFormat('en-GB', {
-    timeZone,
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).format(new Date(ms));
-}

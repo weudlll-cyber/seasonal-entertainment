@@ -8,7 +8,8 @@
 //              item; the item shows the LIVE badge while a call is live; every empty list says
 //              so on a card, never a bare "None."; the Calls header and the item's Winter dot; a
 //              planned call offers "Add to calendar" to everyone and "Remind me on this site"
-//              to members, which sets and removes the reminder.
+//              to members, which sets and removes the reminder; dates in the site's one English
+//              format even under a German browser.
 // ============================================================
 
 import { fireEvent, screen, within } from '@testing-library/react';
@@ -100,6 +101,49 @@ it('a planned call: the calendar file for everyone, the reminder toggle for memb
   expect(calls.map((c) => c.key)).toEqual(
     expect.arrayContaining(['PUT /calls/2/reminder', 'DELETE /calls/2/reminder'])
   );
+});
+
+it("dates are the site's English format, also in a German browser", async () => {
+  // A German browser: every date format without an explicit language comes out German.
+  const RealFormat = Intl.DateTimeFormat;
+  const realToLocale = Date.prototype.toLocaleString;
+  const format = vi
+    .spyOn(Intl, 'DateTimeFormat')
+    .mockImplementation(function german(locale, options) {
+      return new RealFormat(locale ?? 'de-DE', options);
+    });
+  const toLocale = vi
+    .spyOn(Date.prototype, 'toLocaleString')
+    .mockImplementation(function german(locale, options) {
+      return realToLocale.call(this, locale ?? 'de-DE', options);
+    });
+  try {
+    const planned = CALL(2, 'Race night', 'scheduled', { scheduledFor: '2026-10-25T12:00:00Z' });
+    const ended = CALL(3, 'Launch', 'ended', { endedAt: '2026-10-18T12:00:00Z' });
+    mockApi({
+      ...GUEST,
+      'GET /calls/summary': { body: { ok: true, configured: true, live: false } },
+      'GET /calls': {
+        body: {
+          ok: true,
+          configured: true,
+          canManage: false,
+          calls: { live: [], upcoming: [planned], recent: [ended] },
+        },
+      },
+    });
+    await renderApp('/calls');
+    const upcoming = await section('Upcoming');
+    expect(within(upcoming).getByText(/^Planned for /)).toHaveTextContent(
+      /^Planned for Sunday 25 October, \d\d:\d\d \S+$/
+    );
+    expect(within(await section('Recent')).getByText(/^Ended /)).toHaveTextContent(
+      /^Ended Sunday 18 October, \d\d:\d\d \S+$/
+    );
+  } finally {
+    format.mockRestore();
+    toLocale.mockRestore();
+  }
 });
 
 const section = (name) => screen.findByRole('region', { name });

@@ -4,8 +4,10 @@
 // Project:     Seasonal Entertainment
 // Description: The viewer's local week and times: the local Monday 00:00 a week starts at
 //              (daylight-saving weeks are 167 or 169 hours long) and the labels for a day and a
-//              time in a time zone. Used for the event bot's occurrences (docs/BOTS.md). Pure
-//              functions; the time zone is a parameter so tests can pin it.
+//              time in a time zone; formatDateTime is the one way the site writes a date and
+//              time (docs/DESIGN.md, "Dates"). Used for the event bot's occurrences
+//              (docs/BOTS.md), calls, prices and the admin lists. Pure functions; the time zone
+//              (and "now", for the year) are parameters so tests can pin them.
 // ============================================================
 
 // Wall-clock parts of an instant in a time zone.
@@ -80,4 +82,19 @@ export function formatDay(instant, timeZone) {
     day: 'numeric',
     month: 'long',
   }).format(new Date(instant));
+}
+
+// A non-breaking space: the zone never ends up alone on the next line.
+const NBSP = String.fromCharCode(0xa0);
+const yearOf = (instant, timeZone) =>
+  new Intl.DateTimeFormat('en-GB', { timeZone, year: 'numeric' }).format(new Date(instant));
+
+// Every date the site shows, as "Up next" does (decided 2026-10-21): "Thursday 22 October, 20:30
+// CEST" in the zone, English, 24-hour; the year only when it is not the current one there
+// ("Friday 31 December 2027, 23:00 CET").
+export function formatDateTime(instant, timeZone, now = Date.now()) {
+  const year = yearOf(instant, timeZone);
+  const day = formatDay(instant, timeZone) + (year === yearOf(now, timeZone) ? '' : ` ${year}`);
+  const local = formatLocal(instant, timeZone);
+  return `${day}, ${local.time}${NBSP}${local.zone}`;
 }

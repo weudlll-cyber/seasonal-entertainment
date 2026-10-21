@@ -5,22 +5,19 @@
    Description: Home in the SE style (docs/DESIGN.md, "Home"): the banner, then a four-column
                 grid: featured game and "Up next" (two columns each), the four season price
                 tiles in one row (priceTiles.css), then Community, Next call and the fair-price
-                box (homeBottomRow.css). From 1000px wide the rows fill the window when there is
-                room and keep their content's height when there is not (the column then
-                scrolls); narrower, the boxes stack two columns wide. The end of the page stays
-                clear of the floating chat button.
+                box (homeBottomRow.css). From 1000px wide the page fits the window without
+                scrolling from 1280 x 720 on, and no box is ever cut; narrower, the boxes stack
+                two columns wide and the main column scrolls.
    ============================================================ */
 
 .home {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: var(--space-2);
+  gap: var(--space-1);
   max-width: 80rem;
-  min-height: 100%;
+  height: 100%;
   margin: 0 auto;
-  /* The bottom keeps clear of the floating chat button: its size plus its distance from the
-     window's edge (ChatDrawer.css) plus a gap, so the last row is never under it. */
-  padding: 1.25rem var(--space-3) calc(var(--chat-launcher-size) + var(--space-3) + var(--space-1));
+  padding: var(--space-2) var(--space-3);
 }
 
 /* The banner: emblem, the logo's lettering and the greeting, on night blue. Its height
@@ -30,7 +27,8 @@
   align-items: center;
   justify-content: center;
   gap: clamp(var(--space-2), 2vw, 1.75rem);
-  height: clamp(120px, 21vh, 190px);
+  /* Low enough that the boxes below keep their room at 1280 x 720 (15 % of the window). */
+  height: clamp(96px, 15vh, 160px);
   padding: 0 var(--space-3);
   border-radius: var(--radius-card);
 }
@@ -51,14 +49,16 @@
   background: var(--logo-lettering);
   background-clip: text;
   color: transparent;
-  font-size: clamp(2.5rem, 1rem + 4.5vw, 4.75rem);
+  /* With the window's width, but never taller than the banner allows: the lettering and the
+     emblem (a share of the banner's height) scale down together. */
+  font-size: min(clamp(2.5rem, 1rem + 4.5vw, 4.75rem), 7vh);
   font-weight: var(--font-weight-heading);
   letter-spacing: 0.01em;
   line-height: 0.9;
 }
 
 .home__lettering-sub {
-  font-size: clamp(1rem, 0.5rem + 1.6vw, 1.875rem);
+  font-size: min(clamp(1rem, 0.5rem + 1.6vw, 1.875rem), 3vh);
   font-weight: var(--font-weight-strong);
   letter-spacing: 0.24em;
   line-height: 1;
@@ -76,10 +76,10 @@
 .home__grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  /* The rows share the room in these proportions, but never below their content (a box is
-     never cut); the bottom row holds the most text (messages, the next call's actions). */
-  grid-template-rows: minmax(min-content, 1fr) minmax(min-content, 0.8fr) minmax(min-content, 1.2fr);
-  gap: var(--space-2);
+  /* The bottom row holds the most text (messages, the next call with its actions); the top
+     row needs a little more than the tiles (two events with their pictures). */
+  grid-template-rows: minmax(0, 1.05fr) minmax(0, 0.8fr) minmax(0, 1.15fr);
+  gap: var(--space-1);
   min-height: 0;
 }
 
@@ -92,7 +92,7 @@
   flex-direction: column;
   gap: var(--space-1);
   min-height: 0;
-  padding: 1.375rem 1.625rem;
+  padding: var(--space-2) var(--space-3);
   overflow: hidden;
 }
 
@@ -237,6 +237,10 @@
 }
 
 @media (max-width: 999.98px) {
+  .home {
+    height: auto;
+  }
+
   .home__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: none;
@@ -256,8 +260,7 @@
 
 @media (max-width: 599.98px) {
   .home {
-    padding: var(--space-2) var(--space-2)
-      calc(var(--chat-launcher-size) + var(--space-3) + var(--space-1));
+    padding: var(--space-2);
   }
 
   .home__banner {

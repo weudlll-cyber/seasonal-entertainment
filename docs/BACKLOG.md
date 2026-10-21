@@ -70,6 +70,10 @@ An entry moves from part one to part two only when its branch is merged into `ma
   zone stays with its time; the home's end clears the chat button and no box is cut (the home
   scrolls when its content needs it); Fair price's marks in one row with the arrow beside the
   title; the fair price table never sticks out, all rows equal, scrolling inside below 1100px.
+- **SE-HOME-LIVE-1 follow-up 2 (owner decision 2026-10-21)** — on `feat/se-home-live-1` (not
+  merged yet): home fits the window again from 1280 x 720 (a lower banner, tighter spacing, the
+  Next call buttons as icons in one row, its title in 2 lines), no box cut, nothing under the
+  chat button; one date format everywhere (`formatDateTime`, docs/DESIGN.md, "Dates").
 - **Security check (SE-NIGHT-4 piece 4)** — closed by SE-NIGHT-4 piece 4 (`feat/se-night-4`,
   not merged yet): no known vulnerabilities (npm audit), react-router 8.4.0 → 8.5.0; salt
   requests and every `/api` read limited per IP; link-preview failures logged by host only.

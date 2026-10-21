@@ -13,11 +13,10 @@
 import { useEffect, useState } from 'react';
 import { formatDay, startOfWeek } from '@seasonal-entertainment/shared/localWeek.js';
 import { api } from '../api/http.js';
+import { deviceZone } from '../app/dates.js';
 import PageHeader from '../brand/PageHeader.jsx';
 import EventItem from './EventItem.jsx';
 import './EventsPage.css';
-
-const deviceZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 export default function EventsPage({ timeZone = deviceZone(), now }) {
   // "Now" is read once when the page opens; the week shown stays put while it is open.

@@ -12,6 +12,7 @@ import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { deriveAccountKeys } from '@seasonal-entertainment/shared/crypto.js';
 import App from '../app/App.jsx';
+import { formatWhen } from '../app/dates.js';
 import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
 
 const admin = { id: 1, username: 'ada', role: 'admin', twoFactorEnabled: true };
@@ -141,6 +142,7 @@ describe('audit page', () => {
       'user.lock',
       'user.role',
     ]);
-    expect(rows[1]).toHaveTextContent('2026-10-17 03:00:00');
+    // The site's one date format, in the device's zone (plain spaces, as the matcher compares).
+    expect(rows[1]).toHaveTextContent(formatWhen('2026-10-17T03:00:00.000Z').replace(/\s/g, ' '));
   });
 });

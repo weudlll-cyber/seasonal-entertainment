@@ -11,8 +11,8 @@
 // ============================================================
 
 import { Link } from 'react-router';
-import { formatDay, formatLocal } from '@seasonal-entertainment/shared/localWeek.js';
 import { GAME_STATUS_LABELS } from '@seasonal-entertainment/shared/gameRules.js';
+import { formatWhen } from '../app/dates.js';
 import { EMBLEM, QUARTERS, SEASON_ICONS } from '../brand/brand.js';
 import { formatChange, formatUsd, TOKENS } from '../prices/priceFormat.js';
 import './priceTiles.css';
@@ -71,23 +71,18 @@ export function UpNextCard({ next, timeZone }) {
         <p className="home__text">No events in the next seven days.</p>
       )}
       <ul className="home__events">
-        {next?.next?.map(({ id, name, start, image }) => {
-          const local = formatLocal(start, timeZone);
-          return (
-            <li key={`${id}-${start}`}>
-              {/* The event's own image when it has one, else a dot in a season colour. */}
-              {image ? (
-                <img className="home__event-image" src={image} alt={name} loading="lazy" />
-              ) : (
-                <span className="home__event-dot" aria-hidden="true" />
-              )}
-              <strong>{name}</strong>
-              <span className="home__text">
-                {formatDay(start, timeZone)}, {local.time} {local.zone}
-              </span>
-            </li>
-          );
-        })}
+        {next?.next?.map(({ id, name, start, image }) => (
+          <li key={`${id}-${start}`}>
+            {/* The event's own image when it has one, else a dot in a season colour. */}
+            {image ? (
+              <img className="home__event-image" src={image} alt={name} loading="lazy" />
+            ) : (
+              <span className="home__event-dot" aria-hidden="true" />
+            )}
+            <strong>{name}</strong>
+            <span className="home__text">{formatWhen(start, timeZone)}</span>
+          </li>
+        ))}
       </ul>
     </section>
   );

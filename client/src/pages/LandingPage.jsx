@@ -13,6 +13,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '../api/http.js';
+import { deviceZone } from '../app/dates.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { EMBLEM } from '../brand/brand.js';
 import CommunityCard from './CommunityCard.jsx';
@@ -22,7 +23,6 @@ import '../brand/seasonPattern.css';
 import './LandingPage.css';
 import './homeBottomRow.css';
 
-const deviceZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 const HOUR_MS = 60 * 60_000;
 
 // The event bot's next two occurrences that still take place: { connected, next }.

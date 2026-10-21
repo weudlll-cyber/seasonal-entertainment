@@ -19,10 +19,9 @@ import CallStage from '../calls/CallStage.jsx';
 import LiveBadge from '../calls/LiveBadge.jsx';
 import { useCallRoom } from '../calls/useCallRoom.js';
 import { callsChanged } from '../calls/useCallsSummary.js';
+import { formatWhen } from '../app/dates.js';
 import { FormMessage } from '../components/FormField.jsx';
 import '../calls/callPage.css';
-
-const time = (iso) => new Date(iso).toLocaleTimeString(undefined, { timeStyle: 'short' });
 
 const STATUS_TEXT = {
   idle: null,
@@ -61,7 +60,7 @@ export default function CallPage() {
           {info.title} {info.status === 'live' && <LiveBadge />}
         </h1>
         <p className="call-page__facts">
-          {info.status === 'live' && `Started ${time(info.startedAt)}`}
+          {info.status === 'live' && `Started ${formatWhen(info.startedAt)}`}
           {info.status === 'scheduled' && 'This call has not started yet.'}
           {info.status === 'ended' && 'This call has ended.'}
           {joined && ` · ${speakers} speaking · ${live.people.length - speakers} listening`}

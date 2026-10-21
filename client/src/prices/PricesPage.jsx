@@ -20,6 +20,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { api } from '../api/http.js';
+import { deviceZone } from '../app/dates.js';
 import { SEASON_ICONS } from '../brand/brand.js';
 import { FormMessage } from '../components/FormField.jsx';
 import { ALL_COINS, parseCoins, shownCoins, toggleAll, toggleCoin } from './coinSelection.js';
@@ -31,7 +32,6 @@ import TokenPicker from './TokenPicker.jsx';
 import '../brand/seasonPattern.css';
 import './prices.css';
 
-const deviceZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 const isReference = (id) => REFERENCE.some((t) => t.id === id);
 const nameOf = Object.fromEntries([...TOKENS, ...REFERENCE].map((t) => [t.id, t.name]));
 const byId = (answer) => Object.fromEntries((answer?.prices ?? []).map((p) => [p.token, p]));

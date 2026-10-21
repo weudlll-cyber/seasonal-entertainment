@@ -18,8 +18,13 @@ import App from '../app/App.jsx';
 import { GUEST, mockApi } from '../test/mockApi.js';
 import PricesPage from './PricesPage.jsx';
 import { formatChange, formatUsd } from './priceFormat.js';
+import { formatWhen } from '../app/dates.js';
+
+// The site's one date format (app/dates.js), with plain spaces as the matchers compare text.
+const at = (iso, zone) => formatWhen(iso, zone).replace(/\s/g, ' ');
 
 const AT = Date.parse('2026-10-21T12:00:00Z');
+const BERLIN = 'Europe/Berlin';
 const latest = (token, price, change24h) => ({
   token,
   price,
@@ -136,11 +141,17 @@ describe('/info/prices', () => {
     const chart = await screen.findByRole('img', { name: /^Spring price from/ });
     chart.getBoundingClientRect = () => ({ left: 0, width: 640, top: 0, height: 260 });
     fireEvent.pointerMove(chart, { clientX: 630 });
-    expect(screen.getByText('$0.002712 at 21 Oct 2026, 14:00')).toBeInTheDocument();
+    expect(
+      screen.getByText(`$0.002712 at ${at('2026-10-21T12:00:00Z', BERLIN)}`)
+    ).toBeInTheDocument();
     fireEvent.keyDown(chart, { key: 'Home' });
-    expect(screen.getByText('$0.002600 at 20 Oct 2026, 14:00')).toBeInTheDocument();
+    expect(
+      screen.getByText(`$0.002600 at ${at('2026-10-20T12:00:00Z', BERLIN)}`)
+    ).toBeInTheDocument();
     fireEvent.keyDown(chart, { key: 'ArrowRight' });
-    expect(screen.getByText('$0.002800 at 21 Oct 2026, 02:00')).toBeInTheDocument();
+    expect(
+      screen.getByText(`$0.002800 at ${at('2026-10-21T00:00:00Z', BERLIN)}`)
+    ).toBeInTheDocument();
   });
 
   it('dates the time axis even for a day, where it starts and ends at the same hour', async () => {
@@ -154,10 +165,12 @@ describe('/info/prices', () => {
     fireEvent.click(screen.getByRole('button', { name: '24 h' }));
     expect(
       await screen.findByRole('img', {
-        name: 'Spring price from 20 Oct 2026, 14:00 to 21 Oct 2026, 14:00',
+        name: (name) =>
+          name.replace(/\s/g, ' ') ===
+          `Spring price from ${at('2026-10-20T12:00:00Z', BERLIN)} to ${at('2026-10-21T12:00:00Z', BERLIN)}`,
       })
     ).toBeInTheDocument();
-    expect(screen.getByText('20 Oct 2026, 14:00')).toBeInTheDocument(); // the axis's first time
+    expect(screen.getByText(at('2026-10-20T12:00:00Z', BERLIN))).toBeInTheDocument(); // axis start
   });
 
   it('without the price bot, says so plainly', async () => {

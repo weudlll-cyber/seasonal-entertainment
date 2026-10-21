@@ -10,6 +10,7 @@
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
+import { formatWhen } from '../app/dates.js';
 import { mockApi } from '../test/mockApi.js';
 import AdminDirectReports, { SHARED_LABEL } from './AdminDirectReports.jsx';
 
@@ -56,7 +57,7 @@ it('shows shared copies on request, labelled; closes reports as reviewed', async
   fireEvent.click(within(first).getByRole('button', { name: 'Show shared messages' }));
   expect(await within(first).findByText(SHARED_LABEL)).toBeInTheDocument();
   expect(within(first).getByRole('list', { name: 'Shared messages' })).toHaveTextContent(
-    'zoe (2026-10-18 08:00 UTC): the rude one'
+    `zoe (${formatWhen('2026-10-18T08:00:00.000Z').replace(/\s/g, ' ')}): the rude one`
   );
 
   fireEvent.click(within(second).getByRole('button', { name: 'Mark reviewed' }));

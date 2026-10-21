@@ -4,8 +4,8 @@
    Project:     Seasonal Entertainment
    Description: The home page's bottom row (docs/DESIGN.md, "Home"): Community (two columns,
                 night blue, live: CommunityCard.jsx), Next call (one column, NextCallCard.jsx)
-                and the fair-price box (one column). Without calls set up, the fair-price box
-                takes the Next call's column too.
+                and the fair-price box (one column, its content kept left of the floating chat
+                button). Without calls set up, the fair-price box takes the Next call's column.
    ============================================================ */
 
 /* Community: night blue with white text in both themes. */
@@ -13,10 +13,6 @@
   border-radius: var(--radius-card);
   background: var(--color-community);
   color: var(--color-on-banner);
-}
-
-.home__community p:not(.home__actions) {
-  color: var(--color-on-banner-muted);
 }
 
 .home__community .home__wash {
@@ -35,10 +31,13 @@
   color: var(--color-community);
 }
 
-/* The fair-price box (one column): the four marks in one row above its title and line. */
+/* The fair-price box (one column): the four marks in one row above its title and line. It is
+   the bottom-right box, beside the floating chat button: its content keeps left of the button
+   (the button's size, ChatDrawer.css, plus a gap), whatever the window's size. */
 .home__fair {
   grid-column: span 1;
   justify-content: center;
+  padding-right: calc(var(--chat-launcher-size) + var(--space-1));
   gap: 0.75rem;
   color: var(--color-text);
   text-decoration: none;
@@ -61,16 +60,28 @@
   font-weight: var(--font-weight-heading);
 }
 
+/* The head row: title, the online count, and "Open the chat" at its end. */
+.home__community .home__card-head {
+  align-items: center;
+}
+
+.home__community .home__card-head .button {
+  text-decoration: none;
+}
+
 .home__online {
   /* The Spring colour: 6.0:1 on the Community blue (light), 7.7:1 (dark). */
+  margin-left: auto;
   color: var(--color-spring);
   font-size: 0.875rem;
   font-weight: var(--font-weight-strong);
 }
 
 /* The newest messages: an initial in a season colour, name and text, the time at the end. */
+/* Never squeezed: a message that does not fit would be cut. */
 .home__messages {
   display: grid;
+  flex: none;
   gap: 0.375rem;
   min-height: 0;
   margin: 0;
@@ -126,14 +137,14 @@
 }
 
 .home__call-title {
-  /* Never squeezed by the box (it would cut the letters): the title wraps, at most 3 lines,
+  /* Never squeezed by the box (it would cut the letters): the title wraps, at most 2 lines,
      then it is clamped (the full title stays the link's name and tooltip). */
   display: -webkit-box;
   flex: none;
   overflow: hidden;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   font-size: 1.375rem;
   line-height: 1.15;
 }

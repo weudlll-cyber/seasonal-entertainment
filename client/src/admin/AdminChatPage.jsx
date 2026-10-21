@@ -12,6 +12,7 @@
 import { useEffect, useState } from 'react';
 import { ROOM_ACCESS } from '@seasonal-entertainment/shared/chatRules.js';
 import { api } from '../api/http.js';
+import { formatWhen } from '../app/dates.js';
 import { FormMessage } from '../components/FormField.jsx';
 import AdminDirectReports from './AdminDirectReports.jsx';
 
@@ -172,8 +173,7 @@ export default function AdminChatPage() {
         {data.sanctions.map((s) => (
           <li key={s.id}>
             {s.kind} of <strong>{s.target}</strong>{' '}
-            {s.until ? `until ${s.until.slice(0, 16).replace('T', ' ')} UTC` : '(no end)'} by{' '}
-            {s.createdBy}{' '}
+            {s.until ? `until ${formatWhen(s.until)}` : '(no end)'} by {s.createdBy}{' '}
             <button
               className="link-button"
               type="button"

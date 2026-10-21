@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '../api/http.js';
+import { formatWhen } from '../app/dates.js';
 import { FormMessage } from '../components/FormField.jsx';
 
 const show = (value) => (value === null ? '—' : JSON.stringify(value));
@@ -40,7 +41,7 @@ export default function AdminAuditPage() {
         <table className="table">
           <thead>
             <tr>
-              <th>When (UTC)</th>
+              <th>When</th>
               <th>Who</th>
               <th>What</th>
               <th>Target</th>
@@ -51,7 +52,7 @@ export default function AdminAuditPage() {
           <tbody>
             {entries.map((e) => (
               <tr key={e.id}>
-                <td>{e.at.replace('T', ' ').slice(0, 19)}</td>
+                <td>{formatWhen(e.at)}</td>
                 <td>{e.actor}</td>
                 <td>{e.action}</td>
                 <td>

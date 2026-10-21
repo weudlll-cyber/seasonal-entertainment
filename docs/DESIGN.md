@@ -102,6 +102,29 @@ Measured on the production build, and kept by `client/e2e/speed.spec.js` and
   running text are exempt (WCAG 2.5.8). The 390 × 844 and 768 × 1024 checks found no page
   wider than the window.
 
+## Dates
+
+Every date the site shows has one format (decided 2026-10-21), the one "Up next" had: weekday,
+day, month, 24-hour time and time zone, in English, e.g. "Thursday 22 October, 20:30 CEST" — the
+year only when it is not the current one ("Friday 31 December 2027, 23:00 CET"). A non-breaking
+space keeps the zone with its time.
+
+- **One formatter**: `formatDateTime(instant, timeZone, now)` in `shared/localWeek.js`, built
+  from the existing `formatDay` and `formatLocal`; in the browser `formatWhen(instant)` from
+  `client/src/app/dates.js` (the device's time zone, `deviceZone()`). No date is written with
+  the browser's own language (no `toLocaleString` for dates).
+- **Where**:
+  - the home page's "Up next" and Next call;
+  - the Calls page (planned, started, ended);
+  - a call's page ("Started …");
+  - the prices chart (axis, read-out, "% change since");
+  - the admin lists: the audit log, chat sanctions ("until …"), shared copies of reported
+    private messages, info pages' last change.
+- **Unchanged**: time-only stamps (chat messages, the Community box: "17:00"), and the events
+  page, whose day headings ("Monday 19 October") and times already are this format split into
+  a heading and a column (with the UTC time in brackets).
+- `client/src/calls/callsPage.test.jsx` checks the Calls page under a German browser locale.
+
 ## Theme logic
 
 1. A **stored choice** (`localStorage` key `se.theme`, `light` or `dark`) wins.
@@ -154,13 +177,28 @@ this background, sidebar, cards and buttons (info, login, register, account, adm
 call stage, 404).
 
 **Home** (`LandingPage.jsx`, `homeCards.jsx`; reference `StyleBlocks2.dc.html`). Real data only.
-From 1000px wide its rows fill the main column when there is room (1920 x 1080: no scrolling)
-and keep at least their content's height when there is not; the column then scrolls. No box is
-ever cut (2026-10-21; this replaced "fits 1280 x 720 without scrolling" of 2026-10-17, once the
-bottom row held live messages and a call's actions). The page's end keeps clear of the floating
-chat button: its bottom space is the button's size (`--chat-launcher-size`), its distance from
-the window's edge and a gap; `client/e2e/layout.spec.js` checks both at 1440 x 900, 1280 x 720
-and 1920 x 1080.
+**From 1000px wide, home fits the window without scrolling from 1280 x 720 on** (owner decision
+2026-10-17, confirmed 2026-10-21), also at its fullest: a planned call with a long title, a
+member's two call buttons, 3 Community messages. **No box is ever cut**, and **nothing a box
+shows lies under the floating chat button**. `client/e2e/layout.spec.js` checks all three at
+1280 x 720, 1440 x 900 and 1920 x 1080. Below 1000px the page stacks and scrolls.
+
+To make room (2026-10-21), in this order:
+
+- **a)** a lower banner: 15 % of the window, 96–160px, its lettering scaled with that height
+  (the emblem is a share of it), the greeting unchanged;
+- **b)** tighter spacing from the tokens: `--space-1` between the boxes, `--space-2` /
+  `--space-3` inside them;
+- **c)** in Next call, "Add to calendar" and "Remind me on this site" side by side as round icon
+  buttons (calendar, bell; their full names as accessible names and tooltips): as text pills the
+  two need 289px where the box has 190px at 1280 x 720;
+- **d)** the Next call title clamped at 2 lines.
+
+With all four, the top row gets a little more of the height than the bottom one (rows 1.05 :
+0.8 : 1.15) for "Up next"'s two pictured events.
+
+The bottom-right box (Fair price) keeps its content left of the chat button: its right padding is
+the button's size (`--chat-launcher-size`, also used by `ChatDrawer.css`) plus a gap.
 
 1. **Banner**: night blue (`--banner-background`) with the faint season pattern
    (`client/src/brand/seasonPattern.css`), the emblem, "SEASONAL" in the logo's gradient
@@ -177,17 +215,16 @@ and 1920 x 1080.
      colour and the newest 3 messages of General, live (docs/CHAT.md, "Community box"); only
      the count and "Open the chat" when the newest message is over a day old.
    - **Next call** (one column; `NextCallCard.jsx`): a live call ("Live now", Listen), else the
-     next planned one (title wrapped, never cut with an ellipsis before 3 lines, then clamped,
-     the full title the link's name and tooltip; local day and time, the zone kept with its
-     time by a non-breaking space; "Add to calendar", and "Remind me" for members), else a
-     friendly line and "All calls". Not shown while calls are not set
+     next planned one (title wrapped, never cut with an ellipsis before 2 lines, then clamped,
+     the full title the link's name and tooltip; its date in the site's one format; "Add to
+     calendar", and "Remind me" for members, as icon buttons), else a friendly line and "All
+     calls". Not shown while calls are not set
      up; then Fair price takes its column.
    - **Fair price & charts** (one column; to `/info/prices`; without the price bot a plain note
      and the link to the info section): the four marks in one row, the arrow beside the
      title's last word.
 
-   The bottom row is the tallest (rows 1 : 0.8 : 1.2 where there is room): it holds the most
-   text.
+   The bottom row holds the most text.
 
 Faint logo images behind the boxes (`--wash-home`): Featured the controller quarter, Up next the
 balls quarter, Community the people quarter, Next call the play button, Fair price the emblem.

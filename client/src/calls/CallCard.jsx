@@ -3,23 +3,21 @@
 // Path:        client/src/calls/CallCard.jsx
 // Project:     Seasonal Entertainment
 // Description: One call in the /calls list: title, LIVE mark, when (planned, started or
-//              ended, in the browser's local time), description, who created it, a link to
-//              the call's page; for a planned call "Add to calendar" and the member's reminder
+//              ended, in the viewer's time zone), description, who created it, a link to
+//              the call's page (dates in the site's one format, app/dates.js); for a planned call "Add to calendar" and the member's reminder
 //              (CallActions.jsx); for organisers and admins the Start / End button its status
 //              allows.
 // ============================================================
 
 import { Link } from 'react-router';
+import { formatWhen } from '../app/dates.js';
 import CallActions from './CallActions.jsx';
 import LiveBadge from './LiveBadge.jsx';
 
-const when = (iso) =>
-  new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-
 function timeLine(call) {
-  if (call.status === 'live') return `Started ${when(call.startedAt)}`;
-  if (call.status === 'ended') return `Ended ${when(call.endedAt)}`;
-  return call.scheduledFor ? `Planned for ${when(call.scheduledFor)}` : 'Not planned yet';
+  if (call.status === 'live') return `Started ${formatWhen(call.startedAt)}`;
+  if (call.status === 'ended') return `Ended ${formatWhen(call.endedAt)}`;
+  return call.scheduledFor ? `Planned for ${formatWhen(call.scheduledFor)}` : 'Not planned yet';
 }
 
 // reminded: this member has a reminder for it; onAction(call, 'start' | 'end'): only passed

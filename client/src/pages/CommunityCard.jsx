@@ -5,7 +5,7 @@
 // Description: The home page's Community box (docs/DESIGN.md, "Home"): night blue with the
 //              people quarter, "● N online" and the newest 3 messages of the public room
 //              "general" (name, short text, time), kept live through the chat module's public
-//              useRoomGlimpse; then "Open the chat". When the newest message is more than 24
+//              useRoomGlimpse; "Open the chat" in its head row. When the newest message is more than 24
 //              hours old, only the count and the button (decided 2026-10-21). Text only: an
 //              attachment shows as [image], [GIF] or [file].
 // ============================================================
@@ -43,9 +43,13 @@ export default function CommunityCard({ now = Date.now }) {
   return (
     <section className="home__card home__community" aria-label="Community">
       <Wash src={QUARTERS.chat} />
+      {/* The button in the head row: the messages below keep the box's height for themselves. */}
       <div className="home__card-head">
         <h2>Community</h2>
         {loaded && <span className="home__online">● {online} online</span>}
+        <Link className="button home__on-navy" to="/chat">
+          Open the chat
+        </Link>
       </div>
       {/* Older than a day: only the count and the button. */}
       {recent && (
@@ -63,11 +67,6 @@ export default function CommunityCard({ now = Date.now }) {
           ))}
         </ul>
       )}
-      <p className="home__actions">
-        <Link className="button home__on-navy" to="/chat">
-          Open the chat
-        </Link>
-      </p>
     </section>
   );
 }

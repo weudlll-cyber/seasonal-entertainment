@@ -9,7 +9,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest';
-import { formatDay, formatLocal, startOfWeek } from './localWeek.js';
+import { formatDateTime, formatDay, formatLocal, startOfWeek } from './localWeek.js';
 
 const BERLIN = 'Europe/Berlin';
 const at = (iso) => Date.parse(iso);
@@ -43,5 +43,21 @@ describe('local labels across the DST boundary', () => {
   it('a late Sunday UTC is Monday in Berlin, and Sunday evening in New York', () => {
     expect(formatDay(at('2026-10-25T23:30Z'), BERLIN)).toBe('Monday 26 October');
     expect(formatDay(at('2026-10-19T01:00Z'), 'America/New_York')).toBe('Sunday 18 October');
+  });
+});
+
+describe("formatDateTime: the site's one date format", () => {
+  const NOW = Date.parse('2026-10-21T12:00:00Z');
+  it('weekday, day, month, 24-hour time and zone, the zone kept with its time', () => {
+    expect(formatDateTime('2026-10-22T18:30:00Z', 'Europe/Berlin', NOW)).toBe(
+      `Thursday 22 October, 20:30${String.fromCharCode(0xa0)}CEST`
+    );
+  });
+
+  it('adds the year only when it is not the current one in that zone', () => {
+    expect(formatDateTime('2027-01-04T09:00:00Z', 'UTC', NOW)).toMatch(/^Monday 4 January 2027, /);
+    expect(formatDateTime('2025-12-31T23:30:00Z', 'Europe/Berlin', NOW)).toMatch(
+      /^Thursday 1 January, 00:30/
+    );
   });
 });

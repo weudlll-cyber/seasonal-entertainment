@@ -11,19 +11,10 @@
 // ============================================================
 
 import { Link } from 'react-router';
-import { formatDay, formatLocal } from '@seasonal-entertainment/shared/localWeek.js';
+import { formatWhen } from '../app/dates.js';
 import { QUARTERS } from '../brand/brand.js';
 import CallActions from '../calls/CallActions.jsx';
 import { Wash } from './homeCards.jsx';
-
-const NBSP = String.fromCharCode(0xa0); // a non-breaking space
-
-// As "Up next" writes a time: "Thursday 22 October, 20:30 CEST" (shared/localWeek.js); a
-// non-breaking space keeps the zone with its time when the line wraps.
-function when(iso, timeZone) {
-  const local = formatLocal(Date.parse(iso), timeZone);
-  return `${formatDay(Date.parse(iso), timeZone)}, ${local.time}${NBSP}${local.zone}`;
-}
 
 // calls: the /api/calls answer ({ configured, calls, reminders }), or null while loading or
 // failed. Nothing at all while calls are not set up. timeZone: the viewer's (LandingPage).
@@ -58,7 +49,9 @@ export default function NextCallCard({ calls, timeZone }) {
             </Link>
           </h2>
           <p className="home__text">
-            {next.scheduledFor ? when(next.scheduledFor, timeZone) : 'The time is not set yet.'}
+            {next.scheduledFor
+              ? formatWhen(next.scheduledFor, timeZone)
+              : 'The time is not set yet.'}
           </p>
           <CallActions call={next} reminded={calls.reminders?.includes(next.id)} compact />
         </>

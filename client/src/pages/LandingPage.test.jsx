@@ -99,7 +99,7 @@ describe('home', () => {
     home({ bot: { connected: true, occurrences } });
     const card = screen.getByRole('region', { name: 'Up next' });
     const items = await within(card).findAllByRole('listitem');
-    expect(items.map((i) => i.textContent)).toEqual([
+    expect(items.map((i) => i.textContent.replace(/\s/g, ' '))).toEqual([
       'Event 3Thursday 22 October, 09:00 UTC',
       'Event 4Friday 23 October, 09:00 UTC',
     ]);
