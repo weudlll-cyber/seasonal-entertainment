@@ -2,8 +2,9 @@
 // File:        infoSeed.test.js
 // Path:        server/test/infoSeed.test.js
 // Project:     Seasonal Entertainment
-// Description: Guards the first-start info pages: inserted only into an empty table, all as
-//              drafts (invisible to the public), and the content rules: every source-based page
+// Description: Guards the first-start info pages: inserted only into an empty table, the ten
+//              content pages published and the two legal pages as drafts (invisible to the
+//              public), and the content rules: every source-based page
 //              ends with a Sources list, no contract address is retyped, no raw HTML or local
 //              file links, Risks says "not financial advice", legal pages carry placeholders,
 //              the privacy draft says when calls are recorded (only after an organiser starts
@@ -13,23 +14,43 @@
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { SEED_ORDER, readSeedPage, seedInfoPages } from '../src/info/seed.js';
+import { SEED_DRAFTS, SEED_ORDER, readSeedPage, seedInfoPages } from '../src/info/seed.js';
 import { makeTestApp } from './helpers/testApp.js';
 
 let t;
 afterEach(() => t?.close());
 
 const LEGAL = ['imprint', 'privacy'];
+const CONTENT = [
+  'what-are-seasonal-tokens',
+  'how-it-works',
+  'mining',
+  'farming',
+  'charts-and-trading',
+  'faq',
+  'risks',
+  'security-audits',
+  'team',
+  'official-channels',
+];
 
 describe('seeding', () => {
-  it('fills an empty table once, with drafts only', async () => {
+  it('fills an empty table once: the ten content pages published, the legal two drafts', async () => {
     t = makeTestApp();
     expect(seedInfoPages(t.db)).toBe(SEED_ORDER.length);
     expect(seedInfoPages(t.db)).toBe(0);
-    const statuses = t.db.prepare('SELECT DISTINCT status FROM info_pages').all();
-    expect(statuses).toEqual([{ status: 'draft' }]);
-    expect((await t.client().get('/api/info')).body.pages).toEqual([]);
-    expect((await t.client().get('/api/info/faq')).status).toBe(404);
+    expect([...SEED_DRAFTS].sort()).toEqual(LEGAL);
+    const slugs = (status) =>
+      t.db
+        .prepare('SELECT slug FROM info_pages WHERE status = ? ORDER BY slug')
+        .all(status)
+        .map((r) => r.slug);
+    expect(slugs('published')).toEqual([...CONTENT].sort());
+    expect(slugs('draft')).toEqual(LEGAL);
+    const shown = (await t.client().get('/api/info')).body.pages.map((p) => p.slug);
+    expect(shown.sort()).toEqual([...CONTENT].sort());
+    expect((await t.client().get('/api/info/faq')).status).toBe(200);
+    expect((await t.client().get('/api/info/privacy')).status).toBe(404);
   });
 });
 
