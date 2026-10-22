@@ -5,7 +5,8 @@
 // Description: One end-to-end encrypted conversation with another member: the messages,
 //              decrypted in this browser (text with clickable links, a sticker or GIF from the
 //              site's library, a link preview card made while writing: useDirectLinkPreview,
-//              unless the member switched it off), a notice wherever
+//              unless the member switched it off; a file, encrypted in this browser before it
+//              is uploaded: directFile.js), a notice wherever
 //              the partner's security key changed (older pages too), older messages on reaching
 //              the top (or with "Load older messages"), and the composer. A message made for an
 //              earlier key cannot be read and says so. The partner's messages can be reported
@@ -23,6 +24,7 @@ import MenuButton from './MenuButton.jsx';
 import ReportDirectDialog from './ReportDirectDialog.jsx';
 import SafetyNumberDialog from './SafetyNumberDialog.jsx';
 import { showDirect } from './directView.js';
+import { uploadDirectFile } from './directFile.js';
 import { itemsById, useMediaLibrary } from './mediaLibrary.js';
 import PreviewCard from './PreviewCard.jsx';
 import { useDirectLinkPreview } from './useDirectLinkPreview.js';
@@ -71,6 +73,13 @@ export default function DirectConversation({ partner, me, keyId, privateKey }) {
   // The member's own setting, as the session reports it (on unless switched off).
   const linkPreview = useDirectLinkPreview(draft, me?.dmLinkPreviews !== false);
   const card = linkPreview.card;
+  // This conversation's uploads by id: the composer hands back only the id when sending.
+  const uploads = useRef(new Map());
+  async function uploadFile(file) {
+    const done = await uploadDirectFile(partner.id, file);
+    uploads.current.set(done.id, done);
+    return done;
+  }
 
   async function sendReport(body) {
     const sent = await conversation.report(body);
@@ -179,7 +188,8 @@ export default function DirectConversation({ partner, me, keyId, privateKey }) {
       {data?.partnerKey && (
         <ChatComposer
           user={me}
-          files={false}
+          uploadFile={uploadFile}
+          accept=""
           onDraft={setDraft}
           above={
             card && (
@@ -200,7 +210,13 @@ export default function DirectConversation({ partner, me, keyId, privateKey }) {
           onSend={({ body, attachment }) =>
             conversation.send({
               text: body,
-              ...(attachment && { mediaItemId: attachment.itemId }),
+              ...(attachment?.itemId && { mediaItemId: attachment.itemId }),
+              // The file's key, name and type travel only inside the encrypted message.
+              ...(attachment?.uploadId && {
+                file: (({ id, key, name, type, bytes }) => ({ id, key, name, type, bytes }))(
+                  uploads.current.get(attachment.uploadId)
+                ),
+              }),
               // The card travels inside the encrypted message, as the writer saw it.
               ...(card && { preview: card }),
             })

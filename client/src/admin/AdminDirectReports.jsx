@@ -44,7 +44,14 @@ function SharedCopies({ reportId }) {
       <ul aria-label="Shared messages">
         {copies.map((c) => (
           <li key={c.messageId}>
-            <strong>{c.author}</strong> ({formatWhen(c.sentAt)}): {c.text || '(sticker or GIF)'}
+            <strong>{c.author}</strong> ({formatWhen(c.sentAt)}):{' '}
+            {c.text || (c.file ? '' : '(sticker or GIF)')}
+            {/* The reporter's decrypted copy of the message's file: a download only. */}
+            {c.file && (
+              <a href={`/api/chat/direct-reports/${reportId}/files/${c.messageId}`} download>
+                Download {c.file.name}
+              </a>
+            )}
           </li>
         ))}
       </ul>

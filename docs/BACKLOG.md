@@ -4,8 +4,6 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART ONE — open
 
-- **File uploads in direct messages** — open. Left out of v1 (decided 2026-10-18): an uploaded
-  file would have to be encrypted in the browser too.
 - **Telegram-login recovery code handling** — open (decided direction 2026-10-17). Recovery codes
   are to apply to future Telegram logins too: such an account has no password to derive a
   wrapping key from (docs/AUTH.md).
@@ -57,6 +55,12 @@ An entry moves from part one to part two only when its branch is merged into `ma
   - **Sessions** — signed-in sessions end after 7 days without use, renewed by every request
     at most once a minute (docs/AUTH.md, "Sessions").
 - **A ratio view between the seasons** — not wanted (owner decision 2026-10-22).
+- **File uploads in direct messages** — closed by SE-NIGHT-5 piece 4 (`feat/se-night-5`, not
+  merged yet; owner decision 2026-10-22): encrypted in the sender's browser with a fresh key
+  per file (libsodium secretstream), the server stores ciphertext only and serves it to the two
+  members only; only real PNG, JPEG, GIF and WebP are shown inline, everything else is a
+  download; a report shares the file decrypted by the reporter; a deleted message takes its
+  file along (docs/CHAT.md, "Files in direct messages").
 - **Link previews in direct messages** — closed by SE-NIGHT-5 piece 3 (`feat/se-night-5`, not
   merged yet; owner decision 2026-10-22): the sender's browser asks a route that stores and logs
   nothing; the card (with a small inline image) travels inside the encrypted message, and the

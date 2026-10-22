@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: The one attachment of the message being written, shown small above the message
 //              field with an × to take it off again: a sticker or GIF, an uploaded image
-//              (its thumbnail) or a PDF (name and size). It is sent together with the text.
+//              (its thumbnail) or a PDF or, in a direct message, any other file (name and
+//              size). It is sent together with the text.
 // ============================================================
 
 import { fileSize } from './fileSize.js';
@@ -27,7 +28,7 @@ function Preview({ attachment }) {
   }
   return (
     <p className="chat-attachment__file">
-      PDF: {upload.name} ({fileSize(upload.bytes)})
+      {upload.kind === 'pdf' ? 'PDF' : 'File'}: {upload.name} ({fileSize(upload.bytes)})
     </p>
   );
 }

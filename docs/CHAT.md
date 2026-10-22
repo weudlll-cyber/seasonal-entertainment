@@ -102,10 +102,13 @@ of the module other than `index.js`.
   the list and in the field, so a test looking for a just-sent message looks inside the message
   list (`client/src/chat/chatPanel.test.jsx`).
 - **The message list** (`MessageList.jsx`, `useScrollPin.js`) opens at the newest message and
-  stays pinned to it while the reader is at or near the bottom (48 px), also when an image or a
-  preview card makes the newest message grow; a reader who scrolled up is not moved and gets a
-  "New messages" button that scrolls down. A room switch starts at the newest message again.
-  The same in both variants.
+  stays pinned to it while the reader is at or near the bottom (48 px), also when an image, a
+  preview card or a decrypted file makes any message grow (every message is watched, not only
+  the newest; 2026-10-22). Only scrolling up unpins: the list's own jumps go down, and their
+  scroll events may arrive after the content grew further. A reader who scrolled up is not
+  moved and gets a "New messages" button that scrolls down. A room switch starts at the newest
+  message again. The same in both variants and in direct messages
+  (`client/src/chat/scrollPin.test.jsx`).
 - **Layout**: a panel is a column that fills the height its container gives it; the message list
   takes the room left and the composer stays at the bottom. `full` fills its container (the
   `/chat` page's main column), with room tabs as a column on the left (a row below 600px).
@@ -280,7 +283,34 @@ mediaItemId?, preview? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh
     `LINK_PREVIEWS=false` switches the route off with the room previews.
   - Tests: `server/test/directPreview.test.js`, `client/src/chat/directLinkPreview.test.jsx`,
     `client/src/components/privacySettings.test.jsx`.
-- **File uploads** in direct messages are an open backlog item.
+- **Files in direct messages** (decided 2026-10-22): members attach a file with the composer's
+  usual **Attach file** (`ComposerUpload.jsx`), of any type, under the room uploads' limits:
+  at most 10 MB per file, one daily quota of 50 MB together with room uploads, 10 uploads a
+  minute.
+  - **Encrypted in the sender's browser** (`client/src/chat/directFile.js`): a fresh random
+    key per file, `crypto_secretstream_xchacha20poly1305` in 64 KB chunks
+    (`encryptFile` in `shared/crypto.js`; every chunk authenticated, the last one tagged final).
+  - **Only ciphertext reaches the server**: `POST /api/chat/direct/:id/files` (raw body, no
+    name in the address). It is stored under a generated name in `MEDIA_DIR/direct/`, never
+    public (`server/src/directFiles/`). The file's key, name, type and size travel only inside
+    the encrypted message (`file` in the payload). The message names the upload's id
+    (`fileId`), so the server can link the two for access and clean-up. Only the uploader's own
+    upload for that partner, sent once.
+  - **Served to the two members only**: `GET /api/chat/direct/files/:fileId` (a pending upload
+    to its uploader only; anyone else gets 404, as for an unknown file). Always as
+    `application/octet-stream`, a download, `no-store`, sandboxed.
+  - **The recipient's browser downloads and decrypts** (`DirectFile.jsx`). **Safety rule**: only
+    PNG, JPEG, GIF and WebP, recognised by their first bytes after decryption (`rasterType`),
+    are shown inline, as an object URL in an `img` element. The name and type the sender stated
+    do not count. Everything else, SVG and HTML included, is only offered as a download, always
+    as plain data.
+  - **No server-side thumbnails or content checks**: the server cannot see the content. It
+    enforces size and participant access only.
+  - **Deletion**: a file lives as long as its message. When the message goes (retention) or an
+    account is deleted, the retention job deletes the row and the file on disk; it also removes
+    any file in `direct/` that no row names. Direct messages have no delete action of their own.
+  - Tests: `server/test/directFiles.test.js`, `client/src/chat/directFiles.test.jsx`,
+    `shared/crypto.test.js`.
 - **Rules** (`server/src/chat/directRoutes.js`): the same mute/ban and the same per-sender rate
   limit as room messages (one shared limiter); a locked account has no session. The partner must
   have a key; both key ids must be the current ones, else `409 key_changed` with the partner's
@@ -405,6 +435,15 @@ Moderators and admins may see direct messages **only when the affected member re
   reporter sent or received in that conversation; anything else refuses the whole report
   (`400 not_in_conversation`), nothing stored. The author and time of each copy come from the
   server, the text from the reporter (`direct_report_copies`).
+- **Files of shared messages** (2026-10-22): when a shared message carries a file, the
+  reporter's browser decrypts it, as it did the text, and uploads that copy
+  (`POST /api/chat/direct/:id/reports/:reportId/files/:messageId?name=`). This works only for
+  the reporter's own report, a shared message that has a file, and once per message.
+  - **Stored** in `MEDIA_DIR/direct-reports/` (`direct_report_files`).
+  - **For moderators**: offered only as "Download <name>", never shown
+    (`GET /api/chat/direct-reports/:id/files/:messageId`, organisers and admins). Every
+    download is audited (`chat.direct_report_file_view`).
+  - **Deleted** with the report's copies.
 - **Moderators** (organisers and admins with 2FA) find them in Admin → Chat, "Reported private
   conversations" (`GET /api/chat/direct-reports`). Shared copies are loaded only on request and
   labelled "Shared by the reporter from a private conversation — content as provided by the
@@ -443,8 +482,9 @@ it any more (`canWrite` is false, posting answers 403 `read_only`). A guest's ch
 message, report or call join.
 
 `api` is the `/api` router after sessions, the current user and the 2FA gate; call `mountChat`
-before the API's catch-all 404. Outside the chat area only `mount.js` (and the table definitions
-the database layer registers) may be imported; `server/test/chatBoundary.test.js` enforces it.
+before the API's catch-all 404. The chat area is `server/src/chat/`, `media/`, `previews/`,
+`uploads/` and `directFiles/`. Outside it only `mount.js` (and the table definitions the database
+layer registers) may be imported; `server/test/chatBoundary.test.js` enforces it.
 
 ## Embedding
 

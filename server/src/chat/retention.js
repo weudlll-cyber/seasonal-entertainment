@@ -6,12 +6,20 @@
 //              deleted (their reports with them), direct messages too (the same setting),
 //              shared copies of reported private messages 90 days after the report was
 //              reviewed (decided 2026-10-18), files uploaded with any message that no
-//              longer exists go with it (rows and files on disk), uploads never sent are
+//              longer exists go with it (rows and files on disk; room uploads and the
+//              encrypted files of direct messages alike, with the report copies' shared
+//              files and any direct file no row names, e.g. after an account's deletion),
+//              uploads never sent are
 //              deleted after an hour, unused link previews after the cache time, and guest
 //              names unused for 30 days (the session lifetime) are released. Runs at start and
 //              then every six hours.
 // ============================================================
 
+import {
+  deleteOrphanDirectFiles,
+  deleteReportFilesWithoutCopies,
+  unreferencedFiles,
+} from '../directFiles/store.js';
 import { deleteMediaFile } from '../media/files.js';
 import { deleteUnusedPreviews } from '../previews/store.js';
 import { deleteOrphanUploads } from '../uploads/store.js';
@@ -58,10 +66,22 @@ export function deleteOrphanUploadFiles(db, config, now = Date.now()) {
   return files.length;
 }
 
+// Files of direct messages whose message is gone (or never sent), shared report files whose
+// copy is gone, and whatever is left on disk without a row: deleted from disk.
+export function deleteOrphanDirectFileData(db, config, now = Date.now()) {
+  const pendingBefore = new Date(now - config.uploads.pendingMinutes * 60_000).toISOString();
+  deleteOrphanDirectFiles(db, pendingBefore);
+  deleteReportFilesWithoutCopies(db);
+  const files = unreferencedFiles(db, config.mediaDir);
+  for (const file of files) deleteMediaFile(config, file);
+  return files.length;
+}
+
 // One full run; returns what it deleted.
 export function runChatRetention(db, config, now = Date.now()) {
   const messages = deleteExpiredChat(db, config.chat.retentionDays, now);
-  const uploadFiles = deleteOrphanUploadFiles(db, config, now);
+  const uploadFiles =
+    deleteOrphanUploadFiles(db, config, now) + deleteOrphanDirectFileData(db, config, now);
   const previewFiles = deleteUnusedPreviewFiles(db, config, now);
   return { messages, uploadFiles, previewFiles };
 }

@@ -5,8 +5,8 @@
 // Description: Keeps a message list pinned to the newest message while the reader is at (or
 //              near) the bottom; a reader who scrolled up stays where they are and is told about
 //              new messages instead. Opening a room starts at the newest message. Content that
-//              grows after it arrived (an image loading, a preview card) keeps a pinned reader
-//              at the bottom too.
+//              grows after it arrived (an image loading, a preview card, a decrypted file; in
+//              any message, not only the newest) keeps a pinned reader at the bottom too.
 // ============================================================
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -18,11 +18,18 @@ const NEAR_BOTTOM_PX = 48;
 export function useScrollPin(list, room, messages) {
   const pinned = useRef(true);
   const lastId = useRef(null);
+  // The last scroll position seen. Only scrolling up can unpin the reader: the pin's own jumps
+  // go down, and their scroll events may arrive only after the content grew further (measured
+  // then, they would look like a reader far from the end).
+  const lastTop = useRef(0);
   const [unseen, setUnseen] = useState(false);
 
   const showNewest = useCallback(() => {
     const element = list.current;
-    if (element) element.scrollTop = element.scrollHeight;
+    if (element) {
+      element.scrollTop = element.scrollHeight;
+      lastTop.current = element.scrollTop;
+    }
     pinned.current = true;
     setUnseen(false);
   }, [list]);
@@ -44,19 +51,23 @@ export function useScrollPin(list, room, messages) {
     else if (isNewer) setUnseen(true);
   }, [messages, newestId, showNewest]);
 
-  // The newest message growing later (image loaded, preview card) must not unpin the reader.
+  // A message growing later (an image loaded, a preview card, a direct message's file
+  // decrypted — not only the newest one) must not unpin the reader.
   useEffect(() => {
-    const newest = list.current?.lastElementChild;
-    if (!newest || typeof ResizeObserver === 'undefined') return undefined;
+    const element = list.current;
+    if (!element || typeof ResizeObserver === 'undefined') return undefined;
     const observer = new ResizeObserver(() => {
       if (pinned.current) showNewest();
     });
-    observer.observe(newest);
+    for (const message of element.children) observer.observe(message);
     return () => observer.disconnect();
-  }, [list, newestId, showNewest]);
+  }, [list, messages, showNewest]);
 
   const onScroll = () => {
     const element = list.current;
+    const up = element.scrollTop < lastTop.current;
+    lastTop.current = element.scrollTop;
+    if (pinned.current && !up) return; // still at the end, or the pin's own jump
     pinned.current =
       element.scrollHeight - element.scrollTop - element.clientHeight <= NEAR_BOTTOM_PX;
     if (pinned.current) setUnseen(false);

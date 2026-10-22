@@ -4,8 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: Guards the chat area's server boundary (docs/CHAT.md): outside the chat area
 //              only mountChat (chat/mount.js) is used, plus the table definitions the database
-//              layer registers. Chat routes, hub, moderation, media, previews and uploads are
-//              reached through that one call.
+//              layer registers. Chat routes, hub, moderation, media, previews, uploads and the
+//              encrypted files of direct messages (directFiles/) are reached through that call.
 // ============================================================
 
 import { readFileSync, readdirSync } from 'node:fs';
@@ -14,7 +14,9 @@ import { fileURLToPath } from 'node:url';
 import { expect, it } from 'vitest';
 
 const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'src');
-const CHAT_AREA = ['chat', 'media', 'previews', 'uploads'].map((d) => path.join(srcDir, d));
+const CHAT_AREA = ['chat', 'media', 'previews', 'uploads', 'directFiles'].map((d) =>
+  path.join(srcDir, d)
+);
 const inArea = (file) => CHAT_AREA.some((dir) => file.startsWith(dir + path.sep));
 const ALLOWED = (target) =>
   target === path.join(srcDir, 'chat', 'mount.js') || path.basename(target) === 'schema.js';

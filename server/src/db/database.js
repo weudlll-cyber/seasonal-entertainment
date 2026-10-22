@@ -14,6 +14,7 @@ import { ACCOUNTS_SCHEMA, migrateAccounts } from '../accounts/schema.js';
 import { AUDIT_SCHEMA } from '../audit/schema.js';
 import { CALLS_SCHEMA, migrateCalls } from '../calls/schema.js';
 import { CHAT_SCHEMA, migrateChat } from '../chat/schema.js';
+import { DIRECT_FILES_SCHEMA } from '../directFiles/schema.js';
 import { EMBED_SCHEMA } from '../embed/schema.js';
 import { GAMES_SCHEMA } from '../games/schema.js';
 import { INFO_SCHEMA } from '../info/schema.js';
@@ -37,6 +38,7 @@ const SCHEMAS = [
   PREVIEW_SCHEMA,
   CHAT_SCHEMA,
   UPLOAD_SCHEMA,
+  DIRECT_FILES_SCHEMA,
   SETTINGS_SCHEMA,
   REFERENCE_SCHEMA,
   CALLS_SCHEMA,

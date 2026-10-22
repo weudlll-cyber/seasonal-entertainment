@@ -282,6 +282,10 @@ password change and turning 2FA on or off close the account's other sockets at o
   every metadata block (EXIF with GPS, XMP, comments) dropped, animation kept, plus a
   thumbnail at most 480 px wide. Files sit in `MEDIA_DIR/uploads/` under generated names; the
   original name survives only as cleaned-up display text (100 characters).
+- **Files in direct messages** (2026-10-22, `server/src/directFiles/`): encrypted in the
+  browser before upload, stored as ciphertext in `MEDIA_DIR/direct/`, served to the two members
+  only; a reporter's shared copy in `MEDIA_DIR/direct-reports/` for moderators (docs/CHAT.md,
+  "Files in direct messages").
 - **Uploaded files are not public.** The public `/media` mount serves only exact library and
   preview names, never `uploads/`. Files come from `GET /api/chat/files/<id>/<thumb|full|
 download>`, which applies the chat's own rule every time: the viewer must be able to read the

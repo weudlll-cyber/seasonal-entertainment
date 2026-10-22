@@ -95,7 +95,8 @@ export function directReportRoutes(db, config) {
         copies,
       });
       audit(req, 'chat.direct_report', reportId, { shared: copies.length });
-      res.status(201).json({ ok: true });
+      // The id: the reporter's browser then adds shared messages' files (directFiles/).
+      res.status(201).json({ ok: true, reportId });
     }
   );
 

@@ -5,11 +5,13 @@
 // Description: One decrypted direct message: author, local time, the text (links clickable) and
 //              a sticker or GIF from the site's library, and the link preview card the sender's
 //              browser put inside the message (checked by safePreview: its image is inline data,
-//              so showing it contacts no other site); a message made for an earlier key says
-//              it cannot be read. The partner's readable messages can be reported (onReport, from the
+//              so showing it contacts no other site), and a file (DirectFile: a picture only
+//              when its bytes are one, else a download); a message made for an earlier key
+//              says it cannot be read. The partner's readable messages can be reported (onReport, from the
 //              message's "…" menu, MessageMenu).
 // ============================================================
 
+import DirectFile from './DirectFile.jsx';
 import { MessageMedia, MessageText } from './MessageParts.jsx';
 import MessageMenu from './MessageMenu.jsx';
 import PreviewCard from './PreviewCard.jsx';
@@ -36,6 +38,7 @@ export default function DirectMessage({ message, partnerName, ownName, library, 
           <MessageText body={message.payload.text} linkify />
         </p>
       )}
+      {message.payload?.file && <DirectFile file={message.payload.file} />}
       {preview && (
         <PreviewCard preview={{ ...preview, image: preview.image && { url: preview.image } }} />
       )}

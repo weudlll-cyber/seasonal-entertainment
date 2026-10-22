@@ -70,6 +70,11 @@ This list describes what the website's software actually stores.
   sees you as online. The site stores this choice with your account.
 - **Stickers and GIFs in the chat** come from this site's own library, managed by its admins. No
   outside GIF or sticker service is contacted.
+- **Files in private messages**: end-to-end encrypted. Your browser encrypts a file before it
+  is uploaded; this site stores only the encrypted file and cannot see its content, name or
+  type. Only you and the other member can download it, and only your browsers can open it. It
+  is deleted together with its message. If you report a message and choose to share it, your
+  browser also shares that message's file, decrypted, with the moderators, as it does the text.
 - **Files in the chat**: members (not guests) can send images (JPG, PNG, WebP, GIF) and PDF
   files. Images are stored without their hidden metadata, such as camera details and GPS
   location. A file is deleted together with its message, after the chat retention period
