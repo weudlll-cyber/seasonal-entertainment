@@ -21,16 +21,19 @@ import {
   encryptDirect,
   encryptFile,
   FILE_CHUNK,
+  handoverCode,
   newKeyPair,
   newRecoveryCode,
   newSalt,
   normaliseRecoveryCode,
+  openFromDevice,
   openSealed,
   publicKeyOf,
   safetyNumber,
   sealBytes,
+  sealForDevice,
 } from './crypto.js';
-import { base64Length, boundedBase64, exactBytes } from './cryptoFormat.js';
+import { DEVICE_SEALED_BYTES, base64Length, boundedBase64, exactBytes } from './cryptoFormat.js';
 
 const SALT = 'AAECAwQFBgcICQoLDA0ODw==';
 // Shared code has no Buffer (it runs in browsers too): libsodium's own base64.
@@ -140,6 +143,22 @@ describe('files in direct messages', () => {
     expect(await decryptFile(cut, one.key)).toBeNull();
     // Whole chunks dropped from the end: the stream no longer ends with its final chunk.
     expect(await decryptFile(one.data.slice(0, 24 + FILE_CHUNK + 17), one.key)).toBeNull();
+  });
+});
+
+describe('handing the key to a new device', () => {
+  it('the sealed key opens only with the device key; the code follows the device key', async () => {
+    const member = await newKeyPair();
+    const device = await newKeyPair();
+    const other = await newKeyPair();
+    const sealed = await sealForDevice(member.privateKey, device.publicKey);
+    expect(base64Length(sealed)).toBe(DEVICE_SEALED_BYTES);
+    expect(await openFromDevice(sealed, device)).toEqual(member.privateKey);
+    expect(await openFromDevice(sealed, other)).toBeNull();
+    const code = await handoverCode(device.publicKey);
+    expect(code).toMatch(/^\d{3} \d{3}$/);
+    expect(await handoverCode(device.publicKey)).toBe(code);
+    expect(await handoverCode(other.publicKey)).not.toBe(code);
   });
 });
 

@@ -7,7 +7,9 @@
 //              scripts; no home-made cryptography anywhere else. Covers: the login key split
 //              (password -> Argon2id master key -> auth key + wrapping key), sealing a private
 //              key, the optional recovery code, encrypting direct messages (crypto_box), files
-//              in direct messages (crypto_secretstream, chunked, a fresh key per file), and
+//              in direct messages (crypto_secretstream, chunked, a fresh key per file), handing
+//              the private key to a new device of the same member (crypto_box_seal to that
+//              device's one-time key, with a 6-digit code both screens show; docs/AUTH.md), and
 //              the safety number two members compare to check their keys (docs/CHAT.md).
 //              Binary values travel as standard base64 (with padding).
 // ============================================================
@@ -211,6 +213,39 @@ export async function decryptFile(data, keyBase64) {
     }
     if (!final) return null;
     return joinBytes(parts);
+  } catch {
+    return null;
+  }
+}
+
+// Handing the private key to a new device (docs/AUTH.md, "Unlock on another device"). The new
+// device makes a one-time key pair (newKeyPair); the code both screens show comes from that
+// public key, so a key swapped on the way shows another code.
+export async function handoverCode(publicKeyBase64) {
+  await ready();
+  const hash = sodium.crypto_generichash(8, unb64(publicKeyBase64));
+  let value = 0;
+  for (let i = 0; i < 5; i += 1) value = value * 256 + hash[i];
+  const digits = String(value % 1_000_000).padStart(6, '0');
+  return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+}
+
+// The unlocked device seals its private key to the new device's one-time public key: only
+// that device's one-time private key opens it (anonymous sender, crypto_box_seal).
+export async function sealForDevice(privateKey, devicePublicKeyBase64) {
+  await ready();
+  return b64(sodium.crypto_box_seal(privateKey, unb64(devicePublicKeyBase64)));
+}
+
+// The new device opens it: the private key's bytes, or null when it does not open.
+export async function openFromDevice(sealedBase64, deviceKeyPair) {
+  await ready();
+  try {
+    return sodium.crypto_box_seal_open(
+      unb64(sealedBase64),
+      unb64(deviceKeyPair.publicKey),
+      deviceKeyPair.privateKey
+    );
   } catch {
     return null;
   }

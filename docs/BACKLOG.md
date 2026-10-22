@@ -7,9 +7,6 @@ An entry moves from part one to part two only when its branch is merged into `ma
 - **Telegram-login recovery code handling** — open (decided direction 2026-10-17). Recovery codes
   are to apply to future Telegram logins too: such an account has no password to derive a
   wrapping key from (docs/AUTH.md).
-- **Unlock a new device by confirming it on an already logged-in device** — unconfirmed proposal,
-  not decided: instead of the password or the recovery code, a device that is already unlocked
-  hands the private key over to the new one.
 - **Operating-system notifications for mentions and direct messages** — unconfirmed proposal,
   not decided.
 - **Uploads and uploaded images in the chat on other sites** — open. With an embed token,
@@ -55,6 +52,12 @@ An entry moves from part one to part two only when its branch is merged into `ma
   - **Sessions** — signed-in sessions end after 7 days without use, renewed by every request
     at most once a minute (docs/AUTH.md, "Sessions").
 - **A ratio view between the seasons** — not wanted (owner decision 2026-10-22).
+- **Unlock a new device by confirming it on an already logged-in device** — closed by SE-NIGHT-5
+  piece 5 (`feat/se-night-5`, not merged yet; owner decision 2026-10-22): "Confirm on another
+  device" beside the password and the recovery code; the unlocked device confirms the same
+  6-digit code and seals the private key to the new device's one-time key; the server relays
+  the box once and deletes it; requests valid 5 minutes, one at a time, audited (docs/AUTH.md,
+  "Unlock on another device").
 - **File uploads in direct messages** — closed by SE-NIGHT-5 piece 4 (`feat/se-night-5`, not
   merged yet; owner decision 2026-10-22): encrypted in the sender's browser with a fresh key
   per file (libsodium secretstream), the server stores ciphertext only and serves it to the two

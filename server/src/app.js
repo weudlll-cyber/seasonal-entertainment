@@ -43,6 +43,7 @@ import { gameRoutes } from './games/routes.js';
 import { allow } from './http/access.js';
 import { adminInfoRoutes } from './info/adminRoutes.js';
 import { infoRoutes } from './info/routes.js';
+import { keyHandoverRoutes } from './keys/handover.js';
 import { keyRoutes } from './keys/routes.js';
 import { csrfGuard } from './http/csrf.js';
 import { errorHandler, sendError } from './http/errors.js';
@@ -125,6 +126,8 @@ export function createApp({
   api.use('/admin/embed-origins', adminEmbedRoutes(db, config, embedOrigins, chat.sessions));
   // Call reminders reach a member's open pages over the chat's live connection.
   const notifyMember = chat.notify.member;
+  // A new device asks the member's unlocked ones for the key (keys/handover.js).
+  api.use('/keys', keyHandoverRoutes(db, config, notifyMember));
   const remindNow = () => sendCallReminders(db, notifyMember);
   // Before callRoutes: its /:id would take /bot-occurrences.
   api.use('/calls', callEventRoutes(db, config, callService, chat));

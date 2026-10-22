@@ -11,7 +11,9 @@
 //              key in memory until the offer closes: the server asks for it. On another site's
 //              page (the chat embedded there, embed/) the key lives in memory only: no device
 //              copy (storage there is partitioned), handed over by the login popup (adopt), and
-//              gone the moment the member is (logout, token refused) or the page closes.
+//              gone the moment the member is (logout, token refused) or the page closes. A key
+//              handed over by another device of the member (DeviceUnlock.jsx) is kept like one
+//              the password opened.
 // ============================================================
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
@@ -102,6 +104,8 @@ export function KeyProvider({ children }) {
         set(forUser, key ? { status: 'unlocked', ...key } : { status: 'locked' }),
       // The embed token ended: the key goes from memory at once (not just out of view).
       forget: () => setStored({ ...NONE, forUser: null }),
+      // { keyId, privateKey } from another unlocked device, already checked by the caller.
+      fromOtherDevice: (key) => unlocked(userId, key, state.hasRecovery),
       async recover(code, passwordKeys) {
         const result = await actions.recoverWithCode(code, passwordKeys);
         if (result) await unlocked(userId, result, true);

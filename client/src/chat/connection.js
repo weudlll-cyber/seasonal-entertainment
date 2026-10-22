@@ -11,7 +11,8 @@
 //              for the account itself need no subscription — new direct messages, activity in a
 //              readable room, the member's own reads and mutes (the unread counters), someone's
 //              changed online visibility ("presence"), a call reminder of the site's
-//              ("callReminder", calls/CallNotices.jsx) — and
+//              ("callReminder", calls/CallNotices.jsx), a new device asking for the key
+//              ("keyRequest", keys/DeviceRequestPrompt.jsx) — and
 //              joinPersonal() hands them on. The chat embedded on an approved foreign site has
 //              no cookie there: it offers its embed token as a subprotocol (api/http.js), and when
 //              that socket closes, asks whether the token still works (if not, it is dropped).
@@ -31,7 +32,15 @@ export const TOO_MANY_CONNECTIONS = 4008;
 // comes straight back (React's StrictMode remounts every effect in development) reuses it.
 const listeners = new Map(); // room slug -> Set of event handlers
 // Events for the account itself.
-const PERSONAL = new Set(['direct', 'activity', 'read', 'muted', 'presence', 'callReminder']);
+const PERSONAL = new Set([
+  'direct',
+  'activity',
+  'read',
+  'muted',
+  'presence',
+  'callReminder',
+  'keyRequest',
+]);
 const personal = new Set(); // their handlers
 let socket = null;
 let retry = null;

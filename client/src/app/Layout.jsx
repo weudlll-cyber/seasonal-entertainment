@@ -10,12 +10,14 @@
 //              login popup (?next=/embed-login…) gets the chat button and drawer (ChatDrawer).
 //              On a call page the sidebar is an icon rail (more room for the stage). Right
 //              after a member's key pair was made, the recovery-code offer opens over the page.
-//              Members' call reminders show at the top of the main column (CallNotices).
+//              Members' call reminders show at the top of the main column (CallNotices); a
+//              new device's request for the key asks on an unlocked one (DeviceRequestPrompt).
 // ============================================================
 
 import { Suspense } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import CallNotices from '../calls/CallNotices.jsx';
+import DeviceRequestPrompt from '../keys/DeviceRequestPrompt.jsx';
 import { useKeys } from '../keys/KeyContext.jsx';
 import RecoveryOffer from '../keys/RecoveryOffer.jsx';
 import { inEmbedLoginFlow } from '../session/nextPage.js';
@@ -52,6 +54,7 @@ export default function Layout() {
       </main>
       {chatButton && <ChatDrawer />}
       {offerRecovery && <RecoveryOffer />}
+      {user && <DeviceRequestPrompt />}
     </div>
   );
 }

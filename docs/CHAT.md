@@ -224,8 +224,9 @@ salt)` and that seal stored (`PUT /api/keys/recovery`) — the code itself never
   copy of the private key (`client/src/keys/deviceKey.js`), so the device stays unlocked across
   reloads and tabs until **logout, which deletes the copy and that key**. Nothing goes to
   `localStorage`. Without it (new device, after logout) the account page — and the Direct tab —
-  shows **Unlock private messages** (the password, its keys derived with the pre-login salt).
-  Rooms never need unlocking.
+  shows **Unlock private messages** (the password, its keys derived with the pre-login salt),
+  or **Confirm on another device**, where a device that has the key unlocked hands it over
+  (docs/AUTH.md, "Unlock on another device"). Rooms never need unlocking.
 - **Password change**: the browser re-seals the same private key for the new password and sends
   it in the same request as the new verifier; the server stores both in one transaction.
 - **When the sealed key no longer opens** (an admin reset the password; a forgotten password was
