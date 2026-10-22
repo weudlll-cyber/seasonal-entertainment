@@ -6,9 +6,13 @@
 //              calls/service.js that records every request, keeps the open rooms and who is
 //              "connected" (no call server needed; tokens are signed for real with test keys
 //              and can be decoded), an app with calls switched on and the seeded chat rooms, creating and
-//              starting a call as an organiser, and joining one.
+//              starting a call as an organiser, and joining one. The stand-in also records: it
+//              remembers each started recording and, when stopped, writes a small file into the
+//              recordings folder, as LiveKit's egress service would.
 // ============================================================
 
+import { writeFileSync } from 'node:fs';
+import path from 'node:path';
 import { TokenVerifier } from 'livekit-server-sdk';
 import { joinToken } from '../../src/calls/grants.js';
 import { chatApp } from './chat.js';
@@ -20,8 +24,10 @@ export const TEST_KEYS = { apiKey: 'test-key', apiSecret: 'test-secret-of-at-lea
 export const claimsOf = (token) =>
   new TokenVerifier(TEST_KEYS.apiKey, TEST_KEYS.apiSecret).verify(token);
 
-export function fakeCallService() {
+// recordingDir: where a stopped recording's file is written (the app's recordings folder).
+export function fakeCallService({ recordingDir } = {}) {
   const log = [];
+  const recordings = new Map(); // egress id -> file name, while running
   // identity -> { identity, name, permission, attributes, tracks }: who is connected now.
   const connected = new Map();
   const rooms = new Set(); // the open rooms' names; a test deletes one to make it "gone"
@@ -49,13 +55,25 @@ export function fakeCallService() {
     },
     muteTrack: async (_room, identity, sid) => log.push(['mute', identity, sid]),
     setRoomMetadata: async (_room, metadata) => log.push(['metadata', JSON.parse(metadata)]),
+    startRecording: async (room, file) => {
+      const egressId = `EG_${recordings.size + log.length}`;
+      log.push(['recordStart', room, file]);
+      recordings.set(egressId, file);
+      return egressId;
+    },
+    stopRecording: async (egressId) => {
+      log.push(['recordStop', egressId]);
+      const file = recordings.get(egressId);
+      recordings.delete(egressId);
+      if (file && recordingDir) writeFileSync(path.join(recordingDir, file), 'fake mp4 bytes');
+    },
     token: (claims) => joinToken(TEST_KEYS, claims),
   };
 }
 
 // { t, service }: an app with the seeded chat rooms whose calls use the stand-in service.
 export function callApp(overrides) {
-  const service = fakeCallService();
+  const service = fakeCallService({ recordingDir: overrides?.calls?.recording?.dir });
   return { t: chatApp(overrides, { callService: service }), service };
 }
 

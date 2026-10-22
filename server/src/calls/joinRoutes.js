@@ -7,7 +7,9 @@
 //              participant may do (grants.js) — listeners receive only; organisers and admins
 //              start on the stage while it has room. Members join by account, guests by their
 //              chat guest identity. Refused for calls that are not live, chat bans and when the
-//              participant cap is reached. Hands (members only) are stored here and set as the
+//              participant cap is reached. While a recording runs, only someone who confirmed
+//              it (recordingConsent: true) gets a token (docs/CALLS.md, "Recording"); without
+//              that, 409 recording_consent and no connection. Hands (members only) are stored here and set as the
 //              participant's attributes on the call service, so every client sees one truth.
 // ============================================================
 
@@ -18,6 +20,7 @@ import { makeLimiter } from '../http/rateLimit.js';
 import { getSetting } from '../settings/store.js';
 import { callSteps } from './middleware.js';
 import { participantFor, setHand, setOnStage } from './participants.js';
+import { activeRecording } from './recordings.js';
 import { countSpeakers, handAttributes, kindOf, shownName } from './people.js';
 
 export function callJoinRoutes(db, config, service, chat) {
@@ -40,6 +43,9 @@ export function callJoinRoutes(db, config, service, chat) {
         return sendError(res, 403, 'banned', 'You are banned from the chat and its calls.');
       }
       const call = req.call;
+      if (activeRecording(db, call.id) && req.body?.recordingConsent !== true) {
+        return sendError(res, 409, 'recording_consent', 'This call is being recorded.');
+      }
       const me = participantFor(
         db,
         call.id,

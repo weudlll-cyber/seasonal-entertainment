@@ -9,18 +9,25 @@
 //              screens the chat opens as a drawer over the page. The sidebar is an icon rail
 //              here (Layout, Sidebar). Sound starts only after "Join call" (browsers need a
 //              click before they play sound). Not live: what is the case, and the chat. A call
-//              linked to an event bot occurrence names that event (docs/CALLS.md).
+//              linked to an event bot occurrence names that event (docs/CALLS.md). Recording
+//              (docs/CALLS.md, "Recording"): organisers start and stop it here; while it runs
+//              the call shows a red "Recording" (and, to someone not in it, "Being recorded"),
+//              a start during the call shows a banner, and joining or sending asks first
+//              (RecordingConsent); the recordings are listed with a player (CallRecordings).
 // ============================================================
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 import { api } from '../api/http.js';
 import CallChat, { useChatCollapsed } from '../calls/CallChat.jsx';
+import CallRecordings from '../calls/CallRecordings.jsx';
 import CallStage from '../calls/CallStage.jsx';
 import LiveBadge from '../calls/LiveBadge.jsx';
+import RecordingConsent from '../calls/RecordingConsent.jsx';
 import { useCallRoom } from '../calls/useCallRoom.js';
 import { callsChanged } from '../calls/useCallsSummary.js';
 import { formatWhen } from '../app/dates.js';
+import Icon from '../app/icons.jsx';
 import { FormMessage } from '../components/FormField.jsx';
 import '../calls/callPage.css';
 
@@ -33,7 +40,9 @@ const STATUS_TEXT = {
 
 export default function CallPage() {
   const { id } = useParams();
-  const [info, setInfo] = useState(null);
+  // GET /api/calls/:id: { call, canManage, recordingEnabled }.
+  const [answer, setAnswer] = useState(null);
+  const [version, setVersion] = useState(0); // after a recording starts or stops
   const [error, setError] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatCollapsed, setChatCollapsed] = useChatCollapsed();
@@ -41,16 +50,29 @@ export default function CallPage() {
 
   useEffect(() => {
     api(`/calls/${id}`)
-      .then((data) => setInfo(data.call))
+      .then(setAnswer)
       .catch((err) => setError(err.message));
-  }, [id, live.status]);
+  }, [id, live.status, live.recording, version]);
   // An ended call changes the list and the sidebar's LIVE badge.
   useEffect(() => {
     if (live.status === 'ended') callsChanged();
   }, [live.status]);
 
-  if (!info) return <FormMessage error={error} />;
+  if (!answer) return <FormMessage error={error} />;
+  const info = answer.call;
   const joined = live.status === 'joined';
+  const recording = joined ? live.recording : info.recording;
+  const canRecord = answer.canManage && answer.recordingEnabled && info.status === 'live';
+
+  async function toggleRecording() {
+    setError(null);
+    try {
+      await api(`/calls/${id}/recording/${recording ? 'stop' : 'start'}`, { method: 'POST' });
+      setVersion((v) => v + 1);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
   const speakers = live.people.filter((p) => p.speaker).length;
   return (
     <section
@@ -59,14 +81,26 @@ export default function CallPage() {
       <header className="call-page__header">
         <h1>
           {info.title} {info.status === 'live' && <LiveBadge />}
+          {joined && recording && (
+            <span className="call-recording-mark" role="status">
+              <Icon name="record" size={16} />
+              Recording
+            </span>
+          )}
         </h1>
         <p className="call-page__facts">
           {info.status === 'live' && `Started ${formatWhen(info.startedAt)}`}
           {info.status === 'scheduled' && 'This call has not started yet.'}
           {info.status === 'ended' && 'This call has ended.'}
           {info.event && ` · Event: ${info.event.name}`}
+          {!joined && recording && ' · Being recorded'}
           {joined && ` · ${speakers} speaking · ${live.people.length - speakers} listening`}
         </p>
+        {canRecord && (
+          <button type="button" className="button button--secondary" onClick={toggleRecording}>
+            {recording ? 'Stop recording' : 'Start recording'}
+          </button>
+        )}
         <button
           type="button"
           className="button button--secondary call-page__chat-button"
@@ -76,6 +110,20 @@ export default function CallPage() {
         >
           {chatOpen ? 'Hide chat' : 'Show chat'}
         </button>
+        {/* Inside the header: the page is a grid of header, stage and chat. */}
+        {live.recordingNotice && (
+          <p className="banner call-recording-banner" role="status">
+            This call is now being recorded{' '}
+            <button
+              type="button"
+              className="button button--secondary"
+              onClick={live.controls.dismissRecordingNotice}
+            >
+              Dismiss
+            </button>
+          </p>
+        )}
+        <FormMessage error={error} />
       </header>
       <div className="call-page__main">
         {joined ? (
@@ -83,15 +131,22 @@ export default function CallPage() {
         ) : (
           <div className="call-page__join">
             {info.status === 'live' && live.status !== 'ended' && (
-              <button type="button" className="button" onClick={live.controls.join}>
+              <button type="button" className="button" onClick={() => live.controls.join()}>
                 Join call
               </button>
             )}
             <p role="status">{STATUS_TEXT[live.status]}</p>
             <FormMessage error={live.error} />
+            <CallRecordings callId={id} canManage={answer.canManage} version={version} />
           </div>
         )}
       </div>
+      {live.consent && (
+        <RecordingConsent
+          onConfirm={live.controls.confirmRecording}
+          onDecline={live.controls.declineRecording}
+        />
+      )}
       {info.chatRoom && (
         <CallChat
           room={info.chatRoom}

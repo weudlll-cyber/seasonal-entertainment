@@ -6,7 +6,8 @@
 //              ended, in the viewer's time zone), description, who created it, a link to
 //              the call's page (dates in the site's one format, app/dates.js); for a planned call "Add to calendar" and the member's reminder
 //              (CallActions.jsx); for organisers and admins the Start / End button its status
-//              allows and, on a planned call, its event bot occurrence (EventSelect.jsx).
+//              allows and, on a planned call, its event bot occurrence (EventSelect.jsx). A call
+//              whose recording runs says "Being recorded".
 // ============================================================
 
 import { Link } from 'react-router';
@@ -31,6 +32,7 @@ export default function CallCard({ call, reminded, onAction, onLink, events }) {
         {call.title}
         {call.status === 'live' && <LiveBadge />}
       </h3>
+      {call.recording && <p className="call-card__recording">Being recorded</p>}
       <p className="call-card__time">{timeLine(call)}</p>
       {call.description && <p>{call.description}</p>}
       {call.createdBy && <p className="call-card__by">Created by {call.createdBy}</p>}

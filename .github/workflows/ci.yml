@@ -95,6 +95,9 @@ jobs:
           docker compose -f deploy/site/docker-compose.yml config --quiet
           printf 'LIVEKIT_KEYS=k: s\nCALLS_DOMAIN=calls.example\nCALLS_CERT_DIR=/tmp\nACME_EMAIL=ops@site.example\n' > deploy/calls/.env
           docker compose -f deploy/calls/docker-compose.yml --profile proxy config --quiet
+          # Call recording: the add-on file together with the main one.
+          printf 'LIVEKIT_API_KEY=k\nLIVEKIT_API_SECRET=s\nRECORDINGS_DIR=/tmp\n' >> deploy/calls/.env
+          docker compose -f deploy/calls/docker-compose.yml -f deploy/calls/docker-compose.recording.yml config --quiet
 
       - name: Caddyfiles are valid and formatted
         run: |

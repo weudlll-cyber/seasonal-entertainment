@@ -26,6 +26,7 @@ import { callJoinRoutes } from './calls/joinRoutes.js';
 import { callReminderRoutes } from './calls/reminderRoutes.js';
 import { sendCallReminders, startCallReminders } from './calls/reminders.js';
 import { callEventRoutes } from './calls/eventRoutes.js';
+import { callRecordingRoutes } from './calls/recordingRoutes.js';
 import { callRoutes } from './calls/routes.js';
 import { callSpotlightRoutes } from './calls/spotlightRoutes.js';
 import { callStageRoutes } from './calls/stageRoutes.js';
@@ -136,6 +137,7 @@ export function createApp({
   api.use('/calls', callJoinRoutes(db, config, callService, chat));
   api.use('/calls', callStageRoutes(db, config, callService, chat));
   api.use('/calls', callSpotlightRoutes(db, config, callService));
+  api.use('/calls', callRecordingRoutes(db, config, callService));
   // start() returns the function that stops both jobs, or null when neither runs.
   app.locals.calls = {
     start: (log) => {

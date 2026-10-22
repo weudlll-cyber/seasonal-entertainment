@@ -27,7 +27,6 @@ An entry moves from part one to part two only when its branch is merged into `ma
   read-only mounts assumes it (docs/DEPLOYMENT.md, "The owner's bots").
 - **Info page texts** — open, the owner's word: all twelve info pages are drafts; Imprint and
   Privacy need the owner's details.
-- **Call recording** — unconfirmed proposal, not decided. Calls are not recorded (privacy draft).
 - **Login with Discord or Telegram** — open. Accounts use a username and password, with 2FA
   required for organisers and admins (closed: SE-NIGHT-1 pieces 2 and 3); logging in with a
   Discord or Telegram account is not built (for Telegram's recovery codes see above).
@@ -53,6 +52,14 @@ An entry moves from part one to part two only when its branch is merged into `ma
   - **Sessions** — signed-in sessions end after 7 days without use, renewed by every request
     at most once a minute (docs/AUTH.md, "Sessions").
 - **A ratio view between the seasons** — not wanted (owner decision 2026-10-22).
+- **Call recording** — closed by SE-NIGHT-5 piece 7 (`feat/se-night-5`, not merged yet; owner
+  decision 2026-10-22): LiveKit Egress room composite to MP4 (1280 x 720, 15 fps, H.264 about
+  1 Mbit/s, AAC 64 kbit/s), off unless set up; organisers and admins start and stop it, ending
+  the call stops it; a red "Recording", a start banner, and joining or sending only after "I
+  understand this call is being recorded"; recordings on the call's page with a player,
+  deleted only by organisers and admins; included in backups. Tested with a real egress on
+  the PC; a real call on the VPS is still to try (docs/CALLS.md, "Recording";
+  docs/DEPLOYMENT.md, "Call recording").
 - **Operating-system notifications for mentions and direct messages** — closed by SE-NIGHT-5
   piece 6 (`feat/se-night-5`, not merged yet; owner decision 2026-10-22): browser notifications
   while the site is open and no tab of it is visible, one per event across tabs; permission only

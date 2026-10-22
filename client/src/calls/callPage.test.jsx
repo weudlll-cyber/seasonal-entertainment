@@ -14,62 +14,12 @@ import { act, fireEvent, screen } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { FakeSocket } from '../test/fakeSocket.js';
 import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
+import { rooms } from '../test/fakeLiveKit.js';
 import { renderApp } from '../test/renderApp.jsx';
 import { NO_SHARE_AUDIO, NO_SOUND_SHARED } from './stageModel.js';
 
-// The stand-in Room: records what the page asks and lets a test send events.
-const rooms = [];
-vi.mock('livekit-client', () => {
-  class Room {
-    constructor(options) {
-      this.options = options;
-      this.handlers = {};
-      this.metadata = '';
-      this.activeSpeakers = [];
-      this.remoteParticipants = new Map();
-      this.connect = vi.fn(async () => {});
-      this.startAudio = vi.fn(async () => {});
-      this.disconnect = vi.fn(async () => {});
-      const room = this;
-      this.localParticipant = {
-        identity: 'p-me',
-        name: 'me',
-        attributes: { kind: 'member', hand: '0', handAt: '' },
-        permissions: { canPublish: false },
-        isScreenShareEnabled: false,
-        getTrackPublication: () => undefined, // no sound with the share
-        setScreenShareEnabled: vi.fn(async function (on) {
-          this.isScreenShareEnabled = on;
-          room.emit('localTrackPublished', { source: 'screen_share' });
-        }),
-      };
-      rooms.push(this);
-    }
-    on(event, handler) {
-      (this.handlers[event] ??= []).push(handler);
-    }
-    emit(event, ...args) {
-      (this.handlers[event] ?? []).forEach((h) => h(...args));
-    }
-  }
-  const RoomEvent = new Proxy(
-    {},
-    { get: (_t, name) => name.charAt(0).toLowerCase() + name.slice(1) }
-  );
-  return {
-    Room,
-    RoomEvent,
-    DisconnectReason: { ROOM_DELETED: 5 },
-    Track: {
-      Source: {
-        Camera: 'camera',
-        Microphone: 'microphone',
-        ScreenShare: 'screen_share',
-        ScreenShareAudio: 'screen_share_audio',
-      },
-    },
-  };
-});
+// The stand-in Room (test/fakeLiveKit.js): records what the page asks, lets a test send events.
+vi.mock('livekit-client', () => import('../test/fakeLiveKit.js'));
 
 beforeEach(() => {
   rooms.length = 0;

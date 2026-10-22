@@ -8,6 +8,7 @@
                 collapsed, a slim vertical tab). Nothing scrolls but inner lists. Below 1000px
                 the chat is a drawer over the page. The parts have their own files: stage.css,
                 callControls.css, audience.css. Tokens only: both themes.
+                Also a running recording's red mark and start banner, and the recordings list.
    ============================================================ */
 
 .call-page {
@@ -150,4 +151,49 @@
   .call-page--chat-open .call-page__chat {
     display: flex;
   }
+}
+
+/* A running recording (docs/CALLS.md, "Recording"): red, beside the title, for everyone in the
+   call; the banner when it starts during the call. */
+.call-recording-mark {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  margin-left: var(--space-1);
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: var(--color-on-live);
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-strong);
+  vertical-align: middle;
+}
+
+.call-recording-banner {
+  display: flex;
+  flex-basis: 100%; /* a line of its own in the header */
+  gap: var(--space-1);
+  align-items: center;
+  margin: 0;
+}
+
+/* The recordings under the call's state, before joining or after the call: each with its
+   player at most the column's width. */
+.call-page__join {
+  overflow-y: auto;
+}
+
+.call-recordings ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.call-recordings video {
+  display: block;
+  width: min(100%, 640px);
+  border-radius: var(--radius);
+  background: #000;
 }

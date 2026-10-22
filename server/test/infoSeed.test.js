@@ -6,7 +6,9 @@
 //              drafts (invisible to the public), and the content rules: every source-based page
 //              ends with a Sources list, no contract address is retyped, no raw HTML or local
 //              file links, Risks says "not financial advice", legal pages carry placeholders,
-//              the privacy draft says calls are not recorded and what the call server processes.
+//              the privacy draft says when calls are recorded (only after an organiser starts
+//              it, always announced, with the owner's legal details to fill in) and what the
+//              call server processes.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -62,8 +64,11 @@ it('the Risks page says "not financial advice"', () => {
   expect(readSeedPage('risks').body).toMatch(/not financial advice/i);
 });
 
-it('the privacy draft says calls are not recorded and what the call server processes', () => {
+it('the privacy draft says when calls are recorded and what the call server processes', () => {
   const { body } = readSeedPage('privacy');
-  expect(body).toContain('calls are **not recorded**');
+  expect(body).toContain('a call is **not recorded** unless an organiser starts a recording');
+  expect(body).toContain('**Call recordings**');
+  expect(body).toContain('I understand this call is being recorded');
+  expect(body.match(/Legal basis: \[TO BE FILLED BY OWNER\]/)).not.toBeNull();
   expect(body).toMatch(/IP addresses of everyone connected/);
 });

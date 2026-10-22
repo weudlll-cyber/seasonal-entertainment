@@ -10,7 +10,8 @@
 //              per account. The listing names a member's reminded calls (reminders.js); a call
 //              going live starts a reminder round at once (remindNow). A new call may be linked
 //              to an upcoming event bot occurrence (botOccurrenceId; eventLink.js), and one
-//              call's answer names that occurrence while it still exists (event).
+//              call's answer names that occurrence while it still exists (event). Calls say
+//              whether a recording runs (recording; recordingRoutes.js).
 // ============================================================
 
 import express from 'express';
@@ -25,6 +26,7 @@ import { reminderCallIds } from './reminders.js';
 import { endCall } from './endCall.js';
 import { callSteps } from './middleware.js';
 import { linkedOccurrence, occurrenceIdField, pickedOccurrence } from './eventLink.js';
+import { activeRecording, recordedCallIds } from './recordings.js';
 import {
   createCall,
   findCall,
@@ -83,8 +85,13 @@ export function callRoutes(db, config, service, chat, remindNow) {
   router.get('/', allow('public'), (req, res) => {
     const empty = { live: [], upcoming: [], recent: [] };
     const lists = service ? listCalls(db) : empty;
+    // "Being recorded" on a call whose recording runs (docs/CALLS.md, "Recording").
+    const recorded = recordedCallIds(db);
     const calls = Object.fromEntries(
-      Object.entries(lists).map(([key, list]) => [key, list.map((c) => shown(c, chat))])
+      Object.entries(lists).map(([key, list]) => [
+        key,
+        list.map((c) => ({ ...shown(c, chat), recording: recorded.has(c.id) })),
+      ])
     );
     // The member's own reminders (the "Remind me" toggles); guests have none.
     const reminders = req.user ? reminderCallIds(db, req.user.id) : [];
@@ -100,7 +107,14 @@ export function callRoutes(db, config, service, chat, remindNow) {
   router.get('/:id', allow('public'), configured, loadCall, (req, res) => {
     // The linked bot event's name while it still exists at its start (else no event).
     const event = linkedOccurrence(config, req.call);
-    res.json({ ok: true, call: { ...shown(req.call, chat), event }, canManage: canManage(req) });
+    // Whether a recording runs, and whether recording is set up at all (the button).
+    const recording = Boolean(activeRecording(db, req.call.id));
+    res.json({
+      ok: true,
+      call: { ...shown(req.call, chat), event, recording },
+      canManage: canManage(req),
+      recordingEnabled: Boolean(config.calls?.recording),
+    });
   });
 
   router.post('/', allow('organiser'), configured, perUser, (req, res) => {
