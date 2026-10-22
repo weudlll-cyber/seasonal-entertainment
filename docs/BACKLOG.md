@@ -25,10 +25,13 @@ An entry moves from part one to part two only when its branch is merged into `ma
   `/api/...`, which collide with the site's `/api`).
 - **Site and bots on the same VPS** — open, the owner's word: reading the bots' files through
   read-only mounts assumes it (docs/DEPLOYMENT.md, "The owner's bots").
-- **Info page texts** — open, the owner's word: all twelve info pages are drafts; Imprint and
-  Privacy need the owner's details. Privacy's "Call recordings" holds a proposal for the
-  owner to review (consent as the legal basis, kept until deleted, the rights and the
-  complaint to the Datenschutzbehörde); only its contact address is left to fill.
+- **Imprint and Privacy** — drafts; need the owner's details and a legal review. Privacy's
+  "Call recordings" holds a proposal for the owner to review (consent as the legal basis, kept
+  until deleted, the rights and the complaint to the Datenschutzbehörde); only its contact
+  address is left to fill.
+- **Official sources disagree** on the second Spring halving date (home table June 2025,
+  Medium update 5 September 2025) and on the total supply per token (whitepaper ~33.1 million,
+  home page ~37 million); the info pages state neither.
 - **Login with Discord or Telegram** — open. Accounts use a username and password, with 2FA
   required for organisers and admins (closed: SE-NIGHT-1 pieces 2 and 3); logging in with a
   Discord or Telegram account is not built (for Telegram's recovery codes see above).
@@ -43,6 +46,14 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **The ten info content pages** — checked against the official sources (seasonaltokens.org,
+  the whitepaper, the three audit reports, the Telegram and Medium links) and published
+  (2026-10-22, SE-INFO-PUBLISH): what-are-seasonal-tokens, how-it-works, mining, farming,
+  charts-and-trading, faq, risks, security-audits, team and official-channels. Additions only:
+  the trade page's advice and the chart model (Charts and trading), what the Callisto and
+  QuillAudits reports say (Security audits), the Medium "Four Years of Data" update as a
+  source (How it works). A fresh database seeds them published; Imprint and Privacy stay
+  drafts (`server/src/info/seed.js`).
 - **Security check findings (owner decision 2026-10-22)** — closed by SE-NIGHT-5 piece 1
   (`feat/se-night-5`, not merged yet), each with its outcome:
   - **WebSocket connection limit** — built: at most 5 open chat connections per member account,

@@ -131,11 +131,14 @@ Markdown with react-markdown, which builds React elements and drops raw HTML (`s
 The public page and the editor preview use the same component.
 
 **First-start content:** when the table is empty, `server/src/info/seed.js` inserts the pages in
-`server/src/info/seed/*.md` as **drafts**, for an admin to review and publish. The texts were
-drafted only from the official Seasonal Tokens website, both whitepapers and the owner's info
-sheet and farming guide, and each ends with its Sources list (2026-10-17). No contract address
-is retyped anywhere (the pages link to the official site); `server/test/infoSeed.test.js` guards
-these rules. Imprint and Privacy are drafts with `[TO BE FILLED BY OWNER]` placeholders.
+`server/src/info/seed/*.md`: the ten content pages **published**, Imprint and Privacy as
+**drafts** (`SEED_DRAFTS`). The texts were drafted only from the official Seasonal Tokens
+website, both whitepapers and the owner's info sheet and farming guide, and each ends with its
+Sources list (2026-10-17); the ten content pages were checked against the official sources and
+published (decided 2026-10-22). No contract address is retyped anywhere (the pages link to the
+official site); `server/test/infoSeed.test.js` guards these rules. Imprint and Privacy stay
+drafts with `[TO BE FILLED BY OWNER]` placeholders until the owner's details and a legal review
+are in.
 
 ## Events
 
