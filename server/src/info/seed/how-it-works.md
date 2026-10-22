@@ -24,4 +24,5 @@ This rule protects only the token count. The value in dollars can still fall, an
 - [Technical whitepaper](https://github.com/seasonaltokens/seasonaltokens/blob/main/whitepaper/whitepaper.md)
 - [Whitepaper (PDF)](https://seasonaltokens.org/static/files/whitepaper.pdf)
 - Seasonal Tokens info sheet (PDF; no public link yet)
+- [Seasonal Tokens Project Update: Four Years of Data](https://seasonal-tokens.medium.com/seasonal-tokens-project-update-four-years-of-data-8665864019f7) (Medium)
 - [Disclaimer](https://seasonaltokens.org/legal#disclaimer)
