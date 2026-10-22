@@ -163,12 +163,21 @@ taller. `client/e2e/layout.spec.js` checks this on every main page at 1440 x 900
    is live, docs/CALLS.md); a
    divider and Admin for admins only (as before; `staffNavFor` in `navigation.js`); at the bottom
    the account card (initial, name, role, linking to /account) or, for guests, "Log in" and
-   "Register", with the theme toggle; then the legal links (Imprint, Privacy). The current item
+   "Register", with the theme toggle; then the legal links (Imprint, Privacy, and "Not
+   financial advice" to the Disclaimer, wrapping onto a line of its own; the phone menu shows
+   the same footer). The current item
    is the solid pill (`--color-solid`, bold, `aria-current="page"`). Games, Events, Chat and
    Calls end in a 10px dot in the colour of their quarter of the logo: Games Spring `#AFB84E`,
    Events Summer `#E06E22`, Chat Autumn `#F9A825`, Calls Winter `#04AAF7` (`dot` in
    `navigation.js`).
 2. **Main column**: the routed page.
+
+**"Not financial advice"** (decided 2026-10-23): besides the footer link on every page, a
+one-line notice "Information only — not financial advice." with a link to the Disclaimer
+(`components/NotAdvice.jsx`, wording in `shared/disclaimer.js`; small and muted, `.not-advice`)
+sits where the site is most easily read as advice: above the fair price and the converter on
+the prices page, and inside the home fair-price box. That box's title link covers the whole box
+(`.home__fair-link`), so the box stays one click target while the notice keeps its own link.
 
 **Below 760px**: the sidebar becomes a top bar (logo, theme toggle, menu button). The menu opens
 the same navigation as a drawer from the left, over a scrim: closed by its close button, Escape,

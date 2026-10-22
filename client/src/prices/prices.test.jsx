@@ -6,8 +6,9 @@
 //              show each season's price and 24-hour change and open that coin's chart; without
 //              the bot the tiles stay (no prices, no links) beside a "not connected" note;
 //              /info/prices picks a token and a range and asks the server for exactly that;
-//              pointing at the chart (or the arrow keys) reads a price at a local time;
-//              the formats: four significant digits below $1 (seasons and POL alike), cents
+//              pointing at the chart (or the arrow keys) reads a price at a local time; the
+//              notice "Information only — not financial advice." with its Disclaimer link in
+//              the home fair-price box and above the fair price and converter; the formats: four significant digits below $1 (seasons and POL alike), cents
 //              from $1 on, signed percentages.
 // ============================================================
 
@@ -73,6 +74,13 @@ describe('home tiles', () => {
       'href',
       '/info/prices'
     );
+    // The box carries the notice, with its own link to the Disclaimer.
+    const box = screen.getByRole('region', { name: 'Prices' });
+    expect(within(box).getByText(/Information only — not financial advice\./)).toBeVisible();
+    expect(within(box).getByRole('link', { name: 'Disclaimer' })).toHaveAttribute(
+      'href',
+      '/info/disclaimer'
+    );
   });
 
   it('without the price bot: the tiles without prices or links, and a plain note', async () => {
@@ -129,6 +137,21 @@ describe('/info/prices', () => {
     expect(calls.map((c) => c.key)).toContain('GET /prices/winter?range=30d');
     expect(screen.getByRole('button', { name: /^Winter/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '30 days' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('says "Information only — not financial advice." above the fair price and converter', async () => {
+    mockApi(ANSWERS);
+    renderAt('/info/prices');
+    const notice = (await screen.findByText(/Information only — not financial advice\./)).closest(
+      'p'
+    );
+    expect(within(notice).getByRole('link', { name: 'Disclaimer' })).toHaveAttribute(
+      'href',
+      '/info/disclaimer'
+    );
+    // Right before the fair price table (and the converter beside it).
+    const fair = screen.getByRole('heading', { name: 'Fair price' });
+    expect(notice.compareDocumentPosition(fair) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('pointing at the line, or the arrow keys, reads a price at a local time', async () => {

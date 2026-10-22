@@ -41,7 +41,6 @@
   padding-right: calc(var(--chat-launcher-size) + var(--space-1));
   gap: 0.75rem;
   color: var(--color-text);
-  text-decoration: none;
 }
 
 .home__icons {
@@ -59,6 +58,24 @@
 .home__fair-title {
   font-size: 1.375rem;
   font-weight: var(--font-weight-heading);
+}
+
+/* The title's link covers the whole box, so the box is one click target as before. */
+.home__fair-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.home__fair-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+/* Above the covering link, so the Disclaimer link stays its own target. */
+.home__fair-notice {
+  position: relative;
+  z-index: 1;
 }
 
 /* The head row: title, the online count, and "Open the chat" at its end. */

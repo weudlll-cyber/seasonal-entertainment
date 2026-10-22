@@ -46,6 +46,11 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **"Not financial advice" notice** — closed by SE-NIGHT-6 piece 1 (`feat/se-night-6`, not
+  merged yet; owner request 2026-10-23): "Not financial advice" beside Imprint and Privacy on
+  every page (sidebar and phone menu) opens the new Disclaimer info page, seeded published; the
+  notice "Information only — not financial advice." with its Disclaimer link on the prices page
+  and in the home fair-price box (docs/DESIGN.md).
 - **The ten info content pages** — checked against the official sources (seasonaltokens.org,
   the whitepaper, the three audit reports, the Telegram and Medium links) and published
   (2026-10-22, SE-INFO-PUBLISH): what-are-seasonal-tokens, how-it-works, mining, farming,

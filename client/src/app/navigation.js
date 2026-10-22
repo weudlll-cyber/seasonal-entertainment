@@ -3,9 +3,12 @@
 // Path:        client/src/app/navigation.js
 // Project:     Seasonal Entertainment
 // Description: The one definition of the site's navigation: the sidebar's main items (with
-//              their icons and season dots), the Calls item, the admin item and who sees it, the legal links, and the admin
-//              area's sections. Used by the sidebar, the admin layout and their tests.
+//              their icons and season dots), the Calls item, the admin item and who sees it,
+//              the legal links (with "Not financial advice"), and the admin area's sections.
+//              Used by the sidebar, the admin layout and their tests.
 // ============================================================
+
+import { DISCLAIMER_PATH } from '@seasonal-entertainment/shared/disclaimer.js';
 
 // Sidebar order (decided 2026-10-17). "Seasonal Tokens" is the info section. `dot`: the
 // season colour of the section's quarter of the logo, shown as a small dot (docs/DESIGN.md).
@@ -30,10 +33,12 @@ export function staffNavFor(user) {
   return user?.role === 'admin' ? [ADMIN_ITEM] : [];
 }
 
-// Imprint and Privacy are info pages (slugs "imprint" and "privacy").
+// Imprint, Privacy and the Disclaimer are info pages (slugs "imprint", "privacy" and
+// "disclaimer"); the Disclaimer's link says what it is about on every page (2026-10-23).
 export const LEGAL_NAV = [
   { to: '/info/imprint', label: 'Imprint' },
   { to: '/info/privacy', label: 'Privacy' },
+  { to: DISCLAIMER_PATH, label: 'Not financial advice' },
 ];
 
 // Sections of the admin area (/admin); each later area adds its editor here.

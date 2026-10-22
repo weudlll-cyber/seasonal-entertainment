@@ -136,7 +136,9 @@
 
 .sidebar__legal {
   display: flex;
-  gap: var(--space-2);
+  /* Three links do not fit one line of the sidebar: "Not financial advice" wraps below. */
+  flex-wrap: wrap;
+  column-gap: var(--space-2);
   font-size: 0.8125rem;
 }
 

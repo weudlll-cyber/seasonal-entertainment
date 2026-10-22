@@ -69,11 +69,12 @@ describe('app shell', () => {
     expect(dotOf('Home')).toBeUndefined();
   });
 
-  it('shows Imprint and Privacy', () => {
+  it('shows Imprint, Privacy and "Not financial advice" (the Disclaimer)', () => {
     renderAt('/');
     expect(linksOf(screen.getByRole('navigation', { name: 'Legal' }))).toEqual([
       ['Imprint', '/info/imprint'],
       ['Privacy', '/info/privacy'],
+      ['Not financial advice', '/info/disclaimer'],
     ]);
   });
 

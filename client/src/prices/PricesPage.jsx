@@ -10,7 +10,8 @@
 //              (?coins=…), so a link shows the same view (coinSelection.js). The chart covers
 //              24 hours, 7 days, 30 days, a year or everything; then the fair price and the
 //              converter with mining times, as the price bot's /value and /swap
-//              (FairPriceTable.jsx, Converter.jsx; docs/BOTS.md). A source that is not
+//              (FairPriceTable.jsx, Converter.jsx; docs/BOTS.md), under the notice
+//              "Information only — not financial advice." (NotAdvice.jsx). A source that is not
 //              connected says so plainly. timeZone is a prop so tests can pin it. SE style: the
 //              title on a small night-blue banner with the season pattern and the four marks;
 //              the page uses the wide column, and from 1100px the fair price and the converter
@@ -23,6 +24,7 @@ import { api } from '../api/http.js';
 import { deviceZone } from '../app/dates.js';
 import { SEASON_ICONS } from '../brand/brand.js';
 import { FormMessage } from '../components/FormField.jsx';
+import NotAdvice from '../components/NotAdvice.jsx';
 import { ALL_COINS, parseCoins, shownCoins, toggleAll, toggleCoin } from './coinSelection.js';
 import Converter from './Converter.jsx';
 import FairPriceTable from './FairPriceTable.jsx';
@@ -190,10 +192,14 @@ export default function PricesPage({ timeZone = deviceZone() }) {
         </>
       )}
       {seasons?.connected && (
-        <div className="prices__tools">
-          <FairPriceTable actual={actual} rates={seasons.miningRates} />
-          <Converter prices={allPrices} rates={seasons.miningRates} />
-        </div>
+        <>
+          {/* Right above what is most easily read as advice: the fair price and the converter. */}
+          <NotAdvice />
+          <div className="prices__tools">
+            <FairPriceTable actual={actual} rates={seasons.miningRates} />
+            <Converter prices={allPrices} rates={seasons.miningRates} />
+          </div>
+        </>
       )}
     </section>
   );
