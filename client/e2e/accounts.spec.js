@@ -73,7 +73,8 @@ test('register, log out and log in again', async ({ page }) => {
   // Live events of a members-only room reach it: the connection is the member's now (the
   // server refuses a guest's socket there). Posted beside the panel, so only the push shows it.
   await drawer.getByRole('button', { name: 'Room: General' }).click();
-  await page.getByRole('option', { name: /Seasonal Race/ }).click();
+  // Exact: roomRows.spec.js adds "Seasonal Race Results and Announcements" in the same run.
+  await page.getByRole('option', { name: '# Seasonal Race', exact: true }).click();
   await expect(drawer.getByRole('list', { name: 'Messages in Seasonal Race' })).toBeVisible();
   // Only once the server accepted the subscription (a guest's socket is refused there) can a
   // push arrive; posting earlier would race the new connection.
