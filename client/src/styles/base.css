@@ -143,6 +143,17 @@ a {
   padding: var(--space-3);
 }
 
+/* The chat menu (NotificationsMenu) sits at the header's right end, taking no height. */
+.chat-page {
+  position: relative;
+}
+
+.chat-page__bar {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+}
+
 /* The panel follows the header closely: the page's gap is enough. */
 .chat-page .page-header {
   margin-bottom: 0;

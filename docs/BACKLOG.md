@@ -7,8 +7,9 @@ An entry moves from part one to part two only when its branch is merged into `ma
 - **Telegram-login recovery code handling** — open (decided direction 2026-10-17). Recovery codes
   are to apply to future Telegram logins too: such an account has no password to derive a
   wrapping key from (docs/AUTH.md).
-- **Operating-system notifications for mentions and direct messages** — unconfirmed proposal,
-  not decided.
+- **Notifications when the browser is closed (web push)** — not built (owner decision
+  2026-10-22): notifications come only while a tab of the site is open (docs/CHAT.md,
+  "Notifications").
 - **Uploads and uploaded images in the chat on other sites** — open. With an embed token,
   uploading is refused (decided scope), and uploaded images of members-only rooms do not show
   there: an image request cannot carry the token. Would need short-lived signed file links.
@@ -52,6 +53,11 @@ An entry moves from part one to part two only when its branch is merged into `ma
   - **Sessions** — signed-in sessions end after 7 days without use, renewed by every request
     at most once a minute (docs/AUTH.md, "Sessions").
 - **A ratio view between the seasons** — not wanted (owner decision 2026-10-22).
+- **Operating-system notifications for mentions and direct messages** — closed by SE-NIGHT-5
+  piece 6 (`feat/se-night-5`, not merged yet; owner decision 2026-10-22): browser notifications
+  while the site is open and no tab of it is visible, one per event across tabs; permission only
+  on "Turn on notifications"; switches for mentions and direct messages, off until turned on;
+  a direct message's notification never shows its text (docs/CHAT.md, "Notifications").
 - **Unlock a new device by confirming it on an already logged-in device** — closed by SE-NIGHT-5
   piece 5 (`feat/se-night-5`, not merged yet; owner decision 2026-10-22): "Confirm on another
   device" beside the password and the recovery code; the unlocked device confirms the same

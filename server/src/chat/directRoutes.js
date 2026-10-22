@@ -12,7 +12,8 @@
 //              A message may carry the sender's encrypted file upload (fileId; directFiles/:
 //              the file's key, name and type travel inside the ciphertext, the server only
 //              links the upload to the message for access and clean-up).
-//              New messages are pushed to both members' open sockets. A conversation is read
+//              New messages are pushed to both members' open sockets, with the sender's name
+//              (for the recipient's notification; never any text). A conversation is read
 //              in pages of 100, newest first: ?before=<id> gives the 100 before that id, and
 //              `more` says whether there are older ones still.
 // ============================================================
@@ -145,8 +146,9 @@ export function directRoutes(db, hub, allowMessage) {
       }
       return added;
     })();
+    // The sender's name rides along for the recipient's notification (never any text).
     for (const userId of [req.user.id, req.partner.id]) {
-      hub.sendToUser(userId, { type: 'direct', message });
+      hub.sendToUser(userId, { type: 'direct', message, senderName: req.user.username });
     }
     res.status(201).json({ ok: true, message });
   });

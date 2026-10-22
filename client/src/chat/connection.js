@@ -12,7 +12,8 @@
 //              readable room, the member's own reads and mutes (the unread counters), someone's
 //              changed online visibility ("presence"), a call reminder of the site's
 //              ("callReminder", calls/CallNotices.jsx), a new device asking for the key
-//              ("keyRequest", keys/DeviceRequestPrompt.jsx) — and
+//              ("keyRequest", keys/DeviceRequestPrompt.jsx), a mention of the member ("mention",
+//              for a browser notification, notify/) — and
 //              joinPersonal() hands them on. The chat embedded on an approved foreign site has
 //              no cookie there: it offers its embed token as a subprotocol (api/http.js), and when
 //              that socket closes, asks whether the token still works (if not, it is dropped).
@@ -40,6 +41,7 @@ const PERSONAL = new Set([
   'presence',
   'callReminder',
   'keyRequest',
+  'mention',
 ]);
 const personal = new Set(); // their handlers
 let socket = null;

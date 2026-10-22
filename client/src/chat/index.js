@@ -17,7 +17,8 @@
 
 export { default as ChatPanel } from './ChatPanel.jsx';
 export { default as DirectPanel } from './DirectPanel.jsx';
-export { onDirectRequest } from './directView.js';
+// requestDirect: open a member's conversation from outside (a notification's click).
+export { onDirectRequest, requestDirect } from './directView.js';
 export { useUnread } from './unread.js';
 export { default as UnreadCount } from './UnreadCount.jsx';
 export { groupRooms, useFavourites } from './favourites.js';

@@ -421,6 +421,36 @@ its newest 3 messages (name, short text, time), then "Open the chat".
 - **24-hour rule**: when the newest message is more than 24 hours old, the box shows only the
   count and "Open the chat".
 
+## Notifications
+
+Browser notifications while the site is open (decided 2026-10-22; `client/src/notify/`).
+
+- **What**: a mention of the member in a room they can read ("<name> mentioned you in <room>:
+  <first 80 characters>"), and a new direct message ("New message from <name>" only, never the
+  message's text).
+  - **The server** sends a personal `mention` event to each mentioned member's pages, with the
+    author, the room and the first 80 characters (`server/src/chat/routes.js`; only members the
+    mention counts for, who may read the room). The `direct` event now also names the sender
+    (`senderName`); its message is ciphertext.
+- **When**: only when no tab of the site is visible at that moment. Each tab notes its own
+  visibility in browser storage, renewed while visible (`se.visibleTab.*`), so a closed tab's
+  note fades within seconds. One notification per event across tabs: the first tab to claim the
+  event shows it (`se.notified.*`, like the call notices), with the event as the notification's
+  tag. Clicking it focuses the site and opens the room (`/chat?room=<slug>`) or the conversation
+  (`/chat?direct=<id>&name=<name>`).
+- **Permission**: asked only when the member presses **Turn on notifications**, on the account
+  page ("Notifications") or in the chat menu ("…" on the chat page and in the chat drawer);
+  never on page load. When both switches are still off, allowing it turns both on. If the
+  browser blocks notifications, the account page explains how to allow them in the browser
+  (the chat menu leads there).
+- **Account setting**: two switches, "When someone mentions me" and "New direct messages",
+  off until the member turns them on (`users.notify_mentions`, `notify_direct`;
+  `PUT /api/auth/notifications`).
+- **Not while the site is closed**: no web push. With no tab of the site open there are no
+  notifications (backlog part one: "Notifications when the browser is closed (web push) — not
+  built").
+- Tests: `client/src/notify/notifications.test.jsx`, `server/test/notifyEvents.test.js`.
+
 ## Reporting a direct message
 
 Moderators and admins may see direct messages **only when the affected member releases them**

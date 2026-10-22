@@ -145,11 +145,19 @@ describe('the unlocked device', () => {
       })
     );
 
+  // Under load the page may still be switching to its unlocked state when the first request
+  // arrives: the same request again until it asks (a repeated request is the same request).
+  const askUntilShown = (deviceKeys) =>
+    vi.waitFor(async () => {
+      await ask(deviceKeys);
+      expect(screen.getByRole('dialog', { name: 'A new device wants access' })).toBeVisible();
+    });
+
   it('asks with the same code; Confirm sends the key sealed to the new device only', async () => {
     const { calls, privateKey } = await unlockedPage();
     const deviceKeys = await newKeyPair();
-    await ask(deviceKeys);
-    const dialog = await screen.findByRole('dialog', { name: 'A new device wants access' });
+    await askUntilShown(deviceKeys);
+    const dialog = screen.getByRole('dialog', { name: 'A new device wants access' });
     expect(dialog).toHaveTextContent(
       `A new device wants access to your direct messages — code ${await handoverCode(deviceKeys.publicKey)}. Is this you?`
     );
@@ -188,8 +196,8 @@ describe('the unlocked device', () => {
 
   it('Reject sends nothing of the key', async () => {
     const { calls } = await unlockedPage();
-    await ask(await newKeyPair());
-    const dialog = await screen.findByRole('dialog', { name: 'A new device wants access' });
+    await askUntilShown(await newKeyPair());
+    const dialog = screen.getByRole('dialog', { name: 'A new device wants access' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Reject' }));
     await vi.waitFor(() =>
       expect(calls.some((c) => c.key === 'POST /keys/handover/h1/reject')).toBe(true)

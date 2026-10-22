@@ -4,12 +4,13 @@
 // Project:     Seasonal Entertainment
 // Description: The signed-in user's own account: details, password change, two-factor
 //              authentication, private messages (unlock, recovery code), privacy ("Show when I'm
-//              online"), logout.
+//              online", link previews in direct messages), browser notifications, logout.
 // ============================================================
 
 import { useNavigate } from 'react-router';
 import ChangePasswordForm from '../components/ChangePasswordForm.jsx';
 import PrivacySettings from '../components/PrivacySettings.jsx';
+import NotificationSettings from '../notify/NotificationSettings.jsx';
 import TwoFactorDisable from '../components/TwoFactorDisable.jsx';
 import TwoFactorSetup from '../components/TwoFactorSetup.jsx';
 import PrivateMessagesSection from '../keys/PrivateMessagesSection.jsx';
@@ -56,6 +57,7 @@ export default function AccountPage() {
       )}
       <PrivateMessagesSection />
       <PrivacySettings />
+      <NotificationSettings />
       <h2>Log out</h2>
       <button className="button" type="button" onClick={onLogout}>
         Log out

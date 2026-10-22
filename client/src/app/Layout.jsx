@@ -11,7 +11,9 @@
 //              On a call page the sidebar is an icon rail (more room for the stage). Right
 //              after a member's key pair was made, the recovery-code offer opens over the page.
 //              Members' call reminders show at the top of the main column (CallNotices); a
-//              new device's request for the key asks on an unlocked one (DeviceRequestPrompt).
+//              new device's request for the key asks on an unlocked one (DeviceRequestPrompt);
+//              mentions and direct messages become browser notifications while no tab of the
+//              site is visible (useSystemNotifications, notify/).
 // ============================================================
 
 import { Suspense } from 'react';
@@ -19,6 +21,7 @@ import { Link, Outlet, useLocation } from 'react-router';
 import CallNotices from '../calls/CallNotices.jsx';
 import DeviceRequestPrompt from '../keys/DeviceRequestPrompt.jsx';
 import { useKeys } from '../keys/KeyContext.jsx';
+import { useSystemNotifications } from '../notify/useSystemNotifications.js';
 import RecoveryOffer from '../keys/RecoveryOffer.jsx';
 import { inEmbedLoginFlow } from '../session/nextPage.js';
 import { useSession } from '../session/SessionContext.jsx';
@@ -31,6 +34,7 @@ export default function Layout() {
   const { user } = useSession();
   const { offerRecovery } = useKeys();
   const { pathname, search } = useLocation();
+  useSystemNotifications();
   // The full chat page and a call page (its own chat) have the chat already; the admin area
   // keeps the screen to itself; the login popup is a small window for one step.
   const rail = isCallPage(pathname);
