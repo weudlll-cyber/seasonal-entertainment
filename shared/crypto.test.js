@@ -15,19 +15,25 @@ import sodiumModule from 'libsodium-wrappers-sumo';
 import { describe, expect, it } from 'vitest';
 import {
   decryptDirect,
+  decryptFile,
   deriveAccountKeys,
   deriveRecoveryKey,
   encryptDirect,
+  encryptFile,
+  FILE_CHUNK,
+  handoverCode,
   newKeyPair,
   newRecoveryCode,
   newSalt,
   normaliseRecoveryCode,
+  openFromDevice,
   openSealed,
   publicKeyOf,
   safetyNumber,
   sealBytes,
+  sealForDevice,
 } from './crypto.js';
-import { base64Length, boundedBase64, exactBytes } from './cryptoFormat.js';
+import { DEVICE_SEALED_BYTES, base64Length, boundedBase64, exactBytes } from './cryptoFormat.js';
 
 const SALT = 'AAECAwQFBgcICQoLDA0ODw==';
 // Shared code has no Buffer (it runs in browsers too): libsodium's own base64.
@@ -111,6 +117,48 @@ describe('direct messages', () => {
     expect(await decryptDirect(sent, anna.publicKey, eve.privateKey)).toBeNull();
     const again = await encryptDirect(payload, ben.publicKey, anna.privateKey);
     expect(again.nonce).not.toBe(sent.nonce);
+  });
+});
+
+describe('files in direct messages', () => {
+  const bytes = (n) => Uint8Array.from({ length: n }, (_, i) => (i * 7) % 256);
+
+  it.each([0, 10, FILE_CHUNK, FILE_CHUNK * 3 + 5])('%i bytes come back as they were', async (n) => {
+    const file = bytes(n);
+    const { key, data } = await encryptFile(file);
+    expect(data.length).toBeGreaterThan(n);
+    expect(await decryptFile(data, key)).toEqual(file);
+  });
+
+  it('a fresh key per file; a wrong key, a changed byte or a cut-off end opens nothing', async () => {
+    const file = bytes(FILE_CHUNK * 2 + 1);
+    const one = await encryptFile(file);
+    const two = await encryptFile(file);
+    expect(one.key).not.toBe(two.key);
+    expect(await decryptFile(one.data, two.key)).toBeNull();
+    const changed = one.data.slice();
+    changed[100] ^= 1;
+    expect(await decryptFile(changed, one.key)).toBeNull();
+    const cut = one.data.slice(0, one.data.length - 10);
+    expect(await decryptFile(cut, one.key)).toBeNull();
+    // Whole chunks dropped from the end: the stream no longer ends with its final chunk.
+    expect(await decryptFile(one.data.slice(0, 24 + FILE_CHUNK + 17), one.key)).toBeNull();
+  });
+});
+
+describe('handing the key to a new device', () => {
+  it('the sealed key opens only with the device key; the code follows the device key', async () => {
+    const member = await newKeyPair();
+    const device = await newKeyPair();
+    const other = await newKeyPair();
+    const sealed = await sealForDevice(member.privateKey, device.publicKey);
+    expect(base64Length(sealed)).toBe(DEVICE_SEALED_BYTES);
+    expect(await openFromDevice(sealed, device)).toEqual(member.privateKey);
+    expect(await openFromDevice(sealed, other)).toBeNull();
+    const code = await handoverCode(device.publicKey);
+    expect(code).toMatch(/^\d{3} \d{3}$/);
+    expect(await handoverCode(device.publicKey)).toBe(code);
+    expect(await handoverCode(other.publicKey)).not.toBe(code);
   });
 });
 

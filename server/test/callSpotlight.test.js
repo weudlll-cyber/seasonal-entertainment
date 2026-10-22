@@ -95,20 +95,32 @@ describe('the routes', () => {
     const { olga, call, mia, miaIn, host } = await setUp();
     const url = `/api/calls/${call.id}/spotlight`;
     await mia.agent.post(`${url}/self`).send({ on: true });
-    expect(metadata()).toEqual({ spotlight: { identity: miaIn.identity, by: 'self' } });
+    expect(metadata()).toEqual({
+      recording: false,
+      spotlight: { identity: miaIn.identity, by: 'self' },
+    });
 
     await olga.put(url).send({ identity: host.identity });
-    expect(metadata()).toEqual({ spotlight: { identity: host.identity, by: 'organiser' } });
+    expect(metadata()).toEqual({
+      recording: false,
+      spotlight: { identity: host.identity, by: 'organiser' },
+    });
     const refused = await mia.agent.post(`${url}/self`).send({ on: true });
     expect([refused.status, refused.body.error]).toEqual([409, 'organiser_choice']);
 
     await mia.agent.post(`${url}/share`).send({ sharing: true });
-    expect(metadata()).toEqual({ spotlight: { identity: miaIn.identity, by: 'share' } });
+    expect(metadata()).toEqual({
+      recording: false,
+      spotlight: { identity: miaIn.identity, by: 'share' },
+    });
     await mia.agent.post(`${url}/share`).send({ sharing: false });
-    expect(metadata()).toEqual({ spotlight: null });
+    expect(metadata()).toEqual({ recording: false, spotlight: null });
 
     await olga.put(url).send({ identity: null });
-    expect(metadata()).toEqual({ spotlight: { identity: null, by: 'organiser' } });
+    expect(metadata()).toEqual({
+      recording: false,
+      spotlight: { identity: null, by: 'organiser' },
+    });
   });
 
   it('only organisers choose; only speakers highlight themselves or report a share', async () => {
@@ -130,6 +142,6 @@ describe('the routes', () => {
     const { olga, call, mia, miaIn } = await setUp();
     await mia.agent.post(`/api/calls/${call.id}/spotlight/share`).send({ sharing: true });
     await olga.delete(`/api/calls/${call.id}/stage/${miaIn.identity}`);
-    expect(metadata()).toEqual({ spotlight: null });
+    expect(metadata()).toEqual({ recording: false, spotlight: null });
   });
 });

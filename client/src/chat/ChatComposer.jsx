@@ -10,9 +10,11 @@
 //              member typing "@" gets mention suggestions (MentionSuggestions). The buttons carry
 //              an icon and their text; the compact variant (the drawer, a call's chat) shows one
 //              row — field and icon buttons, the texts kept as their names (ChatComposer.css).
+//              A host may follow the draft (onDraft) and show something above the field
+//              (above: a direct message's link preview card, DirectConversation.jsx).
 // ============================================================
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MESSAGE_MAX } from '@seasonal-entertainment/shared/chatRules.js';
 import Icon from '../app/icons.jsx';
 import ChatPicker from './ChatPicker.jsx';
@@ -23,13 +25,27 @@ import './ChatComposer.css';
 
 // onSend(payload) resolves true when the message went out (then text and attachment clear).
 // payload: { body, attachment?: { type: 'sticker' | 'gif', itemId } | { type: 'file', uploadId } }.
-// files: offer "Attach file" to members (false in direct messages: no uploads there, v1).
+// files: offer "Attach file" to members (false where uploads are refused); uploadFile, accept:
+// a direct message's own upload (encrypted first) and file types (ComposerUpload).
 // room: the room's slug, for @mention suggestions (none in direct messages, none for guests).
-export default function ChatComposer({ user, guestName, onSend, files = true, room = null }) {
+// onDraft(text): told every change of the text (also its clearing after sending); above: shown
+// above the field.
+export default function ChatComposer({
+  user,
+  guestName,
+  onSend,
+  files = true,
+  room = null,
+  onDraft,
+  above = null,
+  uploadFile,
+  accept,
+}) {
   const [draft, setDraft] = useState('');
   const [attachment, setAttachment] = useState(null); // { type, item } or { type: 'file', upload }
   const field = useRef(null);
   const mentions = useMentionSuggestions({ field, draft, setDraft, room: user ? room : null });
+  useEffect(() => onDraft?.(draft), [draft, onDraft]);
 
   // Inserts at the cursor (or replaces the selection), never beyond the length limit, and
   // puts the cursor right after the emoji.
@@ -69,6 +85,7 @@ export default function ChatComposer({ user, guestName, onSend, files = true, ro
       {attachment && (
         <ComposerAttachment attachment={attachment} onRemove={() => setAttachment(null)} />
       )}
+      {above}
       {mentions.list}
       <label>
         <span className="chat-label">Message</span>
@@ -92,7 +109,11 @@ export default function ChatComposer({ user, guestName, onSend, files = true, ro
           onMedia={(type, item) => setAttachment({ type, item })}
         />
         {user && files && (
-          <ComposerUpload onUploaded={(upload) => setAttachment({ type: 'file', upload })} />
+          <ComposerUpload
+            onUploaded={(upload) => setAttachment({ type: 'file', upload })}
+            send={uploadFile}
+            accept={accept}
+          />
         )}
         <button className="chat-button" type="submit" disabled={!draft.trim() && !attachment}>
           <Icon name="send" size={20} />

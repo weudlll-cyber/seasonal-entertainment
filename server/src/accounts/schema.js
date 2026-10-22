@@ -19,6 +19,10 @@ import { addMissingColumns } from '../db/addColumns.js';
 //                  in a database from before the key split, whose accounts cannot log in any
 //                  more (an admin's password reset gives them a salt).
 // show_online:     whether others see this member as online (the chat; default on).
+// dm_link_previews: whether this member's browser asks for link previews while writing a
+//                  direct message (docs/CHAT.md; default on, decided 2026-10-22).
+// notify_mentions, notify_direct: the browser notifications this member turned on (a mention,
+//                  a new direct message; docs/CHAT.md, "Notifications"; off by default).
 export const ACCOUNTS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
   id              INTEGER PRIMARY KEY,
@@ -32,6 +36,9 @@ CREATE TABLE IF NOT EXISTS users (
   session_epoch   INTEGER NOT NULL DEFAULT 0,
   kdf_salt        TEXT,
   show_online     INTEGER NOT NULL DEFAULT 1 CHECK (show_online IN (0, 1)),
+  dm_link_previews INTEGER NOT NULL DEFAULT 1 CHECK (dm_link_previews IN (0, 1)),
+  notify_mentions INTEGER NOT NULL DEFAULT 0 CHECK (notify_mentions IN (0, 1)),
+  notify_direct   INTEGER NOT NULL DEFAULT 0 CHECK (notify_direct IN (0, 1)),
   created_at      TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 `;
@@ -43,4 +50,7 @@ export const migrateAccounts = (db) =>
     ['users', 'kdf_salt', 'TEXT'],
     // Existing accounts keep today's behaviour: shown as online.
     ['users', 'show_online', 'INTEGER NOT NULL DEFAULT 1 CHECK (show_online IN (0, 1))'],
+    ['users', 'dm_link_previews', 'INTEGER NOT NULL DEFAULT 1 CHECK (dm_link_previews IN (0, 1))'],
+    ['users', 'notify_mentions', 'INTEGER NOT NULL DEFAULT 0 CHECK (notify_mentions IN (0, 1))'],
+    ['users', 'notify_direct', 'INTEGER NOT NULL DEFAULT 0 CHECK (notify_direct IN (0, 1))'],
   ]);

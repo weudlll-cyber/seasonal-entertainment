@@ -6,11 +6,14 @@
 //              decrypted in the browser with the member's private key, kept live, marked read,
 //              paged back 100 at a time (loadOlder; pages are merged by id, so a live reload
 //              keeps them), and sending (encrypted for the partner's current key; once more
-//              when a key changed meanwhile).
+//              when a key changed meanwhile; a file's upload id goes along so the server links
+//              it to the message). A report with shared messages also shares their files,
+//              decrypted here (directFile.js).
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, api } from '../api/http.js';
+import { shareReportFiles } from './directFile.js';
 import { mergeMessages } from './useChatRoom.js';
 import { useDirectEvents } from './useDirect.js';
 
@@ -98,7 +101,7 @@ export function useDirectConversation(partnerId, keyId, privateKey) {
     setLoadingOlder(false);
   }
 
-  // payload: { text, mediaItemId? }. true when sent.
+  // payload: { text, mediaItemId?, preview?, file? }. true when sent.
   async function send(payload, partnerKey = state.data?.partnerKey, retry = true) {
     setError(null);
     try {
@@ -106,7 +109,12 @@ export function useDirectConversation(partnerId, keyId, privateKey) {
       const box = await encryptDirect(payload, partnerKey.publicKey, privateKey);
       await api(`/chat/direct/${partnerId}`, {
         method: 'POST',
-        body: { ...box, senderKeyId: keyId, recipientKeyId: partnerKey.keyId },
+        body: {
+          ...box,
+          senderKeyId: keyId,
+          recipientKeyId: partnerKey.keyId,
+          ...(payload.file && { fileId: payload.file.id }),
+        },
       });
       await load();
       return true;
@@ -120,10 +128,16 @@ export function useDirectConversation(partnerId, keyId, privateKey) {
     }
   }
 
-  // A report of one of the partner's messages (ReportDirectDialog). true when sent.
+  // A report of one of the partner's messages (ReportDirectDialog). true when sent. The files
+  // of the shared messages follow, decrypted in this browser, as their text did.
   async function report(body) {
     try {
-      await api(`/chat/direct/${partnerId}/report`, { method: 'POST', body });
+      const { reportId } = await api(`/chat/direct/${partnerId}/report`, { method: 'POST', body });
+      const sharedIds = new Set((body.shared ?? []).map((c) => c.id));
+      const files = current.messages
+        .filter((m) => sharedIds.has(m.id) && m.payload?.file)
+        .map((m) => ({ id: m.id, file: m.payload.file }));
+      await shareReportFiles(partnerId, reportId, files);
       return true;
     } catch {
       return false;

@@ -99,6 +99,10 @@ export function readConfig(env = process.env) {
         member: { windowMs: 10_000, max: 5 },
         guest: { windowMs: 10_000, max: 2 },
       },
+      // Open live connections (security check 2026-10-22): per member account, all tabs, the
+      // drawer and embedded chats together; per address for guests without an account.
+      maxConnectionsPerMember: readInt(env, 'CHAT_MAX_CONNECTIONS_PER_MEMBER', 5, 1, 100),
+      maxGuestConnectionsPerIp: readInt(env, 'CHAT_MAX_GUEST_CONNECTIONS_PER_IP', 20, 1, 1000),
     },
     // Link previews in the chat (decided 2026-10-17). Only LINK_PREVIEWS is an env key.
     linkPreviews: {
@@ -148,6 +152,7 @@ export function readConfig(env = process.env) {
       loginAccount: { windowMs: 15 * 60_000, max: 10 }, // failed attempts per username
       register: { windowMs: 60 * 60_000, max: 5 }, // registrations per IP
       passwordChange: { windowMs: 15 * 60_000, max: 5 }, // failed attempts per user
+      keyHandover: { windowMs: 60 * 60_000, max: 10 }, // new-device requests per account
       bootstrap: { windowMs: 60 * 60_000, max: 10 }, // attempts per IP
       twoFactor: { windowMs: 15 * 60_000, max: 5 }, // failed codes per user / per IP at login
       chatReport: { windowMs: 60_000, max: 10 }, // chat reports per IP

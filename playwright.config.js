@@ -76,6 +76,10 @@ export default defineConfig({
         // A token only test runs know: the admin spec creates its admin through the real
         // bootstrap route. Not a secret: it only ever unlocks this throw-away database.
         BOOTSTRAP_TOKEN: 'e2e-bootstrap-token',
+        // Every test browser comes from 127.0.0.1 and many share the run's admin account, in
+        // parallel workers: the chat connection limits (docs/CHAT.md) would count them as one.
+        CHAT_MAX_CONNECTIONS_PER_MEMBER: '100',
+        CHAT_MAX_GUEST_CONNECTIONS_PER_IP: '1000',
         BCRYPT_COST: '4',
         COOKIE_SECURE: 'false',
         PUBLIC_ORIGIN: '',

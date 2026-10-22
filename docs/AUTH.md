@@ -79,6 +79,33 @@ registration, password change, unlock or recovery runs, its button reads **Check
   recovery code or starts over with a new key pair. Setting, replacing or removing the recovery
   code needs the current password (its auth key), like every other change to the keys
   (2026-10-18).
+- **Unlock on another device** (decided 2026-10-22): after login on a device without the
+  private key, besides the password and the recovery code, **Confirm on another device**.
+  - **The new device** makes a one-time key pair and sends its public key
+    (`POST /api/keys/handover`). It shows a 6-digit code computed from that public key
+    (`handoverCode` in `shared/crypto.js`: BLAKE2b, so a key swapped on the way shows another
+    code).
+  - **The request** is valid 5 minutes, one at a time per account (`409 request_pending` for a
+    second device; at most 10 an hour per account, `rateLimits.keyHandover`). It is kept in the
+    server's memory only (`server/src/keys/handover.js`), not in the database. The server relays
+    it as a personal event (`keyRequest`) over the live chat connection to the account's own
+    open pages, never anyone else's.
+  - **The unlocked device**: only a page where the key is unlocked asks
+    (`client/src/keys/DeviceRequestPrompt.jsx`): "A new device wants access to your direct
+    messages — code 123 456. Is this you?" with Confirm / Reject. The member compares the two
+    codes. **Confirm** seals the private key to the one-time public key (`crypto_box_seal`,
+    `sealForDevice`) and sends only that box (exactly 80 bytes; the server takes nothing else,
+    so it never holds the key unsealed). **Reject** sends nothing of the key.
+  - **Delivery**: the new device asks every 2 seconds (`GET /api/keys/handover/:id`, its own
+    session only; `client/src/keys/DeviceUnlock.jsx`) and gets the box once; then it is deleted.
+    It opens the box with its one-time private key, checks that the key belongs to the account's
+    public key, and keeps it like a key the password opened (`fromOtherDevice` in
+    `KeyContext.jsx`). The new device cannot answer its own request.
+  - **Nothing happens** on a rejected, expired or unknown request.
+  - **Audit**: `keys.handover_request`, `keys.handover_confirm`, `keys.handover_reject`, never
+    with a key.
+  - Tests: `server/test/keyHandover.test.js`, `client/src/keys/deviceHandover.test.jsx`,
+    `shared/crypto.test.js`.
 - **Telegram logins (decided direction, 2026-10-17; not built)**: recovery codes are to apply to
   future Telegram logins too — an account that logs in through Telegram has no password to derive
   a wrapping key from, so its private key needs the recovery code (or a start-over) to open on a
@@ -95,8 +122,17 @@ rate limit, the lockout, locked accounts, the session epoch.
 ## Sessions
 
 - Server-side, in the SQLite database (table `sessions`, created by the session store). The
-  browser holds only the cookie: `HttpOnly`, `SameSite=Lax`, path `/`, 30 days, `Secure` when
+  browser holds only the cookie: `HttpOnly`, `SameSite=Lax`, path `/`, `Secure` when
   `COOKIE_SECURE` (default: on in production). Name `__Host-se.sid` when Secure, else `se.sid`.
+- **7 days without use** (decided 2026-10-22): a signed-in session ends after 7 days in which it
+  was not used. Every authenticated request renews it to 7 days from then: the session's
+  `usedAt` stamp, the stored expiry and the cookie's. To spare a database write per request,
+  it renews at most once a minute (`renewSession` in `server/src/http/session.js`; the
+  store's own per-request "touch" is switched off). A session whose `usedAt` is more than 7
+  days old is refused even if its record still exists (`sessionUser`, also used by the chat
+  WebSocket). Signed-in sessions from the earlier 30-day rule are capped at 7 days from the
+  server's start. A guest's session, which only holds a guest name (docs/CHAT.md), keeps
+  30 days. Tests: `server/test/sessionIdle.test.js`.
 - **Login** regenerates the session id (no fixation) and stamps it with the account's
   **session epoch** _(race game)_. Wrong username and wrong password give the same
   `401 invalid_credentials`. A locked account answers `403 account_locked`, but only to someone
@@ -254,6 +290,7 @@ All answer `429 too_many_attempts`. Numbers are in `server/src/config.js` (`rate
 | `POST /api/auth/password`  | 15 min | 5     | account  | failed attempts |
 | `POST /api/auth/bootstrap` | 1 h    | 10    | IP       | every attempt   |
 | every `GET` under `/api`   | 1 min  | 1200  | IP       | every request   |
+| `POST /api/keys/handover`  | 1 h    | 10    | account  | every request   |
 
 `POST /api/auth/prelogin` also shares the two login limiters above (the same counters): a blocked
 name or address gets neither salts nor logins. The limit on every read (since 2026-10-21) covers
@@ -289,9 +326,10 @@ After the first admin exists, unset `BOOTSTRAP_TOKEN`; the route stays closed an
 ### Local development admin
 
 `npm run dev:admin` runs the real app in-process on a random port with a one-time token held only
-in memory, calls the bootstrap route with it (salt and auth key derived from the password with
-`shared/crypto.js`), and writes the username and a random password to
-`data/DEV-ADMIN.txt` (gitignored). Admins need 2FA, so it then turns 2FA on for that account
+in memory and, when the database has no admin yet, calls the bootstrap route with it (salt and
+auth key derived from the password with `shared/crypto.js`; asked first, so a run again spends
+no key derivation and no bcrypt hash on a bootstrap that could only be refused), and writes
+the username and a random password to `data/DEV-ADMIN.txt` (gitignored). Admins need 2FA, so it then turns 2FA on for that account
 through the real API and adds the TOTP secret, its `otpauth://` link and the recovery codes to
 the same file. It also adds a `SESSION_SECRET` to `.env` if missing, so dev logins survive
 restarts. Run again when the account already has 2FA, it rewrites the file's 2FA part from the

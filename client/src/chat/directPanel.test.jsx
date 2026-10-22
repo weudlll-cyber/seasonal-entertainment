@@ -143,8 +143,8 @@ describe('a conversation', () => {
     expect(JSON.stringify(calls.map((c) => c.body))).not.toContain(secret);
     expect(body).toMatchObject({ senderKeyId: 1, recipientKeyId: 9 });
     expect(await decryptDirect(body, mia.publicKey, zoe.privateKey)).toEqual({ text: secret });
-    // No file uploads in direct messages.
-    expect(screen.queryByLabelText('File to attach')).toBeNull();
+    // Files can be attached (encrypted first: directFiles.test.jsx), of any type.
+    expect(screen.getByLabelText('File to attach')).toHaveAttribute('accept', '');
   });
 
   it('a partner key that changed meanwhile: encrypted once more for the new key', async () => {

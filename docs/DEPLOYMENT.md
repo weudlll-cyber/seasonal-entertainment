@@ -233,6 +233,43 @@ with `docker compose --profile proxy up -d` (its own Caddy), and delete
 `deploy/site/caddy/calls.caddy` on the site's VPS. Moving later: docs/CALLS.md, "Moving the call
 service".
 
+### Call recording (optional)
+
+Calls are recorded only with this add-on (docs/CALLS.md, "Recording"):
+`deploy/calls/docker-compose.recording.yml` adds LiveKit's **egress** service (v1.15.0, pinned
+by digest) and the **Redis** it and LiveKit talk through (7.4.11, bound to 127.0.0.1). It
+gives LiveKit `REDIS_HOST`. The egress records the room in a Chrome of its own and needs about
+one CPU while a recording runs (limited to 2 CPUs and 2 GB).
+
+The recordings belong in the site's media folder, so the nightly backup includes them.
+`MEDIA_DIR/recordings` is never served publicly; only the call routes play it.
+
+```sh
+# The site's data volume on the host: the egress writes into its media/recordings.
+docker volume inspect seasonal-site_site-data --format '{{ .Mountpoint }}'
+cd /opt/seasonal-entertainment/deploy/calls
+#   in .env: LIVEKIT_API_KEY, LIVEKIT_API_SECRET (the same pair as LIVEKIT_KEYS)
+#            RECORDINGS_DIR=<that mountpoint>/media/recordings
+docker compose -f docker-compose.yml -f docker-compose.recording.yml up -d
+#   in deploy/site/site.env: CALLS_RECORDINGS_DIR=/data/media/recordings
+#                             CALLS_EGRESS_OUTPUT_DIR=/recordings
+cd ../site && docker compose up -d
+```
+
+The egress writes as root into a folder the site created; the site, as `node`, reads and
+deletes files there (the folder is its own).
+
+**Size**: at most about 1.06 Mbit/s, the video cap of 1 Mbit/s plus 64 kbit/s of sound,
+which is about **480 MB per hour**. Measured with a moving test camera: about 600 kbit/s,
+roughly 270 MB per hour. A call with only voices shows a mostly still picture and needs far
+less (not measured yet). Plan the disk and the backups (which copy every recording each night)
+by the hours recorded.
+
+**Still to try on the VPS**: a real call with several speakers and a shared screen. On the PC
+the egress ran in Docker Desktop with a browser's fake camera (docs/CALLS.md, "Recording").
+Moving the call service to its own VPS later needs the recordings folder shared with the site
+(the add-on assumes one machine).
+
 ## 5. The first admin
 
 With `BOOTSTRAP_TOKEN` set in `site.env` (restart the site after setting it:
@@ -261,6 +298,8 @@ Every night `seasonal-backup.timer` runs `scripts/backup.mjs` inside the site co
 - The database is copied through **SQLite's online backup API** (consistent while the site
   runs; never a file copy) and checked with `PRAGMA integrity_check`.
 - The media folder is copied too, with a `manifest.json` (database SHA-256, media file count).
+  It holds the call recordings when recording is set up (`media/recordings`, about 480 MB per
+  recorded hour at most; "Call recording" above).
 - **Encrypted** (decision rule of 2026-10-19, on by default; the owner may confirm or change
   it): the backup is packed as a `.tar` and encrypted with **age** to the owner's **public**
   key. It uses `age-encryption` 0.3.1, the age author's own implementation, pinned. Only
@@ -482,10 +521,11 @@ restart Docker once.
 | `deploy/site/calls-cert.sh`                                                | Caddy's calls certificate → LiveKit's TURN                                                                                  |
 | `deploy/site/systemd/`                                                     | the backup and certificate timers                                                                                           |
 | `deploy/calls/`                                                            | the call service (docs/CALLS.md); `Caddyfile` for its own VPS                                                               |
+| `deploy/calls/docker-compose.recording.yml`                                | optional: call recording (egress and Redis)                                                                                 |
 | `scripts/backup.mjs`, `scripts/restore.mjs`, `scripts/bootstrap-admin.mjs` | operations, inside the site container                                                                                       |
 | `deploy/pc/`                                                               | the PC side of the backups: `Get-SeasonalBackups.ps1` (the daily task), `SeasonalBackups.psm1`, `SeasonalBackups.Tests.ps1` |
 | `.dockerignore`                                                            | keeps data, secrets and build output out of the image                                                                       |
 
 CI (`.github/workflows/ci.yml`, job "deployment files") builds the image (no push), starts it in
-production mode against `/api/health`, and validates both compose projects and all Caddyfiles
-on every pull request.
+production mode against `/api/health`, and validates both compose projects (the calls one also
+with the recording add-on) and all Caddyfiles on every pull request.

@@ -7,7 +7,13 @@
 //              admins, hidden from everyone else). Some but not all set, or a URL that is not
 //              a ws(s) origin: the server refuses to start. In production the URL must be
 //              wss:// and LiveKit's development key and secret are refused (docs/CALLS.md).
+//              Call recording (docs/CALLS.md, "Recording") is on only when calls are and
+//              CALLS_RECORDINGS_DIR names the folder the recordings land in; LiveKit's egress
+//              service writes them there, seeing the same folder as CALLS_EGRESS_OUTPUT_DIR
+//              (its own mount; the same path when unset).
 // ============================================================
+
+import path from 'node:path';
 
 // What `livekit-server --dev` uses; fine on a developer's machine, never in production.
 export const DEV_API_KEY = 'devkey';
@@ -19,9 +25,16 @@ const fail = (message) => {
   throw new Error(`[calls] ${message}`);
 };
 
-// Returns null (feature off) or { url, httpOrigin, apiKey, apiSecret }: url is the wss/ws
-// origin browsers connect to; httpOrigin the same host over http(s), which the server SDK
-// calls and the browser client uses for its connection check.
+// Recording: null (off) or { dir, egressDir }.
+function readRecording(env) {
+  const dir = env.CALLS_RECORDINGS_DIR || '';
+  if (!dir) return null;
+  return { dir: path.resolve(dir), egressDir: env.CALLS_EGRESS_OUTPUT_DIR || path.resolve(dir) };
+}
+
+// Returns null (feature off) or { url, httpOrigin, apiKey, apiSecret, recording }: url is the
+// wss/ws origin browsers connect to; httpOrigin the same host over http(s), which the server
+// SDK calls and the browser client uses for its connection check.
 export function readCallsConfig(env, isProduction) {
   const url = env.CALLS_URL || '';
   const apiKey = env.CALLS_API_KEY || '';
@@ -53,5 +66,5 @@ export function readCallsConfig(env, isProduction) {
     }
   }
   const httpOrigin = parsed.origin.replace(/^ws/, 'http');
-  return { url: parsed.origin, httpOrigin, apiKey, apiSecret };
+  return { url: parsed.origin, httpOrigin, apiKey, apiSecret, recording: readRecording(env) };
 }

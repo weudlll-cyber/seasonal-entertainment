@@ -8,13 +8,17 @@
 //              controls. The server decides who may do what (docs/CALLS.md); this hook only
 //              asks it (hands, stage, spotlight, end) and uses what the token allows.
 //              Listeners never publish; adaptive stream, dynacast and simulcast let each
-//              listener receive the video layer that fits.
+//              listener receive the video layer that fits. While a recording runs (docs/CALLS.md,
+//              "Recording"), joining — and, for someone who joined before it started, turning
+//              on the microphone, camera or a screen share — waits for "I understand this call
+//              is being recorded" (consent); a recording that starts during the call shows its
+//              banner once (recordingNotice).
 // ============================================================
 
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { DisconnectReason, Room, RoomEvent, Track } from 'livekit-client';
-import { api } from '../api/http.js';
-import { isChromium, personOf, shareAudioNotice, spotlightOf } from './stageModel.js';
+import { ApiError, api } from '../api/http.js';
+import { isChromium, personOf, recordingOf, shareAudioNotice, spotlightOf } from './stageModel.js';
 
 // Every event that changes what the page shows.
 const REDRAW = [
@@ -53,6 +57,10 @@ export function useCallRoom(callId) {
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
   const [kind, setKind] = useState(null);
+  // A step waiting for "I understand this call is being recorded": { run } or null.
+  const [consent, setConsent] = useState(null);
+  const consented = useRef(false); // this member confirmed it in this call already
+  const [recordingNotice, setRecordingNotice] = useState(false);
   const [, redraw] = useReducer((n) => n + 1, 0);
   const post = useCallback(
     (path, body) => api(`/calls/${callId}/${path}`, { method: 'POST', body }),
@@ -61,11 +69,15 @@ export function useCallRoom(callId) {
 
   useEffect(() => () => room.current?.disconnect(), []);
 
-  async function join() {
+  // agreed: true only when the member confirmed the recording (the server asks for it while
+  // one runs); anything else, a click event included, is no.
+  async function join(agreed = false) {
+    const confirmed = agreed === true;
     setStatus('joining');
     setError(null);
     try {
-      const joined = await post('join');
+      const joined = await post('join', confirmed ? { recordingConsent: true } : undefined);
+      if (confirmed) consented.current = true;
       const next = new Room({
         adaptiveStream: true,
         dynacast: true,
@@ -93,6 +105,12 @@ export function useCallRoom(callId) {
       setKind(joined.kind);
       setStatus('joined');
     } catch (err) {
+      // Being recorded: ask first; no connection without the member's yes.
+      if (err instanceof ApiError && err.code === 'recording_consent') {
+        setStatus('idle');
+        setConsent({ run: () => join(true) });
+        return;
+      }
       setError(err.message);
       setStatus('error');
     }
@@ -110,6 +128,20 @@ export function useCallRoom(callId) {
       }
     };
   const local = () => room.current.localParticipant;
+  // Turning something on that is sent (microphone, camera, screen) while a recording runs,
+  // for someone who has not confirmed it yet: asked first.
+  const sending = (turningOn, work) => {
+    if (turningOn && recordingOf(room.current?.metadata) && !consented.current) {
+      setConsent({
+        run: async () => {
+          consented.current = true;
+          await work();
+        },
+      });
+      return undefined;
+    }
+    return work();
+  };
 
   // Starts a screen share; then says whether it carries sound (stageModel.shareAudioNotice).
   async function startShare() {
@@ -124,12 +156,26 @@ export function useCallRoom(callId) {
       await room.current?.disconnect();
       setStatus('left');
     }),
-    toggleMicrophone: act(() => local().setMicrophoneEnabled(!local().isMicrophoneEnabled)),
-    toggleCamera: act(() => local().setCameraEnabled(!local().isCameraEnabled)),
+    toggleMicrophone: act(() => {
+      const on = !local().isMicrophoneEnabled;
+      return sending(on, () => local().setMicrophoneEnabled(on));
+    }),
+    toggleCamera: act(() => {
+      const on = !local().isCameraEnabled;
+      return sending(on, () => local().setCameraEnabled(on));
+    }),
     toggleShare: act(async () => {
       if (local().isScreenShareEnabled) return local().setScreenShareEnabled(false);
-      await startShare();
+      await sending(true, startShare);
     }),
+    // The member's answer to the recording question.
+    confirmRecording: act(async () => {
+      const pending = consent;
+      setConsent(null);
+      await pending?.run();
+    }),
+    declineRecording: () => setConsent(null),
+    dismissRecordingNotice: () => setRecordingNotice(false),
     // "Share again with sound": the browser asks once more, so the presenter can pick the
     // whole screen with system audio, or a tab with its audio.
     reshare: act(async () => {
@@ -150,6 +196,18 @@ export function useCallRoom(callId) {
   };
 
   const current = room.current;
+  const recording = recordingOf(current?.metadata);
+  // A recording that starts while this member is in the call: its banner, once per start.
+  const wasRecording = useRef(null);
+  useEffect(() => {
+    if (status !== 'joined') {
+      wasRecording.current = null;
+      return;
+    }
+    if (wasRecording.current === false && recording) setRecordingNotice(true);
+    if (!recording) setRecordingNotice(false);
+    wasRecording.current = recording;
+  }, [status, recording]);
   const people = current
     ? [
         personOf(current.localParticipant, true),
@@ -164,6 +222,9 @@ export function useCallRoom(callId) {
     room: current,
     people,
     spotlight: spotlightOf(current?.metadata),
+    recording,
+    recordingNotice,
+    consent: Boolean(consent),
     activeSpeakers: new Set((current?.activeSpeakers ?? []).map((p) => p.identity)),
     controls,
   };

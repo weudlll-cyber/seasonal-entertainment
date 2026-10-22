@@ -4,7 +4,9 @@
 // Project:     Seasonal Entertainment
 // Description: One end-to-end encrypted conversation with another member: the messages,
 //              decrypted in this browser (text with clickable links, a sticker or GIF from the
-//              site's library; no file uploads and no link previews in v1), a notice wherever
+//              site's library, a link preview card made while writing: useDirectLinkPreview,
+//              unless the member switched it off; a file, encrypted in this browser before it
+//              is uploaded: directFile.js), a notice wherever
 //              the partner's security key changed (older pages too), older messages on reaching
 //              the top (or with "Load older messages"), and the composer. A message made for an
 //              earlier key cannot be read and says so. The partner's messages can be reported
@@ -22,7 +24,10 @@ import MenuButton from './MenuButton.jsx';
 import ReportDirectDialog from './ReportDirectDialog.jsx';
 import SafetyNumberDialog from './SafetyNumberDialog.jsx';
 import { showDirect } from './directView.js';
+import { uploadDirectFile } from './directFile.js';
 import { itemsById, useMediaLibrary } from './mediaLibrary.js';
+import PreviewCard from './PreviewCard.jsx';
+import { useDirectLinkPreview } from './useDirectLinkPreview.js';
 import { useDirectConversation } from './useDirectConversation.js';
 import { useOlderOnTop } from './useOlderOnTop.js';
 import { useSafetyNumber } from './useSafetyNumber.js';
@@ -64,6 +69,17 @@ export default function DirectConversation({ partner, me, keyId, privateKey }) {
   const [notice, setNotice] = useState(null);
   const safety = useSafetyNumber(me?.id, partner.id, data?.partnerKey ?? null, privateKey);
   const [verifying, setVerifying] = useState(false);
+  const [draft, setDraft] = useState('');
+  // The member's own setting, as the session reports it (on unless switched off).
+  const linkPreview = useDirectLinkPreview(draft, me?.dmLinkPreviews !== false);
+  const card = linkPreview.card;
+  // This conversation's uploads by id: the composer hands back only the id when sending.
+  const uploads = useRef(new Map());
+  async function uploadFile(file) {
+    const done = await uploadDirectFile(partner.id, file);
+    uploads.current.set(done.id, done);
+    return done;
+  }
 
   async function sendReport(body) {
     const sent = await conversation.report(body);
@@ -172,9 +188,38 @@ export default function DirectConversation({ partner, me, keyId, privateKey }) {
       {data?.partnerKey && (
         <ChatComposer
           user={me}
-          files={false}
+          uploadFile={uploadFile}
+          accept=""
+          onDraft={setDraft}
+          above={
+            card && (
+              <div className="chat-attachment" role="group" aria-label="Link preview">
+                <PreviewCard preview={{ ...card, image: card.image && { url: card.image } }} />
+                <button
+                  type="button"
+                  className="chat-attachment__remove"
+                  aria-label="Remove link preview"
+                  title="Remove link preview"
+                  onClick={linkPreview.remove}
+                >
+                  ×
+                </button>
+              </div>
+            )
+          }
           onSend={({ body, attachment }) =>
-            conversation.send({ text: body, ...(attachment && { mediaItemId: attachment.itemId }) })
+            conversation.send({
+              text: body,
+              ...(attachment?.itemId && { mediaItemId: attachment.itemId }),
+              // The file's key, name and type travel only inside the encrypted message.
+              ...(attachment?.uploadId && {
+                file: (({ id, key, name, type, bytes }) => ({ id, key, name, type, bytes }))(
+                  uploads.current.get(attachment.uploadId)
+                ),
+              }),
+              // The card travels inside the encrypted message, as the writer saw it.
+              ...(card && { preview: card }),
+            })
           }
         />
       )}

@@ -5,7 +5,8 @@
 // Description: `npm run dev:admin`: prepares the local development admin through the real
 //              API (the actual app in-process on a random local port):
 //              1. creates it via the bootstrap flow (one-time token held only in memory, sent
-//                 in the x-bootstrap-token header) if no admin exists;
+//                 in the x-bootstrap-token header) if the database has no admin yet; else
+//                 logs in with the password from the file;
 //              2. turns on its 2FA (required for admins) if it is off;
 //              3. if its 2FA is already on, rewrites the file's 2FA part from the secret stored
 //                 now (it may have been set up again since the file was written). It only
@@ -21,6 +22,7 @@ import { randomBytes } from 'node:crypto';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { deriveAccountKeys, newSalt } from '@seasonal-entertainment/shared/crypto.js';
+import { countAdmins } from '../server/src/accounts/userStore.js';
 import { createApp } from '../server/src/app.js';
 import { readBuildInfo } from '../server/src/buildInfo.js';
 import { ENV_FILE, readConfig } from '../server/src/config.js';
@@ -108,15 +110,21 @@ try {
   // 1. The admin account. loggedIn: a full session exists (not just a pending 2FA login).
   // currentAuthKey: proves the account's password again to start the 2FA setup.
   let loggedIn = false;
-  const password = random(18);
-  const salt = await newSalt();
-  let { authKey: currentAuthKey } = await deriveAccountKeys(password, salt);
-  const created = await call(
-    '/auth/bootstrap',
-    { username: USERNAME, email: 'devadmin@example.org', salt, authKey: currentAuthKey },
-    { 'x-bootstrap-token': config.bootstrapToken }
-  );
-  if (created.status === 201) {
+  let currentAuthKey;
+  // Asked first: on a run again, a new password's key derivation (Argon2id) and the server's
+  // bcrypt hash of it would be work for a bootstrap that can only answer "an admin exists".
+  if (countAdmins(db) === 0) {
+    const password = random(18);
+    const salt = await newSalt();
+    ({ authKey: currentAuthKey } = await deriveAccountKeys(password, salt));
+    const created = await call(
+      '/auth/bootstrap',
+      { username: USERNAME, email: 'devadmin@example.org', salt, authKey: currentAuthKey },
+      { 'x-bootstrap-token': config.bootstrapToken }
+    );
+    if (created.status !== 201) {
+      throw new Error(`bootstrap failed: ${created.status} ${created.body.message}`);
+    }
     writeFileSync(
       file,
       [
@@ -130,7 +138,7 @@ try {
     );
     console.log(`Dev admin "${USERNAME}" created; credentials in ${file}`);
     loggedIn = true;
-  } else if (created.status === 409) {
+  } else {
     if (!existsSync(file)) throw new Error(`an admin exists but ${file} is missing`);
     const known = readFileSync(file, 'utf8').match(/^Password: (.+)$/m)?.[1];
     const { answer: login, authKey } = await logIn(known);
@@ -138,8 +146,6 @@ try {
     if (login.status !== 200) throw new Error(`login as ${USERNAME} failed: ${login.status}`);
     if (login.body.twoFactorRequired) await rewriteStoredSecret();
     loggedIn = !login.body.twoFactorRequired;
-  } else {
-    throw new Error(`bootstrap failed: ${created.status} ${created.body.message}`);
   }
 
   // 2. Its 2FA (skipped when the login above already asked for a code).

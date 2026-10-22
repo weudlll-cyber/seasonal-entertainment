@@ -37,11 +37,13 @@ browser ──https──> site (Node, /api/calls/*) ──RoomService API──
 
 The site reads three environment keys (`server/src/calls/config.js`, listed in `.env.example`):
 
-| Variable           | Example                   | Meaning                                              |
-| ------------------ | ------------------------- | ---------------------------------------------------- |
-| `CALLS_URL`        | `wss://calls.example.org` | the call service's public WebSocket origin (no path) |
-| `CALLS_API_KEY`    | `APIxxxxxxxx`             | LiveKit API key                                      |
-| `CALLS_API_SECRET` | (32+ characters)          | LiveKit API secret                                   |
+| Variable                  | Example                   | Meaning                                                              |
+| ------------------------- | ------------------------- | -------------------------------------------------------------------- |
+| `CALLS_URL`               | `wss://calls.example.org` | the call service's public WebSocket origin (no path)                 |
+| `CALLS_API_KEY`           | `APIxxxxxxxx`             | LiveKit API key                                                      |
+| `CALLS_API_SECRET`        | (32+ characters)          | LiveKit API secret                                                   |
+| `CALLS_RECORDINGS_DIR`    | `/data/media/recordings`  | optional: call recording on; where the recordings land ("Recording") |
+| `CALLS_EGRESS_OUTPUT_DIR` | `/recordings`             | the same folder as the egress service sees it (default: as above)    |
 
 - **None set**: the Calls feature is off. Admins see it as "not configured"; everyone else does
   not see it at all.
@@ -104,6 +106,26 @@ Generate a production pair on the call server with
   both lists show the bot's events only. The home's Next call box shows only with a live or
   planned call (docs/DESIGN.md, "Home"). Tests: `client/src/pages/LandingPage.test.jsx`,
   `eventsPage.test.jsx`, `homeLive.test.jsx` and `client/e2e/layout.spec.js`.
+- **Linked to a bot event** (decided 2026-10-22): when creating a call, or later on a planned
+  call's card on the Calls page, an organiser may pick one of the event bot's upcoming
+  occurrences (the next 30 days, scheduled only; `GET /api/calls/bot-occurrences`, organisers
+  and admins) or "No event". The picker reads the bot's file read-only through the existing
+  reader (`server/src/bots/events.js`). The link is kept on the site's side only, as the call's
+  `bot_occurrence_id` and `bot_occurrence_start` (`server/src/calls/eventLink.js`). It is set
+  by `POST /api/calls { botOccurrenceId }` and changed by `PUT /api/calls/:id/event
+{ botOccurrenceId | null }` (planned calls only, audited as `call.event`). An occurrence that
+  is not one of the upcoming ones is refused (`unknown_event`).
+  - **Shown**: in "Up next" and on `/events`, the linked occurrence offers "Listen on this
+    site" (to the call's page), and the call is not listed a second time; while the call is
+    live, the event shows "Live now". The match is by the occurrence's id **and** start
+    (`withCalls` in `client/src/calls/callEntries.js`), from the Calls page's own answer, so a
+    viewer sees the link only for the live and planned calls the Calls page shows them. The
+    call's page names the event ("Event: <name>"; `GET /api/calls/:id` answers `event`).
+  - **The bot changes its mind**: if the occurrence disappears or moves, the call keeps its own
+    time and simply loses the link display, with no error. It is then listed as itself, and
+    its page names no event. An unreadable bot file counts the same (logged).
+  - Tests: `server/test/callEventLink.test.js`; `LandingPage.test.jsx`, `eventsPage.test.jsx`,
+    `callsPage.test.jsx`, `callPage.test.jsx`.
 - **Calendar file** (decided 2026-10-21): every planned call (scheduled, with a planned time)
   has `GET /api/calls/:id/calendar.ics` for everyone, guests included (`allow('public')`, as the
   list; rate limit `callCalendar` per address, 60 a minute). `text/calendar` as a download
@@ -313,6 +335,63 @@ A presenter whose share has no sound is told how to get it (Chrome and Edge: whi
 the browser's share dialog carries sound, and "Share again with sound") or that the browser
 cannot send it (Firefox, Safari): "The call page" above. Listening and speaking work in all
 current browsers.
+
+## Recording
+
+Call recording, video and audio (decided 2026-10-22). It is **off unless set up**:
+`CALLS_RECORDINGS_DIR` names the folder the recordings land in (in production
+`/data/media/recordings`, so backups include them), and LiveKit's egress service writes there
+(docs/DEPLOYMENT.md, "Call recording"). Without it the button is hidden and the routes answer
+`404 recording_off`.
+
+- **How**: LiveKit Egress, room composite to an MP4 file (`server/src/calls/service.js`,
+  `startRecording` / `stopRecording`).
+  - **Encoding**: 1280 x 720, 15 frames a second; H.264 (Main) with the video bitrate capped at
+    1,000 kbit/s; AAC at 64 kbit/s, 48 kHz.
+  - **Layout**: LiveKit's `speaker` layout shows a shared screen or a camera large when there
+    is one, and the speakers' tiles otherwise. A call without video gives a mostly still
+    picture and stays small.
+  - **Stereo, about 64 kbit/s** (decided 2026-10-22): recordings stay stereo. LiveKit's
+    encoding options have no channel setting, so mono cannot be set (measured: stereo).
+  - **The egress writes** to `CALLS_EGRESS_OUTPUT_DIR` (its own mount of the same folder; the
+    same path when unset). The file is named `call-<id>-<time>-<random>.mp4`.
+- **Who**: only organisers and admins start and stop the recording of a live call
+  (`POST /api/calls/:id/recording/start|stop`, audited `call.recording_start|stop`). One
+  recording per call at a time. Ending the call stops it (`endCall.js`).
+- **Notice, always**:
+  - **The room's metadata says it runs** (`roomState.js`, together with the spotlight), so
+    everyone in the call sees a red **Recording** beside the title.
+  - **The start**: when a recording starts, everyone already in the call gets the banner "This
+    call is now being recorded".
+  - **Joining**: while a recording runs, anyone joining — listener or speaker — must first
+    confirm "I understand this call is being recorded" (`RecordingConsent.jsx`). The server
+    gives no token without it (`409 recording_consent` on `POST /api/calls/:id/join` until the
+    body says `recordingConsent: true`), so without the yes nobody connects.
+  - **Sending**: someone who joined before the recording started is asked the same before
+    turning on their microphone, camera or a screen share, for example when moved onto the
+    stage (`useCallRoom.js`).
+  - **"Being recorded"**: the Calls page and the call's page say it on a call while its
+    recording runs.
+- **Afterwards**: the call's page lists its recordings with date, length and a player
+  (`CallRecordings.jsx`), for the same audience as the call (calls are shown to everyone):
+  `GET /api/calls/:id/recordings` and `…/recordings/:rid/video` (range requests, so the player
+  can seek; only finished recordings).
+  - **The length** is the file's own, read from the MP4's movie header (`mp4Duration.js`,
+    which reads only box headers, never the media) once the file is complete, and then kept
+    (`call_recordings.seconds`). It is never computed from the start and stop times, which
+    include the egress's start-up (a 33-second file once showed as 0:36). While it is unknown
+    (the file not complete, or not an MP4), no length is shown rather than a wrong one.
+  - **Deleting**: organisers and admins delete a recording, file and row
+    (`DELETE /api/calls/:id/recordings/:rid`, audited `call.recording_delete`). Nothing is
+    deleted automatically.
+- **Tested for real on the owner's PC** (2026-10-22): LiveKit v1.13.10 with egress v1.15.0 and
+  Redis in Docker. A browser with a fake camera and microphone was recorded through the
+  site's own service code: a playable MP4, 1280 x 720, 15 frames a second, H.264 Main at about
+  530 kbit/s, AAC 64 kbit/s. An empty room does not record: the egress aborts with "Start
+  signal not received".
+- Tests: `server/test/callRecording.test.js` (with the stand-in call service, which writes a
+  file when a recording stops), `server/test/callsConfig.test.js`,
+  `client/src/calls/callRecording.test.jsx`.
 
 ## The call service (`deploy/calls/`)
 

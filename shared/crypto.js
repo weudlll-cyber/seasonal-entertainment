@@ -6,7 +6,10 @@
 //              sumo, exact version pinned). Used by the browser, the server tests and the
 //              scripts; no home-made cryptography anywhere else. Covers: the login key split
 //              (password -> Argon2id master key -> auth key + wrapping key), sealing a private
-//              key, the optional recovery code, encrypting direct messages (crypto_box), and
+//              key, the optional recovery code, encrypting direct messages (crypto_box), files
+//              in direct messages (crypto_secretstream, chunked, a fresh key per file), handing
+//              the private key to a new device of the same member (crypto_box_seal to that
+//              device's one-time key, with a 6-digit code both screens show; docs/AUTH.md), and
 //              the safety number two members compare to check their keys (docs/CHAT.md).
 //              Binary values travel as standard base64 (with padding).
 // ============================================================
@@ -141,6 +144,108 @@ export async function decryptDirect({ nonce, ciphertext }, partnerPublicKey, own
       'text'
     );
     return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+// A file of a direct message: crypto_secretstream_xchacha20poly1305 with a fresh random key,
+// in chunks of FILE_CHUNK bytes (the last one tagged FINAL). The result is the stream header
+// followed by the encrypted chunks; the key travels inside the encrypted message.
+export const FILE_CHUNK = 64 * 1024;
+
+const joinBytes = (parts) => {
+  const all = new Uint8Array(parts.reduce((n, part) => n + part.length, 0));
+  let offset = 0;
+  for (const part of parts) {
+    all.set(part, offset);
+    offset += part.length;
+  }
+  return all;
+};
+
+// bytes: Uint8Array. Returns { key (base64), data (Uint8Array) }.
+export async function encryptFile(bytes) {
+  await ready();
+  const key = sodium.crypto_secretstream_xchacha20poly1305_keygen();
+  const { state, header } = sodium.crypto_secretstream_xchacha20poly1305_init_push(key);
+  const parts = [header];
+  for (let at = 0; at === 0 || at < bytes.length; at += FILE_CHUNK) {
+    const last = at + FILE_CHUNK >= bytes.length;
+    const tag = last
+      ? sodium.crypto_secretstream_xchacha20poly1305_TAG_FINAL
+      : sodium.crypto_secretstream_xchacha20poly1305_TAG_MESSAGE;
+    parts.push(
+      sodium.crypto_secretstream_xchacha20poly1305_push(
+        state,
+        bytes.subarray(at, at + FILE_CHUNK),
+        null,
+        tag
+      )
+    );
+  }
+  return { key: b64(key), data: joinBytes(parts) };
+}
+
+// The file's bytes, or null when the data does not open with the key (changed, cut short, or
+// chunks reordered: every chunk is authenticated, and the stream must end with FINAL).
+export async function decryptFile(data, keyBase64) {
+  await ready();
+  try {
+    const headerBytes = sodium.crypto_secretstream_xchacha20poly1305_HEADERBYTES;
+    const sealed = FILE_CHUNK + sodium.crypto_secretstream_xchacha20poly1305_ABYTES;
+    const state = sodium.crypto_secretstream_xchacha20poly1305_init_pull(
+      data.subarray(0, headerBytes),
+      unb64(keyBase64)
+    );
+    const parts = [];
+    let final = false;
+    for (let at = headerBytes; at < data.length; at += sealed) {
+      if (final) return null; // data after the end
+      // A chunk that does not authenticate: libsodium returns false (or throws).
+      const chunk = sodium.crypto_secretstream_xchacha20poly1305_pull(
+        state,
+        data.subarray(at, at + sealed)
+      );
+      if (!chunk) return null;
+      final = chunk.tag === sodium.crypto_secretstream_xchacha20poly1305_TAG_FINAL;
+      parts.push(chunk.message);
+    }
+    if (!final) return null;
+    return joinBytes(parts);
+  } catch {
+    return null;
+  }
+}
+
+// Handing the private key to a new device (docs/AUTH.md, "Unlock on another device"). The new
+// device makes a one-time key pair (newKeyPair); the code both screens show comes from that
+// public key, so a key swapped on the way shows another code.
+export async function handoverCode(publicKeyBase64) {
+  await ready();
+  const hash = sodium.crypto_generichash(8, unb64(publicKeyBase64));
+  let value = 0;
+  for (let i = 0; i < 5; i += 1) value = value * 256 + hash[i];
+  const digits = String(value % 1_000_000).padStart(6, '0');
+  return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+}
+
+// The unlocked device seals its private key to the new device's one-time public key: only
+// that device's one-time private key opens it (anonymous sender, crypto_box_seal).
+export async function sealForDevice(privateKey, devicePublicKeyBase64) {
+  await ready();
+  return b64(sodium.crypto_box_seal(privateKey, unb64(devicePublicKeyBase64)));
+}
+
+// The new device opens it: the private key's bytes, or null when it does not open.
+export async function openFromDevice(sealedBase64, deviceKeyPair) {
+  await ready();
+  try {
+    return sodium.crypto_box_seal_open(
+      unb64(sealedBase64),
+      unb64(deviceKeyPair.publicKey),
+      deviceKeyPair.privateKey
+    );
   } catch {
     return null;
   }

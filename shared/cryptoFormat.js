@@ -13,8 +13,11 @@ export const KEY_BYTES = 32; // auth key, public key
 export const NONCE_BYTES = 24; // crypto_box / crypto_secretbox nonces
 // A sealed private key: nonce (24) + key (32) + authentication tag (16).
 export const SEALED_KEY_BYTES = 72;
-// Upper bound for a direct message's ciphertext (base64 characters).
-export const CIPHERTEXT_MAX = 16_000;
+// A private key sealed to a new device (crypto_box_seal): ephemeral key (32) + key (32) + tag (16).
+export const DEVICE_SEALED_BYTES = 80;
+// Upper bound for a direct message's ciphertext (base64 characters): room for the text plus a
+// link preview's inline image of at most 50 KB (SE-NIGHT-5).
+export const CIPHERTEXT_MAX = 120_000;
 
 const BASE64 = /^[A-Za-z0-9+/]*={0,2}$/;
 

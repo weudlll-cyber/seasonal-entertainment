@@ -3,8 +3,8 @@
    Path:        client/src/calls/calls.css
    Project:     Seasonal Entertainment
    Description: The /calls page: its sections, the cards of an empty list, the call cards (live
-                ones marked) and a planned call's actions (CallActions.jsx: also in the home
-                page's Next call box).
+                ones marked, "Being recorded" in red) and a planned call's actions
+                (CallActions.jsx: also in the home page's Next call box).
    ============================================================ */
 
 .calls-section h2 {
@@ -98,4 +98,10 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1);
+}
+
+/* A call whose recording runs (CallCard.jsx). */
+.call-card__recording {
+  color: var(--color-danger);
+  font-weight: var(--font-weight-strong);
 }

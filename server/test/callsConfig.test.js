@@ -10,6 +10,7 @@
 //              camera, microphone and screen capture for this origin only.
 // ============================================================
 
+import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { readConfig } from '../src/config.js';
 import { TEST_SECRET_KEY, makeTestApp } from './helpers/testApp.js';
@@ -40,7 +41,24 @@ describe('call service configuration', () => {
       httpOrigin: 'http://localhost:7880',
       apiKey: 'devkey',
       apiSecret: 'secret',
+      recording: null,
     });
+  });
+
+  it('recording only with a recordings folder; the egress sees it under its own path', () => {
+    const base = calls('ws://localhost:7880', 'devkey', 'secret');
+    expect(
+      readConfig({ ...base, CALLS_RECORDINGS_DIR: '/srv/recordings' }).calls.recording
+    ).toEqual({
+      dir: path.resolve('/srv/recordings'),
+      egressDir: path.resolve('/srv/recordings'),
+    });
+    const both = {
+      ...base,
+      CALLS_RECORDINGS_DIR: '/srv/recordings',
+      CALLS_EGRESS_OUTPUT_DIR: '/out',
+    };
+    expect(readConfig(both).calls.recording.egressDir).toBe('/out');
   });
 
   it('refuses to start with only some keys', () => {

@@ -7,7 +7,8 @@
 //              admins see "not configured"; the sidebar hides Calls from everyone else then.
 //              SE style: the Calls header with the play-button quarter; an empty list shows a
 //              friendly card instead (never a bare "None."). Planned calls offer "Add to
-//              calendar" and, to members, "Remind me on this site" (CallActions.jsx).
+//              calendar" and, to members, "Remind me on this site" (CallActions.jsx). Organisers
+//              link a planned call to an event bot occurrence (docs/CALLS.md).
 // ============================================================
 
 import { useEffect, useState } from 'react';
@@ -41,13 +42,22 @@ export default function CallsPage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [version, setVersion] = useState(0);
+  const [events, setEvents] = useState([]); // the bot's upcoming occurrences, for organisers
   const userId = user?.id;
+  const canManage = Boolean(data?.canManage);
 
   useEffect(() => {
     api('/calls')
       .then(setData)
       .catch((err) => setError(err.message));
   }, [userId, version]);
+
+  useEffect(() => {
+    if (!canManage) return;
+    api('/calls/bot-occurrences')
+      .then((answer) => setEvents(answer.occurrences))
+      .catch(() => setEvents([])); // the picker then offers "No event" only
+  }, [canManage]);
 
   // After a change: this list and the sidebar's LIVE badge reload.
   const changed = () => {
@@ -59,6 +69,16 @@ export default function CallsPage() {
     setError(null);
     try {
       await api(`/calls/${call.id}/${action}`, { method: 'POST' });
+      changed();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function link(call, botOccurrenceId) {
+    setError(null);
+    try {
+      await api(`/calls/${call.id}/event`, { method: 'PUT', body: { botOccurrenceId } });
       changed();
     } catch (err) {
       setError(err.message);
@@ -103,7 +123,9 @@ export default function CallsPage() {
                     key={call.id}
                     call={call}
                     reminded={data.reminders?.includes(call.id)}
-                    onAction={data.canManage ? act : null}
+                    onAction={canManage ? act : null}
+                    onLink={canManage ? link : null}
+                    events={events}
                   />
                 ))}
               </ul>
@@ -111,7 +133,7 @@ export default function CallsPage() {
           </section>
         ))}
       {/* After the lists: live calls stay on top (decided 2026-10-18). */}
-      {data?.canManage && <CallForm onCreate={create} />}
+      {canManage && <CallForm onCreate={create} events={events} />}
     </section>
   );
 }

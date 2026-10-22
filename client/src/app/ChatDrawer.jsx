@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: The chat on every page except /chat and /admin (docs/DESIGN.md, "Chat
 //              drawer"): a round chat button bottom right opens a drawer over the page (the
-//              page keeps its width) with "Open full chat", a close button and, for members,
+//              page keeps its width) with "Open full chat", the chat menu (members:
+//              NotificationsMenu), a close button and, for members,
 //              the tabs "Rooms" (DrawerRooms: room picker and a compact chat panel) and
 //              "Direct" (DirectTab: private messages); guests see the rooms only. "Send private
 //              message" in a name menu opens the drawer on the Direct tab. Closes by its close
@@ -21,6 +22,7 @@ import ChatTabs from './ChatTabs.jsx';
 import { readDrawerState, rememberDrawerOpen } from './chatDrawerState.js';
 import DirectTab from './DirectTab.jsx';
 import DrawerRooms from './DrawerRooms.jsx';
+import NotificationsMenu from '../notify/NotificationsMenu.jsx';
 import Icon from './icons.jsx';
 import UnreadDots, { unreadSummary } from './UnreadDots.jsx';
 import './ChatDrawer.css';
@@ -98,6 +100,7 @@ export default function ChatDrawer() {
             <Link to="/chat" className="chat-drawer__full">
               Open full chat
             </Link>
+            <NotificationsMenu />
             <button
               type="button"
               className="icon-button"

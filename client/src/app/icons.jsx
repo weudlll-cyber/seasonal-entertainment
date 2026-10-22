@@ -5,7 +5,7 @@
 // Description: The shell's stroke icons (24 px grid, drawn in currentColor so they follow the
 //              theme). Decorative: the control around each icon carries the text or label.
 //              Also the chat's toggles (star, bell, bell-off: ToggleButton) and the call
-//              controls (microphone, camera, screen, hand, sound, leave), so every icon on the
+//              controls (microphone, camera, screen, hand, sound, leave, record), so every icon on the
 //              site shares one stroke width.
 // ============================================================
 
@@ -39,6 +39,7 @@ const PATHS = {
   person: 'M12 4a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM5 20a7 7 0 0 1 14 0',
   expand: 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
   shrink: 'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5',
+  record: 'M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17ZM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z',
   phoneOff: 'M5 15.5c4-3.3 10-3.3 14 0l-1.8 2.2-3-1.3v-2.2c-1.4-.4-2.9-.4-4.4 0v2.2l-3 1.3Z',
   smile: 'M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17ZM8.5 14a4 4 0 0 0 7 0M9 9.5h.01M15 9.5h.01',
   paperclip:

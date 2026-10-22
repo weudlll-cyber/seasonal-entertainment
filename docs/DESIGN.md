@@ -53,6 +53,11 @@ white on the banner's lightest blue 6.4:1; the Community box's muted text 9.0:1;
 surface-2 4.8:1 (the lowest pair). One pair failed and was changed: the muted banner text
 (`#D2D8E6`) is 4.1:1 on the banner's lightest blue, so the home greeting is white.
 
+**Dialogs over the page** (`.modal` with its backdrop and actions, `styles/base.css`): a card
+with the solid `--color-surface`, never the translucent `--color-card`, so their text never sits
+on the page behind them, in both themes (2026-10-22). The recovery-code offer, a new device
+asking for the key and the call recording's question all use it.
+
 ## Brand images
 
 Made from the owner's logo file (`Seasonal Token/Seasonal Entertainment logo.png`, 1254 × 1254,

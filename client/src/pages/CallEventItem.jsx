@@ -13,7 +13,7 @@ import { Link } from 'react-router';
 import { formatLocal } from '@seasonal-entertainment/shared/localWeek.js';
 import { QUARTERS } from '../brand/brand.js';
 
-// entry: one of callEntries()'s entries.
+// entry: one of withCalls()'s call entries.
 export default function CallEventItem({ entry: { id, name, start, live }, timeZone }) {
   const local = formatLocal(start, timeZone);
   return (

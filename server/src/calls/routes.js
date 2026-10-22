@@ -8,7 +8,10 @@
 //              service), end (endCall.js: closes that room, which disconnects everyone, and
 //              makes the chat read-only). Every management action is audited and rate-limited
 //              per account. The listing names a member's reminded calls (reminders.js); a call
-//              going live starts a reminder round at once (remindNow).
+//              going live starts a reminder round at once (remindNow). A new call may be linked
+//              to an upcoming event bot occurrence (botOccurrenceId; eventLink.js), and one
+//              call's answer names that occurrence while it still exists (event). Calls say
+//              whether a recording runs (recording; recordingRoutes.js).
 // ============================================================
 
 import express from 'express';
@@ -22,7 +25,17 @@ import { getSetting } from '../settings/store.js';
 import { reminderCallIds } from './reminders.js';
 import { endCall } from './endCall.js';
 import { callSteps } from './middleware.js';
-import { createCall, findCall, listCalls, anyCallLive, markLive, setChatRoom } from './store.js';
+import { linkedOccurrence, occurrenceIdField, pickedOccurrence } from './eventLink.js';
+import { activeRecording, recordedCallIds } from './recordings.js';
+import {
+  createCall,
+  findCall,
+  listCalls,
+  anyCallLive,
+  markLive,
+  setCallEvent,
+  setChatRoom,
+} from './store.js';
 
 const CALL_FIELDS = {
   title: required('Title', 100),
@@ -35,10 +48,11 @@ const CALL_FIELDS = {
     v === undefined || v === null || (typeof v === 'string' && !Number.isNaN(Date.parse(v)))
       ? null
       : 'Planned start must be a date and time.',
+  botOccurrenceId: occurrenceIdField,
 };
 
 // What the browser sees of a call: never the call service's room name.
-const shown = (call, chat) => {
+export const shown = (call, chat) => {
   const { roomName, chatRoomId, ...rest } = call;
   return { ...rest, chatRoom: chatRoomId ? (chat.rooms.find(chatRoomId)?.slug ?? null) : null };
 };
@@ -71,8 +85,13 @@ export function callRoutes(db, config, service, chat, remindNow) {
   router.get('/', allow('public'), (req, res) => {
     const empty = { live: [], upcoming: [], recent: [] };
     const lists = service ? listCalls(db) : empty;
+    // "Being recorded" on a call whose recording runs (docs/CALLS.md, "Recording").
+    const recorded = recordedCallIds(db);
     const calls = Object.fromEntries(
-      Object.entries(lists).map(([key, list]) => [key, list.map((c) => shown(c, chat))])
+      Object.entries(lists).map(([key, list]) => [
+        key,
+        list.map((c) => ({ ...shown(c, chat), recording: recorded.has(c.id) })),
+      ])
     );
     // The member's own reminders (the "Remind me" toggles); guests have none.
     const reminders = req.user ? reminderCallIds(db, req.user.id) : [];
@@ -86,12 +105,25 @@ export function callRoutes(db, config, service, chat, remindNow) {
   });
 
   router.get('/:id', allow('public'), configured, loadCall, (req, res) => {
-    res.json({ ok: true, call: shown(req.call, chat), canManage: canManage(req) });
+    // The linked bot event's name while it still exists at its start (else no event).
+    const event = linkedOccurrence(config, req.call);
+    // Whether a recording runs, and whether recording is set up at all (the button).
+    const recording = Boolean(activeRecording(db, req.call.id));
+    res.json({
+      ok: true,
+      call: { ...shown(req.call, chat), event, recording },
+      canManage: canManage(req),
+      recordingEnabled: Boolean(config.calls?.recording),
+    });
   });
 
   router.post('/', allow('organiser'), configured, perUser, (req, res) => {
     const input = validBody(req, res, CALL_FIELDS);
     if (!input) return;
+    const occurrence = pickedOccurrence(config, input.botOccurrenceId);
+    if (occurrence === undefined) {
+      return sendError(res, 400, 'unknown_event', 'Pick one of the upcoming bot events.');
+    }
     // Guests may write in the call's chat when they may in General (decided 2026-10-18).
     const general = chat.rooms.findBySlug('general');
     const id = db.transaction(() => {
@@ -104,6 +136,7 @@ export function callRoutes(db, config, service, chat, remindNow) {
         guestWritable: Boolean(general?.guestWritable),
       });
       setChatRoom(db, callId, room.id);
+      setCallEvent(db, callId, occurrence);
       return callId;
     })();
     const call = findCall(db, id);

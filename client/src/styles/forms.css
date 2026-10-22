@@ -2,7 +2,8 @@
    File:        forms.css
    Path:        client/src/styles/forms.css
    Project:     Seasonal Entertainment
-   Description: Shared form styles (fields, buttons, messages) built on the design tokens.
+   Description: Shared form styles (fields, buttons, messages) built on the design tokens; a
+                field's select looks the same inside and outside a form card.
    ============================================================ */
 
 .form {
@@ -55,7 +56,8 @@
 .form input[type='number'],
 .form input[type='url'],
 .form textarea,
-.form select {
+.form select,
+.form-field select {
   font: inherit;
   min-height: var(--hit-target);
   padding: var(--space-1);
@@ -63,6 +65,17 @@
   border-radius: var(--radius);
   background: var(--color-surface);
   color: var(--color-text);
+}
+
+/* A select never widens its field or card past the column: a long option (an event's name
+   and date, calls/EventSelect.jsx) is cut inside the box instead. */
+.form-field {
+  min-width: 0;
+}
+
+.form-field select {
+  width: 100%;
+  min-width: 0;
 }
 
 /* A checkbox with its text: the whole label is the 44px target (the box alone is small). */

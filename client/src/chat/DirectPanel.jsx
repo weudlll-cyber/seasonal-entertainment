@@ -6,11 +6,13 @@
 //              (MemberSearch) above the member's private conversations — favourite members first (with an online mark), then the most
 //              recent, each with its unread count — or one conversation (DirectConversation). The
 //              host passes the member's unlocked key (and shows the unlock step while there is
-//              none; docs/CHAT.md). Members only.
+//              none; docs/CHAT.md). Members only. Above it, the connection-limit line when the
+//              live connection was refused (ConnectionLimitNotice).
 // ============================================================
 
 import { useSession } from '../session/SessionContext.jsx';
 import ChatNotice from './ChatNotice.jsx';
+import ConnectionLimitNotice from './ConnectionLimitNotice.jsx';
 import DirectConversation from './DirectConversation.jsx';
 import MemberSearch from './MemberSearch.jsx';
 import UserStar from './UserStar.jsx';
@@ -66,6 +68,7 @@ export default function DirectPanel({ keyId, privateKey, variant = 'full' }) {
   const partner = useDirectPartner();
   return (
     <section className={`se-chat se-chat--${variant}`} aria-label="Private messages">
+      <ConnectionLimitNotice />
       {partner ? (
         <DirectConversation partner={partner} me={user} keyId={keyId} privateKey={privateKey} />
       ) : (

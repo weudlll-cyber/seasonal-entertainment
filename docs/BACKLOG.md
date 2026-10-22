@@ -4,18 +4,12 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART ONE — open
 
-- **File uploads in direct messages** — open. Left out of v1 (decided 2026-10-18): an uploaded
-  file would have to be encrypted in the browser too.
-- **Link previews in direct messages** — open. Left out of v1: the server would have to see the
-  link to fetch it; links are plain clickable links.
 - **Telegram-login recovery code handling** — open (decided direction 2026-10-17). Recovery codes
   are to apply to future Telegram logins too: such an account has no password to derive a
   wrapping key from (docs/AUTH.md).
-- **Unlock a new device by confirming it on an already logged-in device** — unconfirmed proposal,
-  not decided: instead of the password or the recovery code, a device that is already unlocked
-  hands the private key over to the new one.
-- **Operating-system notifications for mentions and direct messages** — unconfirmed proposal,
-  not decided.
+- **Notifications when the browser is closed (web push)** — not built (owner decision
+  2026-10-22): notifications come only while a tab of the site is open (docs/CHAT.md,
+  "Notifications").
 - **Uploads and uploaded images in the chat on other sites** — open. With an embed token,
   uploading is refused (decided scope), and uploaded images of members-only rooms do not show
   there: an image request cannot carry the token. Would need short-lived signed file links.
@@ -31,11 +25,10 @@ An entry moves from part one to part two only when its branch is merged into `ma
   `/api/...`, which collide with the site's `/api`).
 - **Site and bots on the same VPS** — open, the owner's word: reading the bots' files through
   read-only mounts assumes it (docs/DEPLOYMENT.md, "The owner's bots").
-- **A ratio view between the seasons** — unconfirmed proposal, not decided (e.g. Spring priced
-  in Summer).
-- **Call recording** — unconfirmed proposal, not decided. Calls are not recorded (privacy draft).
-- **Linking calls to events** — unconfirmed proposal, not decided: an event (now kept in the event
-  bot) could carry its call, and a call its event.
+- **Info page texts** — open, the owner's word: all twelve info pages are drafts; Imprint and
+  Privacy need the owner's details. Privacy's "Call recordings" holds a proposal for the
+  owner to review (consent as the legal basis, kept until deleted, the rights and the
+  complaint to the Datenschutzbehörde); only its contact address is left to fill.
 - **Login with Discord or Telegram** — open. Accounts use a username and password, with 2FA
   required for organisers and admins (closed: SE-NIGHT-1 pieces 2 and 3); logging in with a
   Discord or Telegram account is not built (for Telegram's recovery codes see above).
@@ -49,6 +42,73 @@ An entry moves from part one to part two only when its branch is merged into `ma
   2026-10-19).
 
 ## PART TWO — closed
+
+- **Security check findings (owner decision 2026-10-22)** — closed by SE-NIGHT-5 piece 1
+  (`feat/se-night-5`, not merged yet), each with its outcome:
+  - **WebSocket connection limit** — built: at most 5 open chat connections per member account,
+    20 per address for guests; a refused one is told so and does not retry in a loop
+    (docs/CHAT.md, "Connection limits").
+  - **A limit on `/media`** — not built.
+  - **A limit on the admin password reset** — not built.
+  - **In-memory rate limits resetting on a restart** — accepted.
+  - **Sessions** — signed-in sessions end after 7 days without use, renewed by every request
+    at most once a minute (docs/AUTH.md, "Sessions").
+- **A ratio view between the seasons** — not wanted (owner decision 2026-10-22).
+- **Call recording** — closed by SE-NIGHT-5 piece 7 (`feat/se-night-5`, not merged yet; owner
+  decision 2026-10-22): LiveKit Egress room composite to MP4 (1280 x 720, 15 fps, H.264 about
+  1 Mbit/s, AAC 64 kbit/s), off unless set up; organisers and admins start and stop it, ending
+  the call stops it; a red "Recording", a start banner, and joining or sending only after "I
+  understand this call is being recorded"; recordings on the call's page with a player,
+  deleted only by organisers and admins; included in backups. Tested with a real egress on
+  the PC; a real call on the VPS is still to try (docs/CALLS.md, "Recording";
+  docs/DEPLOYMENT.md, "Call recording").
+- **Flaky browser test `embedForeign.spec.js`** — closed by the SE-NIGHT-5 follow-up, part 4
+  (`feat/se-night-5`). Two causes in the tests, none in the site: the member-login helper
+  (`client/e2e/members.js`) waited for the recovery-code offer, which comes only at a
+  member's first login, so a second run hung; it now asks the run's database whether the key
+  pair exists. And the test put the chat below the window of the site's own page, which never
+  scrolls, so its "Log in" click needed that page scrolled while the parallel tests kept
+  changing it; `frameOf` (`client/e2e/frames.js`) now shows the chat in view.
+- **Slow test `devAdminScript.test.js`** — closed by the same part 4: the script ran at the
+  production bcrypt cost (the only server test that did), and on a run again derived a key and
+  had it hashed for a bootstrap that could only be refused. The test now runs at the tests'
+  cost; the script asks the database first. A stopped run is awaited before its folder is
+  deleted. The 20-second limit is unchanged.
+- **The info editor's stretched "Save" button** — closed by the SE-NIGHT-5 finish
+  (`feat/se-night-5`): beside a long preview, the editor's grid stretched the form, which gave
+  the extra height to its rows and made "Save" as tall as the preview column. The editor's
+  columns now keep their own height (`align-items: start` on `.editor`, `admin/admin.css`);
+  `client/e2e/info.spec.js` checks that "Save" is as tall as "Publish".
+- **Mono sound for call recordings** — not built (decided 2026-10-22): recordings stay stereo
+  at about 64 kbit/s, because LiveKit's encoding options have no channel setting; no code
+  change (SE-NIGHT-5 follow-up, part 2; docs/CALLS.md, "Recording").
+- **Operating-system notifications for mentions and direct messages** — closed by SE-NIGHT-5
+  piece 6 (`feat/se-night-5`, not merged yet; owner decision 2026-10-22): browser notifications
+  while the site is open and no tab of it is visible, one per event across tabs; permission only
+  on "Turn on notifications"; switches for mentions and direct messages, off until turned on;
+  a direct message's notification never shows its text (docs/CHAT.md, "Notifications").
+- **Unlock a new device by confirming it on an already logged-in device** — closed by SE-NIGHT-5
+  piece 5 (`feat/se-night-5`, not merged yet; owner decision 2026-10-22): "Confirm on another
+  device" beside the password and the recovery code; the unlocked device confirms the same
+  6-digit code and seals the private key to the new device's one-time key; the server relays
+  the box once and deletes it; requests valid 5 minutes, one at a time, audited (docs/AUTH.md,
+  "Unlock on another device").
+- **File uploads in direct messages** — closed by SE-NIGHT-5 piece 4 (`feat/se-night-5`, not
+  merged yet; owner decision 2026-10-22): encrypted in the sender's browser with a fresh key
+  per file (libsodium secretstream), the server stores ciphertext only and serves it to the two
+  members only; only real PNG, JPEG, GIF and WebP are shown inline, everything else is a
+  download; a report shares the file decrypted by the reporter; a deleted message takes its
+  file along (docs/CHAT.md, "Files in direct messages").
+- **Link previews in direct messages** — closed by SE-NIGHT-5 piece 3 (`feat/se-night-5`, not
+  merged yet; owner decision 2026-10-22): the sender's browser asks a route that stores and logs
+  nothing; the card (with a small inline image) travels inside the encrypted message, and the
+  recipient's browser never contacts the linked site; account setting, on by default
+  (docs/CHAT.md, "Link previews in direct messages").
+- **Linking calls to events** — closed by SE-NIGHT-5 piece 2 (`feat/se-night-5`, not merged
+  yet; owner decision 2026-10-22): an organiser links a planned call to one of the event bot's
+  next 30 days' occurrences; that event offers "Listen on this site" in "Up next" and on
+  `/events` instead of a second entry, and the call's page names the event; a vanished or moved
+  occurrence just loses the link (docs/CALLS.md, "Linked to a bot event").
 
 - **SE-UPNEXT-CALLS-1 — "Up next" lists site calls too; the Next call box only with a call** —
   on `feat/se-upnext-calls-1` (not merged yet; owner request 2026-10-21): the home's "Up next"

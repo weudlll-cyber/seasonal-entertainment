@@ -80,7 +80,10 @@ export default function ReportDirectDialog({ messages, reported, partnerName, on
           {candidates.map((m) => (
             <label key={m.id} className="chat-dialog__message">
               <input type="checkbox" checked={selected.has(m.id)} onChange={() => toggle(m.id)} />
-              <span>{m.payload.text || '(sticker or GIF)'}</span>
+              <span>
+                {m.payload.text ||
+                  (m.payload.file ? `(file: ${m.payload.file.name})` : '(sticker or GIF)')}
+              </span>
             </label>
           ))}
         </fieldset>

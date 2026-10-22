@@ -6,8 +6,9 @@
 //              recent) and the status changes scheduled -> live -> ended (a scheduled call may
 //              also be ended without ever going live: cancelled). A change applies only from
 //              the expected status, so two organisers acting at once cannot both succeed.
-//              Also the call's spotlight state, and the live calls with since when their room
-//              has been missing (the stale-call job, staleCalls.js).
+//              Also the call's spotlight state, the live calls with since when their room
+//              has been missing (the stale-call job, staleCalls.js), and the call's link to an
+//              event bot occurrence (eventLink.js).
 // ============================================================
 
 import { randomBytes } from 'node:crypto';
@@ -17,7 +18,8 @@ const RECENT = 10;
 
 const COLUMNS = `c.id, c.title, c.description, c.status, c.scheduled_for AS scheduledFor,
   c.created_at AS createdAt, c.started_at AS startedAt, c.ended_at AS endedAt,
-  c.chat_room_id AS chatRoomId, c.room_name AS roomName, u.username AS createdBy`;
+  c.chat_room_id AS chatRoomId, c.room_name AS roomName, u.username AS createdBy,
+  c.bot_occurrence_id AS botOccurrenceId, c.bot_occurrence_start AS botOccurrenceStart`;
 const FROM = 'calls c LEFT JOIN users u ON u.id = c.created_by';
 
 export function findCall(db, id) {
@@ -41,6 +43,15 @@ export function createCall(db, call, createdBy) {
       `call-${randomBytes(8).toString('hex')}`
     );
   return Number(lastInsertRowid);
+}
+
+// occurrence: { id, start } of the event bot's occurrence, or null to unlink.
+export function setCallEvent(db, id, occurrence) {
+  db.prepare('UPDATE calls SET bot_occurrence_id = ?, bot_occurrence_start = ? WHERE id = ?').run(
+    occurrence?.id ?? null,
+    occurrence?.start ?? null,
+    id
+  );
 }
 
 export function setChatRoom(db, id, chatRoomId) {

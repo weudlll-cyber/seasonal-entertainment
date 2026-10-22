@@ -2,8 +2,9 @@
 // File:        privacySettings.test.jsx
 // Path:        client/src/components/privacySettings.test.jsx
 // Project:     Seasonal Entertainment
-// Description: The account page's "Privacy" section: "Show when I'm online" is a switch, on by
-//              default; turning it off sends only the setting and shows the stored state; a
+// Description: The account page's "Privacy" section: "Show when I'm online" and "Link previews
+//              in direct messages" are switches, on by default; turning one off sends only that
+//              setting and shows the stored state; a
 //              "presence" event (someone changed theirs) reloads the online marks of the
 //              Direct list and the favourites.
 // ============================================================
@@ -42,8 +43,32 @@ it('the switch is on by default, and off once switched off', async () => {
   const toggle = await screen.findByRole('switch', { name: "Show when I'm online" });
   expect(toggle).toBeChecked();
   fireEvent.click(toggle);
-  await vi.waitFor(() => expect(screen.getByRole('switch')).not.toBeChecked());
+  await vi.waitFor(() =>
+    expect(screen.getByRole('switch', { name: "Show when I'm online" })).not.toBeChecked()
+  );
   expect(calls.find((c) => c.key === 'PUT /auth/privacy').body).toEqual({ showOnline: false });
+});
+
+it('"Link previews in direct messages" is on by default, and off once switched off', async () => {
+  let dmLinkPreviews = true;
+  const calls = mockApi({
+    'GET /auth/session': () => ({ body: { ok: true, user: { ...MIA, dmLinkPreviews } } }),
+    'PUT /auth/privacy': (sent) => {
+      dmLinkPreviews = sent.dmLinkPreviews;
+      return { body: { ok: true } };
+    },
+  });
+  render(
+    <MemoryRouter initialEntries={['/account']}>
+      <App />
+    </MemoryRouter>
+  );
+  const name = 'Link previews in direct messages';
+  const toggle = await screen.findByRole('switch', { name });
+  expect(toggle).toBeChecked();
+  fireEvent.click(toggle);
+  await vi.waitFor(() => expect(screen.getByRole('switch', { name })).not.toBeChecked());
+  expect(calls.find((c) => c.key === 'PUT /auth/privacy').body).toEqual({ dmLinkPreviews: false });
 });
 
 it('a "presence" event reloads the online marks', async () => {

@@ -19,7 +19,7 @@ This list describes what the website's software actually stores.
   of birth is asked for.
 - **Your login session**: a cookie holding a random session number, and on the server the
   matching session record (which account it belongs to). It ends when you log out, when your
-  password changes, or after 30 days.
+  password changes, or after 7 days without use.
 - **Two-factor authentication** (if you turn it on): the secret your authenticator app uses,
   and your recovery codes as one-way hashes. Deleted when you turn two-factor authentication
   off.
@@ -36,6 +36,13 @@ This list describes what the website's software actually stores.
   used, and when, and cannot read the content; moderators and admins cannot read it either. It
   also stores how far each of you has read a conversation (for the unread mark). Deleted after the
   chat retention period (90 days), like room messages.
+- **Link previews in private messages**: when you write a link in a private message, your
+  browser asks this site for a preview card (title, description, a small picture) of that link.
+  The site fetches the linked page for you but keeps neither the card nor the link, does not log
+  it, and does not record that you asked; it only counts how many previews your account asked
+  for, against abuse. The card is sent end-to-end encrypted with your message, so the recipient's
+  browser never contacts the linked site. You can remove a card before sending, or turn link
+  previews in private messages off on your account page.
 - **Reports of a private message**: the reason, who reported whom, and when. Only if you tick
   "Share the selected messages with the moderators" are copies of the messages you selected sent
   along — as your browser shows them — so the moderators can judge the report. Every time a
@@ -63,6 +70,11 @@ This list describes what the website's software actually stores.
   sees you as online. The site stores this choice with your account.
 - **Stickers and GIFs in the chat** come from this site's own library, managed by its admins. No
   outside GIF or sticker service is contacted.
+- **Files in private messages**: end-to-end encrypted. Your browser encrypts a file before it
+  is uploaded; this site stores only the encrypted file and cannot see its content, name or
+  type. Only you and the other member can download it, and only your browsers can open it. It
+  is deleted together with its message. If you report a message and choose to share it, your
+  browser also shares that message's file, decrypted, with the moderators, as it does the text.
 - **Files in the chat**: members (not guests) can send images (JPG, PNG, WebP, GIF) and PDF
   files. Images are stored without their hidden metadata, such as camera details and GPS
   location. A file is deleted together with its message, after the chat retention period
@@ -71,14 +83,32 @@ This list describes what the website's software actually stores.
   that page once and stores its title, description, site name and a scaled-down copy of its
   image, which are shown with the message. Your browser loads nothing from the linked site for
   this; it only goes there if you click the link.
-- **Community calls**: calls are **not recorded** — neither sound, nor pictures, nor shared
-  screens. While you are in a call, the site's own call server (run by this site, not by
+- **Community calls**: a call is **not recorded** unless an organiser starts a recording (see
+  "Call recordings" below). While you are in a call, the site's own call server (run by this site, not by
   another company) passes the sound, camera pictures and shared screens of the speakers on to
   the other participants as they happen, and processes the IP addresses of everyone connected
   to do so; nothing of it is stored afterwards. The site stores who joined which call (as a
   random participant number linked to your account or guest name), whether you raised your
   hand and whether you were on the stage, and keeps the call's chat like any other chat room.
   If you hide your online status, other listeners see you as "A listener".
+- **Call recordings** (_Proposal — to be reviewed by the site owner_): organisers and admins
+  can record a call (sound, camera pictures and shared screens of the speakers, as the call
+  shows them). You always know: while a recording runs, the call shows a red "Recording"; when
+  it starts, everyone in the call is told; and nobody joins a recorded call, or turns on their
+  microphone or camera in it, without first confirming
+  "I understand this call is being recorded". Recordings are stored on this site's server and
+  shown on the call's page to everyone who can see the call. They are included in the site's
+  backups.
+  - **Legal basis**: your consent (GDPR Art. 6(1)(a)), which you give by confirming
+    "I understand this call is being recorded". You can join a recorded call only after that
+    confirmation, and you can leave the call at any time.
+  - **How long**: a recording is kept until an organiser or admin deletes it. There is no
+    automatic deletion.
+  - **Deletion and your other rights**: if you are in a recording, you can ask for the
+    recording, or your part of it, to be deleted, and for a copy of it, by writing to the
+    contact address in the Imprint ([TO BE FILLED BY OWNER: contact email for these requests]).
+    You can also lodge a complaint with a data protection authority; in Austria that is the
+    Datenschutzbehörde.
 - **Protection against abuse**: to limit repeated login attempts and similar, the server keeps
   your IP address in its memory for up to one hour. It is not written to the database.
 

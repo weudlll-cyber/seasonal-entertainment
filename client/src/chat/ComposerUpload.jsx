@@ -14,8 +14,13 @@ import ChatNotice from './ChatNotice.jsx';
 
 const ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,application/pdf';
 
-// onUploaded(upload): the stored file ({ id, kind, name, bytes, thumbUrl? }).
-export default function ComposerUpload({ onUploaded }) {
+const roomUpload = async (file) =>
+  (await upload('/chat/uploads', file, { name: file.name })).upload;
+
+// onUploaded(upload): the stored file ({ id, kind, name, bytes, thumbUrl? }). send(file):
+// how the file is uploaded (a room's upload by default; a direct message encrypts it first,
+// directFile.js); accept: the file types offered (any for direct messages).
+export default function ComposerUpload({ onUploaded, send = roomUpload, accept = ACCEPT }) {
   const input = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -27,7 +32,7 @@ export default function ComposerUpload({ onUploaded }) {
     setBusy(true);
     setError(null);
     try {
-      onUploaded((await upload('/chat/uploads', file, { name: file.name })).upload);
+      onUploaded(await send(file));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -40,7 +45,7 @@ export default function ComposerUpload({ onUploaded }) {
       <input
         ref={input}
         type="file"
-        accept={ACCEPT}
+        accept={accept}
         hidden
         aria-label="File to attach"
         onChange={choose}

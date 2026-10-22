@@ -9,14 +9,14 @@
 
 import { decryptDirect, encryptDirect } from '@seasonal-entertainment/shared/crypto.js';
 
-// from: a member from memberWithKey (helpers/keys.js); to: the partner's account { id }.
-// Returns the API response.
-export async function sendDirect(from, to, payload) {
+// from: a member from memberWithKey (helpers/keys.js); to: the partner's account { id };
+// extra: more body fields (fileId). Returns the API response.
+export async function sendDirect(from, to, payload, extra = {}) {
   const { partnerKey } = (await from.agent.get(`/api/chat/direct/${to.id}`)).body;
   const box = await encryptDirect(payload, partnerKey.publicKey, from.pair.privateKey);
   return from.agent
     .post(`/api/chat/direct/${to.id}`)
-    .send({ ...box, senderKeyId: from.keyId, recipientKeyId: partnerKey.keyId });
+    .send({ ...box, senderKeyId: from.keyId, recipientKeyId: partnerKey.keyId, ...extra });
 }
 
 // The conversation of `reader` with `partner`, each message decrypted (payload, or null when

@@ -103,7 +103,9 @@ more. "Up next" on the home page asks for the next seven days from the full hour
 question per hour) and shows the next two scheduled occurrences that have not started. The
 site's own live and planned calls are listed beside them in "Up next" and on `/events`, by start
 time (2026-10-21; docs/CALLS.md, "In the event lists"); they are calls, not events, and nothing
-of the bot's data changes.
+of the bot's data changes. A call may be linked to one of the bot's occurrences (2026-10-22;
+docs/CALLS.md, "Linked to a bot event"): the link is stored on the site only, and the bot's
+file is only read.
 
 ## Fair price and converter
 

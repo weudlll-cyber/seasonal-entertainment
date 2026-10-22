@@ -87,6 +87,15 @@ export function spotlightOf(metadata) {
   }
 }
 
+// Whether the server says a recording runs ({ recording: true } in the same metadata).
+export function recordingOf(metadata) {
+  try {
+    return JSON.parse(metadata || '{}').recording === true;
+  } catch {
+    return false;
+  }
+}
+
 // The speaker the server's spotlight names, if they are on the stage now (a stale choice —
 // they left — counts as none).
 export function spotlightSpeaker(spotlight, speakers) {

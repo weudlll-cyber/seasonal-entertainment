@@ -6,7 +6,8 @@
 //              after logout): the account password opens the sealed private key (keys are
 //              derived with the account's salt from the pre-login step). When the password no
 //              longer opens it (an admin reset it, or it was forgotten and reset): the recovery
-//              code, if one exists, and always "Start over without my old messages".
+//              code, if one exists, and always "Start over without my old messages". Besides
+//              the password and the recovery code: "Confirm on another device" (DeviceUnlock).
 // ============================================================
 
 import { useState } from 'react';
@@ -15,6 +16,7 @@ import { keysForPassword } from '../session/credentials.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { useKeys } from './KeyContext.jsx';
 import { BusyButton } from '../components/BusyButton.jsx';
+import DeviceUnlock from './DeviceUnlock.jsx';
 
 export default function UnlockPanel() {
   const { user } = useSession();
@@ -23,6 +25,7 @@ export default function UnlockPanel() {
   const [passwordKeys, setPasswordKeys] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [onOtherDevice, setOnOtherDevice] = useState(false);
 
   async function attempt(work) {
     setBusy(true);
@@ -58,6 +61,17 @@ export default function UnlockPanel() {
 
   const startOver = () => attempt(() => keys.startOver(passwordKeys));
 
+  if (onOtherDevice) return <DeviceUnlock onCancel={() => setOnOtherDevice(false)} />;
+  const otherDevice = (
+    <button
+      className="button button--secondary"
+      type="button"
+      onClick={() => setOnOtherDevice(true)}
+    >
+      Confirm on another device
+    </button>
+  );
+
   if (keys.status !== 'broken' || !passwordKeys) {
     return (
       <form className="form" onSubmit={unlock}>
@@ -71,6 +85,7 @@ export default function UnlockPanel() {
         />
         <FormMessage error={error} />
         <BusyButton busy={busy}>Unlock private messages</BusyButton>
+        {otherDevice}
       </form>
     );
   }
@@ -78,6 +93,7 @@ export default function UnlockPanel() {
   return (
     <div className="unlock-broken">
       <FormMessage error={error} />
+      <div className="form">{otherDevice}</div>
       {keys.hasRecovery && (
         <form className="form" onSubmit={recover}>
           <p>Your recovery code opens your private messages again.</p>

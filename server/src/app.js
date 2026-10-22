@@ -25,6 +25,8 @@ import { adminAuditRoutes } from './admin/auditRoutes.js';
 import { callJoinRoutes } from './calls/joinRoutes.js';
 import { callReminderRoutes } from './calls/reminderRoutes.js';
 import { sendCallReminders, startCallReminders } from './calls/reminders.js';
+import { callEventRoutes } from './calls/eventRoutes.js';
+import { callRecordingRoutes } from './calls/recordingRoutes.js';
 import { callRoutes } from './calls/routes.js';
 import { callSpotlightRoutes } from './calls/spotlightRoutes.js';
 import { callStageRoutes } from './calls/stageRoutes.js';
@@ -42,6 +44,7 @@ import { gameRoutes } from './games/routes.js';
 import { allow } from './http/access.js';
 import { adminInfoRoutes } from './info/adminRoutes.js';
 import { infoRoutes } from './info/routes.js';
+import { keyHandoverRoutes } from './keys/handover.js';
 import { keyRoutes } from './keys/routes.js';
 import { csrfGuard } from './http/csrf.js';
 import { errorHandler, sendError } from './http/errors.js';
@@ -73,6 +76,9 @@ export function createApp({
   app.use(securityHeaders(config, embedOrigins));
 
   const api = express.Router();
+  // Direct messages may carry a link preview's small image inside the ciphertext (docs/CHAT.md):
+  // their own, larger limit, parsed before the general one (which then skips the body).
+  api.use('/chat/direct', express.json({ limit: '160kb' }));
   api.use(express.json({ limit: '100kb' }));
   // Every read under /api per IP; writes have their own, stricter limits per route.
   const readsPerIp = makeLimiter(config.rateLimits.apiRead);
@@ -121,12 +127,17 @@ export function createApp({
   api.use('/admin/embed-origins', adminEmbedRoutes(db, config, embedOrigins, chat.sessions));
   // Call reminders reach a member's open pages over the chat's live connection.
   const notifyMember = chat.notify.member;
+  // A new device asks the member's unlocked ones for the key (keys/handover.js).
+  api.use('/keys', keyHandoverRoutes(db, config, notifyMember));
   const remindNow = () => sendCallReminders(db, notifyMember);
+  // Before callRoutes: its /:id would take /bot-occurrences.
+  api.use('/calls', callEventRoutes(db, config, callService, chat));
   api.use('/calls', callRoutes(db, config, callService, chat, remindNow));
   api.use('/calls', callReminderRoutes(db, config, callService));
   api.use('/calls', callJoinRoutes(db, config, callService, chat));
   api.use('/calls', callStageRoutes(db, config, callService, chat));
   api.use('/calls', callSpotlightRoutes(db, config, callService));
+  api.use('/calls', callRecordingRoutes(db, config, callService));
   // start() returns the function that stops both jobs, or null when neither runs.
   app.locals.calls = {
     start: (log) => {

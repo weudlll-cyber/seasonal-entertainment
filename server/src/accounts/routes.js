@@ -10,8 +10,9 @@
 //              the private key sealed again with the new wrapping key (keys/), stored in the
 //              same transaction as the new verifier. Logout and password change also close
 //              the affected chat sockets (chat/mount.js); logout also ends the member's embed
-//              tokens (embed/tokens.js). PUT /api/auth/privacy: the member's
-//              own "Show when I'm online".
+//              tokens (embed/tokens.js). PUT /api/auth/privacy: the member's own "Show when
+//              I'm online" and "Link previews in direct messages"; PUT /api/auth/notifications:
+//              which browser notifications they want (a mention, a new direct message).
 // ============================================================
 
 import express from 'express';
@@ -37,7 +38,7 @@ import {
   createUser,
   publicUser,
   setPasswordHash,
-  setShowOnline,
+  setSwitches,
 } from './userStore.js';
 
 // chatSessions: the chat handle's sessions interface (chat/mount.js).
@@ -118,15 +119,37 @@ export function accountRoutes(db, config, chatSessions) {
     res.json({ ok: true });
   });
 
-  // "Show when I'm online": the member's own setting only (the account comes from the
-  // session). The change takes effect at once: open chat lists hear "presence" and reload.
+  // The member's own privacy switches, any of them per request (the account comes from the
+  // session): "Show when I'm online" takes effect at once (open chat lists hear "presence"
+  // and reload); "Link previews in direct messages" is read by the member's browser.
+  // Validates switches named in `names` (any of them, at least one): the input, or null after
+  // answering.
+  function switchInput(req, res, names) {
+    const flag = (name) => (v) =>
+      v === undefined || typeof v === 'boolean' ? null : `${name} must be true or false.`;
+    const input = validBody(req, res, Object.fromEntries(names.map((n) => [n, flag(n)])));
+    if (!input) return null;
+    if (names.every((n) => input[n] === undefined)) {
+      sendError(res, 400, 'invalid_input', 'Name a setting to change.');
+      return null;
+    }
+    return input;
+  }
+
   router.put('/privacy', allow('member'), (req, res) => {
-    const input = validBody(req, res, {
-      showOnline: (v) => (typeof v === 'boolean' ? null : 'showOnline must be true or false.'),
-    });
+    const input = switchInput(req, res, ['showOnline', 'dmLinkPreviews']);
     if (!input) return;
-    setShowOnline(db, req.user.id, input.showOnline);
-    chatSessions.presenceChanged();
+    setSwitches(db, req.user.id, input);
+    if (input.showOnline !== undefined) chatSessions.presenceChanged();
+    res.json({ ok: true });
+  });
+
+  // Which browser notifications the member wants (docs/CHAT.md, "Notifications"); the browser's
+  // own permission is asked for there, separately.
+  router.put('/notifications', allow('member'), (req, res) => {
+    const input = switchInput(req, res, ['notifyMentions', 'notifyDirect']);
+    if (!input) return;
+    setSwitches(db, req.user.id, input);
     res.json({ ok: true });
   });
 

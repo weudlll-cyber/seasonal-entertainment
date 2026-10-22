@@ -5,7 +5,8 @@
 // Description: Data access for reports of a private conversation (docs/CHAT.md, "Reporting a
 //              direct message"): the reason and the fact, and — only when the reporter chose to
 //              share them — copies of the selected messages, as the reporter provided them,
-//              with each message's author and time as the server knows them. A moderator marks
+//              with each message's author and time as the server knows them, and the file the
+//              reporter's browser decrypted and shared with it (directFiles/). A moderator marks
 //              a report reviewed; its copies are deleted 90 days later (retention.js).
 // ============================================================
 
@@ -74,11 +75,19 @@ export function findDirectReport(db, id) {
 export function reportCopies(db, reportId) {
   return db
     .prepare(
-      `SELECT message_id AS messageId, author_name AS author, text, media_item_id AS mediaItemId,
-              sent_at AS sentAt
-       FROM direct_report_copies WHERE report_id = ? ORDER BY message_id`
+      `SELECT c.message_id AS messageId, c.author_name AS author, c.text,
+              c.media_item_id AS mediaItemId, c.sent_at AS sentAt,
+              f.name AS fileName, f.bytes AS fileBytes
+       FROM direct_report_copies c
+       LEFT JOIN direct_report_files f
+         ON f.report_id = c.report_id AND f.message_id = c.message_id
+       WHERE c.report_id = ? ORDER BY c.message_id`
     )
-    .all(reportId);
+    .all(reportId)
+    .map(({ fileName, fileBytes, ...copy }) => ({
+      ...copy,
+      file: fileName ? { name: fileName, bytes: fileBytes } : null,
+    }));
 }
 
 export function markDirectReportReviewed(db, id, moderator) {

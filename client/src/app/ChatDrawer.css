@@ -75,6 +75,11 @@
   justify-content: space-between;
 }
 
+.chat-drawer__header .chat-menu {
+  /* The chat menu (NotificationsMenu) beside the close button. */
+  margin-left: auto;
+}
+
 .chat-drawer__full {
   display: inline-flex;
   align-items: center;

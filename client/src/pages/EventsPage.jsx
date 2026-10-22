@@ -6,7 +6,9 @@
 //              bot's occurrences (docs/BOTS.md), each at the viewer's local time with the zone
 //              named and the UTC time beside it (EventItem.jsx), together with the site's live
 //              and planned calls of that week as the Calls page shows them (useCalls.js,
-//              callEntries.js, CallEventItem.jsx), in time order. Previous/next week buttons.
+//              callEntries.js, CallEventItem.jsx), in time order; a call linked to one of the
+//              week's events is not listed twice: that event offers "Listen on this site"
+//              (EventItem.jsx). Previous/next week buttons.
 //              Without the event bot the page says so plainly. timeZone and now are props so
 //              tests can pin them; in the browser they come from the device. SE style: the
 //              Events header with the balls quarter; each event's bar takes a season colour.
@@ -17,7 +19,7 @@ import { formatDay, startOfWeek } from '@seasonal-entertainment/shared/localWeek
 import { api } from '../api/http.js';
 import { deviceZone } from '../app/dates.js';
 import PageHeader from '../brand/PageHeader.jsx';
-import { byStart, callEntries } from '../calls/callEntries.js';
+import { withCalls } from '../calls/callEntries.js';
 import { useCalls } from '../calls/useCalls.js';
 import CallEventItem from './CallEventItem.jsx';
 import EventItem from './EventItem.jsx';
@@ -43,11 +45,8 @@ export default function EventsPage({ timeZone = deviceZone(), now }) {
   }, [weekStart, weekEnd]);
 
   const week = bot?.from === weekStart ? bot : null; // an earlier week's answer is not shown
-  // The bot's occurrences and the week's calls, in time order.
-  const entries = [
-    ...(week?.occurrences ?? []),
-    ...callEntries(calls, { from: weekStart, to: weekEnd }),
-  ].sort(byStart);
+  // The bot's occurrences and the week's calls, in time order; a linked call rides on its event.
+  const entries = withCalls(week?.occurrences ?? [], calls, { from: weekStart, to: weekEnd });
   const days = new Map();
   for (const entry of entries) {
     const day = formatDay(entry.start, timeZone);

@@ -66,6 +66,17 @@ of the module other than `index.js`.
   receives only its own. The socket reconnects after a drop and closes right after the render
   in which the last panel left (a panel that comes straight back, as under React's StrictMode,
   reuses it).
+- **Connection limits** (security check 2026-10-22): at most 5 open connections per member
+  account, counting every tab, the chat drawer and chats embedded on other sites together, and
+  at most 20 per address for guests without an account (`CHAT_MAX_CONNECTIONS_PER_MEMBER`,
+  `CHAT_MAX_GUEST_CONNECTIONS_PER_IP`). The address is the one our own proxies forwarded
+  (`TRUST_PROXY` hops, as for the rate limits). One more is accepted and closed at once with
+  close code 4008 (`server/src/chat/socket.js`), so the browser can tell it from a network drop.
+  The page then shows "You have the chat open in too many windows (at most 5). Close one and
+  try again." in the chat area (`ConnectionLimitNotice.jsx`). It does not retry in a loop: it
+  tries again when the reader presses "Try again", or when another tab of the same browser
+  closes its connection (a `BroadcastChannel` message). Tests: `server/test/chatLimits.test.js`,
+  `client/src/chat/connectionLimit.test.jsx`.
 - **Account changes** (login, logout, switching account) while a panel stays on the page: the
   server knows a socket's reader only from the session cookie at connect time, so the panel
   tells the connection the new account (`connectAs`), which drops the old socket and opens a
@@ -91,10 +102,13 @@ of the module other than `index.js`.
   the list and in the field, so a test looking for a just-sent message looks inside the message
   list (`client/src/chat/chatPanel.test.jsx`).
 - **The message list** (`MessageList.jsx`, `useScrollPin.js`) opens at the newest message and
-  stays pinned to it while the reader is at or near the bottom (48 px), also when an image or a
-  preview card makes the newest message grow; a reader who scrolled up is not moved and gets a
-  "New messages" button that scrolls down. A room switch starts at the newest message again.
-  The same in both variants.
+  stays pinned to it while the reader is at or near the bottom (48 px), also when an image, a
+  preview card or a decrypted file makes any message grow (every message is watched, not only
+  the newest; 2026-10-22). Only scrolling up unpins: the list's own jumps go down, and their
+  scroll events may arrive after the content grew further. A reader who scrolled up is not
+  moved and gets a "New messages" button that scrolls down. A room switch starts at the newest
+  message again. The same in both variants and in direct messages
+  (`client/src/chat/scrollPin.test.jsx`).
 - **Layout**: a panel is a column that fills the height its container gives it; the message list
   takes the room left and the composer stays at the bottom. `full` fills its container (the
   `/chat` page's main column), with room tabs as a column on the left (a row below 600px).
@@ -210,8 +224,9 @@ salt)` and that seal stored (`PUT /api/keys/recovery`) — the code itself never
   copy of the private key (`client/src/keys/deviceKey.js`), so the device stays unlocked across
   reloads and tabs until **logout, which deletes the copy and that key**. Nothing goes to
   `localStorage`. Without it (new device, after logout) the account page — and the Direct tab —
-  shows **Unlock private messages** (the password, its keys derived with the pre-login salt).
-  Rooms never need unlocking.
+  shows **Unlock private messages** (the password, its keys derived with the pre-login salt),
+  or **Confirm on another device**, where a device that has the key unlocked hands it over
+  (docs/AUTH.md, "Unlock on another device"). Rooms never need unlocking.
 - **Password change**: the browser re-seals the same private key for the new password and sends
   it in the same request as the new verifier; the server stores both in one transaction.
 - **When the sealed key no longer opens** (an admin reset the password; a forgotten password was
@@ -233,7 +248,7 @@ open nor send them. Any member can write to any member.
   unlocked key on the device, the Direct tab shows "Unlock private messages" (see "Keys and the
   recovery code").
 - **Encryption** (in the browser, `shared/crypto.js`): message = `crypto_box_easy(JSON { text,
-mediaItemId? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh random nonce each time.
+mediaItemId?, preview? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh random nonce each time.
   Either side opens it with the other's public key and its own private key. The server stores
   ciphertext, nonce, sender and recipient ids, both key ids and the time (`direct_messages`) and
   pushes each new message over the existing WebSocket to both members' open sockets (no
@@ -241,8 +256,62 @@ mediaItemId? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh random no
 - **What a message can hold (v1, decided 2026-10-18)**: text, emoji, and stickers/GIFs from the
   site's library (the library id travels inside the ciphertext; the browser loads the public
   library file, `GET /api/chat/media`, once per page and shares it with the picker:
-  `client/src/chat/mediaLibrary.js`, SE-NIGHT-2 part 5). **No file uploads and no link previews** in direct messages; links are plain
-  clickable links. Both are open backlog items.
+  `client/src/chat/mediaLibrary.js`, SE-NIGHT-2 part 5), and a link preview card (below).
+  The ciphertext may be up to 120,000 base64 characters (`CIPHERTEXT_MAX`), and
+  `/api/chat/direct` takes bodies up to 160 kB (its own JSON parser, before the general 100 kB
+  one), for the card's small image.
+- **Link previews in direct messages** (decided 2026-10-22): while a member writes, their
+  browser sends the first https link of the draft to `POST /api/chat/direct/preview { url }`, a
+  moment after typing stops (`client/src/chat/useDirectLinkPreview.js`).
+  - **The route** (`server/src/previews/directPreview.js`, members only) uses the room
+    previews' fetcher (`fetchPreview.js`, `safeFetch`'s network guard). It answers the title,
+    description, site name and an optional image re-encoded by the server: WebP at most 320px
+    wide and 50 KB (lower quality, then narrower, else no image), as a data URL.
+  - **It keeps nothing**: no cache row, no file, no database write, and no log line, not even
+    the host of a failing link. Nothing records which account asked for which link: only the
+    per-account rate-limit counter (`linkPreviews.perUser`, plus the site-wide `overall`).
+  - **The card**: the writer sees it in the composer above the field and can remove it (×,
+    "Remove link preview"); then no card is sent for that link. One card per message, the
+    first link's. It travels inside the encrypted message (`preview` in the payload), so the
+    server sees only ciphertext.
+  - **The recipient's browser never contacts the linked site**: it shows a card only as the
+    sender's browser makes it (`safePreview`): an https link, plain text, and an image only as
+    inline `data:image/webp;base64` (anything else is dropped). Clicking the link is the
+    reader's own choice.
+  - **Account setting** "Link previews in direct messages" (account page, Privacy; on by
+    default; `users.dm_link_previews`, `PUT /api/auth/privacy { dmLinkPreviews }`). Off, the
+    browser makes no preview request at all; the route refuses one too (`403 previews_off`).
+    `LINK_PREVIEWS=false` switches the route off with the room previews.
+  - Tests: `server/test/directPreview.test.js`, `client/src/chat/directLinkPreview.test.jsx`,
+    `client/src/components/privacySettings.test.jsx`.
+- **Files in direct messages** (decided 2026-10-22): members attach a file with the composer's
+  usual **Attach file** (`ComposerUpload.jsx`), of any type, under the room uploads' limits:
+  at most 10 MB per file, one daily quota of 50 MB together with room uploads, 10 uploads a
+  minute.
+  - **Encrypted in the sender's browser** (`client/src/chat/directFile.js`): a fresh random
+    key per file, `crypto_secretstream_xchacha20poly1305` in 64 KB chunks
+    (`encryptFile` in `shared/crypto.js`; every chunk authenticated, the last one tagged final).
+  - **Only ciphertext reaches the server**: `POST /api/chat/direct/:id/files` (raw body, no
+    name in the address). It is stored under a generated name in `MEDIA_DIR/direct/`, never
+    public (`server/src/directFiles/`). The file's key, name, type and size travel only inside
+    the encrypted message (`file` in the payload). The message names the upload's id
+    (`fileId`), so the server can link the two for access and clean-up. Only the uploader's own
+    upload for that partner, sent once.
+  - **Served to the two members only**: `GET /api/chat/direct/files/:fileId` (a pending upload
+    to its uploader only; anyone else gets 404, as for an unknown file). Always as
+    `application/octet-stream`, a download, `no-store`, sandboxed.
+  - **The recipient's browser downloads and decrypts** (`DirectFile.jsx`). **Safety rule**: only
+    PNG, JPEG, GIF and WebP, recognised by their first bytes after decryption (`rasterType`),
+    are shown inline, as an object URL in an `img` element. The name and type the sender stated
+    do not count. Everything else, SVG and HTML included, is only offered as a download, always
+    as plain data.
+  - **No server-side thumbnails or content checks**: the server cannot see the content. It
+    enforces size and participant access only.
+  - **Deletion**: a file lives as long as its message. When the message goes (retention) or an
+    account is deleted, the retention job deletes the row and the file on disk; it also removes
+    any file in `direct/` that no row names. Direct messages have no delete action of their own.
+  - Tests: `server/test/directFiles.test.js`, `client/src/chat/directFiles.test.jsx`,
+    `shared/crypto.test.js`.
 - **Rules** (`server/src/chat/directRoutes.js`): the same mute/ban and the same per-sender rate
   limit as room messages (one shared limiter); a locked account has no session. The partner must
   have a key; both key ids must be the current ones, else `409 key_changed` with the partner's
@@ -352,6 +421,36 @@ its newest 3 messages (name, short text, time), then "Open the chat".
 - **24-hour rule**: when the newest message is more than 24 hours old, the box shows only the
   count and "Open the chat".
 
+## Notifications
+
+Browser notifications while the site is open (decided 2026-10-22; `client/src/notify/`).
+
+- **What**: a mention of the member in a room they can read ("<name> mentioned you in <room>:
+  <first 80 characters>"), and a new direct message ("New message from <name>" only, never the
+  message's text).
+  - **The server** sends a personal `mention` event to each mentioned member's pages, with the
+    author, the room and the first 80 characters (`server/src/chat/routes.js`; only members the
+    mention counts for, who may read the room). The `direct` event now also names the sender
+    (`senderName`); its message is ciphertext.
+- **When**: only when no tab of the site is visible at that moment. Each tab notes its own
+  visibility in browser storage, renewed while visible (`se.visibleTab.*`), so a closed tab's
+  note fades within seconds. One notification per event across tabs: the first tab to claim the
+  event shows it (`se.notified.*`, like the call notices), with the event as the notification's
+  tag. Clicking it focuses the site and opens the room (`/chat?room=<slug>`) or the conversation
+  (`/chat?direct=<id>&name=<name>`).
+- **Permission**: asked only when the member presses **Turn on notifications**, on the account
+  page ("Notifications") or in the chat menu ("…" on the chat page and in the chat drawer);
+  never on page load. When both switches are still off, allowing it turns both on. If the
+  browser blocks notifications, the account page explains how to allow them in the browser
+  (the chat menu leads there).
+- **Account setting**: two switches, "When someone mentions me" and "New direct messages",
+  off until the member turns them on (`users.notify_mentions`, `notify_direct`;
+  `PUT /api/auth/notifications`).
+- **Not while the site is closed**: no web push. With no tab of the site open there are no
+  notifications (backlog part one: "Notifications when the browser is closed (web push) — not
+  built").
+- Tests: `client/src/notify/notifications.test.jsx`, `server/test/notifyEvents.test.js`.
+
 ## Reporting a direct message
 
 Moderators and admins may see direct messages **only when the affected member releases them**
@@ -367,6 +466,15 @@ Moderators and admins may see direct messages **only when the affected member re
   reporter sent or received in that conversation; anything else refuses the whole report
   (`400 not_in_conversation`), nothing stored. The author and time of each copy come from the
   server, the text from the reporter (`direct_report_copies`).
+- **Files of shared messages** (2026-10-22): when a shared message carries a file, the
+  reporter's browser decrypts it, as it did the text, and uploads that copy
+  (`POST /api/chat/direct/:id/reports/:reportId/files/:messageId?name=`). This works only for
+  the reporter's own report, a shared message that has a file, and once per message.
+  - **Stored** in `MEDIA_DIR/direct-reports/` (`direct_report_files`).
+  - **For moderators**: offered only as "Download <name>", never shown
+    (`GET /api/chat/direct-reports/:id/files/:messageId`, organisers and admins). Every
+    download is audited (`chat.direct_report_file_view`).
+  - **Deleted** with the report's copies.
 - **Moderators** (organisers and admins with 2FA) find them in Admin → Chat, "Reported private
   conversations" (`GET /api/chat/direct-reports`). Shared copies are loaded only on request and
   labelled "Shared by the reporter from a private conversation — content as provided by the
@@ -405,8 +513,9 @@ it any more (`canWrite` is false, posting answers 403 `read_only`). A guest's ch
 message, report or call join.
 
 `api` is the `/api` router after sessions, the current user and the 2FA gate; call `mountChat`
-before the API's catch-all 404. Outside the chat area only `mount.js` (and the table definitions
-the database layer registers) may be imported; `server/test/chatBoundary.test.js` enforces it.
+before the API's catch-all 404. The chat area is `server/src/chat/`, `media/`, `previews/`,
+`uploads/` and `directFiles/`. Outside it only `mount.js` (and the table definitions the database
+layer registers) may be imported; `server/test/chatBoundary.test.js` enforces it.
 
 ## Embedding
 

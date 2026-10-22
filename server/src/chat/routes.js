@@ -12,7 +12,8 @@
 //              of the public room "general" for the home page's Community box (how many members
 //              are shown online, only the number, and its newest messages).
 //              New messages are pushed live; a member's first https link gets a preview
-//              card (previews/).
+//              card (previews/); each mentioned member's pages hear a "mention" event (for a
+//              browser notification, the start of the text only).
 // ============================================================
 
 import express from 'express';
@@ -44,6 +45,8 @@ const forGuests =
 // The Community box's room and how many of its newest messages it shows.
 const GLIMPSE_ROOM = 'general';
 const GLIMPSE_COUNT = 3;
+// A mention's notification shows at most this much of the message (docs/CHAT.md).
+const MENTION_TEXT_MAX = 80;
 
 export function chatRoutes(db, config, hub, previews, allowMessage) {
   const router = express.Router();
@@ -113,11 +116,23 @@ export function chatRoutes(db, config, hub, previews, allowMessage) {
       // Stickers and GIFs count like text towards the sender's rate limit.
       const message = addMessage(db, req.room, viewer, input);
       // Guests may type "@name" too: it notifies only a member who may read the room.
-      storeMentions(db, config, req.room, message, input.body ?? '');
+      const mentioned = storeMentions(db, config, req.room, message, input.body ?? '');
       // Internal ids stay on the server; readers get only what the room shows.
       const { roomId, authorUserId, authorGuest, ...rest } = message;
       const [visible] = withMentions(db, [rest]);
       hub.broadcast(req.room.id, { type: 'message', message: visible });
+      // Each mentioned member's own pages, for a browser notification (docs/CHAT.md,
+      // "Notifications"): who, where, and the start of what they wrote.
+      for (const userId of mentioned) {
+        hub.sendToUser(userId, {
+          type: 'mention',
+          id: visible.id,
+          room: req.room.slug,
+          roomName: req.room.name,
+          author: visible.author,
+          text: (input.body ?? '').slice(0, MENTION_TEXT_MAX),
+        });
+      }
       // Every member who may read the room recounts their unread messages (other tabs too).
       hub.notifyReaders(req.room, { type: 'activity', room: req.room.slug });
       res.status(201).json({ ok: true, message: visible });
