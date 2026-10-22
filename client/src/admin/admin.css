@@ -2,7 +2,8 @@
    File:        admin.css
    Path:        client/src/admin/admin.css
    Project:     Seasonal Entertainment
-   Description: Styles of the admin area: section navigation and compact row controls.
+   Description: Styles of the admin area: section navigation, compact row controls, the audit
+                log's details, the info editor (form beside its preview) and the media packs.
    ============================================================ */
 
 .admin-nav {
@@ -44,9 +45,12 @@
   word-break: break-word;
 }
 
-/* Info editor: form and preview side by side on wide screens, stacked on phones. */
+/* Info editor: form and preview side by side on wide screens, stacked on phones. Each column
+   keeps its own height (start, not the grid's stretch): stretched to a long preview, the form
+   (itself a grid, .form) would hand the extra height to its rows and make "Save" that tall. */
 .editor {
   display: grid;
+  align-items: start;
   gap: var(--space-3);
 }
 

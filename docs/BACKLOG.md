@@ -74,6 +74,11 @@ An entry moves from part one to part two only when its branch is merged into `ma
   had it hashed for a bootstrap that could only be refused. The test now runs at the tests'
   cost; the script asks the database first. A stopped run is awaited before its folder is
   deleted. The 20-second limit is unchanged.
+- **The info editor's stretched "Save" button** — closed by the SE-NIGHT-5 finish
+  (`feat/se-night-5`): beside a long preview, the editor's grid stretched the form, which gave
+  the extra height to its rows and made "Save" as tall as the preview column. The editor's
+  columns now keep their own height (`align-items: start` on `.editor`, `admin/admin.css`);
+  `client/e2e/info.spec.js` checks that "Save" is as tall as "Publish".
 - **Mono sound for call recordings** — not built (decided 2026-10-22): recordings stay stereo
   at about 64 kbit/s, because LiveKit's encoding options have no channel setting; no code
   change (SE-NIGHT-5 follow-up, part 2; docs/CALLS.md, "Recording").
