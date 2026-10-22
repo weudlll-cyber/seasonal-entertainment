@@ -351,8 +351,8 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
   - **Layout**: LiveKit's `speaker` layout shows a shared screen or a camera large when there
     is one, and the speakers' tiles otherwise. A call without video gives a mostly still
     picture and stays small.
-  - **Mono is not possible**: LiveKit's encoding options have no channel setting, so the sound
-    is stereo (measured).
+  - **Stereo, about 64 kbit/s** (decided 2026-10-22): recordings stay stereo. LiveKit's
+    encoding options have no channel setting, so mono cannot be set (measured: stereo).
   - **The egress writes** to `CALLS_EGRESS_OUTPUT_DIR` (its own mount of the same folder; the
     same path when unset). The file is named `call-<id>-<time>-<random>.mp4`.
 - **Who**: only organisers and admins start and stop the recording of a live call

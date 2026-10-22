@@ -60,6 +60,9 @@ An entry moves from part one to part two only when its branch is merged into `ma
   deleted only by organisers and admins; included in backups. Tested with a real egress on
   the PC; a real call on the VPS is still to try (docs/CALLS.md, "Recording";
   docs/DEPLOYMENT.md, "Call recording").
+- **Mono sound for call recordings** — not built (decided 2026-10-22): recordings stay stereo
+  at about 64 kbit/s, because LiveKit's encoding options have no channel setting; no code
+  change (SE-NIGHT-5 follow-up, part 2; docs/CALLS.md, "Recording").
 - **Operating-system notifications for mentions and direct messages** — closed by SE-NIGHT-5
   piece 6 (`feat/se-night-5`, not merged yet; owner decision 2026-10-22): browser notifications
   while the site is open and no tab of it is visible, one per event across tabs; permission only
