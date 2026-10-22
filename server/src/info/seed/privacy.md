@@ -91,16 +91,24 @@ This list describes what the website's software actually stores.
   random participant number linked to your account or guest name), whether you raised your
   hand and whether you were on the stage, and keeps the call's chat like any other chat room.
   If you hide your online status, other listeners see you as "A listener".
-- **Call recordings**: organisers and admins can record a call (sound, camera pictures and
-  shared screens of the speakers, as the call shows them). You always know: while a recording
-  runs, the call shows a red "Recording"; when it starts, everyone in the call is told; and
-  nobody joins a recorded call, or turns on their microphone or camera in it, without first
-  confirming "I understand this call is being recorded". Recordings are stored on this site's
-  server and shown on the call's page to everyone who can see the call. Organisers and admins
-  can delete a recording; recordings are not deleted automatically, and they are included in
-  the site's backups. Legal basis: [TO BE FILLED BY OWNER]. How long recordings are kept:
-  [TO BE FILLED BY OWNER]. How to ask for a recording with you in it to be deleted:
-  [TO BE FILLED BY OWNER].
+- **Call recordings** (_Proposal — to be reviewed by the site owner_): organisers and admins
+  can record a call (sound, camera pictures and shared screens of the speakers, as the call
+  shows them). You always know: while a recording runs, the call shows a red "Recording"; when
+  it starts, everyone in the call is told; and nobody joins a recorded call, or turns on their
+  microphone or camera in it, without first confirming
+  "I understand this call is being recorded". Recordings are stored on this site's server and
+  shown on the call's page to everyone who can see the call. They are included in the site's
+  backups.
+  - **Legal basis**: your consent (GDPR Art. 6(1)(a)), which you give by confirming
+    "I understand this call is being recorded". You can join a recorded call only after that
+    confirmation, and you can leave the call at any time.
+  - **How long**: a recording is kept until an organiser or admin deletes it. There is no
+    automatic deletion.
+  - **Deletion and your other rights**: if you are in a recording, you can ask for the
+    recording, or your part of it, to be deleted, and for a copy of it, by writing to the
+    contact address in the Imprint ([TO BE FILLED BY OWNER: contact email for these requests]).
+    You can also lodge a complaint with a data protection authority; in Austria that is the
+    Datenschutzbehörde.
 - **Protection against abuse**: to limit repeated login attempts and similar, the server keeps
   your IP address in its memory for up to one hour. It is not written to the database.
 

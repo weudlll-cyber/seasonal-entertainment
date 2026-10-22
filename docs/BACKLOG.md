@@ -26,7 +26,9 @@ An entry moves from part one to part two only when its branch is merged into `ma
 - **Site and bots on the same VPS** — open, the owner's word: reading the bots' files through
   read-only mounts assumes it (docs/DEPLOYMENT.md, "The owner's bots").
 - **Info page texts** — open, the owner's word: all twelve info pages are drafts; Imprint and
-  Privacy need the owner's details.
+  Privacy need the owner's details. Privacy's "Call recordings" holds a proposal for the
+  owner to review (consent as the legal basis, kept until deleted, the rights and the
+  complaint to the Datenschutzbehörde); only its contact address is left to fill.
 - **Login with Discord or Telegram** — open. Accounts use a username and password, with 2FA
   required for organisers and admins (closed: SE-NIGHT-1 pieces 2 and 3); logging in with a
   Discord or Telegram account is not built (for Telegram's recovery codes see above).

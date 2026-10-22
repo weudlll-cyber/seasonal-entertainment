@@ -7,8 +7,9 @@
 //              ends with a Sources list, no contract address is retyped, no raw HTML or local
 //              file links, Risks says "not financial advice", legal pages carry placeholders,
 //              the privacy draft says when calls are recorded (only after an organiser starts
-//              it, always announced, with the owner's legal details to fill in) and what the
-//              call server processes.
+//              it, always announced) and what the call server processes, and its recording
+//              section is a proposal for the owner (consent as legal basis, no automatic
+//              deletion, the rights and where to complain) with only the contact left to fill.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -69,6 +70,18 @@ it('the privacy draft says when calls are recorded and what the call server proc
   expect(body).toContain('a call is **not recorded** unless an organiser starts a recording');
   expect(body).toContain('**Call recordings**');
   expect(body).toContain('I understand this call is being recorded');
-  expect(body.match(/Legal basis: \[TO BE FILLED BY OWNER\]/)).not.toBeNull();
   expect(body).toMatch(/IP addresses of everyone connected/);
+});
+
+it('the privacy draft proposes the recording terms, leaving only the contact to fill', () => {
+  const { body } = readSeedPage('privacy');
+  const start = body.indexOf('- **Call recordings**');
+  // Up to the next item of the list.
+  const section = body.slice(start, body.indexOf('\n- **', start + 1));
+  expect(section).toContain('Proposal — to be reviewed by the site owner');
+  expect(section).toMatch(/\*\*Legal basis\*\*: your consent \(GDPR Art\. 6\(1\)\(a\)\)/);
+  expect(section).toMatch(/There is no\s+automatic deletion/);
+  expect(section).toContain('Datenschutzbehörde');
+  expect(section.match(/\[TO BE FILLED BY OWNER/g)).toEqual(['[TO BE FILLED BY OWNER']);
+  expect(section).toContain('[TO BE FILLED BY OWNER: contact email');
 });
