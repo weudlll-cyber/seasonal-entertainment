@@ -170,7 +170,10 @@ describe('the unlocked device', () => {
       btoa(String.fromCharCode(...privateKey))
     );
     expect(await openFromDevice(sealed, deviceKeys)).toEqual(privateKey);
-    expect(screen.queryByRole('dialog', { name: 'A new device wants access' })).toBeNull();
+    // The dialog closes once the server has answered (the request above was only sent).
+    await vi.waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'A new device wants access' })).toBeNull()
+    );
   });
 
   it('a device where the key is locked is not asked', async () => {

@@ -8,12 +8,11 @@
 //              the members some specs log in as (members.js).
 // ============================================================
 
-import path from 'node:path';
 import { request } from '@playwright/test';
 import { codeForStep, stepAt } from '../../server/src/twofa/totp.js';
 import { authKeyFor, newAccountData } from './accountKeys.js';
 import { ADMIN, ADMIN_STATE } from './adminState.js';
-import { seedMembers } from './members.js';
+import { E2E_DATABASE, seedMembers } from './members.js';
 
 export default async function globalSetup(config) {
   const { baseURL } = config.projects[0].use;
@@ -33,5 +32,5 @@ export default async function globalSetup(config) {
   await api.storageState({ path: ADMIN_STATE });
   await api.dispose();
   // The server runs on this run's database (playwright.config.js); WAL lets both write.
-  await seedMembers(path.join(process.env.SE_E2E_DIR, 'e2e.db'));
+  await seedMembers(E2E_DATABASE);
 }

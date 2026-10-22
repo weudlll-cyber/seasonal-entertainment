@@ -62,6 +62,18 @@ An entry moves from part one to part two only when its branch is merged into `ma
   deleted only by organisers and admins; included in backups. Tested with a real egress on
   the PC; a real call on the VPS is still to try (docs/CALLS.md, "Recording";
   docs/DEPLOYMENT.md, "Call recording").
+- **Flaky browser test `embedForeign.spec.js`** — closed by the SE-NIGHT-5 follow-up, part 4
+  (`feat/se-night-5`). Two causes in the tests, none in the site: the member-login helper
+  (`client/e2e/members.js`) waited for the recovery-code offer, which comes only at a
+  member's first login, so a second run hung; it now asks the run's database whether the key
+  pair exists. And the test put the chat below the window of the site's own page, which never
+  scrolls, so its "Log in" click needed that page scrolled while the parallel tests kept
+  changing it; `frameOf` (`client/e2e/frames.js`) now shows the chat in view.
+- **Slow test `devAdminScript.test.js`** — closed by the same part 4: the script ran at the
+  production bcrypt cost (the only server test that did), and on a run again derived a key and
+  had it hashed for a bootstrap that could only be refused. The test now runs at the tests'
+  cost; the script asks the database first. A stopped run is awaited before its folder is
+  deleted. The 20-second limit is unchanged.
 - **Mono sound for call recordings** — not built (decided 2026-10-22): recordings stay stereo
   at about 64 kbit/s, because LiveKit's encoding options have no channel setting; no code
   change (SE-NIGHT-5 follow-up, part 2; docs/CALLS.md, "Recording").

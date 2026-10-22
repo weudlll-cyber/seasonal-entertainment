@@ -326,9 +326,10 @@ After the first admin exists, unset `BOOTSTRAP_TOKEN`; the route stays closed an
 ### Local development admin
 
 `npm run dev:admin` runs the real app in-process on a random port with a one-time token held only
-in memory, calls the bootstrap route with it (salt and auth key derived from the password with
-`shared/crypto.js`), and writes the username and a random password to
-`data/DEV-ADMIN.txt` (gitignored). Admins need 2FA, so it then turns 2FA on for that account
+in memory and, when the database has no admin yet, calls the bootstrap route with it (salt and
+auth key derived from the password with `shared/crypto.js`; asked first, so a run again spends
+no key derivation and no bcrypt hash on a bootstrap that could only be refused), and writes
+the username and a random password to `data/DEV-ADMIN.txt` (gitignored). Admins need 2FA, so it then turns 2FA on for that account
 through the real API and adds the TOTP secret, its `otpauth://` link and the recovery codes to
 the same file. It also adds a `SESSION_SECRET` to `.env` if missing, so dev logins survive
 restarts. Run again when the account already has 2FA, it rewrites the file's 2FA part from the

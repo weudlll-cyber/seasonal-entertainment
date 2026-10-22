@@ -68,8 +68,9 @@ async function open({ messages = [], me = {} } = {}) {
   return calls;
 }
 
-const write = (text) =>
-  fireEvent.change(screen.getByLabelText('Message'), { target: { value: text } });
+// The composer comes once the conversation (and the partner's key) has loaded.
+const write = async (text) =>
+  fireEvent.change(await screen.findByLabelText('Message'), { target: { value: text } });
 const sent = async (calls) => {
   await vi.waitFor(() => expect(calls.some((c) => c.key === 'POST /chat/direct/8')).toBe(true));
   return calls.find((c) => c.key === 'POST /chat/direct/8').body;
@@ -78,7 +79,7 @@ const sent = async (calls) => {
 describe('writing', () => {
   it('the card travels encrypted inside the message; the server sees only ciphertext', async () => {
     const calls = await open();
-    write(`look ${LINK}`);
+    await write(`look ${LINK}`);
     const card = await screen.findByRole('group', { name: 'Link preview' });
     expect(within(card).getByRole('link', { name: 'A page' })).toHaveAttribute('href', LINK);
     expect(calls.find((c) => c.key === 'POST /chat/direct/preview').body).toEqual({ url: LINK });
@@ -94,7 +95,7 @@ describe('writing', () => {
 
   it('a removed card is not sent', async () => {
     const calls = await open();
-    write(`look ${LINK}`);
+    await write(`look ${LINK}`);
     await screen.findByRole('group', { name: 'Link preview' });
     fireEvent.click(screen.getByRole('button', { name: 'Remove link preview' }));
     expect(screen.queryByRole('group', { name: 'Link preview' })).toBeNull();
@@ -106,7 +107,7 @@ describe('writing', () => {
 
   it('with the setting off, no preview is asked for at all', async () => {
     const calls = await open({ me: { dmLinkPreviews: false } });
-    write(`look ${LINK}`);
+    await write(`look ${LINK}`);
     await act(() => new Promise((resolve) => setTimeout(resolve, 1000)));
     fireEvent.click(screen.getByRole('button', { name: 'Send' }));
     await sent(calls);

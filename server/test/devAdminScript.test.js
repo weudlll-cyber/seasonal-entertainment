@@ -6,7 +6,9 @@
 //              database, it creates the admin with 2FA and exits on its own, also a second time;
 //              run again with a stale secret in DEV-ADMIN.txt, it writes the stored secret back
 //              into the file and leaves the 2FA row exactly as it was. A timer left running
-//              would keep it alive until the time-out.
+//              would keep it alive until the time-out. Runs at the tests' bcrypt cost, as every
+//              other server test (helpers/testApp.js): the hashing strength is not what is
+//              tested, and the production cost made each run several times slower.
 // ============================================================
 
 import { spawn } from 'node:child_process';
@@ -21,27 +23,38 @@ const script = fileURLToPath(new URL('../../scripts/create-dev-admin.mjs', impor
 let dir;
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
-// Resolves the exit code, or "still running" after the time-out (then it is stopped).
+// A throw-away database and media folder in a new temporary folder.
+function throwAwayEnv() {
+  dir = mkdtempSync(path.join(tmpdir(), 'se-devadmin-'));
+  return {
+    DATABASE_PATH: path.join(dir, 'seasonal.db'),
+    MEDIA_DIR: path.join(dir, 'media'),
+    BCRYPT_COST: '4',
+  };
+}
+
+// Resolves the exit code, or "still running" after the time-out (then it is stopped, and
+// awaited: on Windows its open database would otherwise block deleting the folder).
 function run(env) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [script], {
       env: { ...process.env, ...env },
       stdio: 'ignore',
     });
+    let result;
     const timer = setTimeout(() => {
+      result = 'still running';
       child.kill();
-      resolve('still running');
     }, 20_000);
     child.on('exit', (code) => {
       clearTimeout(timer);
-      resolve(code);
+      resolve(result ?? code);
     });
   });
 }
 
 it('creates the dev admin and exits on its own, twice', { timeout: 60_000 }, async () => {
-  dir = mkdtempSync(path.join(tmpdir(), 'se-devadmin-'));
-  const env = { DATABASE_PATH: path.join(dir, 'seasonal.db'), MEDIA_DIR: path.join(dir, 'media') };
+  const env = throwAwayEnv();
   expect(await run(env)).toBe(0);
   expect(readFileSync(path.join(dir, 'DEV-ADMIN.txt'), 'utf8')).toMatch(/TOTP secret: [A-Z2-7]+/);
   expect(await run(env)).toBe(0);
@@ -51,11 +64,7 @@ it(
   'rewrites a stale secret in the file from the stored one, never touching the 2FA',
   { timeout: 60_000 },
   async () => {
-    dir = mkdtempSync(path.join(tmpdir(), 'se-devadmin-'));
-    const env = {
-      DATABASE_PATH: path.join(dir, 'seasonal.db'),
-      MEDIA_DIR: path.join(dir, 'media'),
-    };
+    const env = throwAwayEnv();
     const file = path.join(dir, 'DEV-ADMIN.txt');
     const twoFactorRow = () => {
       const db = new Database(env.DATABASE_PATH, { readonly: true });

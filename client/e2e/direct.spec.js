@@ -10,13 +10,12 @@
 // ============================================================
 
 import { randomBytes } from 'node:crypto';
-import path from 'node:path';
 import Database from 'better-sqlite3';
 import { expect, test } from '@playwright/test';
-import { memberPage } from './members.js';
+import { E2E_DATABASE, memberPage } from './members.js';
 
 const databaseText = () => {
-  const db = new Database(path.join(process.env.SE_E2E_DIR, 'e2e.db'), { readonly: true });
+  const db = new Database(E2E_DATABASE, { readonly: true });
   try {
     return db
       .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")

@@ -111,7 +111,9 @@ describe('sending', () => {
       },
     });
     const chosen = new File([PNG], 'holiday.png', { type: 'image/png' });
-    fireEvent.change(screen.getByLabelText('File to attach'), { target: { files: [chosen] } });
+    // The composer comes once the conversation (and the partner's key) has loaded.
+    const input = await screen.findByLabelText('File to attach');
+    fireEvent.change(input, { target: { files: [chosen] } });
     await screen.findByRole('group', { name: 'Attachment' });
     const sentFile = calls.find((c) => c.key.startsWith('POST /chat/direct/8/files'));
     expect(sentFile.key).toBe('POST /chat/direct/8/files?'); // no name in the address
