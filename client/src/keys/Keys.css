@@ -2,36 +2,10 @@
    File:        Keys.css
    Path:        client/src/keys/Keys.css
    Project:     Seasonal Entertainment
-   Description: The recovery-code dialog (a modal over the page), a shown recovery code, the
-                row of actions in the private-messages section, and the 6-digit code of
-                unlocking on another device.
+   Description: A shown recovery code and the 6-digit code of unlocking on another device.
+                The dialogs themselves (.modal, its backdrop and actions) are the site's own,
+                in styles/base.css.
    ============================================================ */
-
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  display: grid;
-  place-items: center;
-  padding: var(--space-2);
-  background: var(--color-scrim);
-}
-
-.modal {
-  width: min(32rem, 100%);
-  max-height: 100%;
-  overflow: auto;
-}
-
-.modal:focus {
-  outline: none;
-}
-
-.modal__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-}
 
 .recovery-code {
   display: flex;

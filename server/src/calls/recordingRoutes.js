@@ -79,7 +79,8 @@ export function callRecordingRoutes(db, config, service) {
 
   // The same audience as the call itself (calls are shown to everyone).
   router.get('/:id/recordings', allow('public'), steps.configured, steps.loadCall, (req, res) => {
-    res.json({ ok: true, recordings: recording ? listRecordings(db, req.call.id) : [] });
+    const list = recording ? listRecordings(db, req.call.id, recording.dir) : [];
+    res.json({ ok: true, recordings: list });
   });
 
   const loadRecording = (req, res, next) => {

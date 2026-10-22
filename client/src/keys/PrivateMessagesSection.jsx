@@ -7,7 +7,8 @@
 //              code" when there is none, "Create a new recovery code" (the old one stops
 //              working) and "Remove recovery code" when there is one. All of these need the
 //              key unlocked here (the code seals the private key, which only this browser has)
-//              and the current password, which the server asks for (as its auth key).
+//              and the current password, which the server asks for (as its auth key), typed in
+//              a form card like the page's other password fields.
 // ============================================================
 
 import { useState } from 'react';
@@ -56,33 +57,38 @@ export default function PrivateMessagesSection() {
             ? 'You have a recovery code. A new one replaces it: the old code stops working.'
             : SKIP_WARNING}
         </p>
-        <FormField
-          label="Password for the recovery code"
-          name="recoveryPassword"
-          type="password"
-          autoComplete="current-password"
-          hint="Your account password: needed to create, replace or remove the code."
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <FormMessage error={error} notice={notice} />
-        <div className="modal__actions">
-          <button
-            type="button"
-            className="button"
-            onClick={() => act(async (authKey) => setCode(await keys.createRecoveryCode(authKey)))}
-          >
-            {keys.hasRecovery ? 'Create a new recovery code' : 'Create recovery code'}
-          </button>
-          {keys.hasRecovery && (
+        {/* A form card like the page's other password fields (styles/forms.css). */}
+        <div className="form">
+          <FormField
+            label="Password for the recovery code"
+            name="recoveryPassword"
+            type="password"
+            autoComplete="current-password"
+            hint="Your account password: needed to create, replace or remove the code."
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <FormMessage error={error} notice={notice} />
+          <div className="modal__actions">
             <button
               type="button"
-              className="button button--secondary"
-              onClick={() => act(keys.removeRecoveryCode, 'Recovery code removed.')}
+              className="button"
+              onClick={() =>
+                act(async (authKey) => setCode(await keys.createRecoveryCode(authKey)))
+              }
             >
-              Remove recovery code
+              {keys.hasRecovery ? 'Create a new recovery code' : 'Create recovery code'}
             </button>
-          )}
+            {keys.hasRecovery && (
+              <button
+                type="button"
+                className="button button--secondary"
+                onClick={() => act(keys.removeRecoveryCode, 'Recovery code removed.')}
+              >
+                Remove recovery code
+              </button>
+            )}
+          </div>
         </div>
       </>
     );

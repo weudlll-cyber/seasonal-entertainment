@@ -5,12 +5,17 @@
 // Description: Data access for call recordings (docs/CALLS.md, "Recording"): the running one of
 //              a call (at most one), starting and stopping its row, a call's recordings with
 //              their length, one recording, and deleting one (the file goes with it). Nothing
-//              is deleted automatically.
+//              is deleted automatically. The length is the file's own (mp4Duration.js), read
+//              once the file is complete and then kept; never computed from the start and stop
+//              times, which include the egress's start-up. Unknown: null (no length shown).
 // ============================================================
+
+import path from 'node:path';
+import { mp4Duration } from './mp4Duration.js';
 
 const now = () => new Date().toISOString();
 const COLUMNS = `id, call_id AS callId, egress_id AS egressId, file, started_at AS startedAt,
-  stopped_at AS stoppedAt, started_by AS startedBy`;
+  stopped_at AS stoppedAt, started_by AS startedBy, seconds`;
 
 export function activeRecording(db, callId) {
   return db
@@ -44,19 +49,24 @@ export function markRecordingStopped(db, id) {
   );
 }
 
-// A call's finished recordings, newest first, with their length in seconds.
-export function listRecordings(db, callId) {
+// A call's finished recordings, newest first, with the length of their file in seconds (null
+// while unknown). dir: the recordings folder.
+export function listRecordings(db, callId, dir) {
+  const store = db.prepare('UPDATE call_recordings SET seconds = ? WHERE id = ?');
   return db
     .prepare(
       `SELECT ${COLUMNS} FROM call_recordings
        WHERE call_id = ? AND stopped_at IS NOT NULL ORDER BY id DESC`
     )
     .all(callId)
-    .map((r) => ({
-      id: r.id,
-      startedAt: r.startedAt,
-      seconds: Math.round((Date.parse(r.stoppedAt) - Date.parse(r.startedAt)) / 1000),
-    }));
+    .map((r) => {
+      let { seconds } = r;
+      if (seconds === null) {
+        seconds = mp4Duration(path.join(dir, r.file));
+        if (seconds !== null) store.run(seconds, r.id);
+      }
+      return { id: r.id, startedAt: r.startedAt, seconds };
+    });
 }
 
 export function findRecording(db, callId, id) {

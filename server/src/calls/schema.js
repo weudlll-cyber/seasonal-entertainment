@@ -9,13 +9,15 @@
 //              when a live call's room has been missing on the call service (staleCalls.js),
 //              and the event bot occurrence it is linked to (eventLink.js: its id and start).
 //              Recordings (recordings.js): one row per recording of a call, its file in the
-//              recordings folder, while running and after; deleted only by an organiser.
+//              recordings folder, while running and after, and its length once read from the
+//              file; deleted only by an organiser.
 //              Participants: one per call and person (participants.js). Reminders: a member's
 //              "Remind me on this site" with when each notice was delivered (reminders.js; a
 //              new table, so CREATE TABLE IF NOT EXISTS adds it to an older database, SE-HOME-
 //              LIVE-1). migrateCalls() brings
 //              an older calls table up (columns that came later: the spotlight, SE-CALLS-2;
-//              room_missing_since, SE-NIGHT-2; the bot occurrence link, SE-NIGHT-5).
+//              room_missing_since, SE-NIGHT-2; the bot occurrence link and a recording's
+//              length, SE-NIGHT-5).
 // ============================================================
 
 import { addMissingColumns } from '../db/addColumns.js';
@@ -71,7 +73,8 @@ CREATE TABLE IF NOT EXISTS call_recordings (
   file       TEXT    NOT NULL,
   started_at TEXT    NOT NULL,
   stopped_at TEXT,
-  started_by TEXT    NOT NULL
+  started_by TEXT    NOT NULL,
+  seconds    INTEGER
 );
 CREATE INDEX IF NOT EXISTS call_recordings_by_call ON call_recordings (call_id);
 `;
@@ -85,5 +88,6 @@ export function migrateCalls(db) {
     ['calls', 'room_missing_since', 'TEXT'],
     ['calls', 'bot_occurrence_id', 'INTEGER'],
     ['calls', 'bot_occurrence_start', 'INTEGER'],
+    ['call_recordings', 'seconds', 'INTEGER'],
   ]);
 }

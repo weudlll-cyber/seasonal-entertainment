@@ -67,6 +67,36 @@ a {
   background: var(--color-card);
 }
 
+/* A dialog over the page (the recovery-code offer, a new device asking for the key, the call
+   recording's question): a card, but solid (--color-surface), so its text never sits on the
+   page behind it. */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: var(--space-2);
+  background: var(--color-scrim);
+}
+
+.modal {
+  width: min(32rem, 100%);
+  background: var(--color-surface);
+  max-height: 100%;
+  overflow: auto;
+}
+
+.modal:focus {
+  outline: none;
+}
+
+.modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
 /* Keyboard focus is always visible, in both themes. */
 :focus-visible {
   outline: 2px solid var(--color-accent);

@@ -376,6 +376,11 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
   (`CallRecordings.jsx`), for the same audience as the call (calls are shown to everyone):
   `GET /api/calls/:id/recordings` and `…/recordings/:rid/video` (range requests, so the player
   can seek; only finished recordings).
+  - **The length** is the file's own, read from the MP4's movie header (`mp4Duration.js`,
+    which reads only box headers, never the media) once the file is complete, and then kept
+    (`call_recordings.seconds`). It is never computed from the start and stop times, which
+    include the egress's start-up (a 33-second file once showed as 0:36). While it is unknown
+    (the file not complete, or not an MP4), no length is shown rather than a wrong one.
   - **Deleting**: organisers and admins delete a recording, file and row
     (`DELETE /api/calls/:id/recordings/:rid`, audited `call.recording_delete`). Nothing is
     deleted automatically.

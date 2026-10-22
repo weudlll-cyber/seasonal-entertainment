@@ -8,11 +8,13 @@
 //              during the call shows the red "Recording" and the banner; someone who joined
 //              before it started is asked before their microphone goes on; organisers get
 //              Start / Stop recording only when it is set up; recordings are listed with their
-//              length and a player, organisers delete them; the Calls page says "Being recorded".
+//              length (none while it is unknown) and a player, organisers delete them; the
+//              Calls page says "Being recorded".
 // ============================================================
 
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { formatWhen } from '../app/dates.js';
 import { rooms } from '../test/fakeLiveKit.js';
 import { FakeSocket } from '../test/fakeSocket.js';
 import { mockApi, signedIn } from '../test/mockApi.js';
@@ -163,7 +165,10 @@ describe('organisers and the recordings', () => {
   });
 
   it('recordings with their length and a player; organisers delete one', async () => {
-    const recordings = [{ id: 3, startedAt: '2026-10-22T18:00:00Z', seconds: 3725 }];
+    const recordings = [
+      { id: 3, startedAt: '2026-10-22T18:00:00Z', seconds: 3725 },
+      { id: 4, startedAt: '2026-10-22T19:00:00Z', seconds: null }, // length not known
+    ];
     const calls = mockApi({
       ...signedIn({ username: 'olga', role: 'organiser' }),
       ...answers({ manage: true, recordings }),
@@ -171,8 +176,11 @@ describe('organisers and the recordings', () => {
     await renderApp('/calls/7');
     const list = await screen.findByRole('region', { name: 'Recordings' });
     expect(list).toHaveTextContent('1:02:05');
+    const [, unknown] = within(list).getAllByRole('listitem');
+    // Only the date (in the device's zone, as the page writes it): no length.
+    expect(unknown.querySelector('p').textContent).toBe(formatWhen('2026-10-22T19:00:00Z'));
     expect(list.querySelector('video')).toHaveAttribute('src', '/api/calls/7/recordings/3/video');
-    fireEvent.click(within(list).getByRole('button', { name: 'Delete recording' }));
+    fireEvent.click(within(list).getAllByRole('button', { name: 'Delete recording' })[0]);
     fireEvent.click(within(list).getByRole('button', { name: 'Delete' }));
     await vi.waitFor(() =>
       expect(calls.some((c) => c.key === 'DELETE /calls/7/recordings/3')).toBe(true)

@@ -3,7 +3,8 @@
 // Path:        client/src/calls/CallRecordings.jsx
 // Project:     Seasonal Entertainment
 // Description: A call's recordings on its page (docs/CALLS.md, "Recording"): each with its date
-//              in the site's format, its length and a player (the video streams from this site;
+//              in the site's format, its length (the file's own; none while unknown) and a player
+//              (the video streams from this site;
 //              seeking asks for parts of it). Shown to everyone who can see the call; organisers
 //              and admins can delete one (file and row), after a question. Nothing when there
 //              are none.
@@ -56,7 +57,8 @@ export default function CallRecordings({ callId, canManage, version }) {
         {recordings.map((r) => (
           <li key={r.id} className="call-recording">
             <p>
-              {formatWhen(r.startedAt)} · {lengthText(r.seconds)}
+              {formatWhen(r.startedAt)}
+              {r.seconds !== null && ` · ${lengthText(r.seconds)}`}
             </p>
             <video
               controls
