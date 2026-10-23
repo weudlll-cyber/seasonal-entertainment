@@ -158,7 +158,8 @@ taller. `client/e2e/layout.spec.js` checks this on every main page at 1440 x 900
 **From 760px wide** (the shell's one breakpoint): two columns.
 
 1. **Sidebar**, 248px (`--sidebar-width`), on the seasons' gradient: the emblem with the
-   "SEASONAL / ENTERTAINMENT" wordmark; nav items as pills with stroke icons (Home, Games, Events, Chat, Calls, Seasonal Tokens = the info
+   "SEASONAL / ENTERTAINMENT" wordmark; nav items as pills with stroke icons (Home, Start here
+   (2026-10-23, a flag), Games, Events, Chat, Calls, Seasonal Tokens = the info
    section; Calls only when calls are set up, admins always, with a red LIVE badge while a call
    is live, docs/CALLS.md); a
    divider and Admin for admins only (as before; `staffNavFor` in `navigation.js`); at the bottom
@@ -171,6 +172,13 @@ taller. `client/e2e/layout.spec.js` checks this on every main page at 1440 x 900
    Events Summer `#E06E22`, Chat Autumn `#F9A825`, Calls Winter `#04AAF7` (`dot` in
    `navigation.js`).
 2. **Main column**: the routed page.
+
+**Start here** (2026-10-23, `/start`, `StartPage.jsx`): five numbered steps for a newcomer, each a
+card with a sentence or two and a button to a page the site has — what Seasonal Tokens are, how
+they work, the risks (info pages), the prices and the fair price, then the chat and the next call
+(the live or next planned call, else the Calls page) — and the not-financial-advice notice under
+them. "Start here" is in the sidebar for everyone, below Home; guests also see "New here? Start
+here" on the greeting's line in the home banner (no extra height: home still fits 1280 x 720).
 
 **"Not financial advice"** (decided 2026-10-23): besides the footer link on every page, a
 one-line notice "Information only — not financial advice." with a link to the Disclaimer

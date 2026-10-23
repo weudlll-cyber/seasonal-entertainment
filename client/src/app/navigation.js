@@ -14,6 +14,8 @@ import { DISCLAIMER_PATH } from '@seasonal-entertainment/shared/disclaimer.js';
 // season colour of the section's quarter of the logo, shown as a small dot (docs/DESIGN.md).
 export const MAIN_NAV = [
   { to: '/', label: 'Home', icon: 'home' },
+  // For everyone, below Home (2026-10-23): the five steps of the Start here page.
+  { to: '/start', label: 'Start here', icon: 'start' },
   { to: '/games', label: 'Games', icon: 'games', dot: 'spring' },
   { to: '/events', label: 'Events', icon: 'events', dot: 'summer' },
   { to: '/chat', label: 'Chat', icon: 'chat', dot: 'autumn' },

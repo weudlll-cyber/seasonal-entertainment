@@ -3,8 +3,9 @@
 // Path:        client/src/pages/LandingPage.jsx
 // Project:     Seasonal Entertainment
 // Description: Home in the SE style (docs/DESIGN.md, "Home"): the night-blue banner with the
-//              emblem, the lettering and the greeting (with the username when signed in) and
-//              the season clock (SeasonClock.jsx), then
+//              emblem, the lettering and the greeting (with the username when signed in; for
+//              guests "New here? Start here" beside it) and the season clock (SeasonClock.jsx),
+//              then
 //              a grid that fits the main column at 1280 x 720 without scrolling: the featured
 //              game and "Up next": the next two of the event bot's occurrences (/api/bot-events)
 //              and the site's live and planned calls (shared/callEntries.js) in time order (a call
@@ -17,6 +18,7 @@
 // ============================================================
 
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { api } from '../api/http.js';
 import { deviceZone } from '../app/dates.js';
 import { withCalls } from '@seasonal-entertainment/shared/callEntries.js';
@@ -98,9 +100,18 @@ export default function LandingPage({ timeZone = deviceZone() }) {
           <span className="home__lettering-sub" aria-hidden="true">
             ENTERTAINMENT
           </span>
-          <h1 className="home__greeting">
-            {user ? `Welcome back, ${user.username}` : 'Welcome to Seasonal Entertainment'}
-          </h1>
+          {/* On the greeting's line, so the banner keeps its height: for guests only (null; a
+              member's session is undefined while it loads, so they never see it flash). */}
+          <div className="home__greeting-row">
+            <h1 className="home__greeting">
+              {user ? `Welcome back, ${user.username}` : 'Welcome to Seasonal Entertainment'}
+            </h1>
+            {user === null && (
+              <Link className="home__start" to="/start">
+                New here? Start here
+              </Link>
+            )}
+          </div>
         </div>
         <SeasonClock timeZone={timeZone} />
       </div>

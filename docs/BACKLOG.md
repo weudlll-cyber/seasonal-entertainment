@@ -43,6 +43,11 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **"Start here" path** — closed by SE-NIGHT-6 piece 5 (`feat/se-night-6`, not merged yet; owner
+  request 2026-10-23): `/start` with five short steps and buttons to existing pages (what Seasonal
+  Tokens are, how they work, the risks, the prices and the fair price, the chat and the next call)
+  and the not-financial-advice notice; "Start here" in the sidebar for everyone and "New here?
+  Start here" on home for guests (docs/DESIGN.md, "Start here").
 - **Recordings archive with chapters** — closed by SE-NIGHT-6 piece 4 (`feat/se-night-6`, not
   merged yet; owner request 2026-10-23): `/calls/recordings` lists every recording for the
   calls' audience, newest first, with call title, date, length, player and a search over the

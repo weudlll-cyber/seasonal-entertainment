@@ -2,7 +2,8 @@
 // File:        LandingPage.test.jsx
 // Path:        client/src/pages/LandingPage.test.jsx
 // Project:     Seasonal Entertainment
-// Description: Guards the home page: the greeting (with the username when signed in), the
+// Description: Guards the home page: the greeting (with the username when signed in; for
+//              guests only, "New here? Start here" beside it), the
 //              featured game from the games data (a "Coming soon" badge only when the data says
 //              so), the event bot's next two occurrences that still take place (or "not
 //              connected"), merged in time order with the site's live and planned calls (the
@@ -90,6 +91,20 @@ describe('home', () => {
     );
     home({ session: signedIn({ id: 2, username: 'mia', role: 'member' }) });
     expect(await screen.findByRole('heading', { name: 'Welcome back, mia' })).toBeInTheDocument();
+  });
+
+  it('guests get "New here? Start here" beside the greeting', async () => {
+    home();
+    expect(await screen.findByRole('link', { name: 'New here? Start here' })).toHaveAttribute(
+      'href',
+      '/start'
+    );
+  });
+
+  it('members do not', async () => {
+    home({ session: signedIn({ id: 2, username: 'mia', role: 'member' }) });
+    await screen.findByRole('heading', { name: 'Welcome back, mia' });
+    expect(screen.queryByRole('link', { name: 'New here? Start here' })).toBeNull();
   });
 
   it('features the first game; the badge only when it is coming soon', async () => {

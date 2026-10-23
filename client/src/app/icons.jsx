@@ -11,6 +11,8 @@
 
 const PATHS = {
   home: 'M3 11.5 12 4l9 7.5M5.5 10v9.5h13V10M10 19.5V14h4v5.5',
+  // A flag on its pole: "Start here".
+  start: 'M6 20.5V4M6 4.5h11.5l-2.5 4 2.5 4H6',
   games:
     'M7 8h10a4 4 0 0 1 4 4v1.5a3.5 3.5 0 0 1-6.3 2.1L14 15h-4l-.7.6A3.5 3.5 0 0 1 3 13.5V12a4 4 0 0 1 4-4ZM8 10.5v3M6.5 12h3M15.5 11.5h.01M17.5 13.5h.01',
   events: 'M4.5 6.5h15v13h-15zM4.5 10.5h15M8.5 4v4M15.5 4v4',

@@ -39,6 +39,7 @@ describe('app shell', () => {
     const nav = screen.getByRole('navigation', { name: 'Main' });
     expect(linksOf(nav)).toEqual([
       ['Home', '/'],
+      ['Start here', '/start'],
       ['Games', '/games'],
       ['Events', '/events'],
       ['Chat', '/chat'],

@@ -73,6 +73,20 @@
   line-height: 1.2;
 }
 
+/* The greeting and, for guests, "New here? Start here" on one line (it wraps when narrow). */
+.home__greeting-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-2);
+}
+
+.home__start {
+  color: var(--color-on-banner);
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-strong);
+}
+
 /* The season clock (SeasonClock.jsx), beside the lettering in the banner's free space; three
    short lines, so the banner keeps its height at 1280 x 720. White on the night blue, as the
    greeting. */
@@ -333,6 +347,14 @@
   .season-clock {
     flex-basis: 100%;
     justify-content: center;
+  }
+
+  /* A whole 44px target on a touch screen, as every control there (the banner's height
+     follows its content here, so it does not grow at desktop sizes). */
+  .home__start {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--hit-target);
   }
 
   .home__lettering {
