@@ -7,7 +7,8 @@
 //              switches on), and a blocked browser is told how to allow them; a mention or a
 //              direct message notifies only when no tab of the site is visible, once across
 //              tabs, only for the switches turned on; a direct message's notification never
-//              carries its text; a click opens the room. jsdom has no Notification: a stand-in.
+//              carries its text; a click opens the room; "Weekly recap" is off by default and,
+//              turned on, says "Weekly recap is out". jsdom has no Notification: a stand-in.
 // ============================================================
 
 import { act, fireEvent, render, screen } from '@testing-library/react';
@@ -75,6 +76,7 @@ const MENTION = {
   author: 'tom',
   text: 'hello @mia, are you there?',
 };
+const RECAP = { type: 'recap', id: 90, room: 'announcements' };
 const DIRECT = {
   type: 'direct',
   senderName: 'tom',
@@ -148,6 +150,21 @@ describe('notifications', () => {
     push(MENTION);
     push(DIRECT);
     expect(shown).toHaveLength(0);
+  });
+
+  it('the weekly recap: off by default, then "Weekly recap is out", opening its room', async () => {
+    await page();
+    expect(screen.getByRole('switch', { name: 'Weekly recap' })).not.toBeChecked();
+    push(RECAP);
+    expect(shown).toHaveLength(0);
+    fireEvent.click(screen.getByRole('switch', { name: 'Weekly recap' }));
+    await vi.waitFor(() =>
+      expect(screen.getByRole('switch', { name: 'Weekly recap' })).toBeChecked()
+    );
+    push({ ...RECAP, id: 91 });
+    expect(shown.map((n) => n.options.body)).toEqual(['Weekly recap is out']);
+    act(() => shown[0].onclick());
+    expect(await screen.findByRole('heading', { level: 1, name: 'Chat' })).toBeInTheDocument();
   });
 
   it('a click focuses the site and opens the room', async () => {

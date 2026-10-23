@@ -43,6 +43,12 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **Weekly recap** — closed by SE-NIGHT-6 piece 3 (`feat/se-night-6`, not merged yet; owner
+  request 2026-10-23): every Monday from 09:00 Vienna time the site posts, as "Seasonal
+  Entertainment" (no account behind it), the week's price changes, the next 7 days' events and
+  calls, the new call recordings and the not-financial-advice line in Announcements; once per
+  week even across restarts; "Post recap now" for admins (audited); the "Weekly recap"
+  notification, off by default (docs/CHAT.md, "Weekly recap").
 - **Season clock on home** — closed by SE-NIGHT-6 piece 2 (`feat/se-night-6`, not merged yet;
   owner request 2026-10-23): the token in season and the next halving, from the token
   contracts' own schedule (`shared/seasonClock.js`, constants cited from `contracts/*Token.sol`;

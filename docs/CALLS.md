@@ -92,7 +92,7 @@ Generate a production pair on the call server with
   here", "No calls yet"), never a bare "None.".
 - **In the event lists** (2026-10-21): the home page's "Up next" and `/events` show the site's
   live and planned calls among the event bot's occurrences, by start time
-  (`client/src/calls/callEntries.js`). Both read the Calls page's own `GET /api/calls` answer
+  (`shared/callEntries.js`). Both read the Calls page's own `GET /api/calls` answer
   (`client/src/calls/useCalls.js`, also behind the home's Next call box), so a viewer sees
   exactly the calls the Calls page shows them; ended calls are not listed. A call entry has the
   title linking to `/calls/<id>`, its date in the site's format (docs/DESIGN.md, "Dates") or
@@ -118,7 +118,7 @@ Generate a production pair on the call server with
   - **Shown**: in "Up next" and on `/events`, the linked occurrence offers "Listen on this
     site" (to the call's page), and the call is not listed a second time; while the call is
     live, the event shows "Live now". The match is by the occurrence's id **and** start
-    (`withCalls` in `client/src/calls/callEntries.js`), from the Calls page's own answer, so a
+    (`withCalls` in `shared/callEntries.js`), from the Calls page's own answer, so a
     viewer sees the link only for the live and planned calls the Calls page shows them. The
     call's page names the event ("Event: <name>"; `GET /api/calls/:id` answers `event`).
   - **The bot changes its mind**: if the occurrence disappears or moves, the call keeps its own

@@ -3,7 +3,8 @@
 // Path:        client/src/chat/ChatMessage.jsx
 // Project:     Seasonal Entertainment
 // Description: One chat message: author (with a Guest badge; a member's name opens the name
-//              menu, NameMenu), local time, then its text (MessageParts: members' https links
+//              menu, NameMenu; the site's own messages, the weekly recap, carry a Site badge
+//              and their site paths as links), local time, then its text (MessageParts: members' https links
 //              become links, @mentions name chips) and its sticker / GIF from the site's
 //              library, a link preview card (PreviewCard), an uploaded file (MessageFile), and
 //              its "…" menu (MessageMenu: Report; for moderators Hide / Mute / Ban / Remove
@@ -31,8 +32,14 @@ export default function ChatMessage({ message, moderator, onAction }) {
       className={`chat-message${message.hiddenAt ? ' chat-message--hidden' : ''}${mentionsMe ? ' chat-message--mention' : ''}`}
     >
       <div className="chat-message__meta">
-        <NameMenu name={message.author} authorId={message.authorId} />
+        {/* The site's own message: no account behind its name, so no name menu. */}
+        {message.isSystem ? (
+          <strong>{message.author}</strong>
+        ) : (
+          <NameMenu name={message.author} authorId={message.authorId} />
+        )}
         {message.isGuest && <span className="chat-badge">Guest</span>}
+        {message.isSystem && <span className="chat-badge">Site</span>}
         <time dateTime={message.createdAt}>{time(message.createdAt)}</time>
         {message.hiddenAt && <em>hidden by {message.hiddenBy}</em>}
       </div>
@@ -41,6 +48,7 @@ export default function ChatMessage({ message, moderator, onAction }) {
           <MessageText
             body={message.body}
             linkify={!message.isGuest}
+            sitePaths={message.isSystem}
             mentions={message.mentions ?? []}
           />
         </p>

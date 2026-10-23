@@ -9,7 +9,8 @@
 //              for client routes. No listen(), so tests drive it directly; app.locals.chat is the chat's handle,
 //              app.locals.calls.start() starts the stale-call and reminder jobs
 //              (calls/staleCalls.js, calls/reminders.js),
-//              app.locals.reference.start() the ETH, POL and BTC prices job (reference/sync.js).
+//              app.locals.reference.start() the ETH, POL and BTC prices job (reference/sync.js),
+//              app.locals.recap.start() the weekly recap (recap/job.js).
 //              The embedded chat on approved foreign sites (embed/) adds its CSP, its token
 //              check and its routes; prices and bot events (bots/) are read-only public reads.
 // ============================================================
@@ -21,6 +22,8 @@ import { bootstrapRoutes } from './accounts/bootstrap.js';
 import { botRoutes } from './bots/routes.js';
 import { referenceRoutes } from './reference/routes.js';
 import { createReferenceSync } from './reference/sync.js';
+import { startWeeklyRecap } from './recap/job.js';
+import { adminRecapRoutes } from './recap/routes.js';
 import { adminAuditRoutes } from './admin/auditRoutes.js';
 import { callJoinRoutes } from './calls/joinRoutes.js';
 import { callReminderRoutes } from './calls/reminderRoutes.js';
@@ -148,6 +151,10 @@ export function createApp({
       return stops.length ? () => stops.forEach((stop) => stop()) : null;
     },
   };
+  // The weekly recap (recap/): posted by the site on Mondays, or now by an admin (audited).
+  const recap = { db, config, chat, callsConfigured: Boolean(callService) };
+  api.use('/admin/recap', adminRecapRoutes(recap));
+  app.locals.recap = { start: (log) => startWeeklyRecap({ ...recap, log }) };
   // The ETH, POL and BTC prices job (reference/sync.js): only with a CoinGecko key and timers on.
   app.locals.reference = {
     start: () =>

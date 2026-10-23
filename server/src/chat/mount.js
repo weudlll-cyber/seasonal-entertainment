@@ -23,6 +23,8 @@ import { uploadRoutes } from '../uploads/routes.js';
 import { directReportRoutes } from './directReportRoutes.js';
 import { directRoutes } from './directRoutes.js';
 import { favouriteRoutes } from './favouriteRoutes.js';
+import { withMentions } from './mentions.js';
+import { addSystemMessage } from './messages.js';
 import { memberRoutes } from './memberRoutes.js';
 import { ChatHub } from './hub.js';
 import { adminChatRoomRoutes, chatModerationRoutes } from './moderationRoutes.js';
@@ -114,6 +116,21 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
       findBySlug: (slug) => findRoomBySlug(db, slug),
       createUnlisted: (room) => createUnlistedRoom(db, room),
       close: (id) => closeRoom(db, id),
+    },
+    // For the site's own messages (the weekly recap, recap/): posted in the first room of
+    // `slugs` that exists, then pushed and counted for unread exactly as a member's post.
+    // Returns the message as readers see it (with its room's slug), or null without a room.
+    system: {
+      post(slugs, body) {
+        const room = slugs.map((slug) => findRoomBySlug(db, slug)).find(Boolean);
+        if (!room) return null;
+        // Internal ids stay on the server, as in routes.js.
+        const { roomId, authorUserId, authorGuest, ...rest } = addSystemMessage(db, room, body);
+        const [message] = withMentions(db, [rest]);
+        hub.broadcast(room.id, { type: 'message', message });
+        hub.notifyReaders(room, { type: 'activity', room: room.slug });
+        return { ...message, room: room.slug };
+      },
     },
     // For areas that tell a member something live (call reminders, calls/reminders.js): an
     // event to every open page of that account; returns how many got it.

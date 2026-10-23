@@ -147,7 +147,7 @@ export function accountRoutes(db, config, chatSessions) {
   // Which browser notifications the member wants (docs/CHAT.md, "Notifications"); the browser's
   // own permission is asked for there, separately.
   router.put('/notifications', allow('member'), (req, res) => {
-    const input = switchInput(req, res, ['notifyMentions', 'notifyDirect']);
+    const input = switchInput(req, res, ['notifyMentions', 'notifyDirect', 'notifyRecap']);
     if (!input) return;
     setSwitches(db, req.user.id, input);
     res.json({ ok: true });

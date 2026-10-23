@@ -5,8 +5,9 @@
 // Description: The account page's "Notifications" section (docs/CHAT.md, "Notifications"):
 //              "Turn on notifications" asks the browser for permission (only on this press,
 //              never on page load); when the browser blocks them, how to allow them there; and
-//              the two switches, off until the member turns them on: mentions, and new direct
-//              messages (never their text). Only while the site is open in a tab.
+//              the three switches, off until the member turns them on: mentions, new direct
+//              messages (never their text), and the weekly recap being out (Mondays). Only
+//              while the site is open in a tab.
 // ============================================================
 
 import { useState } from 'react';
@@ -46,8 +47,9 @@ export default function NotificationSettings() {
     <section aria-labelledby="notifications">
       <h2 id="notifications">Notifications</h2>
       <p>
-        Your browser can tell you about a mention or a new direct message while this site is open in
-        a tab you are not looking at. Not when the browser or every tab of the site is closed.
+        Your browser can tell you about a mention, a new direct message or the weekly recap while
+        this site is open in a tab you are not looking at. Not when the browser or every tab of the
+        site is closed.
       </p>
       {!notificationsSupported() && <p>This browser cannot show notifications.</p>}
       {notificationsSupported() && allowed === 'denied' && <p role="status">{BLOCKED_HELP}</p>}
@@ -80,6 +82,16 @@ export default function NotificationSettings() {
           onChange={change('notifyDirect')}
         />
         <span>New direct messages</span>
+      </label>
+      <label className="form-check">
+        <input
+          type="checkbox"
+          role="switch"
+          checked={Boolean(user.notifyRecap)}
+          disabled={busy}
+          onChange={change('notifyRecap')}
+        />
+        <span>Weekly recap</span>
       </label>
       <p className="form-field__hint">
         A direct message&apos;s notification says only who wrote, never the message.

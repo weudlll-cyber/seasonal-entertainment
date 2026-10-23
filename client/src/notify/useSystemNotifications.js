@@ -4,10 +4,10 @@
 // Project:     Seasonal Entertainment
 // Description: Turns the member's own live events into browser notifications (docs/CHAT.md,
 //              "Notifications"): a mention ("<name> mentioned you in <room>: <first 80
-//              characters>") and a new direct message ("New message from <name>" — never its
-//              text). Only for the switches the member turned on, with the browser's permission,
+//              characters>"), a new direct message ("New message from <name>" — never its
+//              text) and the weekly recap ("Weekly recap is out"). Only for the switches the member turned on, with the browser's permission,
 //              and only when no tab of the site is visible; one per event across tabs. A click
-//              focuses the site and opens the room or the conversation.
+//              focuses the site and opens the room (the recap's room) or the conversation.
 // ============================================================
 
 import { useCallback, useEffect, useRef } from 'react';
@@ -24,6 +24,13 @@ export function notificationFor(event, user) {
     return {
       key: `mention-${event.id}`,
       body: `${event.author} mentioned you in ${event.roomName}: ${event.text.slice(0, MENTION_MAX)}`,
+      path: `/chat?room=${encodeURIComponent(event.room)}`,
+    };
+  }
+  if (event.type === 'recap' && user.notifyRecap) {
+    return {
+      key: `recap-${event.id}`,
+      body: 'Weekly recap is out',
       path: `/chat?room=${encodeURIComponent(event.room)}`,
     };
   }

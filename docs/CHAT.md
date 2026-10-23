@@ -443,9 +443,11 @@ Browser notifications while the site is open (decided 2026-10-22; `client/src/no
   never on page load. When both switches are still off, allowing it turns both on. If the
   browser blocks notifications, the account page explains how to allow them in the browser
   (the chat menu leads there).
-- **Account setting**: two switches, "When someone mentions me" and "New direct messages",
-  off until the member turns them on (`users.notify_mentions`, `notify_direct`;
-  `PUT /api/auth/notifications`).
+- **Account setting**: three switches, "When someone mentions me", "New direct messages" and
+  "Weekly recap" (2026-10-23: "Weekly recap is out", opening its room; see "Weekly recap"),
+  off until the member turns them on (`users.notify_mentions`, `notify_direct`,
+  `notify_recap`; `PUT /api/auth/notifications`). "Turn on notifications" turns on the first
+  two only.
 - **Not while the site is closed**: no web push. With no tab of the site open there are no
   notifications (backlog part one: "Notifications when the browser is closed (web push) — not
   built").
@@ -484,6 +486,37 @@ Moderators and admins may see direct messages **only when the affected member re
 - **Deletion**: shared copies are deleted 90 days after the report was marked reviewed (decided
   2026-10-18; the retention job, `server/src/chat/retention.js`).
 
+## Weekly recap
+
+Every Monday from 09:00 Vienna time the site posts a recap in **Announcements** (in General
+when there is no such room), as itself (decided 2026-10-23; `server/src/recap/`).
+
+- **The sender**: "Seasonal Entertainment", a message with no account and no guest behind it
+  (`chat_messages.author_system`; no username can contain a space, so no account can take the
+  name, and nobody can log in as it). The chat shows it with a **Site** badge and no name menu;
+  only in these messages, paths on this site ("/calls/12") become links within the site
+  (`MessageParts.jsx`).
+- **What it says** (`recap/text.js`), facts only, no advice, dates in the site's format in
+  Vienna time:
+  - each season token's price change over the past 7 days, from the first to the last price in
+    the price bot's file (read-only; a token without data is left out, and without the price
+    bot the whole part);
+  - the next 7 days' events and calls, the same merged list as "Up next"
+    (`shared/callEntries.js`), a canceled event marked;
+  - the call recordings finished in the past 7 days, with links, and the archive
+    (`/calls/recordings`);
+  - last, "Information only — not financial advice." with the Disclaimer link.
+- **Once per week** (`recap/job.js`): the job checks every minute, like the call jobs; the week
+  it posted for is stored as a site setting (`recap.lastWeek`), so a restart never posts it
+  again, and a server that was down at 09:00 posts it when it is back that week. A new site's
+  first start counts the week begun as done: its first recap comes the next Monday.
+- **Post recap now**: admins can post one at once from the admin chat page, to try it out
+  (`POST /api/admin/recap`, audited `recap.post`). It does not count as the week's.
+- **Notification**: members with "Weekly recap" on (off by default) get a personal `recap`
+  event, shown as the browser notification "Weekly recap is out" (see "Notifications").
+- Tests: `server/test/recap.test.js`, `client/src/chat/systemMessage.test.jsx`,
+  `client/src/notify/notifications.test.jsx`, `client/src/admin/adminRecap.test.jsx`.
+
 ## Server: `mountChat()`
 
 `server/src/chat/mount.js` mounts the whole chat area — rooms and messages, moderation, the
@@ -497,6 +530,8 @@ const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork });
 // chat.sessions.presenceChanged()                 someone showed or hid their online status
 // chat.notify.member(userId, event)              an event to every open page of a member
 //                                                (call reminders); returns how many got it
+// chat.system.post(slugs, body)                  the site's own message (weekly recap) in
+//                                                the first room of `slugs` that exists
 // chat.rooms.createUnlisted(room)               a room of another area (a call's chat), unlisted
 // chat.rooms.close(id)                           that room becomes read-only for everyone
 // chat.rooms.find(id) / findBySlug(slug)          read a room

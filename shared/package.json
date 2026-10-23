@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "license": "AGPL-3.0-or-later",
-  "description": "Rules and helpers both server and client must apply identically (accounts, roles, local week and times, games hub, chat, cryptography, the not-financial-advice notice, the season clock).",
+  "description": "Rules and helpers both server and client must apply identically (accounts, roles, local week and times, games hub, chat, cryptography, the not-financial-advice notice, the season clock, calls in the event lists, how a price change reads).",
   "type": "module",
   "exports": {
     "./accountRules.js": "./accountRules.js",
@@ -13,7 +13,9 @@
     "./crypto.js": "./crypto.js",
     "./cryptoFormat.js": "./cryptoFormat.js",
     "./disclaimer.js": "./disclaimer.js",
-    "./seasonClock.js": "./seasonClock.js"
+    "./seasonClock.js": "./seasonClock.js",
+    "./callEntries.js": "./callEntries.js",
+    "./priceChange.js": "./priceChange.js"
   },
   "scripts": {
     "test": "vitest run"

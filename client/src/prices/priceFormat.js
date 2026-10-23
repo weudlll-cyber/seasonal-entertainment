@@ -6,7 +6,8 @@
 //              the reference coins and the chart ranges as the server names them, and the
 //              formats: one rule for every coin's US-dollar price (at least four significant
 //              digits below $1, so the seasons' fractions of a cent and POL's cents stay
-//              readable; two decimals from $1 on); the 24-hour change as a signed percentage.
+//              readable; two decimals from $1 on); the 24-hour change as a signed percentage
+//              (shared/priceChange.js, which the weekly recap uses too).
 //              Times use the site's one date format (app/dates.js).
 // ============================================================
 
@@ -45,12 +46,8 @@ export function formatUsd(price) {
   );
 }
 
-// change: a fraction (0.0441 → "+4.41 %"); null when there is no price a day earlier.
-export function formatChange(change) {
-  if (typeof change !== 'number') return '—';
-  const percent = (change * 100).toFixed(2);
-  return `${change > 0 ? '+' : change < 0 ? '−' : '±'}${percent.replace('-', '')} %`;
-}
+// "+4.41 %" from 0.0441; one rule with the weekly recap's (shared/priceChange.js).
+export { formatChange } from '@seasonal-entertainment/shared/priceChange.js';
 
 // The change's colour class (prices.css): up green, down red, none or flat plain.
 export const changeClass = (change) =>

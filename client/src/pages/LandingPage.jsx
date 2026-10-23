@@ -7,7 +7,7 @@
 //              the season clock (SeasonClock.jsx), then
 //              a grid that fits the main column at 1280 x 720 without scrolling: the featured
 //              game and "Up next": the next two of the event bot's occurrences (/api/bot-events)
-//              and the site's live and planned calls (callEntries.js) in time order (a call
+//              and the site's live and planned calls (shared/callEntries.js) in time order (a call
 //              linked to a listed bot event rides on it: "Listen on this site"), the four
 //              season price tiles (/api/prices, docs/BOTS.md), then Community (live:
 //              CommunityCard.jsx), the next call (only when one is live or planned:
@@ -19,7 +19,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/http.js';
 import { deviceZone } from '../app/dates.js';
-import { withCalls } from '../calls/callEntries.js';
+import { withCalls } from '@seasonal-entertainment/shared/callEntries.js';
 import { useCalls } from '../calls/useCalls.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { EMBLEM } from '../brand/brand.js';

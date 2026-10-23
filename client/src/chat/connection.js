@@ -42,6 +42,7 @@ const PERSONAL = new Set([
   'callReminder',
   'keyRequest',
   'mention',
+  'recap', // the weekly recap is out (server/src/recap/job.js)
 ]);
 const personal = new Set(); // their handlers
 let socket = null;
