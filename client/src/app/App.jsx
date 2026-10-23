@@ -41,6 +41,7 @@ const AdminLayout = lazy(() => import('../admin/AdminLayout.jsx'));
 const AdminSettingsPage = lazy(() => import('../admin/AdminSettingsPage.jsx'));
 const AdminUsersPage = lazy(() => import('../admin/AdminUsersPage.jsx'));
 const CallPage = lazy(() => import('../pages/CallPage.jsx'));
+const RecordingsPage = lazy(() => import('../pages/RecordingsPage.jsx'));
 const EmbedChatPage = lazy(() => import('../embed/EmbedChatPage.jsx'));
 const EmbedLoginPage = lazy(() => import('../embed/EmbedLoginPage.jsx'));
 const InfoEditorPage = lazy(() => import('../admin/InfoEditorPage.jsx'));
@@ -89,6 +90,7 @@ export default function App() {
               <Route path="games" element={<GamesPage />} />
               <Route path="chat" element={<ChatPage />} />
               <Route path="calls" element={<CallsPage />} />
+              <Route path="calls/recordings" element={<RecordingsPage />} />
               <Route path="calls/:id" element={<CallPage />} />
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<RegisterPage />} />

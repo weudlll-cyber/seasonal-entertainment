@@ -166,8 +166,8 @@ describe('organisers and the recordings', () => {
 
   it('recordings with their length and a player; organisers delete one', async () => {
     const recordings = [
-      { id: 3, startedAt: '2026-10-22T18:00:00Z', seconds: 3725 },
-      { id: 4, startedAt: '2026-10-22T19:00:00Z', seconds: null }, // length not known
+      { id: 3, startedAt: '2026-10-22T18:00:00Z', seconds: 3725, chapters: [] },
+      { id: 4, startedAt: '2026-10-22T19:00:00Z', seconds: null, chapters: [] }, // length not known
     ];
     const calls = mockApi({
       ...signedIn({ username: 'olga', role: 'organiser' }),

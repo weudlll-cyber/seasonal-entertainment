@@ -28,8 +28,8 @@ The repository is one npm workspace root with three packages, `shared`, `server`
 the scripts, and `shared/cryptoFormat.js`, the shape checks the server applies (docs/AUTH.md).
 Since 2026-10-23 also what the page and the server both say or work out: the not-financial-advice
 wording (`disclaimer.js`), the season clock from the token contracts (`seasonClock.js`) and the
-calls in the event lists (`callEntries.js`, used by "Up next" and the weekly recap) and how a
-price change reads (`priceChange.js`).
+calls in the event lists (`callEntries.js`, used by "Up next" and the weekly recap), how a
+price change reads (`priceChange.js`) and a recording's times and chapters (`chapterRules.js`).
 
 ## Data
 
@@ -446,7 +446,8 @@ server/
   test/                    Vitest tests
 shared/                    rules used by server and client (accountRules.js, localWeek.js,
                            gameRules.js, chatRules.js, disclaimer.js, seasonClock.js,
-                           callEntries.js, priceChange.js), crypto.js and cryptoFormat.js
+                           callEntries.js, priceChange.js, chapterRules.js), crypto.js and
+                           cryptoFormat.js
 scripts/
   dev.mjs                  npm run dev
   e2e.mjs                  npm run test:e2e (temporary database per run)

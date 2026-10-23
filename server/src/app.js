@@ -30,6 +30,7 @@ import { callReminderRoutes } from './calls/reminderRoutes.js';
 import { sendCallReminders, startCallReminders } from './calls/reminders.js';
 import { callEventRoutes } from './calls/eventRoutes.js';
 import { callRecordingRoutes } from './calls/recordingRoutes.js';
+import { chapterRoutes } from './calls/chapterRoutes.js';
 import { callRoutes } from './calls/routes.js';
 import { callSpotlightRoutes } from './calls/spotlightRoutes.js';
 import { callStageRoutes } from './calls/stageRoutes.js';
@@ -135,12 +136,14 @@ export function createApp({
   const remindNow = () => sendCallReminders(db, notifyMember);
   // Before callRoutes: its /:id would take /bot-occurrences.
   api.use('/calls', callEventRoutes(db, config, callService, chat));
+  // Before callRoutes too: its /:id would take /recordings (the archive).
+  api.use('/calls', callRecordingRoutes(db, config, callService));
+  api.use('/calls', chapterRoutes(db, config, callService));
   api.use('/calls', callRoutes(db, config, callService, chat, remindNow));
   api.use('/calls', callReminderRoutes(db, config, callService));
   api.use('/calls', callJoinRoutes(db, config, callService, chat));
   api.use('/calls', callStageRoutes(db, config, callService, chat));
   api.use('/calls', callSpotlightRoutes(db, config, callService));
-  api.use('/calls', callRecordingRoutes(db, config, callService));
   // start() returns the function that stops both jobs, or null when neither runs.
   app.locals.calls = {
     start: (log) => {

@@ -43,6 +43,12 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **Recordings archive with chapters** — closed by SE-NIGHT-6 piece 4 (`feat/se-night-6`, not
+  merged yet; owner request 2026-10-23): `/calls/recordings` lists every recording for the
+  calls' audience, newest first, with call title, date, length, player and a search over the
+  titles; organisers and admins add, change and delete chapter marks (m:ss or h:mm:ss, a title
+  of at most 80 characters, audited), shown under the player on the call page and in the
+  archive, a click seeking the player there (docs/CALLS.md, "Recording").
 - **Weekly recap** — closed by SE-NIGHT-6 piece 3 (`feat/se-night-6`, not merged yet; owner
   request 2026-10-23): every Monday from 09:00 Vienna time the site posts, as "Seasonal
   Entertainment" (no account behind it), the week's price changes, the next 7 days' events and

@@ -11,7 +11,7 @@
 //              turned on, says "Weekly recap is out". jsdom has no Notification: a stand-in.
 // ============================================================
 
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../app/App.jsx';
@@ -153,14 +153,19 @@ describe('notifications', () => {
   });
 
   it('the weekly recap: off by default, then "Weekly recap is out", opening its room', async () => {
-    await page();
+    const calls = await page();
     expect(screen.getByRole('switch', { name: 'Weekly recap' })).not.toBeChecked();
     push(RECAP);
     expect(shown).toHaveLength(0);
+    // A controlled switch looks ticked at once; the page knows only after the session is read
+    // again (saveNotificationSwitches), so wait for that read.
+    const sessionReads = () => calls.filter((c) => c.key === 'GET /auth/session').length;
+    const before = sessionReads();
     fireEvent.click(screen.getByRole('switch', { name: 'Weekly recap' }));
-    await vi.waitFor(() =>
-      expect(screen.getByRole('switch', { name: 'Weekly recap' })).toBeChecked()
-    );
+    await vi.waitFor(() => expect(sessionReads()).toBeGreaterThan(before));
+    // Testing Library's waitFor runs inside act: the page's effects (the notification hook
+    // learning the new switch) have run when it returns.
+    await waitFor(() => expect(screen.getByRole('switch', { name: 'Weekly recap' })).toBeChecked());
     push({ ...RECAP, id: 91 });
     expect(shown.map((n) => n.options.body)).toEqual(['Weekly recap is out']);
     act(() => shown[0].onclick());

@@ -384,14 +384,29 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
   - **Deleting**: organisers and admins delete a recording, file and row
     (`DELETE /api/calls/:id/recordings/:rid`, audited `call.recording_delete`). Nothing is
     deleted automatically.
+  - **Chapters** (2026-10-23): marks under the player, each a time and a title; a click seeks
+    the player there (`RecordingChapters.jsx`). Organisers and admins add, change and delete
+    them (`POST`, `PUT`, `DELETE /api/calls/:id/recordings/:rid/chapters[/:cid]`, audited
+    `call.chapter_add|edit|delete`; `chapterRoutes.js`): the time as m:ss or h:mm:ss within
+    the recording (its length read from the file if nobody has listed it yet), a title of at
+    most 80 characters (`shared/chapterRules.js`, the same check in the form and on the
+    server). Stored on this site (`call_recording_chapters`), gone with their recording.
+- **The archive** (2026-10-23): `/calls/recordings` (`RecordingsPage.jsx`), linked from the
+  Calls page ("All recordings") and the weekly recap: every finished recording for the calls'
+  audience (everyone), newest first, each with its call's title (a link to the call), date,
+  length, player and chapters, and a search over the call titles
+  (`GET /api/calls/recordings`, mounted before the call routes, whose `/:id` would take it).
+  The call page and the archive show a recording the same way (`RecordingItem.jsx`,
+  `recordings.css`).
 - **Tested for real on the owner's PC** (2026-10-22): LiveKit v1.13.10 with egress v1.15.0 and
   Redis in Docker. A browser with a fake camera and microphone was recorded through the
   site's own service code: a playable MP4, 1280 x 720, 15 frames a second, H.264 Main at about
   530 kbit/s, AAC 64 kbit/s. An empty room does not record: the egress aborts with "Start
   signal not received".
 - Tests: `server/test/callRecording.test.js` (with the stand-in call service, which writes a
-  file when a recording stops), `server/test/callsConfig.test.js`,
-  `client/src/calls/callRecording.test.jsx`.
+  file when a recording stops), `server/test/recordingArchive.test.js`,
+  `server/test/callsConfig.test.js`, `shared/chapterRules.test.js`,
+  `client/src/calls/callRecording.test.jsx`, `client/src/calls/recordingsArchive.test.jsx`.
 
 ## The call service (`deploy/calls/`)
 

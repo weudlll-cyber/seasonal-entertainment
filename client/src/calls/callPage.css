@@ -8,7 +8,7 @@
                 collapsed, a slim vertical tab). Nothing scrolls but inner lists. Below 1000px
                 the chat is a drawer over the page. The parts have their own files: stage.css,
                 callControls.css, audience.css. Tokens only: both themes.
-                Also a running recording's red mark and start banner, and the recordings list.
+                Also a running recording's red mark and start banner (the recordings: recordings.css).
    ============================================================ */
 
 .call-page {
@@ -177,23 +177,8 @@
   margin: 0;
 }
 
-/* The recordings under the call's state, before joining or after the call: each with its
-   player at most the column's width. */
+/* The recordings under the call's state, before joining or after the call (their own styles:
+   calls/recordings.css): the column scrolls when they are longer than it. */
 .call-page__join {
   overflow-y: auto;
-}
-
-.call-recordings ul {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.call-recordings video {
-  display: block;
-  width: min(100%, 640px);
-  border-radius: var(--radius);
-  background: #000;
 }
