@@ -85,8 +85,9 @@ event's name as alt text (owner decision 2026-10-20; `server/src/bots/images.js`
   (`server/src/previews/fetchImage.js`, handed over by the chat area's `mountChat`) and its
   network guard (`safeFetch.js`, `ipPolicy.js`):
   https on port 443 only, every DNS answer a public address (no private, loopback or cloud
-  metadata addresses), redirects checked, 5 seconds, at most 2 MB, a real JPEG, PNG, WebP or GIF.
-  A plain `http://` image is refused like any other.
+  metadata addresses), redirects checked, 5 seconds, at most 2 MB, a real JPEG, PNG, WebP or GIF
+  of at most 50 megapixels (read from the header before decoding, `config.imageMaxPixels`, since
+  2026-10-23). A plain `http://` image is refused like any other.
 - **Re-encoded like uploaded images**: turned upright, every metadata block (EXIF with GPS, XMP,
   comments) dropped, scaled down to 640 px wide, stored as WebP in the media folder as
   `bot-images/<first 32 hex digits of the URL's SHA-256>.webp` and served by the public media
@@ -248,8 +249,8 @@ move the sample week to the current one.
   have not started; "not connected"; merged with the site's calls by time, live and planned
   only; bot events only while calls are not set up).
 - `server/test/botImages.test.js`: an event's image fetched, re-encoded as WebP without
-  metadata, stored by the URL's hash and served from this site; a private address, plain http
-  or a non-image refused; at most once a day.
+  metadata, stored by the URL's hash and served from this site; a private address, plain http,
+  a non-image or an image over 50 megapixels refused (48 used); at most once a day.
 - `server/test/botMiningRates.test.js`: the bot's file format; a missing season or a rate of 0
   (the bot's own loader tests) not available; re-read at most every 5 minutes.
 - `client/src/prices/fairPrice.test.js`: the bot's `test_fair_prices.py` cases with their

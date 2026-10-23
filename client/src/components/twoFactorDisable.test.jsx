@@ -2,10 +2,10 @@
 // File:        twoFactorDisable.test.jsx
 // Path:        client/src/components/twoFactorDisable.test.jsx
 // Project:     Seasonal Entertainment
-// Description: Guards turning 2FA off (TwoFactorDisable.jsx): the password goes out only as
-//              the auth key derived with the account's salt, together with the code; success
-//              hands over to the page; a wrong password or code, too many tries or a server error shows
-//              the server's message and changes nothing; a new try clears the old message.
+// Description: Guards turning 2FA off (TwoFactorDisable.jsx): the password goes out only as the
+//              auth key derived with the account's salt, together with the code; success hands over
+//              to the page; a wrong password or code, too many tries or a server error shows the
+//              server's message and changes nothing; a new try clears the old message.
 // ============================================================
 
 import { fireEvent, render, screen } from '@testing-library/react';

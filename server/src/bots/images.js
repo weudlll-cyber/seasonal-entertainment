@@ -4,12 +4,11 @@
 // Project:     Seasonal Entertainment
 // Description: The event bot's event images (events.image_url, docs/BOTS.md), fetched by this
 //              server, never by the browser: through the link previews' image fetch with its
-//              network guard (previews/fetchImage.js, handed over by the chat area: https,
-//              public addresses only, size and type limits, re-encoded without metadata),
-//              stored in the media folder as bot-images/<hash of the URL>.webp and served by
-//              the public media route. Each URL
-//              is fetched at most once a day; until an image is there, or when it was refused,
-//              the event simply shows without one.
+//              network guard (previews/fetchImage.js, handed over by the chat area: https, public
+//              addresses only, size, type and pixel limits (config.imageMaxPixels), re-encoded
+//              without metadata), stored in the media folder as bot-images/<hash of the URL>.webp
+//              and served by the public media route. Each URL is fetched at most once a day; until
+//              an image is there, or when it was refused, the event simply shows without one.
 // ============================================================
 
 import { createHash } from 'node:crypto';
@@ -50,7 +49,7 @@ export function createBotImages(
     try {
       const { data } = await chatImages.fetch(
         url,
-        { maxBytes: limits.maxBytes, maxWidth: limits.maxWidth },
+        { maxBytes: limits.maxBytes, maxWidth: limits.maxWidth, maxPixels: config.imageMaxPixels },
         {
           timeoutMs: limits.timeoutMs,
           maxRedirects: limits.maxRedirects,
