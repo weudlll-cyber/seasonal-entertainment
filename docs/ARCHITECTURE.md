@@ -469,7 +469,7 @@ server/
   test/                    Vitest tests
 shared/                    rules used by server and client (accountRules.js, localWeek.js,
                            gameRules.js, chatRules.js, disclaimer.js, seasonClock.js,
-                           callEntries.js, priceChange.js, chapterRules.js), crypto.js and
+                           callEntries.js, priceChange.js, chapterRules.js, callPeople.js), crypto.js and
                            cryptoFormat.js
 scripts/
   dev.mjs                  npm run dev

@@ -11,9 +11,9 @@
 //              others — and telling Chromium browsers apart.
 // ============================================================
 
+import { HIDDEN_LISTENER } from '@seasonal-entertainment/shared/callPeople.js';
 import { describe, expect, it } from 'vitest';
 import {
-  HIDDEN_LISTENER,
   NO_SHARE_AUDIO,
   NO_SOUND_SHARED,
   audienceOrder,

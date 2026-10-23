@@ -11,7 +11,7 @@
 // ============================================================
 
 // The name the server gives a member who hides their online status (calls/people.js).
-export const HIDDEN_LISTENER = 'A listener';
+import { HIDDEN_LISTENER } from '@seasonal-entertainment/shared/callPeople.js';
 
 // Browsers that cannot send sound with a screen share at all (Firefox, Safari).
 export const NO_SHARE_AUDIO =
