@@ -492,7 +492,11 @@ Moderators and admins may see direct messages **only when the affected member re
 ## Weekly recap
 
 Every Monday from 09:00 Vienna time the site posts a recap in **Announcements** (in General
-when there is no such room), as itself (decided 2026-10-23; `server/src/recap/`).
+when there is no such room), as itself (decided 2026-10-23; `server/src/recap/`). Its settings
+(docs/SETTINGS.md, "Weekly recap"): on/off, the weekday, the hour (Vienna time, right on
+daylight-saving days: `weekTime` in `shared/localWeek.js`) and the room, a choice of the rooms
+everyone reads; only a week later than the last one posted is due, so moving the day or hour
+never posts twice in one week.
 
 - **The sender**: "Seasonal Entertainment", a message with no account and no guest behind it
   (`chat_messages.author_system`; no username can contain a space, so no account can take the

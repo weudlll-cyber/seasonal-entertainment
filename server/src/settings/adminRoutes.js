@@ -25,7 +25,7 @@ export function adminSettingRoutes(db) {
   router.put('/:key', allow('admin'), (req, res) => {
     if (!SETTINGS[req.params.key]) return sendError(res, 404, 'not_found', 'No such setting.');
     const { value } = req.body ?? {};
-    const problem = checkSetting(req.params.key, value);
+    const problem = checkSetting(db, req.params.key, value);
     if (problem) return sendError(res, 400, 'invalid_input', problem);
     const before = getSetting(db, req.params.key);
     setSetting(db, req.params.key, value);

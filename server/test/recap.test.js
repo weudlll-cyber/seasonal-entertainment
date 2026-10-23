@@ -9,7 +9,9 @@
 //              recordings of the week); a token without price data has no line, and without the
 //              price bot there is no price part; the last line is the not-financial-advice notice;
 //              "Weekly recap" notifications are off by default and reach only members who turned
-//              them on; admins can post one now (audited), nobody else.
+//              them on; admins can post one now (audited), nobody else. Its settings: off posts
+//              nothing; another weekday and hour move it; moving them never posts twice in one
+//              week; the room is a choice of the rooms everyone reads.
 // ============================================================
 
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -26,6 +28,7 @@ import { createCall } from '../src/calls/store.js';
 import { SYSTEM_SENDER } from '../src/chat/messages.js';
 import { postRecap, weeklyRecapRound } from '../src/recap/job.js';
 import { fakeCallService } from './helpers/calls.js';
+import { setSetting } from '../src/settings/store.js';
 import { auditActions, chatApp } from './helpers/chat.js';
 import { makeStaff, registerUser } from './helpers/testApp.js';
 
@@ -109,6 +112,52 @@ describe('posting', () => {
     t.db.prepare("DELETE FROM chat_rooms WHERE slug = 'announcements'").run();
     expect(postRecap(deps(), MONDAY_NINE).room).toBe('general');
     expect(recapsIn('general')).toHaveLength(1);
+  });
+});
+
+describe('settings', () => {
+  it("'Post the weekly recap' off posts nothing; on again, the week's is due", () => {
+    appWith();
+    weeklyRecapRound(deps(), MONDAY_NINE - 60_000); // the first round: earlier weeks are done
+    setSetting(t.db, 'recap.enabled', false);
+    expect(weeklyRecapRound(deps(), MONDAY_NINE)).toBe(false);
+    setSetting(t.db, 'recap.enabled', true);
+    expect(weeklyRecapRound(deps(), MONDAY_NINE + 60_000)).toBe(true);
+  });
+
+  it('weekday and hour move it: Wednesday 18:00 Vienna time', () => {
+    appWith();
+    setSetting(t.db, 'recap.weekday', 'wednesday');
+    setSetting(t.db, 'recap.time', '18:00');
+    weeklyRecapRound(deps(), MONDAY_NINE - 60_000);
+    const wednesdaySix = Date.parse('2026-10-28T17:00:00Z'); // 18:00 CET
+    expect(weeklyRecapRound(deps(), MONDAY_NINE)).toBe(false);
+    expect(weeklyRecapRound(deps(), wednesdaySix - 60_000)).toBe(false);
+    expect(weeklyRecapRound(deps(), wednesdaySix)).toBe(true);
+  });
+
+  it("moving the day later after this week's recap never posts twice", () => {
+    appWith();
+    weeklyRecapRound(deps(), MONDAY_NINE - 60_000);
+    expect(weeklyRecapRound(deps(), MONDAY_NINE)).toBe(true);
+    setSetting(t.db, 'recap.weekday', 'wednesday'); // on Tuesday
+    expect(weeklyRecapRound(deps(), MONDAY_NINE + DAY)).toBe(false);
+    expect(weeklyRecapRound(deps(), MONDAY_NINE + 2 * DAY)).toBe(false); // Wednesday 09:00
+    expect(recapsIn('announcements')).toHaveLength(1);
+    expect(weeklyRecapRound(deps(), MONDAY_NINE + 9 * DAY)).toBe(true); // next Wednesday
+  });
+
+  it('the room is a choice of the rooms everyone reads', async () => {
+    appWith();
+    const admin = (await makeStaff(t, 'ada', 'admin')).agent;
+    const { settings } = (await admin.get('/api/admin/settings')).body;
+    const rooms = settings.find((s) => s.key === 'recap.room').choices.map((c) => c.value);
+    expect(rooms).toContain('general');
+    expect(rooms).not.toContain('organisers');
+    const put = (value) => admin.put('/api/admin/settings/recap.room').send({ value });
+    expect((await put('organisers')).status).toBe(400);
+    expect((await put('general')).status).toBe(200);
+    expect(postRecap(deps(), MONDAY_NINE).room).toBe('general');
   });
 });
 

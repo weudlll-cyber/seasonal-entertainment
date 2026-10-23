@@ -47,10 +47,14 @@ export function getTextSetting(db, key) {
   return db.prepare('SELECT value FROM site_settings WHERE key = ?').get(key)?.value ?? null;
 }
 
+// A choice setting's list: fixed, or a function of the database (the recap's rooms).
+const choicesOf = (db, definition) =>
+  typeof definition.choices === 'function' ? definition.choices(db) : definition.choices;
+
 // null when value fits the setting, else the message for the admin page.
-export function checkSetting(key, value) {
+export function checkSetting(db, key, value) {
   const definition = SETTINGS[key];
-  return TYPES[definition.type].check(definition, value, definition.choices);
+  return TYPES[definition.type].check(definition, value, choicesOf(db, definition));
 }
 
 // Every setting with its definition and current value, in the admin page's group order.
@@ -60,6 +64,7 @@ export function listSettings(db) {
       key,
       ...definition,
       default: defaultOf(db, definition),
+      choices: choicesOf(db, definition),
       value: getSetting(db, key),
     }))
     .sort((a, b) => GROUPS.indexOf(a.group) - GROUPS.indexOf(b.group));

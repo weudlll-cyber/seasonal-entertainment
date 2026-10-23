@@ -12,4 +12,10 @@ export const PUBLIC_SETTING_DEFAULTS = {
   'chat.uploads': true,
   'chat.directFiles': true,
   'accounts.registrationOpen': true,
+  'home.seasonClock': true,
+  'home.startHere': true,
+  'banner.enabled': false,
+  'banner.text': '',
+  'banner.link': '',
+  'banner.style': 'info',
 };

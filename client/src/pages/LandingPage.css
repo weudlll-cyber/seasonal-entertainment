@@ -14,8 +14,12 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: var(--space-1);
+  /* The main column's room below any banner (Layout.css), not its whole height: home still
+     fits the window with the site banner on. */
+  flex: 1 0 0;
+  width: 100%;
+  min-height: 0;
   max-width: 80rem;
-  height: 100%;
   margin: 0 auto;
   padding: var(--space-2) var(--space-3);
 }
@@ -297,7 +301,7 @@
 
 @media (max-width: 999.98px) {
   .home {
-    height: auto;
+    flex: none;
   }
 
   .home__grid {

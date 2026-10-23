@@ -87,6 +87,31 @@ it('every setting keeps to its bounds: whole numbers from min to max, on/off as 
   }
 });
 
+it('the site banner: its link only a page of this site, its text one line of 200 at most', async () => {
+  t = makeTestApp();
+  const admin = (await makeStaff(t, 'ada', 'admin')).agent;
+  const put = async (key, value) =>
+    (await admin.put(`/api/admin/settings/${key}`).send({ value })).status;
+  for (const link of ['https://evil.example/', '//evil.example', 'start', '/a b', 'javascript:x']) {
+    expect(await put('banner.link', link), link).toBe(400);
+  }
+  for (const link of ['', '/start', '/info/faq?x=1#top']) {
+    expect(await put('banner.link', link), link).toBe(200);
+  }
+  expect(await put('banner.text', 'x'.repeat(201))).toBe(400);
+  expect(await put('banner.text', 'two\nlines')).toBe(400);
+  expect(await put('banner.text', '<b>shown as typed</b>')).toBe(200);
+  expect(await put('banner.style', 'warning')).toBe(200);
+  expect(await put('banner.style', 'danger')).toBe(400);
+  // Every visitor's browser gets them with the session.
+  expect((await t.client().get('/api/auth/session')).body.settings).toMatchObject({
+    'banner.text': '<b>shown as typed</b>',
+    'banner.link': '/info/faq?x=1#top',
+    'banner.style': 'warning',
+    'banner.enabled': false,
+  });
+});
+
 it('is for admins only', async () => {
   t = makeTestApp();
   const organiser = (await makeStaff(t, 'olga', 'organiser')).agent;

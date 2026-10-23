@@ -13,6 +13,7 @@
 
 import { rmSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
+import { PUBLIC_SETTING_DEFAULTS } from '@seasonal-entertainment/shared/siteSettings.js';
 import { sendCallReminders } from '../src/calls/reminders.js';
 import { setSetting } from '../src/settings/store.js';
 import { sealSecret } from '../src/twofa/secretBox.js';
@@ -96,11 +97,8 @@ describe('accounts', () => {
   it('the public settings come with the session, as they are now', async () => {
     t = makeTestApp();
     const settings = async () => (await t.client().get('/api/auth/session')).body.settings;
-    expect(await settings()).toEqual({
-      'chat.uploads': true,
-      'chat.directFiles': true,
-      'accounts.registrationOpen': true,
-    });
+    // Every public setting, at the defaults the browser also falls back to.
+    expect(await settings()).toEqual(PUBLIC_SETTING_DEFAULTS);
     setSetting(t.db, 'accounts.registrationOpen', false);
     expect((await settings())['accounts.registrationOpen']).toBe(false);
   });

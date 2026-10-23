@@ -38,7 +38,8 @@ Spring `#AFB84E`, Summer `#E06E22`, Autumn `#F9A825`, Winter `#04AAF7`
 | `--wash-home` / `--wash-page`        | .20 / .16                                       | .26 / .20                                            | opacity of the faint logo images                      |
 | `--color-on-season`                  | `#14171C`                                       | `#14171C`                                            | text and icons on a token colour (tiles, chat button) |
 | `--color-danger` / `--color-success` | `#B42318` / `#1D7A46`                           | `#FF8A80` / `#4ACB8A`                                | errors, confirmations                                 |
-| `--color-warning-surface`            | `#FFF4D6`                                       | `#3A2E10`                                            | the staff 2FA banner                                  |
+| `--color-warning-surface`            | `#FFF4D6`                                       | `#3A2E10`                                            | the 2FA banner, the site banner's warning style       |
+| `--color-info-surface`               | `#E1F3FD`                                       | `#0F2D55`                                            | the site banner's info style (a winter tint)          |
 | `--color-live` / `--color-on-live`   | `#B42318` / `#FFFFFF`                           | the same                                             | the red LIVE badge (calls)                            |
 | `--color-coin-eth/pol/btc`           | `#6D4FD6` / `#C0368A` / `#1F8A7A`               | `#A796FF` / `#F07CC4` / `#4FD1BD`                    | the reference coins' lines (docs/BOTS.md)             |
 
@@ -171,7 +172,12 @@ taller. `client/e2e/layout.spec.js` checks this on every main page at 1440 x 900
    Calls end in a 10px dot in the colour of their quarter of the logo: Games Spring `#AFB84E`,
    Events Summer `#E06E22`, Chat Autumn `#F9A825`, Calls Winter `#04AAF7` (`dot` in
    `navigation.js`).
-2. **Main column**: the routed page.
+2. **Main column**: a column (2026-10-23): first the banners — the **site banner** (an admin's
+   message for everyone, `SiteBanner.jsx`, docs/SETTINGS.md: plain text, an optional "Read
+   more" link to a page of this site, info on `--color-info-surface` or warning on
+   `--color-warning-surface` with a red edge, "Dismiss" remembered per text in this browser),
+   then the 2FA banner and call notices — and below them the routed page. Home takes the room
+   left below the banners, so it still fits the window with a banner on.
 
 **Start here** (2026-10-23, `/start`, `StartPage.jsx`): five numbered steps for a newcomer, each a
 card with a sentence or two and a button to a page the site has — what Seasonal Tokens are, how
@@ -179,6 +185,8 @@ they work, the risks (info pages), the prices and the fair price, then the chat 
 (the live or next planned call, else the Calls page) — and the not-financial-advice notice under
 them. "Start here" is in the sidebar for everyone, below Home; guests also see "New here? Start
 here" on the greeting's line in the home banner (no extra height: home still fits 1280 x 720).
+The "Start here" setting (docs/SETTINGS.md) takes both away; the page stays reachable. The
+season clock has a setting of its own.
 
 **"Not financial advice"** (decided 2026-10-23): besides the footer link on every page, a
 one-line notice "Information only — not financial advice." with a link to the Disclaimer
@@ -335,15 +343,15 @@ header). The site's chat button is not shown on a call page.
   button only. Other pages have the normal sidebar.
 - **Stage**: on the surface-2 colour with the card radius. Fitting pictures (2026-10-18,
   SE-CALLS-4): shared screens are always letterboxed (`object-fit: contain`), never cropped; a
-  camera shown large — alone on the stage or in the spotlight — is letterboxed too; in the grid
-  of several speakers every picture takes its camera's aspect ratio (16:9 until the call service
+  camera shown large — alone on the stage or in the spotlight — is letterboxed too; in the grid of
+  several speakers every picture takes its camera's aspect ratio (16:9 until the call service
   reports the real one) and fills it (`cover`), so at most a thin edge is cut — never more than
-  about 10% of either side (`client/e2e/callFit.spec.js`). A video always fills its picture box exactly
-  (positioned over it), so the box's shape decides and the fit does what it says; sized by its
-  own height, a video was clipped at the bottom instead (the cut-off faces of the eye test). Speaker
-  tiles: picture, name, Host or Speaker, microphone state (off: red), an accent ring while
-  talking, organisers' "…" menu. Chips over the top left (pill, surface colour, raised shadow);
-  the round full-screen button top right.
+  about 10% of either side (`client/e2e/callFit.spec.js`). A video always fills its picture box
+  exactly (positioned over it), so the box's shape decides and the fit does what it says; sized by
+  its own height, a video was clipped at the bottom instead (the cut-off faces of the eye test).
+  Speaker tiles: picture, name, Host or Speaker, microphone state (off: red), an accent ring while
+  talking, organisers' "…" menu. Chips over the top left (pill, surface colour, raised shadow); the
+  round full-screen button top right.
 - **Control bar**: round 48px icon buttons in one centred row with small gaps between groups; a
   tooltip above each on hover and keyboard focus (`data-tooltip`). A toggle names what a click
   will do ("Mute microphone", "Stop sharing"); its icon shows the state: microphone or camera

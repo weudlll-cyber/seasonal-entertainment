@@ -3,7 +3,8 @@
 // Path:        shared/localWeek.js
 // Project:     Seasonal Entertainment
 // Description: The viewer's local week and times: the local Monday 00:00 a week starts at
-//              (daylight-saving weeks are 167 or 169 hours long) and the labels for a day and a
+//              (daylight-saving weeks are 167 or 169 hours long), a local hour on a day of that
+//              week (weekTime; the weekly recap's posting time) and the labels for a day and a
 //              time in a time zone; formatDateTime is the one way the site writes a date and
 //              time (docs/DESIGN.md, "Dates"), formatDate the same date where only the day is
 //              meant. Used for the event bot's occurrences
@@ -59,6 +60,16 @@ export function startOfWeek(instant, timeZone, weekOffset = 0) {
     monday.getUTCDate(),
     timeZone
   );
+}
+
+// The instant of `hour`:00 local time on day `dayIndex` (0 = Monday) of the week starting at
+// `weekStart` (a startOfWeek result). Corrected by the offset change, so it is right on a
+// daylight-saving day too (the hours from midnight are then 8 or 10 for 09:00).
+export function weekTime(weekStart, dayIndex, hour, timeZone) {
+  const p = zonedParts(weekStart, timeZone);
+  const midnight = zonedMidnight(p.year, p.month, p.day + dayIndex, timeZone);
+  const guess = midnight + hour * 3_600_000;
+  return guess + offsetAt(midnight, timeZone) - offsetAt(guess, timeZone);
 }
 
 // "20:00" in the zone, plus the zone's short name ("CEST", "GMT+2", ...).
