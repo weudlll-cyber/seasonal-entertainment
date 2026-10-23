@@ -298,6 +298,10 @@ the public reads that have no limit of their own (session, info, games, calls, c
 messages, files, the embed check); a page load makes a handful, so only a flood meets it. Routes
 with their own limits (bots' reads, member search) keep them as well.
 
+The per-username login limit is kept as it is on purpose (decided 2026-10-23): anyone who knows a
+name can block its logins for 15 minutes with wrong passwords, and a correct password does not
+pass the block either. That is the price of stopping guesses spread over many addresses.
+
 The password-change limit keys on the account, not the IP _(race game)_: people behind one
 address must not lock each other out. Login is limited twice: per IP, and per username as typed
 (case-insensitive), whether that account exists or not, so the 429 reveals nothing. The
