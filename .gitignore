@@ -5,12 +5,11 @@ coverage/
 # Playwright output
 test-results/
 playwright-report/
-# Screenshots of the manual-style browser checks (looked at, never committed)
-reports/embed-check/
-reports/embed-check-2/
-reports/night-3/
-reports/bots-2/
-reports/bots-2b/
+# Screenshots of the manual-style browser checks (looked at, never committed): every folder
+# under reports/, so a new one is covered too; and the audit report, which lists the
+# machine's leftovers.
+reports/*/
+reports/AUDIT-*.md
 # Local data: the SQLite database and the dev admin's credentials file
 data/
 # The development call server binary (npm run dev:calls downloads it)
@@ -25,9 +24,3 @@ data/
 deploy/site/site.env
 deploy/site/docker-compose.override.yml
 .claude/settings.local.json
-reports/redesign/
-reports/home-live/
-reports/upnext-calls/
-reports/night-5/
-reports/info-publish/
-reports/night-6/

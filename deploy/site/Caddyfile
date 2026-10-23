@@ -6,11 +6,22 @@
 #              (Let's Encrypt) for SITE_DOMAIN, http redirected to https, everything forwarded
 #              to the site container (pages, /api, the chat WebSocket /ws/chat, /media).
 #              Security headers come from the app (helmet, server/src/http/securityHeaders.js)
-#              and pass through unchanged; Caddy adds none of its own. Further site blocks
-#              (the calls domain) come from ./caddy/*.caddy.
+#              and pass through unchanged; Caddy adds none of its own. Its logs leave out the
+#              embed token's headers (X-Embed-Token, the WebSocket protocol header). Further site
+#              blocks (the calls domain) come from ./caddy/*.caddy.
 # ============================================================
 {
 	email {$ACME_EMAIL}
+	# Caddy's own log, which also carries the request (with its headers) of a failed proxy
+	# request: the embed token is left out there too (as in the site's access log below).
+	log default {
+		output stderr
+		format filter {
+			wrap json
+			request>headers>X-Embed-Token delete
+			request>headers>Sec-Websocket-Protocol delete
+		}
+	}
 }
 
 {$SITE_DOMAIN} {
@@ -20,7 +31,14 @@
 	reverse_proxy site:3800
 	log {
 		output stdout
-		format console
+		# The access log writes request headers (Caddy itself hides only Cookie and
+		# Authorization): the embed token travels in X-Embed-Token, and for the chat socket in
+		# the WebSocket protocol header, so both are left out (docs/EMBED.md).
+		format filter {
+			wrap console
+			request>headers>X-Embed-Token delete
+			request>headers>Sec-Websocket-Protocol delete
+		}
 	}
 }
 

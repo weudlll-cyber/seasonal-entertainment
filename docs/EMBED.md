@@ -49,6 +49,8 @@ header, sidebar or footer (`client/src/embed/EmbedChatPage.jsx`): the room, and 
   time. The token ends at once on **Log out** in the frame, a logout on the site, a password
   change (or anything else that moves the session epoch), a lock, or the site's removal from the
   list. The frame then forgets the account and the key on the spot and shows **Log in** again.
+  It travels in the `X-Embed-Token` header and, for the chat socket, in the WebSocket protocol
+  header; the site's Caddy leaves both out of its logs (`deploy/site/Caddyfile`, 2026-10-23).
 - **What works there**: rooms and **direct messages**, read and write under the usual rules,
   emoji, stickers and GIFs, @mentions, favourites, unread counts, mutes and reporting.
 - **What does not**: uploading files (the frame shows no "Attach file" there); account, 2FA,
