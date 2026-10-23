@@ -136,13 +136,18 @@ describe("admins set a site's rules", () => {
       allowed: true,
       guestsRead: true,
       guestsWrite: false,
+      uploads: false,
     });
     const set = (rule, value) =>
       admin.put('/api/admin/embed-origins/rules').send({ origin: SITE, rule, value });
     expect((await set('guestsWrite', 'maybe')).status).toBe(400);
     expect((await set('nonsense', 'on')).status).toBe(400);
     const changed = await set('guestsWrite', 'on');
-    expect(changed.body.rules[SITE]).toEqual({ guestsRead: 'inherit', guestsWrite: 'on' });
+    expect(changed.body.rules[SITE]).toEqual({
+      guestsRead: 'inherit',
+      guestsWrite: 'on',
+      uploads: 'inherit',
+    });
     expect((await check()).guestsWrite).toBe(true);
     const audit = t.db
       .prepare("SELECT before, after FROM audit_log WHERE action = 'embed.rule_change'")

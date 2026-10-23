@@ -83,7 +83,7 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
   api.use('/chat', previewModerationRoutes(db, hub));
   api.use('/chat', chatModerationRoutes(db, hub));
   api.use('/chat', mediaRoutes(db));
-  api.use('/chat', uploadRoutes(db, config, hub));
+  api.use('/chat', uploadRoutes(db, config, hub, embedOrigins));
   api.use('/admin/chat/rooms', adminChatRoomRoutes(db));
   api.use('/admin/chat/media', adminMediaRoutes(db, config));
 

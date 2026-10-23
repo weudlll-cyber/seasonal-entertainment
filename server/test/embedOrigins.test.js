@@ -144,7 +144,13 @@ describe('framing', () => {
     const check = async (origin) =>
       (await t.client().get(`/api/embed/check?origin=${encodeURIComponent(origin)}`)).body;
     // An approved site also hears what guests may do there (embedGuests.test.js).
-    const approved = { ok: true, allowed: true, guestsRead: true, guestsWrite: false };
+    const approved = {
+      ok: true,
+      allowed: true,
+      guestsRead: true,
+      guestsWrite: false,
+      uploads: false,
+    };
     expect(await check(SITE)).toEqual(approved);
     expect(await check('https://GAME.example')).toEqual(approved);
     expect(await check('https://evil.example')).toEqual({ ok: true, allowed: false });

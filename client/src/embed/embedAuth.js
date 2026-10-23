@@ -40,7 +40,7 @@ export function dropEmbedToken() {
 }
 
 let site = null; // the verified other site this frame is on
-let rules = null; // what guests may do there: { guestsRead, guestsWrite }
+let rules = null; // the site's rules: { guestsRead, guestsWrite, uploads }
 const GUEST_TOKEN = 'se.embedGuest';
 
 export function setEmbedSite(origin, siteRules) {
@@ -50,6 +50,8 @@ export function setEmbedSite(origin, siteRules) {
 // Unknown until the site is verified: reading as on the site, writing not.
 export const guestsMayRead = () => rules?.guestsRead !== false;
 export const guestsMayWrite = () => rules?.guestsWrite === true;
+// Members upload and see uploaded images there (through file links) only where allowed.
+export const embedUploads = () => rules?.uploads === true;
 export const keepEmbedGuestToken = (guestToken) => writeStored(GUEST_TOKEN, guestToken);
 
 // A member's token; else, on a verified other site, the site and the guest's token if any.

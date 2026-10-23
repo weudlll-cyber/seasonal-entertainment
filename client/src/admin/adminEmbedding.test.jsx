@@ -15,8 +15,8 @@ import App from '../app/App.jsx';
 import { mockApi, signedIn } from '../test/mockApi.js';
 
 const ADA = { id: 1, username: 'ada', role: 'admin', twoFactorEnabled: true };
-const INHERIT = { guestsRead: 'inherit', guestsWrite: 'inherit' };
-const GLOBALS = { guestsRead: true, guestsWrite: false };
+const INHERIT = { guestsRead: 'inherit', guestsWrite: 'inherit', uploads: 'inherit' };
+const GLOBALS = { guestsRead: true, guestsWrite: false, uploads: false };
 // The route's answer: the sites, each one's own rules, and the global settings.
 const listed = (list, rules = {}) => ({
   body: {

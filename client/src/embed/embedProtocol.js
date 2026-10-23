@@ -39,12 +39,12 @@ export function parentOrigin() {
 export async function verifyHost(origin) {
   if (!origin || origin === 'null') return null;
   if (origin === window.location.origin) return origin;
-  const { allowed, guestsRead, guestsWrite } = await api(
+  const { allowed, guestsRead, guestsWrite, uploads } = await api(
     `/embed/check?origin=${encodeURIComponent(origin)}`
   );
   if (!allowed) return null;
   // From now on a guest's requests name the site, under its rules (embedAuth.js).
-  setEmbedSite(origin, { guestsRead, guestsWrite });
+  setEmbedSite(origin, { guestsRead, guestsWrite, uploads });
   return origin;
 }
 

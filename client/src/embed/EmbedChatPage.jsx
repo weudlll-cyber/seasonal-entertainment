@@ -11,7 +11,8 @@
 //              reads and writes as the site's rules allow (the "Other sites" settings or the
 //              site's own, given with the site's check; a guest name lasts through a guest
 //              token in the frame's storage), else gets "Log in to write" or "Log in to read",
-//              and members no "Attach file". Until the site is verified the room waits. Talks to
+//              and members "Attach file" (and uploaded images, through short-lived links) only
+//              where the site allows uploads. Until the site is verified the room waits. Talks to
 //              the framing page only once its origin is verified (embedProtocol.js): ready, unread
 //              (messages while the host says the chat is out of sight), resize; it takes visible
 //              and theme.
@@ -26,7 +27,13 @@ import { useSession } from '../session/SessionContext.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import EmbedAccount, { LogInToRead, LogInToWrite } from './EmbedAccount.jsx';
 import EmbedDirect from './EmbedDirect.jsx';
-import { guestsMayRead, guestsMayWrite, isForeignEmbed, markForeignEmbed } from './embedAuth.js';
+import {
+  embedUploads,
+  guestsMayRead,
+  guestsMayWrite,
+  isForeignEmbed,
+  markForeignEmbed,
+} from './embedAuth.js';
 import { onHostMessage, parentOrigin, toHost, verifyHost } from './embedProtocol.js';
 import { useEmbedLogin } from './useEmbedLogin.js';
 import './EmbedChat.css';
@@ -112,16 +119,16 @@ export default function EmbedChatPage() {
       )}
       <div id="embed-panel" className="embed-chat__panel">
         {shown === 'rooms' ? (
-          // On another site the room waits for the verified site and its rules: no uploads
-          // with an embed token (the server refuses them); a guest reads and writes only as
-          // the site's rules allow, else is offered the login.
+          // On another site the room waits for the verified site and its rules: members
+          // upload only where the site allows it; a guest reads and writes only as the
+          // site's rules allow, else is offered the login.
           foreign && !host ? null : foreign && !user && !guestsMayRead() ? (
             <LogInToRead login={login} ready />
           ) : (
             <ChatPanel
               room={room}
               variant="compact"
-              files={!foreign}
+              files={!foreign || (Boolean(user) && embedUploads())}
               guestPrompt={
                 foreign && !guestsMayWrite() ? <LogInToWrite login={login} ready /> : null
               }

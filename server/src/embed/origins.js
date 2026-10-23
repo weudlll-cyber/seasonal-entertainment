@@ -17,7 +17,7 @@ import { getSetting, getTextSetting, setSetting } from '../settings/store.js';
 const KEY = 'embed.allowedOrigins';
 const RULES_KEY = 'embed.siteRules';
 // What a site may override; each is also a global setting "embed.<rule>" (settings/groups/).
-export const SITE_RULES = ['guestsRead', 'guestsWrite'];
+export const SITE_RULES = ['guestsRead', 'guestsWrite', 'uploads'];
 export const RULE_VALUES = ['inherit', 'on', 'off'];
 
 // Development only: these hosts may be approved over plain http, to try a foreign site on one

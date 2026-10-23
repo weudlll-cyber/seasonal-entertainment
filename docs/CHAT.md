@@ -47,15 +47,16 @@ Community box, below) and
 tab forward). The module encrypts and decrypts with `shared/crypto.js`, the only other outside
 import it is allowed.
 
-The module uses nothing else from the page around it. From outside its folder it imports only
-React, the shared chat rules (`@seasonal-entertainment/shared/chatRules.js`), the account context
-(`client/src/session/SessionContext.jsx`), the site's API client (`client/src/api/http.js`) and
-the site's stroke icons (`client/src/app/icons.jsx`, a leaf file without imports; since
-2026-10-18, so the stars and bells match the rest of the site) and the never-throwing browser
-storage (`client/src/app/storage.js`, also a leaf file; since 2026-10-21, for the safety
-numbers' per-device marks);
-`client/src/chat/chatModule.test.js` fails on any other import, and on any page importing a file
-of the module other than `index.js`.
+The module uses nothing else from the page around it. From outside its folder it imports only React,
+the shared chat rules (`@seasonal-entertainment/shared/chatRules.js`), the account context
+(`client/src/session/SessionContext.jsx`), the site's API client (`client/src/api/http.js`) and the
+site's stroke icons (`client/src/app/icons.jsx`, a leaf file without imports; since 2026-10-18, so
+the stars and bells match the rest of the site) and the never-throwing browser storage
+(`client/src/app/storage.js`, also a leaf file; since 2026-10-21, for the safety numbers' per-device
+marks) and the embed state (`client/src/embed/embedAuth.js`, which imports only that storage; since
+2026-10-23, so a file in the chat on another site loads through its short-lived link,
+`useFileLinks.js`); `client/src/chat/chatModule.test.js` fails on any other import, and on any page
+importing a file of the module other than `index.js`.
 
 - **Styles** sit under one root class, `.se-chat` (`ChatPanel.css`, `ChatPanelVariants.css`,
   `ChatMessage.css`, `ChatPicker.css`), with the module's own buttons and notices. Colours and

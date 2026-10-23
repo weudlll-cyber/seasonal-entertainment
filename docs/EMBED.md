@@ -53,11 +53,12 @@ header, sidebar or footer (`client/src/embed/EmbedChatPage.jsx`): the room, and 
   header; the site's Caddy leaves both out of its logs (`deploy/site/Caddyfile`, 2026-10-23).
 - **What works there**: rooms and **direct messages**, read and write under the usual rules,
   emoji, stickers and GIFs, @mentions, favourites, unread counts, mutes and reporting.
-- **What does not**: uploading files (the frame shows no "Attach file" there); account, 2FA,
-  key, moderation and admin actions (the server answers 403 to a token there); uploaded images
-  in members-only rooms do not show (an image request cannot carry the token). Guests: see
-  "Guests on other sites" below; where they may not write, they get **Log in to write** in place
-  of the composer, the same popup as **Log in**.
+- **What does not**: account, 2FA, key, moderation and admin actions (the server answers 403 to
+  a token there). Files only where the site allows uploads (see "Files on other sites" below;
+  otherwise no "Attach file", and uploaded images in members-only rooms do not show, since an
+  image request cannot carry the token). Guests: see "Guests on other sites" below; where they
+  may not write, they get **Log in to write** in place of the composer, the same popup as **Log
+  in**.
 - **Private messages locked** (the page was reloaded, or "Allow without private messages"):
   the Direct tab offers **Unlock in a login window**, the same popup. The password is never typed
   into the other site's page.
@@ -85,6 +86,23 @@ Built 2026-10-23, behind switches: the "Other sites" settings "Guests can read o
 - **Off**: writing off shows **Log in to write**; reading off shows "Guests cannot read the chat
   on this site." with **Log in to read** in place of the room, and the server refuses the
   frame's reads (`403 embed_guests_off`). Members are not affected.
+
+### Files on other sites
+
+Built 2026-10-23, behind a switch: the "Other sites" setting "Uploads on other sites" (off) and
+each approved site's own "uploads" rule (inherit / on / off, Admin → Embedding).
+
+- **Uploading**: a member there gets **Attach file**; the upload carries the embed token like
+  every request, and the site's limits apply as on the site (size, pixels, type, daily quota;
+  "File uploads in rooms" off refuses it too). Off, `POST /api/chat/uploads` with a token answers
+  `403 embed_uploads_off`.
+- **Seeing a file**: an image or a download in the frame is a plain request that cannot carry the
+  token, so the frame asks for **short-lived links** (`POST /api/chat/files/:id/links`, token
+  only, `client/src/chat/useFileLinks.js`): `?link=<token id>.<expiry>.<signature>` for each
+  variant (`server/src/uploads/fileLinks.js`), good for 5 minutes, for that file and variant
+  only, and only while the token is active. The file route then asks, as always, whether the
+  token's member may read the message's room (a hidden message: moderators only); no file
+  becomes public, and guests get no links.
 
 ## Who may frame it
 
@@ -215,6 +233,10 @@ different sites to the browser.
   the name through the token; a site's own rule beats the global one; unapproved sites, foreign
   or damaged tokens, a cookie's guest; sanctions and the message limit; the admin rules (audited)
   and the check's answer.
+- `server/test/embedFiles.test.js`: uploads and links refused while off; on (globally or by the
+  site's rule), uploads under the site's limits; a members-only image through its links without a
+  cookie; a link only for its file and variant, ending with time and with the token; no links for
+  guests or for a hidden message.
 - `server/test/embedSocket.test.js`: the WebSocket with a token (subprotocol), refused for an
   unknown token, closed at once on revocation, the member's own cookie socket untouched.
 - `client/src/embed/embedChat.test.jsx`: same-site embed (panel only, login state, guests,
@@ -224,6 +246,8 @@ different sites to the browser.
   instead of the composer, a member no "Attach file".
 - `client/src/embed/embedGuests.test.jsx`: by the site's rules, "Log in to write", the guest
   composer naming the site and keeping the token, or "Log in to read".
+- `client/src/embed/embedFiles.test.jsx`: "Attach file" and file links by the site's "uploads"
+  rule.
 - `client/src/embed/embedForeignDirect.test.jsx`: direct messages with the handed-over key;
   nothing secret to the host; a refused token takes account and key, and the key is gone from
   memory. (Shared setup: `client/src/test/foreignEmbed.jsx`.)

@@ -5,13 +5,17 @@
 // Description: A file sent with a chat message: an image as its thumbnail, opening the full
 //              image (metadata removed) on a click; a PDF as a card with name, size and a
 //              download link (the site never shows PDFs itself); "File removed" after a
-//              moderator took it away.
+//              moderator took it away. In the chat on another site the addresses are the file's
+//              short-lived links (useFileLinks.js); until they arrive the file waits.
 // ============================================================
 
 import { fileSize } from './fileSize.js';
+import { useFileLinks } from './useFileLinks.js';
 
-export default function MessageFile({ file }) {
-  if (file.removed) return <p className="chat-message__removed">File removed</p>;
+export default function MessageFile({ file: stored }) {
+  const file = useFileLinks(stored);
+  if (stored.removed) return <p className="chat-message__removed">File removed</p>;
+  if (!file) return <span className="chat-file" aria-busy="true" />;
   if (file.kind === 'image') {
     return (
       <a className="chat-file chat-file--image" href={file.url} target="_blank" rel="noopener">

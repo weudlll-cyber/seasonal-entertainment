@@ -3,7 +3,8 @@
 // Path:        client/src/admin/SiteRules.jsx
 // Project:     Seasonal Entertainment
 // Description: One approved site's own rules on Admin → Embedding (docs/EMBED.md): for each
-//              rule (guests reading, guests writing) "Inherit" (the "Other sites" setting,
+//              rule (guests reading, guests writing, members' uploads) "Inherit" (the "Other
+//              sites" setting,
 //              shown as on or off), "On" or "Off". A change is sent at once (audited).
 // ============================================================
 
@@ -12,6 +13,7 @@ import { useId } from 'react';
 export const RULE_LABELS = {
   guestsRead: 'Guests can read',
   guestsWrite: 'Guests can write',
+  uploads: 'Uploads',
 };
 
 // rules: { rule: 'inherit' | 'on' | 'off' }; globals: { rule: true | false };
