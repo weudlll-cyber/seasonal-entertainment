@@ -76,11 +76,11 @@ Read from the environment when the process starts, never baked into a build:
 | `CSRF_STRICT`                       | `true`                                        | refuse state changes without Origin/Referer                               |
 | `BCRYPT_COST`                       | `12`                                          | password hashing cost (4–15)                                              |
 | `REQUIRE_STAFF_2FA`                 | `true`                                        | organisers/admins must use 2FA; `false` only outside production           |
-| `CHAT_RETENTION_DAYS`               | `90`                                          | chat messages older than this are deleted                                 |
-| `CHAT_MAX_CONNECTIONS_PER_MEMBER`   | `5`                                           | open live chat connections per member account (docs/CHAT.md)              |
-| `CHAT_MAX_GUEST_CONNECTIONS_PER_IP` | `20`                                          | open live chat connections per address for guests (docs/CHAT.md)          |
+| `CHAT_RETENTION_DAYS`               | `90`                                          | default of the "Keep messages" setting (docs/SETTINGS.md)                 |
+| `CHAT_MAX_CONNECTIONS_PER_MEMBER`   | `5`                                           | default of "Open connections per member" (docs/SETTINGS.md)               |
+| `CHAT_MAX_GUEST_CONNECTIONS_PER_IP` | `20`                                          | default of "Open connections per guest address" (docs/SETTINGS.md)        |
 | `MEDIA_DIR`                         | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`                |
-| `LINK_PREVIEWS`                     | `true`                                        | `false` switches chat link previews off                                   |
+| `LINK_PREVIEWS`                     | `true`                                        | default of both link-preview settings (docs/SETTINGS.md)                  |
 | `CALLS_URL`                         | (unset: Calls off)                            | call service origin, `wss://...` (docs/CALLS.md)                          |
 | `CALLS_API_KEY`                     | (unset)                                       | call service API key; set with the other two or none                      |
 | `CALLS_API_SECRET`                  | (unset)                                       | call service API secret; production: no dev pair, 32+ chars               |
@@ -93,6 +93,12 @@ Read from the environment when the process starts, never baked into a build:
 | `EVENT_BOT_DB`                      | (unset: bot events off)                       | the event bot's database, read-only (docs/BOTS.md)                        |
 | `PRICE_BOT_MINING_RATES`            | (unset: no fair price, no mining times)       | the price bot's `mining_rates.json`, read-only (docs/BOTS.md)             |
 | `COINGECKO_API_KEY`                 | (unset: ETH, POL, BTC not connected)          | CoinGecko Demo key: the server fetches ETH/POL/BTC history (docs/BOTS.md) |
+
+Four of these are only the start of a site setting since 2026-10-23 (`CHAT_RETENTION_DAYS`,
+`CHAT_MAX_CONNECTIONS_PER_MEMBER`, `CHAT_MAX_GUEST_CONNECTIONS_PER_IP`, `LINK_PREVIEWS`): an
+admin changes the value at runtime on Admin → Settings, and the setting rules from then on
+(docs/SETTINGS.md). Fixed values in `server/src/config.js` that became settings the same way:
+the upload sizes, the image pixel limit and the per-sender message counts.
 
 The server loads `.env` from the repository root if present; real environment variables win.
 `.env.example` lists every key the server reads, by name with a comment and no value;
@@ -263,8 +269,9 @@ password change and turning 2FA on or off close the account's other sockets at o
   stored as WebP under `MEDIA_DIR/previews/` and served from this origin, so **viewers' browsers
   never contact the linked site** and the CSP stays unchanged. Results are cached per URL for 24 h
   (failures too), one fetch per URL at a time; at most 30 fetches per member per hour and 60 per
-  minute overall (`config.linkPreviews`). `LINK_PREVIEWS=false` switches previews off. Previews
-  nobody uses any more are deleted with their image by the retention job.
+  minute overall (`config.linkPreviews`). The "Link previews in rooms" setting (default
+  `LINK_PREVIEWS`) switches them off. Previews nobody uses any more are deleted with their image by
+  the retention job.
 - **Fetch safety** (`server/src/previews/safeFetch.js`, `ipPolicy.js`), against server-side
   request forgery: https and port 443 only, no credentials in the URL; the server resolves the
   name itself and **every** answer must be a public address — private, loopback, link-local
@@ -330,7 +337,7 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
   recovery-code dialog, the account page's "Private messages").
 - **Favourites** (docs/CHAT.md, "Favourites"): members' favourite rooms and members,
   `/api/chat/favourites`, keyed on the session's account only; rows cascade with the account.
-- **Retention**: messages older than `CHAT_RETENTION_DAYS` (default 90) are deleted with their
+- **Retention**: messages older than the "Keep messages" setting (default `CHAT_RETENTION_DAYS`, 90) are deleted with their
   uploaded files, files whose message was removed in any other way and uploads never sent
   within an hour go too (no orphans), unused link previews after the cache time, and guest
   names unused for 30 days are released, at start and every six hours
@@ -456,7 +463,8 @@ server/
                            the reminder job, the link to a bot event (eventLink.js),
                            recordings with their length and chapters and the archive
                            (recordings.js, chapters.js, recordingRoutes.js, chapterRoutes.js)
-  src/settings/            admin-editable site settings: definitions, store, admin routes
+  src/settings/            admin-editable site settings (docs/SETTINGS.md): kinds, groups/,
+                           definitions, store, admin routes
   src/embed/               the chat on approved other sites: the approved list (a setting),
                            embed tokens, their route allow-list, routes (docs/EMBED.md, AUTH.md)
   src/reference/           ETH, POL and BTC prices from CoinGecko: schema, the API call, the daily

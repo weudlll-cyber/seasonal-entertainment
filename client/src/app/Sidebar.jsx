@@ -69,7 +69,7 @@ function CallsNavItem({ user }) {
 
 // rail: the call page's icon rail instead of the full sidebar (from 760px).
 export default function Sidebar({ rail = false }) {
-  const { user } = useSession();
+  const { user, settings } = useSession();
   const { pathname } = useLocation();
   const railState = useRail(rail);
   // The page the menu was opened on: following a link changes the page and so closes it.
@@ -147,15 +147,17 @@ export default function Sidebar({ rail = false }) {
         </button>
         <nav aria-label="Main" className="sidebar__nav">
           <ul>
-            {MAIN_NAV.map((item) =>
-              item.to === '/chat' ? (
-                <Fragment key={item.to}>
-                  <ChatNavItem item={item} />
-                  <CallsNavItem user={user} />
-                </Fragment>
-              ) : (
-                <NavItem key={item.to} item={item} />
-              )
+            {/* "Start here" only while its site setting is on (the page stays reachable). */}
+            {MAIN_NAV.filter((item) => item.to !== '/start' || settings['home.startHere']).map(
+              (item) =>
+                item.to === '/chat' ? (
+                  <Fragment key={item.to}>
+                    <ChatNavItem item={item} />
+                    <CallsNavItem user={user} />
+                  </Fragment>
+                ) : (
+                  <NavItem key={item.to} item={item} />
+                )
             )}
           </ul>
           {staffNav.length > 0 && (

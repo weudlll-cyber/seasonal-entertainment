@@ -9,7 +9,14 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest';
-import { formatDate, formatDateTime, formatDay, formatLocal, startOfWeek } from './localWeek.js';
+import {
+  formatDate,
+  formatDateTime,
+  formatDay,
+  formatLocal,
+  startOfWeek,
+  weekTime,
+} from './localWeek.js';
 
 const BERLIN = 'Europe/Berlin';
 const at = (iso) => Date.parse(iso);
@@ -31,6 +38,21 @@ describe('startOfWeek', () => {
   it('works for zones behind UTC: Monday 01:00 UTC still belongs to the previous week in New York', () => {
     const week = startOfWeek(at('2026-10-19T01:00Z'), 'America/New_York');
     expect(new Date(week).toISOString()).toBe('2026-10-12T04:00:00.000Z');
+  });
+});
+
+describe('weekTime', () => {
+  const week = startOfWeek(at('2026-10-21T12:00Z'), BERLIN); // the week clocks go back
+  const iso = (instant) => new Date(instant).toISOString();
+
+  it('Monday 09:00 in summer time is 07:00 UTC', () => {
+    expect(iso(weekTime(week, 0, 9, BERLIN))).toBe('2026-10-19T07:00:00.000Z');
+  });
+
+  it('Sunday 09:00 after the change (03:00 back to 02:00) is 08:00 UTC, still 09:00 local', () => {
+    const sunday = weekTime(week, 6, 9, BERLIN);
+    expect(iso(sunday)).toBe('2026-10-25T08:00:00.000Z');
+    expect(formatLocal(sunday, BERLIN).time).toBe('09:00');
   });
 });
 

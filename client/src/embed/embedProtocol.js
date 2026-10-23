@@ -5,7 +5,8 @@
 // Description: The postMessage API between the embedded chat (/embed/chat in an iframe) and
 //              the page that frames it (docs/EMBED.md). The embed talks only to its parent's
 //              origin, and only once that origin is known to be this site itself or a site an
-//              admin approved (asked of the server, which keeps the list). Every message goes
+//              admin approved (asked of the server, which keeps the list and says what guests
+//              may do there; embedAuth.js keeps both). Every message goes
 //              to exactly that origin (never "*"); messages from any other origin or window
 //              are ignored. Nothing secret ever goes to the host: no token, no key, no message
 //              text. Embed -> host: ready, unread, resize. Host -> embed: visible, theme.
@@ -13,6 +14,7 @@
 // ============================================================
 
 import { api } from '../api/http.js';
+import { setEmbedSite } from './embedAuth.js';
 
 export const EMBED_SOURCE = 'seasonal-chat'; // on every message the embed sends
 export const HOST_SOURCE = 'seasonal-chat-host'; // required on every message the host sends
@@ -37,8 +39,13 @@ export function parentOrigin() {
 export async function verifyHost(origin) {
   if (!origin || origin === 'null') return null;
   if (origin === window.location.origin) return origin;
-  const { allowed } = await api(`/embed/check?origin=${encodeURIComponent(origin)}`);
-  return allowed ? origin : null;
+  const { allowed, guestsRead, guestsWrite, uploads, images } = await api(
+    `/embed/check?origin=${encodeURIComponent(origin)}`
+  );
+  if (!allowed) return null;
+  // From now on a guest's requests name the site, under its rules (embedAuth.js).
+  setEmbedSite(origin, { guestsRead, guestsWrite, uploads, images });
+  return origin;
 }
 
 // host: the verified origin (null: say nothing at all).

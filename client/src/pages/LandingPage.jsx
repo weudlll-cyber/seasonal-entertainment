@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: Home in the SE style (docs/DESIGN.md, "Home"): the night-blue banner with the
 //              emblem, the lettering and the greeting (with the username when signed in; for
-//              guests "New here? Start here" beside it) and the season clock (SeasonClock.jsx),
+//              guests "New here? Start here" beside it) and the season clock (SeasonClock.jsx;
+//              both can be switched off: the "Home" site settings),
 //              then
 //              a grid that fits the main column at 1280 x 720 without scrolling: the featured
 //              game and "Up next": the next two of the event bot's occurrences (/api/bot-events)
@@ -61,7 +62,7 @@ function merged(next, calls, to) {
 }
 
 export default function LandingPage({ timeZone = deviceZone() }) {
-  const { user } = useSession();
+  const { user, settings } = useSession();
   const [game, setGame] = useState(undefined); // undefined: loading; null: no games
   const [range] = useState(upNextRange); // fixed while the page is open
   const [next, setNext] = useState(null); // upNext()'s answer; null while loading
@@ -111,13 +112,15 @@ export default function LandingPage({ timeZone = deviceZone() }) {
             <Link
               className="home__start"
               to="/start"
-              style={{ visibility: user === null ? 'visible' : 'hidden' }}
+              style={{
+                visibility: user === null && settings['home.startHere'] ? 'visible' : 'hidden',
+              }}
             >
               New here? Start here
             </Link>
           </div>
         </div>
-        <SeasonClock timeZone={timeZone} />
+        {settings['home.seasonClock'] && <SeasonClock timeZone={timeZone} />}
       </div>
       <div className="home__grid">
         <FeaturedGameCard game={game} />

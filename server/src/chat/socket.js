@@ -11,9 +11,10 @@
 //              chat embedded on an approved foreign site has no cookie there: it offers the
 //              subprotocols "se-chat" and "se-embed.<token>" (embed/tokens.js), and the socket
 //              then acts for the token's member, closed as soon as the token stops working.
-//              Connection limits (security check 2026-10-22): at most `maxConnectionsPerMember`
-//              open sockets per member account (cookie and embed together), at most
-//              `maxGuestConnectionsPerIp` per address for guests; one more is accepted and
+//              Connection limits (security check 2026-10-22; site settings since 2026-10-23):
+//              at most `chat.maxConnectionsPerMember` open sockets per member account (cookie
+//              and embed together), at most `chat.maxGuestConnectionsPerIp` per address for
+//              guests; one more is accepted and
 //              closed at once with TOO_MANY_CONNECTIONS, which the client shows and does not
 //              retry in a loop (client/src/chat/connection.js).
 // ============================================================
@@ -22,6 +23,7 @@ import { WebSocketServer } from 'ws';
 import { findActiveToken } from '../embed/tokens.js';
 import { selfOrigin } from '../http/csrf.js';
 import { sessionUser } from '../http/session.js';
+import { getSetting } from '../settings/store.js';
 import { findRoomBySlug } from './store.js';
 
 export const CHAT_SOCKET_PATH = '/ws/chat';
@@ -88,10 +90,13 @@ export function attachChatSocket(server, { hub, sessionParser, db, config, embed
   // would look like a network error to the browser, which could not tell it apart.
   const accept = (req, socket, head, owner, sessionId, data) =>
     wss.handleUpgrade(req, socket, head, (ws) => {
-      const limit =
+      // The limits are site settings, read at each new connection.
+      const limit = getSetting(
+        db,
         owner.userId !== undefined
-          ? config.chat.maxConnectionsPerMember
-          : config.chat.maxGuestConnectionsPerIp;
+          ? 'chat.maxConnectionsPerMember'
+          : 'chat.maxGuestConnectionsPerIp'
+      );
       if (hub.countOpen(owner) >= limit) {
         return ws.close(TOO_MANY_CONNECTIONS, 'too many connections');
       }

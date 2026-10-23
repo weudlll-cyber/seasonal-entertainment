@@ -6,7 +6,8 @@
 //              decrypted in this browser (text with clickable links, a sticker or GIF from the
 //              site's library, a link preview card made while writing: useDirectLinkPreview,
 //              unless the member switched it off; a file, encrypted in this browser before it
-//              is uploaded: directFile.js), a notice wherever
+//              is uploaded: directFile.js, while the "Files in direct messages" setting is on),
+//              a notice wherever
 //              the partner's security key changed (older pages too), older messages on reaching
 //              the top (or with "Load older messages"), and the composer. A message made for an
 //              earlier key cannot be read and says so. The partner's messages can be reported
@@ -17,6 +18,7 @@
 // ============================================================
 
 import { useMemo, useRef, useState } from 'react';
+import { useSiteSettings } from '../session/SessionContext.jsx';
 import ChatComposer from './ChatComposer.jsx';
 import ChatNotice from './ChatNotice.jsx';
 import DirectMessage from './DirectMessage.jsx';
@@ -59,6 +61,7 @@ function withKeyNotices(messages, currentKeyId) {
 
 // partner: { id, username }; me: the signed-in account; keyId, privateKey: their key.
 export default function DirectConversation({ partner, me, keyId, privateKey }) {
+  const settings = useSiteSettings();
   const conversation = useDirectConversation(partner.id, keyId, privateKey);
   const { data, messages } = conversation;
   const list = useRef(null);
@@ -188,6 +191,7 @@ export default function DirectConversation({ partner, me, keyId, privateKey }) {
       {data?.partnerKey && (
         <ChatComposer
           user={me}
+          files={settings['chat.directFiles']}
           uploadFile={uploadFile}
           accept=""
           onDraft={setDraft}

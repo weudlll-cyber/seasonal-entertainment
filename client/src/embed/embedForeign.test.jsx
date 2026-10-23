@@ -7,7 +7,8 @@
 //              an unapproved parent hears nothing; it takes the login hand-over only from its
 //              own popup, and afterwards the token rides on every request and on the socket.
 //              A guest there gets "Log in to write" instead of a composer that could not send;
-//              a member gets no "Attach file" (uploads are refused with a token).
+//              a member gets no "Attach file" while the site's uploads are off (the default;
+//              on: embedFiles.test.jsx).
 // ============================================================
 
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';

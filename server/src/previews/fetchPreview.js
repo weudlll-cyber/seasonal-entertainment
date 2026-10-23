@@ -3,14 +3,15 @@
 // Path:        server/src/previews/fetchPreview.js
 // Project:     Seasonal Entertainment
 // Description: Fetches one link's preview through safeFetch: the page (text/html only, capped) and,
-//              if it names one, its image (fetchImage.js: checked, at most config.imageMaxPixels,
-//              upright, without metadata, scaled down, WebP). By default the image is stored in the
-//              media folder at the configured width, so room viewers load it from this site; a
-//              direct message's preview (directPreview.js) keeps it small and inline instead. Page
-//              and image share one deadline.
+//              if it names one, its image (fetchImage.js: checked, at most the pixel limit (a site
+//              setting), upright, without metadata, scaled down, WebP). By default the image is
+//              stored in the media folder at the configured width, so room viewers load it from
+//              this site; a direct message's preview (directPreview.js) keeps it small and inline
+//              instead. Page and image share one deadline.
 // ============================================================
 
 import { saveMediaFile } from '../media/files.js';
+import { imageMaxPixels } from '../settings/derived.js';
 import { fetchImage } from './fetchImage.js';
 import { parseMeta } from './parseMeta.js';
 import { safeFetch } from './safeFetch.js';
@@ -25,14 +26,14 @@ const storedImage = (config) => ({
   }),
 });
 
-async function previewImage(url, config, options, network, imageWay) {
+async function previewImage(db, url, config, options, network, imageWay) {
   try {
     const image = await fetchImage(
       url,
       {
         maxBytes: config.linkPreviews.maxImageBytes,
         maxWidth: imageWay.maxWidth,
-        maxPixels: config.imageMaxPixels,
+        maxPixels: imageMaxPixels(db),
       },
       options,
       network
@@ -45,7 +46,7 @@ async function previewImage(url, config, options, network, imageWay) {
 
 // Resolves { title, description, siteName, image } or null (nothing usable, or refused).
 // imageWay: { maxWidth, keep({ data, width, height }) -> the card's image }.
-export async function fetchPreview(url, config, network, imageWay = storedImage(config)) {
+export async function fetchPreview(db, url, config, network, imageWay = storedImage(config)) {
   const limits = config.linkPreviews;
   const options = {
     signal: AbortSignal.timeout(limits.timeoutMs),
@@ -61,7 +62,7 @@ export async function fetchPreview(url, config, network, imageWay = storedImage(
   const meta = parseMeta(page.body.toString('utf8'), page.url, limits);
   if (!meta.title && !meta.description) return null;
   const image = meta.image
-    ? await previewImage(meta.image, config, options, network, imageWay)
+    ? await previewImage(db, meta.image, config, options, network, imageWay)
     : null;
   return { title: meta.title, description: meta.description, siteName: meta.siteName, image };
 }

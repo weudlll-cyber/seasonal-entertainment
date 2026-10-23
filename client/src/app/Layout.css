@@ -4,7 +4,8 @@
    Project:     Seasonal Entertainment
    Description: The app shell: exactly the viewport's height (100dvh), sidebar and main column
                 side by side from 760px, top bar above the main column below. Only the main
-                column scrolls (docs/DESIGN.md).
+                column scrolls (docs/DESIGN.md); it is a column, banners on top and a filling
+                page (home) below them.
    ============================================================ */
 
 .shell {
@@ -13,7 +14,11 @@
   height: 100dvh;
 }
 
+/* A column: the banners on top (the site banner, the 2FA one, call notices) take their own
+   height, and a page that fills the window (home) takes the rest (LandingPage.css). */
 .shell__main {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   min-height: 0;
   overflow: auto;

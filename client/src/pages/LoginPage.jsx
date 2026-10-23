@@ -4,7 +4,9 @@
 // Project:     Seasonal Entertainment
 // Description: Login form, with a second step (code or recovery code) for accounts with 2FA.
 //              After success it returns to the page that sent the visitor here (?next=,
-//              same-site paths only; session/nextPage.js) or to the account page; the link to
+//              same-site paths only; session/nextPage.js) or to the account page; a member who
+//              must still set up 2FA (the site requires it for everyone) goes to its setup
+//              instead; the link to
 //              the registration keeps ?next=. The password itself never leaves
 //              the browser: only the auth key derived from it is sent (session/credentials.js).
 //              Once logged in, the same derived keys open (or first create) the member's key
@@ -12,6 +14,7 @@
 //              logo (FormLogo.jsx), except in the chat's login popup.
 // ============================================================
 
+import { roleAtLeast } from '@seasonal-entertainment/shared/accountRules.js';
 import { useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import FormLogo from '../brand/FormLogo.jsx';
@@ -40,7 +43,8 @@ export default function LoginPage() {
     await keys.openWithPassword(passwordKeys.current, user.id).catch(() => {});
     passwordKeys.current = null;
     setUser(user);
-    navigate(safeNext(params.get('next')), { replace: true });
+    const setUp2fa = user.twoFactorRequired && !roleAtLeast(user.role, 'organiser');
+    navigate(setUp2fa ? '/account#two-factor' : safeNext(params.get('next')), { replace: true });
   }
 
   async function onSubmit(event) {

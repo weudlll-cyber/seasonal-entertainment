@@ -7,7 +7,8 @@
 //              key, name and type only inside the encrypted message; the recipient decrypts it;
 //              only a real PNG, JPEG, GIF or WebP (by its bytes) is shown as a picture, and an
 //              SVG or HTML file — even one named and typed as a picture — only as a download;
-//              reporting a message with a file shares the file decrypted by the reporter.
+//              reporting a message with a file shares the file decrypted by the reporter. While
+//              the "Files in direct messages" setting is off, the composer has no file button.
 // ============================================================
 
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
@@ -21,7 +22,7 @@ import {
 import { SessionProvider } from '../session/SessionContext.jsx';
 import { storedDirect } from '../test/directFixtures.js';
 import { FakeSocket } from '../test/fakeSocket.js';
-import { mockApi, signedIn } from '../test/mockApi.js';
+import { mockApi, signedIn, withSettings } from '../test/mockApi.js';
 import { rasterType } from './directFile.js';
 import { DirectPanel } from './index.js';
 import { showDirect } from './directView.js';
@@ -103,6 +104,13 @@ describe('the safety rule', () => {
 });
 
 describe('sending', () => {
+  it('no file button while the "Files in direct messages" setting is off', async () => {
+    const mia = signedIn({ id: 1, username: 'mia', role: 'member' });
+    await open({ extra: withSettings(mia, { 'chat.directFiles': false }) });
+    await screen.findByLabelText('Message');
+    expect(screen.queryByLabelText('File to attach')).toBeNull();
+  });
+
   it('the file leaves encrypted; its key, name and type only inside the message', async () => {
     const { calls } = await open({
       extra: {

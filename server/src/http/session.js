@@ -5,20 +5,23 @@
 // Description: Cookie sessions stored server-side in the SQLite database (table "sessions"),
 //              plus the per-request user lookup that ends sessions whose account was locked,
 //              deleted, or had its password changed (session epoch, pattern from the race game).
-//              A signed-in session ends after 7 days without use (decided 2026-10-22): every
-//              authenticated request renews it to 7 days from then, at most once a minute
+//              A signed-in session ends after the idle limit without use (decided 2026-10-22;
+//              the "Sign out after" site setting, 7 days by default, since 2026-10-23): every
+//              authenticated request renews it to the limit from then, at most once a minute
 //              (one write per minute, not per request); the store's own per-request "touch"
-//              is off. Signed-in sessions from before the rule are capped at 7 days on start.
+//              is off. Signed-in sessions from before the rule are capped at the limit on start.
 //              A guest's session (a guest name, docs/CHAT.md) keeps its 30 days.
 // ============================================================
 
 import session from 'express-session';
 import sqliteStoreFactory from 'better-sqlite3-session-store';
 import { findUserById } from '../accounts/userStore.js';
+import { getSetting } from '../settings/store.js';
 
 const SqliteStore = sqliteStoreFactory(session);
 const DAY_MS = 24 * 60 * 60 * 1000;
-export const IDLE_LIMIT_MS = 7 * DAY_MS;
+// How long a signed-in session may go unused: the "Sign out after" setting (7 days by default).
+export const idleLimitMs = (db) => getSetting(db, 'accounts.sessionIdleDays') * DAY_MS;
 const GUEST_SESSION_MS = 30 * DAY_MS;
 const RENEW_EVERY_MS = 60_000;
 const SWEEP_MS = 15 * 60_000;
@@ -46,8 +49,8 @@ export function cookieName(config) {
 
 export function sessionMiddleware(db, config) {
   const store = new (storeClass(config.backgroundJobs))({ client: db });
-  // Signed-in sessions from the 30-day rule: at most 7 more days, unless they are used.
-  const cap = new Date(Date.now() + IDLE_LIMIT_MS).toISOString();
+  // Signed-in sessions from the 30-day rule: at most the idle limit more, unless they are used.
+  const cap = new Date(Date.now() + idleLimitMs(db)).toISOString();
   db.prepare(
     "UPDATE sessions SET expire = ? WHERE expire > ? AND json_extract(sess, '$.userId') IS NOT NULL"
   ).run(cap, cap);
@@ -62,42 +65,44 @@ export function sessionMiddleware(db, config) {
       sameSite: 'lax',
       secure: config.cookieSecure,
       path: '/',
-      maxAge: GUEST_SESSION_MS, // signed in: IDLE_LIMIT_MS (renewSession)
+      maxAge: GUEST_SESSION_MS, // signed in: the idle limit (renewSession)
     },
   });
 }
 
-// Last used more than 7 days ago (usedAt: renewSession's stamp; a session from before the
-// rule has none yet and gets one on its next request).
-const idleTooLong = (session) =>
-  session.usedAt !== undefined && Date.now() - session.usedAt > IDLE_LIMIT_MS;
+// Last used longer ago than the idle limit (usedAt: renewSession's stamp; a session from
+// before the rule has none yet and gets one on its next request).
+const idleTooLong = (session, limitMs) =>
+  session.usedAt !== undefined && Date.now() - session.usedAt > limitMs;
 
 // The account a session belongs to, or null when there is none or it no longer qualifies:
-// deleted, locked, the session carries an older epoch, or it was not used for 7 days. Also
-// used by the chat WebSocket.
+// deleted, locked, the session carries an older epoch, or it was not used for the idle limit.
+// Also used by the chat WebSocket.
 export function sessionUser(db, session) {
   const id = session?.userId;
-  if (id === undefined || idleTooLong(session)) return null;
+  if (id === undefined || idleTooLong(session, idleLimitMs(db))) return null;
   const user = findUserById(db, id);
   return user && !user.locked && user.sessionEpoch === session.sessionEpoch ? user : null;
 }
 
-// A used session lives 7 more days: the stamp and the cookie's (and the store's) expiry move,
-// at most once a minute. Changing the session makes express-session save it and resend the
-// cookie with the new expiry.
-function renewSession(session) {
+// A used session lives the idle limit longer: the stamp and the cookie's (and the store's)
+// expiry move, at most once a minute. Changing the session makes express-session save it and
+// resend the cookie with the new expiry.
+function renewSession(session, limitMs) {
   const now = Date.now();
   if (session.usedAt !== undefined && now - session.usedAt < RENEW_EVERY_MS) return;
   session.usedAt = now;
-  session.cookie.maxAge = IDLE_LIMIT_MS;
+  session.cookie.maxAge = limitMs;
 }
 
 // Sets req.user (or null). A session whose account no longer qualifies, or that was not used
-// for 7 days, is logged out here, on its very next request; a used one is renewed.
+// for the idle limit, is logged out here, on its very next request; a used one is renewed.
+// req.idleLimitMs: the limit now, for a session started later in this request (startSession).
 export function currentUser(db) {
   return (req, _res, next) => {
+    req.idleLimitMs = idleLimitMs(db);
     req.user = sessionUser(db, req.session);
-    if (req.user) renewSession(req.session);
+    if (req.user) renewSession(req.session, req.idleLimitMs);
     else if (req.session?.userId !== undefined) {
       delete req.session.userId;
       delete req.session.sessionEpoch;
@@ -117,7 +122,7 @@ export async function startSession(req, user) {
   req.session.userId = user.id;
   req.session.sessionEpoch = user.sessionEpoch;
   req.session.usedAt = Date.now();
-  req.session.cookie.maxAge = IDLE_LIMIT_MS;
+  req.session.cookie.maxAge = req.idleLimitMs;
   await call(req, 'save');
 }
 

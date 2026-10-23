@@ -25,7 +25,8 @@ import './ChatFavourites.css';
 // variant: 'full' (a page of its own) or 'compact' (a box beside other content).
 // showRoomTabs: let the reader switch between their rooms (favourites first, RoomTabs);
 // unlisted: the room is not in the room lists (a call's chat), so it is asked for by name.
-// files: the composer's "Attach file" for members (ChatComposer); false where uploads are refused.
+// files: the composer's "Attach file" for members (ChatComposer); false where uploads are refused
+// (it also goes while the "File uploads in rooms" setting is off).
 // guestPrompt: shown to a guest instead of the composer where a guest cannot write (the chat
 // embedded on another site: a guest name needs a cookie there); null keeps the guest composer.
 export default function ChatPanel({
@@ -36,7 +37,7 @@ export default function ChatPanel({
   files = true,
   guestPrompt = null,
 }) {
-  const { user } = useSession();
+  const { user, settings } = useSession();
   const chat = useChatRoom(roomInput, user, unlisted);
   const { info, room, current } = chat;
   const roomName = current?.name ?? room;
@@ -71,7 +72,7 @@ export default function ChatPanel({
               guestName={info.me.guestName}
               onSend={chat.send}
               room={room}
-              files={files}
+              files={files && settings['chat.uploads']}
             />
           )
         ) : (

@@ -3,7 +3,8 @@
 // Path:        client/src/calls/callNotices.test.jsx
 // Project:     Seasonal Entertainment
 // Description: The notices of "Remind me on this site" (CallNotices.jsx): a member's page
-//              shows "<title> starts in 10 minutes" and "<title> is live now" when the server
+//              shows "<title> starts in N minutes" (counted to the planned start, whatever the
+//              lead time) and "<title> is live now" when the server
 //              pushes them, with Listen and Dismiss; each kind once — dismissed in one tab it
 //              goes in the others and does not come back; none on the call's own page; guests
 //              never get one.
@@ -16,7 +17,9 @@ import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
 import { renderApp } from '../test/renderApp.jsx';
 
 const MIA = { id: 4, username: 'mia', role: 'member' };
-const CALL = { id: 3, title: 'Town hall', scheduledFor: null };
+// Ten minutes ahead, less a moment: the text counts up to the start.
+const ahead = (minutes) => new Date(Date.now() + minutes * 60_000 - 5_000).toISOString();
+const CALL = { id: 3, title: 'Town hall', scheduledFor: ahead(10) };
 const reminder = (kind) => ({ type: 'callReminder', kind, call: CALL });
 const DATA = {
   'GET /games': { body: { ok: true, games: [] } },
@@ -46,6 +49,16 @@ describe('call notices', () => {
     live.push(reminder('live'));
     expect(screen.getByText('Town hall is live now')).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'Listen' })[0]).toHaveAttribute('href', '/calls/3');
+  });
+
+  it('counts to the planned start, so a longer lead time reads right', async () => {
+    mockApi({ ...signedIn(MIA), ...DATA });
+    await renderApp('/games');
+    const live = await socket();
+    live.push({ ...reminder('soon'), call: { ...CALL, id: 5, scheduledFor: ahead(30) } });
+    expect(await screen.findByText('Town hall starts in 30 minutes')).toBeInTheDocument();
+    live.push({ ...reminder('soon'), call: { ...CALL, id: 6, scheduledFor: ahead(1) } });
+    expect(await screen.findByText('Town hall starts in 1 minute')).toBeInTheDocument();
   });
 
   it('once per kind: dismissed here, gone in other tabs and not shown again', async () => {

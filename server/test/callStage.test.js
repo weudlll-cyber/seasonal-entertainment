@@ -12,6 +12,7 @@
 
 import { TrackSource } from 'livekit-server-sdk';
 import { afterEach, describe, expect, it } from 'vitest';
+import { setSetting } from '../src/settings/store.js';
 import { callApp, join, liveCall, organiser } from './helpers/calls.js';
 import { auditActions } from './helpers/chat.js';
 import { registerUser } from './helpers/testApp.js';
@@ -93,7 +94,7 @@ describe('inviting to the stage', () => {
     expect((await invite(olga, call, identity)).body.error).toBe('not_connected');
     await join((await registerUser(t, 'mia2')).agent, service, call);
 
-    t.db.prepare("INSERT INTO site_settings VALUES ('calls.maxSpeakers', '1')").run();
+    setSetting(t.db, 'calls.maxSpeakers', 1);
     const bob = await registerUser(t, 'bob');
     const bobIn = await join(bob.agent, service, call);
     expect((await invite(olga, call, bobIn.identity)).body.error).toBe('stage_full');

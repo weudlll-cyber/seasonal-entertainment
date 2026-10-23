@@ -2,75 +2,56 @@
 // File:        AdminSettingsPage.jsx
 // Path:        client/src/admin/AdminSettingsPage.jsx
 // Project:     Seasonal Entertainment
-// Description: Admin site settings (/admin/settings): every setting the server defines, as a
-//              whole number within its range, saved one at a time (each change is audited).
+// Description: Admin site settings (/admin/settings): every setting the server defines, in
+//              its group (Chat, Other sites, Calls, …, in the server's order), each saved on
+//              its own (SettingForm.jsx; every change is audited).
 // ============================================================
 
 import { useEffect, useState } from 'react';
 import { api } from '../api/http.js';
-import { FormField, FormMessage } from '../components/FormField.jsx';
-
-function SettingForm({ setting, onSaved }) {
-  const [value, setValue] = useState(String(setting.value));
-  const [error, setError] = useState(null);
-
-  async function save(event) {
-    event.preventDefault();
-    setError(null);
-    try {
-      const data = await api(`/admin/settings/${setting.key}`, {
-        method: 'PUT',
-        body: { value: Number(value) },
-      });
-      onSaved(data.settings);
-    } catch (err) {
-      setError(err.message);
-    }
-  }
-
-  return (
-    <form className="form card" aria-label={setting.label} onSubmit={save}>
-      <FormField
-        label={setting.label}
-        hint={`${setting.min}–${setting.max}; default ${setting.default}`}
-        type="number"
-        min={setting.min}
-        max={setting.max}
-        step={1}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        required
-      />
-      <FormMessage error={error} />
-      <button className="button" type="submit">
-        Save
-      </button>
-    </form>
-  );
-}
+import { FormMessage } from '../components/FormField.jsx';
+import SettingForm from './SettingForm.jsx';
 
 export default function AdminSettingsPage() {
-  const [settings, setSettings] = useState(null);
+  const [answer, setAnswer] = useState(null); // { groups, settings }
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
 
   useEffect(() => {
     api('/admin/settings')
-      .then((data) => setSettings(data.settings))
+      .then(setAnswer)
       .catch((err) => setError(err.message));
   }, []);
 
-  function saved(next) {
-    setSettings(next);
+  function saved(settings) {
+    setAnswer((before) => ({ ...before, settings }));
     setNotice('Saved.');
   }
+
+  // Only groups that hold a setting; each group's settings in the server's order.
+  const groups = (answer?.groups ?? [])
+    .map((name) => ({ name, settings: answer.settings.filter((s) => s.group === name) }))
+    .filter((group) => group.settings.length > 0);
 
   return (
     <>
       <h2>Settings</h2>
+      <p>Each setting starts at the site's usual behaviour; a change takes effect at once.</p>
       <FormMessage error={error} notice={notice} />
-      {settings?.map((setting) => (
-        <SettingForm key={`${setting.key}:${setting.value}`} setting={setting} onSaved={saved} />
+      {groups.map((group) => (
+        <section key={group.name} className="settings-group" aria-label={group.name}>
+          <h3>{group.name}</h3>
+          <div className="settings-group__list">
+            {group.settings.map((setting) => (
+              // Keyed by the stored value too: a save shows the server's value afresh.
+              <SettingForm
+                key={`${setting.key}:${setting.value}`}
+                setting={setting}
+                onSaved={saved}
+              />
+            ))}
+          </div>
+        </section>
       ))}
     </>
   );

@@ -97,8 +97,11 @@ export function assignGuestName(db, random = randomGuestSuffix) {
   return null;
 }
 
+// true while the guest still holds the name (it is released after 30 days unused).
 export function touchGuest(db, guestId) {
-  db.prepare('UPDATE chat_guests SET last_seen = ? WHERE id = ?').run(now(), guestId);
+  return (
+    db.prepare('UPDATE chat_guests SET last_seen = ? WHERE id = ?').run(now(), guestId).changes > 0
+  );
 }
 
 // --- reports -------------------------------------------------------------------------

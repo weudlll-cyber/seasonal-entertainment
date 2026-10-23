@@ -13,7 +13,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { findUserById } from '../src/accounts/userStore.js';
 import { readConfig } from '../src/config.js';
 import { allow } from '../src/http/access.js';
-import { staffTwoFactorGate } from '../src/twofa/gate.js';
+import { twoFactorGate } from '../src/twofa/gate.js';
 import { codeForStep, stepAt } from '../src/twofa/totp.js';
 import { logIn, proof } from './helpers/accountKeys.js';
 import { TEST_SECRET_KEY, makeTestApp, registerUser, setRole } from './helpers/testApp.js';
@@ -134,7 +134,7 @@ describe('staff requirement', () => {
   const probe = (config, user) => {
     const app = express();
     app.use((req, _res, next) => ((req.user = user), next()));
-    app.use(staffTwoFactorGate(t.db, config));
+    app.use(twoFactorGate(t.db, config));
     app.post('/organiser-action', allow('organiser'), (_req, res) => res.json({ ok: true }));
     return request(app).post('/organiser-action');
   };

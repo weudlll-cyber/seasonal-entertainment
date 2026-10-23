@@ -52,11 +52,14 @@ export function findActiveToken(db, origins, token, now = Date.now()) {
   return stillValid(db, origins, row, now);
 }
 
-// The same check by id, for a socket that connected with a token earlier.
-export function tokenStillActive(db, origins, tokenId, now = Date.now()) {
+// The same check by id, for a socket that connected with a token earlier and for a file
+// link made for one (uploads/fileLinks.js): { tokenId, origin, user, sessionEpoch } or null.
+export function activeTokenById(db, origins, tokenId, now = Date.now()) {
   const row = db.prepare(`SELECT ${COLUMNS} FROM embed_tokens WHERE id = ?`).get(tokenId);
-  return Boolean(stillValid(db, origins, row, now));
+  return stillValid(db, origins, row, now);
 }
+export const tokenStillActive = (db, origins, tokenId, now = Date.now()) =>
+  Boolean(activeTokenById(db, origins, tokenId, now));
 
 export const revokeToken = (db, tokenId) =>
   db.prepare('DELETE FROM embed_tokens WHERE id = ?').run(tokenId);

@@ -4,8 +4,9 @@
 // Project:     Seasonal Entertainment
 // Description: The account line of the chat embedded on an approved foreign site: "Log in"
 //              (the popup on this site, useEmbedLogin.js) for a guest, the member's name and
-//              "Log out" once logged in. Also LogInToWrite, the same login in place of a
-//              guest's composer there. Same-site embeds have the site's own login instead.
+//              "Log out" once logged in. Also LogInToWrite and LogInToRead, the same login in
+//              place of a guest's composer, or of the room, where the site's rules do not let
+//              guests write or read. Same-site embeds have the site's own login instead.
 // ============================================================
 
 import { useSession } from '../session/SessionContext.jsx';
@@ -32,13 +33,25 @@ export default function EmbedAccount({ login, ready }) {
   );
 }
 
-// In place of the composer for a guest: a guest cannot write on another site (no cookie for
-// a guest name), so the room offers the same login as the account line above.
+// In place of the composer for a guest where guests may not write on that site (the "Other
+// sites" settings or the site's own rule): the same login as the account line above.
 export function LogInToWrite({ login, ready }) {
   return (
     <p className="chat-note">
       <button type="button" className="link-button" disabled={!ready} onClick={login.logIn}>
         Log in to write
+      </button>
+    </p>
+  );
+}
+
+// In place of the room where guests may not even read on that site.
+export function LogInToRead({ login, ready }) {
+  return (
+    <p className="chat-note">
+      Guests cannot read the chat on this site.{' '}
+      <button type="button" className="link-button" disabled={!ready} onClick={login.logIn}>
+        Log in to read
       </button>
     </p>
   );

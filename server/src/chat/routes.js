@@ -36,7 +36,8 @@ import { canRead, canWrite, chatViewer, isModerator } from './viewer.js';
 const forGuests =
   (limiter, { newGuestsOnly = false } = {}) =>
   (req, res, next) => {
-    const counted = !req.user && !(newGuestsOnly && req.session?.chatGuest);
+    const known = req.embedSite ? req.embedGuest : req.session?.chatGuest;
+    const counted = !req.user && !(newGuestsOnly && known);
     return counted ? limiter(req, res, next) : next();
   };
 

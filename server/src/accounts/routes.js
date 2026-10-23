@@ -2,7 +2,8 @@
 // File:        routes.js
 // Path:        server/src/accounts/routes.js
 // Project:     Seasonal Entertainment
-// Description: /api/auth: current session, registration, logout, own password change (login:
+// Description: /api/auth: current session (with the public site settings), registration (while
+//              the "Registration open" setting is on), logout, own password change (login:
 //              loginRoutes.js). No password ever arrives here: registration and password change
 //              carry the auth key the browser derived and its salt (docs/AUTH.md, "Login key
 //              split"); the server stores bcrypt of the auth key. The password rules are checked in
@@ -27,6 +28,7 @@ import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { cookieName, endSession, restampSession, startSession } from '../http/session.js';
 import { mustBeTrue, validBody } from '../http/validate.js';
+import { getSetting, publicSettings } from '../settings/store.js';
 import { twoFactorStatus } from '../twofa/gate.js';
 import { resealKey } from '../keys/store.js';
 import { authKeyField, optional, saltField, sealedKeyField } from './credentials.js';
@@ -55,11 +57,16 @@ export function accountRoutes(db, config, chatSessions) {
     keyGenerator: (req) => `user:${req.user.id}`,
   });
 
+  // The settings every visitor's browser needs (shared/siteSettings.js) travel with it.
   router.get('/session', allow('public'), (req, res) => {
-    res.json({ ok: true, user: req.user ? view(req.user) : null });
+    res.json({ ok: true, user: req.user ? view(req.user) : null, settings: publicSettings(db) });
   });
 
   router.post('/register', allow('public'), registerLimiter, async (req, res) => {
+    // The "Registration open" setting; the first admin's bootstrap (bootstrap.js) is separate.
+    if (!getSetting(db, 'accounts.registrationOpen')) {
+      return sendError(res, 403, 'registration_closed', 'Registration is closed at the moment.');
+    }
     const input = validBody(req, res, {
       username: validateUsername,
       email: validateEmail,

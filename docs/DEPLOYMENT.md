@@ -141,6 +141,11 @@ In **`site.env`**:
 | `COINGECKO_API_KEY`     | your free CoinGecko Demo key (coingecko.com/en/api): ETH, POL and BTC prices on `/info/prices`; empty: "not connected" (docs/BOTS.md)        |
 | everything else         | empty: the defaults fit (docs/ARCHITECTURE.md, "Runtime configuration")                                                                      |
 
+`CHAT_RETENTION_DAYS`, `CHAT_MAX_CONNECTIONS_PER_MEMBER`, `CHAT_MAX_GUEST_CONNECTIONS_PER_IP` and
+`LINK_PREVIEWS` are only defaults now (2026-10-23): once an admin changes the matching setting on
+Admin → Settings, that value rules, whatever `site.env` says (docs/SETTINGS.md). Leave them empty
+and set the values there.
+
 ### The owner's bots (prices and events, read-only)
 
 The site reads the price bot's and the event bot's SQLite files (docs/BOTS.md). **This assumes

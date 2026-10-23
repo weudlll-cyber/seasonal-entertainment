@@ -3,7 +3,8 @@
 // Path:        client/src/calls/CallNotices.jsx
 // Project:     Seasonal Entertainment
 // Description: The notices of "Remind me on this site" (docs/CALLS.md, "Reminders"): "<title>
-//              starts in 10 minutes" and "<title> is live now", each with "Listen" and
+//              starts in N minutes" (counted to its planned start; the lead time is a site
+//              setting) and "<title> is live now", each with "Listen" and
 //              "Dismiss", on every open page of the member. The server pushes each kind once
 //              per member and call over the chat's live connection (usePersonalEvents; members
 //              only, so guests never get one). Dismissing it in one tab dismisses it in all of
@@ -19,8 +20,15 @@ import './calls.css';
 
 const PREFIX = 'se.callNotice.';
 const keyOf = (notice) => `${PREFIX}${notice.call.id}.${notice.kind}`;
+// The minutes up to the planned start, rounded up: the server sends "soon" as early as the
+// "Reminder before a call" setting says, so the text cannot be a fixed number.
+function startsIn(scheduledFor) {
+  const minutes = Math.ceil((Date.parse(scheduledFor) - Date.now()) / 60_000);
+  if (!(minutes > 0)) return 'starts soon';
+  return `starts in ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+}
 const textOf = ({ kind, call }) =>
-  kind === 'live' ? `${call.title} is live now` : `${call.title} starts in 10 minutes`;
+  kind === 'live' ? `${call.title} is live now` : `${call.title} ${startsIn(call.scheduledFor)}`;
 
 export default function CallNotices() {
   const { pathname } = useLocation();

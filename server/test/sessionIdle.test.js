@@ -5,12 +5,14 @@
 // Description: Guards the 7-day rule for signed-in sessions (http/session.js, decided
 //              2026-10-22): a session unused for more than 7 days is rejected; one used within
 //              7 days stays valid past 7 days from login; the renewal writes at most once a
-//              minute; signed-in sessions from the old 30-day rule are capped at 7 days.
+//              minute; signed-in sessions from the old 30-day rule are capped at 7 days. The
+//              limit is the "Sign out after" setting: changed, it rules at once.
 // ============================================================
 
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { IDLE_LIMIT_MS, sessionMiddleware } from '../src/http/session.js';
+import { sessionMiddleware } from '../src/http/session.js';
+import { setSetting } from '../src/settings/store.js';
 import { cookieOf } from './helpers/chatSocket.js';
 import { makeTestApp, registerUser } from './helpers/testApp.js';
 
@@ -50,6 +52,16 @@ describe('sessions end after 7 days without use', () => {
     expect(await sessionUser(cookie)).toMatchObject({ username: 'mia' });
   });
 
+  it('follows the "Sign out after" setting at once', async () => {
+    const cookie = await signedIn();
+    setSetting(t.db, 'accounts.sessionIdleDays', 2);
+    vi.setSystemTime(Date.now() + DAY);
+    expect(await sessionUser(cookie)).toMatchObject({ username: 'mia' }); // renewed: 2 days now
+    expect(stored().cookie.originalMaxAge).toBe(2 * DAY);
+    vi.setSystemTime(Date.now() + 2 * DAY + 60_000);
+    expect(await sessionUser(cookie)).toBeNull();
+  });
+
   it('renews at most once a minute', async () => {
     const cookie = await signedIn();
     const first = stored().usedAt;
@@ -59,7 +71,7 @@ describe('sessions end after 7 days without use', () => {
     vi.setSystemTime(Date.now() + 31_000);
     await sessionUser(cookie);
     expect(stored().usedAt).toBe(first + 61_000);
-    expect(stored().cookie.originalMaxAge).toBe(IDLE_LIMIT_MS);
+    expect(stored().cookie.originalMaxAge).toBe(7 * DAY);
   });
 
   it("signed-in sessions from the 30-day rule are capped at 7 days; a guest's is not", () => {
@@ -71,7 +83,7 @@ describe('sessions end after 7 days without use', () => {
     sessionMiddleware(t.db, t.config);
     const expire = (sid) =>
       Date.parse(t.db.prepare('SELECT expire FROM sessions WHERE sid = ?').get(sid).expire);
-    expect(expire('member')).toBeLessThanOrEqual(Date.now() + IDLE_LIMIT_MS);
+    expect(expire('member')).toBeLessThanOrEqual(Date.now() + 7 * DAY);
     expect(expire('guest')).toBe(Date.parse(in30));
   });
 });

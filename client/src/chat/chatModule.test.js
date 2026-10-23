@@ -29,6 +29,9 @@ const ALLOWED_OUTSIDE = new Set([
   path.join(srcDir, 'app', 'icons.jsx'),
   // The safety numbers' per-device marks (safetyStore.js).
   path.join(srcDir, 'app', 'storage.js'),
+  // The embed state (imports only storage): files load through short-lived links in the chat
+  // on another site (useFileLinks.js).
+  path.join(srcDir, 'embed', 'embedAuth.js'),
 ]);
 
 const importsOf = (file) =>

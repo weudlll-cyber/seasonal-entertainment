@@ -22,6 +22,7 @@ import {
 } from '../directFiles/store.js';
 import { deleteMediaFile } from '../media/files.js';
 import { deleteUnusedPreviews } from '../previews/store.js';
+import { getSetting } from '../settings/store.js';
 import { deleteOrphanUploads } from '../uploads/store.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -79,7 +80,8 @@ function deleteOrphanDirectFileData(db, config, now = Date.now()) {
 
 // One full run; returns what it deleted.
 export function runChatRetention(db, config, now = Date.now()) {
-  const messages = deleteExpiredChat(db, config.chat.retentionDays, now);
+  // How long messages are kept is a site setting (its default: CHAT_RETENTION_DAYS).
+  const messages = deleteExpiredChat(db, getSetting(db, 'chat.retentionDays'), now);
   const uploadFiles =
     deleteOrphanUploadFiles(db, config, now) + deleteOrphanDirectFileData(db, config, now);
   const previewFiles = deleteUnusedPreviewFiles(db, config, now);
@@ -91,7 +93,7 @@ export function startChatRetention(db, config, log = console.log) {
     const { messages, uploadFiles } = runChatRetention(db, config);
     if (messages || uploadFiles) {
       log(
-        `[chat] retention: deleted ${messages} messages older than ${config.chat.retentionDays} days and ${uploadFiles} uploaded files`
+        `[chat] retention: deleted ${messages} messages older than ${getSetting(db, 'chat.retentionDays')} days and ${uploadFiles} uploaded files`
       );
     }
   };

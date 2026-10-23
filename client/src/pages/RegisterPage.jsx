@@ -9,7 +9,8 @@
 //              for private messages is made right away (keys/), and the recovery code offered.
 //              Afterwards it returns to the page that sent the visitor (?next=, e.g. the
 //              embedded chat's login popup), like the login page (session/nextPage.js). The card
-//              shows the logo (FormLogo.jsx), except in the chat's login popup.
+//              shows the logo (FormLogo.jsx), except in the chat's login popup. While the
+//              "Registration open" setting is off, the page says registration is closed.
 // ============================================================
 
 import { useState } from 'react';
@@ -32,7 +33,7 @@ import { useSession } from '../session/SessionContext.jsx';
 import { BusyButton } from '../components/BusyButton.jsx';
 
 export default function RegisterPage() {
-  const { setUser } = useSession();
+  const { setUser, settings } = useSession();
   const keys = useKeys();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -71,6 +72,23 @@ export default function RegisterPage() {
     }
   }
 
+  const logIn = (
+    <p>
+      Already registered? <Link to={withNext('/login', params.get('next'))}>Log in</Link>
+    </p>
+  );
+  if (!settings['accounts.registrationOpen']) {
+    return (
+      <section className="page">
+        <h1>Register</h1>
+        <p className="banner" role="status">
+          Registration is closed at the moment.
+        </p>
+        {logIn}
+      </section>
+    );
+  }
+
   return (
     <section className="page">
       <h1>Register</h1>
@@ -99,9 +117,7 @@ export default function RegisterPage() {
         <FormMessage error={error} />
         <BusyButton busy={busy}>Create account</BusyButton>
       </form>
-      <p>
-        Already registered? <Link to={withNext('/login', params.get('next'))}>Log in</Link>
-      </p>
+      {logIn}
     </section>
   );
 }

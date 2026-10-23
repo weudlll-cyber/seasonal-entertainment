@@ -108,13 +108,15 @@ export function callRoutes(db, config, service, chat, remindNow) {
   router.get('/:id', allow('public'), configured, loadCall, (req, res) => {
     // The linked bot event's name while it still exists at its start (else no event).
     const event = linkedOccurrence(config, req.call);
-    // Whether a recording runs, and whether recording is set up at all (the button).
+    // Whether a recording runs, and whether the button shows: recording set up and allowed (a
+    // site setting), or one running (so it can always be stopped).
     const recording = Boolean(activeRecording(db, req.call.id));
     res.json({
       ok: true,
       call: { ...shown(req.call, chat), event, recording },
       canManage: canManage(req),
-      recordingEnabled: Boolean(config.calls?.recording),
+      recordingEnabled:
+        Boolean(config.calls?.recording) && (recording || getSetting(db, 'calls.recording')),
     });
   });
 

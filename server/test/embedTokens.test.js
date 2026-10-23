@@ -5,7 +5,7 @@
 // Description: Embed tokens (embed/tokens.js, embed/auth.js): issued to a member's own cookie
 //              session for an approved site only, never to a guest or another token; the token
 //              reads and writes rooms and direct messages (decrypted with real keys) and uses
-//              favourites, unread counts and reporting; uploads, keys, account, 2FA,
+//              favourites, unread counts and reporting; uploads (while off), keys, account, 2FA,
 //              moderation and admin routes refuse it; it stops working after 12 hours, an
 //              embed logout, a site logout, a password change, a lock and the site's removal;
 //              only its hash is stored; cookie requests behave exactly as before.
@@ -96,7 +96,6 @@ describe('what a token may do', () => {
   });
 
   it.each([
-    ['an upload', 'post', '/api/chat/uploads'],
     ['the own key', 'get', '/api/keys/me'],
     ['a new key pair', 'post', '/api/keys'],
     ['a password change', 'post', '/api/auth/password'],
@@ -111,6 +110,13 @@ describe('what a token may do', () => {
     const res = await embed[method](url).send({});
     expect(res.status).toBe(403);
     expect(res.body.error).toBe('embed_not_allowed');
+  });
+
+  it("refuses an upload while the site's uploads are off (the default; embedFiles.test.js)", async () => {
+    t = chatApp();
+    const { embed } = await embedded();
+    const res = await embed.post('/api/chat/uploads').send({});
+    expect([res.status, res.body.error]).toEqual([403, 'embed_uploads_off']);
   });
 });
 

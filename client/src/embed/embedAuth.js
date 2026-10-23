@@ -9,7 +9,14 @@
 //              the private key in memory only while the page is a foreign embed. When the
 //              server refuses the token (expired, logged out, password changed, site removed)
 //              it is dropped, and whoever listens forgets the member and the key at once.
+//              Also the frame's site, once verified, with what guests may do there
+//              (/api/embed/check), and a guest's token there (embed/guestTokens.js on the
+//              server): kept in the frame's own storage, which the browser keeps per site, so
+//              the guest name lasts there without a cookie. embedHeaders() is what api/http.js
+//              sends.
 // ============================================================
+
+import { readStored, writeStored } from '../app/storage.js';
 
 let token = null;
 let foreign = false;
@@ -30,6 +37,31 @@ export function dropEmbedToken() {
   if (token === null) return;
   token = null;
   for (const listener of listeners) listener();
+}
+
+let site = null; // the verified other site this frame is on
+let rules = null; // the site's rules: { guestsRead, guestsWrite, uploads, images }
+const GUEST_TOKEN = 'se.embedGuest';
+
+export function setEmbedSite(origin, siteRules) {
+  site = origin;
+  rules = siteRules;
+}
+// Unknown until the site is verified: reading as on the site, writing not.
+export const guestsMayRead = () => rules?.guestsRead !== false;
+export const guestsMayWrite = () => rules?.guestsWrite === true;
+// Members upload there only where the site allows uploads, and see members-only images and
+// downloads (through file links) only where it allows images: two independent rules.
+export const embedUploads = () => rules?.uploads === true;
+export const embedImages = () => rules?.images === true;
+export const keepEmbedGuestToken = (guestToken) => writeStored(GUEST_TOKEN, guestToken);
+
+// A member's token; else, on a verified other site, the site and the guest's token if any.
+export function embedHeaders() {
+  if (token) return { 'X-Embed-Token': token };
+  if (!site) return {};
+  const guest = readStored(GUEST_TOKEN);
+  return { 'X-Embed-Origin': site, ...(guest && { 'X-Embed-Guest': guest }) };
 }
 
 // Returns the function that stops listening.

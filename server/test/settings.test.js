@@ -3,11 +3,14 @@
 // Path:        server/test/settings.test.js
 // Project:     Seasonal Entertainment
 // Description: Admin-editable site settings (settings/): only admins read and change them;
-//              defaults until changed; values outside a setting's range and unknown keys are
-//              refused; every change is audited with the old and new value.
+//              defaults until changed, in their groups; values outside a setting's range and
+//              unknown keys are refused; every change is audited with the old and new value and
+//              takes effect at the next use, without a restart.
 // ============================================================
 
 import { afterEach, expect, it } from 'vitest';
+import { SETTINGS } from '../src/settings/definitions.js';
+import { getSetting } from '../src/settings/store.js';
 import { auditActions } from './helpers/chat.js';
 import { makeStaff, makeTestApp, registerUser } from './helpers/testApp.js';
 
@@ -19,7 +22,15 @@ const valueOf = (settings, key) => settings.find((s) => s.key === key).value;
 it('admins read the defaults and change a setting within its range', async () => {
   t = makeTestApp();
   const admin = (await makeStaff(t, 'ada', 'admin')).agent;
-  const { settings } = (await admin.get('/api/admin/settings')).body;
+  const { groups, settings } = (await admin.get('/api/admin/settings')).body;
+  expect(groups[0]).toBe('Chat');
+  expect(settings.find((s) => s.key === 'calls.maxSpeakers')).toMatchObject({
+    group: 'Calls',
+    type: 'integer',
+    unit: 'speakers',
+    min: 1,
+    max: 25,
+  });
   expect(valueOf(settings, 'calls.maxSpeakers')).toBe(10);
   expect(valueOf(settings, 'calls.maxParticipants')).toBe(250);
 
@@ -33,6 +44,14 @@ it('admins read the defaults and change a setting within its range', async () =>
   ]);
 });
 
+it('a change takes effect at the next use, without a restart', async () => {
+  t = makeTestApp();
+  const admin = (await makeStaff(t, 'ada', 'admin')).agent;
+  expect(getSetting(t.db, 'calls.maxSpeakers')).toBe(10); // read once: now kept in memory
+  await admin.put('/api/admin/settings/calls.maxSpeakers').send({ value: 4 });
+  expect(getSetting(t.db, 'calls.maxSpeakers')).toBe(4);
+});
+
 it('refuses values outside the range and unknown keys', async () => {
   t = makeTestApp();
   const admin = (await makeStaff(t, 'ada', 'admin')).agent;
@@ -43,6 +62,54 @@ it('refuses values outside the range and unknown keys', async () => {
   expect((await put('calls.maxParticipants', '200')).status).toBe(400);
   expect((await put('calls.nope', 3)).status).toBe(404);
   expect(auditActions(t)).toEqual([]);
+});
+
+it('every setting keeps to its bounds: whole numbers from min to max, on/off as true or false', async () => {
+  t = makeTestApp();
+  const admin = (await makeStaff(t, 'ada', 'admin')).agent;
+  const put = async (key, value) =>
+    (await admin.put(`/api/admin/settings/${key}`).send({ value })).status;
+  for (const [key, definition] of Object.entries(SETTINGS)) {
+    expect(definition.help, key).toBeTruthy(); // every setting explains itself on the page
+    if (definition.type === 'integer') {
+      expect([await put(key, definition.min), await put(key, definition.max)], key).toEqual([
+        200, 200,
+      ]);
+      expect([await put(key, definition.min - 1), await put(key, definition.max + 1)], key).toEqual(
+        [400, 400]
+      );
+    }
+    if (definition.type === 'boolean') {
+      expect([await put(key, false), await put(key, true), await put(key, 'off')], key).toEqual([
+        200, 200, 400,
+      ]);
+    }
+  }
+});
+
+it('the site banner: its link only a page of this site, its text one line of 200 at most', async () => {
+  t = makeTestApp();
+  const admin = (await makeStaff(t, 'ada', 'admin')).agent;
+  const put = async (key, value) =>
+    (await admin.put(`/api/admin/settings/${key}`).send({ value })).status;
+  for (const link of ['https://evil.example/', '//evil.example', 'start', '/a b', 'javascript:x']) {
+    expect(await put('banner.link', link), link).toBe(400);
+  }
+  for (const link of ['', '/start', '/info/faq?x=1#top']) {
+    expect(await put('banner.link', link), link).toBe(200);
+  }
+  expect(await put('banner.text', 'x'.repeat(201))).toBe(400);
+  expect(await put('banner.text', 'two\nlines')).toBe(400);
+  expect(await put('banner.text', '<b>shown as typed</b>')).toBe(200);
+  expect(await put('banner.style', 'warning')).toBe(200);
+  expect(await put('banner.style', 'danger')).toBe(400);
+  // Every visitor's browser gets them with the session.
+  expect((await t.client().get('/api/auth/session')).body.settings).toMatchObject({
+    'banner.text': '<b>shown as typed</b>',
+    'banner.link': '/info/faq?x=1#top',
+    'banner.style': 'warning',
+    'banner.enabled': false,
+  });
 });
 
 it('is for admins only', async () => {

@@ -15,6 +15,8 @@ import { MEDIA_URL_PREFIX, mediaUrl } from '../media/files.js';
 import { mediaRoutes } from '../media/routes.js';
 import { seedChatMedia } from '../media/seed.js';
 import { fetchImage } from '../previews/fetchImage.js';
+import { imageMaxPixels } from '../settings/derived.js';
+import { getSetting } from '../settings/store.js';
 import { directFileRoutes } from '../directFiles/routes.js';
 import { directPreviewRoutes } from '../previews/directPreview.js';
 import { previewModerationRoutes } from '../previews/routes.js';
@@ -57,15 +59,20 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
   const hub = new ChatHub(db, config, embedOrigins);
   const previews = createPreviewService(db, config, hub, previewNetwork);
 
-  // One per-sender rate limit for room and direct messages alike.
-  const allowMessage = makeSenderLimit(config.chat.rate);
+  // One per-sender rate limit for room and direct messages alike; how many per window are site
+  // settings, read at each message (the window is config's).
+  const { member, guest } = config.chat.rate;
+  const allowMessage = makeSenderLimit({
+    member: { ...member, max: () => getSetting(db, 'chat.memberMessages') },
+    guest: { ...guest, max: () => getSetting(db, 'chat.guestMessages') },
+  });
 
   api.use('/chat', chatRoutes(db, config, hub, previews, allowMessage));
   api.use('/chat/favourites', favouriteRoutes(db, hub));
   api.use('/chat', unreadRoutes(db, hub));
   api.use('/chat', memberRoutes(db, config, hub));
   // Before directRoutes: its /:id would take /preview.
-  api.use('/chat/direct', directPreviewRoutes(config, previewNetwork));
+  api.use('/chat/direct', directPreviewRoutes(db, config, previewNetwork));
   const directFiles = directFileRoutes(db, config);
   api.use('/chat/direct', directFiles.member);
   api.use('/chat/direct-reports', directFiles.moderator);
@@ -76,7 +83,7 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
   api.use('/chat', previewModerationRoutes(db, hub));
   api.use('/chat', chatModerationRoutes(db, hub));
   api.use('/chat', mediaRoutes(db));
-  api.use('/chat', uploadRoutes(db, config, hub));
+  api.use('/chat', uploadRoutes(db, config, hub, embedOrigins));
   api.use('/admin/chat/rooms', adminChatRoomRoutes(db));
   api.use('/admin/chat/media', adminMediaRoutes(db, config));
 
@@ -94,9 +101,13 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
 
   return {
     // For areas that show outside images from this site (the event bot's, bots/images.js):
-    // the link previews' guarded image fetch (previews/fetchImage.js) and the public media
-    // address of a stored file.
-    images: { fetch: fetchImage, url: mediaUrl },
+    // the link previews' guarded image fetch (previews/fetchImage.js), with the site's pixel
+    // limit (a setting) added, and the public media address of a stored file.
+    images: {
+      fetch: (url, limits, options, network) =>
+        fetchImage(url, { ...limits, maxPixels: imageMaxPixels(db) }, options, network),
+      url: mediaUrl,
+    },
     // For account code: open chat sockets follow logouts and account changes.
     sessions: {
       ended: (sessionId) => hub.disconnectSession(sessionId),

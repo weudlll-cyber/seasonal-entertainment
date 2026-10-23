@@ -143,12 +143,12 @@ Generate a production pair on the call server with
   `GET /api/calls` names the member's reminded calls (`reminders`). A reminder goes when the
   member turns it off, when the call ends (`endCall.js`) and with the account or call
   (cascades). Guests see no toggle.
-  - **The notices**: 10 minutes before a reminded call's planned start ("<title> starts in 10
-    minutes") and when it goes live ("<title> is live now"), every open page of the member shows
-    a notice with **Listen** and **Dismiss** at the top of the main column
-    (`client/src/calls/CallNotices.jsx`). The server pushes it as a personal event
-    (`callReminder`) over the chat's live connection (`chat.notify.member`, docs/CHAT.md); there
-    is no polling.
+  - **The notices**: the lead time before a reminded call's planned start (the "Reminder before a
+    call" setting, 10 minutes by default; "<title> starts in N minutes", counted to the start) and
+    when it goes live ("<title> is live now"), every open page of the member shows a notice with
+    **Listen** and **Dismiss** at the top of the main column (`client/src/calls/CallNotices.jsx`).
+    The server pushes it as a personal event (`callReminder`) over the chat's live connection
+    (`chat.notify.member`, docs/CHAT.md); there is no polling.
   - **Once per kind**: each kind is marked in `call_reminders` (`soon_sent_at`, `live_sent_at`)
     only once it reached an open page, so a member who opens the site within the window still
     gets it, and a restart never repeats one. Dismissing in one tab dismisses it in the others
@@ -158,7 +158,7 @@ Generate a production pair on the call server with
     off.
   - The site had no general on-site notification before; the notices use the shell's banner
     style (`.banner`, as the staff 2FA banner) and the chat's existing personal-event push.
-- **Settings** (Admin → Settings, `/api/admin/settings`, audited `setting.change`): speakers on
+- **Settings** (Admin → Settings, group "Calls", docs/SETTINGS.md): speakers on
   stage at most (default 10, 1–25) and participants per call at most (default 250, 2–1000;
   the call service's UDP range is sized for 250).
 
@@ -355,6 +355,9 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
     encoding options have no channel setting, so mono cannot be set (measured: stereo).
   - **The egress writes** to `CALLS_EGRESS_OUTPUT_DIR` (its own mount of the same folder; the
     same path when unset). The file is named `call-<id>-<time>-<random>.mp4`.
+- **Allowed** (2026-10-23): the "Recording allowed" setting (on by default, docs/SETTINGS.md); off,
+  no new recording starts and the button goes, while a running one can still be stopped and
+  stored recordings stay.
 - **Who**: only organisers and admins start and stop the recording of a live call
   (`POST /api/calls/:id/recording/start|stop`, audited `call.recording_start|stop`). One
   recording per call at a time. Ending the call stops it (`endCall.js`).
