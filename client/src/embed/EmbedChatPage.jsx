@@ -7,8 +7,11 @@
 //              this site's own pages (the games under the main domain) it uses the site's login
 //              cookie and device unlock exactly like the site. On an approved foreign site it has
 //              no cookie: "Log in" opens a popup on this site, which hands over an embed token and
-//              the unlocked key, both kept in memory only (useEmbedLogin.js); there a guest gets
-//              "Log in to write" instead of the composer, and members no "Attach file". Talks to
+//              the unlocked key, both kept in memory only (useEmbedLogin.js); there a guest
+//              reads and writes as the site's rules allow (the "Other sites" settings or the
+//              site's own, given with the site's check; a guest name lasts through a guest
+//              token in the frame's storage), else gets "Log in to write" or "Log in to read",
+//              and members no "Attach file". Until the site is verified the room waits. Talks to
 //              the framing page only once its origin is verified (embedProtocol.js): ready, unread
 //              (messages while the host says the chat is out of sight), resize; it takes visible
 //              and theme.
@@ -21,9 +24,9 @@ import DirectTab from '../app/DirectTab.jsx';
 import { ChatPanel, onDirectRequest, useNewMessageCount, useUnread } from '../chat/index.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
-import EmbedAccount, { LogInToWrite } from './EmbedAccount.jsx';
+import EmbedAccount, { LogInToRead, LogInToWrite } from './EmbedAccount.jsx';
 import EmbedDirect from './EmbedDirect.jsx';
-import { isForeignEmbed, markForeignEmbed } from './embedAuth.js';
+import { guestsMayRead, guestsMayWrite, isForeignEmbed, markForeignEmbed } from './embedAuth.js';
 import { onHostMessage, parentOrigin, toHost, verifyHost } from './embedProtocol.js';
 import { useEmbedLogin } from './useEmbedLogin.js';
 import './EmbedChat.css';
@@ -109,14 +112,21 @@ export default function EmbedChatPage() {
       )}
       <div id="embed-panel" className="embed-chat__panel">
         {shown === 'rooms' ? (
-          // On another site: no uploads with an embed token (the server refuses them), and a
-          // guest is offered the login instead of a composer that could not send.
-          <ChatPanel
-            room={room}
-            variant="compact"
-            files={!foreign}
-            guestPrompt={foreign ? <LogInToWrite login={login} ready={Boolean(host)} /> : null}
-          />
+          // On another site the room waits for the verified site and its rules: no uploads
+          // with an embed token (the server refuses them); a guest reads and writes only as
+          // the site's rules allow, else is offered the login.
+          foreign && !host ? null : foreign && !user && !guestsMayRead() ? (
+            <LogInToRead login={login} ready />
+          ) : (
+            <ChatPanel
+              room={room}
+              variant="compact"
+              files={!foreign}
+              guestPrompt={
+                foreign && !guestsMayWrite() ? <LogInToWrite login={login} ready /> : null
+              }
+            />
+          )
         ) : foreign ? (
           <EmbedDirect onUnlock={login.logIn} />
         ) : (

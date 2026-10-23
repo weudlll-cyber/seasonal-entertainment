@@ -5,30 +5,43 @@
 // Description: Admin "Embedding" (/admin/embedding): the other sites allowed to show the chat
 //              in a frame (owner decision 2026-10-19; docs/EMBED.md). Exact https addresses,
 //              checked and normalised by the server; adding and removing are audited.
-//              Removing a site ends every login of the chat there at once.
+//              Removing a site ends every login of the chat there at once. Each site has its
+//              own rules for guests (SiteRules.jsx), else the "Other sites" settings apply.
 // ============================================================
 
+import SiteRules, { RULE_LABELS } from './SiteRules.jsx';
 import { useEffect, useState } from 'react';
 import { api } from '../api/http.js';
 import { FormField, FormMessage } from '../components/FormField.jsx';
 
 export default function AdminEmbeddingPage() {
   const [origins, setOrigins] = useState(null);
+  const [rules, setRules] = useState({}); // { origin: { rule: value } } and the globals
+  const [globals, setGlobals] = useState({});
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
 
+  function shown(data) {
+    setOrigins(data.origins);
+    setRules(data.rules);
+    setGlobals(data.globals);
+  }
+
   useEffect(() => {
     api('/admin/embed-origins')
-      .then((data) => setOrigins(data.origins))
+      .then(shown)
       .catch((err) => setError(err.message));
   }, []);
 
-  async function change(method, origin, done) {
+  async function change(method, origin, done, path = '', extra = {}) {
     setError(null);
     setNotice(null);
     try {
-      const data = await api('/admin/embed-origins', { method, body: { origin } });
-      setOrigins(data.origins);
+      const data = await api(`/admin/embed-origins${path}`, {
+        method,
+        body: { origin, ...extra },
+      });
+      shown(data);
       setNotice(done);
       return true;
     } catch (err) {
@@ -79,6 +92,17 @@ export default function AdminEmbeddingPage() {
               >
                 Remove
               </button>
+              <SiteRules
+                origin={origin}
+                rules={rules[origin]}
+                globals={globals}
+                onChange={(rule, value) =>
+                  change('PUT', origin, `${RULE_LABELS[rule]} on ${origin}: ${value}.`, '/rules', {
+                    rule,
+                    value,
+                  })
+                }
+              />
             </li>
           ))}
         </ul>

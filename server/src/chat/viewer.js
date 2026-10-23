@@ -26,9 +26,12 @@ function makeViewer(user, guest, twoFactorMissing) {
   };
 }
 
-// HTTP: req.user and the 2FA gate's mark (req.staffRefusal, twofa/gate.js) are already set.
+// HTTP: req.user and the 2FA gate's mark (req.staffRefusal, twofa/gate.js) are already set. A
+// guest in a frame on another site is the one its guest token names (embed/auth.js), never a
+// cookie's.
+const guestOf = (req) => (req.embedSite ? req.embedGuest : req.session?.chatGuest) ?? null;
 export const chatViewer = (req) =>
-  makeViewer(req.user ?? null, req.session?.chatGuest ?? null, Boolean(req.staffRefusal));
+  makeViewer(req.user ?? null, guestOf(req), Boolean(req.staffRefusal));
 
 // Any account, not the one asking (who may read a room, for @mentions and the member search):
 // the same rule as for that account's own requests.

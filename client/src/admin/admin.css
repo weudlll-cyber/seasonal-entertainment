@@ -98,3 +98,11 @@
 .settings-group__list .form {
   max-width: none;
 }
+
+/* A site's own rules on Admin → Embedding (SiteRules.jsx): side by side while they fit. */
+.site-rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin-top: var(--space-1);
+}

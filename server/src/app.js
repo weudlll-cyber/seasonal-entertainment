@@ -96,7 +96,7 @@ export function createApp({
   api.use(sessions);
   api.use(currentUser(db));
   // An embed token (the chat on an approved foreign site) acts on the chat routes only.
-  api.use(embedTokenAuth(db, embedOrigins));
+  api.use(embedTokenAuth(db, embedOrigins, config));
   api.use(twoFactorGate(db, config));
 
   // The whole chat area (docs/CHAT.md). Its handle: index.js attaches the socket and starts

@@ -54,13 +54,37 @@ header, sidebar or footer (`client/src/embed/EmbedChatPage.jsx`): the room, and 
 - **What works there**: rooms and **direct messages**, read and write under the usual rules,
   emoji, stickers and GIFs, @mentions, favourites, unread counts, mutes and reporting.
 - **What does not**: uploading files (the frame shows no "Attach file" there); account, 2FA,
-  key, moderation and admin actions (the server answers 403 to a token there); guests cannot
-  write (a guest name needs a cookie), so a guest reads and gets **Log in to write** in place
-  of the composer, the same popup as **Log in**; uploaded images in members-only rooms do not
-  show (an image request cannot carry the token).
+  key, moderation and admin actions (the server answers 403 to a token there); uploaded images
+  in members-only rooms do not show (an image request cannot carry the token). Guests: see
+  "Guests on other sites" below; where they may not write, they get **Log in to write** in place
+  of the composer, the same popup as **Log in**.
 - **Private messages locked** (the page was reloaded, or "Allow without private messages"):
   the Direct tab offers **Unlock in a login window**, the same popup. The password is never typed
   into the other site's page.
+
+### Guests on other sites
+
+Built 2026-10-23, behind switches: the "Other sites" settings "Guests can read on other sites"
+(on) and "Guests can write on other sites" (off), and each approved site's own rule for each
+(inherit / on / off, Admin → Embedding). A site's own "on" or "off" beats the global setting.
+
+- **The frame names its site**: once its parent is verified (`/api/embed/check`, which also
+  answers what guests may do there), a guest's requests carry `X-Embed-Origin` with that site
+  (`client/src/embed/embedAuth.js`). The server checks the site is approved and its rules allow
+  the request, and then treats it as a guest on the guest routes only: the session, reading
+  rooms, writing and reporting in them (`server/src/embed/auth.js`); anything else is 403.
+- **The guest name without a cookie**: the guest's first message there gets a name as on the
+  site (the same rules), and the answer hands back a **guest token** in the `X-Embed-Guest`
+  header (`server/src/embed/guestTokens.js`): the guest's id, name and the site, signed with a
+  key derived from the session secret. The frame keeps it in its own storage (which the browser
+  keeps per site) and sends it with the next requests; a token for another site, a damaged one
+  or one whose name was released meanwhile counts as no token (a new name). It gives no rights
+  of its own: the site's rules and the chat's guest rules decide every request.
+- **The same rules as on the site**: guest-name rules, the guest message limit and the per-address
+  limits, mutes and bans, reporting. A cookie's guest from this site never counts in the frame.
+- **Off**: writing off shows **Log in to write**; reading off shows "Guests cannot read the chat
+  on this site." with **Log in to read** in place of the room, and the server refuses the
+  frame's reads (`403 embed_guests_off`). Members are not affected.
 
 ## Who may frame it
 
@@ -74,12 +98,14 @@ from the frame that opened it on the other site's page.
 ### Approving a site (admins)
 
 **Admin → Embedding** (`/admin/embedding`): add a site by its address, e.g.
-`https://game.example.org`. Only exact `https://` origins are allowed: no wildcards, paths,
-queries or login parts. The server normalises them (lower case, no default port) and refuses
-this site itself, which needs no entry. Adding and removing are audited (`embed.origin_add`,
+`https://game.example.org`. Only exact `https://` origins are allowed: no wildcards, paths, queries
+or login parts. The server normalises them (lower case, no default port) and refuses this site
+itself, which needs no entry. Adding and removing are audited (`embed.origin_add`,
 `embed.origin_remove`). Removing a site ends every embed token for it and closes their live
-connections at once. In development only, `http://` on `localhost`, `127.0.0.1` and `[::1]` can
-be approved too, to try it on one machine (see "Trying it").
+connections at once, and forgets its own rules. Each site's own rules for guests (inherit / on /
+off; inherit shows the global value) are set there too (`PUT /api/admin/embed-origins/rules`,
+audited `embed.rule_change`). In development only, `http://` on `localhost`, `127.0.0.1` and `[::1]`
+can be approved too, to try it on one machine (see "Trying it").
 
 ## The postMessage API
 
@@ -185,6 +211,10 @@ different sites to the browser.
   rooms and direct messages with a token; uploads, keys, account, 2FA, moderation, admin and
   calls refused; the token ends after 12 hours, embed logout, site logout, password change,
   lock and the site's removal; cookies unchanged.
+- `server/test/embedGuests.test.js`: guests writing off by default; on, a guest writes and keeps
+  the name through the token; a site's own rule beats the global one; unapproved sites, foreign
+  or damaged tokens, a cookie's guest; sanctions and the message limit; the admin rules (audited)
+  and the check's answer.
 - `server/test/embedSocket.test.js`: the WebSocket with a token (subprotocol), refused for an
   unknown token, closed at once on revocation, the member's own cookie socket untouched.
 - `client/src/embed/embedChat.test.jsx`: same-site embed (panel only, login state, guests,
@@ -192,6 +222,8 @@ different sites to the browser.
 - `client/src/embed/embedForeign.test.jsx`: talks only to an approved parent; the hand-over
   only from its popup; the token on requests and the socket; a guest gets "Log in to write"
   instead of the composer, a member no "Attach file".
+- `client/src/embed/embedGuests.test.jsx`: by the site's rules, "Log in to write", the guest
+  composer naming the site and keeping the token, or "Log in to read".
 - `client/src/embed/embedForeignDirect.test.jsx`: direct messages with the handed-over key;
   nothing secret to the host; a refused token takes account and key, and the key is gone from
   memory. (Shared setup: `client/src/test/foreignEmbed.jsx`.)
@@ -200,7 +232,7 @@ different sites to the browser.
   gets no token.
 - `client/src/app/chatDrawer.test.jsx`: no chat button on the login and registration pages
   inside the popup.
-- `client/src/admin/adminEmbedding.test.jsx`: the admin page.
+- `client/src/admin/adminEmbedding.test.jsx`: the admin page, with a site's own rules.
 - `client/e2e/embed.spec.js` and `client/e2e/embedForeign.spec.js` (real browser, real
   headers): framing per site; a member on an approved other site logs in through the popup,
   continues with cookies cleared, and exchanges private messages both ways; the host hears

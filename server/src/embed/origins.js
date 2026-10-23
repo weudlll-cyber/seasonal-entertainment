@@ -7,11 +7,18 @@
 //              setting (settings/store.js, key "embed.allowedOrigins", a JSON list), held in
 //              memory and replaced on every change, so the CSP of /embed/* (http/
 //              securityHeaders.js) and every embed token check read the list without a query.
+//              Each site's own rules (2026-10-23): for every rule in SITE_RULES, "inherit" (the
+//              "Other sites" setting), "on" or "off", stored the same way ("embed.siteRules", a
+//              JSON object by origin) and gone with the site.
 // ============================================================
 
-import { getTextSetting, setSetting } from '../settings/store.js';
+import { getSetting, getTextSetting, setSetting } from '../settings/store.js';
 
 const KEY = 'embed.allowedOrigins';
+const RULES_KEY = 'embed.siteRules';
+// What a site may override; each is also a global setting "embed.<rule>" (settings/groups/).
+export const SITE_RULES = ['guestsRead', 'guestsWrite'];
+export const RULE_VALUES = ['inherit', 'on', 'off'];
 
 // Development only: these hosts may be approved over plain http, to try a foreign site on one
 // machine (e.g. a page on http://[::1]:5380 framing http://localhost:5380; docs/EMBED.md).
@@ -41,9 +48,10 @@ export function normaliseOrigin(input, { allowLocalHttp = false } = {}) {
   return { origin: url.origin };
 }
 
-// { list, allows, add, remove } over the stored list.
+// { list, allows, add, remove, rulesOf, rule, setRule } over the stored list and rules.
 export function createEmbedOrigins(db) {
   let cached = null;
+  let cachedRules = null;
   const read = () => {
     cached ??= Object.freeze(JSON.parse(getTextSetting(db, KEY) ?? '[]'));
     return cached;
@@ -52,6 +60,16 @@ export function createEmbedOrigins(db) {
     setSetting(db, KEY, JSON.stringify(list));
     cached = null; // the next read (a CSP header, a token check) sees the change
   };
+  const readRules = () => (cachedRules ??= JSON.parse(getTextSetting(db, RULES_KEY) ?? '{}'));
+  const writeRules = (all) => {
+    setSetting(db, RULES_KEY, JSON.stringify(all));
+    cachedRules = null;
+  };
+  // Without the site's own override, its rules are "inherit".
+  const rulesOf = (origin) => ({
+    ...Object.fromEntries(SITE_RULES.map((rule) => [rule, 'inherit'])),
+    ...readRules()[origin],
+  });
   return {
     list: read,
     allows: (origin) => read().includes(origin),
@@ -64,7 +82,25 @@ export function createEmbedOrigins(db) {
     remove(origin) {
       if (!read().includes(origin)) return false;
       write(read().filter((o) => o !== origin));
+      const { [origin]: _gone, ...rest } = readRules(); // its rules go with it
+      writeRules(rest);
       return true;
+    },
+    rulesOf,
+    // Whether `rule` holds on that site now: its own "on" or "off", else the global setting.
+    rule(origin, rule) {
+      const own = rulesOf(origin)[rule];
+      return own === 'inherit' ? getSetting(db, `embed.${rule}`) : own === 'on';
+    },
+    // value: one of RULE_VALUES; "inherit" drops the site's own value.
+    setRule(origin, rule, value) {
+      const { [rule]: _old, ...others } = rulesOf(origin);
+      const own = Object.fromEntries(
+        Object.entries({ ...others, ...(value === 'inherit' ? {} : { [rule]: value }) }).filter(
+          ([, v]) => v !== 'inherit'
+        )
+      );
+      writeRules({ ...readRules(), [origin]: own });
     },
   };
 }

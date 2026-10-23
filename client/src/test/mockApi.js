@@ -5,7 +5,8 @@
 // Description: Test helper: replaces fetch with fixed API answers keyed "METHOD /path"
 //              (path without /api). An answer is { status, body } or a function of the sent
 //              body returning one (or a promise of one, to hold an answer back); { bytes }
-//              answers binary data (a Uint8Array, read with arrayBuffer()). Returns the
+//              answers binary data (a Uint8Array, read with arrayBuffer()); { headers } are the
+//              answer's response headers (read with headers.get). Returns the
 //              list of calls made ({ key, body, headers }). Unknown calls fail the test.
 //              PRELOGIN answers the login key split's pre-login step with a fixed salt; NO_KEY
 //              is a member without a key pair yet; withSettings() adds site settings to a
@@ -29,10 +30,12 @@ export function mockApi(answers) {
         status = 200,
         body = {},
         bytes,
+        headers = {},
       } = typeof answer === 'function' ? await answer(sent) : answer;
       return {
         ok: status < 400,
         status,
+        headers: { get: (name) => headers[name] ?? null },
         json: async () => body,
         arrayBuffer: async () => bytes.slice().buffer,
       };

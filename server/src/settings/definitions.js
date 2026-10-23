@@ -12,6 +12,7 @@ import { ACCOUNT_SETTINGS } from './groups/accounts.js';
 import { BANNER_SETTINGS } from './groups/banner.js';
 import { CALL_SETTINGS } from './groups/calls.js';
 import { CHAT_SETTINGS } from './groups/chat.js';
+import { EMBED_SETTINGS } from './groups/embed.js';
 import { HOME_SETTINGS } from './groups/home.js';
 import { RECAP_SETTINGS } from './groups/recap.js';
 
@@ -28,6 +29,7 @@ export const GROUPS = [
 // group name -> that group's settings.
 const BY_GROUP = {
   Chat: CHAT_SETTINGS,
+  'Other sites': EMBED_SETTINGS,
   Calls: CALL_SETTINGS,
   Accounts: ACCOUNT_SETTINGS,
   Home: HOME_SETTINGS,

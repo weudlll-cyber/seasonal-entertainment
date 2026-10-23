@@ -6,10 +6,16 @@
 //              (upload(): a file as the raw body). Failures throw ApiError carrying the
 //              server's stable code, its message and the rest of its answer (details). The chat
 //              embedded on an approved foreign site also sends its embed token
-//              (embed/embedAuth.js), and drops it when the server refuses it.
+//              (embed/embedAuth.js), and drops it when the server refuses it; for a guest there
+//              it names the site and sends the guest's token, and keeps a new one it is given.
 // ============================================================
 
-import { dropEmbedToken, embedToken } from '../embed/embedAuth.js';
+import {
+  dropEmbedToken,
+  embedHeaders,
+  embedToken,
+  keepEmbedGuestToken,
+} from '../embed/embedAuth.js';
 
 export class ApiError extends Error {
   constructor(status, code, message, details = {}) {
@@ -21,9 +27,11 @@ export class ApiError extends Error {
 }
 
 async function call(path, init) {
-  const token = embedToken();
-  const headers = token ? { ...init.headers, 'X-Embed-Token': token } : init.headers;
+  const headers = { ...init.headers, ...embedHeaders() };
   const res = await fetch(`/api${path}`, { credentials: 'same-origin', ...init, headers });
+  // A guest's first message from a frame on another site names them: kept for the next ones.
+  const guestToken = res.headers?.get('X-Embed-Guest');
+  if (guestToken) keepEmbedGuestToken(guestToken);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     if (data.error === 'embed_token_invalid') dropEmbedToken();
