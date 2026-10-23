@@ -37,11 +37,6 @@ entry waits for.
 - **Group roles** — site roles tied to Discord or Telegram groups are not built.
 - **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
   own repository and is not connected.
-- **Uploads and uploaded images in the chat on other sites** — refused with an embed token, and
-  members-only images do not show there (an image request cannot carry the token); would need
-  short-lived signed file links.
-- **Guests writing in the chat on other sites** — the guest name lives in a cookie that other
-  sites' frames do not get; guests can read there but not write.
 
 ### Technical debt
 
@@ -55,6 +50,23 @@ entry waits for.
   two failed on CI is what the trace will show.
 
 ## PART TWO — closed
+
+- **Admin-controlled settings (SE-SETTINGS-1)** — on `feat/se-settings-1` (not merged yet; owner
+  requests 2026-10-23): site settings admins change on Admin → Settings instead of code
+  changes, every default today's behaviour, every bound with its reason, every change audited
+  and in effect at once (docs/SETTINGS.md): chat (uploads, sizes, pixels, previews, files in
+  direct messages, connection and message limits, retention), calls (recording allowed,
+  reminder lead), accounts (sign-out days, registration open, 2FA for every member), home
+  (season clock, "Start here"), the weekly recap (on/off, day, hour, room) and a new site
+  banner. Env values that were the source are now only defaults (docs/DEPLOYMENT.md).
+- **Uploads and uploaded images in the chat on other sites** — built behind switches, off by
+  default (2026-10-23, `feat/se-settings-1`): "Uploads on other sites" and each site's own rule;
+  members upload there and see members-only images through 5-minute signed links bound to the
+  file and their embed token (docs/EMBED.md, "Files on other sites").
+- **Guests writing in the chat on other sites** — built behind switches, off by default
+  (2026-10-23, `feat/se-settings-1`): "Guests can read/write on other sites" and each site's own
+  rule; the guest name travels as a signed guest token kept in the frame's own storage, no
+  third-party cookie (docs/EMBED.md, "Guests on other sites").
 
 - **Technical debt (SE-DEBT-1)** — closed by `chore/se-debt-1` (merged, PR #19; owner request
   2026-10-23), no visible change:

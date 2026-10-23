@@ -94,6 +94,12 @@ Read from the environment when the process starts, never baked into a build:
 | `PRICE_BOT_MINING_RATES`            | (unset: no fair price, no mining times)       | the price bot's `mining_rates.json`, read-only (docs/BOTS.md)             |
 | `COINGECKO_API_KEY`                 | (unset: ETH, POL, BTC not connected)          | CoinGecko Demo key: the server fetches ETH/POL/BTC history (docs/BOTS.md) |
 
+Four of these are only the start of a site setting since 2026-10-23 (`CHAT_RETENTION_DAYS`,
+`CHAT_MAX_CONNECTIONS_PER_MEMBER`, `CHAT_MAX_GUEST_CONNECTIONS_PER_IP`, `LINK_PREVIEWS`): an
+admin changes the value at runtime on Admin → Settings, and the setting rules from then on
+(docs/SETTINGS.md). Fixed values in `server/src/config.js` that became settings the same way:
+the upload sizes, the image pixel limit and the per-sender message counts.
+
 The server loads `.env` from the repository root if present; real environment variables win.
 `.env.example` lists every key the server reads, by name with a comment and no value;
 `server/test/envExample.test.js` fails when one is missing or carries a value. (It is the one
