@@ -3,7 +3,8 @@
 // Path:        server/test/chatPreviews.test.js
 // Project:     Seasonal Entertainment
 // Description: Guards link previews in the chat on a pretend internet: a member's first https
-//              link gets a card (Open Graph) with its image re-served from this site; plain
+//              link gets a card (Open Graph) with its image re-served from this site (none over 50
+//              megapixels); plain
 //              http links are refused; one fetch per URL (cache); the switch and the fetch
 //              limit; a moderator removes a card (audited); a reported message shows its card
 //              to moderators only until reviewed; unused previews are cleaned up.
@@ -15,7 +16,7 @@ import sharp from 'sharp';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { deleteUnusedPreviewFiles } from '../src/chat/retention.js';
 import { auditActions, chatApp } from './helpers/chat.js';
-import { addLibraryItem, makeImage } from './helpers/media.js';
+import { addLibraryItem, largePng, makeImage } from './helpers/media.js';
 import { PUBLIC_IP, html, previewInternet } from './helpers/previewNet.js';
 import { makeStaff, registerUser } from './helpers/testApp.js';
 
@@ -31,7 +32,8 @@ const PAGE = `<html><head><meta property="og:title" content="Seasonal Tokens">
   <meta property="og:site_name" content="seasonaltokens.org">
   <meta property="og:image" content="https://site.test/card.png"></head></html>`;
 
-async function start(overrides) {
+// extra: more pages and files of the pretend internet, by host and path.
+async function start(overrides, extra = {}) {
   const card = await makeImage('png', 1200);
   internet = await previewInternet(
     {
@@ -41,6 +43,7 @@ async function start(overrides) {
         res.setHeader('Content-Type', 'image/png');
         res.end(card);
       },
+      ...extra,
     },
     { 'site.test': [PUBLIC_IP] }
   );
@@ -72,6 +75,37 @@ describe('previews', () => {
     expect(served.headers['content-type']).toBe('image/webp');
     expect((await sharp(served.body).metadata()).width).toBe(480);
   });
+
+  it(
+    'an image over 50 megapixels is left out of the card; one of 48 is kept',
+    {
+      timeout: 60_000,
+    },
+    async () => {
+      // A page per image; 8500 x 6000 is 51 megapixels, 8000 x 6000 is 48, both under 60 KB.
+      const extra = {};
+      for (const [name, png] of [
+        ['huge', await largePng(8500, 6000)],
+        ['large', await largePng(8000, 6000)],
+      ]) {
+        extra[`site.test/${name}`] = html(PAGE.replace('card.png', `${name}.png`));
+        extra[`site.test/${name}.png`] = (_req, res) => {
+          res.setHeader('Content-Type', 'image/png');
+          res.end(png);
+        };
+      }
+      const mia = await start(undefined, extra);
+      const card = async (path) => {
+        const { message } = (await say(mia, `https://site.test/${path}`)).body;
+        await vi.waitFor(async () => expect(await previewOf(mia, message.id)).not.toBeNull(), {
+          timeout: 30_000,
+        });
+        return previewOf(mia, message.id);
+      };
+      expect(await card('huge')).toMatchObject({ title: 'Seasonal Tokens', image: null });
+      expect((await card('large')).image).toMatchObject({ width: 480 });
+    }
+  );
 
   it('text sent together with a sticker gets its preview as well', async () => {
     const mia = await start();

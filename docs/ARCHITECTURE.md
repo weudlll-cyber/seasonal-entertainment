@@ -254,17 +254,17 @@ password change and turning 2FA on or off close the account's other sockets at o
   "Seasonal Tokens", and GIFs "Seasonal Tokens". The "library empty" check is repeated inside the
   write, so two starts at once (a restarting dev server) cannot seed twice.
 - **Link previews** (decided 2026-10-17, `server/src/previews/`): when a member's text message
-  contains an https link, the **server** previews the first one in the background and pushes a
-  card (`{ type: "preview" }`) to the room; the message itself is never delayed, and a failed
-  fetch just means no card. Title, description and site name come from Open Graph, then
-  Twitter-card tags, then `<title>`/description, as **plain text** with capped lengths (120 /
-  300 / 60). The image is downloaded by the server, checked by the library's validator (JPEG,
-  PNG, WebP or GIF by content, at most 1 MB), scaled down to at most 480 px wide, stored as
-  WebP under `MEDIA_DIR/previews/` and served from this origin, so **viewers' browsers never
-  contact the linked site** and the CSP stays unchanged. Results are cached per URL for 24 h
-  (failures too), one fetch per URL at a time; at most 30 fetches per member per hour and 60
-  per minute overall (`config.linkPreviews`). `LINK_PREVIEWS=false` switches previews off.
-  Previews nobody uses any more are deleted with their image by the retention job.
+  contains an https link, the **server** previews the first one in the background and pushes a card
+  (`{ type: "preview" }`) to the room; the message itself is never delayed, and a failed fetch just
+  means no card. Title, description and site name come from Open Graph, then Twitter-card tags, then
+  `<title>`/description, as **plain text** with capped lengths (120 / 300 / 60). The image is
+  downloaded by the server, checked by the library's validator (JPEG, PNG, WebP or GIF by content,
+  at most 1 MB and 50 megapixels, `config.imageMaxPixels`), scaled down to at most 480 px wide,
+  stored as WebP under `MEDIA_DIR/previews/` and served from this origin, so **viewers' browsers
+  never contact the linked site** and the CSP stays unchanged. Results are cached per URL for 24 h
+  (failures too), one fetch per URL at a time; at most 30 fetches per member per hour and 60 per
+  minute overall (`config.linkPreviews`). `LINK_PREVIEWS=false` switches previews off. Previews
+  nobody uses any more are deleted with their image by the retention job.
 - **Fetch safety** (`server/src/previews/safeFetch.js`, `ipPolicy.js`), against server-side
   request forgery: https and port 443 only, no credentials in the URL; the server resolves the
   name itself and **every** answer must be a public address — private, loopback, link-local
@@ -285,14 +285,15 @@ password change and turning 2FA on or off close the account's other sockets at o
   Every action is audited. Anyone may report a message, counted once per account or guest; no
   IP address is stored.
 - **File uploads** (decided 2026-10-17, `server/src/uploads/`): members (not guests) attach one
-  image (JPG, PNG, WebP, GIF) or PDF to a message with **Attach file**. The file is uploaded
-  first (`POST /api/chat/uploads`, raw body, name in the query) and sent with the message as
-  `{ type: 'file', uploadId }` — only the uploader's own, not yet sent upload. The real type
-  comes from the content (the media validator; PDF by its `%PDF-` signature); at most 10 MB per
-  file and 50 MB per member per 24 hours (`config.uploads`), 10 uploads a minute
-  (`rateLimits.chatUpload`). Images are re-encoded: turned upright by their orientation tag,
-  every metadata block (EXIF with GPS, XMP, comments) dropped, animation kept, plus a
-  thumbnail at most 480 px wide. Files sit in `MEDIA_DIR/uploads/` under generated names; the
+  image (JPG, PNG, WebP, GIF) or PDF to a message with **Attach file**. The file is uploaded first
+  (`POST /api/chat/uploads`, raw body, name in the query) and sent with the message as
+  `{ type: 'file', uploadId }` — only the uploader's own, not yet sent upload. The real type comes
+  from the content (the media validator; PDF by its `%PDF-` signature); at most 10 MB per file and
+  50 MB per member per 24 hours (`config.uploads`), images at most 50 megapixels (width x height,
+  read from the header before anything is decoded, `config.imageMaxPixels`, decided 2026-10-23), 10
+  uploads a minute (`rateLimits.chatUpload`). Images are re-encoded: turned upright by their
+  orientation tag, every metadata block (EXIF with GPS, XMP, comments) dropped, animation kept, plus
+  a thumbnail at most 480 px wide. Files sit in `MEDIA_DIR/uploads/` under generated names; the
   original name survives only as cleaned-up display text (100 characters).
 - **Files in direct messages** (2026-10-22, `server/src/directFiles/`): encrypted in the
   browser before upload, stored as ciphertext in `MEDIA_DIR/direct/`, served to the two members

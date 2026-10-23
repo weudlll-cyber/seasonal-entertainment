@@ -3,11 +3,12 @@
 // Path:        server/src/uploads/process.js
 // Project:     Seasonal Entertainment
 // Description: Turns an uploaded chat file into what is stored. The real type comes from the
-//              content (the media validator; PDF by its signature). Images are re-encoded:
-//              turned upright by their orientation tag, every metadata block (EXIF with GPS,
-//              XMP, comments) dropped, animation kept, plus a thumbnail for the chat. PDFs are
-//              stored as they are (served only as a download). Names on disk are generated; the
-//              original file name survives only as cleaned-up display text.
+//              content (the media validator; PDF by its signature). Images over
+//              config.imageMaxPixels are refused from their header; the others are re-encoded:
+//              turned upright by their orientation tag, every metadata block (EXIF with GPS, XMP,
+//              comments) dropped, animation kept, plus a thumbnail for the chat. PDFs are stored as
+//              they are (served only as a download). Names on disk are generated; the original file
+//              name survives only as cleaned-up display text.
 // ============================================================
 
 import path from 'node:path';
@@ -79,6 +80,6 @@ export async function processUpload(buffer, originalName, config) {
       file: saveMediaFile(config, buffer, ext, SUBFOLDER),
     };
   }
-  await checkImage(buffer, { types: [type], maxBytes });
+  await checkImage(buffer, { types: [type], maxBytes, maxPixels: config.imageMaxPixels });
   return { name, mime, bytes: buffer.length, ...(await storeImage(buffer, type, config)) };
 }

@@ -2,10 +2,10 @@
 // File:        imageCheck.js
 // Path:        server/src/media/imageCheck.js
 // Project:     Seasonal Entertainment
-// Description: The one file-type check and image validator, for library uploads (stickers,
-//              GIFs), link-preview images and chat file uploads alike: the real type comes from
-//              the file's first bytes (never its name; PDF by its %PDF- signature),
-//              sharp must read its header, the dimensions are checked from it before any
+// Description: The one file-type check and image validator, for library uploads (stickers, GIFs),
+//              link-preview images and chat file uploads alike: the real type comes from the file's
+//              first bytes (never its name; PDF by its %PDF- signature), sharp must read its
+//              header, the dimensions (each side, the pixel count) are checked from it before any
 //              decoding, then its first frame must decode fully (a truncated or damaged file
 //              fails); size and animation are checked against the caller's rules too.
 // ============================================================
@@ -46,7 +46,8 @@ export function libraryRules(config, kind) {
     : { types: ['gif', 'webp'], animatedWebpOnly: true, ...config.media.gif };
 }
 
-// rules: { types: ['webp', ...], maxBytes, maxSide (optional), animatedWebpOnly (optional) }.
+// rules: { types: ['webp', ...], maxBytes, maxSide, maxPixels, animatedWebpOnly } (the last three
+// optional).
 // Returns { type, mime, ext, width, height, animated }; throws ImageRejected with a message
 // fit for the person uploading.
 export async function checkImage(buffer, rules) {
@@ -72,6 +73,11 @@ export async function checkImage(buffer, rules) {
   // it first would cost the memory the limit is there to spare.
   if (rules.maxSide && (width > rules.maxSide || height > rules.maxSide)) {
     throw new ImageRejected(`The image may be at most ${rules.maxSide} px on each side.`);
+  }
+  if (rules.maxPixels && width * height > rules.maxPixels) {
+    throw new ImageRejected(
+      `The image may have at most ${rules.maxPixels / 1_000_000} megapixels (width x height).`
+    );
   }
   try {
     // The header alone can be intact while the image data is not: decode one frame.

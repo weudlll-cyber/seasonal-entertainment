@@ -4,7 +4,7 @@
 // Project:     Seasonal Entertainment
 // Description: Guards chat file uploads: members only; the real type from the content, whatever
 //              the name says; per-file size and daily quota; images stored upright without
-//              metadata (EXIF with GPS gone), GIF animation kept, a thumbnail; generated names on
+//              metadata (EXIF with GPS gone), GIF animation kept, a thumbnail; at most 50 megapixels; generated names on
 //              disk; the original name only as cleaned display text.
 // ============================================================
 
@@ -13,7 +13,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 import { afterEach, describe, expect, it } from 'vitest';
 import { chatApp } from './helpers/chat.js';
-import { makeImage } from './helpers/media.js';
+import { largePng, makeImage } from './helpers/media.js';
 import { registerUser } from './helpers/testApp.js';
 import { PDF, gpsJpeg, upload, uploadedFiles } from './helpers/uploads.js';
 
@@ -48,6 +48,24 @@ describe('who and what may be uploaded', () => {
     expect((await upload(mia, PDF, 'report.pdf')).status).toBe(201);
     expect((await upload(mia, await makeImage('webp'), 'a.webp')).status).toBe(201);
   });
+
+  // 8500 x 6000 is 51 megapixels and 8000 x 6000 is 48, both under 60 KB: only the pixel count
+  // tells them apart. The refusal comes from the header, before decoding.
+  it(
+    'an image over 50 megapixels is refused, one of 48 is stored',
+    { timeout: 60_000 },
+    async () => {
+      const mia = await member();
+      const refused = await upload(mia, await largePng(8500, 6000), 'huge.png');
+      expect(refused.status).toBe(400);
+      expect(refused.body.message).toBe(
+        'The image may have at most 50 megapixels (width x height).'
+      );
+      const stored = await upload(mia, await largePng(8000, 6000), 'large.png');
+      expect(stored.status).toBe(201);
+      expect(stored.body.upload).toMatchObject({ width: 8000, height: 6000 });
+    }
+  );
 
   it('per-file size and the daily quota', async () => {
     const mia = await member({

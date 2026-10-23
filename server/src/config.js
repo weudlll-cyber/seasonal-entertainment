@@ -70,6 +70,10 @@ export function readConfig(env = process.env) {
       pendingMinutes: 60, // uploaded but never sent: deleted after this
       nameMax: 100, // the original file name, kept as display text only
     },
+    // The most pixels (width x height, of one frame) an image from a member or from the internet
+    // may have: chat uploads and link-preview images, read from the header before any decoding
+    // (decided 2026-10-23). A small file can claim a huge picture; decoding it costs memory.
+    imageMaxPixels: 50_000_000,
     // Library upload limits per pack kind (decided 2026-10-17).
     media: {
       sticker: { maxBytes: 512 * 1024, maxSide: 1024 },

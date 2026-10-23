@@ -2,11 +2,11 @@
 // File:        fetchPreview.js
 // Path:        server/src/previews/fetchPreview.js
 // Project:     Seasonal Entertainment
-// Description: Fetches one link's preview through safeFetch: the page (text/html only, capped)
-//              and, if it names one, its image (fetchImage.js: checked, upright, without
-//              metadata, scaled down, WebP). By default the image is stored in the media folder
-//              at the configured width, so room viewers load it from this site; a direct
-//              message's preview (directPreview.js) keeps it small and inline instead. Page
+// Description: Fetches one link's preview through safeFetch: the page (text/html only, capped) and,
+//              if it names one, its image (fetchImage.js: checked, at most config.imageMaxPixels,
+//              upright, without metadata, scaled down, WebP). By default the image is stored in the
+//              media folder at the configured width, so room viewers load it from this site; a
+//              direct message's preview (directPreview.js) keeps it small and inline instead. Page
 //              and image share one deadline.
 // ============================================================
 
@@ -29,7 +29,11 @@ async function previewImage(url, config, options, network, imageWay) {
   try {
     const image = await fetchImage(
       url,
-      { maxBytes: config.linkPreviews.maxImageBytes, maxWidth: imageWay.maxWidth },
+      {
+        maxBytes: config.linkPreviews.maxImageBytes,
+        maxWidth: imageWay.maxWidth,
+        maxPixels: config.imageMaxPixels,
+      },
       options,
       network
     );
