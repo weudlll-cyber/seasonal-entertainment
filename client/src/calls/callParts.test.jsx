@@ -13,11 +13,12 @@
 //              hosts end the call, and it asks first.
 // ============================================================
 
+import { HIDDEN_LISTENER } from '@seasonal-entertainment/shared/callPeople.js';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import Audience from './Audience.jsx';
 import CallControls from './CallControls.jsx';
-import { HEADPHONES_HINT, HIDDEN_LISTENER } from './stageModel.js';
+import { HEADPHONES_HINT } from './stageModel.js';
 import { person } from './testRoom.js';
 
 describe('the listener panel', () => {

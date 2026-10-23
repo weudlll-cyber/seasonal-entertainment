@@ -2,14 +2,14 @@
 // File:        botImages.test.js
 // Path:        server/test/botImages.test.js
 // Project:     Seasonal Entertainment
-// Description: The event bot's images (server/src/bots/images.js, docs/BOTS.md), on a fixture
-//              event bot and a pretend internet (helpers/previewNet.js): the server fetches an
-//              event's image, re-encodes it as WebP without metadata, stores it by a hash of its
-//              URL and serves it from the public media route, and the event then carries its
-//              address on this site (never the bot's URL); a private address, plain http or a
-//              non-image is refused and the event shows without one; each URL is fetched at most
-//              once a day. In development the fixture's own image host is served from its files
-//              (bots/fixtureNetwork.js), and that network reaches no other host.
+// Description: The event bot's images (server/src/bots/images.js, docs/BOTS.md), on a fixture event
+//              bot and a pretend internet (helpers/previewNet.js): the server fetches an event's
+//              image, re-encodes it as WebP without metadata, stores it by a hash of its URL and
+//              serves it from the public media route, and the event then carries its address on
+//              this site (never the bot's URL); a private address, plain http or a non-image or an
+//              image over 50 megapixels is refused and the event shows without one; each URL is
+//              fetched at most once a day. In development the fixture's own image host is served
+//              from its files (bots/fixtureNetwork.js), and that network reaches no other host.
 // ============================================================
 
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -21,6 +21,7 @@ import { afterEach, beforeAll, expect, it, vi } from 'vitest';
 import { buildEventFixture, buildEventImages } from '../src/bots/fixtures.js';
 import { fixtureImageNetwork } from '../src/bots/fixtureNetwork.js';
 import { botImageFile } from '../src/bots/images.js';
+import { largePng } from './helpers/media.js';
 import { PUBLIC_IP, html, previewInternet } from './helpers/previewNet.js';
 import { makeTestApp } from './helpers/testApp.js';
 
@@ -114,6 +115,24 @@ it('a private address, plain http or something that is no image: no image, nothi
   expect(warn.mock.calls.join('\n')).toMatch(/event image not used \(address not allowed\)/);
   expect(warn.mock.calls.join('\n')).toMatch(/event image not used \(https only\)/); // the stream
   expect(existsSync(path.join(t.config.mediaDir, 'bot-images'))).toBe(false);
+});
+
+// 8000 x 6000 is 48 megapixels and 8500 x 6000 is 51, both under 60 KB: only the pixel count
+// tells them apart, read from the header before decoding.
+it('an image over 50 megapixels is refused, one of 48 is used', { timeout: 60_000 }, async () => {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const api = await appOn({
+    [`${HOST}/quiz.png`]: image(await largePng(8000, 6000), 'image/png'),
+    [`${HOST}/call.png`]: image(await largePng(8500, 6000), 'image/png'),
+  });
+  await api.get(WEEK);
+  const timeout = { timeout: 30_000 };
+  await vi.waitFor(async () => expect((await quizOf(api)).image).not.toBeNull(), timeout);
+  const warned = () => warn.mock.calls.join('\n');
+  await vi.waitFor(() => expect(warned()).toMatch(/call\.png/), timeout);
+  expect(warned()).toMatch(/event image not used \(.*50 megapixels.*call\.png/);
+  const week = (await api.get(WEEK)).body.occurrences;
+  expect(week.find((o) => o.name === '[Sample] Bot Community Call').image).toBeNull();
 });
 
 it('fetches each image at most once a day', async () => {

@@ -45,20 +45,28 @@ entry waits for.
 
 ### Technical debt
 
-- **The hidden listener's name twice** — "A listener" in `client/src/calls/stageModel.js:14` and
-  `server/src/calls/people.js:12`; could move to `shared/`.
-- **Unit tests for turning 2FA off and the device key store** —
-  `client/src/components/TwoFactorDisable.jsx` (0 % of lines) and `client/src/keys/deviceKey.js`
-  (19 %) are covered only by server tests and an in-memory stand-in.
 - **A call test that sometimes hangs on CI** — `client/e2e/callShare.spec.js:57` (once also
   `calls.spec.js:61`) waits minutes for "Join call" on CI only. Since 2026-10-23 a failed browser
   test's trace and screenshot are uploaded (`playwright-test-results`, 7 days): the next hang shows
-  what the page held.
-- **A coverage script** — the repository has no `test:coverage` script or provider; adding one
-  adds a devDependency (`@vitest/coverage-v8`).
+  what the page held. Not reproduced on the PC (2026-10-23, `CI=1`, 2 workers as on CI, 12 extra
+  busy CPU threads): `callShare.spec.js` alone 20 times, 20 passed; three full browser runs, 104
+  of 104 passed each (7.1, 12.0 and 10.8 min; the two call tests 12–22 s). The test is unchanged.
+  The button needs the call `live` and the page's one `GET /api/calls/:id` answered; which of the
+  two failed on CI is what the trace will show.
 
 ## PART TWO — closed
 
+- **Technical debt (SE-DEBT-1)** — closed by `chore/se-debt-1` (merged, PR #19; owner request
+  2026-10-23), no visible change:
+  - **The hidden listener's name** — one constant, `shared/callPeople.js`, used by
+    `server/src/calls/people.js` and `client/src/calls/stageModel.js`.
+  - **Unit tests for turning 2FA off and the device key store** — `twoFactorDisable.test.jsx` and
+    `deviceKey.test.js` (over `client/src/test/memoryIndexedDb.js`); both files now 100 % of
+    lines; no bug found.
+  - **A coverage script** — `npm run test:coverage` (`scripts/coverage.mjs`, `@vitest/coverage-v8`),
+    reports in `coverage/`, not part of verify or CI; lines today: shared 100 %, server 96.4 %,
+    client 93.8 %.
+  - **The event bot's images** — under the 50-megapixel limit too (`config.imageMaxPixels`).
 - **Project audit (SE-AUDIT-1)** — closed by `chore/se-audit-1` (merged, PR #18; owner request
   2026-10-23): an image's size is checked from its header before it is decoded; Caddy's logs leave
   out the embed token's headers; 59 unused exports removed and one secret length rule; docs,
