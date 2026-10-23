@@ -53,7 +53,11 @@ entry waits for.
 - **A call test that sometimes hangs on CI** — `client/e2e/callShare.spec.js:57` (once also
   `calls.spec.js:61`) waits minutes for "Join call" on CI only. Since 2026-10-23 a failed browser
   test's trace and screenshot are uploaded (`playwright-test-results`, 7 days): the next hang shows
-  what the page held.
+  what the page held. Not reproduced on the PC (2026-10-23, `CI=1`, 2 workers as on CI, 12 extra
+  busy CPU threads): `callShare.spec.js` alone 20 times, 20 passed; three full browser runs, 104
+  of 104 passed each (7.1, 12.0 and 10.8 min; the two call tests 12–22 s). The test is unchanged.
+  The button needs the call `live` and the page's one `GET /api/calls/:id` answered; which of the
+  two failed on CI is what the trace will show.
 - **A coverage script** — the repository has no `test:coverage` script or provider; adding one
   adds a devDependency (`@vitest/coverage-v8`).
 
