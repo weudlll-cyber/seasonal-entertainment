@@ -3,11 +3,13 @@
 // Path:        server/test/settings.test.js
 // Project:     Seasonal Entertainment
 // Description: Admin-editable site settings (settings/): only admins read and change them;
-//              defaults until changed; values outside a setting's range and unknown keys are
-//              refused; every change is audited with the old and new value.
+//              defaults until changed, in their groups; values outside a setting's range and
+//              unknown keys are refused; every change is audited with the old and new value and
+//              takes effect at the next use, without a restart.
 // ============================================================
 
 import { afterEach, expect, it } from 'vitest';
+import { getSetting } from '../src/settings/store.js';
 import { auditActions } from './helpers/chat.js';
 import { makeStaff, makeTestApp, registerUser } from './helpers/testApp.js';
 
@@ -19,7 +21,15 @@ const valueOf = (settings, key) => settings.find((s) => s.key === key).value;
 it('admins read the defaults and change a setting within its range', async () => {
   t = makeTestApp();
   const admin = (await makeStaff(t, 'ada', 'admin')).agent;
-  const { settings } = (await admin.get('/api/admin/settings')).body;
+  const { groups, settings } = (await admin.get('/api/admin/settings')).body;
+  expect(groups[0]).toBe('Chat');
+  expect(settings.find((s) => s.key === 'calls.maxSpeakers')).toMatchObject({
+    group: 'Calls',
+    type: 'integer',
+    unit: 'speakers',
+    min: 1,
+    max: 25,
+  });
   expect(valueOf(settings, 'calls.maxSpeakers')).toBe(10);
   expect(valueOf(settings, 'calls.maxParticipants')).toBe(250);
 
@@ -31,6 +41,14 @@ it('admins read the defaults and change a setting within its range', async () =>
     { value: 10 },
     { value: 6 },
   ]);
+});
+
+it('a change takes effect at the next use, without a restart', async () => {
+  t = makeTestApp();
+  const admin = (await makeStaff(t, 'ada', 'admin')).agent;
+  expect(getSetting(t.db, 'calls.maxSpeakers')).toBe(10); // read once: now kept in memory
+  await admin.put('/api/admin/settings/calls.maxSpeakers').send({ value: 4 });
+  expect(getSetting(t.db, 'calls.maxSpeakers')).toBe(4);
 });
 
 it('refuses values outside the range and unknown keys', async () => {

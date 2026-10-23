@@ -3,7 +3,8 @@
    Path:        client/src/admin/admin.css
    Project:     Seasonal Entertainment
    Description: Styles of the admin area: section navigation, compact row controls, the audit
-                log's details, the info editor (form beside its preview) and the media packs.
+                log's details, the info editor (form beside its preview), the media packs and the
+                settings page's groups.
    ============================================================ */
 
 .admin-nav {
@@ -79,4 +80,21 @@
   width: 48px;
   height: 48px;
   object-fit: contain;
+}
+
+/* Settings (AdminSettingsPage.jsx): one section per group, its settings as cards side by side
+   while they fit, one under the other on a phone. */
+.settings-group {
+  margin-top: var(--space-3);
+}
+
+.settings-group__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: var(--space-2);
+  align-items: start;
+}
+
+.settings-group__list .form {
+  max-width: none;
 }

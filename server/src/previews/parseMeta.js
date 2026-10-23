@@ -9,6 +9,7 @@
 // ============================================================
 
 import { Parser } from 'htmlparser2';
+import { isControl } from '../http/validate.js';
 
 // The first of these keys that is present wins.
 const FIELDS = {
@@ -16,12 +17,6 @@ const FIELDS = {
   description: ['og:description', 'twitter:description', 'description'],
   siteName: ['og:site_name'],
   image: ['og:image:secure_url', 'og:image', 'twitter:image', 'twitter:image:src'],
-};
-
-// C0 and C1 control characters (tabs and newlines included) become spaces.
-const isControl = (char) => {
-  const code = char.codePointAt(0);
-  return code < 0x20 || (code >= 0x7f && code <= 0x9f);
 };
 
 function plainText(value, max) {

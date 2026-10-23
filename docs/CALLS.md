@@ -158,7 +158,7 @@ Generate a production pair on the call server with
     off.
   - The site had no general on-site notification before; the notices use the shell's banner
     style (`.banner`, as the staff 2FA banner) and the chat's existing personal-event push.
-- **Settings** (Admin → Settings, `/api/admin/settings`, audited `setting.change`): speakers on
+- **Settings** (Admin → Settings, group "Calls", docs/SETTINGS.md): speakers on
   stage at most (default 10, 1–25) and participants per call at most (default 250, 2–1000;
   the call service's UDP range is sized for 250).
 

@@ -10,6 +10,7 @@
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
+import { setSetting } from '../src/settings/store.js';
 import { callApp, join, liveCall, newCall, organiser } from './helpers/calls.js';
 import { registerUser } from './helpers/testApp.js';
 
@@ -79,7 +80,7 @@ describe('join tokens', () => {
       canUpdateOwnMetadata: false,
       canPublishSources: SPEAKER_SOURCES,
     });
-    t.db.prepare("INSERT INTO site_settings VALUES ('calls.maxSpeakers', '1')").run();
+    setSetting(t.db, 'calls.maxSpeakers', 1);
     const second = await join(await organiser(t, 'otto'), service, call);
     expect(second.claims.video).toMatchObject(LISTENER_GRANT);
   });
@@ -126,7 +127,7 @@ describe('refusals', () => {
   it('is refused when the call is full, except for someone already in it', async () => {
     ({ t, service } = callApp());
     const call = await liveCall(await organiser(t));
-    t.db.prepare("INSERT INTO site_settings VALUES ('calls.maxParticipants', '2')").run();
+    setSetting(t.db, 'calls.maxParticipants', 2);
     const mia = await registerUser(t, 'mia');
     await join(mia.agent, service, call);
     await join(t.client(), service, call);

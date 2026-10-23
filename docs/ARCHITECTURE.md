@@ -456,7 +456,8 @@ server/
                            the reminder job, the link to a bot event (eventLink.js),
                            recordings with their length and chapters and the archive
                            (recordings.js, chapters.js, recordingRoutes.js, chapterRoutes.js)
-  src/settings/            admin-editable site settings: definitions, store, admin routes
+  src/settings/            admin-editable site settings (docs/SETTINGS.md): kinds, groups/,
+                           definitions, store, admin routes
   src/embed/               the chat on approved other sites: the approved list (a setting),
                            embed tokens, their route allow-list, routes (docs/EMBED.md, AUTH.md)
   src/reference/           ETH, POL and BTC prices from CoinGecko: schema, the API call, the daily
