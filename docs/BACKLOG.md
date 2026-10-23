@@ -18,24 +18,6 @@ entry waits for.
 - **Event bot admin page inside the site** — waits for a change in the bot project: its page
   skips its own login when the site's server supplies the bot token, and its API paths can sit
   under a prefix (today absolute `/api/...`, which collide with the site's `/api`).
-- **A pixel limit for chat uploads and link-preview images** — `server/src/uploads/process.js:82`
-  and `server/src/previews/fetchImage.js:26` pass no `maxSide`, so sharp's default (about 268
-  megapixels) applies; decision: the limit's value.
-- **A reporter's copy of a direct-message file and the upload quota** —
-  `server/src/directFiles/routes.js:109` does not count it against the daily quota (the upload
-  does, :84); decision: count it, or keep it exempt.
-- **The per-username login block** — `server/src/accounts/loginRoutes.js:38-44`: 10 failed logins
-  in 15 minutes block a known name for everyone; decision: keep, or let a correct password through.
-- **`CSRF_STRICT=false` in production** — `server/src/productionConfig.js:19-44` refuses an http
-  origin and `COOKIE_SECURE=false`, but not this; decision: refuse it there too.
-- **The approved design mockups** — `docs/design/se-style/StyleBlocks2.dc.html:108` (and the dark
-  one) still say "best buy", all four use heading weight 900; decision: annotate them or leave.
-- **Audit entries of deleted test accounts** — 28 entries in the dev database's `audit_log`
-  (`ec-admin-*`, `n5-*`, `n5f-*`, `ec-p4-admin`); the app has no delete path for audit entries.
-- **Screenshots under `reports/`** — 102 MB of gitignored screenshot folders behind the morning
-  sheets; decision: keep or delete.
-- **Docker leftovers of unproven origin** — 8 anonymous volumes (created 2026-10-18/19) and the
-  image `caddy:2.10-alpine`; another project uses Docker on this PC, so they stay until confirmed.
 
 ### Waits for going online
 
@@ -77,11 +59,26 @@ entry waits for.
 
 ## PART TWO — closed
 
-- **Project audit (SE-AUDIT-1)** — closed by `chore/se-audit-1` (not merged yet; owner request
+- **Project audit (SE-AUDIT-1)** — closed by `chore/se-audit-1` (merged, PR #18; owner request
   2026-10-23): an image's size is checked from its header before it is decoded; Caddy's logs leave
   out the embed token's headers; 59 unused exports removed and one secret length rule; docs,
-  headers and comments made true to the code; two tests wait for the server instead of a clock.
-  What needs a decision is in part one.
+  headers and comments made true to the code; two tests wait for the server instead of a clock;
+  a failed browser test's trace and screenshot are uploaded on CI. The audit's questions, each
+  decided 2026-10-23 and closed by the same branch:
+  - **Pixel limit** — built: chat uploads and link-preview images (rooms and direct messages)
+    over 50 megapixels are refused from the header, before decoding (`config.imageMaxPixels`);
+    10 MB per file and 50 MB a day unchanged.
+  - **A reporter's copy of a direct-message file** — stays outside the upload quota; a comment
+    at `server/src/directFiles/routes.js` says why.
+  - **The per-username login block** — kept as it is (docs/AUTH.md, "Rate limits").
+  - **`CSRF_STRICT=false` in production** — refused at start, like an http origin and
+    `COOKIE_SECURE=false` (docs/DEPLOYMENT.md).
+  - **The approved design mockups** — not edited; `docs/design/se-style/README.md` marks them
+    historical (heading weight 700, no "best buy" wording).
+  - **Audit entries of deleted test accounts** — kept: the audit log is deliberately not
+    deletable, and production starts with a fresh database.
+  - **Screenshots under `reports/`** — deleted (about 100 MB); the morning sheets stay.
+  - **Docker leftovers of unproven origin** — left; they can be removed in Docker Desktop.
 - **Notifications when the browser is closed (web push)** — not built (decided 2026-10-22):
   notifications come only while a tab of the site is open (docs/CHAT.md, "Notifications").
 - **No "best buy" wording** — closed by the SE-NIGHT-6 finish (`feat/se-night-6`; owner decision
