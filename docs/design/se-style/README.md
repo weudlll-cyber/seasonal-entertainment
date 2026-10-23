@@ -4,6 +4,11 @@ Reference mockups for SE-REDESIGN-1. They are design-canvas sources, not site co
 the markup between `<x-dc>` tags is HTML with inline styles; `{{t.*}}` values are the
 light/dark tokens defined in each file's `renderVals()` script at the bottom.
 
+**Historical** (noted 2026-10-23): the mockups stay as approved and are not edited. The site has
+moved on in two places: headings use Luxora Grotesk Bold (weight 700, `--font-weight-heading`)
+instead of the mockups' 900 since 2026-10-21, and no page uses "best buy" wording (the mockups'
+"Which season is the best buy today?") since 2026-10-23. docs/DESIGN.md is the current state.
+
 - `StyleBlocks2.dc.html` — home, light
 - `StyleBlocks2Dark.dc.html` — home, dark (same file, dark by default)
 - `StyleSubpages.dc.html` — Games / Events / Chat / Calls, light (page switched by the `page` value)
