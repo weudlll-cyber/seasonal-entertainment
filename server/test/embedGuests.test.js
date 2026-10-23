@@ -137,6 +137,7 @@ describe("admins set a site's rules", () => {
       guestsRead: true,
       guestsWrite: false,
       uploads: false,
+      images: false,
     });
     const set = (rule, value) =>
       admin.put('/api/admin/embed-origins/rules').send({ origin: SITE, rule, value });
@@ -147,6 +148,7 @@ describe("admins set a site's rules", () => {
       guestsRead: 'inherit',
       guestsWrite: 'on',
       uploads: 'inherit',
+      images: 'inherit',
     });
     expect((await check()).guestsWrite).toBe(true);
     const audit = t.db

@@ -150,6 +150,7 @@ describe('framing', () => {
       guestsRead: true,
       guestsWrite: false,
       uploads: false,
+      images: false,
     };
     expect(await check(SITE)).toEqual(approved);
     expect(await check('https://GAME.example')).toEqual(approved);

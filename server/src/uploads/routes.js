@@ -126,7 +126,7 @@ export function uploadRoutes(db, config, hub, embedOrigins) {
     res.sendFile(path.join(config.mediaDir, file));
   });
 
-  // For an embed token only (embed/auth.js lets it reach this while the site's "uploads" rule
+  // For an embed token only (embed/auth.js lets it reach this while the site's "images" rule
   // is on): links to the file's variants, for whoever may fetch it now.
   router.post('/files/:id/links', allow('member'), loadUpload, (req, res) => {
     if (!req.embed) return sendError(res, 400, 'not_embedded', 'No embed token was sent.');

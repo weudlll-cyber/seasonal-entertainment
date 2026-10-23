@@ -3,8 +3,9 @@
 // Path:        server/src/settings/groups/embed.js
 // Project:     Seasonal Entertainment
 // Description: The "Other sites" group of site settings (definitions.js): what guests may do
-//              in the chat embedded on an approved other site, and whether members upload and
-//              see uploaded images there (docs/EMBED.md). Each is the
+//              in the chat embedded on an approved other site, whether members upload there,
+//              and whether they see members-only images and downloads there (docs/EMBED.md); the
+//              last two are independent of each other (decided 2026-10-23). Each is the
 //              global rule; Admin → Embedding can override it per site (inherit / on / off,
 //              embed/origins.js).
 // ============================================================
@@ -25,7 +26,13 @@ export const EMBED_SETTINGS = {
   'embed.uploads': {
     type: 'boolean',
     label: 'Uploads on other sites',
-    help: 'Members attach files there and see uploaded images of members-only rooms (short-lived links).',
+    help: 'Members attach images and PDFs in the embedded chat.',
+    default: false,
+  },
+  'embed.images': {
+    type: 'boolean',
+    label: 'Images on other sites',
+    help: 'Members see images and downloads of members-only rooms there, through short-lived links.',
     default: false,
   },
 };

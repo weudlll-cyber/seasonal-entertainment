@@ -2,11 +2,11 @@
 // File:        embedFiles.test.jsx
 // Path:        client/src/embed/embedFiles.test.jsx
 // Project:     Seasonal Entertainment
-// Description: Files in the chat embedded on another site, by the site's "uploads" rule
-//              (/api/embed/check): off, a member there has no "Attach file" and asks for no
-//              links; on, "Attach file" is there and an uploaded image in a message shows
-//              through its short-lived link (POST /api/chat/files/:id/links), not its plain
-//              address.
+// Description: Files in the chat embedded on another site, by the site's two independent
+//              rules (/api/embed/check): "uploads" alone gives a member "Attach file" but no
+//              links; "images" alone shows an uploaded image in a message through its short-
+//              lived link (POST /api/chat/files/:id/links), not its plain address, with no
+//              "Attach file"; neither gives neither.
 // ============================================================
 
 import { screen, waitFor } from '@testing-library/react';
@@ -25,8 +25,10 @@ beforeEach(setUpForeignHost);
 afterEach(tearDownForeignHost);
 
 const CHECK = `GET /embed/check?origin=${encodeURIComponent(SITE)}`;
-const uploadsRule = (uploads) => ({
-  [CHECK]: { body: { ok: true, allowed: true, guestsRead: true, guestsWrite: false, uploads } },
+const rules = (uploads, images) => ({
+  [CHECK]: {
+    body: { ok: true, allowed: true, guestsRead: true, guestsWrite: false, uploads, images },
+  },
 });
 const LINK = '/api/chat/files/7/thumb?link=3.999.sig';
 const WITH_IMAGE = {
@@ -62,23 +64,33 @@ const WITH_IMAGE = {
   },
 };
 
-it('uploads off: no "Attach file", and no links are asked for', async () => {
-  const calls = mockApi(answers(true, { ...uploadsRule(false), ...WITH_IMAGE }));
+async function shown(uploads, images) {
+  const calls = mockApi(answers(true, { ...rules(uploads, images), ...WITH_IMAGE }));
   await showEmbed();
   await logIn();
-  expect(await screen.findByLabelText('Message')).toBeInTheDocument();
+  await screen.findByLabelText('Message');
+  return calls;
+}
+const askedForLinks = (calls) => calls.some((c) => c.key === 'POST /chat/files/7/links');
+
+it('both off: no "Attach file", and no links are asked for', async () => {
+  const calls = await shown(false, false);
   expect(screen.queryByRole('button', { name: 'Attach file' })).toBeNull();
-  expect(calls.some((c) => c.key === 'POST /chat/files/7/links')).toBe(false);
+  expect(askedForLinks(calls)).toBe(false);
 });
 
-it('uploads on: "Attach file", and an image shows through its short-lived link', async () => {
-  const calls = mockApi(answers(true, { ...uploadsRule(true), ...WITH_IMAGE }));
-  await showEmbed();
-  await logIn();
+it('uploads on, images off: "Attach file", but no links', async () => {
+  const calls = await shown(true, false);
   expect(await screen.findByRole('button', { name: 'Attach file' })).toBeInTheDocument();
+  expect(askedForLinks(calls)).toBe(false);
+});
+
+it('images on, uploads off: the image through its short-lived link, no "Attach file"', async () => {
+  const calls = await shown(false, true);
   const image = await screen.findByRole('img', { name: 'Picture: pic.png' });
   await waitFor(() => expect(image).toHaveAttribute('src', LINK));
   expect(
     calls.find((c) => c.key === 'POST /chat/files/7/links').headers['X-Embed-Token']
   ).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Attach file' })).toBeNull();
 });

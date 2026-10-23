@@ -7,8 +7,9 @@
 //              blocked there). Such a request acts as the token's member, but only on the chat's
 //              member routes listed below: rooms and direct messages (read, write, read markers,
 //              mutes, reports), unread counts, favourites, the member search and the sticker/GIF
-//              library; uploads and short-lived links to uploaded files only while the site's
-//              "uploads" rule allows it (origins.js). Everything else — moderation, keys, account,
+//              library; uploads only while the site's "uploads" rule allows them, short-lived
+//              links to uploaded files only while its "images" rule does (origins.js; the two are
+//              independent). Everything else — moderation, keys, account,
 //              2FA, admin, calls — answers 403. A guest's requests from such a frame name the site
 //              instead (X-Embed-Origin, the frame's verified parent) and may carry a guest token
 //              (guestTokens.js): they act as a guest, on the guest routes below only, while the
@@ -48,8 +49,21 @@ const ALLOWED = [
   ['POST', '/chat/uploads'],
   ['POST', `/chat/files/${ID}/links`],
 ];
-// Allowed above, but only while the site's "uploads" rule is on.
-const UPLOADS = new RegExp(`^/chat/(uploads|files/${ID}/links)$`);
+// Allowed above, but only while the site's rule is on: [path, rule, error code, message].
+const RULED = [
+  [
+    /^\/chat\/uploads$/,
+    'uploads',
+    'embed_uploads_off',
+    'Uploads are switched off in the chat here.',
+  ],
+  [
+    new RegExp(`^/chat/files/${ID}/links$`),
+    'images',
+    'embed_images_off',
+    'Images are switched off in the chat here.',
+  ],
+];
 // What a guest of the frame may reach: the session (with the public settings), reading rooms
 // and writing and reporting in them, as guests do on the site itself.
 const GUEST_ALLOWED = [
@@ -113,8 +127,9 @@ export function embedTokenAuth(db, origins, config) {
     if (!allows(MEMBER_RULES, req.method, req.path)) {
       return sendError(res, 403, 'embed_not_allowed', 'This is not available in an embedded chat.');
     }
-    if (UPLOADS.test(req.path) && !origins.rule(found.origin, 'uploads')) {
-      return sendError(res, 403, 'embed_uploads_off', 'Files are switched off in the chat here.');
+    const ruled = RULED.find(([path]) => path.test(req.path));
+    if (ruled && !origins.rule(found.origin, ruled[1])) {
+      return sendError(res, 403, ruled[2], ruled[3]);
     }
     req.user = found.user;
     req.embed = found;

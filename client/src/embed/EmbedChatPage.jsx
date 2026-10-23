@@ -7,15 +7,15 @@
 //              this site's own pages (the games under the main domain) it uses the site's login
 //              cookie and device unlock exactly like the site. On an approved foreign site it has
 //              no cookie: "Log in" opens a popup on this site, which hands over an embed token and
-//              the unlocked key, both kept in memory only (useEmbedLogin.js); there a guest
-//              reads and writes as the site's rules allow (the "Other sites" settings or the
-//              site's own, given with the site's check; a guest name lasts through a guest
-//              token in the frame's storage), else gets "Log in to write" or "Log in to read",
-//              and members "Attach file" (and uploaded images, through short-lived links) only
-//              where the site allows uploads. Until the site is verified the room waits. Talks to
-//              the framing page only once its origin is verified (embedProtocol.js): ready, unread
-//              (messages while the host says the chat is out of sight), resize; it takes visible
-//              and theme.
+//              the unlocked key, both kept in memory only (useEmbedLogin.js); there a guest reads
+//              and writes as the site's rules allow (the "Other sites" settings or the site's own,
+//              given with the site's check; a guest name lasts through a guest token in the frame's
+//              storage), else gets "Log in to write" or "Log in to read", and members "Attach file"
+//              only where the site allows uploads, and members-only images (through short-lived
+//              links) only where it allows images. Until the site is verified the room waits. Talks
+//              to the framing page only once its origin is verified (embedProtocol.js): ready,
+//              unread (messages while the host says the chat is out of sight), resize; it takes
+//              visible and theme.
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
