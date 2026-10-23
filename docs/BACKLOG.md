@@ -58,11 +58,15 @@ entry waits for.
   direct messages, connection and message limits, retention), calls (recording allowed,
   reminder lead), accounts (sign-out days, registration open, 2FA for every member), home
   (season clock, "Start here"), the weekly recap (on/off, day, hour, room) and a new site
-  banner. Env values that were the source are now only defaults (docs/DEPLOYMENT.md).
+  banner. Env values that were the source are now only defaults (docs/DEPLOYMENT.md). The
+  finish (decided 2026-10-23): "Uploads on other sites" and "Images on other sites" are two
+  independent switches, each with its per-site rule; the site banner's info style shows as info
+  (it had lost to the shell's warning-looking `.banner`; a browser test now compares both).
 - **Uploads and uploaded images in the chat on other sites** — built behind switches, off by
-  default (2026-10-23, `feat/se-settings-1`): "Uploads on other sites" and each site's own rule;
-  members upload there and see members-only images through 5-minute signed links bound to the
-  file and their embed token (docs/EMBED.md, "Files on other sites").
+  default (2026-10-23, `feat/se-settings-1`): "Uploads on other sites" (members upload there) and
+  "Images on other sites" (members-only images through 5-minute signed links bound to the file and
+  their embed token), independent of each other, each with the site's own rule (docs/EMBED.md,
+  "Files on other sites").
 - **Guests writing in the chat on other sites** — built behind switches, off by default
   (2026-10-23, `feat/se-settings-1`): "Guests can read/write on other sites" and each site's own
   rule; the guest name travels as a signed guest token kept in the frame's own storage, no
