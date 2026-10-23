@@ -20,14 +20,15 @@ function shown(setting, value) {
   return `${value}${setting.unit ? ` ${setting.unit}` : ''}`;
 }
 
+// "<explanation> <bounds>. Default: <value>."
 function hintOf(setting) {
   const bounds =
     setting.type === 'integer'
-      ? ` ${setting.min}–${setting.max} ${setting.unit ?? ''}`.trimEnd() + ';'
+      ? ` ${`${setting.min}–${setting.max} ${setting.unit ?? ''}`.trimEnd()}.`
       : setting.type === 'text'
-        ? ` At most ${setting.maxLength} characters;`
+        ? ` At most ${setting.maxLength} characters.`
         : '';
-  return `${setting.help}${bounds} default ${shown(setting, setting.default)}.`;
+  return `${setting.help}${bounds} Default: ${shown(setting, setting.default)}.`;
 }
 
 // The value as the server expects it: a number field holds text until it is sent.
@@ -36,8 +37,9 @@ const outgoing = (setting, value) => (setting.type === 'integer' ? Number(value)
 function Control({ setting, value, onChange, hint }) {
   const hintId = useId();
   if (setting.type === 'boolean') {
+    // Not a .form-field: its label rule would stack the box above the text.
     return (
-      <div className="form-field">
+      <div className="setting-check">
         <label className="form-check">
           <input
             type="checkbox"

@@ -88,12 +88,12 @@ it('shows the settings in their groups with explanation, bounds and default', as
   // Within its form: the form itself is named after the setting as well.
   expect(within(formOf('Speakers at most')).getByLabelText('Speakers at most')).toHaveValue(10);
   expect(
-    calls.getByText('How many can speak at once. 1–25 speakers; default 10 speakers.')
+    calls.getByText('How many can speak at once. 1–25 speakers. Default: 10 speakers.')
   ).toBeInTheDocument();
   expect(within(formOf('Uploads')).getByLabelText('Uploads')).toBeChecked();
-  expect(screen.getByText('Members attach files. default on.')).toBeInTheDocument();
+  expect(screen.getByText('Members attach files. Default: on.')).toBeInTheDocument();
   expect(
-    screen.getByText('Plain text. At most 200 characters; default empty.')
+    screen.getByText('Plain text. At most 200 characters. Default: empty.')
   ).toBeInTheDocument();
   expect(within(formOf('Banner style')).getByLabelText('Banner style')).toHaveValue('info');
 });

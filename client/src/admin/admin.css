@@ -106,3 +106,9 @@
   gap: var(--space-1) var(--space-3);
   margin-top: var(--space-1);
 }
+
+/* An on/off setting (SettingForm.jsx): the box beside its label, the explanation below. */
+.setting-check {
+  display: grid;
+  gap: 0.25rem;
+}
