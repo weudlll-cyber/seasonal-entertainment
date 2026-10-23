@@ -29,9 +29,6 @@ An entry moves from part one to part two only when its branch is merged into `ma
   "Call recordings" holds a proposal for the owner to review (consent as the legal basis, kept
   until deleted, the rights and the complaint to the Datenschutzbehörde); only its contact
   address is left to fill.
-- **Official sources disagree** on the second Spring halving date (home table June 2025,
-  Medium update 5 September 2025) and on the total supply per token (whitepaper ~33.1 million,
-  home page ~37 million); the info pages state neither.
 - **Login with Discord or Telegram** — open. Accounts use a username and password, with 2FA
   required for organisers and admins (closed: SE-NIGHT-1 pieces 2 and 3); logging in with a
   Discord or Telegram account is not built (for Telegram's recovery codes see above).
@@ -46,6 +43,13 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **Season clock on home** — closed by SE-NIGHT-6 piece 2 (`feat/se-night-6`, not merged yet;
+  owner request 2026-10-23): the token in season and the next halving, from the token
+  contracts' own schedule (`shared/seasonClock.js`, constants cited from `contracts/*Token.sol`;
+  the four creation times read with a public read-only `eth_call`). It also settles the earlier
+  disagreement between official sources: the second Spring halving is in June 2025 (5 June, by
+  the contract; the Medium update's 5 September 2025 is not the contract's date), and the total
+  supply per token is 33,112,800 (`SpringToken.sol:22`, the same in all four contracts).
 - **"Not financial advice" notice** — closed by SE-NIGHT-6 piece 1 (`feat/se-night-6`, not
   merged yet; owner request 2026-10-23): "Not financial advice" beside Imprint and Privacy on
   every page (sidebar and phone menu) opens the new Disclaimer info page, seeded published; the

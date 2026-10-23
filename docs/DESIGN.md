@@ -222,7 +222,12 @@ the button's size (`--chat-launcher-size`, also used by `ChatDrawer.css`) plus a
 1. **Banner**: night blue (`--banner-background`) with the faint season pattern
    (`client/src/brand/seasonPattern.css`), the emblem, "SEASONAL" in the logo's gradient
    lettering, "ENTERTAINMENT" in white, and the greeting as the page's `h1` (with the username
-   when signed in). Its height follows the window (120–190px).
+   when signed in). Its height follows the window (120–190px). In its free space on the right,
+   the **season clock** (2026-10-23, `SeasonClock.jsx`, `shared/seasonClock.js`): the token in
+   season (the highest reward now; its icon on a white disc ringed in its season colour), "Next
+   halving: <token>, <date>" by the day only (`formatDate`, never a time), and the small line
+   "Calculated from the token contracts' halving schedule." On a phone the banner wraps and the
+   clock takes a line of its own.
 2. **Featured game** (the first game of the games data; a "Coming soon" badge only when its
    status says so) and **Up next** side by side. Up next (2026-10-21): the next two of the
    event bot's occurrences and the site's live and planned calls together, by start time

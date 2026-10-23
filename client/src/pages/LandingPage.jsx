@@ -3,7 +3,8 @@
 // Path:        client/src/pages/LandingPage.jsx
 // Project:     Seasonal Entertainment
 // Description: Home in the SE style (docs/DESIGN.md, "Home"): the night-blue banner with the
-//              emblem, the lettering and the greeting (with the username when signed in), then
+//              emblem, the lettering and the greeting (with the username when signed in) and
+//              the season clock (SeasonClock.jsx), then
 //              a grid that fits the main column at 1280 x 720 without scrolling: the featured
 //              game and "Up next": the next two of the event bot's occurrences (/api/bot-events)
 //              and the site's live and planned calls (callEntries.js) in time order (a call
@@ -25,6 +26,7 @@ import { EMBLEM } from '../brand/brand.js';
 import CommunityCard from './CommunityCard.jsx';
 import { FairPriceCard, FeaturedGameCard, PriceTiles, UpNextCard } from './homeCards.jsx';
 import NextCallCard from './NextCallCard.jsx';
+import SeasonClock from './SeasonClock.jsx';
 import '../brand/seasonPattern.css';
 import './LandingPage.css';
 import './homeBottomRow.css';
@@ -100,6 +102,7 @@ export default function LandingPage({ timeZone = deviceZone() }) {
             {user ? `Welcome back, ${user.username}` : 'Welcome to Seasonal Entertainment'}
           </h1>
         </div>
+        <SeasonClock timeZone={timeZone} />
       </div>
       <div className="home__grid">
         <FeaturedGameCard game={game} />
