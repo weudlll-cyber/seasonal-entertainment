@@ -3,8 +3,8 @@
    Path:        client/src/app/SiteBanner.css
    Project:     Seasonal Entertainment
    Description: The site banner (SiteBanner.jsx) on top of the shell's .banner: text, link and
-                Dismiss in one wrapping row; info on the winter tint, warning on the warning
-                surface with a stronger edge.
+                Dismiss in one wrapping row; info on the winter tint with a winter-blue edge,
+                warning on the warning surface with a red edge.
    ============================================================ */
 
 .site-banner {
@@ -20,11 +20,14 @@
   text-decoration: none;
 }
 
-.site-banner--info {
+/* Both classes: the shell's .banner (Layout.css, the 2FA banner's warning look) has the same
+   weight and loads later, so a single class here lost to it and info looked like warning. */
+.banner.site-banner--info {
   background: var(--color-info-surface);
+  border-bottom: 2px solid var(--color-winter);
 }
 
-.site-banner--warning {
+.banner.site-banner--warning {
   background: var(--color-warning-surface);
   border-bottom: 2px solid var(--color-danger);
 }

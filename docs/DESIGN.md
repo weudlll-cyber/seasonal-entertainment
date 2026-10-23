@@ -173,11 +173,12 @@ taller. `client/e2e/layout.spec.js` checks this on every main page at 1440 x 900
    Events Summer `#E06E22`, Chat Autumn `#F9A825`, Calls Winter `#04AAF7` (`dot` in
    `navigation.js`).
 2. **Main column**: a column (2026-10-23): first the banners — the **site banner** (an admin's
-   message for everyone, `SiteBanner.jsx`, docs/SETTINGS.md: plain text, an optional "Read
-   more" link to a page of this site, info on `--color-info-surface` or warning on
-   `--color-warning-surface` with a red edge, "Dismiss" remembered per text in this browser),
-   then the 2FA banner and call notices — and below them the routed page. Home takes the room
-   left below the banners, so it still fits the window with a banner on.
+   message for everyone, `SiteBanner.jsx`, docs/SETTINGS.md: plain text, an optional "Read more"
+   link to a page of this site, info on `--color-info-surface` with a winter-blue edge or warning on
+   `--color-warning-surface` with a red edge (both classes over the shell's `.banner`;
+   `client/e2e/siteBanner.spec.js` checks they differ in both themes), "Dismiss" remembered per text
+   in this browser), then the 2FA banner and call notices — and below them the routed page. Home
+   takes the room left below the banners, so it still fits the window with a banner on.
 
 **Start here** (2026-10-23, `/start`, `StartPage.jsx`): five numbered steps for a newcomer, each a
 card with a sentence or two and a button to a page the site has — what Seasonal Tokens are, how
