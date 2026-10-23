@@ -22,8 +22,11 @@ test.describe('through the Vite dev server', () => {
     playwright,
   }) => {
     const chatSockets = [];
+    const received = []; // what the chat socket receives: the server's "subscribed" answers
     page.on('websocket', (ws) => {
-      if (ws.url().endsWith('/ws/chat')) chatSockets.push(ws.url());
+      if (!ws.url().endsWith('/ws/chat')) return;
+      chatSockets.push(ws.url());
+      ws.on('framereceived', (frame) => received.push(String(frame.payload)));
     });
     await page.goto('/test/chat-panels');
     const general = page.getByRole('region', { name: 'Chat: General' });
@@ -40,8 +43,11 @@ test.describe('through the Vite dev server', () => {
     });
     const stamp = Date.now();
     const say = (room, body) => admin.post(`/api/chat/rooms/${room}/messages`, { data: { body } });
-    await expect(general.getByRole('list')).toBeVisible();
-    await page.waitForTimeout(300); // both rooms subscribed
+    // Only once the server accepted both subscriptions can a push arrive; posting earlier would
+    // race them.
+    const subscribed = (room) =>
+      received.some((p) => p.includes('"subscribed"') && p.includes(room));
+    await expect.poll(() => subscribed('general') && subscribed('announcements')).toBe(true);
     expect((await say('general', `to general ${stamp}`)).status()).toBe(201);
     expect((await say('announcements', `to announcements ${stamp}`)).status()).toBe(201);
 

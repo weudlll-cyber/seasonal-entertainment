@@ -9,7 +9,7 @@
 //              and nothing once that room is for members only.
 // ============================================================
 
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { connect, cookieOf, listeningChat, stopServer } from './helpers/chatSocket.js';
 import { post } from './helpers/chat.js';
 import { registerUser } from './helpers/testApp.js';
@@ -26,7 +26,6 @@ afterEach(async () => {
 });
 
 const count = async () => (await t.client().get('/api/chat/glimpse')).body.online;
-const settle = () => new Promise((resolve) => setTimeout(resolve, 100));
 
 it('counts members shown online and pushes the number to readers of general', async () => {
   let url;
@@ -44,12 +43,15 @@ it('counts members shown online and pushes the number to readers of general', as
     const page = connect(url, { cookie: cookieOf(agent) });
     sockets.push(page);
     await page.opened;
+    await page.subscribe('general'); // answered: the server has this connection
   }
-  await settle();
+  const pushed = () => guest.events.filter((e) => e.type === 'online');
+  // The push reaches the guest's own socket in its own time: wait for it, not for a clock.
+  await vi.waitFor(() =>
+    expect(pushed().at(-1)).toEqual({ type: 'online', count: 1, room: 'general' })
+  );
   expect(await count()).toBe(1);
-  const pushed = guest.events.filter((e) => e.type === 'online');
-  expect(pushed.at(-1)).toEqual({ type: 'online', count: 1, room: 'general' });
-  expect(JSON.stringify(pushed)).not.toMatch(/mia|ben/);
+  expect(JSON.stringify(pushed())).not.toMatch(/mia|ben/);
 });
 
 it('shows the newest 3 visible messages of general, and none once it is for members', async () => {
