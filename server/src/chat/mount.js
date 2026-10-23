@@ -3,10 +3,10 @@
 // Path:        server/src/chat/mount.js
 // Project:     Seasonal Entertainment
 // Description: The whole chat area behind one call: rooms and messages, unread counters,
-//              favourites, the member search, direct messages, moderation, the sticker/GIF library, link
-//              previews, members' file uploads, the live WebSocket and the retention job.
-//              The rest of the server knows only mountChat() and the handle it returns
-//              (docs/CHAT.md, "Server interface").
+//              favourites, the member search, direct messages, moderation, the sticker/GIF library,
+//              link previews, members' file uploads, the live WebSocket and the retention job. The
+//              rest of the server knows only mountChat() and the handle it returns (docs/CHAT.md,
+//              "Server: mountChat()").
 // ============================================================
 
 import express from 'express';

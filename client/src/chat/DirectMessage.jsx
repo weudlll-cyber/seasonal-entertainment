@@ -2,13 +2,13 @@
 // File:        DirectMessage.jsx
 // Path:        client/src/chat/DirectMessage.jsx
 // Project:     Seasonal Entertainment
-// Description: One decrypted direct message: author, local time, the text (links clickable) and
-//              a sticker or GIF from the site's library, and the link preview card the sender's
-//              browser put inside the message (checked by safePreview: its image is inline data,
-//              so showing it contacts no other site), and a file (DirectFile: a picture only
-//              when its bytes are one, else a download); a message made for an earlier key
-//              says it cannot be read. The partner's readable messages can be reported (onReport, from the
-//              message's "…" menu, MessageMenu).
+// Description: One decrypted direct message: author, local time, the text (links clickable) and a
+//              sticker or GIF from the site's library, and the link preview card the sender's
+//              browser put inside the message (checked by safePreview: its image is inline data, so
+//              showing it contacts no other site), and a file (DirectFile: a picture only when its
+//              bytes are one, else a download); a message made for an earlier key says it cannot be
+//              read. The partner's readable messages can be reported (onReport, from the message's
+//              "…" menu, MessageMenu).
 // ============================================================
 
 import DirectFile from './DirectFile.jsx';

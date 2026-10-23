@@ -57,38 +57,42 @@ The race game uses 5173 and 4173; this project stays clear of them.
 
 Read from the environment when the process starts, never baked into a build:
 
-| Variable                 | Default                                       | Used by                                                                   |
-| ------------------------ | --------------------------------------------- | ------------------------------------------------------------------------- |
-| `HOST`                   | `127.0.0.1`                                   | server listen address                                                     |
-| `PORT`                   | `3800`                                        | server listen port                                                        |
-| `CLIENT_DIST`            | `client/dist`                                 | folder of the built client the server serves (`assets/` cached a year)    |
-| `COMMIT_SHA`             | output of `git rev-parse`                     | commit reported by `/api/health`                                          |
-| `CLIENT_PORT`            | `5380`                                        | Vite dev server port                                                      |
-| `API_ORIGIN`             | `http://127.0.0.1:3800`                       | where the Vite dev server forwards `/api` and `/ws`                       |
-| `NODE_ENV`               | (unset)                                       | `production`: Secure cookies, no dev defaults (DEPLOYMENT.md)             |
-| `DATABASE_PATH`          | `data/seasonal.db`                            | SQLite file                                                               |
-| `SESSION_SECRET`         | random per start (dev)                        | signs session cookies; required in production                             |
-| `SECRET_ENCRYPTION_KEY`  | public development key (dev)                  | encrypts 2FA secrets at rest; required in production (AUTH.md)            |
-| `BOOTSTRAP_TOKEN`        | (unset)                                       | one-time first-admin creation (AUTH.md)                                   |
-| `PUBLIC_ORIGIN`          | from the Host header (required in production) | own origin for CSRF/WebSocket origin checks                               |
-| `TRUST_PROXY`            | `0` (must be set explicitly in production)    | number of reverse proxies in front                                        |
-| `COOKIE_SECURE`          | `true` in production                          | Secure session cookie                                                     |
-| `CSRF_STRICT`            | `true`                                        | refuse state changes without Origin/Referer                               |
-| `BCRYPT_COST`            | `12`                                          | password hashing cost (4–15)                                              |
-| `REQUIRE_STAFF_2FA`      | `true`                                        | organisers/admins must use 2FA; `false` only outside production           |
-| `CHAT_RETENTION_DAYS`    | `90`                                          | chat messages older than this are deleted                                 |
-| `MEDIA_DIR`              | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`                |
-| `LINK_PREVIEWS`          | `true`                                        | `false` switches chat link previews off                                   |
-| `CALLS_URL`              | (unset: Calls off)                            | call service origin, `wss://...` (docs/CALLS.md)                          |
-| `CALLS_API_KEY`          | (unset)                                       | call service API key; set with the other two or none                      |
-| `CALLS_API_SECRET`       | (unset)                                       | call service API secret; production: no dev pair, 32+ chars               |
-| `BACKUP_DIR`             | (unset)                                       | where `scripts/backup.mjs` writes backups (DEPLOYMENT.md)                 |
-| `BACKUP_ENCRYPTION`      | `on`                                          | encrypt backups with age (`off`: plain folders)                           |
-| `BACKUP_RECIPIENT`       | (unset; required while encryption is on)      | the owner's age public key (`age1…`) the backups are for                  |
-| `PRICE_BOT_DB`           | (unset: prices off)                           | the price bot's `snapshots.db`, read-only (docs/BOTS.md)                  |
-| `EVENT_BOT_DB`           | (unset: bot events off)                       | the event bot's database, read-only (docs/BOTS.md)                        |
-| `PRICE_BOT_MINING_RATES` | (unset: no fair price, no mining times)       | the price bot's `mining_rates.json`, read-only (docs/BOTS.md)             |
-| `COINGECKO_API_KEY`      | (unset: ETH, POL, BTC not connected)          | CoinGecko Demo key: the server fetches ETH/POL/BTC history (docs/BOTS.md) |
+| Variable                            | Default                                       | Used by                                                                   |
+| ----------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------- |
+| `HOST`                              | `127.0.0.1`                                   | server listen address                                                     |
+| `PORT`                              | `3800`                                        | server listen port                                                        |
+| `CLIENT_DIST`                       | `client/dist`                                 | folder of the built client the server serves (`assets/` cached a year)    |
+| `COMMIT_SHA`                        | output of `git rev-parse`                     | commit reported by `/api/health`                                          |
+| `CLIENT_PORT`                       | `5380`                                        | Vite dev server port                                                      |
+| `API_ORIGIN`                        | `http://127.0.0.1:3800`                       | where the Vite dev server forwards `/api` and `/ws`                       |
+| `NODE_ENV`                          | (unset)                                       | `production`: Secure cookies, no dev defaults (DEPLOYMENT.md)             |
+| `DATABASE_PATH`                     | `data/seasonal.db`                            | SQLite file                                                               |
+| `SESSION_SECRET`                    | random per start (dev)                        | signs session cookies; required in production                             |
+| `SECRET_ENCRYPTION_KEY`             | public development key (dev)                  | encrypts 2FA secrets at rest; required in production (AUTH.md)            |
+| `BOOTSTRAP_TOKEN`                   | (unset)                                       | one-time first-admin creation (AUTH.md)                                   |
+| `PUBLIC_ORIGIN`                     | from the Host header (required in production) | own origin for CSRF/WebSocket origin checks                               |
+| `TRUST_PROXY`                       | `0` (must be set explicitly in production)    | number of reverse proxies in front                                        |
+| `COOKIE_SECURE`                     | `true` in production                          | Secure session cookie                                                     |
+| `CSRF_STRICT`                       | `true`                                        | refuse state changes without Origin/Referer                               |
+| `BCRYPT_COST`                       | `12`                                          | password hashing cost (4–15)                                              |
+| `REQUIRE_STAFF_2FA`                 | `true`                                        | organisers/admins must use 2FA; `false` only outside production           |
+| `CHAT_RETENTION_DAYS`               | `90`                                          | chat messages older than this are deleted                                 |
+| `CHAT_MAX_CONNECTIONS_PER_MEMBER`   | `5`                                           | open live chat connections per member account (docs/CHAT.md)              |
+| `CHAT_MAX_GUEST_CONNECTIONS_PER_IP` | `20`                                          | open live chat connections per address for guests (docs/CHAT.md)          |
+| `MEDIA_DIR`                         | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`                |
+| `LINK_PREVIEWS`                     | `true`                                        | `false` switches chat link previews off                                   |
+| `CALLS_URL`                         | (unset: Calls off)                            | call service origin, `wss://...` (docs/CALLS.md)                          |
+| `CALLS_API_KEY`                     | (unset)                                       | call service API key; set with the other two or none                      |
+| `CALLS_API_SECRET`                  | (unset)                                       | call service API secret; production: no dev pair, 32+ chars               |
+| `CALLS_RECORDINGS_DIR`              | (unset: recording off)                        | the folder call recordings land in (docs/CALLS.md, "Recording")           |
+| `CALLS_EGRESS_OUTPUT_DIR`           | the same as `CALLS_RECORDINGS_DIR`            | that folder as the egress service sees it                                 |
+| `BACKUP_DIR`                        | (unset)                                       | where `scripts/backup.mjs` writes backups (DEPLOYMENT.md)                 |
+| `BACKUP_ENCRYPTION`                 | `on`                                          | encrypt backups with age (`off`: plain folders)                           |
+| `BACKUP_RECIPIENT`                  | (unset; required while encryption is on)      | the owner's age public key (`age1…`) the backups are for                  |
+| `PRICE_BOT_DB`                      | (unset: prices off)                           | the price bot's `snapshots.db`, read-only (docs/BOTS.md)                  |
+| `EVENT_BOT_DB`                      | (unset: bot events off)                       | the event bot's database, read-only (docs/BOTS.md)                        |
+| `PRICE_BOT_MINING_RATES`            | (unset: no fair price, no mining times)       | the price bot's `mining_rates.json`, read-only (docs/BOTS.md)             |
+| `COINGECKO_API_KEY`                 | (unset: ETH, POL, BTC not connected)          | CoinGecko Demo key: the server fetches ETH/POL/BTC history (docs/BOTS.md) |
 
 The server loads `.env` from the repository root if present; real environment variables win.
 `.env.example` lists every key the server reads, by name with a comment and no value;
@@ -389,9 +393,16 @@ client/                    React + Vite client
                            the sidebar's calls summary, a planned call's actions (calendar
                            file, reminder), the members' reminder notices; the call page's parts (stage, speaker
                            tiles, listeners, controls, media), its live connection
-                           (useCallRoom, livekit-client) and its rules (stageModel)
+                           (useCallRoom, livekit-client) and its rules (stageModel); the
+                           recording question, a recording with its player and chapters
+                           (RecordingItem, RecordingChapters; the archive page is
+                           pages/RecordingsPage.jsx)
   src/keys/                a member's key pair in the browser: provider, device copy
-                           (IndexedDB), unlock, recovery code (docs/CHAT.md)
+                           (IndexedDB), unlock, recovery code, unlocking a new device from
+                           an unlocked one (docs/CHAT.md, AUTH.md)
+  src/notify/              browser notifications while the site is open: permission, the
+                           switches, mentions, direct messages, the weekly recap (docs/CHAT.md)
+  src/games/               the games hub's card images
   public/theme-init.js     sets the theme before the first paint (external: strict CSP)
   src/assets/              logo, season marks, fonts (woff2)
   src/assets/seasons/source/  original season marks, input of build-season-marks.mjs
@@ -424,15 +435,25 @@ server/
                            used for the event bot's images
   src/uploads/             chat file uploads: schema, store, processing (type, metadata,
                            thumbnails), access-checked serving, moderators' removal
+  src/directFiles/         files in direct messages: ciphertext only, schema, store, routes
+                           (the two members; a reporter's shared copy for moderators)
+  src/recap/               the weekly recap: its text, its sources, the Monday job, the
+                           admins' "Post recap now" (docs/CHAT.md, "Weekly recap")
+  src/backup/              backup and restore of the database and media (the scripts'
+                           library; DEPLOYMENT.md)
   seeds/chat-media/        the starter stickers and GIFs (owner's own files, README credits)
   test/helpers/testApp.js  app on a temporary database for tests (chat.js: chat helpers,
                            chatSocket.js: a listening server and WebSocket clients)
   src/config.js            environment configuration
+  src/productionConfig.js  what production refuses to start with (docs/DEPLOYMENT.md)
+  src/secretKey.js         the key that encrypts 2FA secrets at rest (SECRET_ENCRYPTION_KEY)
   src/calls/               community calls (docs/CALLS.md): call service configuration, the
                            call service adapter, schema, store, participants, grants and join
                            tokens, spotlight rule, routes (management, join, stage, spotlight,
                            calendar file and reminders), ending a call, the stale-call job and
-                           the reminder job
+                           the reminder job, the link to a bot event (eventLink.js),
+                           recordings with their length and chapters and the archive
+                           (recordings.js, chapters.js, recordingRoutes.js, chapterRoutes.js)
   src/settings/            admin-editable site settings: definitions, store, admin routes
   src/embed/               the chat on approved other sites: the approved list (a setting),
                            embed tokens, their route allow-list, routes (docs/EMBED.md, AUTH.md)
@@ -466,7 +487,8 @@ scripts/
 deploy/site/               the site for a server: Dockerfile, docker-compose.yml (site + Caddy),
                            Caddyfile, systemd timers (docs/DEPLOYMENT.md)
 deploy/pc/                 the owner's PC: fetches the encrypted backups (PowerShell, sftp)
-deploy/calls/              the call service for a server: livekit.yaml, docker-compose.yml
+deploy/calls/              the call service for a server: livekit.yaml, docker-compose.yml,
+                           the optional recording add-on (docker-compose.recording.yml)
 docs/                      this file, the backlog, and one file per area (AUTH, BOTS, CHAT,
                            CALLS, DESIGN, EMBED) plus SCALING (the staged plan for growing beyond one
                            VPS) and DEPLOYMENT (the runbook for the VPS)
@@ -529,20 +551,15 @@ optical centre in `opticalCentres.js`, and a run of `npm run marks:build`.
 
 ## Planned areas
 
-None of these exist yet. Each gets its own branch and backlog entry.
-
-- **Accounts**: Discord and Telegram login; 2FA for organisers and admins.
-- **Info pages**: content pages, edited by admins in the browser.
-- **Games hub**: list of games; the race game connected here.
-- **Chat**: community chat.
-- **Bots**: Discord/Telegram bots and group roles.
-- **Admin pages**: management screens (events are kept in the event bot, docs/BOTS.md).
+Still to come (docs/BACKLOG.md part one): logging in with Discord or Telegram, group
+roles from those groups, and the race game connected to the games hub. Each gets its own
+branch and backlog entry.
 
 ## Adding a new area or game
 
 1. Open a branch and a backlog entry for it.
-2. Server: add a router file per area (for example `server/src/routes/games.js`) mounted under
-   `/api/<area>` in `app.js`, with its tests in `server/test/`.
+2. Server: add the area's folder with its router (for example `server/src/games/routes.js`),
+   mounted under `/api/<area>` in `app.js`, with its tests in `server/test/`.
 3. Client: add the page(s) under `client/src/pages/`, styled only with tokens from
    `tokens.css`, and their routes in `client/src/app/App.jsx` (plus a link in
    `navigation.js` if it belongs in the sidebar).

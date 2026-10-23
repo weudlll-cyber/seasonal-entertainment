@@ -2,17 +2,17 @@
 // File:        app.js
 // Path:        server/src/app.js
 // Project:     Seasonal Entertainment
-// Description: Builds the Express app: security headers, CSRF origin check, sessions, the
-//              JSON API under /api (the chat area through mountChat; calls, docs/CALLS.md,
-//              with the call service built from config) and, when a built client exists, the
-//              static client (hashed assets/ cached for a year) with a fallback to index.html
-//              for client routes. No listen(), so tests drive it directly; app.locals.chat is the chat's handle,
+// Description: Builds the Express app: security headers, CSRF origin check, sessions, the JSON API
+//              under /api (the chat area through mountChat; calls, docs/CALLS.md, with the call
+//              service built from config) and, when a built client exists, the static client
+//              (hashed assets/ cached for a year) with a fallback to index.html for client routes.
+//              No listen(), so tests drive it directly; app.locals.chat is the chat's handle,
 //              app.locals.calls.start() starts the stale-call and reminder jobs
-//              (calls/staleCalls.js, calls/reminders.js),
-//              app.locals.reference.start() the ETH, POL and BTC prices job (reference/sync.js),
-//              app.locals.recap.start() the weekly recap (recap/job.js).
-//              The embedded chat on approved foreign sites (embed/) adds its CSP, its token
-//              check and its routes; prices and bot events (bots/) are read-only public reads.
+//              (calls/staleCalls.js, calls/reminders.js), app.locals.reference.start() the ETH, POL
+//              and BTC prices job (reference/sync.js), app.locals.recap.start() the weekly recap
+//              (recap/job.js). The embedded chat on approved foreign sites (embed/) adds its CSP,
+//              its token check and its routes; prices and bot events (bots/) are read-only public
+//              reads.
 // ============================================================
 
 import { existsSync } from 'node:fs';

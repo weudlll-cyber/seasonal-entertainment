@@ -4,11 +4,11 @@
 // Project:     Seasonal Entertainment
 // Description: Server entry point: loads .env (if present), reads configuration, opens the
 //              database, encrypts any 2FA secret still stored in plain text (twofa/secretBox.js),
-//              adds first-start content, builds the app (in development with the fake event
-//              bot's image files, bots/fixtureNetwork.js), starts the chat (its own
-//              first-start content and retention job), the stale-call job, the reference
-//              prices job (with a CoinGecko key) and the weekly recap, starts listening and
-//              attaches the chat WebSocket.
+//              adds first-start content, builds the app (in development with the fake event bot's
+//              image files, bots/fixtureNetwork.js), starts the chat (its own first-start content
+//              and retention job), the stale-call and reminder jobs, the reference prices job (with
+//              a CoinGecko key) and the weekly recap, starts listening and attaches the chat
+//              WebSocket.
 // ============================================================
 
 import { existsSync } from 'node:fs';

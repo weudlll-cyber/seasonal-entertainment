@@ -3,23 +3,21 @@
 // Path:        server/src/calls/schema.js
 // Project:     Seasonal Entertainment
 // Description: Community calls (docs/CALLS.md): title, optional description and planned time,
-//              status (scheduled, live, ended), who created it, when it started and ended, its
-//              chat room (an unlisted chat room, read-only once the call ends), the name of
-//              its room on the call service, who is in the spotlight (spotlight.js) and since
-//              when a live call's room has been missing on the call service (staleCalls.js),
-//              and the event bot occurrence it is linked to (eventLink.js: its id and start).
-//              Recordings (recordings.js): one row per recording of a call, its file in the
-//              recordings folder, while running and after, and its length once read from the
-//              file; deleted only by an organiser. Its chapter marks (chapters.js: a time and
-//              a title, set by organisers and admins; a new table, so CREATE TABLE IF NOT
-//              EXISTS adds it to an older database, SE-NIGHT-6), gone with the recording.
-//              Participants: one per call and person (participants.js). Reminders: a member's
-//              "Remind me on this site" with when each notice was delivered (reminders.js; a
-//              new table, so CREATE TABLE IF NOT EXISTS adds it to an older database, SE-HOME-
-//              LIVE-1). migrateCalls() brings
-//              an older calls table up (columns that came later: the spotlight, SE-CALLS-2;
-//              room_missing_since, SE-NIGHT-2; the bot occurrence link and a recording's
-//              length, SE-NIGHT-5).
+//              status (scheduled, live, ended), who created it, when it started and ended, its chat
+//              room (an unlisted chat room, read-only once the call ends), the name of its room on
+//              the call service, who is in the spotlight (spotlight.js) and since when a live
+//              call's room has been missing on the call service (staleCalls.js), and the event bot
+//              occurrence it is linked to (eventLink.js: its id and start). Recordings
+//              (recordings.js): one row per recording of a call, its file in the recordings folder,
+//              while running and after, and its length once read from the file; deleted only by an
+//              organiser. Its chapter marks (chapters.js: a time and a title, set by organisers and
+//              admins; a new table, so CREATE TABLE IF NOT EXISTS adds it to an older database,
+//              SE-NIGHT-6), gone with the recording. Participants: one per call and person
+//              (participants.js). Reminders: a member's "Remind me on this site" with when each
+//              notice was delivered (reminders.js; a new table, so CREATE TABLE IF NOT EXISTS adds
+//              it to an older database, SE-HOME-LIVE-1). migrateCalls() brings an older calls table
+//              up (columns that came later: the spotlight, SE-CALLS-2; room_missing_since,
+//              SE-NIGHT-2; the bot occurrence link and a recording's length, SE-NIGHT-5).
 // ============================================================
 
 import { addMissingColumns } from '../db/addColumns.js';

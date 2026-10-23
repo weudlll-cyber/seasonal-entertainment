@@ -2,9 +2,9 @@
 // File:        senderLimit.js
 // Path:        server/src/chat/senderLimit.js
 // Project:     Seasonal Entertainment
-// Description: Message rate limit per sender (account or guest), stricter for guests
-//              (decided 2026-10-17), built on one sliding-window counter. In memory: a restart forgets the counts, which is fine
-//              for windows of seconds.
+// Description: Message rate limit per sender (account or guest), stricter for guests (decided
+//              2026-10-17), built on one sliding-window counter. In memory: a restart forgets the
+//              counts, which is fine for windows of seconds.
 // ============================================================
 
 // One sliding window: allow(key) is true (and counts) while key has fewer than max events in

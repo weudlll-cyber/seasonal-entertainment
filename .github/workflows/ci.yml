@@ -2,8 +2,8 @@
 # File:        ci.yml
 # Path:        .github/workflows/ci.yml
 # Project:     Seasonal Entertainment
-# Description: CI: runs `npm run verify` (lint, format check, server and client tests, build,
-#              browser tests) on pushes to master and on pull requests against master.
+# Description: CI: runs `npm run verify` (lint, format check, shared, server and client tests,
+#              build, browser tests) on pushes to master and on pull requests against master.
 #              It calls the same script as local work, so both always run the same checks.
 #              The browser tests start their own call server: the pinned LiveKit binary,
 #              downloaded and checked against its SHA-256 first (scripts/calls-binary.mjs).

@@ -2,15 +2,15 @@
 // File:        joinRoutes.js
 // Path:        server/src/calls/joinRoutes.js
 // Project:     Seasonal Entertainment
-// Description: Joining a live call and raising a hand (docs/CALLS.md, "Joining"). The server
-//              is the only authority: it issues a short-lived token with exactly what the
-//              participant may do (grants.js) — listeners receive only; organisers and admins
-//              start on the stage while it has room. Members join by account, guests by their
-//              chat guest identity. Refused for calls that are not live, chat bans and when the
-//              participant cap is reached. While a recording runs, only someone who confirmed
-//              it (recordingConsent: true) gets a token (docs/CALLS.md, "Recording"); without
-//              that, 409 recording_consent and no connection. Hands (members only) are stored here and set as the
-//              participant's attributes on the call service, so every client sees one truth.
+// Description: Joining a live call and raising a hand (docs/CALLS.md, "Joining"). The server is the
+//              only authority: it issues a short-lived token with exactly what the participant may
+//              do (grants.js) — listeners receive only; organisers and admins start on the stage
+//              while it has room. Members join by account, guests by their chat guest identity.
+//              Refused for calls that are not live, chat bans and when the participant cap is
+//              reached. While a recording runs, only someone who confirmed it (recordingConsent:
+//              true) gets a token (docs/CALLS.md, "Recording"); without that, 409 recording_consent
+//              and no connection. Hands (members only) are stored here and set as the participant's
+//              attributes on the call service, so every client sees one truth.
 // ============================================================
 
 import express from 'express';

@@ -2,15 +2,14 @@
 // File:        EventsPage.jsx
 // Path:        client/src/pages/EventsPage.jsx
 // Project:     Seasonal Entertainment
-// Description: /events: one week (Monday to Sunday in the viewer's time zone) of the event
-//              bot's occurrences (docs/BOTS.md), each at the viewer's local time with the zone
-//              named and the UTC time beside it (EventItem.jsx), together with the site's live
-//              and planned calls of that week as the Calls page shows them (useCalls.js,
-//              shared/callEntries.js, CallEventItem.jsx), in time order; a call linked to one of the
-//              week's events is not listed twice: that event offers "Listen on this site"
-//              (EventItem.jsx). Previous/next week buttons.
-//              Without the event bot the page says so plainly. timeZone and now are props so
-//              tests can pin them; in the browser they come from the device. SE style: the
+// Description: /events: one week (Monday to Sunday in the viewer's time zone) of the event bot's
+//              occurrences (docs/BOTS.md), each at the viewer's local time with the zone named and
+//              the UTC time beside it (EventItem.jsx), together with the site's live and planned
+//              calls of that week as the Calls page shows them (useCalls.js, shared/callEntries.js,
+//              CallEventItem.jsx), in time order; a call linked to one of the week's events is not
+//              listed twice: that event offers "Listen on this site" (EventItem.jsx). Previous/next
+//              week buttons. Without the event bot the page says so plainly. timeZone and now are
+//              props so tests can pin them; in the browser they come from the device. SE style: the
 //              Events header with the balls quarter; each event's bar takes a season colour.
 // ============================================================
 

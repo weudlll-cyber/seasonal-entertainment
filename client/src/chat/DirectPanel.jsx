@@ -3,11 +3,12 @@
 // Path:        client/src/chat/DirectPanel.jsx
 // Project:     Seasonal Entertainment
 // Description: The chat module's direct-message view (public, index.js): "Find a member"
-//              (MemberSearch) above the member's private conversations — favourite members first (with an online mark), then the most
-//              recent, each with its unread count — or one conversation (DirectConversation). The
-//              host passes the member's unlocked key (and shows the unlock step while there is
-//              none; docs/CHAT.md). Members only. Above it, the connection-limit line when the
-//              live connection was refused (ConnectionLimitNotice).
+//              (MemberSearch) above the member's private conversations — favourite members first
+//              (with an online mark), then the most recent, each with its unread count — or one
+//              conversation (DirectConversation). The host passes the member's unlocked key (and
+//              shows the unlock step while there is none; docs/CHAT.md). Members only. Above it,
+//              the connection-limit line when the live connection was refused
+//              (ConnectionLimitNotice).
 // ============================================================
 
 import { useSession } from '../session/SessionContext.jsx';

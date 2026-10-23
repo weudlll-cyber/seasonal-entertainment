@@ -2,14 +2,13 @@
 // File:        referencePrices.test.js
 // Path:        server/test/referencePrices.test.js
 // Project:     Seasonal Entertainment
-// Description: ETH, POL and BTC from CoinGecko (server/src/reference/, docs/BOTS.md), against a fake
-//              fetch: without a key both routes say not connected; the first run stores a year
-//              of daily and 90 days of hourly prices per coin (the right coin ids, USD, the key
-//              in the demo header and never in the URL, a pause between calls); the routes then
-//              give the latest price with its 24-hour change and the history per range; the next
-//              hour fetches only the last two days, the next day everything again and drops
-//              what is over a year old; a failed fetch keeps the stored prices, logs once and
-//              waits an hour.
+// Description: ETH, POL and BTC from CoinGecko (server/src/reference/, docs/BOTS.md), against a
+//              fake fetch: without a key both routes say not connected; the first run stores a year
+//              of daily and 90 days of hourly prices per coin (the right coin ids, USD, the key in
+//              the demo header and never in the URL, a pause between calls); the routes then give
+//              the latest price with its 24-hour change and the history per range; the next hour
+//              fetches only the last two days, the next day everything again and drops what is over
+//              a year old; a failed fetch keeps the stored prices, logs once and waits an hour.
 // ============================================================
 
 import request from 'supertest';

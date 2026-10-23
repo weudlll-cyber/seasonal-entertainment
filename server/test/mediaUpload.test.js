@@ -2,10 +2,11 @@
 // File:        mediaUpload.test.js
 // Path:        server/test/mediaUpload.test.js
 // Project:     Seasonal Entertainment
-// Description: Guards the chat media library: only admins upload; the real type is read from
-//              the content (a disguised file is refused whatever it claims to be); size and
-//              dimension limits per pack kind (dimensions from the header, before decoding); generated file names; served from this origin
-//              with the right Content-Type, nosniff and a long cache; edits are audited.
+// Description: Guards the chat media library: only admins upload; the real type is read from the
+//              content (a disguised file is refused whatever it claims to be); size and dimension
+//              limits per pack kind (dimensions from the header, before decoding); generated file
+//              names; served from this origin with the right Content-Type, nosniff and a long
+//              cache; edits are audited.
 // ============================================================
 
 import { existsSync, readdirSync } from 'node:fs';

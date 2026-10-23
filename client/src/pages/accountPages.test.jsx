@@ -2,11 +2,11 @@
 // File:        accountPages.test.jsx
 // Path:        client/src/pages/accountPages.test.jsx
 // Project:     Seasonal Entertainment
-// Description: Guards the Register, Login and Account pages: client-side rules (age
-//              checkbox), server errors shown, redirects (including no open redirect), the
-//              guard on /account and the password change. The login card shows the logo (the full
-//              logo for light mode, the emblem for dark), but not in the chat's login popup. No password ever leaves the
-//              browser: requests carry salts and auth keys only (docs/AUTH.md).
+// Description: Guards the Register, Login and Account pages: client-side rules (age checkbox),
+//              server errors shown, redirects (including no open redirect), the guard on /account
+//              and the password change. The login card shows the logo (the full logo for light
+//              mode, the emblem for dark), but not in the chat's login popup. No password ever
+//              leaves the browser: requests carry salts and auth keys only (docs/AUTH.md).
 // ============================================================
 
 import { fireEvent, render, screen, within } from '@testing-library/react';

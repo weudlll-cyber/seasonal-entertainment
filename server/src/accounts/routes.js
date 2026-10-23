@@ -5,14 +5,14 @@
 // Description: /api/auth: current session, registration, logout, own password change (login:
 //              loginRoutes.js). No password ever arrives here: registration and password change
 //              carry the auth key the browser derived and its salt (docs/AUTH.md, "Login key
-//              split"); the server stores bcrypt of the auth key. The password rules are
-//              checked in the browser (shared/accountRules.js). A password change also carries
-//              the private key sealed again with the new wrapping key (keys/), stored in the
-//              same transaction as the new verifier. Logout and password change also close
-//              the affected chat sockets (chat/mount.js); logout also ends the member's embed
-//              tokens (embed/tokens.js). PUT /api/auth/privacy: the member's own "Show when
-//              I'm online" and "Link previews in direct messages"; PUT /api/auth/notifications:
-//              which browser notifications they want (a mention, a new direct message).
+//              split"); the server stores bcrypt of the auth key. The password rules are checked in
+//              the browser (shared/accountRules.js). A password change also carries the private key
+//              sealed again with the new wrapping key (keys/), stored in the same transaction as
+//              the new verifier. Logout and password change also close the affected chat sockets
+//              (chat/mount.js); logout also ends the member's embed tokens (embed/tokens.js). PUT
+//              /api/auth/privacy: the member's own "Show when I'm online" and "Link previews in
+//              direct messages"; PUT /api/auth/notifications: which browser notifications they want
+//              (a mention, a new direct message, the weekly recap).
 // ============================================================
 
 import express from 'express';

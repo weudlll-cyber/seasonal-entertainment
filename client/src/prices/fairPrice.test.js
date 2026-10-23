@@ -51,7 +51,7 @@ describe('fair prices, as the bot computes them', () => {
     expect(rows.summer.deviation).toBeCloseTo(-42.19, 1);
     expect(rows.autumn.deviation).toBeCloseTo(65.18, 1);
     expect(rows.winter.deviation).toBeCloseTo(15.63, 1);
-    // Best buy first: the lowest actual / fair (summer 0.58, spring 0.93, winter 1.16, autumn 1.65).
+    // Rank 1 first: the lowest actual / fair (summer 0.58, spring 0.93, winter 1.16, autumn 1.65).
     expect([rows.summer, rows.spring, rows.winter, rows.autumn].map((r) => r.rank)).toEqual([
       1, 2, 3, 4,
     ]);

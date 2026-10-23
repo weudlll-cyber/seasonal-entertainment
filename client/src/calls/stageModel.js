@@ -105,7 +105,8 @@ export function spotlightSpeaker(spotlight, speakers) {
 
 // The speaker to show large, or null for the grid of all speakers. sharers: the identities
 // with a screen share now, in stage order. The server's choice first; without one a share is
-// shown large anyway (the last sharer), so a share never depends on the spotlight update. Only an organiser's explicit "all speakers" keeps the grid (shares show in tiles).
+// shown large anyway (the last sharer), so a share never depends on the spotlight update. Only
+// an organiser's explicit "all speakers" keeps the grid (shares show in tiles).
 export function shownLarge(spotlight, speakers, sharers) {
   const chosen = spotlightSpeaker(spotlight, speakers);
   if (chosen || (spotlight?.by === 'organiser' && spotlight.identity === null)) return chosen;

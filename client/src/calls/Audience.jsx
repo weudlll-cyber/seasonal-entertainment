@@ -2,15 +2,15 @@
 // File:        Audience.jsx
 // Path:        client/src/calls/Audience.jsx
 // Project:     Seasonal Entertainment
-// Description: The listeners (design "Community Call – Bühne"). Collapsed (the default): one
-//              row of chips — every raised hand first, then a few more — with "+N" and a button
-//              to show all; expanded: "Find a listener" and the whole list, scrolling inside
-//              its capped height. One chip per listener — an initial circle and the name; raised hands first,
-//              marked in autumn orange with the hand symbol; guests tagged; hidden listeners
-//              ("A listener") last, with a neutral circle. Organisers invite members from a
-//              compact button inside the chip (guests can only listen); hidden listeners are
-//              numbered in their Invite button's name ("Invite listener 2 to the stage"), so
-//              each button has its own name and organisers tell them apart by position.
+// Description: The listeners (design "Community Call – Bühne"). Collapsed (the default): one row of
+//              chips — every raised hand first, then a few more — with "+N" and a button to show
+//              all; expanded: "Find a listener" and the whole list, scrolling inside its capped
+//              height. One chip per listener — an initial circle and the name; raised hands first,
+//              marked in autumn orange with the hand symbol; guests tagged; hidden listeners ("A
+//              listener") last, with a neutral circle. Organisers invite members from a compact
+//              button inside the chip (guests can only listen); hidden listeners are numbered in
+//              their Invite button's name ("Invite listener 2 to the stage"), so each button has
+//              its own name and organisers tell them apart by position.
 // ============================================================
 
 import { useState } from 'react';
