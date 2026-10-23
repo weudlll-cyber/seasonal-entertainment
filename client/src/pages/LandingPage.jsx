@@ -100,17 +100,21 @@ export default function LandingPage({ timeZone = deviceZone() }) {
           <span className="home__lettering-sub" aria-hidden="true">
             ENTERTAINMENT
           </span>
-          {/* On the greeting's line, so the banner keeps its height: for guests only (null; a
-              member's session is undefined while it loads, so they never see it flash). */}
+          {/* On the greeting's line: for guests only. It holds its place from the start and is
+              shown once the session says "guest" (null; undefined while it loads), so nothing
+              moves when the session answers (speed.spec.js); for members it stays hidden,
+              out of reach of focus and screen readers. */}
           <div className="home__greeting-row">
             <h1 className="home__greeting">
               {user ? `Welcome back, ${user.username}` : 'Welcome to Seasonal Entertainment'}
             </h1>
-            {user === null && (
-              <Link className="home__start" to="/start">
-                New here? Start here
-              </Link>
-            )}
+            <Link
+              className="home__start"
+              to="/start"
+              style={{ visibility: user === null ? 'visible' : 'hidden' }}
+            >
+              New here? Start here
+            </Link>
           </div>
         </div>
         <SeasonClock timeZone={timeZone} />
