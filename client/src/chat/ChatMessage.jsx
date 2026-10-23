@@ -2,14 +2,13 @@
 // File:        ChatMessage.jsx
 // Path:        client/src/chat/ChatMessage.jsx
 // Project:     Seasonal Entertainment
-// Description: One chat message: author (with a Guest badge; a member's name opens the name
-//              menu, NameMenu; the site's own messages, the weekly recap, carry a Site badge
-//              and their site paths as links), local time, then its text (MessageParts: members' https links
-//              become links, @mentions name chips) and its sticker / GIF from the site's
-//              library, a link preview card (PreviewCard), an uploaded file (MessageFile), and
-//              its "…" menu (MessageMenu: Report; for moderators Hide / Mute / Ban / Remove
-//              file / Remove preview). A message that mentions the reader is highlighted for
-//              them.
+// Description: One chat message: author (with a Guest badge; a member's name opens the name menu,
+//              NameMenu; the site's own messages, the weekly recap, carry a Site badge and their
+//              site paths as links), local time, then its text (MessageParts: members' https links
+//              become links, @mentions name chips) and its sticker / GIF from the site's library, a
+//              link preview card (PreviewCard), an uploaded file (MessageFile), and its "…" menu
+//              (MessageMenu: Report; for moderators Hide / Mute / Ban / Remove file / Remove
+//              preview). A message that mentions the reader is highlighted for them.
 // ============================================================
 
 import { useSession } from '../session/SessionContext.jsx';

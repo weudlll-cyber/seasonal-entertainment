@@ -20,7 +20,7 @@ import path from 'node:path';
 import Database from 'better-sqlite3';
 import sharp from 'sharp';
 
-export const BOT_TOKENS = ['spring', 'summer', 'autumn', 'winter'];
+const BOT_TOKENS = ['spring', 'summer', 'autumn', 'winter'];
 const HOUR_MS = 60 * 60_000;
 const DAY_MS = 24 * HOUR_MS;
 

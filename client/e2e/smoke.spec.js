@@ -2,9 +2,9 @@
 // File:        smoke.spec.js
 // Path:        client/e2e/smoke.spec.js
 // Project:     Seasonal Entertainment
-// Description: Browser smoke tests against the production server: the home page opens
-//              with title, the sidebar's loaded logo and no console errors (a Content-Security-Policy
-//              violation would show up as one), and a deep link reaches the client's router.
+// Description: Browser smoke tests against the production server: the home page opens with title,
+//              the sidebar's loaded logo and no console errors (a Content-Security-Policy violation
+//              would show up as one), and a deep link reaches the client's router.
 // ============================================================
 
 import { expect, test } from '@playwright/test';

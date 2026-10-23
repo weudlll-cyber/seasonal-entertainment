@@ -3,12 +3,12 @@
 // Path:        client/e2e/accounts.spec.js
 // Project:     Seasonal Entertainment
 // Description: Browser flow through the real server: register, see the account, change the
-//              password, log out, log in again with the new one; neither password appears in
-//              any request (docs/AUTH.md, "Login key split"). The chat drawer stays open across the login and the logout: its
-//              panel writes as the member after logging in and is a guest's again after
-//              logging out, without leaving the page. Runs on the e2e run's own temporary
-//              database; the registration limit per IP is why this spec carries the drawer
-//              check instead of registering an account of its own.
+//              password, log out, log in again with the new one; neither password appears in any
+//              request (docs/AUTH.md, "Login key split"). The chat drawer stays open across the
+//              login and the logout: its panel writes as the member after logging in and is a
+//              guest's again after logging out, without leaving the page. Runs on the e2e run's own
+//              temporary database; the registration limit per IP is why this spec carries the
+//              drawer check instead of registering an account of its own.
 // ============================================================
 
 import { expect, test } from '@playwright/test';

@@ -2,12 +2,12 @@
 // File:        CommunityCard.jsx
 // Path:        client/src/pages/CommunityCard.jsx
 // Project:     Seasonal Entertainment
-// Description: The home page's Community box (docs/DESIGN.md, "Home"): night blue with the
-//              people quarter, "● N online" and the newest 3 messages of the public room
-//              "general" (name, short text, time), kept live through the chat module's public
-//              useRoomGlimpse; "Open the chat" in its head row. When the newest message is more than 24
-//              hours old, only the count and the button (decided 2026-10-21). Text only: an
-//              attachment shows as [image], [GIF] or [file].
+// Description: The home page's Community box (docs/DESIGN.md, "Home"): night blue with the people
+//              quarter, "● N online" and the newest 3 messages of the public room "general" (name,
+//              short text, time), kept live through the chat module's public useRoomGlimpse; "Open
+//              the chat" in its head row. When the newest message is more than 24 hours old, only
+//              the count and the button (decided 2026-10-21). Text only: an attachment shows as
+//              [image], [GIF] or [file].
 // ============================================================
 
 import { Link } from 'react-router';

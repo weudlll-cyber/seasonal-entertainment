@@ -17,7 +17,7 @@ import http from 'node:http';
 import net from 'node:net';
 import path from 'node:path';
 
-export const FIXTURE_IMAGE_HOST = 'images.bot-fixtures.test';
+const FIXTURE_IMAGE_HOST = 'images.bot-fixtures.test';
 // A public address for the guard to accept; nothing is ever sent there (see connect).
 const PLACEHOLDER_ADDRESS = '93.184.216.34';
 const TYPES = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' };

@@ -10,15 +10,15 @@
 import { readStored, writeStored } from '../app/storage.js';
 
 export const THEME_KEY = 'se.theme';
-export const THEMES = ['light', 'dark'];
-export const DARK_QUERY = '(prefers-color-scheme: dark)';
+const THEMES = ['light', 'dark'];
+const DARK_QUERY = '(prefers-color-scheme: dark)';
 
-export function storedTheme() {
+function storedTheme() {
   const value = readStored(THEME_KEY);
   return THEMES.includes(value) ? value : null;
 }
 
-export function systemTheme() {
+function systemTheme() {
   return window.matchMedia?.(DARK_QUERY).matches ? 'dark' : 'light';
 }
 

@@ -3,14 +3,14 @@
 // Path:        server/test/infoSeed.test.js
 // Project:     Seasonal Entertainment
 // Description: Guards the first-start info pages: inserted only into an empty table, the ten
-//              content pages and the Disclaimer published and the two legal pages as drafts (invisible to the
-//              public), and the content rules: every source-based page
-//              ends with a Sources list, no contract address is retyped, no raw HTML or local
-//              file links, Risks says "not financial advice", legal pages carry placeholders,
-//              the privacy draft says when calls are recorded (only after an organiser starts
-//              it, always announced) and what the call server processes, and its recording
-//              section is a proposal for the owner (consent as legal basis, no automatic
-//              deletion, the rights and where to complain) with only the contact left to fill.
+//              content pages and the Disclaimer published and the two legal pages as drafts
+//              (invisible to the public), and the content rules: every source-based page ends with
+//              a Sources list, no contract address is retyped, no raw HTML or local file links,
+//              Risks says "not financial advice", legal pages carry placeholders, the privacy draft
+//              says when calls are recorded (only after an organiser starts it, always announced)
+//              and what the call server processes, and its recording section is a proposal for the
+//              owner (consent as legal basis, no automatic deletion, the rights and where to
+//              complain) with only the contact left to fill.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';

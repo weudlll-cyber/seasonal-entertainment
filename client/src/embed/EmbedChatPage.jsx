@@ -2,16 +2,16 @@
 // File:        EmbedChatPage.jsx
 // Path:        client/src/embed/EmbedChatPage.jsx
 // Project:     Seasonal Entertainment
-// Description: /embed/chat?room=<slug>&theme=<light|dark|auto>: the chat alone, compact, no
-//              site shell, for an iframe (docs/EMBED.md). Rooms for everyone; "Direct" for
-//              members. On this site's own pages (the games under the main domain) it uses the
-//              site's login cookie and device unlock exactly like the site. On an approved
-//              foreign site it has no cookie: "Log in" opens a popup on this site, which hands
-//              over an embed token and the unlocked key, both kept in memory only
-//              (useEmbedLogin.js); there a guest gets "Log in to write" instead of the
-//              composer, and members no "Attach file". Talks to the framing page only once its origin is verified
-//              (embedProtocol.js): ready, unread (messages while the host says the chat is out
-//              of sight), resize; it takes visible and theme.
+// Description: /embed/chat?room=<slug>&theme=<light|dark|auto>: the chat alone, compact, no site
+//              shell, for an iframe (docs/EMBED.md). Rooms for everyone; "Direct" for members. On
+//              this site's own pages (the games under the main domain) it uses the site's login
+//              cookie and device unlock exactly like the site. On an approved foreign site it has
+//              no cookie: "Log in" opens a popup on this site, which hands over an embed token and
+//              the unlocked key, both kept in memory only (useEmbedLogin.js); there a guest gets
+//              "Log in to write" instead of the composer, and members no "Attach file". Talks to
+//              the framing page only once its origin is verified (embedProtocol.js): ready, unread
+//              (messages while the host says the chat is out of sight), resize; it takes visible
+//              and theme.
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';

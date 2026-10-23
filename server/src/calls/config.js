@@ -14,12 +14,11 @@
 // ============================================================
 
 import path from 'node:path';
+import { SECRET_MIN } from '../productionConfig.js';
 
 // What `livekit-server --dev` uses; fine on a developer's machine, never in production.
-export const DEV_API_KEY = 'devkey';
-export const DEV_API_SECRET = 'secret';
-// LiveKit's own advice for a production secret.
-const SECRET_MIN = 32;
+const DEV_API_KEY = 'devkey';
+const DEV_API_SECRET = 'secret';
 
 const fail = (message) => {
   throw new Error(`[calls] ${message}`);

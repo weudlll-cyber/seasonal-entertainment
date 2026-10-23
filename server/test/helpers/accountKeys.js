@@ -12,7 +12,7 @@
 
 import { deriveAccountKeys, newKeyPair, sealBytes } from '@seasonal-entertainment/shared/crypto.js';
 
-export const TEST_SALT = 'dGVzdC1zYWx0LTE2Ynl0ZQ==';
+const TEST_SALT = 'dGVzdC1zYWx0LTE2Ynl0ZQ==';
 const RESET_SALT = 'cmVzZXQtc2FsdC0xNmJ5dA==';
 const derived = new Map();
 

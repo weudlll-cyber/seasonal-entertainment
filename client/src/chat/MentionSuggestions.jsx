@@ -13,7 +13,7 @@ import { useId, useState } from 'react';
 import { QUERY_MIN, useMemberSearch } from './useMemberSearch.js';
 
 // The "@name" being typed right before the cursor: { query, start } or null.
-export function mentionAt(text, caret) {
+function mentionAt(text, caret) {
   const match = /(?:^|[^A-Za-z0-9_.@-])@([A-Za-z0-9_.-]{0,24})$/.exec(text.slice(0, caret));
   return match ? { query: match[1], start: caret - match[1].length - 1 } : null;
 }

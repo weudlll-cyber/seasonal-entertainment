@@ -16,7 +16,7 @@ import { saveMediaFile } from './files.js';
 import { checkImage, libraryRules } from './imageCheck.js';
 import { addItem, countPacks, createPack } from './store.js';
 
-export const SEED_DIR = path.resolve(
+const SEED_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '..',
   '..',
@@ -28,7 +28,7 @@ const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
 const title = (word) => word[0].toUpperCase() + word.slice(1);
 
 // [pack name, kind, folder, [[file stem, name, alt text, credit?], ...]]
-export const SEED_PACKS = [
+const SEED_PACKS = [
   [
     'Seasons',
     'sticker',

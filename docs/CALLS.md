@@ -88,8 +88,8 @@ Generate a production pair on the call server with
   lists or the unread counters) and becomes **read-only** when the call ends; its messages
   follow the normal retention (docs/CHAT.md, "Server").
 - **Empty lists** (2026-10-21): an empty "Live now", "Upcoming" or "Recent" shows a card in the
-  page's style ("No call is live right now", "No call is planned yet — organisers announce them
-  here", "No calls yet"), never a bare "None.".
+  page's style ("No call is live right now", "No call is planned yet" with "Organisers announce
+  the next community calls here.", "No calls yet"), never a bare "None.".
 - **In the event lists** (2026-10-21): the home page's "Up next" and `/events` show the site's
   live and planned calls among the event bot's occurrences, by start time
   (`shared/callEntries.js`). Both read the Calls page's own `GET /api/calls` answer
@@ -483,7 +483,8 @@ Live calls are cut off by the move; do it when no call is live.
 `.calls-bin/` (gitignored) and checks its SHA-256 against the value pinned in
 `scripts/calls-binary.mjs`; a mismatch stops it before anything runs. Then start the site with
 `CALLS_URL=ws://127.0.0.1:7880 CALLS_API_KEY=devkey CALLS_API_SECRET=secret npm run dev` (or
-put the three keys in `.env`).
+put the three keys in `.env`). `CALLS_DEV_PORT` moves it off 7880 (the browser tests run their
+own on 7890).
 
 Pinned binaries exist for Windows x64 and Linux x64/arm64. **macOS** has no release binary:
 install it by hand (`brew install livekit`, then check `livekit-server --version` shows

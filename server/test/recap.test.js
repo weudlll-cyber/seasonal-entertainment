@@ -2,14 +2,14 @@
 // File:        recap.test.js
 // Path:        server/test/recap.test.js
 // Project:     Seasonal Entertainment
-// Description: Guards the weekly recap (server/src/recap/, docs/CHAT.md, "Weekly recap"):
-//              posted by the site itself in "announcements" from Monday 09:00 Vienna time, once
-//              per week and not again after a restart, a new site's first on the next Monday; facts only from the sources (the price
-//              bot's 7 days, the event bot and the site's calls, the recordings of the week);
-//              a token without price data has no line, and without the price bot there is no
-//              price part; the last line is the not-financial-advice notice; "Weekly recap"
-//              notifications are off by default and reach only members who turned them on;
-//              admins can post one now (audited), nobody else.
+// Description: Guards the weekly recap (server/src/recap/, docs/CHAT.md, "Weekly recap"): posted by
+//              the site itself in "announcements" from Monday 09:00 Vienna time, once per week and
+//              not again after a restart, a new site's first on the next Monday; facts only from
+//              the sources (the price bot's 7 days, the event bot and the site's calls, the
+//              recordings of the week); a token without price data has no line, and without the
+//              price bot there is no price part; the last line is the not-financial-advice notice;
+//              "Weekly recap" notifications are off by default and reach only members who turned
+//              them on; admins can post one now (audited), nobody else.
 // ============================================================
 
 import { mkdtempSync, rmSync } from 'node:fs';

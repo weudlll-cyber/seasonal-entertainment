@@ -22,7 +22,7 @@ import { recordRequests } from './requestLog.js';
 export const MEMBER_PASSWORD = 'member-horse-1';
 export const E2E_DATABASE = path.join(process.env.SE_E2E_DIR, 'e2e.db');
 // One account per spec that needs its own, so specs running in parallel never share one.
-export const MEMBERS = [
+const MEMBERS = [
   'keyskip',
   'keycode',
   'dmsender',

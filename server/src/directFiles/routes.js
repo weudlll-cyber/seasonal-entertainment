@@ -106,6 +106,8 @@ export function directFileRoutes(db, config) {
   });
 
   // The reporter's decrypted copy of a shared message's file (once per message).
+  // Not counted against the daily upload quota (decided 2026-10-23): a copy of a file already
+  // counted when its sender uploaded it, once per message, so a full quota never blocks a report.
   member.post(
     '/:id/reports/:reportId/files/:messageId',
     allow('member'),

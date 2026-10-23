@@ -2,12 +2,12 @@
 // File:        callPage.test.jsx
 // Path:        client/src/calls/callPage.test.jsx
 // Project:     Seasonal Entertainment
-// Description: /calls/:id with a stand-in for livekit-client: nothing connects or plays until
-//              "Join call" (browsers need the click for sound); then the token from the server
-//              connects and audio starts; a speaker's screen share without sound shows the
-//              notice (in Chrome and Edge how to share with sound, and "Share again with sound",
-//              which asks the browser once more) and is reported to the server; the call ending for everyone shows so.
-//              Guests get no hand; calls not live offer no Join.
+// Description: /calls/:id with a stand-in for livekit-client: nothing connects or plays until "Join
+//              call" (browsers need the click for sound); then the token from the server connects
+//              and audio starts; a speaker's screen share without sound shows the notice (in Chrome
+//              and Edge how to share with sound, and "Share again with sound", which asks the
+//              browser once more) and is reported to the server; the call ending for everyone shows
+//              so. Guests get no hand; calls not live offer no Join.
 // ============================================================
 
 import { act, fireEvent, screen } from '@testing-library/react';

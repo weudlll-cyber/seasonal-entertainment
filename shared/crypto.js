@@ -2,16 +2,16 @@
 // File:        crypto.js
 // Path:        shared/crypto.js
 // Project:     Seasonal Entertainment
-// Description: The one cryptography helper of the project, on libsodium (libsodium-wrappers-
-//              sumo, exact version pinned). Used by the browser, the server tests and the
-//              scripts; no home-made cryptography anywhere else. Covers: the login key split
-//              (password -> Argon2id master key -> auth key + wrapping key), sealing a private
-//              key, the optional recovery code, encrypting direct messages (crypto_box), files
-//              in direct messages (crypto_secretstream, chunked, a fresh key per file), handing
-//              the private key to a new device of the same member (crypto_box_seal to that
-//              device's one-time key, with a 6-digit code both screens show; docs/AUTH.md), and
-//              the safety number two members compare to check their keys (docs/CHAT.md).
-//              Binary values travel as standard base64 (with padding).
+// Description: The one cryptography helper of the project, on libsodium (libsodium-wrappers-sumo,
+//              exact version pinned). Used by the browser, the server tests and the scripts; no
+//              home-made cryptography anywhere else. Covers: the login key split (password ->
+//              Argon2id master key -> auth key + wrapping key), sealing a private key, the optional
+//              recovery code, encrypting direct messages (crypto_box), files in direct messages
+//              (crypto_secretstream, chunked, a fresh key per file), handing the private key to a
+//              new device of the same member (crypto_box_seal to that device's one-time key, with a
+//              6-digit code both screens show; docs/AUTH.md), and the safety number two members
+//              compare to check their keys (docs/CHAT.md). Binary values travel as standard base64
+//              (with padding).
 // ============================================================
 
 import sodiumModule from 'libsodium-wrappers-sumo';

@@ -59,8 +59,9 @@ A configured file that cannot be read (missing, locked, being replaced) answers 
 - Every read opens the file with `{ readonly: true, fileMustExist: true }`, sets
   `PRAGMA query_only = ON`, runs its query and closes the file again (`server/src/bots/botDb.js`).
   A missing file is never created, and the bot can rewrite or replace its file at any time.
-- The site never writes to these files, never calls the bots' admin web, never needs their admin
-  token, and never calls any outside price API.
+- The site never writes to these files, never calls the bots' admin web and never needs their
+  admin token. The bots' data never comes from an outside API; the only outside price source is
+  CoinGecko, which the server asks for ETH, POL and BTC (see "Reference prices").
 - In production both files are mounted into the site container **read-only** (`:ro`,
   docs/DEPLOYMENT.md), so even a mistake in the site could not change them.
 - `server/test/botData.test.js` checks that a write through the site's handle is refused and that
@@ -225,10 +226,10 @@ browser never does, and the CSP is unchanged.
   host is reached; with a copy of the real bot (no `images/` folder beside it) development uses
   the real internet.
 
-`npm run dev` points `PRICE_BOT_DB` and `EVENT_BOT_DB` at these files when neither the shell nor
-`.env` sets them. A key set to an empty value in `.env` keeps that bot off, to see the "not
-connected" state. No real bot data is ever in the repository. Run the script again to move the
-sample week to the current one.
+`npm run dev` points `PRICE_BOT_DB`, `EVENT_BOT_DB` and `PRICE_BOT_MINING_RATES` at these files when
+neither the shell nor `.env` sets them. A key set to an empty value in `.env` keeps that bot off, to
+see the "not connected" state. No real bot data is ever in the repository. Run the script again to
+move the sample week to the current one.
 
 ## Tests
 

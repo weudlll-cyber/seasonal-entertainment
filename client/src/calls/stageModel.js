@@ -62,7 +62,7 @@ export function listenerNames(listeners) {
 
 // The collapsed listener panel's one row: every raised hand (organisers must not miss one),
 // then others up to `size` chips; `more` counts the rest ("+N"). ordered: audienceOrder().
-export const COLLAPSED_CHIPS = 4;
+const COLLAPSED_CHIPS = 4;
 export function collapsedListeners(ordered, size = COLLAPSED_CHIPS) {
   const hands = ordered.filter((p) => p.hand).length;
   const shown = ordered.slice(0, Math.max(size, hands));
@@ -105,7 +105,8 @@ export function spotlightSpeaker(spotlight, speakers) {
 
 // The speaker to show large, or null for the grid of all speakers. sharers: the identities
 // with a screen share now, in stage order. The server's choice first; without one a share is
-// shown large anyway (the last sharer), so a share never depends on the spotlight update. Only an organiser's explicit "all speakers" keeps the grid (shares show in tiles).
+// shown large anyway (the last sharer), so a share never depends on the spotlight update. Only
+// an organiser's explicit "all speakers" keeps the grid (shares show in tiles).
 export function shownLarge(spotlight, speakers, sharers) {
   const chosen = spotlightSpeaker(spotlight, speakers);
   if (chosen || (spotlight?.by === 'organiser' && spotlight.identity === null)) return chosen;

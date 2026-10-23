@@ -2,13 +2,13 @@
 // File:        callEntries.js
 // Path:        shared/callEntries.js
 // Project:     Seasonal Entertainment
-// Description: The site's live and planned calls in the event lists (home "Up next", /events,
-//              and the weekly recap's next seven days; docs/CALLS.md, "In the event lists"),
-//              from the /api/calls answer's shape ({ configured, calls: { live, upcoming } }). withCalls()
+// Description: The site's live and planned calls in the event lists (home "Up next", /events, and
+//              the weekly recap's next seven days; docs/CALLS.md, "In the event lists"), from the
+//              /api/calls answer's shape ({ configured, calls: { live, upcoming } }). withCalls()
 //              merges them with the event bot's occurrences by start time. A call linked to an
-//              occurrence that is in the list (same id and start; docs/CALLS.md, "Linked to a
-//              bot event") is not listed a second time: the occurrence carries it instead
-//              (listen: { id, live }, "Listen on this site"). Nothing while calls are not set up.
+//              occurrence that is in the list (same id and start; docs/CALLS.md, "Linked to a bot
+//              event") is not listed a second time: the occurrence carries it instead (listen: {
+//              id, live }, "Listen on this site"). Nothing while calls are not set up.
 // ============================================================
 
 // The live and planned calls as dated entries: { call: true, id, name, start, live, event }.

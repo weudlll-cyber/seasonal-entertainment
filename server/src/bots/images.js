@@ -16,7 +16,7 @@ import { createHash } from 'node:crypto';
 import { mkdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-export const BOT_IMAGE_FOLDER = 'bot-images';
+const BOT_IMAGE_FOLDER = 'bot-images';
 const DAY_MS = 24 * 60 * 60_000;
 
 export const botImageFile = (url) =>

@@ -3,10 +3,10 @@
 // Path:        client/src/app/icons.jsx
 // Project:     Seasonal Entertainment
 // Description: The shell's stroke icons (24 px grid, drawn in currentColor so they follow the
-//              theme). Decorative: the control around each icon carries the text or label.
-//              Also the chat's toggles (star, bell, bell-off: ToggleButton) and the call
-//              controls (microphone, camera, screen, hand, sound, leave, record), so every icon on the
-//              site shares one stroke width.
+//              theme). Decorative: the control around each icon carries the text or label. Also the
+//              chat's toggles (star, bell, bell-off: ToggleButton) and the call controls
+//              (microphone, camera, screen, hand, sound, leave, record), so every icon on the site
+//              shares one stroke width.
 // ============================================================
 
 const PATHS = {

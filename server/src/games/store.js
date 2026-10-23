@@ -14,7 +14,7 @@ const ORDER = 'ORDER BY position, id';
 export class DuplicatePathError extends Error {}
 
 // Which visibilities a viewer passes: guests see "everyone" only.
-export function visibleTo(user) {
+function visibleTo(user) {
   if (!user) return ['everyone'];
   return roleAtLeast(user.role, 'organiser')
     ? ['everyone', 'members', 'organisers']

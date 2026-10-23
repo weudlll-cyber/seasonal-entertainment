@@ -2,14 +2,14 @@
 // File:        prices.test.jsx
 // Path:        client/src/prices/prices.test.jsx
 // Project:     Seasonal Entertainment
-// Description: Prices from the price bot (docs/BOTS.md): the home page's four season tiles
-//              show each season's price and 24-hour change and open that coin's chart; without
-//              the bot the tiles stay (no prices, no links) beside a "not connected" note;
-//              /info/prices picks a token and a range and asks the server for exactly that;
-//              pointing at the chart (or the arrow keys) reads a price at a local time; the
-//              notice "Information only — not financial advice." with its Disclaimer link in
-//              the home fair-price box and above the fair price and converter; the formats: four significant digits below $1 (seasons and POL alike), cents
-//              from $1 on, signed percentages.
+// Description: Prices from the price bot (docs/BOTS.md): the home page's four season tiles show
+//              each season's price and 24-hour change and open that coin's chart; without the bot
+//              the tiles stay (no prices, no links) beside a "not connected" note; /info/prices
+//              picks a token and a range and asks the server for exactly that; pointing at the
+//              chart (or the arrow keys) reads a price at a local time; the notice "Information
+//              only — not financial advice." with its Disclaimer link in the home fair-price box
+//              and above the fair price and converter; the formats: four significant digits below
+//              $1 (seasons and POL alike), cents from $1 on, signed percentages.
 // ============================================================
 
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';

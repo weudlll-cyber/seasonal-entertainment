@@ -3,11 +3,12 @@
 // Path:        server/src/uploads/process.js
 // Project:     Seasonal Entertainment
 // Description: Turns an uploaded chat file into what is stored. The real type comes from the
-//              content (the media validator; PDF by its signature). Images are re-encoded:
-//              turned upright by their orientation tag, every metadata block (EXIF with GPS,
-//              XMP, comments) dropped, animation kept, plus a thumbnail for the chat. PDFs are
-//              stored as they are (served only as a download). Names on disk are generated; the
-//              original file name survives only as cleaned-up display text.
+//              content (the media validator; PDF by its signature). Images over
+//              config.imageMaxPixels are refused from their header; the others are re-encoded:
+//              turned upright by their orientation tag, every metadata block (EXIF with GPS, XMP,
+//              comments) dropped, animation kept, plus a thumbnail for the chat. PDFs are stored as
+//              they are (served only as a download). Names on disk are generated; the original file
+//              name survives only as cleaned-up display text.
 // ============================================================
 
 import path from 'node:path';
@@ -15,7 +16,7 @@ import sharp from 'sharp';
 import { saveMediaFile } from '../media/files.js';
 import { FILE_TYPES, ImageRejected, checkImage, sniffFileType } from '../media/imageCheck.js';
 
-export const UPLOAD_TYPES = ['jpeg', 'png', 'webp', 'gif', 'pdf'];
+const UPLOAD_TYPES = ['jpeg', 'png', 'webp', 'gif', 'pdf'];
 const SUBFOLDER = 'uploads';
 
 const ENCODE = {
@@ -26,7 +27,7 @@ const ENCODE = {
 };
 
 // Display text only: no path, control characters as spaces, collapsed spaces, capped length.
-export function displayName(raw, max) {
+function displayName(raw, max) {
   const base = path.basename(String(raw ?? '').replace(/\\/g, '/'));
   const clean = [...base]
     .map((char) => (char.codePointAt(0) < 0x20 || char.codePointAt(0) === 0x7f ? ' ' : char))
@@ -79,6 +80,6 @@ export async function processUpload(buffer, originalName, config) {
       file: saveMediaFile(config, buffer, ext, SUBFOLDER),
     };
   }
-  await checkImage(buffer, { types: [type], maxBytes });
+  await checkImage(buffer, { types: [type], maxBytes, maxPixels: config.imageMaxPixels });
   return { name, mime, bytes: buffer.length, ...(await storeImage(buffer, type, config)) };
 }

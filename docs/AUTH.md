@@ -273,9 +273,10 @@ The password-hashing worker needs **no CSP change**: it is a same-origin module 
 Every state-changing API request (`POST`, `PUT`, `PATCH`, `DELETE`) must carry an `Origin` (or
 `Referer`) equal to the site's own origin (`PUBLIC_ORIGIN`, or derived from the `Host` header)
 _(race game)_. Strict by default (`CSRF_STRICT=true`): a request with neither header is refused —
-stricter than the race game, which is strict only in production. Together with `SameSite=Lax`
-cookies this blocks cross-site form posts and fetches. The chat WebSocket upgrade uses the same
-rule (`selfOrigin()` in `server/src/http/csrf.js`): the full origin, scheme included, must match.
+stricter than the race game, which is strict only in production. Production refuses to start with
+`CSRF_STRICT=false` (decided 2026-10-23). Together with `SameSite=Lax` cookies this blocks
+cross-site form posts and fetches. The chat WebSocket upgrade uses the same rule (`selfOrigin()` in
+`server/src/http/csrf.js`): the full origin, scheme included, must match.
 
 ## Rate limits
 
@@ -297,6 +298,10 @@ name or address gets neither salts nor logins. The limit on every read (since 20
 the public reads that have no limit of their own (session, info, games, calls, chat rooms and
 messages, files, the embed check); a page load makes a handful, so only a flood meets it. Routes
 with their own limits (bots' reads, member search) keep them as well.
+
+The per-username login limit is kept as it is on purpose (decided 2026-10-23): anyone who knows a
+name can block its logins for 15 minutes with wrong passwords, and a correct password does not
+pass the block either. That is the price of stopping guesses spread over many addresses.
 
 The password-change limit keys on the account, not the IP _(race game)_: people behind one
 address must not lock each other out. Login is limited twice: per IP, and per username as typed

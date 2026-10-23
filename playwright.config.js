@@ -10,6 +10,7 @@
 //              one of its own in the system temp folder. Calls use the run's own LiveKit server
 //              in development mode (scripts/calls-dev.mjs, pinned and checksum-checked binary);
 //              the event bot is the run's own fake database (scripts/build-bot-fixtures.mjs).
+//              On CI a failing test keeps its trace and screenshot for the workflow to upload.
 // ============================================================
 
 import { existsSync, mkdtempSync } from 'node:fs';
@@ -45,7 +46,12 @@ export default defineConfig({
   timeout: 90_000,
   // Creates the run's admin (with 2FA) once, after the server is up.
   globalSetup: './client/e2e/globalSetup.js',
-  use: { baseURL: `http://127.0.0.1:${port}` },
+  use: {
+    baseURL: `http://127.0.0.1:${port}`,
+    // On CI only: a failing test keeps its trace and a screenshot in test-results/, which the
+    // workflow uploads (ci.yml); locally nothing extra is recorded.
+    ...(process.env.CI && { trace: 'retain-on-failure', screenshot: 'only-on-failure' }),
+  },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
     {

@@ -2,11 +2,13 @@
 # File:        ci.yml
 # Path:        .github/workflows/ci.yml
 # Project:     Seasonal Entertainment
-# Description: CI: runs `npm run verify` (lint, format check, server and client tests, build,
-#              browser tests) on pushes to master and on pull requests against master.
+# Description: CI: runs `npm run verify` (lint, format check, shared, server and client tests,
+#              build, browser tests) on pushes to master and on pull requests against master.
 #              It calls the same script as local work, so both always run the same checks.
 #              The browser tests start their own call server: the pinned LiveKit binary,
 #              downloaded and checked against its SHA-256 first (scripts/calls-binary.mjs).
+#              When a browser test fails, its traces and screenshots (test-results/) are
+#              uploaded as an artefact, kept 7 days.
 #              A second job builds the production image (deploy/site/Dockerfile; never pushed)
 #              and checks the compose files and Caddyfiles, so the deployment files cannot rot;
 #              it also decrypts an encrypted backup with the real age tool and runs the PC-side
@@ -50,6 +52,16 @@ jobs:
 
       - name: Verify
         run: npm run verify
+
+      # Only a failed browser test leaves a trace or a screenshot (playwright.config.js, on CI
+      # only), so a failure elsewhere uploads nothing.
+      - name: Upload the failed browser tests' traces and screenshots
+        if: failure() && hashFiles('test-results/**/*.zip', 'test-results/**/*.png') != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: playwright-test-results
+          path: test-results/
+          retention-days: 7
 
   deploy-files:
     name: deployment files

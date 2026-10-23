@@ -2,12 +2,12 @@
 // File:        imageCheck.js
 // Path:        server/src/media/imageCheck.js
 // Project:     Seasonal Entertainment
-// Description: The one file-type check and image validator, for library uploads (stickers,
-//              GIFs), link-preview images and chat file uploads alike: the real type comes from
-//              the file's first bytes (never its name; PDF by its %PDF- signature),
-//              sharp must read its header and fully decode its first frame (a truncated or
-//              damaged file fails), and size, dimensions and animation are checked against the
-//              caller's rules.
+// Description: The one file-type check and image validator, for library uploads (stickers, GIFs),
+//              link-preview images and chat file uploads alike: the real type comes from the file's
+//              first bytes (never its name; PDF by its %PDF- signature), sharp must read its
+//              header, the dimensions (each side, the pixel count) are checked from it before any
+//              decoding, then its first frame must decode fully (a truncated or damaged file
+//              fails); size and animation are checked against the caller's rules too.
 // ============================================================
 
 import sharp from 'sharp';
@@ -15,7 +15,7 @@ import sharp from 'sharp';
 export class ImageRejected extends Error {}
 
 // type -> how it starts, its MIME type and the extension files on disk get.
-export const IMAGE_TYPES = {
+const IMAGE_TYPES = {
   png: { mime: 'image/png', ext: 'png' },
   gif: { mime: 'image/gif', ext: 'gif' },
   webp: { mime: 'image/webp', ext: 'webp' },
@@ -46,7 +46,8 @@ export function libraryRules(config, kind) {
     : { types: ['gif', 'webp'], animatedWebpOnly: true, ...config.media.gif };
 }
 
-// rules: { types: ['webp', ...], maxBytes, maxSide (optional), animatedWebpOnly (optional) }.
+// rules: { types: ['webp', ...], maxBytes, maxSide, maxPixels, animatedWebpOnly } (the last three
+// optional).
 // Returns { type, mime, ext, width, height, animated }; throws ImageRejected with a message
 // fit for the person uploading.
 export async function checkImage(buffer, rules) {
@@ -58,19 +59,31 @@ export async function checkImage(buffer, rules) {
   if (!type || !rules.types.includes(type)) {
     throw new ImageRejected(`Allowed file types: ${rules.types.join(', ').toUpperCase()}.`);
   }
+  const unreadable = () => new ImageRejected('The file is not a readable image.');
   let meta;
   try {
     meta = await sharp(buffer, { animated: true }).metadata();
-    // The header alone can be intact while the image data is not: decode one frame.
-    await sharp(buffer).stats();
   } catch {
-    throw new ImageRejected('The file is not a readable image.');
+    throw unreadable();
   }
   const width = meta.width;
   const height = meta.pageHeight ?? meta.height; // one frame of an animation
   const animated = (meta.pages ?? 1) > 1;
+  // From the header, before any decoding: a small file can claim huge dimensions, and decoding
+  // it first would cost the memory the limit is there to spare.
   if (rules.maxSide && (width > rules.maxSide || height > rules.maxSide)) {
     throw new ImageRejected(`The image may be at most ${rules.maxSide} px on each side.`);
+  }
+  if (rules.maxPixels && width * height > rules.maxPixels) {
+    throw new ImageRejected(
+      `The image may have at most ${rules.maxPixels / 1_000_000} megapixels (width x height).`
+    );
+  }
+  try {
+    // The header alone can be intact while the image data is not: decode one frame.
+    await sharp(buffer).stats();
+  } catch {
+    throw unreadable();
   }
   if (rules.animatedWebpOnly && type === 'webp' && !animated) {
     throw new ImageRejected('A WebP in a GIF pack must be animated.');

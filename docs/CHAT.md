@@ -524,10 +524,11 @@ sticker/GIF library (`server/src/media/`), link previews (`server/src/previews/`
 uploads (`server/src/uploads/`), the WebSocket hub and the retention job:
 
 ```js
-const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork });
+const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork, embedOrigins });
 // chat.sessions.ended(sessionId)                 logout: close that session's sockets
 // chat.sessions.accountChanged(userId, keepSid)  role, lock, password, 2FA: close the account's sockets
 // chat.sessions.presenceChanged()                 someone showed or hid their online status
+// chat.sessions.embedRevoked(which)              embed tokens ended: their sockets close
 // chat.notify.member(userId, event)              an event to every open page of a member
 //                                                (call reminders); returns how many got it
 // chat.system.post(slugs, body)                  the site's own message (weekly recap) in
@@ -535,6 +536,11 @@ const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork });
 // chat.rooms.createUnlisted(room)               a room of another area (a call's chat), unlisted
 // chat.rooms.close(id)                           that room becomes read-only for everyone
 // chat.rooms.find(id) / findBySlug(slug)          read a room
+// chat.people.identify(req, res)                 who asks to join a call: an account, or a
+//                                                guest with their chat identity
+// chat.people.sanction(who)                      their mute or ban, if any
+// chat.images.fetch / url                        the guarded image fetch and a media file's
+//                                                public address (the event bot's images)
 // chat.attach(httpServer)                        the WebSocket, once the server listens
 // await chat.start()                             first-start rooms and media, retention job
 ```

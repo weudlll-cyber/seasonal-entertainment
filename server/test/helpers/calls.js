@@ -2,14 +2,14 @@
 // File:        calls.js
 // Path:        server/test/helpers/calls.js
 // Project:     Seasonal Entertainment
-// Description: Test helpers for calls: a stand-in call service with the methods of
-//              calls/service.js that records every request, keeps the open rooms and who is
-//              "connected" (no call server needed; tokens are signed for real with test keys
-//              and can be decoded), an app with calls switched on and the seeded chat rooms, creating and
-//              starting a call as an organiser, and joining one. The stand-in also records: it
-//              remembers each started recording and, when stopped, writes a small file into the
-//              recordings folder, as LiveKit's egress service would. recordingApp: an app
-//              recording into a temporary folder; mp4Lasting: a minimal MP4 of a given length.
+// Description: Test helpers for calls: a stand-in call service with the methods of calls/service.js
+//              that records every request, keeps the open rooms and who is "connected" (no call
+//              server needed; tokens are signed for real with test keys and can be decoded), an app
+//              with calls switched on and the seeded chat rooms, creating and starting a call as an
+//              organiser, and joining one. The stand-in also records: it remembers each started
+//              recording and, when stopped, writes a small file into the recordings folder, as
+//              LiveKit's egress service would. recordingApp: an app recording into a temporary
+//              folder; mp4Lasting: a minimal MP4 of a given length.
 // ============================================================
 
 import { mkdtempSync, writeFileSync } from 'node:fs';
@@ -20,11 +20,10 @@ import { joinToken } from '../../src/calls/grants.js';
 import { chatApp } from './chat.js';
 import { makeStaff } from './testApp.js';
 
-export const TEST_KEYS = { apiKey: 'test-key', apiSecret: 'test-secret-of-at-least-32-characters' };
+const TEST_KEYS = { apiKey: 'test-key', apiSecret: 'test-secret-of-at-least-32-characters' };
 
 // Decodes a join token with the test keys: its claims ({ sub, name, video, attributes, ... }).
-export const claimsOf = (token) =>
-  new TokenVerifier(TEST_KEYS.apiKey, TEST_KEYS.apiSecret).verify(token);
+const claimsOf = (token) => new TokenVerifier(TEST_KEYS.apiKey, TEST_KEYS.apiSecret).verify(token);
 
 // recordingDir: where a stopped recording's file is written (the app's recordings folder).
 export function fakeCallService({ recordingDir } = {}) {

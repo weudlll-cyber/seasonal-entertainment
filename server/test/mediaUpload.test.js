@@ -2,15 +2,17 @@
 // File:        mediaUpload.test.js
 // Path:        server/test/mediaUpload.test.js
 // Project:     Seasonal Entertainment
-// Description: Guards the chat media library: only admins upload; the real type is read from
-//              the content (a disguised file is refused whatever it claims to be); size and
-//              dimension limits per pack kind; generated file names; served from this origin
-//              with the right Content-Type, nosniff and a long cache; edits are audited.
+// Description: Guards the chat media library: only admins upload; the real type is read from the
+//              content (a disguised file is refused whatever it claims to be); size and dimension
+//              limits per pack kind (dimensions from the header, before decoding); generated file
+//              names; served from this origin with the right Content-Type, nosniff and a long
+//              cache; edits are audited.
 // ============================================================
 
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { checkImage } from '../src/media/imageCheck.js';
 import { auditActions } from './helpers/chat.js';
 import { makeImage } from './helpers/media.js';
 import { makeStaff, makeTestApp, registerUser } from './helpers/testApp.js';
@@ -91,6 +93,16 @@ describe('upload', () => {
     // Over the sticker limit: refused by the check; over every limit: refused while reading.
     expect((await upload(Buffer.concat([big, Buffer.alloc(4000)]))).status).toBe(400);
     expect((await upload(Buffer.concat([big, Buffer.alloc(30000)]))).status).toBe(413);
+  });
+
+  it('an image too large is refused from its header, before it is decoded', async () => {
+    // A 200 x 200 PNG cut off half-way: its header is intact, its image data is not. Refused
+    // for its size, which the header tells; decoding first would end in "not a readable image".
+    const png = await makeImage('png', 200);
+    const cut = png.subarray(0, Math.floor(png.length / 2));
+    await expect(
+      checkImage(cut, { types: ['png'], maxBytes: 100_000, maxSide: 64 })
+    ).rejects.toThrow('The image may be at most 64 px on each side.');
   });
 
   it('a GIF pack takes GIFs and animated WebP, not a still WebP', async () => {

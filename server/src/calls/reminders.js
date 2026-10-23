@@ -43,7 +43,7 @@ export const reminderCallIds = (db, userId) =>
 // Notices due at `at` (ms) and not yet delivered: "soon" for a scheduled call starting within
 // 10 minutes (not after its start: then it is late, and "live" follows), "live" for a live
 // call. Each row: { userId, callId, title, scheduledFor, kind }.
-export function dueNotices(db, at = Date.now()) {
+function dueNotices(db, at = Date.now()) {
   const from = new Date(at).toISOString();
   const until = new Date(at + SOON_MS).toISOString();
   return db

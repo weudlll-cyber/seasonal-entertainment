@@ -6,7 +6,7 @@
 //              race game itself lives in its own repository and is not connected yet.
 // ============================================================
 
-export const SEED_GAMES = [
+const SEED_GAMES = [
   {
     name: 'Seasonal Race',
     description: 'A race game for the Seasonal Tokens community.',

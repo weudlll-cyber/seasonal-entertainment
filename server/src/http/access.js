@@ -16,7 +16,7 @@ const ACCESS = Symbol('access');
 // 'member'    any signed-in account
 // 'organiser' organiser or admin
 // 'admin'     admin only
-export const ACCESS_LEVELS = ['public', 'member', 'organiser', 'admin'];
+const ACCESS_LEVELS = ['public', 'member', 'organiser', 'admin'];
 
 export function allow(level) {
   if (!ACCESS_LEVELS.includes(level)) throw new Error(`unknown access level "${level}"`);

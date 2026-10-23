@@ -177,10 +177,10 @@ Set by `docker-compose.yml`, never in `site.env` (it would be overruled): `NODE_
 Production **refuses to start** with development defaults (`server/src/productionConfig.js`,
 `server/src/secretKey.js`, `server/src/calls/config.js`). That covers a missing or short
 `SESSION_SECRET`, a missing `SECRET_ENCRYPTION_KEY` or the development one, an `http://` origin,
-`COOKIE_SECURE=false`, a short `BOOTSTRAP_TOKEN`, LiveKit's `devkey`/`secret` pair, a
-`CALLS_API_SECRET` under 32 characters, and `ws://` for calls. Cookies are `Secure` with the
-`__Host-` prefix. The site sees each visitor's own address (Caddy's `X-Forwarded-For`, one
-trusted proxy), so the per-IP limits work.
+`COOKIE_SECURE=false`, `CSRF_STRICT=false`, a short `BOOTSTRAP_TOKEN`, LiveKit's `devkey`/`secret`
+pair, a `CALLS_API_SECRET` under 32 characters, and `ws://` for calls. Cookies are `Secure` with the
+`__Host-` prefix. The site sees each visitor's own address (Caddy's `X-Forwarded-For`, one trusted
+proxy), so the per-IP limits work.
 
 ## 4. First start
 

@@ -14,7 +14,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { findUserById } from '../accounts/userStore.js';
 
-export const TOKEN_HOURS = 12;
+const TOKEN_HOURS = 12;
 const hash = (token) => createHash('sha256').update(token).digest('hex');
 
 // Returns { token, expiresAt }; the token itself is never stored.

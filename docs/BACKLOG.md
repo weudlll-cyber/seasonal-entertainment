@@ -4,79 +4,117 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART ONE — open
 
-- **Telegram-login recovery code handling** — open (decided direction 2026-10-17). Recovery codes
-  are to apply to future Telegram logins too: such an account has no password to derive a
-  wrapping key from (docs/AUTH.md).
-- **Notifications when the browser is closed (web push)** — not built (owner decision
-  2026-10-22): notifications come only while a tab of the site is open (docs/CHAT.md,
-  "Notifications").
-- **Uploads and uploaded images in the chat on other sites** — open. With an embed token,
-  uploading is refused (decided scope), and uploaded images of members-only rooms do not show
-  there: an image request cannot carry the token. Would need short-lived signed file links.
-- **Guests writing in the chat on other sites** — open. A guest name is kept in a cookie, which
-  other sites' frames do not get; guests can read there but not write.
-- **Real sites to approve for the chat embed** — open, the owner's word: which game sites go on
-  Admin → Embedding once the site is live (only exact `https://` origins).
-- **Age key pair for the backups** — open, at deployment: the owner creates it on the PC
-  (docs/DEPLOYMENT.md, "Backups"); the VPS gets only the public key.
-- **Event bot admin page inside the site for admins without a second login** — open, waits for
-  a change in the bot project: the bot page skips its own login when the site's server supplies
-  the bot token, and its API paths can sit under a path prefix (today it calls absolute
-  `/api/...`, which collide with the site's `/api`).
-- **Site and bots on the same VPS** — open, the owner's word: reading the bots' files through
-  read-only mounts assumes it (docs/DEPLOYMENT.md, "The owner's bots").
-- **Imprint and Privacy** — drafts; need the owner's details and a legal review. Privacy's
-  "Call recordings" holds a proposal for the owner to review (consent as the legal basis, kept
-  until deleted, the rights and the complaint to the Datenschutzbehörde); only its contact
-  address is left to fill.
-- **Login with Discord or Telegram** — open. Accounts use a username and password, with 2FA
-  required for organisers and admins (closed: SE-NIGHT-1 pieces 2 and 3); logging in with a
-  Discord or Telegram account is not built (for Telegram's recovery codes see above).
-- **Group roles** — open: site roles tied to Discord or Telegram groups are not built. The bots'
-  data is shown (prices, events: SE-NIGHT-3 and SE-BOTS-2).
-- **Race-game connection** — open: the games hub lists the race game as "coming soon"; the game
-  lives in its own repository and is not connected to the site yet.
-- **VPS deployment** — open, the owner's word: prepared (SE-NIGHT-2 part 7: image, compose with
-  Caddy, backups, runbook in docs/DEPLOYMENT.md); the deployment itself waits for the owner's
-  domains, VPS access and the backup key pair made on the owner's PC (backups go there, decided
-  2026-10-19).
+Checked against the code by the project audit of 2026-10-23 (SE-AUDIT-1); grouped by what each
+entry waits for.
+
+### Needs the owner's decision
+
+- **Real sites to approve for the chat embed** — which game sites go on Admin → Embedding once
+  the site is live (only exact `https://` origins).
+- **Site and bots on the same VPS** — reading the bots' files through read-only mounts assumes
+  it (docs/DEPLOYMENT.md, "The owner's bots").
+- **Imprint and Privacy** — drafts; need the owner's details and a legal review. Privacy's "Call
+  recordings" holds a proposal to review; only its contact address is left to fill.
+- **Event bot admin page inside the site** — waits for a change in the bot project: its page
+  skips its own login when the site's server supplies the bot token, and its API paths can sit
+  under a prefix (today absolute `/api/...`, which collide with the site's `/api`).
+
+### Waits for going online
+
+- **VPS deployment** — prepared (image, compose with Caddy, backups, runbook in
+  docs/DEPLOYMENT.md); waits for the domains, VPS access and the backup key pair.
+- **Age key pair for the backups** — made on the owner's PC at deployment (docs/DEPLOYMENT.md,
+  "Backups"); the VPS gets only the public key (backups go there, decided 2026-10-19).
+- **A recorded call on the VPS** — call recording is tested with a real egress on the PC; one
+  real recorded call on the server is still to try (docs/CALLS.md, "Recording").
+
+### Proposals not decided
+
+- **Login with Discord or Telegram** — accounts use a username and password (2FA for organisers
+  and admins); logging in with a Discord or Telegram account is not built.
+- **Telegram-login recovery codes** — direction decided 2026-10-17: recovery codes apply to
+  Telegram logins too, which have no password to derive a wrapping key from (docs/AUTH.md).
+- **Group roles** — site roles tied to Discord or Telegram groups are not built.
+- **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
+  own repository and is not connected.
+- **Uploads and uploaded images in the chat on other sites** — refused with an embed token, and
+  members-only images do not show there (an image request cannot carry the token); would need
+  short-lived signed file links.
+- **Guests writing in the chat on other sites** — the guest name lives in a cookie that other
+  sites' frames do not get; guests can read there but not write.
+
+### Technical debt
+
+- **The hidden listener's name twice** — "A listener" in `client/src/calls/stageModel.js:14` and
+  `server/src/calls/people.js:12`; could move to `shared/`.
+- **Unit tests for turning 2FA off and the device key store** —
+  `client/src/components/TwoFactorDisable.jsx` (0 % of lines) and `client/src/keys/deviceKey.js`
+  (19 %) are covered only by server tests and an in-memory stand-in.
+- **A call test that sometimes hangs on CI** — `client/e2e/callShare.spec.js:57` (once also
+  `calls.spec.js:61`) waits minutes for "Join call" on CI only. Since 2026-10-23 a failed browser
+  test's trace and screenshot are uploaded (`playwright-test-results`, 7 days): the next hang shows
+  what the page held.
+- **A coverage script** — the repository has no `test:coverage` script or provider; adding one
+  adds a devDependency (`@vitest/coverage-v8`).
 
 ## PART TWO — closed
 
+- **Project audit (SE-AUDIT-1)** — closed by `chore/se-audit-1` (merged, PR #18; owner request
+  2026-10-23): an image's size is checked from its header before it is decoded; Caddy's logs leave
+  out the embed token's headers; 59 unused exports removed and one secret length rule; docs,
+  headers and comments made true to the code; two tests wait for the server instead of a clock;
+  a failed browser test's trace and screenshot are uploaded on CI. The audit's questions, each
+  decided 2026-10-23 and closed by the same branch:
+  - **Pixel limit** — built: chat uploads and link-preview images (rooms and direct messages)
+    over 50 megapixels are refused from the header, before decoding (`config.imageMaxPixels`);
+    10 MB per file and 50 MB a day unchanged.
+  - **A reporter's copy of a direct-message file** — stays outside the upload quota; a comment
+    at `server/src/directFiles/routes.js` says why.
+  - **The per-username login block** — kept as it is (docs/AUTH.md, "Rate limits").
+  - **`CSRF_STRICT=false` in production** — refused at start, like an http origin and
+    `COOKIE_SECURE=false` (docs/DEPLOYMENT.md).
+  - **The approved design mockups** — not edited; `docs/design/se-style/README.md` marks them
+    historical (heading weight 700, no "best buy" wording).
+  - **Audit entries of deleted test accounts** — kept: the audit log is deliberately not
+    deletable, and production starts with a fresh database.
+  - **Screenshots under `reports/`** — deleted (about 100 MB); the morning sheets stay.
+  - **Docker leftovers of unproven origin** — left; they can be removed in Docker Desktop.
+- **Notifications when the browser is closed (web push)** — not built (decided 2026-10-22):
+  notifications come only while a tab of the site is open (docs/CHAT.md, "Notifications").
 - **No "best buy" wording** — closed by the SE-NIGHT-6 finish (`feat/se-night-6`; owner decision
   2026-10-23): the fair price table's rank shows only the number, under "Rank (vs. fair price)",
   with a line saying what it shows and the not-financial-advice link; "underpriced" and
   "overpriced" stay (they describe the calculation). The converter, the home fair-price box, the
   season clock and the weekly recap had no recommending words (docs/BOTS.md, "Fair price").
-- **"Start here" path** — closed by SE-NIGHT-6 piece 5 (`feat/se-night-6`, not merged yet; owner
+- **"Start here" path** — closed by SE-NIGHT-6 piece 5 (`feat/se-night-6`, merged, PR #17; owner
   request 2026-10-23): `/start` with five short steps and buttons to existing pages (what Seasonal
   Tokens are, how they work, the risks, the prices and the fair price, the chat and the next call)
   and the not-financial-advice notice; "Start here" in the sidebar for everyone and "New here?
   Start here" on home for guests (docs/DESIGN.md, "Start here").
-- **Recordings archive with chapters** — closed by SE-NIGHT-6 piece 4 (`feat/se-night-6`, not
-  merged yet; owner request 2026-10-23): `/calls/recordings` lists every recording for the
-  calls' audience, newest first, with call title, date, length, player and a search over the
-  titles; organisers and admins add, change and delete chapter marks (m:ss or h:mm:ss, a title
-  of at most 80 characters, audited), shown under the player on the call page and in the
-  archive, a click seeking the player there (docs/CALLS.md, "Recording").
-- **Weekly recap** — closed by SE-NIGHT-6 piece 3 (`feat/se-night-6`, not merged yet; owner
+- **Recordings archive with chapters** — closed by SE-NIGHT-6 piece 4 (`feat/se-night-6`, merged, PR
+  #17; owner request 2026-10-23): `/calls/recordings` lists every recording for the calls' audience,
+  newest first, with call title, date, length, player and a search over the titles; organisers and
+  admins add, change and delete chapter marks (m:ss or h:mm:ss, a title of at most 80 characters,
+  audited), shown under the player on the call page and in the archive, a click seeking the player
+  there (docs/CALLS.md, "Recording").
+- **Weekly recap** — closed by SE-NIGHT-6 piece 3 (`feat/se-night-6`, merged, PR #17; owner
   request 2026-10-23): every Monday from 09:00 Vienna time the site posts, as "Seasonal
   Entertainment" (no account behind it), the week's price changes, the next 7 days' events and
   calls, the new call recordings and the not-financial-advice line in Announcements; once per
   week even across restarts; "Post recap now" for admins (audited); the "Weekly recap"
   notification, off by default (docs/CHAT.md, "Weekly recap").
-- **Season clock on home** — closed by SE-NIGHT-6 piece 2 (`feat/se-night-6`, not merged yet;
+- **Season clock on home** — closed by SE-NIGHT-6 piece 2 (`feat/se-night-6`, merged, PR #17;
   owner request 2026-10-23): the token in season and the next halving, from the token
   contracts' own schedule (`shared/seasonClock.js`, constants cited from `contracts/*Token.sol`;
   the four creation times read with a public read-only `eth_call`). It also settles the earlier
   disagreement between official sources: the second Spring halving is in June 2025 (5 June, by
   the contract; the Medium update's 5 September 2025 is not the contract's date), and the total
   supply per token is 33,112,800 (`SpringToken.sol:22`, the same in all four contracts).
-- **"Not financial advice" notice** — closed by SE-NIGHT-6 piece 1 (`feat/se-night-6`, not
-  merged yet; owner request 2026-10-23): "Not financial advice" beside Imprint and Privacy on
-  every page (sidebar and phone menu) opens the new Disclaimer info page, seeded published; the
-  notice "Information only — not financial advice." with its Disclaimer link on the prices page
-  and in the home fair-price box (docs/DESIGN.md).
+- **"Not financial advice" notice** — closed by SE-NIGHT-6 piece 1 (`feat/se-night-6`, merged, PR
+  #17; owner request 2026-10-23): "Not financial advice" beside Imprint and Privacy on every page
+  (sidebar and phone menu) opens the new Disclaimer info page, seeded published; the notice
+  "Information only — not financial advice." with its Disclaimer link on the prices page and in the
+  home fair-price box (docs/DESIGN.md).
 - **The ten info content pages** — checked against the official sources (seasonaltokens.org,
   the whitepaper, the three audit reports, the Telegram and Medium links) and published
   (2026-10-22, SE-INFO-PUBLISH): what-are-seasonal-tokens, how-it-works, mining, farming,
@@ -86,7 +124,7 @@ An entry moves from part one to part two only when its branch is merged into `ma
   source (How it works). A fresh database seeds them published; Imprint and Privacy stay
   drafts (`server/src/info/seed.js`).
 - **Security check findings (owner decision 2026-10-22)** — closed by SE-NIGHT-5 piece 1
-  (`feat/se-night-5`, not merged yet), each with its outcome:
+  (`feat/se-night-5`, merged, PR #15), each with its outcome:
   - **WebSocket connection limit** — built: at most 5 open chat connections per member account,
     20 per address for guests; a refused one is told so and does not retry in a loop
     (docs/CHAT.md, "Connection limits").
@@ -96,7 +134,7 @@ An entry moves from part one to part two only when its branch is merged into `ma
   - **Sessions** — signed-in sessions end after 7 days without use, renewed by every request
     at most once a minute (docs/AUTH.md, "Sessions").
 - **A ratio view between the seasons** — not wanted (owner decision 2026-10-22).
-- **Call recording** — closed by SE-NIGHT-5 piece 7 (`feat/se-night-5`, not merged yet; owner
+- **Call recording** — closed by SE-NIGHT-5 piece 7 (`feat/se-night-5`, merged, PR #15; owner
   decision 2026-10-22): LiveKit Egress room composite to MP4 (1280 x 720, 15 fps, H.264 about
   1 Mbit/s, AAC 64 kbit/s), off unless set up; organisers and admins start and stop it, ending
   the call stops it; a red "Recording", a start banner, and joining or sending only after "I
@@ -125,71 +163,70 @@ An entry moves from part one to part two only when its branch is merged into `ma
   at about 64 kbit/s, because LiveKit's encoding options have no channel setting; no code
   change (SE-NIGHT-5 follow-up, part 2; docs/CALLS.md, "Recording").
 - **Operating-system notifications for mentions and direct messages** — closed by SE-NIGHT-5
-  piece 6 (`feat/se-night-5`, not merged yet; owner decision 2026-10-22): browser notifications
+  piece 6 (`feat/se-night-5`, merged, PR #15; owner decision 2026-10-22): browser notifications
   while the site is open and no tab of it is visible, one per event across tabs; permission only
   on "Turn on notifications"; switches for mentions and direct messages, off until turned on;
   a direct message's notification never shows its text (docs/CHAT.md, "Notifications").
 - **Unlock a new device by confirming it on an already logged-in device** — closed by SE-NIGHT-5
-  piece 5 (`feat/se-night-5`, not merged yet; owner decision 2026-10-22): "Confirm on another
+  piece 5 (`feat/se-night-5`, merged, PR #15; owner decision 2026-10-22): "Confirm on another
   device" beside the password and the recovery code; the unlocked device confirms the same
   6-digit code and seals the private key to the new device's one-time key; the server relays
   the box once and deletes it; requests valid 5 minutes, one at a time, audited (docs/AUTH.md,
   "Unlock on another device").
-- **File uploads in direct messages** — closed by SE-NIGHT-5 piece 4 (`feat/se-night-5`, not
-  merged yet; owner decision 2026-10-22): encrypted in the sender's browser with a fresh key
-  per file (libsodium secretstream), the server stores ciphertext only and serves it to the two
-  members only; only real PNG, JPEG, GIF and WebP are shown inline, everything else is a
-  download; a report shares the file decrypted by the reporter; a deleted message takes its
-  file along (docs/CHAT.md, "Files in direct messages").
-- **Link previews in direct messages** — closed by SE-NIGHT-5 piece 3 (`feat/se-night-5`, not
-  merged yet; owner decision 2026-10-22): the sender's browser asks a route that stores and logs
-  nothing; the card (with a small inline image) travels inside the encrypted message, and the
-  recipient's browser never contacts the linked site; account setting, on by default
-  (docs/CHAT.md, "Link previews in direct messages").
+- **File uploads in direct messages** — closed by SE-NIGHT-5 piece 4 (`feat/se-night-5`, merged, PR
+  #15; owner decision 2026-10-22): encrypted in the sender's browser with a fresh key per file
+  (libsodium secretstream), the server stores ciphertext only and serves it to the two members only;
+  only real PNG, JPEG, GIF and WebP are shown inline, everything else is a download; a report shares
+  the file decrypted by the reporter; a deleted message takes its file along (docs/CHAT.md, "Files
+  in direct messages").
+- **Link previews in direct messages** — closed by SE-NIGHT-5 piece 3 (`feat/se-night-5`, merged, PR
+  #15; owner decision 2026-10-22): the sender's browser asks a route that stores and logs nothing;
+  the card (with a small inline image) travels inside the encrypted message, and the recipient's
+  browser never contacts the linked site; account setting, on by default (docs/CHAT.md, "Link
+  previews in direct messages").
 - **Linking calls to events** — closed by SE-NIGHT-5 piece 2 (`feat/se-night-5`, not merged
   yet; owner decision 2026-10-22): an organiser links a planned call to one of the event bot's
   next 30 days' occurrences; that event offers "Listen on this site" in "Up next" and on
   `/events` instead of a second entry, and the call's page names the event; a vanished or moved
   occurrence just loses the link (docs/CALLS.md, "Linked to a bot event").
 
-- **SE-UPNEXT-CALLS-1 — "Up next" lists site calls too; the Next call box only with a call** —
-  on `feat/se-upnext-calls-1` (not merged yet; owner request 2026-10-21): the home's "Up next"
-  and `/events` show the site's live and planned calls among the event bot's occurrences by
-  start time, from the Calls page's own answer (docs/CALLS.md, "In the event lists"); the Next
-  call box shows only with a live or planned call, else Fair price takes its column; home still
-  fits from 1280 x 720 in both cases (docs/DESIGN.md, "Home"). After the owner's review: on `/events` a call's line
-  says "Community call on this site" without repeating the date, with no empty line under its
-  title.
+- **SE-UPNEXT-CALLS-1 — "Up next" lists site calls too; the Next call box only with a call** — on
+  `feat/se-upnext-calls-1` (merged, PR #14; owner request 2026-10-21): the home's "Up next" and
+  `/events` show the site's live and planned calls among the event bot's occurrences by start time,
+  from the Calls page's own answer (docs/CALLS.md, "In the event lists"); the Next call box shows
+  only with a live or planned call, else Fair price takes its column; home still fits from 1280 x
+  720 in both cases (docs/DESIGN.md, "Home"). After the owner's review: on `/events` a call's line
+  says "Community call on this site" without repeating the date, with no empty line under its title.
 
 - **SE-HOME-LIVE-1 part 1 — "Next call" box on the home page** — closed by `feat/se-home-live-1`
-  (not merged yet; owner request 2026-10-21): a live call with Listen, else the next planned one
+  (merged, PR #13; owner request 2026-10-21): a live call with Listen, else the next planned one
   with its time, else a friendly line; the calls quarter behind it (docs/DESIGN.md, "Home").
 - **SE-HOME-LIVE-1 part 2 — "Add to calendar"** — closed by `feat/se-home-live-1` (not merged
   yet): an RFC 5545 file per planned call for everyone, on the Calls page and in the Next call
   box (docs/CALLS.md, "Calendar file").
-- **SE-HOME-LIVE-1 part 3 — "Remind me on this site"** — closed by `feat/se-home-live-1` (not
-  merged yet): members' reminders, notices 10 minutes before and when live on every open page,
-  once per kind (docs/CALLS.md, "Reminders").
+- **SE-HOME-LIVE-1 part 3 — "Remind me on this site"** — closed by `feat/se-home-live-1` (merged, PR
+  #13): members' reminders, notices 10 minutes before and when live on every open page, once per
+  kind (docs/CALLS.md, "Reminders").
 - **SE-HOME-LIVE-1 part 4 — live Community box** — closed by `feat/se-home-live-1` (not merged
   yet): the online count and the newest messages of General, live; the 24-hour rule (docs/CHAT.md,
   "Community box").
 - **SE-HOME-LIVE-1 part 5 — empty Calls lists and the wide prices page** — closed by
-  `feat/se-home-live-1` (not merged yet): cards instead of "None."; the prices page in the wide
+  `feat/se-home-live-1` (merged, PR #13): cards instead of "None."; the prices page in the wide
   column with fair price and converter side by side from 1100px (docs/DESIGN.md).
 - **SE-HOME-LIVE-1 follow-up (owner review 2026-10-21)** — on `feat/se-home-live-1` (not merged
   yet): the Next call title wraps instead of being cut (full title as name and tooltip), the
   zone stays with its time; the home's end clears the chat button and no box is cut (the home
   scrolls when its content needs it); Fair price's marks in one row with the arrow beside the
   title; the fair price table never sticks out, all rows equal, scrolling inside below 1100px.
-- **SE-HOME-LIVE-1 follow-up 2 (owner decision 2026-10-21)** — on `feat/se-home-live-1` (not
-  merged yet): home fits the window again from 1280 x 720 (a lower banner, tighter spacing, the
-  Next call buttons as icons in one row, its title in 2 lines), no box cut, nothing under the
-  chat button; one date format everywhere (`formatDateTime`, docs/DESIGN.md, "Dates").
-- **SE-HOME-LIVE-1 final step (owner decision 2026-10-21)** — on `feat/se-home-live-1` (not
-  merged yet): headings in Luxora Grotesk Bold instead of Heavy (`--font-weight-heading` 700);
-  the unused Heavy face and its font file removed.
+- **SE-HOME-LIVE-1 follow-up 2 (owner decision 2026-10-21)** — on `feat/se-home-live-1` (merged, PR
+  #13): home fits the window again from 1280 x 720 (a lower banner, tighter spacing, the Next call
+  buttons as icons in one row, its title in 2 lines), no box cut, nothing under the chat button; one
+  date format everywhere (`formatDateTime`, docs/DESIGN.md, "Dates").
+- **SE-HOME-LIVE-1 final step (owner decision 2026-10-21)** — on `feat/se-home-live-1` (merged, PR
+  #13): headings in Luxora Grotesk Bold instead of Heavy (`--font-weight-heading` 700); the unused
+  Heavy face and its font file removed.
 - **Security check (SE-NIGHT-4 piece 4)** — closed by SE-NIGHT-4 piece 4 (`feat/se-night-4`,
-  not merged yet): no known vulnerabilities (npm audit), react-router 8.4.0 → 8.5.0; salt
+  merged, PR #12): no known vulnerabilities (npm audit), react-router 8.4.0 → 8.5.0; salt
   requests and every `/api` read limited per IP; link-preview failures logged by host only.
   Design questions are on the morning sheet (reports/NIGHT-2026-10-21.md).
 - **Safety-number verification** — closed by SE-NIGHT-4 piece 3 (`feat/se-night-4`, not merged

@@ -4,10 +4,11 @@
 // Project:     Seasonal Entertainment
 // Description: Turns the member's own live events into browser notifications (docs/CHAT.md,
 //              "Notifications"): a mention ("<name> mentioned you in <room>: <first 80
-//              characters>"), a new direct message ("New message from <name>" — never its
-//              text) and the weekly recap ("Weekly recap is out"). Only for the switches the member turned on, with the browser's permission,
-//              and only when no tab of the site is visible; one per event across tabs. A click
-//              focuses the site and opens the room (the recap's room) or the conversation.
+//              characters>"), a new direct message ("New message from <name>" — never its text) and
+//              the weekly recap ("Weekly recap is out"). Only for the switches the member turned
+//              on, with the browser's permission, and only when no tab of the site is visible; one
+//              per event across tabs. A click focuses the site and opens the room (the recap's
+//              room) or the conversation.
 // ============================================================
 
 import { useCallback, useEffect, useRef } from 'react';
@@ -19,7 +20,7 @@ import { anyTabVisible, notifyOnce, permission, trackVisibility } from './system
 const MENTION_MAX = 80;
 
 // What a notification says and opens, for an event the member wants; null otherwise.
-export function notificationFor(event, user) {
+function notificationFor(event, user) {
   if (event.type === 'mention' && user.notifyMentions) {
     return {
       key: `mention-${event.id}`,

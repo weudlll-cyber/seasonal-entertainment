@@ -3,7 +3,8 @@
 // Path:        server/test/helpers/media.js
 // Project:     Seasonal Entertainment
 // Description: Chat media test helpers: real images made with sharp (PNG, WebP, GIF, JPEG,
-//              animated WebP), and a library pack with one item added straight through the
+//              animated WebP), large one-colour PNGs for the pixel limit (a few dozen KB, many
+//              megapixels), and a library pack with one item added straight through the
 //              store, for tests that need something to send.
 // ============================================================
 
@@ -21,6 +22,18 @@ const square = (size, red = 200) =>
       background: { r: red, g: 120, b: 30, alpha: 1 },
     },
   });
+
+// A one-colour PNG of width x height: tiny on disk, huge once decoded. Made once per size and
+// kept, since making one takes seconds.
+const largePngs = new Map();
+export function largePng(width, height) {
+  const key = `${width}x${height}`;
+  if (!largePngs.has(key)) {
+    const image = sharp({ create: { width, height, channels: 3, background: '#4080c0' } });
+    largePngs.set(key, image.png({ palette: true }).toBuffer());
+  }
+  return largePngs.get(key);
+}
 
 // format: 'png' | 'webp' | 'gif' | 'jpeg' | 'animated-webp' (two different frames: identical
 // ones would be merged into a still image).
