@@ -2,17 +2,18 @@
 // File:        routes.js
 // Path:        server/src/directFiles/routes.js
 // Project:     Seasonal Entertainment
-// Description: Files in direct messages (docs/CHAT.md, "Files in direct messages"). The
-//              sender's browser encrypts the file (shared/crypto.js, encryptFile) and uploads
-//              only the ciphertext: POST /api/chat/direct/:id/files (raw body). The room
-//              uploads' limits apply: per-file size (plus the encryption's few bytes), the
-//              daily quota counted together with room uploads, the upload rate limit. The
-//              server cannot see the content, so it makes no thumbnails and checks no types.
-//              GET /api/chat/direct/files/:fileId serves the ciphertext to the two members of
-//              the conversation only (a pending one to its uploader); everyone else gets 404.
-//              Reports: the reporter's browser decrypts a shared message's file and uploads
-//              that copy (POST .../:id/reports/:reportId/files/:messageId); moderators download
-//              it (GET /api/chat/direct-reports/:id/files/:messageId, audited, a download only).
+// Description: Files in direct messages (docs/CHAT.md, "Files in direct messages"). The sender's
+//              browser encrypts the file (shared/crypto.js, encryptFile) and uploads only the
+//              ciphertext: POST /api/chat/direct/:id/files (raw body), while the "Files in direct
+//              messages" setting is on. The room uploads' limits (site settings,
+//              settings/derived.js) apply: per-file size (plus the encryption's few bytes), the
+//              daily quota counted together with room uploads, the upload rate limit. The server
+//              cannot see the content, so it makes no thumbnails and checks no types. GET
+//              /api/chat/direct/files/:fileId serves the ciphertext to the two members of the
+//              conversation only (a pending one to its uploader); everyone else gets 404. Reports:
+//              the reporter's browser decrypts a shared message's file and uploads that copy (POST
+//              .../:id/reports/:reportId/files/:messageId); moderators download it (GET
+//              /api/chat/direct-reports/:id/files/:messageId, audited, a download only).
 // ============================================================
 
 import path from 'node:path';
@@ -23,6 +24,8 @@ import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { saveMediaFile } from '../media/files.js';
+import { uploadLimits } from '../settings/derived.js';
+import { getSetting } from '../settings/store.js';
 import { bytesUploadedSince } from '../uploads/store.js';
 import {
   DIRECT_FOLDER,
@@ -55,11 +58,22 @@ function sendDownload(res, config, file, name) {
 export function directFileRoutes(db, config) {
   const member = express.Router();
   const moderator = express.Router();
-  const { maxBytes, dailyBytes } = config.uploads;
   const perMember = makeLimiter(config.rateLimits.chatUpload, {
     keyGenerator: (req) => `user:${req.user.id}`,
   });
-  const raw = (limit) => express.raw({ type: () => true, limit });
+  // Built per request: the size limit is a setting (limitOf reads it at the request).
+  const raw = (limitOf) => (req, res, next) =>
+    express.raw({ type: () => true, limit: limitOf() })(req, res, next);
+  const maxBytes = () => uploadLimits(db).maxBytes;
+  const filesOn = (_req, res, next) =>
+    getSetting(db, 'chat.directFiles')
+      ? next()
+      : sendError(
+          res,
+          403,
+          'files_off',
+          'Files in direct messages are switched off at the moment.'
+        );
   const fileId = (req) => Number.parseInt(req.params.fileId, 10);
 
   // One daily quota for room and direct uploads.
@@ -67,22 +81,23 @@ export function directFileRoutes(db, config) {
     const since = new Date(Date.now() - DAY_MS).toISOString();
     return (
       bytesUploadedSince(db, userId, since) + directBytesSince(db, userId, since) + adding >
-      dailyBytes
+      uploadLimits(db).dailyBytes
     );
   };
 
   member.post(
     '/:id/files',
     allow('member'),
+    filesOn,
     ...partnerHandlers(db),
     perMember,
-    raw(maxBytes + STREAM_OVERHEAD(maxBytes)),
+    raw(() => maxBytes() + STREAM_OVERHEAD(maxBytes())),
     (req, res) => {
       if (!Buffer.isBuffer(req.body) || req.body.length < 24 + 17) {
         return sendError(res, 400, 'invalid_file', 'This is not an encrypted file.');
       }
       if (overQuota(req.user.id, req.body.length)) {
-        const mb = Math.round(dailyBytes / 1024 / 1024);
+        const mb = Math.round(uploadLimits(db).dailyBytes / 1024 / 1024);
         return sendError(res, 429, 'upload_quota', `Upload limit reached: ${mb} MB per 24 hours.`);
       }
       const file = saveMediaFile(config, req.body, 'bin', DIRECT_FOLDER);

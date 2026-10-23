@@ -22,6 +22,9 @@ export function allow(level) {
   if (!ACCESS_LEVELS.includes(level)) throw new Error(`unknown access level "${level}"`);
   const guard = (req, res, next) => {
     if (level === 'public') return next();
+    // A member who still has to set up the required 2FA (twofa/gate.js) is told so.
+    const missing2fa = req.memberRefusal;
+    if (missing2fa) return sendError(res, 403, missing2fa.code, missing2fa.message);
     if (!req.user) return sendError(res, 401, 'not_authenticated', 'Please log in.');
     if (level !== 'member') {
       if (!roleAtLeast(req.user.role, level)) {

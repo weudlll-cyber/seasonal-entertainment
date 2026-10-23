@@ -2,17 +2,19 @@
 // File:        service.js
 // Path:        server/src/previews/service.js
 // Project:     Seasonal Entertainment
-// Description: Link previews for the chat (decided 2026-10-17): after a member's message text
-//              is stored, the server previews its first https link and pushes the card to the
-//              room. Cached per URL (config: cacheHours), one fetch per URL at a time, limited
-//              per user and overall; can be switched off (LINK_PREVIEWS=false). Failures are
-//              silent: the message simply has no card (the log names only the link's host).
+// Description: Link previews for the chat (decided 2026-10-17): after a member's message text is
+//              stored, the server previews its first https link and pushes the card to the room.
+//              Cached per URL (config: cacheHours), one fetch per URL at a time, limited per user
+//              and overall; can be switched off (the "Link previews in rooms" setting;
+//              LINK_PREVIEWS is its default). Failures are silent: the message simply has no card
+//              (the log names only the link's host).
 // ============================================================
 
 import { firstHttpsLink } from '@seasonal-entertainment/shared/chatRules.js';
 import { findMessage } from '../chat/messages.js';
 import { makeWindowLimit } from '../chat/senderLimit.js';
 import { deleteMediaFile } from '../media/files.js';
+import { getSetting } from '../settings/store.js';
 import { fetchPreview } from './fetchPreview.js';
 import { realNetwork } from './safeFetch.js';
 import { findPreview, savePreview, setMessagePreview } from './store.js';
@@ -34,7 +36,7 @@ export function createPreviewService(db, config, hub, network = realNetwork) {
     if (inFlight.has(url)) return inFlight.get(url);
     // A fetch refused by a limit is not cached: the next message may get the card.
     if (!perUser(`user:${userId}`) || !overall('all')) return null;
-    const job = fetchPreview(url, config, network)
+    const job = fetchPreview(db, url, config, network)
       .catch(() => null)
       .then((data) => {
         const { preview, oldFile } = savePreview(db, url, data);
@@ -48,7 +50,7 @@ export function createPreviewService(db, config, hub, network = realNetwork) {
 
   // Never throws and is not awaited by the route: the message is already posted.
   async function attach(message, viewer) {
-    if (!settings.enabled || !viewer.user || !message.body) return;
+    if (!getSetting(db, 'chat.roomPreviews') || !viewer.user || !message.body) return;
     const url = firstHttpsLink(message.body);
     if (!url) return;
     try {

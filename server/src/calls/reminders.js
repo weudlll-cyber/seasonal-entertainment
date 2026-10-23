@@ -2,19 +2,20 @@
 // File:        reminders.js
 // Path:        server/src/calls/reminders.js
 // Project:     Seasonal Entertainment
-// Description: "Remind me on this site" (docs/CALLS.md, "Reminders"): a member's reminder for
-//              a call (table call_reminders, schema.js), and the job that tells their open
-//              pages when the call is 10 minutes from its planned start ("soon") and when it
-//              goes live ("live"). The notice travels as a personal event over the chat's live
-//              connection (mountChat's notify). Each kind is sent once per member and call:
-//              marked in the table only once it reached an open page, so a member who opens the
-//              site within the window still gets it, and a restart never repeats one. The job
-//              runs like the stale-call job (staleCalls.js): at start, then every 30 seconds,
-//              and a round runs at once when a call goes live (routes.js). Reminders go with
-//              the call's end (endCall.js).
+// Description: "Remind me on this site" (docs/CALLS.md, "Reminders"): a member's reminder for a
+//              call (table call_reminders, schema.js), and the job that tells their open pages when
+//              the call is the lead time (a setting, 10 minutes) from its planned start ("soon")
+//              and when it goes live ("live"). The notice travels as a personal event over the
+//              chat's live connection (mountChat's notify). Each kind is sent once per member and
+//              call: marked in the table only once it reached an open page, so a member who opens
+//              the site within the window still gets it, and a restart never repeats one. The job
+//              runs like the stale-call job (staleCalls.js): at start, then every 30 seconds, and a
+//              round runs at once when a call goes live (routes.js). Reminders go with the call's
+//              end (endCall.js).
 // ============================================================
 
-const SOON_MS = 10 * 60_000;
+import { getSetting } from '../settings/store.js';
+
 const CHECK_MS = 30_000;
 const now = () => new Date().toISOString();
 
@@ -41,11 +42,12 @@ export const reminderCallIds = (db, userId) =>
     .map((row) => row.id);
 
 // Notices due at `at` (ms) and not yet delivered: "soon" for a scheduled call starting within
-// 10 minutes (not after its start: then it is late, and "live" follows), "live" for a live
-// call. Each row: { userId, callId, title, scheduledFor, kind }.
+// the lead time (the "Reminder before a call" setting, 10 minutes by default; not after its
+// start: then it is late, and "live" follows), "live" for a live call. Each row: { userId,
+// callId, title, scheduledFor, kind }.
 function dueNotices(db, at = Date.now()) {
   const from = new Date(at).toISOString();
-  const until = new Date(at + SOON_MS).toISOString();
+  const until = new Date(at + getSetting(db, 'calls.reminderLeadMinutes') * 60_000).toISOString();
   return db
     .prepare(
       `SELECT r.user_id AS userId, c.id AS callId, c.title, c.scheduled_for AS scheduledFor,

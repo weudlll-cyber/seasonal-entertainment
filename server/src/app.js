@@ -56,7 +56,8 @@ import { makeLimiter } from './http/rateLimit.js';
 import { securityHeaders } from './http/securityHeaders.js';
 import { currentUser, sessionMiddleware } from './http/session.js';
 import { adminSettingRoutes } from './settings/adminRoutes.js';
-import { staffTwoFactorGate } from './twofa/gate.js';
+import { bindSettingsConfig } from './settings/store.js';
+import { twoFactorGate } from './twofa/gate.js';
 import { twoFactorRoutes } from './twofa/routes.js';
 
 // previewNetwork: how link previews reach the internet (tests replace it); botImageNetwork:
@@ -71,6 +72,8 @@ export function createApp({
   botImageNetwork,
   callService = createCallService(config.calls),
 }) {
+  // Settings whose default is a config (env) value read it from here (settings/store.js).
+  bindSettingsConfig(db, config);
   const app = express();
   app.disable('x-powered-by');
   // Behind a reverse proxy, req.ip and req.protocol come from its X-Forwarded-* headers.
@@ -94,7 +97,7 @@ export function createApp({
   api.use(currentUser(db));
   // An embed token (the chat on an approved foreign site) acts on the chat routes only.
   api.use(embedTokenAuth(db, embedOrigins));
-  api.use(staffTwoFactorGate(db, config));
+  api.use(twoFactorGate(db, config));
 
   // The whole chat area (docs/CHAT.md). Its handle: index.js attaches the socket and starts
   // it; account routes tell it about ended sessions and changed accounts.

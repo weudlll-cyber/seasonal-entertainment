@@ -3,7 +3,9 @@
 // Path:        server/src/calls/recordingRoutes.js
 // Project:     Seasonal Entertainment
 // Description: Call recording (docs/CALLS.md, "Recording", decided 2026-10-22), on only when
-//              recording is configured (config.calls.recording). Organisers and admins start and
+//              recording is configured (config.calls.recording); starting one also needs the
+//              "Recording allowed" setting (stopping and deleting never do). Organisers and
+//              admins start and
 //              stop the recording of a live call (one at a time; audited); the room's metadata
 //              then says a recording runs (roomState.js), which every client shows. Ending the
 //              call stops it (endCall.js). The recordings of a call are listed, and played
@@ -20,6 +22,7 @@ import express from 'express';
 import { recordAudit } from '../audit/auditLog.js';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
+import { getSetting } from '../settings/store.js';
 import { callSteps } from './middleware.js';
 import {
   activeRecording,
@@ -80,6 +83,14 @@ export function callRecordingRoutes(db, config, service) {
   });
 
   router.post('/:id/recording/start', ...manage, steps.live, async (req, res) => {
+    if (!getSetting(db, 'calls.recording')) {
+      return sendError(
+        res,
+        403,
+        'recording_not_allowed',
+        'Recording is switched off at the moment.'
+      );
+    }
     if (activeRecording(db, req.call.id)) {
       return sendError(res, 409, 'recording_running', 'This call is being recorded already.');
     }

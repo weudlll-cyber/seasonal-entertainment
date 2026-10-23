@@ -6,7 +6,9 @@
 //              Nothing is baked into a build, so one build runs on any host. Every key is
 //              listed in .env.example (test/envExample.test.js) and docs/ARCHITECTURE.md.
 //              The call service's keys are read by calls/config.js; what production refuses
-//              to start with is checked by productionConfig.js.
+//              to start with is checked by productionConfig.js. Values marked "default of a
+//              site setting" only start that setting off: at runtime the setting rules
+//              (settings/groups/, docs/SETTINGS.md).
 // ============================================================
 
 import { randomBytes } from 'node:crypto';
@@ -64,15 +66,16 @@ export function readConfig(env = process.env) {
     mediaDir: path.resolve(env.MEDIA_DIR ?? path.join(repoRoot, 'data', 'media')),
     // Chat file uploads by members (decided 2026-10-17): images and PDF.
     uploads: {
-      maxBytes: 10 * 1024 * 1024, // per file
-      dailyBytes: 50 * 1024 * 1024, // per member in 24 hours
+      maxBytes: 10 * 1024 * 1024, // per file; default of a site setting (in MB)
+      dailyBytes: 50 * 1024 * 1024, // per member in 24 hours; default of a site setting (in MB)
       thumbWidth: 480,
       pendingMinutes: 60, // uploaded but never sent: deleted after this
       nameMax: 100, // the original file name, kept as display text only
     },
     // The most pixels (width x height, of one frame) an image from a member or from the internet
     // may have: chat uploads, link-preview images and the event bot's images, read from the
-    // header before any decoding (decided 2026-10-23). A small file can claim a huge picture; decoding it costs memory.
+    // header before any decoding (decided 2026-10-23). A small file can claim a huge picture;
+    // decoding it costs memory. Default of a site setting (in megapixels).
     imageMaxPixels: 50_000_000,
     // Library upload limits per pack kind (decided 2026-10-17).
     media: {
@@ -96,19 +99,22 @@ export function readConfig(env = process.env) {
     // The call service (LiveKit, docs/CALLS.md); null when not configured (feature off).
     calls: readCallsConfig(env, isProduction),
     chat: {
-      // Messages older than this are deleted by the retention job.
+      // Messages older than this are deleted by the retention job. Default of a site setting.
       retentionDays: readInt(env, 'CHAT_RETENTION_DAYS', 90, 1, 3650),
-      // Per sender; guests stricter (decided 2026-10-17).
+      // Per sender; guests stricter (decided 2026-10-17). Each max is the default of a site
+      // setting; the window stays.
       rate: {
         member: { windowMs: 10_000, max: 5 },
         guest: { windowMs: 10_000, max: 2 },
       },
       // Open live connections (security check 2026-10-22): per member account, all tabs, the
-      // drawer and embedded chats together; per address for guests without an account.
+      // drawer and embedded chats together; per address for guests without an account. Both
+      // defaults of site settings.
       maxConnectionsPerMember: readInt(env, 'CHAT_MAX_CONNECTIONS_PER_MEMBER', 5, 1, 100),
       maxGuestConnectionsPerIp: readInt(env, 'CHAT_MAX_GUEST_CONNECTIONS_PER_IP', 20, 1, 1000),
     },
-    // Link previews in the chat (decided 2026-10-17). Only LINK_PREVIEWS is an env key.
+    // Link previews in the chat (decided 2026-10-17). Only LINK_PREVIEWS is an env key: the
+    // default of both preview settings (rooms, direct messages).
     linkPreviews: {
       enabled: readBool(env, 'LINK_PREVIEWS', true),
       timeoutMs: 5000, // page and image together

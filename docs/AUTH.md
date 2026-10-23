@@ -10,14 +10,16 @@ from the race game's `docs/AUTH.md` are marked _(race game)_.
   guests have no account and no stored role.
 - **"Can start games"** is a separate flag on the account, granted by admins; admins have it
   implicitly (`canStartGames` in the session answer is true for every admin).
-- **Registration is open to everyone** (decided 2026-10-16): username, email, password and the
-  required checkbox "I am at least 14 years old" (minimum age 14, decided 2026-10-17). No date of
-  birth is stored, and the checkbox itself is not stored either. New accounts are `member`.
+- **Registration is open to everyone** (decided 2026-10-16; admins can close it with the
+  "Registration open" setting, docs/SETTINGS.md: the page and the route then say "Registration is
+  closed at the moment.", while the first admin's bootstrap still works): username, email, password
+  and the required checkbox "I am at least 14 years old" (minimum age 14, decided 2026-10-17). No
+  date of birth is stored, and the checkbox itself is not stored either. New accounts are `member`.
 - **Rules shared by server and client** (`shared/accountRules.js`): username 3–24 characters,
   letters, digits, `_`, `-`, `.`, starting with a letter or digit; unique **case-insensitively**
-  (enforced by the database, `COLLATE NOCASE`). Password at least 10 characters _(race game)_ and
-  at most 72 bytes (from when bcrypt read the password itself; kept unchanged). Email: a plain
-  shape check; no confirmation mail is sent. The password rules are checked **in the browser only** (next
+  (enforced by the database, `COLLATE NOCASE`). Password at least 10 characters _(race game)_ and at
+  most 72 bytes (from when bcrypt read the password itself; kept unchanged). Email: a plain shape
+  check; no confirmation mail is sent. The password rules are checked **in the browser only** (next
   section).
 - **The password never reaches the server** (next section). The server stores bcrypt of the auth
   key the browser derives from it, cost 12 by default (`BCRYPT_COST`) _(race game)_.
@@ -124,25 +126,27 @@ rate limit, the lockout, locked accounts, the session epoch.
 - Server-side, in the SQLite database (table `sessions`, created by the session store). The
   browser holds only the cookie: `HttpOnly`, `SameSite=Lax`, path `/`, `Secure` when
   `COOKIE_SECURE` (default: on in production). Name `__Host-se.sid` when Secure, else `se.sid`.
-- **7 days without use** (decided 2026-10-22): a signed-in session ends after 7 days in which it
-  was not used. Every authenticated request renews it to 7 days from then: the session's
-  `usedAt` stamp, the stored expiry and the cookie's. To spare a database write per request,
-  it renews at most once a minute (`renewSession` in `server/src/http/session.js`; the
-  store's own per-request "touch" is switched off). A session whose `usedAt` is more than 7
-  days old is refused even if its record still exists (`sessionUser`, also used by the chat
-  WebSocket). Signed-in sessions from the earlier 30-day rule are capped at 7 days from the
-  server's start. A guest's session, which only holds a guest name (docs/CHAT.md), keeps
-  30 days. Tests: `server/test/sessionIdle.test.js`.
+- **7 days without use** (decided 2026-10-22; since 2026-10-23 the "Sign out after" setting, 1–90
+  days, docs/SETTINGS.md; 7 below stands for its value): a signed-in session ends after 7 days in
+  which it was not used. Every authenticated request renews it to 7 days from then: the session's
+  `usedAt` stamp, the stored expiry and the cookie's. To spare a database write per request, it
+  renews at most once a minute (`renewSession` in `server/src/http/session.js`; the store's own
+  per-request "touch" is switched off). A session whose `usedAt` is more than 7 days old is refused
+  even if its record still exists (`sessionUser`, also used by the chat WebSocket). Signed-in
+  sessions from the earlier 30-day rule are capped at 7 days from the server's start. A guest's
+  session, which only holds a guest name (docs/CHAT.md), keeps 30 days. Tests:
+  `server/test/sessionIdle.test.js`.
 - **Login** regenerates the session id (no fixation) and stamps it with the account's
   **session epoch** _(race game)_. Wrong username and wrong password give the same
   `401 invalid_credentials`. A locked account answers `403 account_locked`, but only to someone
   who gave the right password.
 - **Every request** reloads the account: a session whose account is gone, locked, or has a
   different epoch is logged out right there (`currentUser` in `server/src/http/session.js`).
-- **Own password change** (`POST /api/auth/password`, current + new password; the account comes
-  from the session, never the body) bumps the epoch in the same statement that stores the new
-  hash: every **other** session of that account ends; the session making the change is
-  re-stamped and stays signed in _(race game)_. An admin password reset bumps the epoch too and ends all of that user's sessions.
+- **Own password change** (`POST /api/auth/password`, current + new password; the account comes from
+  the session, never the body) bumps the epoch in the same statement that stores the new hash: every
+  **other** session of that account ends; the session making the change is re-stamped and stays
+  signed in _(race game)_. An admin password reset bumps the epoch too and ends all of that user's
+  sessions.
 - **Logout** destroys the server-side session and clears the cookie.
 - **Open chat sockets follow the account:** logout closes that session's chat WebSocket; a role,
   lock or password change closes the account's sockets (except the session making its own
@@ -211,10 +215,15 @@ member with an **embed token** instead (`server/src/embed/`; SE-NIGHT-2 follow-u
   bump as a password change, `bumpSessionEpoch` in `server/src/accounts/userStore.js`) and
   closes its other chat sockets; the session making the change is re-stamped and stays.
 - **Staff must use it:** an organiser or admin without 2FA can log in, but every organiser/admin
-  route answers `403 two_factor_required` until 2FA is on (`server/src/twofa/gate.js`, checked
-  in `allow()`). In the chat, over HTTP and WebSocket alike, such an account counts as a member
-  (`server/src/chat/viewer.js`). The session answer carries `twoFactorRequired`, and the site shows a banner
-  leading to the setup. Members may turn it on voluntarily.
+  route answers `403 two_factor_required` until 2FA is on (`server/src/twofa/gate.js`, checked in
+  `allow()`). In the chat, over HTTP and WebSocket alike, such an account counts as a member
+  (`server/src/chat/viewer.js`). The session answer carries `twoFactorRequired`, and the site shows
+  a banner leading to the setup. Members may turn it on voluntarily.
+- **2FA for every member** (the "Require 2FA for every member" setting, off by default,
+  2026-10-23): while it is on, a member without 2FA counts as a guest everywhere but `/api/auth`
+  and `/api/2fa`; member routes answer `403 two_factor_required`; the session answer carries
+  `twoFactorRequired`, the banner shows, and the login leads to the setup instead of `?next=`.
+  Organisers and admins keep their own rule above.
 - **`REQUIRE_STAFF_2FA`** (default `true`) may be set to `false` for local development only;
   the server refuses to start with `false` in production.
 - Failed codes are rate-limited (`rateLimits.twoFactor`: 5 per 15 minutes, per account for

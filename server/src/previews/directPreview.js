@@ -20,6 +20,7 @@ import { makeWindowLimit } from '../chat/senderLimit.js';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { validBody } from '../http/validate.js';
+import { getSetting } from '../settings/store.js';
 import { fetchPreview } from './fetchPreview.js';
 import { realNetwork } from './safeFetch.js';
 
@@ -46,7 +47,7 @@ async function smallImage(data) {
 }
 
 // network: safeFetch's network (tests replace it; no real internet there).
-export function directPreviewRoutes(config, network = realNetwork) {
+export function directPreviewRoutes(db, config, network = realNetwork) {
   const router = express.Router();
   const settings = config.linkPreviews;
   // Counters only, keyed by account: no link is kept.
@@ -58,14 +59,14 @@ export function directPreviewRoutes(config, network = realNetwork) {
       url: (v) => (typeof v === 'string' && firstHttpsLink(v) === v ? null : 'Not an https link.'),
     });
     if (!input) return;
-    if (!settings.enabled || req.user.dmLinkPreviews === false) {
+    if (!getSetting(db, 'chat.directPreviews') || req.user.dmLinkPreviews === false) {
       return sendError(res, 403, 'previews_off', 'Link previews are switched off.');
     }
     if (!perUser(`user:${req.user.id}`) || !overall('all')) {
       return sendError(res, 429, 'rate_limited', 'Too many previews at once. Try again later.');
     }
     // A failure is no card, and is not logged: even a host would say which site was linked.
-    const found = await fetchPreview(input.url, config, network, {
+    const found = await fetchPreview(db, input.url, config, network, {
       maxWidth: DIRECT_IMAGE.maxWidth,
       keep: async ({ data }) => smallImage(data),
     }).catch(() => null);

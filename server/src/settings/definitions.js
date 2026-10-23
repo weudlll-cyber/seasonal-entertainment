@@ -8,7 +8,9 @@
 //              next to it). The admin page shows the groups in GROUPS order.
 // ============================================================
 
+import { ACCOUNT_SETTINGS } from './groups/accounts.js';
 import { CALL_SETTINGS } from './groups/calls.js';
+import { CHAT_SETTINGS } from './groups/chat.js';
 
 export const GROUPS = [
   'Chat',
@@ -21,7 +23,7 @@ export const GROUPS = [
 ];
 
 // group name -> that group's settings.
-const BY_GROUP = { Calls: CALL_SETTINGS };
+const BY_GROUP = { Chat: CHAT_SETTINGS, Calls: CALL_SETTINGS, Accounts: ACCOUNT_SETTINGS };
 
 export const SETTINGS = Object.fromEntries(
   Object.entries(BY_GROUP).flatMap(([group, settings]) =>

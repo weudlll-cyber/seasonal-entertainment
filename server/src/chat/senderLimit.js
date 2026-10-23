@@ -8,12 +8,14 @@
 // ============================================================
 
 // One sliding window: allow(key) is true (and counts) while key has fewer than max events in
-// the last windowMs. Also used for link-preview fetches (previews/service.js).
+// the last windowMs. max is a number or a function read at each call (a site setting). Also
+// used for link-preview fetches (previews/service.js).
 export function makeWindowLimit({ max, windowMs }) {
   const recent = new Map(); // key -> timestamps inside the window
+  const maxNow = typeof max === 'function' ? max : () => max;
   return function allow(key, now = Date.now()) {
     const times = (recent.get(key) ?? []).filter((t) => t > now - windowMs);
-    const allowed = times.length < max;
+    const allowed = times.length < maxNow();
     if (allowed) times.push(now);
     recent.set(key, times);
     // Keep memory flat: drop keys with nothing in their window.

@@ -58,15 +58,16 @@ numbers' per-device marks);
 of the module other than `index.js`.
 
 - **Styles** sit under one root class, `.se-chat` (`ChatPanel.css`, `ChatPanelVariants.css`,
-  `ChatMessage.css`, `ChatPicker.css`), with the module's own buttons and notices. Colours and spacing come from the
-  site's tokens when they exist (`--color-text`, `--space-1`, …) with built-in fallbacks, so a
-  panel looks the same on any page and on a host without those tokens.
+  `ChatMessage.css`, `ChatPicker.css`), with the module's own buttons and notices. Colours and
+  spacing come from the site's tokens when they exist (`--color-text`, `--space-1`, …) with built-in
+  fallbacks, so a panel looks the same on any page and on a host without those tokens.
 - **One connection per page** (`connection.js`): however many panels a page shows, they share one
   WebSocket; each room is subscribed once, and every pushed event names its room, so each panel
   receives only its own. The socket reconnects after a drop and closes right after the render
   in which the last panel left (a panel that comes straight back, as under React's StrictMode,
   reuses it).
-- **Connection limits** (security check 2026-10-22): at most 5 open connections per member
+- **Connection limits** (security check 2026-10-22; site settings since 2026-10-23, the env
+  values below are their defaults, docs/SETTINGS.md): at most 5 open connections per member
   account, counting every tab, the chat drawer and chats embedded on other sites together, and
   at most 20 per address for guests without an account (`CHAT_MAX_CONNECTIONS_PER_MEMBER`,
   `CHAT_MAX_GUEST_CONNECTIONS_PER_IP`). The address is the one our own proxies forwarded
@@ -281,12 +282,14 @@ mediaItemId?, preview? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh
   - **Account setting** "Link previews in direct messages" (account page, Privacy; on by
     default; `users.dm_link_previews`, `PUT /api/auth/privacy { dmLinkPreviews }`). Off, the
     browser makes no preview request at all; the route refuses one too (`403 previews_off`).
-    `LINK_PREVIEWS=false` switches the route off with the room previews.
+    The "Link previews in direct messages" setting (default: `LINK_PREVIEWS`) switches the
+    route off.
   - Tests: `server/test/directPreview.test.js`, `client/src/chat/directLinkPreview.test.jsx`,
     `client/src/components/privacySettings.test.jsx`.
 - **Files in direct messages** (decided 2026-10-22): members attach a file with the composer's
   usual **Attach file** (`ComposerUpload.jsx`), of any type, under the room uploads' limits:
-  at most 10 MB per file, one daily quota of 50 MB together with room uploads, 10 uploads a
+  at most 10 MB per file, one daily quota of 50 MB together with room uploads (both site
+  settings, docs/SETTINGS.md; "Files in direct messages" off hides the button), 10 uploads a
   minute.
   - **Encrypted in the sender's browser** (`client/src/chat/directFile.js`): a fresh random
     key per file, `crypto_secretstream_xchacha20poly1305` in 64 KB chunks

@@ -5,8 +5,9 @@
 // Description: Who is using the chat (an account, or a guest held in the session) and what
 //              that viewer may do in a room. One rule set for HTTP routes and the WebSocket:
 //              an organiser or admin who still has to set up the required 2FA counts as a
-//              member for reading, writing and moderation alike. Guests write only in rooms
-//              marked guest-writable.
+//              member for reading, writing and moderation alike; a member who has to (the
+//              "Require 2FA for every member" setting) counts as a guest. Guests write only in
+//              rooms marked guest-writable.
 // ============================================================
 
 import { roleAtLeast } from '@seasonal-entertainment/shared/accountRules.js';
@@ -16,10 +17,12 @@ import { needsTwoFactorSetup } from '../twofa/gate.js';
 // user: the account or null; guest: { id, name } from the session or null; staff: may act as
 // organiser here (the role, and the 2FA requirement met).
 function makeViewer(user, guest, twoFactorMissing) {
+  const staffRole = Boolean(user) && roleAtLeast(user.role, 'organiser');
+  const account = twoFactorMissing && !staffRole ? null : user;
   return {
-    user,
-    guest: user ? null : guest,
-    staff: Boolean(user) && roleAtLeast(user.role, 'organiser') && !twoFactorMissing,
+    user: account,
+    guest: account ? null : guest,
+    staff: staffRole && !twoFactorMissing,
   };
 }
 

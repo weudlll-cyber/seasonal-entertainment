@@ -3,7 +3,8 @@
 // Path:        server/src/settings/groups/calls.js
 // Project:     Seasonal Entertainment
 // Description: The "Calls" group of site settings (definitions.js): how many speak and how
-//              many take part in one call.
+//              many take part in one call, whether calls may be recorded, and how early a
+//              reminder comes.
 // ============================================================
 
 export const CALL_SETTINGS = {
@@ -29,5 +30,22 @@ export const CALL_SETTINGS = {
     default: 250,
     min: 2,
     max: 1000,
+  },
+  'calls.recording': {
+    type: 'boolean',
+    label: 'Recording allowed',
+    help: 'Organisers and admins may record a call; hidden anyway while no recording service is set up.',
+    default: true,
+  },
+  // At least 1 minute, so the notice still comes before the start; at most 120 (two hours), a
+  // notice much earlier is no longer a reminder of something about to start.
+  'calls.reminderLeadMinutes': {
+    type: 'integer',
+    label: 'Reminder before a call',
+    help: 'How long before a planned call members with "Remind me" get the notice.',
+    unit: 'minutes',
+    default: 10,
+    min: 1,
+    max: 120,
   },
 };

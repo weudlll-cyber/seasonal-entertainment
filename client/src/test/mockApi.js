@@ -8,7 +8,8 @@
 //              answers binary data (a Uint8Array, read with arrayBuffer()). Returns the
 //              list of calls made ({ key, body, headers }). Unknown calls fail the test.
 //              PRELOGIN answers the login key split's pre-login step with a fixed salt; NO_KEY
-//              is a member without a key pair yet.
+//              is a member without a key pair yet; withSettings() adds site settings to a
+//              session answer (they travel with it).
 // ============================================================
 
 import { vi } from 'vitest';
@@ -49,6 +50,12 @@ export function signedIn(user) {
     },
   };
 }
+
+// A session answer (GUEST or signedIn(...)) carrying public site settings, e.g.
+// { 'chat.uploads': false }; the others keep their defaults.
+export const withSettings = (session, settings) => ({
+  'GET /auth/session': { body: { ...session['GET /auth/session'].body, settings } },
+});
 
 // The pre-login answer for any username: a fixed salt (docs/AUTH.md, "Login key split").
 export const PRELOGIN_SALT = 'AAECAwQFBgcICQoLDA0ODw==';

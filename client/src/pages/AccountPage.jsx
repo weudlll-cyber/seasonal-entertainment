@@ -7,6 +7,7 @@
 //              online", link previews in direct messages), browser notifications, logout.
 // ============================================================
 
+import { roleAtLeast } from '@seasonal-entertainment/shared/accountRules.js';
 import { useNavigate } from 'react-router';
 import ChangePasswordForm from '../components/ChangePasswordForm.jsx';
 import PrivacySettings from '../components/PrivacySettings.jsx';
@@ -48,9 +49,11 @@ export default function AccountPage() {
       ) : (
         <>
           <p>
-            {user.twoFactorRequired
-              ? 'Your role requires two-factor authentication. Organiser and admin actions stay blocked until it is on.'
-              : 'Optional for members: a code from an authenticator app in addition to your password.'}
+            {!user.twoFactorRequired
+              ? 'Optional for members: a code from an authenticator app in addition to your password.'
+              : roleAtLeast(user.role, 'organiser')
+                ? 'Your role requires two-factor authentication. Organiser and admin actions stay blocked until it is on.'
+                : 'This site requires two-factor authentication for every member. Member features stay blocked until it is on.'}
           </p>
           <TwoFactorSetup onEnabled={refresh} />
         </>

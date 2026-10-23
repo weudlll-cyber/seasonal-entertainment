@@ -2,7 +2,8 @@
 // File:        chatUploads.test.jsx
 // Path:        client/src/chat/chatUploads.test.jsx
 // Project:     Seasonal Entertainment
-// Description: Guards file uploads in the chat page: guests get no "Attach file"; a member's
+// Description: Guards file uploads in the chat page: guests get no "Attach file", nor members
+//              while the "File uploads in rooms" setting is off; a member's
 //              file is uploaded, shown above the field and sent with the text as one message;
 //              messages show images (thumbnail, full image on click), PDFs as a download card,
 //              "File removed", and a moderator's "Remove file".
@@ -11,7 +12,7 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeSocket } from '../test/fakeSocket.js';
-import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
+import { GUEST, mockApi, signedIn, withSettings } from '../test/mockApi.js';
 import { renderApp } from '../test/renderApp.jsx';
 
 beforeEach(() => {
@@ -78,6 +79,12 @@ const choose = (file) =>
 describe('attaching a file', () => {
   it('guests get no upload button', async () => {
     await chat(GUEST);
+    await screen.findByLabelText('Message');
+    expect(screen.queryByRole('button', { name: 'Attach file' })).toBeNull();
+  });
+
+  it('members get none while the "File uploads in rooms" setting is off', async () => {
+    await chat(withSettings(MIA, { 'chat.uploads': false }));
     await screen.findByLabelText('Message');
     expect(screen.queryByRole('button', { name: 'Attach file' })).toBeNull();
   });

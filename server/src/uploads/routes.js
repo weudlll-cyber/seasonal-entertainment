@@ -3,7 +3,9 @@
 // Path:        server/src/uploads/routes.js
 // Project:     Seasonal Entertainment
 // Description: Chat file uploads (members only, decided 2026-10-17): upload a file (raw body,
-//              name in the query; per-file size, daily quota, rate limit), fetch it, and the
+//              name in the query; while the "File uploads in rooms" setting is on; per-file
+//              size, daily quota and pixel limit from the site settings, rate limit), fetch it,
+//              and the
 //              moderators' "Remove file". Uploaded files are not public: every fetch checks
 //              that the viewer may read the message's room, hidden messages' files go to
 //              moderators only, a not-yet-sent file to its uploader only. PDFs are served only
@@ -22,6 +24,8 @@ import { loadById } from '../http/loadById.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { deleteMediaFile } from '../media/files.js';
 import { ImageRejected } from '../media/imageCheck.js';
+import { imageMaxPixels, uploadLimits } from '../settings/derived.js';
+import { getSetting } from '../settings/store.js';
 import { processUpload } from './process.js';
 import {
   bytesUploadedSince,
@@ -39,7 +43,15 @@ export function uploadRoutes(db, config, hub) {
   const perMember = makeLimiter(config.rateLimits.chatUpload, {
     keyGenerator: (req) => `user:${req.user.id}`,
   });
-  const rawFile = express.raw({ type: () => true, limit: config.uploads.maxBytes });
+  // Built per request: the size limit is a setting, and a file over it is refused (413) before
+  // it is held in memory.
+  const rawFile = (req, res, next) =>
+    express.raw({ type: () => true, limit: uploadLimits(db).maxBytes })(req, res, next);
+  // Before the body is read: a switched-off feature never takes a file in.
+  const uploadsOn = (_req, res, next) =>
+    getSetting(db, 'chat.uploads')
+      ? next()
+      : sendError(res, 403, 'uploads_off', 'File uploads are switched off at the moment.');
   const loadUpload = loadById((id) => findUpload(db, id), 'upload', 'file');
   const loadMessage = loadById((id) => findMessage(db, id), 'message', 'message');
 
@@ -55,15 +67,19 @@ export function uploadRoutes(db, config, hub) {
     return !message.hiddenAt || isModerator(viewer);
   }
 
-  router.post('/uploads', allow('member'), perMember, rawFile, async (req, res) => {
+  router.post('/uploads', allow('member'), uploadsOn, perMember, rawFile, async (req, res) => {
     const since = new Date(Date.now() - DAY_MS).toISOString();
-    if (bytesUploadedSince(db, req.user.id, since) + req.body.length > config.uploads.dailyBytes) {
-      const mb = Math.round(config.uploads.dailyBytes / 1024 / 1024);
+    const { maxBytes, dailyBytes } = uploadLimits(db);
+    if (bytesUploadedSince(db, req.user.id, since) + req.body.length > dailyBytes) {
+      const mb = Math.round(dailyBytes / 1024 / 1024);
       return sendError(res, 429, 'upload_quota', `Upload limit reached: ${mb} MB per 24 hours.`);
     }
     let stored;
     try {
-      stored = await processUpload(req.body, req.query.name, config);
+      stored = await processUpload(req.body, req.query.name, config, {
+        maxBytes,
+        maxPixels: imageMaxPixels(db),
+      });
     } catch (err) {
       if (!(err instanceof ImageRejected)) throw err;
       return sendError(res, 400, 'invalid_file', err.message);
