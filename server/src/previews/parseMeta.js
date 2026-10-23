@@ -24,7 +24,7 @@ const isControl = (char) => {
   return code < 0x20 || (code >= 0x7f && code <= 0x9f);
 };
 
-export function plainText(value, max) {
+function plainText(value, max) {
   const text = [...String(value ?? '')]
     .map((char) => (isControl(char) ? ' ' : char))
     .join('')

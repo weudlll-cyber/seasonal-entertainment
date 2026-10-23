@@ -31,13 +31,13 @@ const DAY_MS = 24 * 60 * 60_000;
 const day = (ms) => new Date(ms).toISOString().slice(0, 10);
 
 // The bot writes ISO-8601 UTC, with "Z" or "+00:00"; a time without an offset counts as UTC.
-export function parseBotTime(text) {
+function parseBotTime(text) {
   if (typeof text !== 'string') return NaN;
   return Date.parse(/(Z|[+-]\d\d:\d\d)$/.test(text) ? text : `${text}Z`);
 }
 
 // Only a web address becomes a link on the site.
-export function webUrl(value) {
+function webUrl(value) {
   try {
     const url = new URL(value);
     return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;

@@ -9,7 +9,7 @@
 import { createHmac, randomBytes } from 'node:crypto';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'; // RFC 4648 base32
-export const STEP_SECONDS = 30;
+const STEP_SECONDS = 30;
 
 export function base32Encode(buffer) {
   let bits = '';

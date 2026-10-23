@@ -28,7 +28,7 @@ export const isCallPage = (pathname) => /^\/calls\/\d+/.test(pathname);
 // Calls: after Chat, shown when calls are set up (admins always: they see "not configured").
 export const CALLS_ITEM = { to: '/calls', label: 'Calls', icon: 'mic', dot: 'winter' };
 
-export const ADMIN_ITEM = { to: '/admin', label: 'Admin', icon: 'admin' };
+const ADMIN_ITEM = { to: '/admin', label: 'Admin', icon: 'admin' };
 
 // The items below the divider for this account: Admin for admins only (as before the shell).
 export function staffNavFor(user) {

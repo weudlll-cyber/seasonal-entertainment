@@ -8,7 +8,8 @@
 //              checked by calls/config.js.
 // ============================================================
 
-// A secret this long is out of reach of guessing; also what LiveKit advises for its own.
+// A secret this long is out of reach of guessing; also what LiveKit advises for its own, so the
+// call service's secret is held to it too (calls/config.js).
 export const SECRET_MIN = 32;
 
 const fail = (message) => {

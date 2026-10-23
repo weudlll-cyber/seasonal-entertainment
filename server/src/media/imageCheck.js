@@ -15,7 +15,7 @@ import sharp from 'sharp';
 export class ImageRejected extends Error {}
 
 // type -> how it starts, its MIME type and the extension files on disk get.
-export const IMAGE_TYPES = {
+const IMAGE_TYPES = {
   png: { mime: 'image/png', ext: 'png' },
   gif: { mime: 'image/gif', ext: 'gif' },
   webp: { mime: 'image/webp', ext: 'webp' },

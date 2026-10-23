@@ -25,8 +25,8 @@ import { sessionUser } from '../http/session.js';
 import { findRoomBySlug } from './store.js';
 
 export const CHAT_SOCKET_PATH = '/ws/chat';
-export const CHAT_PROTOCOL = 'se-chat';
-export const EMBED_PROTOCOL_PREFIX = 'se-embed.';
+const CHAT_PROTOCOL = 'se-chat';
+const EMBED_PROTOCOL_PREFIX = 'se-embed.';
 // Close code from the private range: too many open connections (the client knows it).
 export const TOO_MANY_CONNECTIONS = 4008;
 

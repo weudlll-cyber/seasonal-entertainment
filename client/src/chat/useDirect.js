@@ -13,7 +13,7 @@ import { useFavourites } from './favourites.js';
 import { usePersonalEvents } from './usePersonalEvents.js';
 
 // Favourites first, then everyone else; within each, the most recent conversation first.
-export function sortConversations(list) {
+function sortConversations(list) {
   const recent = (a, b) =>
     (b.lastMessageAt ?? '').localeCompare(a.lastMessageAt ?? '') ||
     a.partner.username.localeCompare(b.partner.username);

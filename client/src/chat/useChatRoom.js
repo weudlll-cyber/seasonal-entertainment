@@ -27,7 +27,7 @@ const ACTION_DONE = {
 
 // A pushed event applied to the message list. moderator: hidden messages and held-back
 // previews stay visible to moderators.
-export function applyEvent(list, event, moderator) {
+function applyEvent(list, event, moderator) {
   const update = (change) => list.map((m) => (m.id === event.id ? { ...m, ...change } : m));
   switch (event.type) {
     case 'message':

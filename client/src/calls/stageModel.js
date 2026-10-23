@@ -62,7 +62,7 @@ export function listenerNames(listeners) {
 
 // The collapsed listener panel's one row: every raised hand (organisers must not miss one),
 // then others up to `size` chips; `more` counts the rest ("+N"). ordered: audienceOrder().
-export const COLLAPSED_CHIPS = 4;
+const COLLAPSED_CHIPS = 4;
 export function collapsedListeners(ordered, size = COLLAPSED_CHIPS) {
   const hands = ordered.filter((p) => p.hand).length;
   const shown = ordered.slice(0, Math.max(size, hands));

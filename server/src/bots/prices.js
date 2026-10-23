@@ -20,10 +20,10 @@ export const PRICE_RANGES = {
   '1y': 365 * DAY_MS,
   all: null,
 };
-export const HISTORY_POINTS = 500;
+const HISTORY_POINTS = 500;
 // Where the prices are: a table (ts_ms, token, price) and its tokens. Names are constants of
 // this code, never input.
-export const BOT_SNAPSHOTS = { table: 'snapshots', tokens: PRICE_TOKENS };
+const BOT_SNAPSHOTS = { table: 'snapshots', tokens: PRICE_TOKENS };
 
 // [[ts, price], ...] of one token from `since` on (or all), oldest first.
 const pointsSince = (db, table, token, since) =>
@@ -34,7 +34,7 @@ const pointsSince = (db, table, token, since) =>
 
 // At most `max` points: the span is cut into equal time slices and each slice keeps its last
 // snapshot (a real price at a real time, never an average that was never quoted).
-export function thinOut(points, max = HISTORY_POINTS) {
+function thinOut(points, max = HISTORY_POINTS) {
   if (points.length <= max) return points;
   const first = points[0][0];
   const span = points.at(-1)[0] - first || 1;

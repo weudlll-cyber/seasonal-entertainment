@@ -23,7 +23,7 @@ import { validBody } from '../http/validate.js';
 import { fetchPreview } from './fetchPreview.js';
 import { realNetwork } from './safeFetch.js';
 
-export const DIRECT_IMAGE = { maxWidth: 320, maxBytes: 50 * 1024 };
+const DIRECT_IMAGE = { maxWidth: 320, maxBytes: 50 * 1024 };
 // Tried in turn until the image fits the byte limit: lower quality first, then narrower;
 // when nothing fits, the card goes without its image.
 const QUALITIES = [80, 60, 40];

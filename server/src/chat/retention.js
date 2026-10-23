@@ -59,7 +59,7 @@ export function deleteUnusedPreviewFiles(db, config, now = Date.now()) {
 
 // Uploads whose message is gone (deleted here or in any other way) and uploads never sent:
 // rows and files go, so no file outlives its message.
-export function deleteOrphanUploadFiles(db, config, now = Date.now()) {
+function deleteOrphanUploadFiles(db, config, now = Date.now()) {
   const pendingBefore = new Date(now - config.uploads.pendingMinutes * 60_000).toISOString();
   const files = deleteOrphanUploads(db, pendingBefore);
   for (const file of files) deleteMediaFile(config, file);
@@ -68,7 +68,7 @@ export function deleteOrphanUploadFiles(db, config, now = Date.now()) {
 
 // Files of direct messages whose message is gone (or never sent), shared report files whose
 // copy is gone, and whatever is left on disk without a row: deleted from disk.
-export function deleteOrphanDirectFileData(db, config, now = Date.now()) {
+function deleteOrphanDirectFileData(db, config, now = Date.now()) {
   const pendingBefore = new Date(now - config.uploads.pendingMinutes * 60_000).toISOString();
   deleteOrphanDirectFiles(db, pendingBefore);
   deleteReportFilesWithoutCopies(db);

@@ -12,9 +12,9 @@
 import { AccessToken, TrackSource } from 'livekit-server-sdk';
 
 // A token is used to connect only; LiveKit refreshes it for a running connection.
-export const TOKEN_TTL = '10m';
+const TOKEN_TTL = '10m';
 
-export const SPEAKER_SOURCES = [
+const SPEAKER_SOURCES = [
   TrackSource.MICROPHONE,
   TrackSource.CAMERA,
   TrackSource.SCREEN_SHARE,

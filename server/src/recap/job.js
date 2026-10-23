@@ -21,7 +21,7 @@ import { getTextSetting, setSetting } from '../settings/store.js';
 import { priceChanges, recentRecordings, upcomingWeek } from './sources.js';
 import { RECAP_ZONE, recapText } from './text.js';
 
-export const RECAP_ROOMS = ['announcements', 'general'];
+const RECAP_ROOMS = ['announcements', 'general'];
 const LAST_WEEK = 'recap.lastWeek';
 // Monday 09:00 is nine hours after the local Monday 00:00: Europe's clock changes happen on
 // Sunday nights, never on a Monday morning.
@@ -61,7 +61,7 @@ function latestWeek(now) {
 // The week whose recap is due at `now`, or null. On the very first round (nothing stored yet,
 // a new site) the latest week counts as done: a site first started on a Friday posts its
 // first recap on Monday, not that Friday.
-export function dueWeek(db, now = Date.now()) {
+function dueWeek(db, now = Date.now()) {
   const latest = latestWeek(now);
   const last = getTextSetting(db, LAST_WEEK);
   if (last === null) {

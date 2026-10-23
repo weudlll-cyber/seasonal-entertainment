@@ -10,7 +10,7 @@
 import { activeRecording } from './recordings.js';
 import { spotlightOf } from './store.js';
 
-export const roomState = (db, callId) =>
+const roomState = (db, callId) =>
   JSON.stringify({
     spotlight: spotlightOf(db, callId),
     recording: Boolean(activeRecording(db, callId)),

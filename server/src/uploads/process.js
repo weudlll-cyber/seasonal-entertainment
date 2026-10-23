@@ -15,7 +15,7 @@ import sharp from 'sharp';
 import { saveMediaFile } from '../media/files.js';
 import { FILE_TYPES, ImageRejected, checkImage, sniffFileType } from '../media/imageCheck.js';
 
-export const UPLOAD_TYPES = ['jpeg', 'png', 'webp', 'gif', 'pdf'];
+const UPLOAD_TYPES = ['jpeg', 'png', 'webp', 'gif', 'pdf'];
 const SUBFOLDER = 'uploads';
 
 const ENCODE = {
@@ -26,7 +26,7 @@ const ENCODE = {
 };
 
 // Display text only: no path, control characters as spaces, collapsed spaces, capped length.
-export function displayName(raw, max) {
+function displayName(raw, max) {
   const base = path.basename(String(raw ?? '').replace(/\\/g, '/'));
   const clean = [...base]
     .map((char) => (char.codePointAt(0) < 0x20 || char.codePointAt(0) === 0x7f ? ' ' : char))

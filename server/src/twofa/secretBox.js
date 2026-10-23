@@ -16,7 +16,7 @@ import { base32Decode } from './totp.js';
 
 const PREFIX = 'enc1:';
 
-export const isSealed = (stored) => stored.startsWith(PREFIX);
+const isSealed = (stored) => stored.startsWith(PREFIX);
 
 export async function sealSecret(secret, key) {
   return PREFIX + (await sealBytes(new TextEncoder().encode(secret), key));

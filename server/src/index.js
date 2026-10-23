@@ -30,7 +30,7 @@ const buildInfo = readBuildInfo();
 const db = openDatabase(config.databasePath);
 await sealStoredSecrets(db, config.secretKey);
 const seeded = seedInfoPages(db);
-if (seeded) console.log(`Added ${seeded} draft info pages (first start)`);
+if (seeded) console.log(`Added ${seeded} info pages, Imprint and Privacy as drafts (first start)`);
 if (seedGames(db)) console.log('Added the games hub entry (first start)');
 // Development only, with the fake event bot (its images/ folder beside the database): its
 // images come from those files. Otherwise (production, or a copy of the real bot) the

@@ -8,7 +8,7 @@
 //              organisers and admins write.
 // ============================================================
 
-export const SEED_ROOMS = [
+const SEED_ROOMS = [
   {
     slug: 'general',
     name: 'General',

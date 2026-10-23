@@ -35,18 +35,18 @@ const CSP_BASE = {
   frameAncestors: ["'none'"],
 };
 
-export const PERMISSIONS_POLICY = 'camera=(self), microphone=(self), display-capture=(self)';
+const PERMISSIONS_POLICY = 'camera=(self), microphone=(self), display-capture=(self)';
 
 // The embedded chat's pages (client/src/embed/), and its login popup (not frameable at all).
-export const EMBED_PREFIX = '/embed/';
-export const EMBED_LOGIN_PATH = '/embed-login';
+const EMBED_PREFIX = '/embed/';
+const EMBED_LOGIN_PATH = '/embed-login';
 
 // calls: config.calls or null. The call service is reached over its WebSocket (signalling)
 // and over https at the same host (livekit-client's connection check after a failed
 // connect); media flows over WebRTC, which the CSP does not govern. embedAncestors: for an
 // /embed/ page, the approved foreign sites (embed/origins.js); its policy differs only in who
 // may frame it.
-export function cspDirectives(calls, { embedAncestors } = {}) {
+function cspDirectives(calls, { embedAncestors } = {}) {
   const callOrigins = calls ? [calls.url, calls.httpOrigin] : [];
   return {
     ...CSP_BASE,

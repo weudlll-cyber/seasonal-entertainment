@@ -15,7 +15,7 @@ import { showDirect } from './directView.js';
 import UserStar from './UserStar.jsx';
 import { QUERY_MIN, useMemberSearch } from './useMemberSearch.js';
 
-export const NO_KEY_NOTE = 'Has not set up private messages yet';
+const NO_KEY_NOTE = 'Has not set up private messages yet';
 
 export default function MemberSearch() {
   const [query, setQuery] = useState('');

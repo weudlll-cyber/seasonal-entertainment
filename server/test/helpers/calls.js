@@ -20,11 +20,10 @@ import { joinToken } from '../../src/calls/grants.js';
 import { chatApp } from './chat.js';
 import { makeStaff } from './testApp.js';
 
-export const TEST_KEYS = { apiKey: 'test-key', apiSecret: 'test-secret-of-at-least-32-characters' };
+const TEST_KEYS = { apiKey: 'test-key', apiSecret: 'test-secret-of-at-least-32-characters' };
 
 // Decodes a join token with the test keys: its claims ({ sub, name, video, attributes, ... }).
-export const claimsOf = (token) =>
-  new TokenVerifier(TEST_KEYS.apiKey, TEST_KEYS.apiSecret).verify(token);
+const claimsOf = (token) => new TokenVerifier(TEST_KEYS.apiKey, TEST_KEYS.apiSecret).verify(token);
 
 // recordingDir: where a stopped recording's file is written (the app's recordings folder).
 export function fakeCallService({ recordingDir } = {}) {

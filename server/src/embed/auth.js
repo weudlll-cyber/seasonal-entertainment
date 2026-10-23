@@ -15,7 +15,7 @@
 import { sendError } from '../http/errors.js';
 import { findActiveToken } from './tokens.js';
 
-export const EMBED_TOKEN_HEADER = 'X-Embed-Token';
+const EMBED_TOKEN_HEADER = 'X-Embed-Token';
 
 const SLUG = '[^/]+';
 const ID = '[0-9]+';
@@ -39,7 +39,7 @@ const ALLOWED = [
   ['POST', `/chat/direct/${ID}/(read|report)`],
 ].map(([methods, path]) => ({ methods: methods.split(' '), path: new RegExp(`^${path}$`) }));
 
-export const embedAllows = (method, path) =>
+const embedAllows = (method, path) =>
   ALLOWED.some((rule) => rule.methods.includes(method) && rule.path.test(path));
 
 // After currentUser and before the 2FA gate (which then judges the token's member as usual).

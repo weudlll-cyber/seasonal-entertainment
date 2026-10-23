@@ -46,7 +46,7 @@ export function toHost(host, type, data = {}) {
   if (host && framed()) window.parent.postMessage({ source: EMBED_SOURCE, type, ...data }, host);
 }
 
-export const fromHost = (host, event) =>
+const fromHost = (host, event) =>
   Boolean(host) &&
   framed() &&
   event.origin === host &&

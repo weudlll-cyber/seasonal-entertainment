@@ -9,7 +9,7 @@
 //              and how many are on the stage.
 // ============================================================
 
-export const HIDDEN_LISTENER = 'A listener';
+const HIDDEN_LISTENER = 'A listener';
 
 // who: { user, guest } (chat viewer); on the stage everyone is named.
 export function shownName(who, onStage) {
