@@ -69,8 +69,9 @@ entry waits for.
   `client/src/components/TwoFactorDisable.jsx` (0 % of lines) and `client/src/keys/deviceKey.js`
   (19 %) are covered only by server tests and an in-memory stand-in.
 - **A call test that sometimes hangs on CI** — `client/e2e/callShare.spec.js:57` (once also
-  `calls.spec.js:61`) waits minutes for "Join call" on CI only; CI keeps no Playwright traces,
-  so uploading `test-results/` on a failure would be the first step to the cause.
+  `calls.spec.js:61`) waits minutes for "Join call" on CI only. Since 2026-10-23 a failed browser
+  test's trace and screenshot are uploaded (`playwright-test-results`, 7 days): the next hang shows
+  what the page held.
 - **A coverage script** — the repository has no `test:coverage` script or provider; adding one
   adds a devDependency (`@vitest/coverage-v8`).
 

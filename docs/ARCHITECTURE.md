@@ -355,7 +355,8 @@ screen capture for this origin only (docs/CALLS.md, "Security headers").
 ## Folder layout
 
 ```
-.github/workflows/ci.yml   CI: npm run verify
+.github/workflows/ci.yml   CI: npm run verify; a failed browser test's trace and screenshot
+                           uploaded as the artefact playwright-test-results (7 days)
 .claude/settings.json      agent permissions for this repository
 client/                    React + Vite client
   index.html               HTML shell
