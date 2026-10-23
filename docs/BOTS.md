@@ -121,7 +121,11 @@ numbers):
 - **Fair price** (`compute_fair_prices`): over the seasons that have a price, K = average of the
   actual prices ÷ average of 1 / mining rate; a season's fair price = K ÷ its mining rate;
   deviation = (actual − fair) ÷ fair × 100 %; underpriced when actual < fair; ranked by actual ÷
-  fair, best buy first. A season mined at half the rate is worth twice as much.
+  fair, the furthest below its fair price first. A season mined at half the rate is worth twice
+  as much. The table's column reads "Rank (vs. fair price)" and shows only the number, with no
+  recommending words; a line under the table says "The rank only shows how far each price is
+  below or above its calculated fair price. Information only — not financial advice." with the
+  Disclaimer link (decided 2026-10-23).
 - **Converter** (`/swap`): an amount of Spring, Summer, Autumn, Winter, ETH, POL or BTC (each
   reference coin only while it is connected, see "Reference prices") into another: converted =
   amount × price(from) ÷ price(to). Each side that is a season gets its mining time in hours (the

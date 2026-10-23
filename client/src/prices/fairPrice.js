@@ -23,7 +23,8 @@ export function fairPrices(actual, rates) {
 }
 
 // One row per priced season: actual, fair, deviation in % ((actual - fair) / fair × 100),
-// underpriced (actual below fair) and rank (1 = best buy: the lowest actual / fair).
+// underpriced (actual below fair) and rank (1: the lowest actual / fair, the furthest below its
+// fair price; a position, not a recommendation).
 export function fairTable(actual, rates) {
   const fair = fairPrices(actual, rates);
   if (!fair) return [];

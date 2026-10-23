@@ -43,6 +43,11 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **No "best buy" wording** — closed by the SE-NIGHT-6 finish (`feat/se-night-6`; owner decision
+  2026-10-23): the fair price table's rank shows only the number, under "Rank (vs. fair price)",
+  with a line saying what it shows and the not-financial-advice link; "underpriced" and
+  "overpriced" stay (they describe the calculation). The converter, the home fair-price box, the
+  season clock and the weekly recap had no recommending words (docs/BOTS.md, "Fair price").
 - **"Start here" path** — closed by SE-NIGHT-6 piece 5 (`feat/se-night-6`, not merged yet; owner
   request 2026-10-23): `/start` with five short steps and buttons to existing pages (what Seasonal
   Tokens are, how they work, the risks, the prices and the fair price, the chat and the next call)
