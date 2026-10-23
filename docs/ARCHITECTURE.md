@@ -481,6 +481,8 @@ scripts/
   build-brand-images.mjs   one-off: the brand images in client/public/brand/ from the owner's
                            logo file (docs/DESIGN.md, "Brand images")
   verify.mjs               npm run verify
+  coverage.mjs             npm run test:coverage: the unit tests with line coverage, one HTML
+                           report per workspace in coverage/ (gitignored); not in verify or CI
   calls-dev.mjs            npm run dev:calls (LiveKit in development mode)
   calls-binary.mjs         the pinned LiveKit binary, checksum-checked, in .calls-bin/
   backup.mjs, restore.mjs  nightly backup (encrypted with age) and restore
