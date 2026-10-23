@@ -8,10 +8,12 @@
 //              and can be decoded), an app with calls switched on and the seeded chat rooms, creating and
 //              starting a call as an organiser, and joining one. The stand-in also records: it
 //              remembers each started recording and, when stopped, writes a small file into the
-//              recordings folder, as LiveKit's egress service would.
+//              recordings folder, as LiveKit's egress service would. recordingApp: an app
+//              recording into a temporary folder; mp4Lasting: a minimal MP4 of a given length.
 // ============================================================
 
-import { writeFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { TokenVerifier } from 'livekit-server-sdk';
 import { joinToken } from '../../src/calls/grants.js';
@@ -75,6 +77,38 @@ export function fakeCallService({ recordingDir } = {}) {
 export function callApp(overrides) {
   const service = fakeCallService({ recordingDir: overrides?.calls?.recording?.dir });
   return { t: chatApp(overrides, { callService: service }), service };
+}
+
+// { t, service, dir }: an app whose calls record into a new temporary folder `dir` (the caller
+// deletes it); recording: false leaves recording off.
+export function recordingApp({ recording = true } = {}) {
+  const dir = mkdtempSync(path.join(tmpdir(), 'se-recordings-'));
+  const calls = {
+    url: 'wss://calls.test',
+    httpOrigin: 'https://calls.test',
+    ...TEST_KEYS,
+    recording: recording ? { dir, egressDir: dir } : null,
+  };
+  return { ...callApp({ calls }), dir };
+}
+
+// A minimal MP4 as an egress writes one: ftyp, the media data, then the movie box with its
+// header (version 0: time scale 1000, duration in thousandths).
+export function mp4Lasting(seconds) {
+  const box = (type, content) => {
+    const header = Buffer.alloc(8);
+    header.writeUInt32BE(8 + content.length);
+    header.write(type, 4, 'latin1');
+    return Buffer.concat([header, content]);
+  };
+  const mvhd = Buffer.alloc(100);
+  mvhd.writeUInt32BE(1000, 12);
+  mvhd.writeUInt32BE(seconds * 1000, 16);
+  return Buffer.concat([
+    box('ftyp', Buffer.from('isom    ', 'latin1')),
+    box('mdat', Buffer.alloc(5000, 7)),
+    box('moov', box('mvhd', mvhd)),
+  ]);
 }
 
 export async function organiser(t, name = 'olga') {

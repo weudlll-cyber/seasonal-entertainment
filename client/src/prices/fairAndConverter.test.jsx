@@ -4,7 +4,9 @@
 // Project:     Seasonal Entertainment
 // Description: The fair price table and the converter on /info/prices (FairPriceTable.jsx,
 //              Converter.jsx; the arithmetic itself in fairPrice.test.js): the table with the
-//              price bot's mining rates, ranked from best buy; a season-to-season conversion
+//              price bot's mining rates, ranked by the distance to the fair price (only the
+//              number, no recommending words) with the line saying what the rank shows and the
+//              Disclaimer link; a season-to-season conversion
 //              with both mining times; a season into ETH with the season's only; ETH not offered
 //              while it is not connected; without the mining rates both say so.
 // ============================================================
@@ -56,7 +58,7 @@ function showPage(miningRates) {
 }
 
 describe('fair price table', () => {
-  it('each season: actual, fair, deviation, under/overpriced and rank from best buy', async () => {
+  it('each season: actual, fair, deviation, under/overpriced and the rank as a number', async () => {
     showPage(RATES);
     const table = await screen.findByRole('table');
     const rows = within(table)
@@ -65,11 +67,25 @@ describe('fair price table', () => {
       .map((r) => r.textContent);
     expect(rows).toEqual([
       'Spring$0.004000$0.004324−8 %underpriced2', // −7.5 % rounds to −8
-      'Summer$0.003000$0.005189−42 %underpriced1 (best buy)',
+      'Summer$0.003000$0.005189−42 %underpriced1',
       'Autumn$0.005000$0.003027+65 %overpriced4',
       'Winter$0.004000$0.003459+16 %overpriced3',
     ]);
     expect(screen.getByText(/fair price = K ÷ mining rate/)).toBeInTheDocument();
+    expect(
+      within(table).getByRole('columnheader', { name: 'Rank (vs. fair price)' })
+    ).toBeVisible();
+    // No recommending words anywhere in the table or under it.
+    const section = table.closest('section');
+    expect(section.textContent).not.toMatch(/\b(best|buy|sell)\b/i);
+    const note = within(section).getByText(/The rank only shows how far each price/);
+    expect(note).toHaveTextContent(
+      'The rank only shows how far each price is below or above its calculated fair price. Information only — not financial advice.'
+    );
+    expect(within(note).getByRole('link', { name: 'not financial advice' })).toHaveAttribute(
+      'href',
+      '/info/disclaimer'
+    );
   });
 
   it('without the mining rates: says so, for the table and the mining times', async () => {

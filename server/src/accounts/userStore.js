@@ -9,7 +9,8 @@
 
 const COLUMNS = `id, username, email, role, can_start_games AS canStartGames, locked,
   session_epoch AS sessionEpoch, show_online AS showOnline, dm_link_previews AS dmLinkPreviews,
-  notify_mentions AS notifyMentions, notify_direct AS notifyDirect, created_at AS createdAt`;
+  notify_mentions AS notifyMentions, notify_direct AS notifyDirect, notify_recap AS notifyRecap,
+  created_at AS createdAt`;
 
 function toUser(row) {
   if (!row) return null;
@@ -21,6 +22,7 @@ function toUser(row) {
     dmLinkPreviews: row.dmLinkPreviews === 1,
     notifyMentions: row.notifyMentions === 1,
     notifyDirect: row.notifyDirect === 1,
+    notifyRecap: row.notifyRecap === 1,
   };
 }
 
@@ -104,6 +106,7 @@ const SWITCH_COLUMNS = {
   dmLinkPreviews: 'dm_link_previews',
   notifyMentions: 'notify_mentions',
   notifyDirect: 'notify_direct',
+  notifyRecap: 'notify_recap',
 };
 export function setSwitches(db, id, settings) {
   for (const [key, column] of Object.entries(SWITCH_COLUMNS)) {
@@ -111,6 +114,13 @@ export function setSwitches(db, id, settings) {
     db.prepare(`UPDATE users SET ${column} = ? WHERE id = ?`).run(settings[key] ? 1 : 0, id);
   }
 }
+
+// The members who want a browser notification when the weekly recap is out (recap/job.js).
+export const recapNotifyIds = (db) =>
+  db
+    .prepare('SELECT id FROM users WHERE notify_recap = 1 AND locked = 0')
+    .all()
+    .map((r) => r.id);
 
 // Of these account ids, the ones that let others see them online.
 export function idsShowingOnline(db, ids) {
@@ -142,5 +152,6 @@ export function publicUser(user) {
     dmLinkPreviews: user.dmLinkPreviews,
     notifyMentions: user.notifyMentions,
     notifyDirect: user.notifyDirect,
+    notifyRecap: user.notifyRecap,
   };
 }

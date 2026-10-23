@@ -29,9 +29,6 @@ An entry moves from part one to part two only when its branch is merged into `ma
   "Call recordings" holds a proposal for the owner to review (consent as the legal basis, kept
   until deleted, the rights and the complaint to the Datenschutzbehörde); only its contact
   address is left to fill.
-- **Official sources disagree** on the second Spring halving date (home table June 2025,
-  Medium update 5 September 2025) and on the total supply per token (whitepaper ~33.1 million,
-  home page ~37 million); the info pages state neither.
 - **Login with Discord or Telegram** — open. Accounts use a username and password, with 2FA
   required for organisers and admins (closed: SE-NIGHT-1 pieces 2 and 3); logging in with a
   Discord or Telegram account is not built (for Telegram's recovery codes see above).
@@ -46,6 +43,40 @@ An entry moves from part one to part two only when its branch is merged into `ma
 
 ## PART TWO — closed
 
+- **No "best buy" wording** — closed by the SE-NIGHT-6 finish (`feat/se-night-6`; owner decision
+  2026-10-23): the fair price table's rank shows only the number, under "Rank (vs. fair price)",
+  with a line saying what it shows and the not-financial-advice link; "underpriced" and
+  "overpriced" stay (they describe the calculation). The converter, the home fair-price box, the
+  season clock and the weekly recap had no recommending words (docs/BOTS.md, "Fair price").
+- **"Start here" path** — closed by SE-NIGHT-6 piece 5 (`feat/se-night-6`, not merged yet; owner
+  request 2026-10-23): `/start` with five short steps and buttons to existing pages (what Seasonal
+  Tokens are, how they work, the risks, the prices and the fair price, the chat and the next call)
+  and the not-financial-advice notice; "Start here" in the sidebar for everyone and "New here?
+  Start here" on home for guests (docs/DESIGN.md, "Start here").
+- **Recordings archive with chapters** — closed by SE-NIGHT-6 piece 4 (`feat/se-night-6`, not
+  merged yet; owner request 2026-10-23): `/calls/recordings` lists every recording for the
+  calls' audience, newest first, with call title, date, length, player and a search over the
+  titles; organisers and admins add, change and delete chapter marks (m:ss or h:mm:ss, a title
+  of at most 80 characters, audited), shown under the player on the call page and in the
+  archive, a click seeking the player there (docs/CALLS.md, "Recording").
+- **Weekly recap** — closed by SE-NIGHT-6 piece 3 (`feat/se-night-6`, not merged yet; owner
+  request 2026-10-23): every Monday from 09:00 Vienna time the site posts, as "Seasonal
+  Entertainment" (no account behind it), the week's price changes, the next 7 days' events and
+  calls, the new call recordings and the not-financial-advice line in Announcements; once per
+  week even across restarts; "Post recap now" for admins (audited); the "Weekly recap"
+  notification, off by default (docs/CHAT.md, "Weekly recap").
+- **Season clock on home** — closed by SE-NIGHT-6 piece 2 (`feat/se-night-6`, not merged yet;
+  owner request 2026-10-23): the token in season and the next halving, from the token
+  contracts' own schedule (`shared/seasonClock.js`, constants cited from `contracts/*Token.sol`;
+  the four creation times read with a public read-only `eth_call`). It also settles the earlier
+  disagreement between official sources: the second Spring halving is in June 2025 (5 June, by
+  the contract; the Medium update's 5 September 2025 is not the contract's date), and the total
+  supply per token is 33,112,800 (`SpringToken.sol:22`, the same in all four contracts).
+- **"Not financial advice" notice** — closed by SE-NIGHT-6 piece 1 (`feat/se-night-6`, not
+  merged yet; owner request 2026-10-23): "Not financial advice" beside Imprint and Privacy on
+  every page (sidebar and phone menu) opens the new Disclaimer info page, seeded published; the
+  notice "Information only — not financial advice." with its Disclaimer link on the prices page
+  and in the home fair-price box (docs/DESIGN.md).
 - **The ten info content pages** — checked against the official sources (seasonaltokens.org,
   the whitepaper, the three audit reports, the Telegram and Medium links) and published
   (2026-10-22, SE-INFO-PUBLISH): what-are-seasonal-tokens, how-it-works, mining, farming,

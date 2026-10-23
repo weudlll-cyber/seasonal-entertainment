@@ -9,7 +9,8 @@
 //              for client routes. No listen(), so tests drive it directly; app.locals.chat is the chat's handle,
 //              app.locals.calls.start() starts the stale-call and reminder jobs
 //              (calls/staleCalls.js, calls/reminders.js),
-//              app.locals.reference.start() the ETH, POL and BTC prices job (reference/sync.js).
+//              app.locals.reference.start() the ETH, POL and BTC prices job (reference/sync.js),
+//              app.locals.recap.start() the weekly recap (recap/job.js).
 //              The embedded chat on approved foreign sites (embed/) adds its CSP, its token
 //              check and its routes; prices and bot events (bots/) are read-only public reads.
 // ============================================================
@@ -21,12 +22,15 @@ import { bootstrapRoutes } from './accounts/bootstrap.js';
 import { botRoutes } from './bots/routes.js';
 import { referenceRoutes } from './reference/routes.js';
 import { createReferenceSync } from './reference/sync.js';
+import { startWeeklyRecap } from './recap/job.js';
+import { adminRecapRoutes } from './recap/routes.js';
 import { adminAuditRoutes } from './admin/auditRoutes.js';
 import { callJoinRoutes } from './calls/joinRoutes.js';
 import { callReminderRoutes } from './calls/reminderRoutes.js';
 import { sendCallReminders, startCallReminders } from './calls/reminders.js';
 import { callEventRoutes } from './calls/eventRoutes.js';
 import { callRecordingRoutes } from './calls/recordingRoutes.js';
+import { chapterRoutes } from './calls/chapterRoutes.js';
 import { callRoutes } from './calls/routes.js';
 import { callSpotlightRoutes } from './calls/spotlightRoutes.js';
 import { callStageRoutes } from './calls/stageRoutes.js';
@@ -132,12 +136,14 @@ export function createApp({
   const remindNow = () => sendCallReminders(db, notifyMember);
   // Before callRoutes: its /:id would take /bot-occurrences.
   api.use('/calls', callEventRoutes(db, config, callService, chat));
+  // Before callRoutes too: its /:id would take /recordings (the archive).
+  api.use('/calls', callRecordingRoutes(db, config, callService));
+  api.use('/calls', chapterRoutes(db, config, callService));
   api.use('/calls', callRoutes(db, config, callService, chat, remindNow));
   api.use('/calls', callReminderRoutes(db, config, callService));
   api.use('/calls', callJoinRoutes(db, config, callService, chat));
   api.use('/calls', callStageRoutes(db, config, callService, chat));
   api.use('/calls', callSpotlightRoutes(db, config, callService));
-  api.use('/calls', callRecordingRoutes(db, config, callService));
   // start() returns the function that stops both jobs, or null when neither runs.
   app.locals.calls = {
     start: (log) => {
@@ -148,6 +154,10 @@ export function createApp({
       return stops.length ? () => stops.forEach((stop) => stop()) : null;
     },
   };
+  // The weekly recap (recap/): posted by the site on Mondays, or now by an admin (audited).
+  const recap = { db, config, chat, callsConfigured: Boolean(callService) };
+  api.use('/admin/recap', adminRecapRoutes(recap));
+  app.locals.recap = { start: (log) => startWeeklyRecap({ ...recap, log }) };
   // The ETH, POL and BTC prices job (reference/sync.js): only with a CoinGecko key and timers on.
   app.locals.reference = {
     start: () =>

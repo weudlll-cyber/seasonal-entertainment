@@ -3,7 +3,7 @@
 // Path:        server/test/infoSeed.test.js
 // Project:     Seasonal Entertainment
 // Description: Guards the first-start info pages: inserted only into an empty table, the ten
-//              content pages published and the two legal pages as drafts (invisible to the
+//              content pages and the Disclaimer published and the two legal pages as drafts (invisible to the
 //              public), and the content rules: every source-based page
 //              ends with a Sources list, no contract address is retyped, no raw HTML or local
 //              file links, Risks says "not financial advice", legal pages carry placeholders,
@@ -32,10 +32,11 @@ const CONTENT = [
   'security-audits',
   'team',
   'official-channels',
+  'disclaimer',
 ];
 
 describe('seeding', () => {
-  it('fills an empty table once: the ten content pages published, the legal two drafts', async () => {
+  it('fills an empty table once: the content pages and the Disclaimer published, the legal two drafts', async () => {
     t = makeTestApp();
     expect(seedInfoPages(t.db)).toBe(SEED_ORDER.length);
     expect(seedInfoPages(t.db)).toBe(0);
@@ -84,6 +85,15 @@ describe.each(SEED_ORDER)('seed page %s', (slug) => {
 
 it('the Risks page says "not financial advice"', () => {
   expect(readSeedPage('risks').body).toMatch(/not financial advice/i);
+});
+
+it('the Disclaimer says what the site is not, and links the official disclaimer', () => {
+  const { body } = readSeedPage('disclaimer');
+  expect(body).toMatch(/not financial, investment, legal or tax advice/);
+  expect(body).toMatch(/Nothing here is a recommendation to buy, sell or hold any token/);
+  expect(body).toMatch(/you can lose money/);
+  expect(body).toMatch(/does not sell tokens/);
+  expect(body).toContain('(https://seasonaltokens.org/legal#disclaimer)');
 });
 
 it('the privacy draft says when calls are recorded and what the call server processes', () => {

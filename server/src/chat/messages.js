@@ -3,7 +3,8 @@
 // Path:        server/src/chat/messages.js
 // Project:     Seasonal Entertainment
 // Description: Data access for chat messages: text, sticker or GIF (a library item by id),
-//              or an uploaded file, visible or hidden, with an optional link preview, and the
+//              or an uploaded file, visible or hidden, with an optional link preview; the
+//              site's own messages (isSystem, sender "Seasonal Entertainment"); and the
 //              reported-messages
 //              list. A sticker/GIF whose item or pack is now inactive or deleted comes back with
 //              media: null ("media removed"). A message with reports nobody has reviewed yet
@@ -18,7 +19,8 @@ const now = () => new Date().toISOString();
 
 // authorId: the author's account id (null for guests), for the name menu (favourites).
 const MESSAGE_COLUMNS = `m.id, r.slug AS room, m.author_name AS author,
-  m.author_user_id AS authorId, (m.author_guest IS NOT NULL) AS isGuest, m.kind, m.body, m.created_at AS createdAt,
+  m.author_user_id AS authorId, (m.author_guest IS NOT NULL) AS isGuest,
+  m.author_system AS isSystem, m.kind, m.body, m.created_at AS createdAt,
   m.hidden_at AS hiddenAt, m.hidden_by AS hiddenBy,
   i.file AS mediaFile, i.alt AS mediaAlt, i.credit AS mediaCredit, i.width AS mediaWidth,
   i.height AS mediaHeight,
@@ -82,6 +84,7 @@ function toMessage(row, moderator) {
   return {
     ...message,
     isGuest: row.isGuest === 1,
+    isSystem: row.isSystem === 1,
     media: mediaOf(row),
     file: fileOf(row),
     preview: held && !moderator ? null : preview,
@@ -121,6 +124,22 @@ export function addMessage(
     }
     return findMessage(db, id);
   })();
+}
+
+// The name the site's own messages carry (no username can have a space, so no account can
+// take it).
+export const SYSTEM_SENDER = 'Seasonal Entertainment';
+
+// A text message from the site itself (the weekly recap): no account and no guest behind it,
+// so nobody can log in as its sender; marked author_system.
+export function addSystemMessage(db, room, body) {
+  const { lastInsertRowid } = db
+    .prepare(
+      `INSERT INTO chat_messages (room_id, author_name, author_system, kind, body, created_at)
+       VALUES (?, ?, 1, 'text', ?, ?)`
+    )
+    .run(room.id, SYSTEM_SENDER, body, now());
+  return findMessage(db, Number(lastInsertRowid));
 }
 
 // As every reader sees it, plus the internal ids the server needs.

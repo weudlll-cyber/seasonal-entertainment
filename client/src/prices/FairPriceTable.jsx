@@ -4,10 +4,14 @@
 // Project:     Seasonal Entertainment
 // Description: The "Fair price" table of /info/prices, as the price bot's /value works it out
 //              (fairPrice.js): each season's actual and fair price, how far apart they are,
-//              under- or overpriced, and the rank from best buy to worst. Without the mining
-//              rates it says they are not available.
+//              under- or overpriced, and its rank by that distance (only the number, no
+//              recommending words; decided 2026-10-23), with a line under the table saying what
+//              the rank shows, information only, not financial advice (the Disclaimer). Without
+//              the mining rates it says they are not available.
 // ============================================================
 
+import { Link } from 'react-router';
+import { DISCLAIMER_PATH } from '@seasonal-entertainment/shared/disclaimer.js';
 import { fairTable } from './fairPrice.js';
 import { TOKENS, formatUsd } from './priceFormat.js';
 
@@ -36,7 +40,7 @@ export default function FairPriceTable({ actual, rates }) {
                 <th scope="col">Fair</th>
                 <th scope="col">Deviation</th>
                 <th scope="col">Price</th>
-                <th scope="col">Rank</th>
+                <th scope="col">Rank (vs. fair price)</th>
               </tr>
             </thead>
             <tbody>
@@ -49,11 +53,15 @@ export default function FairPriceTable({ actual, rates }) {
                   <td className={row.underpriced ? 'price-change--up' : 'price-change--down'}>
                     {row.underpriced ? 'underpriced' : 'overpriced'}
                   </td>
-                  <td>{row.rank === 1 ? '1 (best buy)' : row.rank}</td>
+                  <td>{row.rank}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <p className="not-advice">
+            The rank only shows how far each price is below or above its calculated fair price.
+            Information only — <Link to={DISCLAIMER_PATH}>not financial advice</Link>.
+          </p>
         </>
       )}
     </section>

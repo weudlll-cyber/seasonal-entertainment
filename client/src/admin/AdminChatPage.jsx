@@ -5,8 +5,8 @@
 // Description: Admin chat page: rooms (add, edit who may read and write, and whether guests
 //              may write: only where explicitly ticked; off for new rooms), reported messages
 //              (hide them, or keep them: marked reviewed, their preview shows again), reported
-//              private conversations (AdminDirectReports), and active mutes and bans (lift
-//              them).
+//              private conversations (AdminDirectReports), active mutes and bans (lift them),
+//              and the weekly recap's "Post recap now" (AdminRecap).
 // ============================================================
 
 import { useEffect, useState } from 'react';
@@ -15,6 +15,7 @@ import { api } from '../api/http.js';
 import { formatWhen } from '../app/dates.js';
 import { FormMessage } from '../components/FormField.jsx';
 import AdminDirectReports from './AdminDirectReports.jsx';
+import AdminRecap from './AdminRecap.jsx';
 
 const NEW_ROOM = {
   slug: '',
@@ -143,6 +144,7 @@ export default function AdminChatPage() {
           </tbody>
         </table>
       </div>
+      <AdminRecap />
       <h3>Reported messages</h3>
       {data.reports.length === 0 && <p>No open reports.</p>}
       <ul className="link-list">

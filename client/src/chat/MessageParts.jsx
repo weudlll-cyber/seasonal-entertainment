@@ -3,7 +3,8 @@
 // Path:        client/src/chat/MessageParts.jsx
 // Project:     Seasonal Entertainment
 // Description: Parts of a message shared by room and direct messages: the text as plain text
-//              (members' https links become links; guests' never; an @mention of a member
+//              (members' https links become links; guests' never; in the site's own messages,
+//              the weekly recap, paths on this site become links within it; an @mention of a member
 //              becomes a name chip that opens the name menu) and a sticker or GIF from the
 //              site's library ("Media removed" once it is gone), with its credit.
 // ============================================================
@@ -29,7 +30,27 @@ function TextWithMentions({ text, mentions }) {
   });
 }
 
-export function MessageText({ body, linkify, mentions = [] }) {
+// A path on this site ("/calls/12", "/info/disclaimer") standing alone between spaces.
+const SITE_PATH = /(?<=^|\s)(\/[a-z0-9-]+(?:\/[a-z0-9-]+)*)(?=$|\s|[.,;:)])/g;
+
+// The site's own messages (the weekly recap): their site paths become links inside the site.
+// Only for those: a member's text never gets links it did not write as https. Plain links: the
+// chat module stays free of the app's routing (chatModule.test.js), so a click loads the page.
+function TextWithSitePaths({ text }) {
+  return text.split(SITE_PATH).map((part, i) =>
+    i % 2 === 1 ? (
+      <a key={i} href={part}>
+        {part}
+      </a>
+    ) : (
+      part
+    )
+  );
+}
+
+// sitePaths: the site's own message (isSystem); linkify: a member's (https links).
+export function MessageText({ body, linkify, sitePaths = false, mentions = [] }) {
+  if (sitePaths) return <TextWithSitePaths text={body} />;
   if (!linkify) return <TextWithMentions text={body} mentions={mentions} />;
   return splitLinks(body).map((part, i) =>
     part.link ? (

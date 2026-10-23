@@ -6,7 +6,7 @@
 //              bot's occurrences (docs/BOTS.md), each at the viewer's local time with the zone
 //              named and the UTC time beside it (EventItem.jsx), together with the site's live
 //              and planned calls of that week as the Calls page shows them (useCalls.js,
-//              callEntries.js, CallEventItem.jsx), in time order; a call linked to one of the
+//              shared/callEntries.js, CallEventItem.jsx), in time order; a call linked to one of the
 //              week's events is not listed twice: that event offers "Listen on this site"
 //              (EventItem.jsx). Previous/next week buttons.
 //              Without the event bot the page says so plainly. timeZone and now are props so
@@ -19,7 +19,7 @@ import { formatDay, startOfWeek } from '@seasonal-entertainment/shared/localWeek
 import { api } from '../api/http.js';
 import { deviceZone } from '../app/dates.js';
 import PageHeader from '../brand/PageHeader.jsx';
-import { withCalls } from '../calls/callEntries.js';
+import { withCalls } from '@seasonal-entertainment/shared/callEntries.js';
 import { useCalls } from '../calls/useCalls.js';
 import CallEventItem from './CallEventItem.jsx';
 import EventItem from './EventItem.jsx';

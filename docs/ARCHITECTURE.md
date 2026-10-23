@@ -26,6 +26,10 @@ The repository is one npm workspace root with three packages, `shared`, `server`
 2026-10-18 it also holds the project's one cryptography helper, `shared/crypto.js` (libsodium,
 `libsodium-wrappers-sumo` pinned to an exact version), used by the browser, the server tests and
 the scripts, and `shared/cryptoFormat.js`, the shape checks the server applies (docs/AUTH.md).
+Since 2026-10-23 also what the page and the server both say or work out: the not-financial-advice
+wording (`disclaimer.js`), the season clock from the token contracts (`seasonClock.js`) and the
+calls in the event lists (`callEntries.js`, used by "Up next" and the weekly recap), how a
+price change reads (`priceChange.js`) and a recording's times and chapters (`chapterRules.js`).
 
 ## Data
 
@@ -131,8 +135,9 @@ Markdown with react-markdown, which builds React elements and drops raw HTML (`s
 The public page and the editor preview use the same component.
 
 **First-start content:** when the table is empty, `server/src/info/seed.js` inserts the pages in
-`server/src/info/seed/*.md`: the ten content pages **published**, Imprint and Privacy as
-**drafts** (`SEED_DRAFTS`). The texts were drafted only from the official Seasonal Tokens
+`server/src/info/seed/*.md`: the ten content pages and the Disclaimer (2026-10-23, linked as
+"Not financial advice" from every page) **published**, Imprint and Privacy as **drafts**
+(`SEED_DRAFTS`). The texts were drafted only from the official Seasonal Tokens
 website, both whitepapers and the owner's info sheet and farming guide, and each ends with its
 Sources list (2026-10-17); the ten content pages were checked against the official sources and
 published (decided 2026-10-22). No contract address is retyped anywhere (the pages link to the
@@ -440,7 +445,9 @@ server/
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests
 shared/                    rules used by server and client (accountRules.js, localWeek.js,
-                           gameRules.js, chatRules.js), crypto.js and cryptoFormat.js
+                           gameRules.js, chatRules.js, disclaimer.js, seasonClock.js,
+                           callEntries.js, priceChange.js, chapterRules.js), crypto.js and
+                           cryptoFormat.js
 scripts/
   dev.mjs                  npm run dev
   e2e.mjs                  npm run test:e2e (temporary database per run)

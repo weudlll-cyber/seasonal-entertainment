@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: Chat tables: rooms (who may read/write; guests write only where guest_writable
 //              is set; an unlisted room — a call's chat — shows only where a panel names it;
-//              a closed room is read-only for everyone), messages (author is an account or a guest; hidden by moderators),
+//              a closed room is read-only for everyone), messages (author is an account, a
+//              guest or the site itself, author_system; hidden by moderators),
 //              reports, sanctions (mute with an end, ban without) and guest names (unique while
 //              held; released by the retention job). A message is text, or a sticker / GIF
 //              from the media library (media/schema.js), optionally with a link preview
@@ -45,6 +46,8 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   author_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   author_guest   TEXT,
   author_name    TEXT    NOT NULL,
+  -- 1: the site itself wrote it (the weekly recap, recap/); no account or guest behind it.
+  author_system  INTEGER NOT NULL DEFAULT 0 CHECK (author_system IN (0, 1)),
   kind           TEXT    NOT NULL DEFAULT 'text' CHECK (kind IN ('text', 'sticker', 'gif')),
   body           TEXT    NOT NULL,
   media_item_id  INTEGER REFERENCES media_items(id) ON DELETE SET NULL,
@@ -160,6 +163,7 @@ const ADDED_COLUMNS = [
   ['chat_messages', 'media_item_id', 'INTEGER REFERENCES media_items(id) ON DELETE SET NULL'],
   ['chat_messages', 'preview_id', 'INTEGER REFERENCES link_previews(id) ON DELETE SET NULL'],
   ['chat_reports', 'reviewed_at', 'TEXT'],
+  ['chat_messages', 'author_system', 'INTEGER NOT NULL DEFAULT 0 CHECK (author_system IN (0, 1))'],
 ];
 
 export function migrateChat(db) {

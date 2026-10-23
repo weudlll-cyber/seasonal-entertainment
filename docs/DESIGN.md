@@ -158,17 +158,34 @@ taller. `client/e2e/layout.spec.js` checks this on every main page at 1440 x 900
 **From 760px wide** (the shell's one breakpoint): two columns.
 
 1. **Sidebar**, 248px (`--sidebar-width`), on the seasons' gradient: the emblem with the
-   "SEASONAL / ENTERTAINMENT" wordmark; nav items as pills with stroke icons (Home, Games, Events, Chat, Calls, Seasonal Tokens = the info
+   "SEASONAL / ENTERTAINMENT" wordmark; nav items as pills with stroke icons (Home, Start here
+   (2026-10-23, a flag), Games, Events, Chat, Calls, Seasonal Tokens = the info
    section; Calls only when calls are set up, admins always, with a red LIVE badge while a call
    is live, docs/CALLS.md); a
    divider and Admin for admins only (as before; `staffNavFor` in `navigation.js`); at the bottom
    the account card (initial, name, role, linking to /account) or, for guests, "Log in" and
-   "Register", with the theme toggle; then the legal links (Imprint, Privacy). The current item
+   "Register", with the theme toggle; then the legal links (Imprint, Privacy, and "Not
+   financial advice" to the Disclaimer, wrapping onto a line of its own; the phone menu shows
+   the same footer). The current item
    is the solid pill (`--color-solid`, bold, `aria-current="page"`). Games, Events, Chat and
    Calls end in a 10px dot in the colour of their quarter of the logo: Games Spring `#AFB84E`,
    Events Summer `#E06E22`, Chat Autumn `#F9A825`, Calls Winter `#04AAF7` (`dot` in
    `navigation.js`).
 2. **Main column**: the routed page.
+
+**Start here** (2026-10-23, `/start`, `StartPage.jsx`): five numbered steps for a newcomer, each a
+card with a sentence or two and a button to a page the site has — what Seasonal Tokens are, how
+they work, the risks (info pages), the prices and the fair price, then the chat and the next call
+(the live or next planned call, else the Calls page) — and the not-financial-advice notice under
+them. "Start here" is in the sidebar for everyone, below Home; guests also see "New here? Start
+here" on the greeting's line in the home banner (no extra height: home still fits 1280 x 720).
+
+**"Not financial advice"** (decided 2026-10-23): besides the footer link on every page, a
+one-line notice "Information only — not financial advice." with a link to the Disclaimer
+(`components/NotAdvice.jsx`, wording in `shared/disclaimer.js`; small and muted, `.not-advice`)
+sits where the site is most easily read as advice: above the fair price and the converter on
+the prices page, and inside the home fair-price box. That box's title link covers the whole box
+(`.home__fair-link`), so the box stays one click target while the notice keeps its own link.
 
 **Below 760px**: the sidebar becomes a top bar (logo, theme toggle, menu button). The menu opens
 the same navigation as a drawer from the left, over a scrim: closed by its close button, Escape,
@@ -213,7 +230,12 @@ the button's size (`--chat-launcher-size`, also used by `ChatDrawer.css`) plus a
 1. **Banner**: night blue (`--banner-background`) with the faint season pattern
    (`client/src/brand/seasonPattern.css`), the emblem, "SEASONAL" in the logo's gradient
    lettering, "ENTERTAINMENT" in white, and the greeting as the page's `h1` (with the username
-   when signed in). Its height follows the window (120–190px).
+   when signed in). Its height follows the window (120–190px). In its free space on the right,
+   the **season clock** (2026-10-23, `SeasonClock.jsx`, `shared/seasonClock.js`): the token in
+   season (the highest reward now; its icon on a white disc ringed in its season colour), "Next
+   halving: <token>, <date>" by the day only (`formatDate`, never a time), and the small line
+   "Calculated from the token contracts' halving schedule." On a phone the banner wraps and the
+   clock takes a line of its own.
 2. **Featured game** (the first game of the games data; a "Coming soon" badge only when its
    status says so) and **Up next** side by side. Up next (2026-10-21): the next two of the
    event bot's occurrences and the site's live and planned calls together, by start time

@@ -3,14 +3,16 @@
 // Path:        server/src/calls/recordings.js
 // Project:     Seasonal Entertainment
 // Description: Data access for call recordings (docs/CALLS.md, "Recording"): the running one of
-//              a call (at most one), starting and stopping its row, a call's recordings with
-//              their length, one recording, and deleting one (the file goes with it). Nothing
+//              a call (at most one), starting and stopping its row, a call's recordings and
+//              every recording (the archive), with their length and chapters, one recording,
+//              and deleting one (the file goes with it). Nothing
 //              is deleted automatically. The length is the file's own (mp4Duration.js), read
 //              once the file is complete and then kept; never computed from the start and stop
 //              times, which include the egress's start-up. Unknown: null (no length shown).
 // ============================================================
 
 import path from 'node:path';
+import { chaptersOf } from './chapters.js';
 import { mp4Duration } from './mp4Duration.js';
 
 const now = () => new Date().toISOString();
@@ -49,24 +51,54 @@ export function markRecordingStopped(db, id) {
   );
 }
 
-// A call's finished recordings, newest first, with the length of their file in seconds (null
-// while unknown). dir: the recordings folder.
+// A finished recording's length in seconds: the stored one, else read from its file once and
+// kept; null while unknown. recording: { id, file, seconds }; dir: the recordings folder.
+export function recordingLength(db, recording, dir) {
+  if (recording.seconds !== null) return recording.seconds;
+  const seconds = mp4Duration(path.join(dir, recording.file));
+  if (seconds !== null) {
+    db.prepare('UPDATE call_recordings SET seconds = ? WHERE id = ?').run(seconds, recording.id);
+  }
+  return seconds;
+}
+
+// Finished recordings as listed: with their length and their chapters.
+function asListed(db, rows, dir) {
+  const chapters = chaptersOf(
+    db,
+    rows.map((r) => r.id)
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    startedAt: r.startedAt,
+    seconds: recordingLength(db, r, dir),
+    chapters: chapters.get(r.id),
+  }));
+}
+
+// A call's finished recordings, newest first.
 export function listRecordings(db, callId, dir) {
-  const store = db.prepare('UPDATE call_recordings SET seconds = ? WHERE id = ?');
-  return db
+  const rows = db
     .prepare(
       `SELECT ${COLUMNS} FROM call_recordings
        WHERE call_id = ? AND stopped_at IS NOT NULL ORDER BY id DESC`
     )
-    .all(callId)
-    .map((r) => {
-      let { seconds } = r;
-      if (seconds === null) {
-        seconds = mp4Duration(path.join(dir, r.file));
-        if (seconds !== null) store.run(seconds, r.id);
-      }
-      return { id: r.id, startedAt: r.startedAt, seconds };
-    });
+    .all(callId);
+  return asListed(db, rows, dir);
+}
+
+// Every finished recording, newest first, with its call's id and title (the archive,
+// /calls/recordings; calls, and so their recordings, are shown to everyone).
+export function listAllRecordings(db, dir) {
+  const rows = db
+    .prepare(
+      `SELECT r.id, r.call_id AS callId, r.file, r.started_at AS startedAt, r.seconds, c.title
+       FROM call_recordings r JOIN calls c ON c.id = r.call_id
+       WHERE r.stopped_at IS NOT NULL ORDER BY r.started_at DESC, r.id DESC`
+    )
+    .all();
+  const listed = asListed(db, rows, dir);
+  return rows.map((r, i) => ({ ...listed[i], callId: r.callId, title: r.title }));
 }
 
 export function findRecording(db, callId, id) {

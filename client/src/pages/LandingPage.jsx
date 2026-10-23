@@ -3,10 +3,12 @@
 // Path:        client/src/pages/LandingPage.jsx
 // Project:     Seasonal Entertainment
 // Description: Home in the SE style (docs/DESIGN.md, "Home"): the night-blue banner with the
-//              emblem, the lettering and the greeting (with the username when signed in), then
+//              emblem, the lettering and the greeting (with the username when signed in; for
+//              guests "New here? Start here" beside it) and the season clock (SeasonClock.jsx),
+//              then
 //              a grid that fits the main column at 1280 x 720 without scrolling: the featured
 //              game and "Up next": the next two of the event bot's occurrences (/api/bot-events)
-//              and the site's live and planned calls (callEntries.js) in time order (a call
+//              and the site's live and planned calls (shared/callEntries.js) in time order (a call
 //              linked to a listed bot event rides on it: "Listen on this site"), the four
 //              season price tiles (/api/prices, docs/BOTS.md), then Community (live:
 //              CommunityCard.jsx), the next call (only when one is live or planned:
@@ -16,15 +18,17 @@
 // ============================================================
 
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { api } from '../api/http.js';
 import { deviceZone } from '../app/dates.js';
-import { withCalls } from '../calls/callEntries.js';
+import { withCalls } from '@seasonal-entertainment/shared/callEntries.js';
 import { useCalls } from '../calls/useCalls.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { EMBLEM } from '../brand/brand.js';
 import CommunityCard from './CommunityCard.jsx';
 import { FairPriceCard, FeaturedGameCard, PriceTiles, UpNextCard } from './homeCards.jsx';
 import NextCallCard from './NextCallCard.jsx';
+import SeasonClock from './SeasonClock.jsx';
 import '../brand/seasonPattern.css';
 import './LandingPage.css';
 import './homeBottomRow.css';
@@ -96,10 +100,24 @@ export default function LandingPage({ timeZone = deviceZone() }) {
           <span className="home__lettering-sub" aria-hidden="true">
             ENTERTAINMENT
           </span>
-          <h1 className="home__greeting">
-            {user ? `Welcome back, ${user.username}` : 'Welcome to Seasonal Entertainment'}
-          </h1>
+          {/* On the greeting's line: for guests only. It holds its place from the start and is
+              shown once the session says "guest" (null; undefined while it loads), so nothing
+              moves when the session answers (speed.spec.js); for members it stays hidden,
+              out of reach of focus and screen readers. */}
+          <div className="home__greeting-row">
+            <h1 className="home__greeting">
+              {user ? `Welcome back, ${user.username}` : 'Welcome to Seasonal Entertainment'}
+            </h1>
+            <Link
+              className="home__start"
+              to="/start"
+              style={{ visibility: user === null ? 'visible' : 'hidden' }}
+            >
+              New here? Start here
+            </Link>
+          </div>
         </div>
+        <SeasonClock timeZone={timeZone} />
       </div>
       <div className="home__grid">
         <FeaturedGameCard game={game} />

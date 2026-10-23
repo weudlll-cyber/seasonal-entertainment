@@ -6,8 +6,8 @@
 //              real data: the featured game (the first game of the games list), "Up next" (the
 //              event bot's occurrences and the site's calls, merged by LandingPage.jsx; a call
 //              with the calls quarter, linking to its page), the four season price tiles (price
-//              bot, docs/BOTS.md) and
-//              the link to the fair prices and charts; the faint logo part (Wash) the boxes
+//              bot, docs/BOTS.md) and the link to the fair prices and charts (with the notice
+//              "Information only — not financial advice."); the faint logo part (Wash) the boxes
 //              share. Community and Next call have files of their own (CommunityCard.jsx,
 //              NextCallCard.jsx). Each box but the tiles carries a faint part of the logo.
 // ============================================================
@@ -16,6 +16,7 @@ import { Link } from 'react-router';
 import { GAME_STATUS_LABELS } from '@seasonal-entertainment/shared/gameRules.js';
 import { formatWhen } from '../app/dates.js';
 import { EMBLEM, QUARTERS, SEASON_ICONS } from '../brand/brand.js';
+import NotAdvice from '../components/NotAdvice.jsx';
 import { formatChange, formatUsd, TOKENS } from '../prices/priceFormat.js';
 import './priceTiles.css';
 
@@ -186,18 +187,21 @@ export function FairPriceCard({ prices }) {
       </section>
     );
   }
+  // The title's link covers the whole box (home__fair-link), so the box is clickable as one;
+  // the notice's Disclaimer link sits above it and stays a link of its own.
   return (
-    <Link className="card home__card home__fair" to="/info/prices">
+    <section className="card home__card home__fair" aria-label="Prices">
       <Wash src={EMBLEM} />
       {icons}
       <span className="home__fair-text">
-        <strong className="home__fair-title">
+        <Link className="home__fair-title home__fair-link" to="/info/prices">
           {/* A non-breaking space keeps the arrow beside the title's last word. */}
           Fair price &amp; charts&nbsp;
           <span aria-hidden="true">→</span>
-        </strong>
+        </Link>
         <span className="home__text">Fair prices, charts and a converter for every coin.</span>
+        <NotAdvice className="home__fair-notice" />
       </span>
-    </Link>
+    </section>
   );
 }

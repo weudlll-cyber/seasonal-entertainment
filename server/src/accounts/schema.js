@@ -21,8 +21,9 @@ import { addMissingColumns } from '../db/addColumns.js';
 // show_online:     whether others see this member as online (the chat; default on).
 // dm_link_previews: whether this member's browser asks for link previews while writing a
 //                  direct message (docs/CHAT.md; default on, decided 2026-10-22).
-// notify_mentions, notify_direct: the browser notifications this member turned on (a mention,
-//                  a new direct message; docs/CHAT.md, "Notifications"; off by default).
+// notify_mentions, notify_direct, notify_recap: the browser notifications this member turned
+//                  on (a mention, a new direct message, the weekly recap is out; docs/CHAT.md,
+//                  "Notifications"; off by default).
 export const ACCOUNTS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
   id              INTEGER PRIMARY KEY,
@@ -39,6 +40,7 @@ CREATE TABLE IF NOT EXISTS users (
   dm_link_previews INTEGER NOT NULL DEFAULT 1 CHECK (dm_link_previews IN (0, 1)),
   notify_mentions INTEGER NOT NULL DEFAULT 0 CHECK (notify_mentions IN (0, 1)),
   notify_direct   INTEGER NOT NULL DEFAULT 0 CHECK (notify_direct IN (0, 1)),
+  notify_recap    INTEGER NOT NULL DEFAULT 0 CHECK (notify_recap IN (0, 1)),
   created_at      TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 `;
@@ -53,4 +55,5 @@ export const migrateAccounts = (db) =>
     ['users', 'dm_link_previews', 'INTEGER NOT NULL DEFAULT 1 CHECK (dm_link_previews IN (0, 1))'],
     ['users', 'notify_mentions', 'INTEGER NOT NULL DEFAULT 0 CHECK (notify_mentions IN (0, 1))'],
     ['users', 'notify_direct', 'INTEGER NOT NULL DEFAULT 0 CHECK (notify_direct IN (0, 1))'],
+    ['users', 'notify_recap', 'INTEGER NOT NULL DEFAULT 0 CHECK (notify_recap IN (0, 1))'],
   ]);

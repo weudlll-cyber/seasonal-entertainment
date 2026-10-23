@@ -5,11 +5,11 @@
 // Description: Guards the viewer's local week and times: weeks start on the local Monday, the
 //              week of Europe's daylight-saving change (25 October 2026) is 169 hours long, and
 //              one UTC instant shows the right local time and zone on either side of the change
-//              and in a zone behind UTC.
+//              and in a zone behind UTC; the site's date format, with a time and by the day only.
 // ============================================================
 
 import { describe, expect, it } from 'vitest';
-import { formatDateTime, formatDay, formatLocal, startOfWeek } from './localWeek.js';
+import { formatDate, formatDateTime, formatDay, formatLocal, startOfWeek } from './localWeek.js';
 
 const BERLIN = 'Europe/Berlin';
 const at = (iso) => Date.parse(iso);
@@ -59,5 +59,15 @@ describe("formatDateTime: the site's one date format", () => {
     expect(formatDateTime('2025-12-31T23:30:00Z', 'Europe/Berlin', NOW)).toMatch(
       /^Thursday 1 January, 00:30/
     );
+  });
+});
+
+describe('formatDate: the same date by the day only', () => {
+  it('has no time, and the year only outside the current one', () => {
+    const NOW = Date.parse('2026-10-23T12:00:00Z');
+    expect(formatDate('2026-12-05T10:30:47Z', 'Europe/Vienna', NOW)).toBe('Saturday 5 December');
+    expect(formatDate('2027-03-06T10:00:00Z', 'Europe/Vienna', NOW)).toBe('Saturday 6 March 2027');
+    // The day where the viewer is: late on the 5th in UTC is the 6th in Tokyo.
+    expect(formatDate('2026-12-05T20:00:00Z', 'Asia/Tokyo', NOW)).toBe('Sunday 6 December');
   });
 });

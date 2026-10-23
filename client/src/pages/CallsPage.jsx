@@ -8,10 +8,12 @@
 //              SE style: the Calls header with the play-button quarter; an empty list shows a
 //              friendly card instead (never a bare "None."). Planned calls offer "Add to
 //              calendar" and, to members, "Remind me on this site" (CallActions.jsx). Organisers
-//              link a planned call to an event bot occurrence (docs/CALLS.md).
+//              link a planned call to an event bot occurrence (docs/CALLS.md). "All recordings"
+//              leads to the archive (/calls/recordings).
 // ============================================================
 
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { api } from '../api/http.js';
 import CallCard from '../calls/CallCard.jsx';
 import CallForm from '../calls/CallForm.jsx';
@@ -106,6 +108,9 @@ export default function CallsPage() {
   return (
     <section className="page page--wide">
       <PageHeader quarter="calls" title="Calls" lead={LEAD} />
+      <p>
+        <Link to="/calls/recordings">All recordings</Link>
+      </p>
       <FormMessage error={error} />
       {data &&
         SECTIONS.map(([key, title]) => (

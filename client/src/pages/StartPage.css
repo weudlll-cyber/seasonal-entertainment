@@ -1,0 +1,41 @@
+/* ============================================================
+   File:        StartPage.css
+   Path:        client/src/pages/StartPage.css
+   Project:     Seasonal Entertainment
+   Description: The Start here page (StartPage.jsx): five numbered steps, each a card with its
+                title, a sentence or two and its buttons; the notice below them.
+   ============================================================ */
+
+.start__steps {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+/* The list is an ordered one for screen readers; the number shows before each title. */
+.start__step {
+  counter-increment: step;
+}
+
+.start__step h2 {
+  margin: 0 0 var(--space-1);
+  font-size: 1.25rem;
+}
+
+.start__step h2::before {
+  content: counter(step) '. ';
+  color: var(--color-text-muted);
+}
+
+.start__step p {
+  margin: 0 0 var(--space-1);
+}
+
+.start__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}

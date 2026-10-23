@@ -1,0 +1,40 @@
+/* ============================================================
+   File:        recordings.css
+   Path:        client/src/calls/recordings.css
+   Project:     Seasonal Entertainment
+   Description: Recordings in a list (RecordingItem.jsx: a call's page and the archive): one
+                under the other, each player at most the column's width, its chapters below.
+   ============================================================ */
+
+.recording-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recording p,
+.recording__title {
+  margin: 0 0 var(--space-1);
+}
+
+.recording video {
+  display: block;
+  width: min(100%, 640px);
+  border-radius: var(--radius);
+  background: #000;
+}
+
+/* The chapters under the player: time and title, the editing actions beside them. */
+.recording-chapters {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+  margin: var(--space-1) 0;
+}
+
+.recording-chapters ol {
+  margin: 0;
+  padding-left: var(--space-3);
+}

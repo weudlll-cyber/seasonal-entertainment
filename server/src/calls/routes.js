@@ -57,8 +57,9 @@ export const shown = (call, chat) => {
   return { ...rest, chatRoom: chatRoomId ? (chat.rooms.find(chatRoomId)?.slug ?? null) : null };
 };
 
-// Organisers and admins with 2FA in order (the gate's mark), as allow('organiser') decides.
-const canManage = (req) =>
+// Organisers and admins with 2FA in order (the gate's mark), as allow('organiser') decides;
+// also the recordings archive's (recordingRoutes.js).
+export const canManage = (req) =>
   Boolean(req.user) && roleAtLeast(req.user.role, 'organiser') && !req.staffRefusal;
 
 // service: the call service (service.js) or null when not configured; chat: mountChat's handle;

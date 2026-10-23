@@ -5,7 +5,8 @@
 // Description: The viewer's local week and times: the local Monday 00:00 a week starts at
 //              (daylight-saving weeks are 167 or 169 hours long) and the labels for a day and a
 //              time in a time zone; formatDateTime is the one way the site writes a date and
-//              time (docs/DESIGN.md, "Dates"). Used for the event bot's occurrences
+//              time (docs/DESIGN.md, "Dates"), formatDate the same date where only the day is
+//              meant. Used for the event bot's occurrences
 //              (docs/BOTS.md), calls, prices and the admin lists. Pure functions; the time zone
 //              (and "now", for the year) are parameters so tests can pin them.
 // ============================================================
@@ -93,8 +94,13 @@ const yearOf = (instant, timeZone) =>
 // CEST" in the zone, English, 24-hour; the year only when it is not the current one there
 // ("Friday 31 December 2027, 23:00 CET").
 export function formatDateTime(instant, timeZone, now = Date.now()) {
-  const year = yearOf(instant, timeZone);
-  const day = formatDay(instant, timeZone) + (year === yearOf(now, timeZone) ? '' : ` ${year}`);
   const local = formatLocal(instant, timeZone);
-  return `${day}, ${local.time}${NBSP}${local.zone}`;
+  return `${formatDate(instant, timeZone, now)}, ${local.time}${NBSP}${local.zone}`;
+}
+
+// The same date without the time, where only the day is meant (the season clock's halvings):
+// "Saturday 5 December", the year only when it is not the current one there.
+export function formatDate(instant, timeZone, now = Date.now()) {
+  const year = yearOf(instant, timeZone);
+  return formatDay(instant, timeZone) + (year === yearOf(now, timeZone) ? '' : ` ${year}`);
 }

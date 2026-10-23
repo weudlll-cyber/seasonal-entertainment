@@ -92,7 +92,7 @@ Generate a production pair on the call server with
   here", "No calls yet"), never a bare "None.".
 - **In the event lists** (2026-10-21): the home page's "Up next" and `/events` show the site's
   live and planned calls among the event bot's occurrences, by start time
-  (`client/src/calls/callEntries.js`). Both read the Calls page's own `GET /api/calls` answer
+  (`shared/callEntries.js`). Both read the Calls page's own `GET /api/calls` answer
   (`client/src/calls/useCalls.js`, also behind the home's Next call box), so a viewer sees
   exactly the calls the Calls page shows them; ended calls are not listed. A call entry has the
   title linking to `/calls/<id>`, its date in the site's format (docs/DESIGN.md, "Dates") or
@@ -118,7 +118,7 @@ Generate a production pair on the call server with
   - **Shown**: in "Up next" and on `/events`, the linked occurrence offers "Listen on this
     site" (to the call's page), and the call is not listed a second time; while the call is
     live, the event shows "Live now". The match is by the occurrence's id **and** start
-    (`withCalls` in `client/src/calls/callEntries.js`), from the Calls page's own answer, so a
+    (`withCalls` in `shared/callEntries.js`), from the Calls page's own answer, so a
     viewer sees the link only for the live and planned calls the Calls page shows them. The
     call's page names the event ("Event: <name>"; `GET /api/calls/:id` answers `event`).
   - **The bot changes its mind**: if the occurrence disappears or moves, the call keeps its own
@@ -384,14 +384,29 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
   - **Deleting**: organisers and admins delete a recording, file and row
     (`DELETE /api/calls/:id/recordings/:rid`, audited `call.recording_delete`). Nothing is
     deleted automatically.
+  - **Chapters** (2026-10-23): marks under the player, each a time and a title; a click seeks
+    the player there (`RecordingChapters.jsx`). Organisers and admins add, change and delete
+    them (`POST`, `PUT`, `DELETE /api/calls/:id/recordings/:rid/chapters[/:cid]`, audited
+    `call.chapter_add|edit|delete`; `chapterRoutes.js`): the time as m:ss or h:mm:ss within
+    the recording (its length read from the file if nobody has listed it yet), a title of at
+    most 80 characters (`shared/chapterRules.js`, the same check in the form and on the
+    server). Stored on this site (`call_recording_chapters`), gone with their recording.
+- **The archive** (2026-10-23): `/calls/recordings` (`RecordingsPage.jsx`), linked from the
+  Calls page ("All recordings") and the weekly recap: every finished recording for the calls'
+  audience (everyone), newest first, each with its call's title (a link to the call), date,
+  length, player and chapters, and a search over the call titles
+  (`GET /api/calls/recordings`, mounted before the call routes, whose `/:id` would take it).
+  The call page and the archive show a recording the same way (`RecordingItem.jsx`,
+  `recordings.css`).
 - **Tested for real on the owner's PC** (2026-10-22): LiveKit v1.13.10 with egress v1.15.0 and
   Redis in Docker. A browser with a fake camera and microphone was recorded through the
   site's own service code: a playable MP4, 1280 x 720, 15 frames a second, H.264 Main at about
   530 kbit/s, AAC 64 kbit/s. An empty room does not record: the egress aborts with "Start
   signal not received".
 - Tests: `server/test/callRecording.test.js` (with the stand-in call service, which writes a
-  file when a recording stops), `server/test/callsConfig.test.js`,
-  `client/src/calls/callRecording.test.jsx`.
+  file when a recording stops), `server/test/recordingArchive.test.js`,
+  `server/test/callsConfig.test.js`, `shared/chapterRules.test.js`,
+  `client/src/calls/callRecording.test.jsx`, `client/src/calls/recordingsArchive.test.jsx`.
 
 ## The call service (`deploy/calls/`)
 

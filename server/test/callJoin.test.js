@@ -49,7 +49,9 @@ describe('join tokens', () => {
     expect(claims.sub).toBe(joined.identity);
     expect(claims.name).toBe('mia');
     expect(claims.attributes).toEqual({ kind: 'member', hand: '0', handAt: '' });
-    expect(claims.exp - claims.nbf).toBe(600);
+    // Ten minutes. The token library reads the clock twice (exp from one reading, nbf from the
+    // next), so when a second ticks over between them the difference is 599.
+    expect([599, 600]).toContain(claims.exp - claims.nbf);
     // The same member keeps one identity for the call.
     expect((await join(mia.agent, service, call)).identity).toBe(joined.identity);
   });

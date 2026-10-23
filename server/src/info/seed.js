@@ -5,7 +5,8 @@
 // Description: First-start content: when the info_pages table is empty, inserts the pages
 //              from server/src/info/seed/<slug>.md (first line "# Title", the rest is the
 //              Markdown body) in SEED_ORDER. The ten content pages are published (checked
-//              against the official sources, decided 2026-10-22); Imprint and Privacy
+//              against the official sources, decided 2026-10-22), and so is the Disclaimer
+//              (linked as "Not financial advice" from every page, 2026-10-23); Imprint and Privacy
 //              (SEED_DRAFTS) stay drafts until the owner's details and a legal review are in.
 //              Never runs again once pages exist, so later edits, renames and reorders are
 //              never undone.
@@ -24,6 +25,7 @@ export const SEED_ORDER = [
   'official-channels',
   'risks',
   'faq',
+  'disclaimer',
   'imprint',
   'privacy',
 ];

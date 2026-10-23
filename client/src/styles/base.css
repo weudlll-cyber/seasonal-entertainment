@@ -151,6 +151,14 @@ a {
   line-height: 2;
 }
 
+/* "Information only — not financial advice." with its Disclaimer link (NotAdvice.jsx): small
+   and muted, so it is always there without competing with the content it belongs to. */
+.not-advice {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
 /* Rendered Markdown (info pages, previews), on a card. */
 .markdown {
   overflow-wrap: anywhere;

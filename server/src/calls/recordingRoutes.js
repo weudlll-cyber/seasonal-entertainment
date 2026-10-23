@@ -9,7 +9,8 @@
 //              call stops it (endCall.js). The recordings of a call are listed, and played
 //              (with range requests, so a player can seek), for the same audience as the call
 //              itself; organisers and admins delete one (file and row). Nothing is deleted
-//              automatically.
+//              automatically. The archive lists every finished recording with its call and
+//              chapters (GET /api/calls/recordings); the chapter routes are chapterRoutes.js.
 // ============================================================
 
 import { randomBytes } from 'node:crypto';
@@ -25,10 +26,12 @@ import {
   addRecording,
   deleteRecordingRow,
   findRecording,
+  listAllRecordings,
   listRecordings,
   markRecordingStopped,
 } from './recordings.js';
 import { publishRoomState } from './roomState.js';
+import { canManage } from './routes.js';
 
 // Stops the call's running recording, if any: the egress, then its row, then the room says so.
 // Used by the stop route and by endCall.js (where the room is closed right after).
@@ -39,22 +42,42 @@ export async function stopCallRecording(db, service, call) {
   return markRecordingStopped(db, running.id);
 }
 
-export function callRecordingRoutes(db, config, service) {
-  const router = express.Router();
+// The checks the recording routes share (here and chapterRoutes.js): recording set up
+// (enabled), an organiser's action on a call (manage), one finished recording of the call
+// (loadRecording, :rid) and the audit entry (after: what changed, the call's title by default).
+export function recordingSteps(db, config, service) {
   const steps = callSteps(db, config, service);
   const recording = config.calls?.recording ?? null;
-  // The egress writes into it: it must exist before the first recording.
-  if (recording) mkdirSync(recording.dir, { recursive: true });
   const enabled = (_req, res, next) =>
     recording ? next() : sendError(res, 404, 'recording_off', 'Recording is not set up.');
-  const audit = (req, action, call) =>
-    recordAudit(db, req.user, {
-      action,
-      targetType: 'call',
-      targetId: call.id,
-      after: { title: call.title },
-    });
+  const audit = (req, action, call, after = { title: call.title }) =>
+    recordAudit(db, req.user, { action, targetType: 'call', targetId: call.id, after });
   const manage = [allow('organiser'), steps.configured, enabled, steps.loadCall, steps.perUser];
+  const loadRecording = (req, res, next) => {
+    const found = findRecording(db, req.call.id, Number.parseInt(req.params.rid, 10));
+    if (!found?.stoppedAt) return sendError(res, 404, 'not_found', 'No such recording.');
+    req.recording = found;
+    next();
+  };
+  return { steps, recording, enabled, audit, manage, loadRecording };
+}
+
+export function callRecordingRoutes(db, config, service) {
+  const router = express.Router();
+  const { steps, recording, enabled, audit, manage, loadRecording } = recordingSteps(
+    db,
+    config,
+    service
+  );
+  // The egress writes into it: it must exist before the first recording.
+  if (recording) mkdirSync(recording.dir, { recursive: true });
+
+  // The archive (/calls/recordings): every finished recording, with its call; the same
+  // audience as the calls (everyone). canManage: the chapters can be edited.
+  router.get('/recordings', allow('public'), steps.configured, (req, res) => {
+    const list = recording ? listAllRecordings(db, recording.dir) : [];
+    res.json({ ok: true, canManage: canManage(req), recordings: list });
+  });
 
   router.post('/:id/recording/start', ...manage, steps.live, async (req, res) => {
     if (activeRecording(db, req.call.id)) {
@@ -82,13 +105,6 @@ export function callRecordingRoutes(db, config, service) {
     const list = recording ? listRecordings(db, req.call.id, recording.dir) : [];
     res.json({ ok: true, recordings: list });
   });
-
-  const loadRecording = (req, res, next) => {
-    const found = findRecording(db, req.call.id, Number.parseInt(req.params.rid, 10));
-    if (!found?.stoppedAt) return sendError(res, 404, 'not_found', 'No such recording.');
-    req.recording = found;
-    next();
-  };
 
   router.get(
     '/:id/recordings/:rid/video',

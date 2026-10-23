@@ -11,7 +11,7 @@
 import { api } from '../api/http.js';
 import { askPermission } from './systemNotify.js';
 
-// settings: { notifyMentions?, notifyDirect? }; refresh: the session's.
+// settings: { notifyMentions?, notifyDirect?, notifyRecap? }; refresh: the session's.
 export async function saveNotificationSwitches(settings, refresh) {
   await api('/auth/notifications', { method: 'PUT', body: settings });
   await refresh();
