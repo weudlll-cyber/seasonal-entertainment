@@ -273,9 +273,10 @@ The password-hashing worker needs **no CSP change**: it is a same-origin module 
 Every state-changing API request (`POST`, `PUT`, `PATCH`, `DELETE`) must carry an `Origin` (or
 `Referer`) equal to the site's own origin (`PUBLIC_ORIGIN`, or derived from the `Host` header)
 _(race game)_. Strict by default (`CSRF_STRICT=true`): a request with neither header is refused —
-stricter than the race game, which is strict only in production. Together with `SameSite=Lax`
-cookies this blocks cross-site form posts and fetches. The chat WebSocket upgrade uses the same
-rule (`selfOrigin()` in `server/src/http/csrf.js`): the full origin, scheme included, must match.
+stricter than the race game, which is strict only in production. Production refuses to start with
+`CSRF_STRICT=false` (decided 2026-10-23). Together with `SameSite=Lax` cookies this blocks
+cross-site form posts and fetches. The chat WebSocket upgrade uses the same rule (`selfOrigin()` in
+`server/src/http/csrf.js`): the full origin, scheme included, must match.
 
 ## Rate limits
 

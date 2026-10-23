@@ -2,11 +2,11 @@
 // File:        productionConfig.test.js
 // Path:        server/test/productionConfig.test.js
 // Project:     Seasonal Entertainment
-// Description: Production refuses development defaults (short session secret or bootstrap
-//              token, http origin, insecure cookies) and starts with a proper set; behind the
-//              reverse proxy (Caddy, TRUST_PROXY=1) the session cookie is the Secure __Host-
-//              one only for requests the proxy marks as HTTPS, and each visitor's own address
-//              (X-Forwarded-For) is what the per-IP limits count.
+// Description: Production refuses development defaults (short session secret or bootstrap token,
+//              http origin, insecure cookies, a loose CSRF check) and starts with a proper set;
+//              behind the reverse proxy (Caddy, TRUST_PROXY=1) the session cookie is the Secure
+//              __Host- one only for requests the proxy marks as HTTPS, and each visitor's own
+//              address (X-Forwarded-For) is what the per-IP limits count.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -33,6 +33,7 @@ describe('production start', () => {
     ['a short session secret', { SESSION_SECRET: 'change-me' }, /SESSION_SECRET/],
     ['an http origin', { PUBLIC_ORIGIN: 'http://se.example' }, /https/],
     ['insecure cookies', { COOKIE_SECURE: 'false' }, /COOKIE_SECURE/],
+    ['a loose CSRF check', { CSRF_STRICT: 'false' }, /CSRF_STRICT/],
     ['a short bootstrap token', { BOOTSTRAP_TOKEN: 'abc' }, /BOOTSTRAP_TOKEN/],
   ])('refuses %s', (_name, change, message) => {
     expect(() => readConfig({ ...PROD, ...change })).toThrow(message);

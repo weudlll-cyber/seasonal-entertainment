@@ -2,10 +2,10 @@
 // File:        uploads.test.js
 // Path:        server/test/uploads.test.js
 // Project:     Seasonal Entertainment
-// Description: Guards chat file uploads: members only; the real type from the content, whatever
-//              the name says; per-file size and daily quota; images stored upright without
-//              metadata (EXIF with GPS gone), GIF animation kept, a thumbnail; at most 50 megapixels; generated names on
-//              disk; the original name only as cleaned display text.
+// Description: Guards chat file uploads: members only; the real type from the content, whatever the
+//              name says; per-file size and daily quota; images stored upright without metadata
+//              (EXIF with GPS gone), GIF animation kept, a thumbnail; at most 50 megapixels;
+//              generated names on disk; the original name only as cleaned display text.
 // ============================================================
 
 import { readdirSync } from 'node:fs';

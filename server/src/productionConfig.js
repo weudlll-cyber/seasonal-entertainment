@@ -36,6 +36,8 @@ export function checkProduction(env, config) {
   // The site is only ever served over HTTPS (Caddy); an http origin means a wrong setup.
   if (origin.protocol !== 'https:') fail('PUBLIC_ORIGIN must use https:// in production');
   if (!config.cookieSecure) fail('COOKIE_SECURE=false is not allowed in production');
+  // Without it a state change with neither Origin nor Referer would pass (decided 2026-10-23).
+  if (!config.csrfStrict) fail('CSRF_STRICT=false is not allowed in production');
   if (config.sessionSecret.length < SECRET_MIN) {
     fail(`SESSION_SECRET must be at least ${SECRET_MIN} characters in production`);
   }
