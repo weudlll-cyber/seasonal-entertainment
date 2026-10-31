@@ -12,7 +12,8 @@
 #              A second job builds the production image (deploy/site/Dockerfile; never pushed)
 #              and checks the compose files and Caddyfiles, so the deployment files cannot rot;
 #              it also decrypts an encrypted backup with the real age tool and runs the PC-side
-#              PowerShell tests (deploy/pc/).
+#              PowerShell tests (deploy/pc/) and shellcheck over the installer
+#              (deploy/install.sh, deploy/install/).
 # ============================================================
 
 name: CI
@@ -119,9 +120,23 @@ jobs:
             -e ACME_EMAIL=ops@site.example -e CALLS_UPSTREAM=host.docker.internal:7880 \
             -v "$PWD/deploy/site/Caddyfile:/etc/caddy/Caddyfile:ro" \
             -v "$PWD/deploy/site/caddy:/etc/caddy/sites:ro" \
-            -v "$PWD/deploy/calls/Caddyfile:/etc/caddy/calls-own:ro" "$image" sh -c '
+            -v "$PWD/deploy/calls/Caddyfile:/etc/caddy/calls-own:ro" \
+            -v "$PWD/deploy/install/caddy:/etc/caddy/install-sites:ro" "$image" sh -c '
               caddy validate --config /etc/caddy/Caddyfile &&
               caddy validate --config /etc/caddy/calls-own --adapter caddyfile &&
-              for f in /etc/caddy/Caddyfile /etc/caddy/sites/calls.caddy /etc/caddy/calls-own; do
+              for f in /etc/caddy/Caddyfile /etc/caddy/sites/calls.caddy /etc/caddy/calls-own \
+                /etc/caddy/install-sites/www.caddy; do
                 caddy fmt "$f" | diff -q - "$f" || exit 1
               done'
+          # The installer's sites folder (the www redirect) in place of ./caddy.
+          docker run --rm -e SITE_DOMAIN=site.example -e ACME_EMAIL=ops@site.example \
+            -v "$PWD/deploy/site/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            -v "$PWD/deploy/install/caddy:/etc/caddy/sites:ro" "$image" \
+            caddy validate --config /etc/caddy/Caddyfile
+
+      # The installer and the scripts it runs (deploy/install.sh, docs/DEPLOYMENT.md).
+      - name: Installer scripts pass shellcheck
+        run: >-
+          docker run --rm -v "$PWD:/mnt" -w /mnt koalaman/shellcheck:v0.10.0 -x
+          deploy/install.sh deploy/install/lib/*.sh deploy/install/certbot-hook.sh
+          deploy/site/calls-cert.sh

@@ -8,10 +8,13 @@
 #              Security headers come from the app (helmet, server/src/http/securityHeaders.js)
 #              and pass through unchanged; Caddy adds none of its own. Its logs leave out the
 #              embed token's headers (X-Embed-Token, the WebSocket protocol header). Further site
-#              blocks (the calls domain) come from ./caddy/*.caddy.
+#              blocks (the calls domain, the www redirect) come from the folder mounted at
+#              /etc/caddy/sites (./caddy/, or the installer's CADDY_SITES_DIR). ACME_CA picks
+#              another certificate authority (a staging or test one); empty: Let's Encrypt.
 # ============================================================
 {
 	email {$ACME_EMAIL}
+	acme_ca {$ACME_CA:https://acme-v02.api.letsencrypt.org/directory}
 	# Caddy's own log, which also carries the request (with its headers) of a failed proxy
 	# request: the embed token is left out there too (as in the site's access log below).
 	log default {

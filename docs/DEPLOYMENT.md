@@ -6,6 +6,13 @@ the owner may change it). Written in SE-NIGHT-2 part 7. **Nothing has been deplo
 
 Everything marked **⚠ OWNER** needs a value or a decision from the owner before go-live.
 
+**The installer** (`sudo ./deploy/install.sh` from a checkout on the server; SE-INSTALL-1) does
+the steps below in one run: it asks for the domains and options or reads an answers file
+(`deploy/install/answers.example`), uses the site's own Caddy on an empty server or works beside
+an nginx already there, makes every secret on the server, starts the site and the call service,
+creates the first admin and sets up the backups. `--help` lists `--status`, `--uninstall` and
+`--rollback`.
+
 ## What runs where
 
 | On the site's VPS                          | What                                                                                                                         |
@@ -523,6 +530,7 @@ restart Docker once.
 | `deploy/site/docker-compose.yml`                                           | site + Caddy; volumes for the database and media, backups on the host                                                       |
 | `deploy/site/Caddyfile`, `caddy/calls.caddy`                               | HTTPS for both domains; wss to LiveKit                                                                                      |
 | `deploy/site/.env.example`                                                 | compose settings (domains, ACME email, commit)                                                                              |
+| `deploy/install.sh`, `deploy/install/`                                     | the one-command installer: `lib/` (its parts), `answers.example`, the certbot hook (nginx mode), the www redirect for Caddy |
 | `deploy/site/calls-cert.sh`                                                | Caddy's calls certificate → LiveKit's TURN                                                                                  |
 | `deploy/site/systemd/`                                                     | the backup and certificate timers                                                                                           |
 | `deploy/calls/`                                                            | the call service (docs/CALLS.md); `Caddyfile` for its own VPS                                                               |
@@ -533,4 +541,5 @@ restart Docker once.
 
 CI (`.github/workflows/ci.yml`, job "deployment files") builds the image (no push), starts it in
 production mode against `/api/health`, and validates both compose projects (the calls one also
-with the recording add-on) and all Caddyfiles on every pull request.
+with the recording add-on) and all Caddyfiles on every pull request, and runs shellcheck over the
+installer.

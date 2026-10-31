@@ -56,14 +56,17 @@ services:
       SITE_DOMAIN: ${SITE_DOMAIN:?set SITE_DOMAIN in deploy/site/.env}
       CALLS_DOMAIN: ${CALLS_DOMAIN:-}
       ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in deploy/site/.env}
+      # Let's Encrypt unless a staging or test ACME directory is set.
+      ACME_CA: ${ACME_CA:-https://acme-v02.api.letsencrypt.org/directory}
       # The call service's signalling port as seen from this container (host networking).
       CALLS_UPSTREAM: ${CALLS_UPSTREAM:-host.docker.internal:7880}
     extra_hosts:
       - host.docker.internal:host-gateway
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      # Extra site blocks; calls.caddy while the call service runs on this VPS.
-      - ./caddy:/etc/caddy/sites:ro
+      # Extra site blocks; calls.caddy while the call service runs on this VPS. The installer
+      # points CADDY_SITES_DIR at its own folder with only the blocks the answers need.
+      - ${CADDY_SITES_DIR:-./caddy}:/etc/caddy/sites:ro
       # Certificates and ACME account: must persist, or Let's Encrypt limits are hit.
       - caddy-data:/data
       - caddy-config:/config

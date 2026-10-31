@@ -496,6 +496,8 @@ scripts/
   backup.mjs, restore.mjs  nightly backup (encrypted with age) and restore
                            (server/src/backup/; DEPLOYMENT.md)
   bootstrap-admin.mjs      the first admin of a running production site
+deploy/install.sh          the one-command installer for a server (deploy/install/: its parts,
+                           answers.example, the certbot hook; docs/DEPLOYMENT.md)
 deploy/site/               the site for a server: Dockerfile, docker-compose.yml (site + Caddy),
                            Caddyfile, systemd timers (docs/DEPLOYMENT.md)
 deploy/pc/                 the owner's PC: fetches the encrypted backups (PowerShell, sftp)
