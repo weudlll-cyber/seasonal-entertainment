@@ -133,6 +133,19 @@ and server routes as the former row of links under each message (2026-10-18, SE-
 moderators also **Hide** and **Ban** (both ask first in the menu), **Mute 10 min / 1 h / 24 h**,
 **Remove file**, **Remove preview**.
 
+## Staff badges
+
+In a room (decided 2026-11-01), an admin's message shows the name in the admin colour with an
+**Admin** badge, an organiser's in the organiser colour with an **Organiser** badge, beside the
+existing **Guest** and **Site** badges (`client/src/chat/ChatMessage.jsx`). The colours are the
+ETH and POL coin tokens (`client/src/styles/tokens.css`, a light and a dark value each), far
+from the four season colours (`client/src/chat/ChatMessage.css`).
+
+- **The role is the server's**: every message carries `authorRole` (`'admin'`, `'organiser'` or
+  `null`), joined from the author's account as it is **now** (`server/src/chat/messages.js`). A
+  former organiser's old messages lose the badge; nothing a client sends can set it.
+- **Room messages only**: direct messages carry no role.
+
 ## Unread counters
 
 Members (never guests: no account to keep read state) see how many messages they have not read,
@@ -417,10 +430,15 @@ its newest 3 messages (name, short text, time), then "Open the chat".
   "general" may be read by everyone (`room` is then `"general"`, else `null` and no messages),
   never a hidden one, not even for moderators. Never another room, never direct messages. When
   the online count changes (a member connects or leaves, or shows or hides their status), the
-  hub pushes `{ type: 'online', count }` to the readers of "general".
+  hub pushes `{ type: 'online', count }` to the readers of "general", and the current count to
+  each socket as it subscribes there (`server/src/chat/hub.js`, `subscribe`). Without that, a
+  member's own page could stay at "0 online": its own connection counted only after the page's
+  GET was answered, and the push for it went out before that socket had subscribed (seen on the
+  live site, 2026-11-01).
 - **Client**: the module's **`useRoomGlimpse()`** (`index.js`): the glimpse, kept live on the one
   connection — a new message added (only while `room` is set), a hidden one makes it ask again,
-  a new count replaces the old. The box (`client/src/pages/CommunityCard.jsx`) shows text only:
+  a new count replaces the old. Once the connection has told a count, a later GET answer does not
+  replace it (that answer was counted earlier). The box (`client/src/pages/CommunityCard.jsx`) shows text only:
   an attachment as `[image]` (stickers, pictures), `[GIF]` or `[file]`.
 - **24-hour rule**: when the newest message is more than 24 hours old, the box shows only the
   count and "Open the chat".

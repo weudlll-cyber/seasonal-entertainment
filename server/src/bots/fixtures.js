@@ -6,7 +6,8 @@
 //              two bot databases with the bots' exact schemas (weudlll-cyber/Seasonal-tokens:
 //              stpricebot helpers/snapshots.py, stannouncebot db/schema.sql; only the tables
 //              the site reads) and clearly fake, seeded sample data. Prices: hourly snapshots of
-//              the four seasonal tokens with a seeded random walk, and fake mining rates
+//              the four seasonal tokens with a seeded random walk ending at fixed realistic
+//              prices and 24-hour changes (LATEST: the widest cases), and fake mining rates
 //              (buildMiningRates). Events: a few weekly events
 //              around `now`, past ones done, one moved by an override (two overrides, the later
 //              wins), one canceled this week, one inactive and one with a non-web link; three
@@ -21,6 +22,15 @@ import Database from 'better-sqlite3';
 import sharp from 'sharp';
 
 const BOT_TOKENS = ['spring', 'summer', 'autumn', 'winter'];
+// The latest price and 24-hour change per token: the real order of magnitude (fractions of a
+// US cent, down to four zeros after the point) and, to show the layout's widest cases, one
+// large price and falls as well as rises.
+const LATEST = {
+  spring: { price: 0.001804, change24h: -0.0421 },
+  summer: { price: 0.0002117, change24h: 0.0135 },
+  autumn: { price: 0.002117, change24h: -0.0083 },
+  winter: { price: 1234.5678, change24h: -0.1257 },
+};
 const HOUR_MS = 60 * 60_000;
 const DAY_MS = 24 * HOUR_MS;
 
@@ -57,14 +67,20 @@ export function buildPriceFixture(
   const insert = db.prepare('INSERT INTO snapshots (ts_ms, token, price) VALUES (?, ?, ?)');
   const last = Math.floor(now / HOUR_MS) * HOUR_MS;
   db.transaction(() => {
-    BOT_TOKENS.forEach((token, index) => {
-      // Around the tokens' real order of magnitude (a few tenths of a US cent), each its own walk.
-      let price = 0.0024 + index * 0.0003;
-      for (let h = hours - 1; h >= 0; h -= 1) {
-        price *= Math.exp((random() - 0.5) * 0.02); // ±1 % per hour at most
+    for (const token of BOT_TOKENS) {
+      const { price: latest, change24h } = LATEST[token];
+      // Walked backwards from the latest price, ±1 % per hour at most. The last day's steps are
+      // centred and given the day's trend, so the 24-hour change is exactly change24h.
+      const steps = Array.from({ length: hours }, () => (random() - 0.5) * 0.02);
+      const day = steps.slice(0, 24);
+      const centre = day.reduce((sum, step) => sum + step, 0) / day.length;
+      const trend = Math.log(1 + change24h) / day.length;
+      let price = latest;
+      steps.forEach((step, h) => {
         insert.run(last - h * HOUR_MS, token, Number(price.toPrecision(6)));
-      }
-    });
+        price /= Math.exp(h < 24 ? step - centre + trend : step);
+      });
+    }
   })();
   db.close();
 }

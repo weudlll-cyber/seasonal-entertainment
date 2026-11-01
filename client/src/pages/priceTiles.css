@@ -4,8 +4,8 @@
    Project:     Seasonal Entertainment
    Description: The four season price tiles of the home page (PriceTiles in homeCards.jsx;
                 docs/DESIGN.md, "Home"): one row across the grid, each in its solid token colour
-                with dark text, the season mark in a white circle at the bottom right; two by
-                two below 1000px.
+                with dark text, the season mark in a white circle at the bottom right in a column
+                of its own, the price sized to fit beside it; two by two below 1000px.
    ============================================================ */
 
 /* The four season tiles: one row, each in its token colour with dark text. */
@@ -25,6 +25,8 @@
 }
 
 .price-tile {
+  /* The price is sized to the tile's own width (cqi below), not the window's. */
+  container-type: inline-size;
   min-height: 0;
   border-radius: var(--radius-card);
   background: var(--tile);
@@ -48,44 +50,65 @@
 }
 
 .price-tile__body {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
+  /* The text column and the mark's column side by side: the price can never run under the
+     mark, however short or narrow the tile (a short window, large text settings). */
+  --pad-x: 1.375rem;
+  --mark: 62px;
+  --mark-gap: var(--space-1);
+  display: grid;
+  grid-template-areas:
+    'name mark'
+    'price mark'
+    'change mark';
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto 1fr;
+  column-gap: var(--mark-gap);
+  row-gap: 0.125rem;
   height: 100%;
-  padding: 1.125rem 1.375rem;
+  padding: 1.125rem var(--pad-x);
   border-radius: inherit;
   color: inherit;
   text-decoration: none;
 }
 
 .price-tile__name {
+  grid-area: name;
   font-size: 0.9375rem;
   font-weight: var(--font-weight-strong);
 }
 
 .price-tile__price {
-  font-size: clamp(1.25rem, 0.6rem + 1.3vw, 1.75rem);
+  grid-area: price;
+  /* As large as before, but never wider than the text column: the column's width (the tile's
+     less its padding, the mark and the gap) shared by the price's characters (--chars, set by
+     PriceTiles; a figure of this font is about 0.64em wide). */
+  font-size: min(
+    clamp(1.25rem, 0.6rem + 1.3vw, 1.75rem),
+    calc((100cqi - 2 * var(--pad-x) - var(--mark) - var(--mark-gap)) / (var(--chars) * 0.65))
+  );
   font-variant-numeric: tabular-nums;
   font-weight: var(--font-weight-heading);
   letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
 .price-tile__change {
+  grid-area: change;
   font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
   font-weight: var(--font-weight-strong);
 }
 
-/* The season mark: 48px in a white 62px circle, bottom right. */
+/* The season mark: 48px in a white 62px circle, bottom right, in its own column. The negative
+   margins keep it where it sat before (1rem from the right, 0.875rem from the bottom). */
 .price-tile__mark {
-  position: absolute;
-  right: 1rem;
-  bottom: 0.875rem;
   display: grid;
+  grid-area: mark;
+  align-self: end;
   place-items: center;
-  width: 62px;
-  height: 62px;
+  width: var(--mark);
+  height: var(--mark);
+  margin: 0 calc(1rem - var(--pad-x)) -0.25rem 0;
   border-radius: 50%;
   background: rgb(255 255 255 / 88%);
 }
@@ -98,22 +121,29 @@
 /* Two narrow tiles side by side: the mark moves up beside the name, smaller, so the price
    below has the tile's full width. */
 @media (max-width: 599.98px) {
+  .price-tile__body {
+    --mark: 40px;
+
+    grid-template-areas:
+      'name mark'
+      'price price'
+      'change change';
+  }
+
   .price-tile__name {
     display: flex;
     align-items: center;
     min-height: 40px;
   }
 
+  /* The price has the tile's full width here. */
   .price-tile__price {
-    font-size: 1.125rem;
+    font-size: min(1.125rem, calc((100cqi - 2 * var(--pad-x)) / (var(--chars) * 0.65)));
   }
 
   .price-tile__mark {
-    top: 0.875rem;
-    right: 0.875rem;
-    bottom: auto;
-    width: 40px;
-    height: 40px;
+    align-self: center;
+    margin: -0.25rem calc(0.875rem - var(--pad-x)) 0 0;
   }
 
   .price-tile__mark img {

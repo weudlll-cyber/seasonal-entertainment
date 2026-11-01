@@ -8,9 +8,9 @@
 //              call box, 3 messages) and with no call (no Next call box, the fair-price box
 //              wider), fits the window without scrolling, no box is cut and nothing in a box
 //              lies under the floating chat button (owner decision 2026-10-17, confirmed
-//              2026-10-21). At
-//              390 x 844 (phone): no window
-//              scroll, a top bar, and the navigation drawer opens and closes (close button,
+//              2026-10-21), no price runs under its season mark. Shorter windows (1200 x 650,
+//              1366 x 768, 1500 x 940; 2026-11-01): Home the same, and the admin's sidebar fits
+//              without a scrollbar. At 390 x 844 (phone): no window scroll, a top bar, and the navigation drawer opens and closes (close button,
 //              Escape, following a link), with focus going in and back. The chat button shows
 //              exactly on the pages that have no chat of their own (not /chat, not /admin); at
 //              phone width its drawer opens full width and closes.
@@ -54,11 +54,14 @@ const homeState = (page) =>
   page.evaluate(() => {
     const main = document.querySelector('main');
     const boxes = [...document.querySelectorAll('.home__grid > *')];
+    // What a visitor sees: not the faint logo part, nor an entry hidden because it does not
+    // fit whole (useWholeItems.js).
     const seen = (box) =>
       [...box.querySelectorAll('*')].filter(
         (el) =>
           !el.closest('.home__wash') &&
           getComputedStyle(el).position !== 'absolute' &&
+          getComputedStyle(el).visibility !== 'hidden' &&
           el.getClientRects().length > 0
       );
     const name = (box) => box.getAttribute('aria-label') ?? box.className;
@@ -74,22 +77,33 @@ const homeState = (page) =>
     };
     return {
       scrolls: main.scrollHeight > main.clientHeight,
-      // Cut: reaching past the box, or past any part inside it that clips (a list that hides
-      // its overflow would otherwise cut a message without the box noticing).
+      // Cut: reaching past the box's bottom or top, or past any part inside it that clips (a
+      // list that hides its overflow would otherwise cut a message without the box noticing).
       cut: boxes
         .filter((box) =>
           seen(box).some((el) => {
-            const bottom = el.getBoundingClientRect().bottom;
+            const { top, bottom } = el.getBoundingClientRect();
             for (let up = el.parentElement; up && up !== box.parentElement; up = up.parentElement) {
               // A title clamped after its lines hides the rest on purpose (ellipsis).
               if (getComputedStyle(up).webkitLineClamp !== 'none') return false;
               const clips = getComputedStyle(up).overflowY !== 'visible' || up === box;
-              if (clips && bottom > up.getBoundingClientRect().bottom + 1) return true;
+              const edge = up.getBoundingClientRect();
+              if (clips && (bottom > edge.bottom + 1 || top < edge.top - 1)) return true;
             }
             return false;
           })
         )
         .map(name),
+      // A price tile whose price runs under its season mark (its text, not its box).
+      underMark: [...document.querySelectorAll('.price-tile')]
+        .filter((tile) => {
+          const text = document.createRange();
+          text.selectNodeContents(tile.querySelector('.price-tile__price'));
+          const price = text.getBoundingClientRect();
+          const mark = tile.querySelector('.price-tile__mark').getBoundingClientRect();
+          return price.right > mark.left && price.bottom > mark.top && price.top < mark.bottom;
+        })
+        .map((tile) => tile.querySelector('.price-tile__name').textContent),
       underLauncher: boxes.flatMap((box) =>
         seen(box)
           .filter((el) => el.matches('a, button, p, h2, span, strong, li, img, time') && under(el))
@@ -100,8 +114,9 @@ const homeState = (page) =>
 
 // The fullest home, whatever other specs do meanwhile (they start their own calls): a planned
 // call with a 58-character title and the longest date (with the year), first in "Up next" and
-// in the Next call box with both of its buttons (as the run's admin), and 3 recent messages in
-// General — answered here, as prices.spec.js does. withCall false: no live or planned call.
+// in the Next call box with both of its buttons (as the run's admin), 3 recent messages in
+// General and the widest prices (the price bot is off in this run) — answered here, as
+// prices.spec.js does. withCall false: no live or planned call.
 const CALL = {
   id: 999,
   title: 'Seasonal Tokens community call: the four seasons explained',
@@ -109,7 +124,17 @@ const CALL = {
   description: '',
   scheduledFor: '2000-01-01T19:00:00.000Z',
 };
+// The widest prices the tiles show: down to four zeros after the point, and a large one.
+const PRICES = [
+  ['spring', 0.001804, -0.0421],
+  ['summer', 0.0002117, 0.0135],
+  ['autumn', 0.002117, -0.0083],
+  ['winter', 1234.5678, -0.1257],
+].map(([token, price, change24h]) => ({ token, price, change24h, at: 0, spark: [] }));
 async function fullestHome(page, withCall) {
+  await page.route('**/api/prices', (route) =>
+    route.fulfill({ json: { ok: true, connected: true, prices: PRICES } })
+  );
   await page.route('**/api/calls', (route) =>
     route.fulfill({
       json: {
@@ -144,6 +169,15 @@ async function fullestHome(page, withCall) {
     })
   );
 }
+
+const HOME_OK = { scrolls: false, cut: [], underMark: [], underLauncher: [] };
+
+// The sidebar's panel scrolls when its links do not fit its height.
+const sidebarScrolls = (page) =>
+  page.evaluate(() => {
+    const panel = document.querySelector('.sidebar__panel');
+    return panel.scrollHeight > panel.clientHeight;
+  });
 
 for (const [width, height] of DESKTOP) {
   test.describe(`${width} x ${height}`, () => {
@@ -180,7 +214,7 @@ for (const [width, height] of DESKTOP) {
       ).toBeVisible();
       await expect(page.getByText('See you at the community call!')).toBeVisible();
       await page.waitForLoadState('networkidle');
-      expect(await homeState(page)).toEqual({ scrolls: false, cut: [], underLauncher: [] });
+      expect(await homeState(page)).toEqual(HOME_OK);
     });
 
     test('Home without a call: no Next call box, still fits, nothing cut or under the button', async ({
@@ -192,7 +226,38 @@ for (const [width, height] of DESKTOP) {
       await expect(page.locator('.home__fair')).toBeVisible();
       await page.waitForLoadState('networkidle');
       await expect(page.getByRole('region', { name: 'Next call' })).toHaveCount(0);
-      expect(await homeState(page)).toEqual({ scrolls: false, cut: [], underLauncher: [] });
+      expect(await homeState(page)).toEqual(HOME_OK);
+    });
+  });
+}
+
+// Shorter and narrower windows seen on 2026-11-01 (a 1500 x 940 window at 125 % display
+// scaling leaves about 1200 x 650 for the page): Home has every box whole (no label cut at the
+// top, only whole "Up next" entries), no price under its mark, and the admin's sidebar fits
+// without scrolling. Below 1280 x 720 the fullest home may scroll its column instead (then
+// something can pass under the chat button while scrolling).
+const SHORT = [
+  [1200, 650],
+  [1366, 768],
+  [1500, 940],
+];
+for (const [width, height] of SHORT) {
+  test.describe(`${width} x ${height} (home)`, () => {
+    test.use({ viewport: { width, height } });
+
+    test('Home: no box cut, no price under its mark, the sidebar without a scrollbar', async ({
+      page,
+    }) => {
+      await fullestHome(page, true);
+      await page.goto('/');
+      await expect(page.getByText('See you at the community call!')).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      const { cut, underMark, ...rest } = await homeState(page);
+      expect({ cut, underMark }).toEqual({ cut: [], underMark: [] });
+      if (width >= 1280 && height >= 720) {
+        expect(rest).toEqual({ scrolls: false, underLauncher: [] });
+      }
+      expect(await sidebarScrolls(page)).toBe(false);
     });
   });
 }

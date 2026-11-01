@@ -236,6 +236,30 @@ With all four, the top row gets a little more of the height than the bottom one 
 The bottom-right box (Fair price) keeps its content left of the chat button: its right padding is
 the button's size (`--chat-launcher-size`, also used by `ChatDrawer.css`) plus a gap.
 
+**Shorter and narrower windows** (2026-11-01; a 1500 x 940 window at 125 % display scaling
+leaves about 1200 x 650 for the page). Boxes were cut there, so the layout now holds without a
+minimum window:
+
+- **No row is lower than its boxes' content** (`minmax(min-content, …fr)`); the featured game's
+  label was cut at the top. Its content is centred "safely" (from the top when it does not fit).
+  Where even the content does not fit (below 1280 x 720), the main column scrolls; the rows keep
+  their proportions above that.
+- **"Up next" shows only whole entries** (`useWholeItems.js`): an entry that does not fit is
+  hidden and out of reach (`inert`), never shown cut. The list does not make its row taller.
+- **The price never runs under the season mark**: the mark has a column of its own, and the
+  price's size is the text column's width shared by its characters (container units on the
+  tile, its length from `PriceTiles`), so every price fits beside the mark, whatever its digits.
+- **The sidebar fits 650px without a scrollbar**: "Imprint", "Privacy" and "Not financial
+  advice" share one line (a small gap between the 44px targets); with the old gap the third
+  wrapped onto a second line.
+- **A narrow Fair price box** (one column of a 1280px window, beside Next call) drops its four
+  marks and takes the title on one line; its text wrapped so far that the Disclaimer link was
+  cut.
+
+`client/e2e/layout.spec.js` checks this at 1200 x 650, 1366 x 768 and 1500 x 940 (no box cut, no
+price under its mark, the admin's sidebar without a scrollbar), with the widest prices on the
+tiles in every home test.
+
 1. **Banner**: night blue (`--banner-background`) with the faint season pattern
    (`client/src/brand/seasonPattern.css`), the emblem, "SEASONAL" in the logo's gradient
    lettering, "ENTERTAINMENT" in white, and the greeting as the page's `h1` (with the username
@@ -252,8 +276,8 @@ the button's size (`--chat-launcher-size`, also used by `ChatDrawer.css`) plus a
    or its own image; a call shows the calls quarter, its title linking to its page, and its
    date, or "Live now".
 3. The **four season price tiles in one row**: each in its solid token colour with dark text,
-   the name, the price large, the 24-hour change; the season mark 48px in a white 62px circle at
-   the bottom right. With prices each tile opens its coin's chart (`/info/prices?coins=<id>`).
+   the name, the price large (at most the size that fits beside the mark), the 24-hour change;
+   the season mark 48px in a white 62px circle at the bottom right, in a column of its own. With prices each tile opens its coin's chart (`/info/prices?coins=<id>`).
 4. The bottom row (2026-10-21, `homeBottomRow.css`):
    - **Community** (two columns, night blue; `CommunityCard.jsx`): "● N online" in the Spring
      colour and the newest 3 messages of General, live (docs/CHAT.md, "Community box"); only
@@ -265,8 +289,8 @@ the button's size (`--chat-launcher-size`, also used by `ChatDrawer.css`) plus a
      planned** (2026-10-21): with none, or while calls are not set up, the box is not shown and
      Fair price takes its column.
    - **Fair price & charts** (one column; to `/info/prices`; without the price bot a plain note
-     and the link to the info section): the four marks in one row, the arrow beside the
-     title's last word.
+     and the link to the info section): the four marks in one row (not in a narrow box), the
+     arrow beside the title's last word.
 
    The bottom row holds the most text.
 
