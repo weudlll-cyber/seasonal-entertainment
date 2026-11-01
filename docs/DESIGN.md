@@ -99,9 +99,14 @@ Measured on the production build, and kept by `client/e2e/speed.spec.js` and
 - **Image sizes**: each brand image is at most twice its largest size on the page (the faint
   quarters once, as they show at 16–26 %), and at most 60 KB. The faint images on the home
   boxes, game card pictures and event pictures load lazily.
-- **No jumping while data arrives**: on narrow screens the featured game and "Up next" keep
-  their room from the start, and on the prices page the coin buttons stand empty and disabled
-  until their prices arrive. A late answer moves nothing below (layout shift under 0.05).
+- **No jumping while data arrives**: on narrow screens the featured game (15rem) and "Up next"
+  (16.5rem: two events whose names wrap) keep their room from the start, and on the prices page
+  the coin buttons stand empty and disabled until their prices arrive. A late answer moves
+  nothing below (layout shift under 0.05). On a phone (2026-11-01) the featured game's content
+  starts at the top (centred, its label jumped up 87px when the game arrived), and the banner's
+  season clock has fixed room for its longest form (its "Next halving" line takes one or two
+  lines depending on the date and on whether the web font has arrived). `speed.spec.js` checks
+  it on three pinned dates (UTC), with games and events answered a second late.
 - **Fonts**: `font-display: swap`, unchanged. Preloading the four faces was measured and made
   the first paint later (464 vs 400 ms) without a gain in layout shift, so it was left out.
 - **Touch targets**: every control is at least 44 × 44 px, also on a phone. A checkbox counts
