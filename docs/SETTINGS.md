@@ -2,8 +2,8 @@
 
 Admin → Settings (`/admin/settings`) lists every site setting in its group. A setting's default
 is the site's usual behaviour, so nothing changes until an admin changes it (decided
-2026-10-23). Organisers change the "Site banner" group, and only it, on their own page (below,
-"Who").
+2026-10-23). Organisers change the site banner's on/off and text, and nothing else, on their own page
+(below, "Who").
 
 ## How settings work
 
@@ -14,15 +14,17 @@ is the site's usual behaviour, so nothing changes until an admin changes it (dec
   both included), short text (one line, at most a length, optionally a rule of its own) and a
   choice from a list.
 - **Who**: admins, with 2FA like every admin route (`/api/admin/settings`), every setting.
-  Organisers (and admins), with 2FA like every staff route, the four "Site banner" settings
-  (on/off, text, link, style) and no other (decided 2026-11-01): `GET`/`PUT /api/banner`
-  (`server/src/settings/bannerRoutes.js`), the page Site banner (`/banner`, in the sidebar
-  below the divider for organisers; `client/src/pages/BannerPage.jsx`) with the banner now on
-  the site, the four fields as on Admin → Settings, a live preview and one Save. The whole
-  group, not only on/off and text: the link and the style belong to the same line, and a new
-  text with a stale "Read more" link or the wrong style would be half a change. A `PUT` sends
-  several values; all are checked before any is stored, and one outside the group refuses the
-  request (403). The admin route stays admins only.
+  Organisers, with 2FA like every staff route, exactly two settings: `banner.enabled` and
+  `banner.text` (decided 2026-11-01; `ORGANISER_BANNER_KEYS` in
+  `server/src/settings/bannerRoutes.js`). The banner's link and style stay admin-only.
+  `GET /api/banner` returns the whole "Site banner" group (link and style read-only) and the
+  keys it may change (`editable`); `PUT /api/banner` sends several values, all checked before
+  any is stored, and any other key, the link and the style included, refuses the request (403,
+  nothing stored). The route takes the same two keys from admins too; they change the rest on
+  Admin → Settings. The page Site banner (`/banner`, in the sidebar below the divider for
+  organisers; `client/src/pages/BannerPage.jsx`) shows the banner now on the site, on/off and
+  text as on Admin → Settings, the link and style read-only ("Link and style: an admin changes
+  them in Admin → Settings."), a live preview and one Save. The admin route stays admins only.
 - **Audit**: every change, on either route, writes one entry (`setting.change`, with the old
   and the new value) through the one helper `changeSetting` (`server/src/settings/change.js`);
   the values are checked by the same rules (`checkSetting`, `store.js`).

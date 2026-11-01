@@ -6,8 +6,8 @@
 //              settings/types.js): on/off as a checkbox, a whole number with its unit and
 //              bounds, a short text with its length, a choice as a list. The explanation, the
 //              bounds and the default sit under the field; Save sends the value as its kind.
-//              The field (SettingControl) and its hint (hintOf) also serve the organisers'
-//              Site banner page (pages/BannerPage.jsx).
+//              The field (SettingControl), its hint (hintOf) and a value as it reads (shown)
+//              also serve the organisers' Site banner page (pages/BannerPage.jsx).
 // ============================================================
 
 import { useId, useState } from 'react';
@@ -15,7 +15,7 @@ import { api } from '../api/http.js';
 import { FormField, FormMessage } from '../components/FormField.jsx';
 
 // How a value reads on the page: on/off, an empty text, a choice by its label.
-function shown(setting, value) {
+export function shown(setting, value) {
   if (setting.type === 'boolean') return value ? 'on' : 'off';
   if (setting.type === 'choice') return setting.choices.find((c) => c.value === value)?.label;
   if (setting.type === 'text') return value ? `"${value}"` : 'empty';

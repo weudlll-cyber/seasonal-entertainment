@@ -59,7 +59,8 @@ entry waits for.
 ## PART TWO — closed
 
 - **Organisers set the site banner** — closed by `feat/se-organiser-banner` (owner proposal
-  2026-11-01): organisers (with 2FA) change the four "Site banner" settings, and no other, at
+  2026-11-01): organisers (with 2FA) change exactly the banner's on/off and text
+  (`banner.enabled`, `banner.text`; link and style stay admin-only), and no other setting, at
   `/api/banner` (`server/src/settings/bannerRoutes.js`) on the page Site banner (`/banner`, in
   their sidebar) with a live preview; each change is audited like an admin's (`change.js`), with
   the same rules (docs/SETTINGS.md, "Who"; AUTH.md, "Site banner").

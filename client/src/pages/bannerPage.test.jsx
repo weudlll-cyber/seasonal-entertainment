@@ -3,9 +3,10 @@
 // Path:        client/src/pages/bannerPage.test.jsx
 // Project:     Seasonal Entertainment
 // Description: The organisers' Site banner page (/banner, BannerPage.jsx): reached from the
-//              sidebar, it shows whether the banner is on now, its four settings with their
-//              explanations, a preview that follows the edits, and one Save that sends only
-//              the changed values; a refusal shows on the page. Members see "Not allowed".
+//              sidebar, it shows whether the banner is on now, its on/off and text as fields
+//              with their explanations, its link and style read-only, a preview that follows
+//              the edits, and one Save that sends only the changed values; a refusal shows on
+//              the page. Members see "Not allowed".
 // ============================================================
 
 import { fireEvent, screen, within } from '@testing-library/react';
@@ -43,6 +44,7 @@ const answer = (values) => ({
       default: DEFAULTS[d.key],
       value: values[d.key],
     })),
+    editable: ['banner.enabled', 'banner.text'],
   },
 });
 const OLGA = signedIn({ username: 'olga', role: 'organiser' });
@@ -68,16 +70,29 @@ it('an organiser finds it in the sidebar', async () => {
 });
 
 it('shows the banner now on the site, its settings and a preview of the edits', async () => {
-  await open({ ...DEFAULTS, 'banner.enabled': true, 'banner.text': 'Call at 8' });
+  await open({
+    ...DEFAULTS,
+    'banner.enabled': true,
+    'banner.text': 'Call at 8',
+    'banner.link': '/calls',
+    'banner.style': 'warning',
+  });
   expect(screen.getByText(/shown to everyone \("Call at 8"\)/)).toBeInTheDocument();
   expect(field('Show the banner')).toBeChecked();
   expect(screen.getByText('Plain text. At most 200 characters. Default: empty.')).toBeVisible();
   expect(within(preview()).getByText('Call at 8')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled(); // nothing changed yet
 
+  // Link and style are read-only here: an admin changes them in Admin → Settings.
+  const form = within(screen.getByRole('form', { name: 'Site banner' }));
+  expect(form.queryByLabelText('Banner link')).toBeNull();
+  expect(form.queryByLabelText('Banner style')).toBeNull();
+  expect(
+    form.getByText(/Banner link: "\/calls" · Banner style: Warning\. Link and style: an admin/)
+  ).toBeInTheDocument();
+
   fireEvent.change(field('Banner text'), { target: { value: 'Call at 9' } });
-  fireEvent.change(field('Banner link'), { target: { value: '/calls' } });
-  fireEvent.change(field('Banner style'), { target: { value: 'warning' } });
+  // The preview shows the edited text with the stored link and style.
   const line = within(preview()).getByText('Call at 9').closest('p');
   expect(line).toHaveClass('site-banner--warning');
   expect(line).not.toHaveAttribute('role'); // a preview is not read out on every keystroke

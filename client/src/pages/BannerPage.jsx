@@ -3,13 +3,14 @@
 // Path:        client/src/pages/BannerPage.jsx
 // Project:     Seasonal Entertainment
 // Description: Site banner (/banner), for organisers and admins: whether the banner is on the
-//              site now, its settings (on/off, text, link, style; the server's "Site banner"
-//              group, /api/banner) drawn as on Admin → Settings, a live preview of the values
-//              being edited, and one Save for all changed values (each change is audited).
+//              site now, its on/off and text (the settings the server names `editable`,
+//              /api/banner) drawn as on Admin → Settings, its link and style read-only (an
+//              admin changes them in Admin → Settings), a live preview of the banner being
+//              edited, and one Save for all changed values (each change is audited).
 // ============================================================
 
 import { useEffect, useState } from 'react';
-import { hintOf, SettingControl } from '../admin/SettingForm.jsx';
+import { hintOf, SettingControl, shown } from '../admin/SettingForm.jsx';
 import { api } from '../api/http.js';
 import { BannerLine } from '../app/SiteBanner.jsx';
 import { FormMessage } from '../components/FormField.jsx';
@@ -22,18 +23,20 @@ const shows = (values) => Boolean(values['banner.enabled'] && values['banner.tex
 export default function BannerPage() {
   const { refresh } = useSession();
   const [settings, setSettings] = useState(null); // as stored: [{ key, label, …, value }]
+  const [editable, setEditable] = useState([]); // the keys this page may change
   const [values, setValues] = useState({}); // as edited: { key: value }
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
 
-  function show(stored) {
-    setSettings(stored);
-    setValues(valuesOf(stored));
+  function show(data) {
+    setSettings(data.settings);
+    setEditable(data.editable);
+    setValues(valuesOf(data.settings));
   }
 
   useEffect(() => {
     api('/banner')
-      .then((data) => show(data.settings))
+      .then(show)
       .catch((err) => setError(err.message));
   }, []);
 
@@ -49,7 +52,7 @@ export default function BannerPage() {
     setNotice(null);
     try {
       const data = await api('/banner', { method: 'PUT', body: { values: changed } });
-      show(data.settings);
+      show(data);
       setNotice('Saved. Visitors see it when they next open the site.');
       refresh(); // this browser's own banner, at the top, at once
     } catch (err) {
@@ -70,15 +73,24 @@ export default function BannerPage() {
       <FormMessage error={error} notice={notice} />
       {settings && (
         <form className="form" aria-label="Site banner" onSubmit={save}>
-          {settings.map((setting) => (
-            <SettingControl
-              key={setting.key}
-              setting={setting}
-              value={values[setting.key]}
-              onChange={(value) => setValues((before) => ({ ...before, [setting.key]: value }))}
-              hint={hintOf(setting)}
-            />
-          ))}
+          {settings
+            .filter((setting) => editable.includes(setting.key))
+            .map((setting) => (
+              <SettingControl
+                key={setting.key}
+                setting={setting}
+                value={values[setting.key]}
+                onChange={(value) => setValues((before) => ({ ...before, [setting.key]: value }))}
+                hint={hintOf(setting)}
+              />
+            ))}
+          <p>
+            {settings
+              .filter((setting) => !editable.includes(setting.key))
+              .map((setting) => `${setting.label}: ${shown(setting, setting.value)}`)
+              .join(' · ')}
+            . Link and style: an admin changes them in Admin → Settings.
+          </p>
           <section aria-label="Preview">
             <h2>Preview</h2>
             {shows(values) ? (

@@ -3,12 +3,14 @@
 // Path:        server/test/bannerSettings.test.js
 // Project:     Seasonal Entertainment
 // Description: Organisers set the site banner (/api/banner, settings/bannerRoutes.js): they
-//              read and change the "Site banner" settings, audited as on Admin → Settings and
-//              in effect at once, with the same rules; no other setting, not the admin
-//              route; members, guests and organisers without 2FA not at all.
+//              read the "Site banner" settings and change its on/off and text, audited as on
+//              Admin → Settings and in effect at once, with the same rules; not its link or
+//              style, no other setting, not the admin route; members, guests and organisers
+//              without 2FA not at all.
 // ============================================================
 
 import { afterEach, expect, it } from 'vitest';
+import { ORGANISER_BANNER_KEYS } from '../src/settings/bannerRoutes.js';
 import { getSetting } from '../src/settings/store.js';
 import { auditActions } from './helpers/chat.js';
 import { makeStaff, makeTestApp, registerUser, setRole } from './helpers/testApp.js';
@@ -29,6 +31,8 @@ it('an organiser reads the banner settings, and only those', async () => {
   const res = await organiser.get('/api/banner');
   expect(res.status).toBe(200);
   expect(res.body.settings.map((s) => s.key)).toEqual(BANNER_KEYS);
+  expect(res.body.editable).toEqual(['banner.enabled', 'banner.text']);
+  expect(ORGANISER_BANNER_KEYS).toEqual(res.body.editable);
   expect(res.body.settings.find((s) => s.key === 'banner.text')).toMatchObject({
     type: 'text',
     maxLength: 200,
@@ -72,15 +76,27 @@ it('an organiser changes the banner: audited like an admin change, in effect at 
   ]);
   const actor = t.db.prepare('SELECT actor_id FROM audit_log').all();
   expect(actor.every((row) => row.actor_id === user.id)).toBe(true);
-  // The style and the link are part of the banner too.
-  const more = await organiser
-    .put('/api/banner')
-    .send({ values: { 'banner.style': 'warning', 'banner.link': '/calls' } });
-  expect(more.status).toBe(200);
-  expect([getSetting(t.db, 'banner.style'), getSetting(t.db, 'banner.link')]).toEqual([
-    'warning',
-    '/calls',
-  ]);
+});
+
+it("an organiser cannot change the banner's link or style, alone or with on/off and text", async () => {
+  t = makeTestApp();
+  const organiser = (await makeStaff(t, 'olga', 'organiser')).agent;
+  const put = async (values) => (await organiser.put('/api/banner').send({ values })).status;
+  for (const [key, value] of [
+    ['banner.link', '/calls'],
+    ['banner.style', 'warning'],
+  ]) {
+    expect(await put({ [key]: value }), key).toBe(403);
+    expect(await put({ 'banner.text': 'allowed', [key]: value }), key).toBe(403);
+    expect(await put({ 'banner.enabled': true, [key]: value }), key).toBe(403);
+  }
+  expect([
+    getSetting(t.db, 'banner.link'),
+    getSetting(t.db, 'banner.style'),
+    getSetting(t.db, 'banner.text'),
+    getSetting(t.db, 'banner.enabled'),
+  ]).toEqual(['', 'info', '', false]);
+  expect(auditActions(t)).toEqual([]);
 });
 
 it('the same rules as for admins; one bad value stores none of them', async () => {
@@ -89,8 +105,6 @@ it('the same rules as for admins; one bad value stores none of them', async () =
   const put = async (values) => (await organiser.put('/api/banner').send({ values })).status;
   expect(await put({ 'banner.text': 'x'.repeat(201) })).toBe(400);
   expect(await put({ 'banner.text': 'two\nlines' })).toBe(400);
-  expect(await put({ 'banner.link': 'https://evil.example/' })).toBe(400);
-  expect(await put({ 'banner.style': 'danger' })).toBe(400);
   expect(await put({ 'banner.enabled': 'on' })).toBe(400);
   expect(await put({ 'banner.enabled': true, 'banner.text': 'x'.repeat(201) })).toBe(400);
   expect(await put({})).toBe(400);
@@ -147,10 +161,12 @@ it('members, guests and organisers without 2FA cannot', async () => {
   expect(auditActions(t)).toEqual([]);
 });
 
-it('admins may use it too', async () => {
+it('admins may use it too, for the same two settings (the rest on Admin → Settings)', async () => {
   t = makeTestApp();
   const admin = (await makeStaff(t, 'ada', 'admin')).agent;
   const res = await admin.put('/api/banner').send({ values: { 'banner.text': 'From an admin' } });
   expect(res.status).toBe(200);
+  const link = await admin.put('/api/banner').send({ values: { 'banner.link': '/calls' } });
+  expect(link.status).toBe(403);
   expect(auditActions(t)).toEqual(['setting.change']);
 });
