@@ -46,13 +46,6 @@ entry waits for.
 
 ### Technical debt
 
-- **Home on a phone moves when a call exists** — with a live or planned call, the late game and
-  events on a phone shift the boxes below (`.home__tiles` and an eyebrow) by 0.029 (local) and
-  0.053 (CI's fonts) in layout-shift terms, measured 2026-11-01, also before the layout changes
-  of that day; without a call 0.0013. `client/e2e/speed.spec.js` now answers "no call", so other
-  specs' calls no longer decide it (it failed on CI twice that day); the kept room
-  (`LandingPage.css`, `.home__game` / `.home__upnext` min-heights) does not yet cover the call.
-
 - **Event bot images too large** — the live site logs "event image not used (too large)" for six
   of the event bot's images (seen 2026-11-01): those events show without their picture (a dot in
   "Up next"). The limits are in `server/src/bots/images.js` (`config.bots.images`).
@@ -66,6 +59,17 @@ entry waits for.
   two failed on CI is what the trace will show.
 
 ## PART TWO — closed
+
+- **Home on a phone moved while its data arrived** — closed by `fix/test-home-shift-2`:
+  `speed.spec.js`'s phone home test measured exactly 0.0530 on CI (limit 0.05) from 2026-11-01,
+  also on master. `fix/test-home-shift` (PR #30) blamed other specs' calls and made the test
+  answer "no call"; that was wrong, the test failed the same with it. The test now names what
+  moved: the banner's season clock lost a line when the web font arrived (the page below moved
+  19px), the featured game's centred label jumped 87px when the game arrived, and "Up next"
+  outgrew its kept room with names that wrap. Fixed on a phone: the clock has fixed room, the
+  game's content starts at the top, "Up next" keeps 16.5rem. The test pins three dates (the
+  season clock's longest and shortest lines) and UTC, answers games and events itself, and no
+  longer answers "no call". Before / after locally: 0.022-0.030 / 0.0012-0.0013 on each date.
 
 - **Installer: one-command update** — closed by `feat/se-install-2` (SE-INSTALL-2; requested
   2026-11-01): `sudo /opt/seasonal-entertainment/deploy/install.sh --update` takes a fresh backup
