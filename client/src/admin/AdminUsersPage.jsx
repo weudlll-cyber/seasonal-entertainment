@@ -3,7 +3,8 @@
 // Path:        client/src/admin/AdminUsersPage.jsx
 // Project:     Seasonal Entertainment
 // Description: Admin users list with search; each row changes role, "can start games",
-//              lock and password (UserRow). The list reloads after every change.
+//              lock and password, or deletes the account (UserRow). The list reloads after every
+//              change.
 // ============================================================
 
 import { useEffect, useState } from 'react';
@@ -48,6 +49,7 @@ export default function AdminUsersPage() {
                 <th>Can start games</th>
                 <th>Locked</th>
                 <th>Password</th>
+                <th>Account</th>
               </tr>
             </thead>
             <tbody>

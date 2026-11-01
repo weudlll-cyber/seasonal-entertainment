@@ -37,7 +37,7 @@ test('register, log out and log in again', async ({ page }) => {
     .getByRole('button', { name: 'Skip' })
     .click();
 
-  await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Account', exact: true })).toBeVisible();
   // The sidebar's account card shows the new account.
   const shell = page.getByRole('banner');
   await expect(shell.getByRole('link', { name: `${name} (Member), your account` })).toBeVisible();
@@ -60,7 +60,7 @@ test('register, log out and log in again', async ({ page }) => {
   await main.getByLabel('Username').fill(name);
   await main.getByLabel('Password').fill('battery-staple-2');
   await main.getByRole('button', { name: 'Log in' }).click();
-  await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Account', exact: true })).toBeVisible();
 
   // The same panel now writes as the member.
   await expect(drawer.getByText(/You are a guest/)).toHaveCount(0);
