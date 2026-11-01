@@ -4,12 +4,14 @@
 // Project:     Seasonal Entertainment
 // Description: The signed-in user's own account: details, password change, two-factor
 //              authentication, private messages (unlock, recovery code), privacy ("Show when I'm
-//              online", link previews in direct messages), browser notifications, logout.
+//              online", link previews in direct messages), browser notifications, logout, and
+//              deleting the account (DeleteAccountForm).
 // ============================================================
 
 import { roleAtLeast } from '@seasonal-entertainment/shared/accountRules.js';
 import { useNavigate } from 'react-router';
 import ChangePasswordForm from '../components/ChangePasswordForm.jsx';
+import DeleteAccountForm from '../components/DeleteAccountForm.jsx';
 import PrivacySettings from '../components/PrivacySettings.jsx';
 import NotificationSettings from '../notify/NotificationSettings.jsx';
 import TwoFactorDisable from '../components/TwoFactorDisable.jsx';
@@ -65,6 +67,8 @@ export default function AccountPage() {
       <button className="button" type="button" onClick={onLogout}>
         Log out
       </button>
+      <h2 id="delete-account">Delete my account</h2>
+      <DeleteAccountForm />
     </section>
   );
 }

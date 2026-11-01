@@ -99,9 +99,14 @@ Measured on the production build, and kept by `client/e2e/speed.spec.js` and
 - **Image sizes**: each brand image is at most twice its largest size on the page (the faint
   quarters once, as they show at 16–26 %), and at most 60 KB. The faint images on the home
   boxes, game card pictures and event pictures load lazily.
-- **No jumping while data arrives**: on narrow screens the featured game and "Up next" keep
-  their room from the start, and on the prices page the coin buttons stand empty and disabled
-  until their prices arrive. A late answer moves nothing below (layout shift under 0.05).
+- **No jumping while data arrives**: on narrow screens the featured game (15rem) and "Up next"
+  (16.5rem: two events whose names wrap) keep their room from the start, and on the prices page
+  the coin buttons stand empty and disabled until their prices arrive. A late answer moves
+  nothing below (layout shift under 0.05). On a phone (2026-11-01) the featured game's content
+  starts at the top (centred, its label jumped up 87px when the game arrived), and the banner's
+  season clock has fixed room for its longest form (its "Next halving" line takes one or two
+  lines depending on the date and on whether the web font has arrived). `speed.spec.js` checks
+  it on three pinned dates (UTC), with games and events answered a second late.
 - **Fonts**: `font-display: swap`, unchanged. Preloading the four faces was measured and made
   the first paint later (464 vs 400 ms) without a gain in layout shift, so it was left out.
 - **Touch targets**: every control is at least 44 × 44 px, also on a phone. A checkbox counts
@@ -172,13 +177,20 @@ taller. `client/e2e/layout.spec.js` checks this on every main page at 1440 x 900
    Calls end in a 10px dot in the colour of their quarter of the logo: Games Spring `#AFB84E`,
    Events Summer `#E06E22`, Chat Autumn `#F9A825`, Calls Winter `#04AAF7` (`dot` in
    `navigation.js`).
-2. **Main column**: a column (2026-10-23): first the banners — the **site banner** (an admin's
+2. **Main column**: a column (2026-10-23): first the banners — the **update notice**
+   (2026-11-01, `UpdateNotice.jsx`: "A new version of this site is available." with a primary
+   **Reload** button, in the site banner's info style, `role="status"`, no Dismiss; shown once the
+   server reports another commit than the page's build, docs/DEPLOYMENT.md, "Updating"), the
+   **site banner** (an admin's
    message for everyone, `SiteBanner.jsx`, docs/SETTINGS.md: plain text, an optional "Read more"
    link to a page of this site, info on `--color-info-surface` with a winter-blue edge or warning on
    `--color-warning-surface` with a red edge (both classes over the shell's `.banner`;
    `client/e2e/siteBanner.spec.js` checks they differ in both themes), "Dismiss" remembered per text
    in this browser), then the 2FA banner and call notices — and below them the routed page. Home
-   takes the room left below the banners, so it still fits the window with a banner on.
+   takes the room left below the banners, so it still fits the window with a banner on. A page
+   loaded on first use that cannot be loaded even after the one reload for an update shows, in
+   its place, "This part of the page could not be loaded." with **Reload** in the warning style
+   (`role="alert"`, `LazyBoundary.jsx`); the sidebar and banners stay.
 
 **Start here** (2026-10-23, `/start`, `StartPage.jsx`): five numbered steps for a newcomer, each a
 card with a sentence or two and a button to a page the site has — what Seasonal Tokens are, how

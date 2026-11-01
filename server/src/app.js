@@ -116,11 +116,11 @@ export function createApp({
   api.get('/health', allow('public'), (_req, res) => {
     res.json({ ok: true, version: buildInfo.version, commit: buildInfo.commit });
   });
-  api.use('/auth', accountRoutes(db, config, chat.sessions));
+  api.use('/auth', accountRoutes(db, config, chat));
   api.use('/auth', bootstrapRoutes(db, config));
   api.use('/2fa', twoFactorRoutes(db, config, chat.sessions));
   api.use('/keys', keyRoutes(db, config));
-  api.use('/admin/users', adminUserRoutes(db, config, chat.sessions));
+  api.use('/admin/users', adminUserRoutes(db, config, chat));
   api.use('/admin/audit', adminAuditRoutes(db));
   api.use('/info', infoRoutes(db));
   api.use('/admin/info', adminInfoRoutes(db));

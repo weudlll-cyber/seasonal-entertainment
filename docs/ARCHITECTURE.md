@@ -55,14 +55,16 @@ The race game uses 5173 and 4173; this project stays clear of them.
 
 ## Runtime configuration
 
-Read from the environment when the process starts, never baked into a build:
+Read from the environment when the process starts, never baked into a build (except the
+commit, which the client build carries for the update notice):
 
 | Variable                            | Default                                       | Used by                                                                   |
 | ----------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------- |
 | `HOST`                              | `127.0.0.1`                                   | server listen address                                                     |
 | `PORT`                              | `3800`                                        | server listen port                                                        |
 | `CLIENT_DIST`                       | `client/dist`                                 | folder of the built client the server serves (`assets/` cached a year)    |
-| `COMMIT_SHA`                        | output of `git rev-parse`                     | commit reported by `/api/health`                                          |
+| `COMMIT_SHA`                        | output of `git rev-parse`                     | commit of `/api/health` and of the client build (`npm run build`)         |
+| `SE_DEV_BUILD_COMMIT`               | (unset)                                       | `npm run dev`: a pretended client build commit (DEPLOYMENT.md)            |
 | `CLIENT_PORT`                       | `5380`                                        | Vite dev server port                                                      |
 | `API_ORIGIN`                        | `http://127.0.0.1:3800`                       | where the Vite dev server forwards `/api` and `/ws`                       |
 | `NODE_ENV`                          | (unset)                                       | `production`: Secure cookies, no dev defaults (DEPLOYMENT.md)             |
@@ -155,6 +157,15 @@ published (decided 2026-10-22). No contract address is retyped anywhere (the pag
 official site); `server/test/infoSeed.test.js` guards these rules. Imprint and Privacy stay
 drafts with `[TO BE FILLED BY OWNER]` placeholders until the owner's details and a legal review
 are in.
+
+**Seed texts that changed later** (2026-11-01): the seed never runs again once pages exist, so a
+changed seed text would not reach a running site. On every start `refreshSeedPages`
+(`server/src/info/seed.js`, called by `server/src/index.js`) gives a stored page the current seed
+text when its body is still **exactly** an earlier seed text of that page, recognised by its
+SHA-256 in `server/src/info/seed/earlier-seeds.json` (Privacy: every version before account
+deletion was described). Title, status, order and slug stay; a page an admin edited is never
+touched. When a seed page listed there changes again, its text before the change is added to the
+list.
 
 ## Events
 
@@ -342,7 +353,9 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
   uploaded files, files whose message was removed in any other way and uploads never sent
   within an hour go too (no orphans), unused link previews after the cache time, and guest
   names unused for 30 days are released, at start and every six hours
-  (`server/src/chat/retention.js`, `runChatRetention`).
+  (`server/src/chat/retention.js`, `runChatRetention`). A deleted account's room messages and
+  uploaded files go at once, not with the retention (decided 2026-11-01; docs/AUTH.md, "Deleting
+  an account").
 
 ## Security headers
 
@@ -370,7 +383,9 @@ client/                    React + Vite client
   index.html               HTML shell
   src/app/                 route table, app shell (Layout, Sidebar, AccountCard), chat drawer
                            (ChatDrawer, RoomPicker, its remembered state), icons, navigation
-                           list, never-throwing browser storage
+                           list, never-throwing browser storage; after an update the
+                           "new version" notice (UpdateNotice) and the one reload for a page
+                           part whose file is gone (staleChunks, LazyBoundary)
   src/api/http.js          the one fetch wrapper (JSON, ApiError)
   src/session/             session context (who is signed in), RequireUser guard, credentials
                            (password -> auth key and wrapping key, docs/AUTH.md) and the
@@ -427,17 +442,20 @@ server/
   src/db/database.js       opens the database, applies every area's schema and migrations
   src/db/addColumns.js     adds columns to older databases (each area's migrate function)
   src/accounts/            accounts area: schema, user store, passwords, routes (login:
-                           loginRoutes.js, pre-login and login), credentials, bootstrap
+                           loginRoutes.js, pre-login and login), credentials, bootstrap,
+                           account deletion (deletion.js; own deletion: deleteRoutes.js)
   src/twofa/               two-factor area: TOTP, schema, store, routes, staff gate
   src/keys/                members' keys: public keys, sealed private keys, recovery seal
   src/audit/               audit log: schema and the one recordAudit helper
   src/admin/               /api/admin routes (users, audit); areas add their own editors
-  src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md)
+  src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md,
+                           seed/earlier-seeds.json)
   src/games/               games hub: schema, store, public and admin routes, seed
   src/chat/                chat area, mounted by mount.js (the only entry for the rest of the
                            server): schema, store, messages and what may be sent, viewer rules,
                            routes, moderation, WebSocket endpoint (socket.js) and hub, sender
-                           rate limit, retention, seed
+                           rate limit, retention, seed, the chat's part of deleting an
+                           account (accountData.js)
   src/media/               chat media library: schema, store, image validator, files on disk,
                            picker and admin routes, first-start seed
   src/previews/            chat link previews: safe fetching (SSRF rules), meta parsing, cache,
