@@ -215,8 +215,10 @@ browser never does, and the CSP is unchanged.
 `server/src/bots/fixtures.js`) builds two stand-in databases with the bots' exact schemas and
 **clearly fake, seeded** data into `data/bot-fixtures/` (gitignored, like all of `data/`):
 
-- a year of hourly prices for the four tokens (a seeded random walk around a few tenths of a US
-  cent, ±1 % per hour at most), and fake mining rates (`mining_rates.json`: 40, 30, 60, 50);
+- a year of hourly prices for the four tokens (a seeded random walk, ±1 % per hour at most,
+  ending at fixed prices that show the layout's widest cases: $0.001804, $0.0002117, $0.002117
+  and a large $1,234.57, with 24-hour changes of −4.21 %, +1.35 %, −0.83 % and −12.57 %), and fake
+  mining rates (`mining_rates.json`: 40, 30, 60, 50);
 - a few weekly `[Sample]` events from two weeks back to four ahead: past ones `done`, one moved
   by two overrides (the later wins), one canceled this week, one inactive (never shown) and one
   with a non-web link (shown as text);
