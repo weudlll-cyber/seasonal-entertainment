@@ -168,7 +168,9 @@ taller. `client/e2e/layout.spec.js` checks this on every main page at 1440 x 900
    (2026-10-23, a flag), Games, Events, Chat, Calls, Seasonal Tokens = the info
    section; Calls only when calls are set up, admins always, with a red LIVE badge while a call
    is live, docs/CALLS.md); a
-   divider and Admin for admins only (as before; `staffNavFor` in `navigation.js`); at the bottom
+   divider and the staff items (`staffNavFor` in `navigation.js`): Admin for admins, Site banner
+   for organisers, and Manage events (a calendar with a pencil) for both while the event bot's
+   admin page is set up (docs/BOTS.md); at the bottom
    the account card (initial, name, role, linking to /account) or, for guests, "Log in" and
    "Register", with the theme toggle; then the legal links (Imprint, Privacy, and "Not
    financial advice" to the Disclaimer, wrapping onto a line of its own; the phone menu shows
@@ -415,7 +417,8 @@ opens above the row. The full chat page keeps its labelled text buttons.
 
 ## Chat drawer
 
-On every page except `/chat` and `/admin/*` (`client/src/app/ChatDrawer.jsx`):
+On every page except `/chat`, `/admin/*` and `/manage-events` (the event bot's page would sit
+under the button; `client/src/app/ChatDrawer.jsx`):
 
 - A round **chat button** bottom right: 56px, autumn colour, a 24px chat icon
   (`--color-on-season`), with the unread dots scaled with the button (blue rooms, orange private

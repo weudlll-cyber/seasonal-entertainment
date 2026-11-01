@@ -36,6 +36,13 @@ function readBool(env, name, fallback) {
   throw new Error(`${name} must be "true" or "false", got "${value}"`);
 }
 
+// A switch written as 1 (on) or 0 / unset (off), as the installer writes it (BOT_ADMIN_EMBEDDED).
+function readOnOff(value, name) {
+  if (value === undefined || value === '' || value === '0') return false;
+  if (value === '1') return true;
+  throw new Error(`${name} must be "1" or "0", got "${value}"`);
+}
+
 // Production refuses to start without a secret; development gets a random one per start
 // (sessions then end on every restart) and a warning, as in the race game.
 function readSessionSecret(env, isProduction) {
@@ -150,6 +157,10 @@ export function readConfig(env = process.env) {
         userAgent: 'SeasonalEntertainmentEventImages/1.0 (event images for Seasonal Entertainment)',
       },
     },
+    // The event bot's admin page embedded at /bot-admin/ (docs/BOTS.md, "The event bot's admin
+    // page"): the host's nginx asks GET /api/bot-admin/authorize before every request to it.
+    // Off: that route answers 404 and the sidebar has no "Manage events".
+    botAdminEmbedded: readOnOff(env.BOT_ADMIN_EMBEDDED, 'BOT_ADMIN_EMBEDDED'),
     // ETH, POL and BTC prices from CoinGecko's free Demo API (reference/, docs/BOTS.md); null:
     // they show as not connected. Calls are spaced by gapMs (about 78 a day in all).
     coingecko: env.COINGECKO_API_KEY

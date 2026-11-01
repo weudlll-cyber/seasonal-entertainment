@@ -5,7 +5,9 @@
 // Description: CSRF protection for state-changing API requests: the Origin (or Referer)
 //              must be this site's own origin. Together with SameSite=Lax session cookies
 //              this blocks cross-site form posts and fetches (pattern from the race game).
-//              selfOrigin() is also the rule for the chat WebSocket's Origin check.
+//              selfOrigin() is also the rule for the chat WebSocket's Origin check;
+//              originRefusal() the same rule for a request the site only authorises for another
+//              service (the event bot's admin page, bots/adminAuthorizeRoutes.js).
 // ============================================================
 
 import { sendError } from './errors.js';
@@ -33,17 +35,27 @@ function requestOrigin(req) {
   }
 }
 
+export const isStateChanging = (method) => STATE_CHANGING.has(method);
+
+// Why a state-changing request must be refused ({ code, message }), or null when its Origin
+// (or Referer) is this site's own.
+export function originRefusal(req, config) {
+  const origin = requestOrigin(req);
+  if (!origin) {
+    if (!config.csrfStrict) return null;
+    return { code: 'origin_required', message: 'Request refused: no Origin header.' };
+  }
+  if (origin !== selfOrigin(req, config)) {
+    return { code: 'cross_origin', message: 'Request refused: wrong origin.' };
+  }
+  return null;
+}
+
 export function csrfGuard(config) {
   return (req, res, next) => {
-    if (!STATE_CHANGING.has(req.method)) return next();
-    const origin = requestOrigin(req);
-    if (!origin) {
-      if (!config.csrfStrict) return next();
-      return sendError(res, 403, 'origin_required', 'Request refused: no Origin header.');
-    }
-    if (origin !== selfOrigin(req, config)) {
-      return sendError(res, 403, 'cross_origin', 'Request refused: wrong origin.');
-    }
+    if (!isStateChanging(req.method)) return next();
+    const refusal = originRefusal(req, config);
+    if (refusal) return sendError(res, 403, refusal.code, refusal.message);
     next();
   };
 }

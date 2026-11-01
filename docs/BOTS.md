@@ -1,8 +1,10 @@
 # Prices and events from the owner's bots
 
 The site shows data that two of the owner's bots already collect (SE-NIGHT-3, 2026-10-20). The
-bots live in the private repository `weudlll-cyber/Seasonal-tokens`; the site only **reads**
-their SQLite files and never talks to the bots themselves.
+bots live in the private repository `weudlll-cyber/Seasonal-tokens`; the site's server only
+**reads** their SQLite files and never talks to the bots themselves. The one exception is in the
+browser: staff may see the event bot's own admin page inside the site (see "The event bot's admin
+page"), served by the host's nginx, not by the site.
 
 | Bot             | Its file                                 | Config key               | What the site shows                                       |
 | --------------- | ---------------------------------------- | ------------------------ | --------------------------------------------------------- |
@@ -60,8 +62,9 @@ A configured file that cannot be read (missing, locked, being replaced) answers 
 - Every read opens the file with `{ readonly: true, fileMustExist: true }`, sets
   `PRAGMA query_only = ON`, runs its query and closes the file again (`server/src/bots/botDb.js`).
   A missing file is never created, and the bot can rewrite or replace its file at any time.
-- The site never writes to these files, never calls the bots' admin web and never needs their
-  admin token. The bots' data never comes from an outside API; the only outside price source is
+- The site never writes to these files, its server never calls the bots' admin web and never
+  has their admin token (the embedded admin page goes through nginx; see "The event bot's admin
+  page"). The bots' data never comes from an outside API; the only outside price source is
   CoinGecko, which the server asks for ETH, POL and BTC (see "Reference prices").
 - In production both files are mounted into the site container **read-only** (`:ro`,
   docs/DEPLOYMENT.md), so even a mistake in the site could not change them.
@@ -205,6 +208,51 @@ browser never does, and the CSP is unchanged.
 - Routes: `GET /api/reference-prices` and `GET /api/reference-prices/:token?range=`, public,
   cached for 5 minutes and rate limited like the bots' reads. The converter offers every connected coin (owner request 2026-10-20).
 
+## The event bot's admin page
+
+Organisers and admins manage the event bot's events on its own admin page, embedded in the site
+rather than rebuilt and with no second login (decided 2026-10-20; organisers since 2026-11-01).
+The site is switched on for it with `BOT_ADMIN_EMBEDDED=1` (off by default; the installer sets it,
+docs/DEPLOYMENT.md).
+
+**From the site's side**
+
+- The sidebar's **Manage events** (organisers and admins, `client/src/app/navigation.js`) shows
+  only while the session answer says the page is set up: `features.botAdmin` in
+  `GET /api/auth/session`, from `BOT_ADMIN_EMBEDDED`; no domain is built into the client.
+- It opens `/manage-events` (`client/src/pages/ManageEventsPage.jsx`, loaded on first use like the
+  other staff pages): it asks `GET /bot-admin/health` (same origin) first and on "Retry"; with an
+  OK it shows `/bot-admin/` in a frame filling the content area (title "Event bot admin"), without
+  one "The event bot's admin page does not answer right now." and a Retry button. The frame has no
+  `sandbox`: the bot's page is same-origin and needs scripts, its own requests and forms, and a
+  sandbox allowing all three protects nothing while it breaks the page's dialogs and downloads.
+  Staff without 2FA are led to set it up instead (the server would refuse them anyway).
+- The chat button is left off that page, as in the admin area: it would cover the bot's buttons.
+
+**The request path** (production)
+
+1. The browser asks `https://<site>/bot-admin/...` (the frame, its scripts, its API calls).
+2. The host's nginx serves `location /bot-admin/` and first asks the site
+   `GET http://127.0.0.1:3800/api/bot-admin/authorize` as an `auth_request` subrequest, with the
+   browser's own headers (`Cookie`, `Origin`) and `X-Original-Method` and `X-Original-URI`.
+3. The site answers `204` with `X-Acting-User: <username>` for a signed-in organiser or admin with
+   2FA, and checks a change's Origin and writes its audit entry (docs/AUTH.md, "The event bot's
+   admin page"); anything else and nginx refuses the request.
+4. nginx proxies to the bot (`127.0.0.1:8090/bot-admin/...`) with `X-Acting-User` from that
+   answer and `X-Bot-Admin-Token` read from a root-only file. The browser never sees the token;
+   the site never gets it.
+
+**The bot's contract** (bot project PR #58, commit `c5cf09e`)
+
+- In the bot's env file: `STANNOUNCEBOT_WEB_EMBEDDED=1` and `STANNOUNCEBOT_WEB_BASE_PATH=/bot-admin`,
+  so its page and its API paths sit under `/bot-admin` (no collision with the site's `/api`).
+- Embedded, the bot skips its own login for a request carrying the right `X-Bot-Admin-Token` from
+  an allowed address (nginx on the same host) and logs the `X-Acting-User` it is given with each
+  change.
+- Its page may be framed by the same origin only (the site's page that frames it is served on the
+  same domain).
+- The existing separate admin address of the bot is unchanged.
+
 ## What is not shown, and why
 
 - **A ratio view between seasons** (e.g. Spring in Summer): not built; open owner decision.
@@ -278,3 +326,10 @@ move the sample week to the current one.
 - `client/e2e/events.spec.js`: the real server reading a fixture event bot; no events editor in
   the admin area.
 - `server/test/info.test.js`: the info slug `prices` is reserved (`/info/prices` is this page).
+- `server/test/botAdminAuthorize.test.js`: the bot admin page's authorize answer for every kind of
+  visitor, the Origin rule and the audit entry of a change, no-store, nothing of the request
+  repeated, off without `BOT_ADMIN_EMBEDDED`; the session's `features.botAdmin`.
+- `client/src/pages/manageEventsPage.test.jsx`: Manage events only for staff and only while set
+  up; the frame when the health check answers, the message and Retry when not; staff without 2FA.
+- `client/e2e/manageEvents.spec.js` (real browser, the session's feature and the bot stubbed):
+  the item for staff only, the frame loading the stub page and filling the content area, Retry.

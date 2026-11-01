@@ -1,0 +1,38 @@
+/* ============================================================
+   File:        ManageEventsPage.css
+   Path:        client/src/pages/ManageEventsPage.css
+   Project:     Seasonal Entertainment
+   Description: Manage events (ManageEventsPage.jsx): the page fills the main column below the
+                banners (Layout.css), and the event bot's admin frame takes all of it below the
+                title.
+   ============================================================ */
+
+.manage-events {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+  padding: var(--space-3) var(--space-2);
+}
+
+.manage-events h1 {
+  margin: 0;
+}
+
+.manage-events__down {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The bot's page scrolls inside its frame; a floor keeps it usable on a short window. */
+.manage-events__frame {
+  flex: 1;
+  width: 100%;
+  min-height: 24rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}

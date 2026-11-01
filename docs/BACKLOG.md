@@ -15,9 +15,6 @@ entry waits for.
   it (the installer's bot-file answers, docs/DEPLOYMENT.md, "What it asks").
 - **Imprint and Privacy** — drafts; need the owner's details and a legal review. Privacy's "Call
   recordings" holds a proposal to review; only its contact address is left to fill.
-- **Event bot admin page inside the site** — waits for a change in the bot project: its page
-  skips its own login when the site's server supplies the bot token, and its API paths can sit
-  under a prefix (today absolute `/api/...`, which collide with the site's `/api`).
 
 ### To try on the live server
 
@@ -26,11 +23,6 @@ entry waits for.
   there: call media over UDP from outside (signalling through nginx answered 101 on 2026-11-01).
   LiveKit logged "could not validate external IP" at start (docs/DEPLOYMENT.md,
   "Troubleshooting").
-
-### Owner proposals (2026-11-01)
-
-- **Organisers create event-bot appointments on the site** — needs the bot-project change named
-  in "Event bot admin page inside the site" above.
 
 ### Proposals not decided
 
@@ -54,6 +46,19 @@ entry waits for.
   two failed on CI is what the trace will show.
 
 ## PART TWO — closed
+
+- **Event bot admin page inside the site** — closed by `feat/se-bot-admin`: the bot's own admin
+  page is embedded, not rebuilt, with no second login (decided 2026-10-20). The host's nginx serves
+  `/bot-admin/` and asks the site's `GET /api/bot-admin/authorize` before every request
+  (`server/src/bots/adminAuthorizeRoutes.js`, only with `BOT_ADMIN_EMBEDDED=1`): organisers and
+  admins with 2FA pass, a change needs the site's Origin and writes one audit entry
+  (`bot_admin.change`); the bot's token stays with nginx. The sidebar's "Manage events" opens
+  `/manage-events` with the page in a same-origin frame, after a health check with Retry. The bot
+  side: bot project PR #58 (its base path and embedded mode). Details: docs/BOTS.md, "The event
+  bot's admin page", and docs/AUTH.md.
+- **Organisers create event-bot appointments on the site** — closed by `feat/se-bot-admin`:
+  organisers may manage events (decided 2026-11-01) and do it on the embedded bot admin page
+  ("Manage events", above), under their own name (`X-Acting-User`, logged by the bot).
 
 - **Flaky test `devAdminScript.test.js`** — closed by `fix/test-dev-admin` (timed out twice under
   load on 2026-11-01, passed alone): its 20-second limit covered the whole run, and the run

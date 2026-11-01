@@ -12,13 +12,15 @@
 //              and BTC prices job (reference/sync.js), app.locals.recap.start() the weekly recap
 //              (recap/job.js). The embedded chat on approved foreign sites (embed/) adds its CSP,
 //              its token check and its routes; prices and bot events (bots/) are read-only public
-//              reads.
+//              reads; /api/bot-admin/authorize lets staff through to the event bot's admin page
+//              (bots/adminAuthorizeRoutes.js, only with BOT_ADMIN_EMBEDDED=1).
 // ============================================================
 
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import express from 'express';
 import { bootstrapRoutes } from './accounts/bootstrap.js';
+import { botAdminRoutes } from './bots/adminAuthorizeRoutes.js';
 import { botRoutes } from './bots/routes.js';
 import { referenceRoutes } from './reference/routes.js';
 import { createReferenceSync } from './reference/sync.js';
@@ -127,6 +129,8 @@ export function createApp({
   const bots = botRoutes(config, chat.images, botImageNetwork);
   api.use('/prices', bots.prices);
   api.use('/bot-events', bots.events);
+  // The host's nginx asks this before every request to the event bot's admin page (/bot-admin/).
+  api.use('/bot-admin', botAdminRoutes(db, config));
   api.use('/reference-prices', referenceRoutes(db, config));
   api.use('/games', gameRoutes(db));
   api.use('/admin/games', adminGameRoutes(db));

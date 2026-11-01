@@ -444,6 +444,42 @@ the page `/banner`. The banner's link and style, every other setting and the adm
 `/api/admin/settings` stay admin-only; `/api/banner` takes the same two keys from admins. Each change is audited like an admin's
 setting change (`setting.change`). Details: docs/SETTINGS.md, "Who".
 
+## The event bot's admin page (/bot-admin/)
+
+The event bot's own admin page is embedded in the site, not rebuilt, and needs no second login
+(decided 2026-10-20); organisers may manage events (decided 2026-11-01). The host's nginx serves
+`/bot-admin/` on the site's domain and, before every request to it, asks the site
+`GET /api/bot-admin/authorize` (an `auth_request` subrequest carrying the browser's own `Cookie`,
+`Origin` and `Referer`, plus `X-Original-Method` and `X-Original-URI`;
+`server/src/bots/adminAuthorizeRoutes.js`). The bot side and the setup: docs/BOTS.md, "The event
+bot's admin page".
+
+- **Only while set up**: `BOT_ADMIN_EMBEDDED=1` (off by default). Off, the route answers `404`.
+- **Who**: `allow('organiser')`, the site's own rule. `204` with `X-Acting-User: <username>` for an
+  organiser or admin who passed the staff 2FA gate; `401` for a guest, and for a locked account,
+  whose session ends on its next request (`sessionUser`, `server/src/http/session.js`, as
+  everywhere); `403` for a member and for staff without 2FA (`two_factor_required`). nginx lets
+  the request through on `204` only.
+- **Changes need the site's Origin**: for `X-Original-Method` `POST`, `PUT`, `PATCH` or `DELETE` the
+  browser's `Origin` (or `Referer`) must be the site's own, the CSRF rule above (`originRefusal`,
+  `server/src/http/csrf.js`), else `403`. `GET`, `HEAD` and `OPTIONS` only read; any other or a
+  missing method is refused (`403 method_unknown`), so a request nobody checked never passes.
+- **Audit**: each change let through writes **one** audit entry `bot_admin.change` (actor, target
+  type `bot_admin`, target the path of `X-Original-URI` without its query string, at most 300
+  characters, after `{ method }`) through `recordAudit`. Never a body, never a header. It records
+  that the site let the change through; the bot's own answer is not known to the site.
+- **Nothing to leak**: every answer is `Cache-Control: no-store` and repeats no request header. The
+  bot's token stays with nginx (a root-only file); the site never has it. Its only rate limit is
+  the one on every `GET` under `/api` (below; each request of the bot's page is one), and nothing
+  on the route logs a header.
+- Tests: `server/test/botAdminAuthorize.test.js` (every answer above, no-store, a fake
+  `X-Bot-Admin-Token` never repeated, the audit entry without query or body);
+  `client/src/pages/manageEventsPage.test.jsx` and `client/e2e/manageEvents.spec.js` (the item and
+  the frame).
+- The sidebar's **Manage events** (organisers and admins, while set up) opens `/manage-events`,
+  which shows `/bot-admin/` in a same-origin frame; the client learns that the page is set up from
+  the session answer (`features.botAdmin`, `GET /api/auth/session`).
+
 **Chat file uploads** are a member route (`POST /api/chat/uploads`); guests cannot upload or
 attach. **Every request for an uploaded file applies the chat's read rule** (`GET
 /api/chat/files/...`, `server/src/uploads/routes.js`): the viewer must be able to read the room
