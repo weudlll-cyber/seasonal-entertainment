@@ -46,6 +46,13 @@ entry waits for.
 
 ### Technical debt
 
+- **Home on a phone moves when a call exists** — with a live or planned call, the late game and
+  events on a phone shift the boxes below (`.home__tiles` and an eyebrow) by 0.029 (local) and
+  0.053 (CI's fonts) in layout-shift terms, measured 2026-11-01, also before the layout changes
+  of that day; without a call 0.0013. `client/e2e/speed.spec.js` now answers "no call", so other
+  specs' calls no longer decide it (it failed on CI twice that day); the kept room
+  (`LandingPage.css`, `.home__game` / `.home__upnext` min-heights) does not yet cover the call.
+
 - **Event bot images too large** — the live site logs "event image not used (too large)" for six
   of the event bot's images (seen 2026-11-01): those events show without their picture (a dot in
   "Up next"). The limits are in `server/src/bots/images.js` (`config.bots.images`).
