@@ -50,7 +50,7 @@ rollback() {
   local commit
   commit="$(cat "$snap/commit")"
   if [[ "$commit" != unknown && "$commit" != "$(commit_sha)" && -f "$snap/install.conf" ]]; then
-    git -c safe.directory="$INSTALL_DIR" -C "$INSTALL_DIR" checkout -q "$commit" ||
+    git_here checkout -q "$commit" ||
       die "could not check out $commit"
     say "code: back at $commit; run the installer again to rebuild and restart"
   elif [[ ! -f "$snap/install.conf" ]]; then

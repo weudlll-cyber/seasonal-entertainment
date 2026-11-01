@@ -29,15 +29,15 @@ own names in their place.
 
 ## The one command
 
-On the server, get the code and run the installer as root:
+On the server, get the code and run the installer as root, in one line:
 
 ```sh
-git clone https://github.com/weudlll-cyber/seasonal-entertainment.git /opt/seasonal-entertainment
-cd /opt/seasonal-entertainment
-sudo ./deploy/install.sh
+git clone https://github.com/weudlll-cyber/seasonal-entertainment.git /opt/seasonal-entertainment && sudo /opt/seasonal-entertainment/deploy/install.sh
 ```
 
-The repository is public, so the clone needs no GitHub login on the server. Any folder works; the
+It needs git, which Ubuntu servers usually have; if not, `sudo apt-get install -y git` first.
+Writing to `/opt` needs root: run it as root, or as `sudo git clone …` for the first half. The
+repository is public, so the clone needs no GitHub login on the server. Any folder works; the
 installer remembers where it ran. After the questions, a run on a fresh server took about 6
 minutes (first deployment), most of it installing Docker and building the image. It writes one
 plain line per step (`[install] …`) and says before the long ones (installing Docker, building
@@ -203,13 +203,33 @@ it is no longer one of the installer's files where other sites listen).
 ## Updating
 
 ```sh
-cd /opt/seasonal-entertainment
-sudo systemctl start seasonal-backup.service          # a fresh backup first (if set up)
-sudo ./deploy/install.sh --commit <tag or commit>     # fetches, checks it out, re-runs
+sudo /opt/seasonal-entertainment/deploy/install.sh --update
 ```
 
-`--commit` checks out the ref and runs **that** commit's installer, which rebuilds the image and
-restarts the services. A plain `sudo ./deploy/install.sh` after a `git pull` does the same.
+`--update` (`deploy/install/lib/update.sh`) does, in this order:
+
+1. Checks that the checkout can simply move forward, and stops with the reason, having changed
+   nothing, if it cannot: tracked files are modified, the checkout has commits origin's default
+   branch does not have (diverged), it is on another branch, or origin's default branch is
+   unknown. It never resets, stashes or discards anything; fix such a checkout by hand.
+2. With backups set up, takes a fresh backup and prints where it is
+   (`/var/backups/seasonal/<time>.tar.age`). Without, it warns and goes on.
+3. Fetches and fast-forwards the checkout to origin's default branch (`master`), also from a
+   detached checkout left by `--commit`, and prints the old and the new commit.
+4. Runs **that** commit's installer as a plain re-run: no questions for remembered answers; it
+   rebuilds the image and restarts what changed. Like every re-run on a terminal, it asks for the
+   CoinGecko key while none is set (Enter: none); `--update --yes` never asks.
+
+For a specific version instead, `sudo ./deploy/install.sh --commit <tag or commit>` checks out
+the ref and runs that commit's installer the same way (take a backup first:
+`sudo systemctl start seasonal-backup.service`). `--update` and `--commit` do not go together.
+
+A server installed before `--update` existed has an installer without it. The first time:
+
+```sh
+cd /opt/seasonal-entertainment && git pull --ff-only && sudo ./deploy/install.sh --update
+```
+
 Secrets, data, certificates and answers are kept. The site is down for the few seconds the
 container needs to start. Chat connections reconnect by themselves, and running calls continue
 when only the site changes. Database changes are additive (added on start).
@@ -524,7 +544,12 @@ The scenarios:
   before the install). Before the second install the installer's files get their old names: the
   same check must then fail (the old behaviour), and the second install must move them and pass
   it again. ufw is active with `80,443/tcp`, `7881`, `50000:60000/udp` and `5349/tcp` for IPv4
-  only: the installer may add only `3478/udp` and the IPv6 rule for `5349/tcp`.
+  only: the installer may add only `3478/udp` and the IPv6 rule for `5349/tcp`. With backups set
+  up, the checkout tracks a bare "origin" repository inside the server; after the re-run origin
+  gets a newer commit. `--update` must first refuse while a tracked file is modified (same commit,
+  site not restarted), then take a backup, keep the secrets and the remembered answers, move the
+  checkout to the new commit on `master` and serve it (`/api/health`), with the same answer for
+  unknown names.
 - `jammy`: a 22.04 server, the site alone, ufw active with the app profile `Nginx Full`: the
   installer may add only `443/udp`. The admin password is typed first too short, then with a
   differing confirmation; the installer must explain and ask again each time.
@@ -727,7 +752,7 @@ systemctl start seasonal-backup.service && ls /var/backups/seasonal
 | File                                                                       | What                                                                                                                                                                                                                             |
 | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `deploy/install.sh`                                                        | the one-command installer (entry: options, the install flow)                                                                                                                                                                     |
-| `deploy/install/lib/`                                                      | its parts: prompts, long steps and state, detection, packages, configuration, nginx and its answer for unknown names, firewall, services, snapshot/status/uninstall                                                              |
+| `deploy/install/lib/`                                                      | its parts: prompts, long steps and state, detection, packages, configuration, nginx and its answer for unknown names, firewall, services, snapshot/status/uninstall, `--update`                                                  |
 | `deploy/install/answers.example`                                           | the answers file for unattended runs                                                                                                                                                                                             |
 | `deploy/install/certbot-hook.sh`, `deploy/install/caddy/www.caddy`         | nginx mode: hands renewed certificates on; Caddy mode: the www redirect                                                                                                                                                          |
 | `deploy/test/`                                                             | the installer's end-to-end tests (`run.sh`; systemd Ubuntu containers, Pebble, test DNS)                                                                                                                                         |

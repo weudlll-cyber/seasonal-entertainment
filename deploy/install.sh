@@ -10,7 +10,8 @@
 #              Caddy on an empty server or works beside an nginx already there, installs Docker
 #              if missing, makes every secret on the server, builds and starts the site (and the
 #              call service with recording, if chosen), creates the first admin and sets up the
-#              encrypted backups. Re-running keeps secrets, data and answers. --status,
+#              encrypted backups. Re-running keeps secrets, data and answers. --update (a backup,
+#              then the newest commit of origin's default branch), --commit <ref>, --status,
 #              --uninstall [--purge-data], --rollback <snapshot>, --admin, --backups. The parts
 #              live in deploy/install/lib/.
 # ============================================================
@@ -37,6 +38,8 @@ source "$LIB/nginx-default.sh"
 source "$LIB/services.sh"
 # shellcheck source=install/lib/manage.sh
 source "$LIB/manage.sh"
+# shellcheck source=install/lib/update.sh
+source "$LIB/update.sh"
 
 # Any command failing where no step expected it still stops with a message and the rollback.
 trap 'die "unexpected failure (line $LINENO: $BASH_COMMAND)"' ERR
@@ -52,6 +55,8 @@ Usage: sudo ./deploy/install.sh [options]
   (no action)            install, or update what is installed (asks what it needs)
   --answers FILE         answers for unattended runs (KEY=VALUE; deploy/install/answers.example)
   --yes                  never ask: missing optional answers are "none"
+  --update               a fresh backup (if set up), then the newest code of origin's default
+                         branch (fast-forward only), installed as a plain re-run does
   --commit REF           check out REF (a commit, tag or branch) first, then install it
   --admin                create the first admin (password asked on the terminal)
   --backups              set up or change the encrypted backups (asks for the age public key)
@@ -68,12 +73,14 @@ PURGE=no
 UNATTENDED=no
 ANSWERS=""
 COMMIT_REF=""
+UPDATE=no
 ROLLBACK_DIR=""
 while (($#)); do
   case "$1" in
     --answers) ANSWERS="${2:?--answers needs a file}"; shift ;;
     --yes) UNATTENDED=yes ;;
     --commit) COMMIT_REF="${2:?--commit needs a ref}"; shift ;;
+    --update) UPDATE=yes ;;
     --admin) ACTION='admin' ;;
     --backups) ACTION=backups ;;
     --status) ACTION=status ;;
@@ -88,18 +95,19 @@ done
 
 [[ "$(id -u)" == 0 ]] || die "run as root: sudo $0"
 [[ "$PURGE" == no || "$ACTION" == uninstall ]] || die "--purge-data goes with --uninstall"
+[[ "$UPDATE" == no || -z "$COMMIT_REF" ]] ||
+  die "--update and --commit do not go together: --update takes the newest code, --commit REF a chosen one"
+[[ "$UPDATE" == no || "$ACTION" == install ]] || die "--update goes alone (with --answers or --yes at most)"
 
 # A different commit: check it out, then run that commit's own installer (this file may change).
 if [[ -n "$COMMIT_REF" && -z "${SEASONAL_REEXEC:-}" ]]; then
-  git -c safe.directory="$INSTALL_DIR" -C "$INSTALL_DIR" fetch -q --all --tags || die "git fetch failed"
-  git -c safe.directory="$INSTALL_DIR" -C "$INSTALL_DIR" checkout -q "$COMMIT_REF" ||
-    die "could not check out $COMMIT_REF (uncommitted changes in $INSTALL_DIR?)"
+  git_here fetch -q --all --tags || die "git fetch failed"
+  git_here checkout -q "$COMMIT_REF" || die "could not check out $COMMIT_REF (uncommitted changes in $INSTALL_DIR?)"
   say "code: $COMMIT_REF ($(commit_sha | cut -c1-12))"
-  args=()
-  [[ -z "$ANSWERS" ]] || args+=(--answers "$ANSWERS")
-  [[ "$UNATTENDED" == no ]] || args+=(--yes)
-  SEASONAL_REEXEC=1 exec "$INSTALL_DIR/deploy/install.sh" "${args[@]}"
+  reexec_installer
 fi
+# The newest code: backup, fast-forward, then that commit's installer (update.sh).
+[[ "$UPDATE" == no || -n "${SEASONAL_REEXEC:-}" ]] || update_installed
 
 # Shown before the calls and recording questions, only when they are really asked: what the
 # feature is, what it needs, and the safe answer for someone who is not sure.

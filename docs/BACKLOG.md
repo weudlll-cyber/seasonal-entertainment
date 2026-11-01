@@ -57,6 +57,12 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Installer: one-command update** — closed by `feat/se-install-2` (SE-INSTALL-2; requested
+  2026-11-01): `sudo /opt/seasonal-entertainment/deploy/install.sh --update` takes a fresh backup
+  (if set up), fast-forwards the checkout to origin's default branch (refusing modified tracked
+  files and diverged checkouts, never resetting or stashing) and re-runs that commit's installer
+  (docs/DEPLOYMENT.md, "Updating"); the installer tests' nginx scenario updates from a bare
+  "origin" in the server.
 - **Backups to a Linux or macOS PC** — closed by `feat/se-install-2` (SE-INSTALL-2; owner proposal
   2026-11-01): docs/DEPLOYMENT.md "Backups to your PC", "Linux and macOS": age 1.2.1 from the
   release tarball, the key pair, `deploy/pc/get-seasonal-backups.sh` (POSIX sh; the same as the

@@ -15,7 +15,9 @@
 #              whose nginx already serves another site with its own certificate and no
 #              default_server (requests by IP address must keep its answer; before the re-run
 #              the installer's files get their old names, which the re-run must move), and ufw
-#              active with combined, range and IPv4-only rules, calls, a bot's file; "jammy" =
+#              active with combined, range and IPv4-only rules, calls, a bot's file, backups,
+#              and --update from a bare "origin" in the server that gets a newer commit (refused
+#              first while a tracked file is modified); "jammy" =
 #              a 22.04 server with ufw active and the app profile "Nginx Full", the site alone,
 #              and a too-short password and a differing confirmation typed first.
 #              Not part of npm run verify or CI (it takes long and needs Docker with privileged
@@ -158,6 +160,49 @@ old_nginx_names() {
     systemctl reload nginx'
 }
 
+# An "origin" for --update inside the server: a bare repository whose default branch (master)
+# holds the commit about to be installed; the checkout tracks it, as a clone from GitHub does.
+make_origin() {
+  on_server sh -ec "git init -q --bare -b master /srv/origin.git
+    cd $REMOTE
+    git branch -M master
+    git remote add origin /srv/origin.git
+    git push -q -u origin master"
+}
+
+# One newer commit on origin's master, as a release would add; prints its hash.
+newer_origin_commit() {
+  on_server sh -ec "rm -rf /srv/upstream
+    git clone -q /srv/origin.git /srv/upstream
+    cd /srv/upstream
+    echo 'a newer commit for the --update test' > deploy/test/update-marker.txt
+    git add -A
+    git -c user.name=test -c user.email=test@example.org commit -qm newer
+    git push -q origin master
+    git rev-parse HEAD"
+}
+
+head_commit() { on_server git -C "$REMOTE" rev-parse HEAD; }
+site_started_at() { on_server docker inspect -f '{{.State.StartedAt}}' seasonal-site-site-1; }
+answers_hash() { on_server sha256sum /etc/seasonal/install.conf; }
+
+# --update with a modified tracked file: it must stop with the reason and change nothing (the
+# same commit, the site not rebuilt or restarted).
+update_refused() {
+  local commit="$1" started="$2" out
+  if out="$(on_server "$REMOTE/deploy/install.sh" --update 2>&1)"; then return 1; fi
+  printf '%s\n' "$out" | grep STOPPED | sed 's/^/    /' | tee -a "$RESULTS"
+  [[ "$out" == *'tracked files'*'are modified'* && "$(head_commit)" == "$commit" &&
+    "$(site_started_at)" == "$started" ]]
+}
+
+# The update's own backup, before the new code: named in the output from line FROM on, and there.
+update_backup_taken() {
+  local file
+  file="$(tail -n +"$1" "$RESULTS" | sed -n 's/.*backup before the update: \(\/var\/backups\/seasonal\/[^ ]*\.tar\.age\).*/\1/p' | head -n 1)"
+  [[ -n "$file" ]] && on_server test -s "$file"
+}
+
 # The answers file: the same keys a person would fill in (deploy/install/answers.example).
 answers() {
   local calls="$1" recording="$2" www="$3" backups="$4" price_bot="$5" recipient=""
@@ -187,6 +232,7 @@ scenario() {
   case "$name" in
     caddy) ubuntu=24.04 mode=caddy calls=calls.example.org recording=yes www=yes backups=yes ;;
     nginx) ubuntu=24.04 mode=nginx calls=calls.example.org www=yes price_bot=/srv/bots/snapshots.db ufw=yes
+      backups=yes # --update takes one first
       # 80, 443, 7881 and the media range are covered already; 5349/tcp only for IPv4.
       ufw_added=(46:udp:3478 6:tcp:5349) ufw_own=(3478/udp 'to ::/0 port 5349 proto tcp') ;;
     jammy) ubuntu=22.04 mode=caddy ufw=yes PASSWORD_MISTAKES=1
@@ -199,6 +245,7 @@ scenario() {
   if [[ "$mode" == nginx ]]; then
     on_server /etc/seasonal-test/prepare-nginx.sh | tee -a "$RESULTS"
     on_server sh -c 'mkdir -p /srv/bots && : > /srv/bots/snapshots.db'
+    make_origin
   fi
   [[ "$ufw" == no ]] || on_server /etc/seasonal-test/prepare-ufw.sh "$name" | tee -a "$RESULTS"
   answers "$calls" "$recording" "$www" "$backups" "$price_bot"
@@ -240,6 +287,25 @@ scenario() {
   check marker
   [[ "$mode" == caddy ]] || { check other; check unknown-name; check nginx-files; }
   [[ "$ufw" == no ]] || { check ufw "${ufw_added[@]}"; check ufw-own "${ufw_own[@]}"; }
+
+  if [[ "$mode" == nginx ]]; then
+    say "--- --update to a newer commit of origin's default branch"
+    local old_commit new_commit answers_before
+    old_commit="$(head_commit)"
+    new_commit="$(newer_origin_commit | tail -n 1)"
+    on_server sh -c "echo 'a local change' >> $REMOTE/README.md"
+    ok "--update refuses a modified tracked file and changes nothing" update_refused "$old_commit" "$(site_started_at)"
+    on_server git -C "$REMOTE" checkout -q -- README.md
+    before="$(check secrets-hash)"
+    answers_before="$(answers_hash)"
+    from=$(($(wc -l <"$RESULTS") + 1))
+    run_installer --update
+    ok "--update took a backup before the new code" update_backup_taken "$from"
+    ok "secrets kept by --update" same_secrets "$before"
+    ok "remembered answers unchanged by --update" test "$(answers_hash)" = "$answers_before"
+    check served-commit "$new_commit"
+    check unknown-name
+  fi
 
   say "--- uninstall"
   on_server "$REMOTE/deploy/install.sh" --uninstall | tee -a "$RESULTS"

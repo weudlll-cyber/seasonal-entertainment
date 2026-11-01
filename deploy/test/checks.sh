@@ -76,6 +76,17 @@ case "$check" in
       fail unknown-name "requests by IP address get another answer: ${now//$'\n'/; } (before: $(paste -sd ';' "$TEST_DIR/unknown-name-answer"))"
     pass "requests by IP address / without SNI get the same answer as before the install (${now//$'\n'/; })"
     ;;
+  served-commit)
+    # After --update: the checkout is on master at the commit given, and the site serves it.
+    pebble_root
+    served="$(curl -fsS --max-time 10 --cacert "$ROOT_CA" https://example.org/api/health |
+      sed -n 's/.*"commit":"\([0-9a-f]*\)".*/\1/p')"
+    head="$(git -C /opt/seasonal-entertainment rev-parse HEAD)"
+    branch="$(git -C /opt/seasonal-entertainment symbolic-ref -q --short HEAD || true)"
+    [[ "$head" == "$1" && "$branch" == master && -n "$served" && "$1" == "$served"* ]] ||
+      fail served-commit "checkout $head on '$branch', site serves '$served', expected $1 on master"
+    pass "the checkout moved to $(cut -c1-12 <<<"$1") on master and the site serves it ($served)"
+    ;;
   nginx-files)
     # Today's names (they load after the other sites' files); the old names are gone.
     for name in site calls; do

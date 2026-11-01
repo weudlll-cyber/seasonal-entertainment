@@ -30,6 +30,10 @@ die() {
   exit 1
 }
 
+# git in the checkout (which may belong to another user than root): --commit, --update, the
+# commit the image is built with.
+git_here() { git -c safe.directory="$INSTALL_DIR" -C "$INSTALL_DIR" "$@"; }
+
 # A terminal to ask on, also when stdin is a pipe; none in unattended runs.
 have_tty() { [[ -r /dev/tty && -w /dev/tty ]] && { : </dev/tty; } 2>/dev/null; }
 

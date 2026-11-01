@@ -150,9 +150,18 @@ install_admin() {
   say "BOOTSTRAP_TOKEN removed, site restarted"
 }
 
+# backup_now WHAT: one backup through the systemd unit, as the timer runs it, under run_step;
+# stops the run unless the newest file is then an encrypted .tar.age. Sets NEWEST_BACKUP.
+backup_now() {
+  run_step "$1" systemctl start seasonal-backup.service ||
+    die "the backup failed (journalctl -u seasonal-backup.service)"
+  # shellcheck disable=SC2012 # backup names are plain timestamps
+  NEWEST_BACKUP="$(ls -t "$BACKUP_HOST_DIR" 2>/dev/null | head -n 1)"
+  [[ "$NEWEST_BACKUP" == *.tar.age ]] || die "the newest backup is not an encrypted .tar.age ($NEWEST_BACKUP)"
+}
+
 # The nightly backup, encrypted to the owner's age public key (docs/DEPLOYMENT.md, "Backups").
 install_backups() {
-  local newest
   [[ -n "${BACKUP_RECIPIENT:-}" ]] || return 0
   [[ "$BACKUP_RECIPIENT" =~ ^age1[0-9a-z]{58}$ ]] || die "BACKUP_RECIPIENT is not an age public key (age1…)"
   kv_set "$(site_env)" BACKUP_RECIPIENT "$BACKUP_RECIPIENT"
@@ -164,10 +173,6 @@ install_backups() {
   systemctl enable --now seasonal-backup.timer >/dev/null 2>&1
   wait_health
   say "running one backup now (the database and the media folder; longer with many recordings)"
-  run_step "the first backup" systemctl start seasonal-backup.service ||
-    die "the backup failed (journalctl -u seasonal-backup.service)"
-  # shellcheck disable=SC2012 # backup names are plain timestamps
-  newest="$(ls -t "$BACKUP_HOST_DIR" 2>/dev/null | head -n 1)"
-  [[ "$newest" == *.tar.age ]] || die "the newest backup is not an encrypted .tar.age ($newest)"
-  say "backups: nightly at 03:30; the first one is $BACKUP_HOST_DIR/$newest"
+  backup_now "the first backup"
+  say "backups: nightly at 03:30; the first one is $BACKUP_HOST_DIR/$NEWEST_BACKUP"
 }
