@@ -42,9 +42,10 @@ Escape, Tab; an item with `confirm` asks first — the call stage uses it for it
 collapsed call chat, whose unlisted room is not in the unread counters),
 **`usePersonalEvents(handler)`** (the signed-in member's own live events on the one connection;
 the site's call reminders, `callReminder`, docs/CALLS.md), **`useRoomGlimpse()`** (the
-Community box, below) and
+Community box, below),
 **`onDirectRequest(callback)`** (a name menu asked for a conversation: the host brings its Direct
-tab forward). The module encrypts and decrypts with `shared/crypto.js`, the only other outside
+tab forward) and **`onReconnect(listener)`** (the one connection is open again after a drop: the
+site's update notice asks then whether the server was updated, docs/DEPLOYMENT.md, "Updating"). The module encrypts and decrypts with `shared/crypto.js`, the only other outside
 import it is allowed.
 
 The module uses nothing else from the page around it. From outside its folder it imports only React,

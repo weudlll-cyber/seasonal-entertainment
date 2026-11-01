@@ -10,7 +10,8 @@
 //              menu (MenuButton) and the new-message count of a hidden room (useNewMessageCount);
 //              the member's own live events for other areas of the site (usePersonalEvents: call
 //              reminders, a new device asking for the key, notifications) and a room's newest
-//              messages with the online count (useRoomGlimpse: the home page's Community box).
+//              messages with the online count (useRoomGlimpse: the home page's Community box);
+//              onReconnect (the live connection is back after a drop: app/UpdateNotice.jsx).
 //              Pages import only from here; everything else in this folder is internal
 //              (docs/CHAT.md).
 // ============================================================
@@ -29,3 +30,4 @@ export { default as MenuButton } from './MenuButton.jsx';
 export { useNewMessageCount } from './useNewMessageCount.js';
 export { usePersonalEvents } from './usePersonalEvents.js';
 export { useRoomGlimpse } from './useRoomGlimpse.js';
+export { onReconnect } from './connection.js';

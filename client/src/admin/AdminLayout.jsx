@@ -3,15 +3,17 @@
 // Path:        client/src/admin/AdminLayout.jsx
 // Project:     Seasonal Entertainment
 // Description: Frame of the admin area: heading, section navigation, the routed section
-//              (each loaded on first use, App.jsx: the frame stays while it arrives).
+//              (each loaded on first use, App.jsx: the frame stays while it arrives, and a
+//              section that cannot be loaded shows its error inside the frame, LazyBoundary).
 // ============================================================
 
-import { Suspense } from 'react';
-import { NavLink, Outlet } from 'react-router';
+import { NavLink, Outlet, useLocation } from 'react-router';
+import LazyBoundary from '../app/LazyBoundary.jsx';
 import { ADMIN_NAV } from '../app/navigation.js';
 import './admin.css';
 
 export default function AdminLayout() {
+  const { pathname } = useLocation();
   return (
     <section className="page page--wide">
       <h1>Admin</h1>
@@ -24,9 +26,9 @@ export default function AdminLayout() {
           ))}
         </ul>
       </nav>
-      <Suspense>
+      <LazyBoundary resetKey={pathname}>
         <Outlet />
-      </Suspense>
+      </LazyBoundary>
     </section>
   );
 }

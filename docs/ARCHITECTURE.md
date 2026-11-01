@@ -55,14 +55,16 @@ The race game uses 5173 and 4173; this project stays clear of them.
 
 ## Runtime configuration
 
-Read from the environment when the process starts, never baked into a build:
+Read from the environment when the process starts, never baked into a build (except the
+commit, which the client build carries for the update notice):
 
 | Variable                            | Default                                       | Used by                                                                   |
 | ----------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------- |
 | `HOST`                              | `127.0.0.1`                                   | server listen address                                                     |
 | `PORT`                              | `3800`                                        | server listen port                                                        |
 | `CLIENT_DIST`                       | `client/dist`                                 | folder of the built client the server serves (`assets/` cached a year)    |
-| `COMMIT_SHA`                        | output of `git rev-parse`                     | commit reported by `/api/health`                                          |
+| `COMMIT_SHA`                        | output of `git rev-parse`                     | commit of `/api/health` and of the client build (`npm run build`)         |
+| `SE_DEV_BUILD_COMMIT`               | (unset)                                       | `npm run dev`: a pretended client build commit (DEPLOYMENT.md)            |
 | `CLIENT_PORT`                       | `5380`                                        | Vite dev server port                                                      |
 | `API_ORIGIN`                        | `http://127.0.0.1:3800`                       | where the Vite dev server forwards `/api` and `/ws`                       |
 | `NODE_ENV`                          | (unset)                                       | `production`: Secure cookies, no dev defaults (DEPLOYMENT.md)             |
@@ -369,7 +371,9 @@ client/                    React + Vite client
   index.html               HTML shell
   src/app/                 route table, app shell (Layout, Sidebar, AccountCard), chat drawer
                            (ChatDrawer, RoomPicker, its remembered state), icons, navigation
-                           list, never-throwing browser storage
+                           list, never-throwing browser storage; after an update the
+                           "new version" notice (UpdateNotice) and the one reload for a page
+                           part whose file is gone (staleChunks, LazyBoundary)
   src/api/http.js          the one fetch wrapper (JSON, ApiError)
   src/session/             session context (who is signed in), RequireUser guard, credentials
                            (password -> auth key and wrapping key, docs/AUTH.md) and the
