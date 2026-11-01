@@ -33,9 +33,6 @@ entry waits for.
   admins change (`server/src/settings/adminRoutes.js`, docs/SETTINGS.md).
 - **Organisers create event-bot appointments on the site** — needs the bot-project change named
   in "Event bot admin page inside the site" above.
-- **Backups to a Linux or macOS PC** — docs/DEPLOYMENT.md "Backups to your PC" and `deploy/pc/`
-  cover Windows (PowerShell) only; the same for Linux and macOS is missing: the age key pair,
-  fetching and checking the backups, the copy of the 2FA encryption key.
 
 ### Proposals not decided
 
@@ -60,16 +57,42 @@ entry waits for.
   of 104 passed each (7.1, 12.0 and 10.8 min; the two call tests 12–22 s). The test is unchanged.
   The button needs the call `live` and the page's one `GET /api/calls/:id` answered; which of the
   two failed on CI is what the trace will show.
-- **Installer: the calls file as nginx's catch-all for 443** — in nginx mode, without a
-  `default_server` for 443, `seasonal-calls.conf` can load first and then answers requests by IP
-  address or without SNI with the calls certificate (first deployment, 2026-11-01; documented in
-  docs/DEPLOYMENT.md, "The two modes"). Named sites are not affected.
-- **Installer: combined ufw rules** — an existing `80,443/tcp` rule is not recognised as covering
-  `80/tcp` and `443/tcp`, so redundant rules are added beside it (first deployment, 2026-11-01;
-  docs/DEPLOYMENT.md, "What it does").
 
 ## PART TWO — closed
 
+- **Installer: one-command update** — closed by `feat/se-install-2` (SE-INSTALL-2; requested
+  2026-11-01): `sudo /opt/seasonal-entertainment/deploy/install.sh --update` takes a fresh backup
+  (if set up), fast-forwards the checkout to origin's default branch (refusing modified tracked
+  files and diverged checkouts, never resetting or stashing) and re-runs that commit's installer
+  (docs/DEPLOYMENT.md, "Updating"); the installer tests' nginx scenario updates from a bare
+  "origin" in the server.
+- **Backups to a Linux or macOS PC** — closed by `feat/se-install-2` (SE-INSTALL-2; owner proposal
+  2026-11-01): docs/DEPLOYMENT.md "Backups to your PC", "Linux and macOS": age 1.2.1 from the
+  release tarball, the key pair, `deploy/pc/get-seasonal-backups.sh` (POSIX sh; the same as the
+  Windows script: sftp as the read-only backup user, every missing backup, the newest 30 kept,
+  `download.log`), checking that one decrypts, the 2FA key copy readable for the owner only, and
+  the daily run with cron or launchd. `get-seasonal-backups.test.sh` (a fake sftp) runs in CI.
+- **Installer: the calls file as nginx's catch-all for 443** — closed by `feat/se-install-2`
+  (SE-INSTALL-2; found on the first deployment, 2026-11-01): requests by IP address or without
+  SNI get the same answer after a run as before it. The installer's files are now
+  `zz-seasonal-*.conf` and load after the other sites' files (the old names are moved on the next
+  run); the load order is checked with `nginx -T` before every reload and the certificate shown
+  without SNI after it, and a change puts the files back and stops the run; where no other site
+  listens on 443, a server of the installer's rejects the handshake (nginx 1.19.4 or newer;
+  docs/DEPLOYMENT.md, "Unknown names stay with the other sites"). The installer tests' nginx
+  scenario names the other site's file as on the real server and compares the answer before and
+  after.
+- **Installer: combined ufw rules** — closed by `feat/se-install-2` (SE-INSTALL-2; found on the
+  first deployment, 2026-11-01): an existing rule that already lets a port in (a combined rule
+  such as `80,443/tcp`, a range, a port without protocol, an app profile such as `Nginx Full`)
+  counts, for IPv4 and IPv6 separately, so nothing redundant is added (docs/DEPLOYMENT.md, "What
+  it does").
+- **Installer: clearer questions and no silent pauses** — closed by `feat/se-install-2`
+  (SE-INSTALL-2; seen on the first deployment, 2026-11-01): the calls and recording questions are
+  explained when they are asked; long steps say how long they take and print "still working"
+  while they run (apt's needrestart scan included); the admin password shows as `*`, is checked
+  against the site's password rules before the confirmation and is asked again instead of
+  stopping the run.
 - **VPS deployment** — closed by the first deployment on 2026-11-01, commit `d1f8837`: the site,
   the call service with recording and the nightly encrypted backups run on the VPS in nginx mode
   beside its existing site (docs/DEPLOYMENT.md).

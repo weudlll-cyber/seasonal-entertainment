@@ -6,8 +6,10 @@
 # Description: The installer tests' checks, run inside the test server by deploy/test/run.sh:
 #              `checks.sh <check> [args]`. Each prints one "[check] PASS|FAIL <name>" line and
 #              fails with a non-zero exit. Certificates are checked against Pebble's root, so a
-#              pass means a real ACME certificate, not just any answer. Secrets are read from
-#              the server's files where needed but never printed (only their hashes).
+#              pass means a real ACME certificate, not just any answer. The answer for unknown
+#              names (by IP address, no SNI) and ufw's rules are compared with what
+#              prepare-nginx.sh and prepare-ufw.sh recorded before the install. Secrets are read
+#              from the server's files where needed but never printed (only their hashes).
 # ============================================================
 
 set -euo pipefail
@@ -57,6 +59,43 @@ case "$check" in
     body="$(curl -fsS -k --max-time 10 https://other.example/)" || fail other "no answer"
     [[ "$body" == "the other site" ]] || fail other "answer changed: $body"
     pass "the other nginx site answers unchanged with its own certificate"
+    ;;
+  unknown-name-answer)
+    # What a client gets on 443 without a name (by IP address, no SNI), over IPv4 and IPv6:
+    # the certificate's fingerprint and the page.
+    for address in 127.0.0.1 '[::1]'; do
+      cert="$(timeout 10 openssl s_client -connect "$address:443" -noservername </dev/null 2>/dev/null |
+        openssl x509 -noout -fingerprint -sha256 2>/dev/null || true)"
+      body="$(curl -sk --max-time 10 "https://$address/" 2>/dev/null || true)"
+      echo "$address ${cert:-no TLS answer} | ${body:-no page}"
+    done
+    ;;
+  unknown-name)
+    now="$("$0" unknown-name-answer)"
+    [[ "$now" == "$(cat "$TEST_DIR/unknown-name-answer")" ]] ||
+      fail unknown-name "requests by IP address get another answer: ${now//$'\n'/; } (before: $(paste -sd ';' "$TEST_DIR/unknown-name-answer"))"
+    pass "requests by IP address / without SNI get the same answer as before the install (${now//$'\n'/; })"
+    ;;
+  served-commit)
+    # After --update: the checkout is on master at the commit given, and the site serves it.
+    pebble_root
+    served="$(curl -fsS --max-time 10 --cacert "$ROOT_CA" https://example.org/api/health |
+      sed -n 's/.*"commit":"\([0-9a-f]*\)".*/\1/p')"
+    head="$(git -C /opt/seasonal-entertainment rev-parse HEAD)"
+    branch="$(git -C /opt/seasonal-entertainment symbolic-ref -q --short HEAD || true)"
+    [[ "$head" == "$1" && "$branch" == master && -n "$served" && "$1" == "$served"* ]] ||
+      fail served-commit "checkout $head on '$branch', site serves '$served', expected $1 on master"
+    pass "the checkout moved to $(cut -c1-12 <<<"$1") on master and the site serves it ($served)"
+    ;;
+  nginx-files)
+    # Today's names (they load after the other sites' files); the old names are gone.
+    for name in site calls; do
+      [[ -f "/etc/nginx/sites-available/zz-seasonal-$name.conf" && -L "/etc/nginx/sites-enabled/zz-seasonal-$name.conf" ]] ||
+        fail nginx-files "zz-seasonal-$name.conf is missing"
+      [[ ! -e "/etc/nginx/sites-available/seasonal-$name.conf" && ! -L "/etc/nginx/sites-enabled/seasonal-$name.conf" ]] ||
+        fail nginx-files "the old seasonal-$name.conf is still there"
+    done
+    pass "nginx files: zz-seasonal-site.conf and zz-seasonal-calls.conf, no old names"
     ;;
   wss)
     # A LiveKit token signed with the installer's key pair, then a WebSocket upgrade over TLS.
@@ -119,27 +158,40 @@ case "$check" in
     ;;
   uninstalled)
     [[ -z "$(docker ps -q --filter 'name=^seasonal-')" ]] || fail uninstalled "containers still run"
-    [[ ! -e /etc/nginx/sites-enabled/seasonal-site.conf && ! -e /etc/nginx/sites-available/seasonal-site.conf ]] ||
-      fail uninstalled "the installer's nginx file is still there"
+    # Today's and the old names; no /etc/nginx at all in Caddy mode.
+    left="$({ find /etc/nginx -name '*seasonal-*.conf' 2>/dev/null || true; } | paste -sd ' ')"
+    [[ -z "$left" ]] || fail uninstalled "the installer's nginx files are still there: $left"
     [[ ! -e /etc/letsencrypt/renewal-hooks/deploy/seasonal.sh ]] || fail uninstalled "the certbot hook is still there"
     [[ -z "$(systemctl list-unit-files --no-legend 'seasonal-*' 2>/dev/null)" ]] || fail uninstalled "units remain"
     docker volume inspect seasonal-site_site-data >/dev/null || fail uninstalled "the data volume is gone"
     [[ -n "$(kv "$SITE_DIR/site.env" SESSION_SECRET)" ]] || fail uninstalled "the secrets are gone"
     pass "uninstalled: containers, nginx files, hook and units gone; data and secrets kept"
     ;;
+  ufw-rules)
+    # ufw's own record of every rule, IPv4 (user) and IPv6 (user6), one line each.
+    for family in user user6; do sed -n "s/^### tuple ### /$family /p" "/etc/ufw/$family.rules"; done | sort
+    ;;
   ufw)
-    # The rules the server had before (22, 80, 443) stay; the installer's own are listed.
-    rules="$(ufw status | awk 'NR > 4 && $2 == "ALLOW" { print $1 }' | sort -u | tr '\n' ' ')"
-    for rule in 22/tcp 80/tcp 443/tcp "$@"; do
-      [[ " $rules " == *" $rule "* ]] || fail ufw "rule $rule missing (have: $rules)"
-    done
-    pass "firewall rules: $rules"
+    # The rules the server had before are all still there, and the installer added exactly
+    # the ones given (<4|6|46>:<proto>:<port>), nothing redundant beside an existing rule.
+    expected="$({
+      cat "$TEST_DIR/ufw-before"
+      for rule in "$@"; do
+        IFS=: read -r families proto port <<<"$rule"
+        [[ "$families" != *4* ]] || echo "user allow $proto $port 0.0.0.0/0 any 0.0.0.0/0 in"
+        [[ "$families" != *6* ]] || echo "user6 allow $proto $port ::/0 any ::/0 in"
+      done
+    } | sort)"
+    now="$("$0" ufw-rules)"
+    [[ "$now" == "$expected" ]] ||
+      fail ufw "rules differ: added $(comm -13 <(echo "$expected") <(echo "$now") | paste -sd ';'), missing $(comm -23 <(echo "$expected") <(echo "$now") | paste -sd ';')"
+    pass "firewall: the server's own rules kept, added exactly: ${*:-nothing}"
     ;;
   ufw-own)
-    # Only what the installer added itself: the server's own 80/443 are not counted as its.
-    added="$(tr '\n' ' ' </etc/seasonal/ufw-added 2>/dev/null || true)"
-    [[ "$added" == "$*"* && " $added " != *" 80/tcp "* ]] || fail ufw-own "recorded as added: $added"
-    pass "firewall rules recorded as the installer's: $added"
+    # Exactly what the installer added, as it will remove it (the server's own rules are not its).
+    added="$(cat /etc/seasonal/ufw-added 2>/dev/null || true)"
+    [[ "$added" == "$(printf '%s\n' "$@")" ]] || fail ufw-own "recorded as added: ${added//$'\n'/; }"
+    pass "firewall rules recorded as the installer's: ${added//$'\n'/; }"
     ;;
   containers)
     for name in "$@"; do

@@ -33,7 +33,7 @@ kv_keep() {
 }
 
 commit_sha() {
-  git -c safe.directory="$INSTALL_DIR" -C "$INSTALL_DIR" rev-parse HEAD 2>/dev/null || echo unknown
+  git_here rev-parse HEAD 2>/dev/null || echo unknown
 }
 
 write_site_env() {

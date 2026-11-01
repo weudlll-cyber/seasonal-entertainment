@@ -6,18 +6,26 @@
 # Description: The packages the installer may add, and only when they are missing: Docker
 #              Engine with the Compose plugin (from Docker's own apt repository, as Docker's
 #              install guide for Ubuntu), certbot for nginx mode, git for updates. It never
-#              upgrades or removes another package (apt-get --no-upgrade).
+#              upgrades or removes another package (apt-get --no-upgrade). apt runs under
+#              run_step (common.sh), so a long install shows "still working" lines.
 # ============================================================
 
+# apt-get without questions. Ubuntu's needrestart runs after every apt run: it scans all
+# processes ("Scanning processes...", a silent minute on a busy server; run_step now reports
+# it as still working) and, in its default modes, may ask on the terminal or restart services
+# by itself. NEEDRESTART_MODE=l (list only) keeps it from ever prompting, or restarting another
+# site's nginx or ssh in the middle of the run; `sudo needrestart` shows later what waits.
+apt_get() { DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get "$@"; }
+
 apt_install() {
-  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-upgrade --no-install-recommends "$@" \
-    >/dev/null || die "could not install: $*"
+  run_step "installing $*" apt_get install -y --no-upgrade --no-install-recommends "$@" ||
+    die "could not install: $*"
 }
 
 apt_updated=no
 apt_update_once() {
   [[ "$apt_updated" == yes ]] && return 0
-  apt-get update -qq || die "apt-get update failed"
+  run_step "apt-get update" apt_get update -qq || die "apt-get update failed"
   apt_updated=yes
 }
 
@@ -39,14 +47,14 @@ ensure_docker() {
       say "installing the Docker Compose plugin"
       apt_update_once
       # Docker's repository calls it docker-compose-plugin, Ubuntu's own docker.io docker-compose-v2.
-      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-upgrade docker-compose-plugin \
-        >/dev/null 2>&1 || apt_install docker-compose-v2
+      run_step "installing docker-compose-plugin" apt_get install -y --no-upgrade docker-compose-plugin ||
+        apt_install docker-compose-v2
     fi
     systemctl is-active --quiet docker || systemctl start docker || die "Docker does not start"
     say "Docker: $(docker --version | sed 's/,.*//') with Compose $(docker compose version --short)"
     return 0
   fi
-  say "installing Docker Engine and the Compose plugin (Docker's apt repository)"
+  say "installing Docker Engine and the Compose plugin (Docker's apt repository; usually 1 to 3 minutes)"
   apt_update_once
   apt_install ca-certificates curl
   install -m 0755 -d /etc/apt/keyrings
@@ -69,7 +77,7 @@ ensure_certbot() {
     say "certbot: $(certbot --version 2>&1) (already installed, used as it is)"
     return 0
   fi
-  say "installing certbot (Ubuntu's package, with its renewal timer)"
+  say "installing certbot (Ubuntu's package, with its renewal timer; usually under a minute)"
   apt_update_once
   apt_install certbot
 }

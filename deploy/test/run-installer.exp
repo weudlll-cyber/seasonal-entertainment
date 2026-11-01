@@ -5,19 +5,58 @@
 # Project:     Seasonal Entertainment
 # Description: Runs the installer on a real terminal (a pty) inside the test server, as a person
 #              would, and types the first admin's password when it is asked for, from
-#              TEST_ADMIN_PASSWORD (deploy/test/run.sh). The installer turns echo off, so the
-#              password never shows in the log. Exits with the installer's own exit code.
+#              TEST_ADMIN_PASSWORD (deploy/test/run.sh). The installer echoes one * per
+#              character, so the password never shows in the log. With TEST_PASSWORD_MISTAKES=1
+#              it types as a person might: first a too-short password, then the right one with
+#              a typo removed by backspace and a confirmation that differs, then both right; the
+#              installer must say why and ask again each time, never stop. The CoinGecko key,
+#              asked on a terminal while none is set, is answered empty. Exits with the
+#              installer's own exit code (1 when a mistake was not answered by a new question).
 #              Usage: run-installer.exp <installer> [options]
 # ============================================================
 
 set timeout 3600
 set password $env(TEST_ADMIN_PASSWORD)
+set mistakes [expr {[info exists env(TEST_PASSWORD_MISTAKES)] && $env(TEST_PASSWORD_MISTAKES) == 1}]
+# With mistakes: 0 = the too-short one comes next, 1 = the differing confirmation, 2 = all right.
+set step [expr {$mistakes ? 0 : 2}]
+set asked 0
+set told_short 0
+set told_differ 0
 spawn {*}$argv
 expect {
-  "Password for" { send -- "$password\r"; exp_continue }
-  "The same password again" { send -- "$password\r"; exp_continue }
+  "Password for" {
+    set asked 1
+    if {$step == 0} {
+      send -- "short\r"
+      set step 1
+    } elseif {$step == 1} {
+      send -- "${password}x\x7f\r"
+    } else {
+      send -- "$password\r"
+    }
+    exp_continue
+  }
+  "The same password again" {
+    if {$step == 1} {
+      send -- "$password-not-the-same\r"
+      set step 2
+    } else {
+      send -- "$password\r"
+    }
+    exp_continue
+  }
+  # Asked on a terminal while no key is set, also by a re-run without --yes (--update): none.
+  "CoinGecko Demo API key" { send -- "\r"; exp_continue }
+  "at least 10 characters long" { set told_short 1; exp_continue }
+  "passwords differ" { set told_differ 1; exp_continue }
   timeout { puts "\[test\] the installer took longer than an hour"; exit 1 }
   eof
 }
 lassign [wait] pid spawn_id os_error status
+# A re-run asks no password (the admin exists): nothing to check then.
+if {$mistakes && $asked && !($told_short && $told_differ)} {
+  puts "\[test\] the installer did not explain and ask again after a wrong password"
+  exit 1
+}
 exit $status

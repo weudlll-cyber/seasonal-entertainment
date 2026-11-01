@@ -502,7 +502,8 @@ deploy/test/               the installer's end-to-end tests: run.sh (systemd Ubu
                            Pebble, test DNS); not part of npm run verify or CI
 deploy/site/               the site for a server: Dockerfile, docker-compose.yml (site + Caddy),
                            Caddyfile, systemd timers (docs/DEPLOYMENT.md)
-deploy/pc/                 the owner's PC: fetches the encrypted backups (PowerShell, sftp)
+deploy/pc/                 the owner's PC: fetches the encrypted backups over sftp (PowerShell on
+                           Windows, a POSIX sh script on Linux and macOS)
 deploy/calls/              the call service for a server: livekit.yaml, docker-compose.yml,
                            the optional recording add-on (docker-compose.recording.yml)
 docs/                      this file, the backlog, and one file per area (AUTH, BOTS, CHAT,

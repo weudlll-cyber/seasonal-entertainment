@@ -12,8 +12,14 @@
 #              (checks.sh), install again (nothing may change), --status, --uninstall, install
 #              once more (the data must still be there). Scenarios: "caddy" = an empty 24.04
 #              server, calls with recording, www redirect, backups; "nginx" = a 24.04 server
-#              whose nginx already serves another site with its own certificate and ufw
-#              active, calls, a bot's file; "jammy" = an empty 22.04 server, the site alone.
+#              whose nginx already serves another site with its own certificate and no
+#              default_server (requests by IP address must keep its answer; before the re-run
+#              the installer's files get their old names, which the re-run must move), and ufw
+#              active with combined, range and IPv4-only rules, calls, a bot's file, backups,
+#              and --update from a bare "origin" in the server that gets a newer commit (refused
+#              first while a tracked file is modified); "jammy" =
+#              a 22.04 server with ufw active and the app profile "Nginx Full", the site alone,
+#              and a too-short password and a differing confirmation typed first.
 #              Not part of npm run verify or CI (it takes long and needs Docker with privileged
 #              containers). Everything it creates carries the label seasonal.test and is
 #              removed at the end (KEEP=1 keeps it for a look).
@@ -98,7 +104,7 @@ start_server() {
     cd $REMOTE && find . -type f -not -path './.git/*' -exec chmod 644 {} + && xargs -r chmod 755 &&
     git init -q && git add -A && git -c user.name=test -c user.email=test@example.org commit -qm test"
   on_server install -d -m 700 /etc/seasonal-test /etc/docker
-  for file in checks.sh prepare-nginx.sh run-installer.exp; do
+  for file in checks.sh prepare-nginx.sh prepare-ufw.sh run-installer.exp; do
     on_server install -m 755 "$REMOTE/deploy/test/$file" "/etc/seasonal-test/$file"
   done
   docker cp seasonal-install-test-pebble:/test/certs/pebble.minica.pem - | on_server tar -C /etc/seasonal-test -xf -
@@ -112,12 +118,16 @@ start_server() {
 # run_installer [options...]: the installer on a terminal, its output into the results.
 run_installer() {
   local status=0
-  on_server env TEST_ADMIN_PASSWORD="$TEST_ADMIN_PASSWORD" /etc/seasonal-test/run-installer.exp \
-    "$REMOTE/deploy/install.sh" "$@" 2>&1 | tr -d '\r' | sed 's/^/    /' | tee -a "$RESULTS" || status=$?
+  on_server env TEST_ADMIN_PASSWORD="$TEST_ADMIN_PASSWORD" TEST_PASSWORD_MISTAKES="${PASSWORD_MISTAKES:-0}" \
+    /etc/seasonal-test/run-installer.exp "$REMOTE/deploy/install.sh" "$@" 2>&1 | tr -d '\r' |
+    sed 's/^/    /' | tee -a "$RESULTS" || status=$?
   return "$status"
 }
 
 check() { on_server /etc/seasonal-test/checks.sh "$@" | tee -a "$RESULTS"; }
+
+# fails <check> [args]: the check must fail (its own FAIL line is kept out of the results).
+fails() { ! on_server /etc/seasonal-test/checks.sh "$@" >/dev/null; }
 
 # ok "what" command...: a check made here rather than in checks.sh.
 ok() {
@@ -129,6 +139,69 @@ ok() {
 same_secrets() { [[ "$(check secrets-hash)" == "$1" ]]; }
 livekit_started_at() { on_server docker inspect -f '{{.State.StartedAt}}' seasonal-calls-livekit-1; }
 same_livekit() { [[ "$(livekit_started_at)" == "$1" ]]; }
+
+# The results from line FROM on: the typed password is not in them, only its * echo.
+password_hidden() {
+  local out
+  out="$(tail -n +"$1" "$RESULTS")"
+  [[ "$out" != *"$TEST_ADMIN_PASSWORD"* && "$out" == *'**********'* ]]
+}
+
+# The installer's nginx files under the names an earlier version gave them (before 2026-11-01),
+# as a server installed with it has them: requests by IP address then reach the calls file.
+old_nginx_names() {
+  # shellcheck disable=SC2016 # $n is the server shell's own variable
+  on_server sh -ec 'for n in site calls; do
+      mv /etc/nginx/sites-available/zz-seasonal-$n.conf /etc/nginx/sites-available/seasonal-$n.conf
+      rm /etc/nginx/sites-enabled/zz-seasonal-$n.conf
+      ln -s /etc/nginx/sites-available/seasonal-$n.conf /etc/nginx/sites-enabled/seasonal-$n.conf
+    done
+    nginx -t 2>/dev/null
+    systemctl reload nginx'
+}
+
+# An "origin" for --update inside the server: a bare repository whose default branch (master)
+# holds the commit about to be installed; the checkout tracks it, as a clone from GitHub does.
+make_origin() {
+  on_server sh -ec "git init -q --bare -b master /srv/origin.git
+    cd $REMOTE
+    git branch -M master
+    git remote add origin /srv/origin.git
+    git push -q -u origin master"
+}
+
+# One newer commit on origin's master, as a release would add; prints its hash.
+newer_origin_commit() {
+  on_server sh -ec "rm -rf /srv/upstream
+    git clone -q /srv/origin.git /srv/upstream
+    cd /srv/upstream
+    echo 'a newer commit for the --update test' > deploy/test/update-marker.txt
+    git add -A
+    git -c user.name=test -c user.email=test@example.org commit -qm newer
+    git push -q origin master
+    git rev-parse HEAD"
+}
+
+head_commit() { on_server git -C "$REMOTE" rev-parse HEAD; }
+site_started_at() { on_server docker inspect -f '{{.State.StartedAt}}' seasonal-site-site-1; }
+answers_hash() { on_server sha256sum /etc/seasonal/install.conf; }
+
+# --update with a modified tracked file: it must stop with the reason and change nothing (the
+# same commit, the site not rebuilt or restarted).
+update_refused() {
+  local commit="$1" started="$2" out
+  if out="$(on_server "$REMOTE/deploy/install.sh" --update 2>&1)"; then return 1; fi
+  printf '%s\n' "$out" | grep STOPPED | sed 's/^/    /' | tee -a "$RESULTS"
+  [[ "$out" == *'tracked files'*'are modified'* && "$(head_commit)" == "$commit" &&
+    "$(site_started_at)" == "$started" ]]
+}
+
+# The update's own backup, before the new code: named in the output from line FROM on, and there.
+update_backup_taken() {
+  local file
+  file="$(tail -n +"$1" "$RESULTS" | sed -n 's/.*backup before the update: \(\/var\/backups\/seasonal\/[^ ]*\.tar\.age\).*/\1/p' | head -n 1)"
+  [[ -n "$file" ]] && on_server test -s "$file"
+}
 
 # The answers file: the same keys a person would fill in (deploy/install/answers.example).
 answers() {
@@ -152,12 +225,19 @@ EOF
 }
 
 scenario() {
-  local name="$1" ubuntu mode calls="" recording=no www=no backups=no price_bot="" own_ports=()
+  local name="$1" ubuntu mode calls="" recording=no www=no backups=no price_bot="" ufw=no from
+  # What the installer must add to ufw beside the server's own rules (prepare-ufw.sh): for
+  # checks.sh "ufw" (<4|6|46>:<proto>:<port>) and as recorded for --uninstall ("ufw-own").
+  local ufw_added=() ufw_own=() PASSWORD_MISTAKES=0
   case "$name" in
     caddy) ubuntu=24.04 mode=caddy calls=calls.example.org recording=yes www=yes backups=yes ;;
-    nginx) ubuntu=24.04 mode=nginx calls=calls.example.org www=yes price_bot=/srv/bots/snapshots.db
-      own_ports=(7881/tcp 3478/udp 5349/tcp 50000:50499/udp) ;;
-    jammy) ubuntu=22.04 mode=caddy ;;
+    nginx) ubuntu=24.04 mode=nginx calls=calls.example.org www=yes price_bot=/srv/bots/snapshots.db ufw=yes
+      backups=yes # --update takes one first
+      # 80, 443, 7881 and the media range are covered already; 5349/tcp only for IPv4.
+      ufw_added=(46:udp:3478 6:tcp:5349) ufw_own=(3478/udp 'to ::/0 port 5349 proto tcp') ;;
+    jammy) ubuntu=22.04 mode=caddy ufw=yes PASSWORD_MISTAKES=1
+      # "Nginx Full" covers 80/tcp and 443/tcp; HTTP/3 needs 443/udp.
+      ufw_added=(46:udp:443) ufw_own=(443/udp) ;;
     *) say "unknown scenario $name"; return 1 ;;
   esac
   say "=== scenario $name: Ubuntu $ubuntu, expected mode $mode, calls ${calls:-none}, recording $recording"
@@ -165,14 +245,18 @@ scenario() {
   if [[ "$mode" == nginx ]]; then
     on_server /etc/seasonal-test/prepare-nginx.sh | tee -a "$RESULTS"
     on_server sh -c 'mkdir -p /srv/bots && : > /srv/bots/snapshots.db'
+    make_origin
   fi
+  [[ "$ufw" == no ]] || on_server /etc/seasonal-test/prepare-ufw.sh "$name" | tee -a "$RESULTS"
   answers "$calls" "$recording" "$www" "$backups" "$price_bot"
 
-  say "--- first install"
+  say "--- first install$([[ "$PASSWORD_MISTAKES" == 1 ]] && echo ': a too-short password and a differing confirmation first')"
+  from=$(($(wc -l <"$RESULTS") + 1))
   run_installer --answers /etc/seasonal-test/answers --yes
+  ok "the admin password never shows in the output (one * per character)" password_hidden "$from"
   check health
   [[ "$www" == no ]] || check www
-  [[ "$mode" == caddy ]] || check other
+  [[ "$mode" == caddy ]] || { check other; check unknown-name; }
   [[ -z "$calls" ]] || check wss
   [[ -z "$calls" ]] || check modes "$REMOTE/deploy/calls/.env"
   [[ -n "$calls" ]] || check modes
@@ -181,28 +265,55 @@ scenario() {
   [[ "$recording" == no ]] || check containers seasonal-calls-livekit-1 seasonal-calls-egress-1 seasonal-calls-redis-1
   [[ -z "$price_bot" ]] || ok "the bot's file is mounted read-only" on_server docker exec seasonal-site-site-1 \
     sh -c 'test -f /bots/snapshots.db && ! touch /bots/snapshots.db 2>/dev/null'
-  [[ "$mode" == caddy ]] || { check ufw "${own_ports[@]}"; check ufw-own "${own_ports[*]}"; }
+  [[ "$ufw" == no ]] || { check ufw "${ufw_added[@]}"; check ufw-own "${ufw_own[@]}"; }
   check status "$mode"
   check marker-write
   local before livekit_started=""
   before="$(check secrets-hash)"
   [[ -z "$calls" ]] || livekit_started="$(livekit_started_at)"
 
-  say "--- second install (idempotent)"
+  if [[ "$mode" == nginx ]]; then
+    say "--- the nginx files under the old names, as an earlier installer left them"
+    old_nginx_names
+    ok "with the old names requests by IP address reach the installer's file (the check sees it)" fails unknown-name
+  fi
+
+  say "--- second install (idempotent$([[ "$mode" == nginx ]] && echo '; moves the old nginx file names'))"
   run_installer --answers /etc/seasonal-test/answers --yes
   ok "secrets kept on re-run" same_secrets "$before"
   # An update must not cut running calls: LiveKit keeps running when nothing of it changed.
   [[ -z "$calls" ]] || ok "LiveKit not restarted by the re-run" same_livekit "$livekit_started"
   check health
   check marker
-  [[ "$mode" == caddy ]] || check other
+  [[ "$mode" == caddy ]] || { check other; check unknown-name; check nginx-files; }
+  [[ "$ufw" == no ]] || { check ufw "${ufw_added[@]}"; check ufw-own "${ufw_own[@]}"; }
+
+  if [[ "$mode" == nginx ]]; then
+    say "--- --update to a newer commit of origin's default branch"
+    local old_commit new_commit answers_before
+    old_commit="$(head_commit)"
+    new_commit="$(newer_origin_commit | tail -n 1)"
+    on_server sh -c "echo 'a local change' >> $REMOTE/README.md"
+    ok "--update refuses a modified tracked file and changes nothing" update_refused "$old_commit" "$(site_started_at)"
+    on_server git -C "$REMOTE" checkout -q -- README.md
+    before="$(check secrets-hash)"
+    answers_before="$(answers_hash)"
+    from=$(($(wc -l <"$RESULTS") + 1))
+    run_installer --update
+    ok "--update took a backup before the new code" update_backup_taken "$from"
+    ok "secrets kept by --update" same_secrets "$before"
+    ok "remembered answers unchanged by --update" test "$(answers_hash)" = "$answers_before"
+    check served-commit "$new_commit"
+    check unknown-name
+  fi
 
   say "--- uninstall"
   on_server "$REMOTE/deploy/install.sh" --uninstall | tee -a "$RESULTS"
   check uninstalled
   check marker
-  [[ "$mode" == caddy ]] || { check other; check ufw; }
-  [[ "$mode" == caddy ]] || ok "the installer's firewall rules are removed" on_server test ! -s /etc/seasonal/ufw-added
+  [[ "$mode" == caddy ]] || { check other; check unknown-name; }
+  [[ "$ufw" == no ]] || check ufw
+  [[ "$ufw" == no ]] || ok "the installer's firewall rules are removed" on_server test ! -s /etc/seasonal/ufw-added
 
   say "--- install after uninstall (data kept)"
   run_installer --answers /etc/seasonal-test/answers --yes
@@ -210,7 +321,7 @@ scenario() {
   check marker
   check admin
   [[ -z "$calls" ]] || check wss
-  [[ "$mode" == caddy ]] || check other
+  [[ "$mode" == caddy ]] || { check other; check unknown-name; }
   say "=== scenario $name: all checks passed"
 }
 
