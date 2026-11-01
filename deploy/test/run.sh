@@ -17,7 +17,11 @@
 #              the installer's files get their old names, which the re-run must move), and ufw
 #              active with combined, range and IPv4-only rules, calls, a bot's file, backups,
 #              and --update from a bare "origin" in the server that gets a newer commit (refused
-#              first while a tracked file is modified); "jammy" =
+#              first while a tracked file is modified), every run on a terminal without --yes:
+#              the CoinGecko key asked once and answered empty, then never again; before the
+#              re-run 80/tcp and 443/tcp are added and recorded as the installer's beside the
+#              server's 80,443/tcp (as an earlier installer did), which the re-run must remove;
+#              the KEEP SAFE note only on the first install, one backup per run; "jammy" =
 #              a 22.04 server with ufw active and the app profile "Nginx Full", the site alone,
 #              and a too-short password and a differing confirmation typed first.
 #              Not part of npm run verify or CI (it takes long and needs Docker with privileged
@@ -116,9 +120,11 @@ start_server() {
 }
 
 # run_installer [options...]: the installer on a terminal, its output into the results.
+# COINGECKO (ask|never|any) is what run-installer.exp requires of the CoinGecko question.
 run_installer() {
   local status=0
   on_server env TEST_ADMIN_PASSWORD="$TEST_ADMIN_PASSWORD" TEST_PASSWORD_MISTAKES="${PASSWORD_MISTAKES:-0}" \
+    TEST_COINGECKO="${COINGECKO:-any}" \
     /etc/seasonal-test/run-installer.exp "$REMOTE/deploy/install.sh" "$@" 2>&1 | tr -d '\r' |
     sed 's/^/    /' | tee -a "$RESULTS" || status=$?
   return "$status"
@@ -203,6 +209,23 @@ update_backup_taken() {
   [[ -n "$file" ]] && on_server test -s "$file"
 }
 
+# output_has FROM TEXT / output_lacks FROM TEXT: the results from line FROM on (one run's
+# output) hold TEXT, or do not.
+output_has() { tail -n +"$1" "$RESULTS" | grep -qF -- "$2"; }
+output_lacks() { ! output_has "$@"; }
+
+# The encrypted backups on the server.
+backup_count() { on_server sh -c "find /var/backups/seasonal -maxdepth 1 -name '*.tar.age' 2>/dev/null | wc -l"; }
+backups_added() { [[ "$(backup_count)" == $(($1 + $2)) ]]; }
+
+# As the first deployment's installer (2026-11-01) left a server whose ufw had 80,443/tcp: its
+# own 80/tcp and 443/tcp beside it (IPv4 and IPv6), recorded as the installer's.
+redundant_ufw_rules() {
+  on_server sh -ec 'ufw allow 80/tcp >/dev/null
+    ufw allow 443/tcp >/dev/null
+    printf "80/tcp\n443/tcp\n" >> /etc/seasonal/ufw-added'
+}
+
 # The answers file: the same keys a person would fill in (deploy/install/answers.example).
 answers() {
   local calls="$1" recording="$2" www="$3" backups="$4" price_bot="$5" recipient=""
@@ -229,12 +252,16 @@ scenario() {
   # What the installer must add to ufw beside the server's own rules (prepare-ufw.sh): for
   # checks.sh "ufw" (<4|6|46>:<proto>:<port>) and as recorded for --uninstall ("ufw-own").
   local ufw_added=() ufw_own=() PASSWORD_MISTAKES=0
+  # --yes, except in the nginx scenario: there every run is on a terminal as a person's would
+  # be, so the CoinGecko question is asked once (COINGECKO=ask) and must not come again.
+  local yes=(--yes) COINGECKO=any
   case "$name" in
     caddy) ubuntu=24.04 mode=caddy calls=calls.example.org recording=yes www=yes backups=yes ;;
     nginx) ubuntu=24.04 mode=nginx calls=calls.example.org www=yes price_bot=/srv/bots/snapshots.db ufw=yes
       backups=yes # --update takes one first
       # 80, 443, 7881 and the media range are covered already; 5349/tcp only for IPv4.
-      ufw_added=(46:udp:3478 6:tcp:5349) ufw_own=(3478/udp 'to ::/0 port 5349 proto tcp') ;;
+      ufw_added=(46:udp:3478 6:tcp:5349) ufw_own=(3478/udp 'to ::/0 port 5349 proto tcp')
+      yes=() COINGECKO=ask ;;
     jammy) ubuntu=22.04 mode=caddy ufw=yes PASSWORD_MISTAKES=1
       # "Nginx Full" covers 80/tcp and 443/tcp; HTTP/3 needs 443/udp.
       ufw_added=(46:udp:443) ufw_own=(443/udp) ;;
@@ -252,8 +279,10 @@ scenario() {
 
   say "--- first install$([[ "$PASSWORD_MISTAKES" == 1 ]] && echo ': a too-short password and a differing confirmation first')"
   from=$(($(wc -l <"$RESULTS") + 1))
-  run_installer --answers /etc/seasonal-test/answers --yes
+  run_installer --answers /etc/seasonal-test/answers "${yes[@]}"
   ok "the admin password never shows in the output (one * per character)" password_hidden "$from"
+  ok "the first install says KEEP SAFE for the 2FA key" output_has "$from" 'KEEP SAFE'
+  [[ "$backups" == no ]] || ok "the first install names its backup the first one" output_has "$from" 'the first one is'
   check health
   [[ "$www" == no ]] || check www
   [[ "$mode" == caddy ]] || { check other; check unknown-name; }
@@ -276,11 +305,29 @@ scenario() {
     say "--- the nginx files under the old names, as an earlier installer left them"
     old_nginx_names
     ok "with the old names requests by IP address reach the installer's file (the check sees it)" fails unknown-name
+    say "--- 80/tcp and 443/tcp added and recorded beside 80,443/tcp, as an earlier installer left them"
+    redundant_ufw_rules
+    ok "with them ufw differs from the expected rules (the check sees it)" fails ufw "${ufw_added[@]}"
   fi
 
-  say "--- second install (idempotent$([[ "$mode" == nginx ]] && echo '; moves the old nginx file names'))"
-  run_installer --answers /etc/seasonal-test/answers --yes
+  say "--- second install (idempotent$([[ "$mode" == nginx ]] && echo '; moves the old nginx file names, removes the redundant ufw rules'))"
+  local backups_before
+  backups_before="$(backup_count)"
+  # Answered (empty) by the first install: from now on it must not be asked.
+  [[ "$COINGECKO" == any ]] || COINGECKO=never
+  from=$(($(wc -l <"$RESULTS") + 1))
+  run_installer --answers /etc/seasonal-test/answers "${yes[@]}"
   ok "secrets kept on re-run" same_secrets "$before"
+  ok "no KEEP SAFE note on a re-run" output_lacks "$from" 'KEEP SAFE'
+  if [[ "$backups" == yes ]]; then
+    ok "the re-run takes one backup" backups_added "$backups_before" 1
+    ok "the re-run's backup is not called the first one" output_lacks "$from" 'the first one is'
+    ok "the re-run's backup is called a new one" output_has "$from" 'a new one now is'
+  fi
+  if [[ "$mode" == nginx ]]; then
+    ok "the re-run says it removed 80/tcp" output_has "$from" 'firewall: removed 80/tcp'
+    ok "the re-run says it removed 443/tcp" output_has "$from" 'firewall: removed 443/tcp'
+  fi
   # An update must not cut running calls: LiveKit keeps running when nothing of it changed.
   [[ -z "$calls" ]] || ok "LiveKit not restarted by the re-run" same_livekit "$livekit_started"
   check health
@@ -298,9 +345,15 @@ scenario() {
     on_server git -C "$REMOTE" checkout -q -- README.md
     before="$(check secrets-hash)"
     answers_before="$(answers_hash)"
+    backups_before="$(backup_count)"
     from=$(($(wc -l <"$RESULTS") + 1))
     run_installer --update
     ok "--update took a backup before the new code" update_backup_taken "$from"
+    ok "--update took exactly one backup" backups_added "$backups_before" 1
+    ok "--update's re-run names that backup" output_has "$from" "this update's backup"
+    ok "no KEEP SAFE note on --update" output_lacks "$from" 'KEEP SAFE'
+    check ufw "${ufw_added[@]}"
+    check ufw-own "${ufw_own[@]}"
     ok "secrets kept by --update" same_secrets "$before"
     ok "remembered answers unchanged by --update" test "$(answers_hash)" = "$answers_before"
     check served-commit "$new_commit"
@@ -316,7 +369,9 @@ scenario() {
   [[ "$ufw" == no ]] || ok "the installer's firewall rules are removed" on_server test ! -s /etc/seasonal/ufw-added
 
   say "--- install after uninstall (data kept)"
-  run_installer --answers /etc/seasonal-test/answers --yes
+  from=$(($(wc -l <"$RESULTS") + 1))
+  run_installer --answers /etc/seasonal-test/answers "${yes[@]}"
+  ok "no KEEP SAFE note when installing again (the key was kept)" output_lacks "$from" 'KEEP SAFE'
   check health
   check marker
   check admin

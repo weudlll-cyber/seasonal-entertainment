@@ -10,9 +10,11 @@
 #              profile (Nginx Full), for IPv4 and IPv6 separately: when only one of them is
 #              missing, only that one is added. The rules added are listed in
 #              /etc/seasonal/ufw-added (no ufw comment: with one, ufw would "update" an existing
-#              rule instead of skipping it), so --uninstall removes exactly those. With ufw
-#              inactive or absent nothing is enabled: the ports to open are printed instead.
-#              Existing rules are never changed.
+#              rule instead of skipping it), so --uninstall removes exactly those. A rule listed
+#              there that other rules now cover (an earlier version added 80/tcp beside a
+#              server's 80,443/tcp) is removed and taken off the list. With ufw inactive or
+#              absent nothing is enabled: the ports to open are printed instead. Rules the
+#              installer did not add are never changed.
 # ============================================================
 
 UFW_ADDED="$STATE_DIR/ufw-added"
@@ -37,19 +39,22 @@ ufw_active() { command -v ufw >/dev/null && ufw status 2>/dev/null | grep -q '^S
 # ufw adds every rule for IPv6 too, unless IPv6 is switched off in its settings.
 ufw_ipv6() { grep -qi '^IPV6=yes' /etc/default/ufw 2>/dev/null; }
 
-# ufw_covers RULES_FILE PROTO PORT: an existing rule already lets PROTO (tcp/udp) to PORT (a
-# port, or a range A:B) in, from any address to any address, on every interface. ufw keeps each
-# rule as a "### tuple ###" line: action, protocol, ports, destination, source port, source,
-# [app names,] direction; an app profile's ports are already resolved there. A rule limited
-# to a source, an interface or a rate (limit) does not count: it does not open the port.
+# ufw_covers RULES_FILE PROTO PORT [other]: an existing rule already lets PROTO (tcp/udp) to
+# PORT (a port, or a range A:B) in, from any address to any address, on every interface. ufw
+# keeps each rule as a "### tuple ###" line: action, protocol, ports, destination, source port,
+# source, [app names,] direction; an app profile's ports are already resolved there. A rule
+# limited to a source, an interface or a rate (limit) does not count: it does not open the
+# port. With "other", the plain rule for exactly PROTO and PORT (10 fields: no app profile)
+# does not count either: the question is then whether the installer's own rule is still needed.
 ufw_covers() {
-  local file="$1" proto="$2" want="$3"
+  local file="$1" proto="$2" want="$3" other="${4:-}"
   [[ -f "$file" ]] || return 1
-  awk -v proto="$proto" -v want="$want" '
+  awk -v proto="$proto" -v want="$want" -v other="$other" '
     BEGIN { lo = want; hi = want; if (split(want, w, ":") == 2) { lo = w[1]; hi = w[2] } }
     $1 == "###" && $2 == "tuple" && $3 == "###" && $4 == "allow" && $NF == "in" &&
     ($5 == proto || $5 == "any") && $8 == "any" &&
     ($7 == "0.0.0.0/0" || $7 == "::/0") && ($9 == "0.0.0.0/0" || $9 == "::/0") {
+      if (other != "" && NF == 10 && $5 == proto && $6 == want) next
       if ($6 == "any") found = 1
       n = split($6, items, ",")
       for (i = 1; i <= n; i++) {
@@ -76,6 +81,41 @@ ufw_rule_needed() {
   esac
 }
 
+# ufw_redundant RULE: a rule the installer recorded (a spec such as 80/tcp, or "to 0.0.0.0/0
+# port P proto X" for one address family) is covered by other rules in every family it opens.
+ufw_redundant() {
+  local rule="$1" port proto v4=yes v6=yes
+  if [[ "$rule" =~ ^to\ ([^ ]+)\ port\ ([^ ]+)\ proto\ ([a-z]+)$ ]]; then
+    port="${BASH_REMATCH[2]}"
+    proto="${BASH_REMATCH[3]}"
+    if [[ "${BASH_REMATCH[1]}" == ::/0 ]]; then v4=no; else v6=no; fi
+  else
+    port="${rule%/*}"
+    proto="${rule#*/}"
+  fi
+  ufw_ipv6 || v6=no
+  [[ "$v4" == no ]] || ufw_covers "$UFW_RULES_V4" "$proto" "$port" other || return 1
+  [[ "$v6" == no ]] || ufw_covers "$UFW_RULES_V6" "$proto" "$port" other || return 1
+}
+
+# The installer's own recorded rules that other rules cover now are removed (ufw_delete) and
+# taken off /etc/seasonal/ufw-added; only those, never a rule the installer did not add. The
+# port stays open through the other rule. (--rollback restores the list, not such a rule.)
+ufw_drop_redundant() {
+  local rule kept=()
+  [[ -s "$UFW_ADDED" ]] || return 0
+  while read -r rule; do
+    [[ -n "$rule" ]] || continue
+    if ufw_redundant "$rule"; then
+      say "firewall: $rule was added by this installer earlier and another rule allows it now"
+      ufw_delete "$rule"
+    else
+      kept+=("$rule")
+    fi
+  done <"$UFW_ADDED"
+  if ((${#kept[@]})); then printf '%s\n' "${kept[@]}" >"$UFW_ADDED"; else : >"$UFW_ADDED"; fi
+}
+
 open_ports() {
   local spec rule out args=()
   if ! ufw_active; then
@@ -84,6 +124,7 @@ open_ports() {
   fi
   install -d -m 700 "$STATE_DIR"
   touch "$UFW_ADDED"
+  ufw_drop_redundant
   while read -r spec; do
     rule="$(ufw_rule_needed "$spec")"
     if [[ -z "$rule" ]]; then

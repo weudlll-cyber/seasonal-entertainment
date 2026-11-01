@@ -10,7 +10,9 @@
 #              password typed on the terminal (one * per character), checked against the site's
 #              password rules and asked again until it fits and is confirmed, then given to
 #              scripts/bootstrap-admin.mjs on stdin, after which BOOTSTRAP_TOKEN is removed; the
-#              nightly encrypted backup. Long steps and waits run under run_step (common.sh).
+#              nightly encrypted backup and one backup now on every run (none in the re-run of
+#              --update, which took its own before the new code). Long steps and waits run
+#              under run_step (common.sh).
 # ============================================================
 
 compose_site() { (cd "$INSTALL_DIR/$SITE_DIR_REL" && docker compose "$@"); }
@@ -160,8 +162,10 @@ backup_now() {
   [[ "$NEWEST_BACKUP" == *.tar.age ]] || die "the newest backup is not an encrypted .tar.age ($NEWEST_BACKUP)"
 }
 
-# The nightly backup, encrypted to the owner's age public key (docs/DEPLOYMENT.md, "Backups").
+# The nightly backup, encrypted to the owner's age public key (docs/DEPLOYMENT.md, "Backups"),
+# and one backup now, checked, so a run ends with a backup that is known to work.
 install_backups() {
+  local earlier
   [[ -n "${BACKUP_RECIPIENT:-}" ]] || return 0
   [[ "$BACKUP_RECIPIENT" =~ ^age1[0-9a-z]{58}$ ]] || die "BACKUP_RECIPIENT is not an age public key (age1…)"
   kv_set "$(site_env)" BACKUP_RECIPIENT "$BACKUP_RECIPIENT"
@@ -172,7 +176,17 @@ install_backups() {
   systemctl daemon-reload
   systemctl enable --now seasonal-backup.timer >/dev/null 2>&1
   wait_health
+  # The re-run of --update: update.sh took (and checked) one minutes ago, before the new code.
+  if [[ -n "${SEASONAL_UPDATE_BACKUP:-}" ]]; then
+    say "backups: nightly at 03:30; this update's backup (before the new code) is $SEASONAL_UPDATE_BACKUP"
+    return 0
+  fi
+  earlier="$(find "$BACKUP_HOST_DIR" -maxdepth 1 -name '*.tar.age' -print -quit 2>/dev/null)"
   say "running one backup now (the database and the media folder; longer with many recordings)"
-  backup_now "the first backup"
-  say "backups: nightly at 03:30; the first one is $BACKUP_HOST_DIR/$NEWEST_BACKUP"
+  backup_now "a backup now"
+  if [[ -z "$earlier" ]]; then
+    say "backups: nightly at 03:30; the first one is $BACKUP_HOST_DIR/$NEWEST_BACKUP"
+  else
+    say "backups: nightly at 03:30; a new one now is $BACKUP_HOST_DIR/$NEWEST_BACKUP"
+  fi
 }

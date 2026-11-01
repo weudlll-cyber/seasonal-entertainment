@@ -11,9 +11,9 @@
 #              if missing, makes every secret on the server, builds and starts the site (and the
 #              call service with recording, if chosen), creates the first admin and sets up the
 #              encrypted backups. Re-running keeps secrets, data and answers. --update (a backup,
-#              then the newest commit of origin's default branch), --commit <ref>, --status,
-#              --uninstall [--purge-data], --rollback <snapshot>, --admin, --backups. The parts
-#              live in deploy/install/lib/.
+#              then the newest commit of origin's default branch), --commit <ref>, --coingecko
+#              (ask the CoinGecko key again), --status, --uninstall [--purge-data], --rollback
+#              <snapshot>, --admin, --backups. The parts live in deploy/install/lib/.
 # ============================================================
 
 set -Eeuo pipefail
@@ -57,6 +57,8 @@ Usage: sudo ./deploy/install.sh [options]
   --yes                  never ask: missing optional answers are "none"
   --update               a fresh backup (if set up), then the newest code of origin's default
                          branch (fast-forward only), installed as a plain re-run does
+  --coingecko            ask for the CoinGecko Demo API key again (once answered, also with
+                         Enter for none, it is not asked again); Enter now removes a key
   --commit REF           check out REF (a commit, tag or branch) first, then install it
   --admin                create the first admin (password asked on the terminal)
   --backups              set up or change the encrypted backups (asks for the age public key)
@@ -65,6 +67,10 @@ Usage: sudo ./deploy/install.sh [options]
   --uninstall --purge-data   also delete the site's data (asks you to type the site name)
   --rollback DIR         undo a run, back to the snapshot DIR it printed
   -h, --help             this text
+
+KEEP SAFE: /etc/seasonal/secret-encryption-key is the key that encrypts 2FA secrets. Copy it
+off this server and keep it apart from the backups; without it, 2FA logins cannot be restored:
+  scp root@<this server>:/etc/seasonal/secret-encryption-key ./seasonal-secret-encryption-key
 EOF
 }
 
@@ -74,6 +80,7 @@ UNATTENDED=no
 ANSWERS=""
 COMMIT_REF=""
 UPDATE=no
+ASK_COINGECKO=no
 ROLLBACK_DIR=""
 while (($#)); do
   case "$1" in
@@ -81,6 +88,7 @@ while (($#)); do
     --yes) UNATTENDED=yes ;;
     --commit) COMMIT_REF="${2:?--commit needs a ref}"; shift ;;
     --update) UPDATE=yes ;;
+    --coingecko) ASK_COINGECKO=yes ;;
     --admin) ACTION='admin' ;;
     --backups) ACTION=backups ;;
     --status) ACTION=status ;;
@@ -97,7 +105,9 @@ done
 [[ "$PURGE" == no || "$ACTION" == uninstall ]] || die "--purge-data goes with --uninstall"
 [[ "$UPDATE" == no || -z "$COMMIT_REF" ]] ||
   die "--update and --commit do not go together: --update takes the newest code, --commit REF a chosen one"
-[[ "$UPDATE" == no || "$ACTION" == install ]] || die "--update goes alone (with --answers or --yes at most)"
+[[ "$UPDATE" == no || "$ACTION" == install ]] || die "--update goes alone (with --answers, --yes or --coingecko at most)"
+[[ "$ASK_COINGECKO" == no || "$ACTION" == install ]] || die "--coingecko goes with an install, a re-run or --update"
+[[ "$ASK_COINGECKO" == no || "$UNATTENDED" == no ]] || die "--coingecko asks on the terminal: not with --yes"
 
 # A different commit: check it out, then run that commit's own installer (this file may change).
 if [[ -n "$COMMIT_REF" && -z "${SEASONAL_REEXEC:-}" ]]; then
@@ -149,11 +159,29 @@ gather_answers() {
   ask_optional PRICE_BOT_MINING_RATES "The price bot's mining_rates.json"
   ask_optional EVENT_BOT_DB "The event bot's database"
   ask_optional BACKUP_RECIPIENT "The age public key for encrypted backups (age1…; can be added later with --backups)"
-  if [[ -z "${COINGECKO_API_KEY+set}" && "$UNATTENDED" == no ]] && have_tty &&
-    [[ -z "$(kv_get "$(site_env)" COINGECKO_API_KEY)" ]]; then
-    ask_secret COINGECKO_API_KEY "CoinGecko Demo API key for ETH/POL/BTC prices (empty: none; not shown)"
-  fi
+  ask_coingecko
   : "${ACME_SERVER:=}" "${ACME_CA_BUNDLE:=}" "${ADMIN_DONE:=no}"
+}
+
+# The CoinGecko key, a secret: typed on the terminal, stored only in site.env. Asked once: an
+# empty answer is remembered as COINGECKO=none in the state (the answer, never a key), so later
+# runs and --update do not ask again; --coingecko asks again (there Enter removes a stored key,
+# write_site_env). A key in the answers file is taken as it is. Unattended runs never ask and
+# remember nothing, so the next run on a terminal still asks.
+ask_coingecko() {
+  [[ "$ASK_COINGECKO" == no ]] || COINGECKO=""
+  if [[ -n "${COINGECKO_API_KEY:-}" ]]; then
+    COINGECKO=""
+    return 0
+  fi
+  [[ "$ASK_COINGECKO" == yes || -z "$(kv_get "$(site_env)" COINGECKO_API_KEY)" ]] || return 0
+  [[ -z "${COINGECKO_API_KEY+set}" && "${COINGECKO:-}" != none && "$UNATTENDED" == no ]] || return 0
+  if ! have_tty; then
+    [[ "$ASK_COINGECKO" == no ]] || die "--coingecko needs a terminal"
+    return 0
+  fi
+  ask_secret COINGECKO_API_KEY "CoinGecko Demo API key for ETH/POL/BTC prices (empty: none, not asked again; not shown)"
+  [[ -n "$COINGECKO_API_KEY" ]] || COINGECKO=none
 }
 
 validate_answers() {
@@ -195,9 +223,16 @@ install_all() {
   install_backups
   save_state
   say "done: https://$SITE_DOMAIN"
-  say "KEEP SAFE: copy the key that encrypts 2FA secrets off this server now, e.g. from your PC:"
-  say "  scp root@<this server>:$KEY_COPY ./seasonal-secret-encryption-key"
-  say "  (and keep it apart from the backups; without it, 2FA logins cannot be restored)"
+  # Once, at the end of the first install that finishes (write_site_env made the key and set
+  # KEY_NOTE=pending; a first run that stopped earlier shows it on the next run); --help and
+  # docs/DEPLOYMENT.md keep saying it.
+  if [[ "${KEY_NOTE:-}" == pending ]]; then
+    say "KEEP SAFE: copy the key that encrypts 2FA secrets off this server now, e.g. from your PC:"
+    say "  scp root@<this server>:$KEY_COPY ./seasonal-secret-encryption-key"
+    say "  (and keep it apart from the backups; without it, 2FA logins cannot be restored)"
+    KEY_NOTE=shown
+    save_state
+  fi
   [[ -n "$BACKUP_RECIPIENT" ]] || say "backups are not set up yet: sudo $INSTALL_DIR/deploy/install.sh --backups"
 }
 
