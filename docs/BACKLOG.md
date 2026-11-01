@@ -49,6 +49,9 @@ entry waits for.
 
 ### Technical debt
 
+- **Event bot images too large** — the live site logs "event image not used (too large)" for six
+  of the event bot's images (seen 2026-11-01): those events show without their picture (a dot in
+  "Up next"). The limits are in `server/src/bots/images.js` (`config.bots.images`).
 - **A call test that sometimes hangs on CI** — `client/e2e/callShare.spec.js:57` (once also
   `calls.spec.js:61`) waits minutes for "Join call" on CI only. Since 2026-10-23 a failed browser
   test's trace and screenshot are uploaded (`playwright-test-results`, 7 days): the next hang shows
