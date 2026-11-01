@@ -33,6 +33,16 @@ entry waits for.
 - **A recorded call on the VPS** — call recording is tested with a real egress on the PC; one
   real recorded call on the server is still to try (docs/CALLS.md, "Recording").
 
+### Owner proposals (2026-11-01)
+
+- **Organisers set the site banner** — today the banner is one of the site settings, which only
+  admins change (`server/src/settings/adminRoutes.js`, docs/SETTINGS.md).
+- **Organisers create event-bot appointments on the site** — needs the bot-project change named
+  in "Event bot admin page inside the site" above.
+- **Backups to a Linux or macOS PC** — docs/DEPLOYMENT.md "Backups to your PC" and `deploy/pc/`
+  cover Windows (PowerShell) only; the same for Linux and macOS is missing: the age key pair,
+  fetching and checking the backups, the copy of the 2FA encryption key.
+
 ### Proposals not decided
 
 - **Login with Discord or Telegram** — accounts use a username and password (2FA for organisers
