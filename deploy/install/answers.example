@@ -1,0 +1,34 @@
+# ============================================================
+# File:        answers.example
+# Path:        deploy/install/answers.example
+# Project:     Seasonal Entertainment
+# Description: The answers deploy/install.sh asks for, as a file for an unattended run:
+#              `sudo ./deploy/install.sh --answers my-answers.txt`. Copy it outside the
+#              repository and fill it in. KEY=VALUE, one per line; an empty value means "none".
+#              No secret belongs here: the installer makes them on the server, and the first
+#              admin's password is always asked on the terminal.
+# ============================================================
+
+# The site's domain (its DNS A record must point at this server)
+SITE_DOMAIN=example.org
+# www.<SITE_DOMAIN> redirects to it (its A record too): yes or no
+WWW_REDIRECT=yes
+# The call service's domain; empty: no calls
+CALLS_DOMAIN=calls.example.org
+# Record calls (needs CALLS_DOMAIN): yes or no
+RECORDING=no
+# Let's Encrypt writes certificate notices here
+ACME_EMAIL=admin@example.org
+# The first admin (the password is asked on the terminal)
+ADMIN_NAME=admin
+ADMIN_EMAIL=admin@example.org
+# The bots' files on this server (docs/BOTS.md); empty: that bot is not connected
+PRICE_BOT_DB=
+PRICE_BOT_MINING_RATES=
+EVENT_BOT_DB=
+# The age public key the nightly backups are encrypted to (age1…); empty: set up later
+BACKUP_RECIPIENT=
+# Only for a staging or test certificate authority instead of Let's Encrypt: its ACME directory
+# URL, and the file with the CA certificate its own HTTPS uses
+ACME_SERVER=
+ACME_CA_BUNDLE=

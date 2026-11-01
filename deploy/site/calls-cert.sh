@@ -17,8 +17,10 @@ CADDY="$1"
 DOMAIN="$2"
 CERT_DIR="$3"
 CALLS_DIR="$4"
-# Caddy's storage: one folder per domain under the ACME directory (Let's Encrypt).
-SOURCE="/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/$DOMAIN"
+# Caddy's storage: one folder per domain under a folder named after the ACME directory
+# (Let's Encrypt, or a staging or test CA), so the CA folder is found, not assumed.
+SOURCE="$(docker exec "$CADDY" sh -c "ls -d /data/caddy/certificates/*/$DOMAIN 2>/dev/null | head -n 1")"
+[ -n "$SOURCE" ] || { echo "calls-cert: Caddy has no certificate for $DOMAIN yet" >&2; exit 1; }
 
 mkdir -p "$CERT_DIR"
 TMP="$(mktemp -d)"

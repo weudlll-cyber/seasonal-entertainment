@@ -4,13 +4,14 @@ The site shows data that two of the owner's bots already collect (SE-NIGHT-3, 20
 bots live in the private repository `weudlll-cyber/Seasonal-tokens`; the site only **reads**
 their SQLite files and never talks to the bots themselves.
 
-| Bot             | Its file on the VPS                       | Config key               | What the site shows                                       |
-| --------------- | ----------------------------------------- | ------------------------ | --------------------------------------------------------- |
-| `stpricebot`    | `/var/lib/stpricebot/snapshots.db`        | `PRICE_BOT_DB`           | the home page's price tiles, the charts at `/info/prices` |
-| `stannouncebot` | `/var/lib/stannouncebot/stannouncebot.db` | `EVENT_BOT_DB`           | `/events` and the home page's "Up next": the only events  |
-| `stpricebot`    | `/var/lib/stpricebot/mining_rates.json`   | `PRICE_BOT_MINING_RATES` | the fair price and the converter's mining times           |
+| Bot             | Its file                                 | Config key               | What the site shows                                       |
+| --------------- | ---------------------------------------- | ------------------------ | --------------------------------------------------------- |
+| `stpricebot`    | `snapshots.db` in its runtime folder     | `PRICE_BOT_DB`           | the home page's price tiles, the charts at `/info/prices` |
+| `stannouncebot` | its SQLite database                      | `EVENT_BOT_DB`           | `/events` and the home page's "Up next": the only events  |
+| `stpricebot`    | `mining_rates.json` next to snapshots.db | `PRICE_BOT_MINING_RATES` | the fair price and the converter's mining times           |
 
-Each key is a file path. **Unset, that feature is off** and the page says plainly that the
+Each key is a file path. On a server the installer asks for the files' paths and mounts them
+read-only into the site container (docs/DEPLOYMENT.md, "What it asks"). **Unset, that feature is off** and the page says plainly that the
 data source is not connected: the home page's season tiles show no prices and the fair-price
 box says "Prices: the data source is not connected.", `/info/prices` says there are no prices to show, `/events` says "The event
 calendar is not connected, so there are no events to show." and "Up next" on the home page "The

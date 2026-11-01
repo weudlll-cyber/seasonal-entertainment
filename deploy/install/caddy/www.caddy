@@ -1,0 +1,12 @@
+# ============================================================
+# File:        www.caddy
+# Path:        deploy/install/caddy/www.caddy
+# Project:     Seasonal Entertainment
+# Description: Caddy mode, when the www name redirects (deploy/install.sh copies it into the
+#              Caddy sites folder, /etc/seasonal/caddy-sites): www.<SITE_DOMAIN> gets its own
+#              certificate and sends every request to the same path on SITE_DOMAIN.
+# ============================================================
+
+www.{$SITE_DOMAIN} {
+	redir https://{$SITE_DOMAIN}{uri} permanent
+}

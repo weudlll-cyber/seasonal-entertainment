@@ -1,0 +1,19 @@
+# ============================================================
+# File:        Corefile
+# Path:        deploy/test/Corefile
+# Project:     Seasonal Entertainment
+# Description: The installer tests' DNS (deploy/test/run.sh): the test names point at the test
+#              server and at Pebble inside the test network; every other name (Docker's and
+#              npm's registries) is asked upstream as usual. Used by the server, by the
+#              containers Docker starts inside it, and by Pebble for its validations.
+# ============================================================
+
+. {
+	hosts {
+		10.77.0.10 example.org www.example.org calls.example.org other.example
+		10.77.0.20 pebble pebble.test
+		fallthrough
+	}
+	forward . /etc/resolv.conf
+	errors
+}

@@ -1,0 +1,13 @@
+{
+  "description": "Pebble (the local ACME test server standing in for Let's Encrypt) for the installer tests, deploy/test/run.sh: it validates on the usual ports 80 and 443 of the test server.",
+  "pebble": {
+    "listenAddress": "0.0.0.0:14000",
+    "managementListenAddress": "0.0.0.0:15000",
+    "certificate": "/test/certs/localhost/cert.pem",
+    "privateKey": "/test/certs/localhost/key.pem",
+    "httpPort": 80,
+    "tlsPort": 443,
+    "ocspResponderURL": "",
+    "externalAccountBindingRequired": false
+  }
+}

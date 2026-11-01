@@ -1,0 +1,241 @@
+#!/bin/bash
+# ============================================================
+# File:        run.sh
+# Path:        deploy/test/run.sh
+# Project:     Seasonal Entertainment
+# Description: The installer's end-to-end tests (docs/DEPLOYMENT.md, "Testing the installer"),
+#              on any PC with Docker: `bash deploy/test/run.sh [caddy] [nginx] [jammy]` (all
+#              three by default). Each scenario starts a systemd Ubuntu container as the server
+#              (server.Dockerfile), with Pebble standing in for Let's Encrypt and a small DNS
+#              (Corefile) that points the test names at it, then: install from the working tree
+#              with an answers file and a typed password (run-installer.exp), check
+#              (checks.sh), install again (nothing may change), --status, --uninstall, install
+#              once more (the data must still be there). Scenarios: "caddy" = an empty 24.04
+#              server, calls with recording, www redirect, backups; "nginx" = a 24.04 server
+#              whose nginx already serves another site with its own certificate and ufw
+#              active, calls, a bot's file; "jammy" = an empty 22.04 server, the site alone.
+#              Not part of npm run verify or CI (it takes long and needs Docker with privileged
+#              containers). Everything it creates carries the label seasonal.test and is
+#              removed at the end (KEEP=1 keeps it for a look).
+# ============================================================
+
+set -euo pipefail
+export MSYS_NO_PATHCONV=1 # Git Bash on Windows: container paths stay as written
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO="$(cd "$HERE/../.." && pwd)"
+LABEL=seasonal.test=seasonal-install-test
+NET=seasonal-install-test
+SERVER=seasonal-install-test-server
+SERVER_IMAGE=seasonal-install-test-server
+PEBBLE_IMAGE=ghcr.io/letsencrypt/pebble:2.7.0
+DNS_IMAGE=coredns/coredns:1.11.3
+REMOTE=/opt/seasonal-entertainment
+RESULTS="${RESULTS:-$(mktemp)}"
+# Only for this test's admin account inside the throwaway server.
+TEST_ADMIN_PASSWORD="test-$(openssl rand -hex 8)"
+export TEST_ADMIN_PASSWORD
+
+say() { printf '[test] %s\n' "$*" | tee -a "$RESULTS"; }
+
+# A path docker.exe can read, also from Git Bash on Windows.
+host_path() { if command -v cygpath >/dev/null; then cygpath -m "$1"; else echo "$1"; fi; }
+
+# -i: several steps feed the server through stdin (the working tree, the answers).
+on_server() { docker exec -i "$SERVER" "$@"; }
+
+# Images this run pulled are removed at the end; ones that were already there stay.
+PULLED=()
+pull_once() {
+  docker image inspect "$1" >/dev/null 2>&1 || { docker pull -q "$1" >/dev/null && PULLED+=("$1"); }
+}
+
+cleanup() {
+  [[ "${KEEP:-}" == 1 ]] && { say "KEEP=1: test containers left running (label $LABEL)"; return; }
+  docker ps -aq --filter "label=$LABEL" | xargs -r docker rm -f >/dev/null
+  docker volume ls -q --filter "label=$LABEL" | xargs -r docker volume rm >/dev/null
+  docker network ls -q --filter "label=$LABEL" | xargs -r docker network rm >/dev/null
+  docker image ls -q --filter "label=$LABEL" | sort -u | xargs -r docker rmi -f >/dev/null 2>&1 || true
+  ((${#PULLED[@]} == 0)) || docker rmi "${PULLED[@]}" >/dev/null 2>&1 || true
+  say "removed the test's containers, volumes, network and images"
+}
+trap cleanup EXIT
+
+infrastructure() {
+  pull_once "$PEBBLE_IMAGE"
+  pull_once "$DNS_IMAGE"
+  pull_once ubuntu:24.04
+  pull_once ubuntu:22.04
+  docker network create --label "$LABEL" --subnet 10.77.0.0/24 "$NET" >/dev/null
+  docker run -d --name seasonal-install-test-dns --label "$LABEL" --network "$NET" --ip 10.77.0.53 \
+    -v "$(host_path "$HERE/Corefile"):/etc/coredns/Corefile:ro" "$DNS_IMAGE" -conf /etc/coredns/Corefile >/dev/null
+  # No random nonce rejections or validation delays: the test is about the installer.
+  docker run -d --name seasonal-install-test-pebble --label "$LABEL" --network "$NET" --ip 10.77.0.20 \
+    -e PEBBLE_VA_NOSLEEP=1 -e PEBBLE_WFE_NONCEREJECT=0 \
+    -v "$(host_path "$HERE/pebble.json"):/test/config/seasonal.json:ro" "$PEBBLE_IMAGE" \
+    -config /test/config/seasonal.json -dnsserver 10.77.0.53:53 >/dev/null
+}
+
+start_server() {
+  local ubuntu="$1" tries=60 state
+  docker build -q --label "$LABEL" --build-arg "UBUNTU=$ubuntu" -t "$SERVER_IMAGE:$ubuntu" \
+    -f "$(host_path "$HERE/server.Dockerfile")" "$(host_path "$HERE")" >/dev/null
+  # Docker inside needs real file systems for its images (overlay on overlay does not work).
+  docker run -d --name "$SERVER" --hostname server --label "$LABEL" --privileged --cgroupns private \
+    --tmpfs /run --tmpfs /run/lock --network "$NET" --ip 10.77.0.10 --dns 10.77.0.53 \
+    --mount "type=volume,dst=/var/lib/docker,volume-label=$LABEL" \
+    --mount "type=volume,dst=/var/lib/containerd,volume-label=$LABEL" \
+    "$SERVER_IMAGE:$ubuntu" >/dev/null
+  until state="$(on_server systemctl is-system-running 2>/dev/null)"; [[ "$state" == running || "$state" == degraded ]]; do
+    ((tries-- > 0)) || { say "systemd did not come up in the test server ($state)"; return 1; }
+    sleep 1
+  done
+  # The working tree as git would check it out (tracked and new files; nothing ignored, so no
+  # .env, no data), committed inside so the installer sees a commit.
+  (cd "$REPO" && git ls-files -co --exclude-standard -z | tar --null -T - -cf -) |
+    on_server sh -c "mkdir -p $REMOTE && tar -C $REMOTE -xf - --no-same-owner"
+  (cd "$REPO" && git ls-files -s | awk '$1 == "100755" { print $4 }') | on_server sh -c "
+    cd $REMOTE && find . -type f -not -path './.git/*' -exec chmod 644 {} + && xargs -r chmod 755 &&
+    git init -q && git add -A && git -c user.name=test -c user.email=test@example.org commit -qm test"
+  on_server install -d -m 700 /etc/seasonal-test /etc/docker
+  for file in checks.sh prepare-nginx.sh run-installer.exp; do
+    on_server install -m 755 "$REMOTE/deploy/test/$file" "/etc/seasonal-test/$file"
+  done
+  docker cp seasonal-install-test-pebble:/test/certs/pebble.minica.pem - | on_server tar -C /etc/seasonal-test -xf -
+  # The test DNS also for the containers Docker will start inside (they cannot use Docker's own).
+  # Docker's embedded DNS never forwards a single-label name such as "pebble": the search domain
+  # turns it into pebble.test, while TLS still checks "pebble" (the name in Pebble's certificate).
+  echo '{"dns": ["10.77.0.53"], "dns-search": ["test"]}' | on_server sh -c 'cat > /etc/docker/daemon.json'
+  on_server age-keygen -o /etc/seasonal-test/age-key.txt 2>/dev/null
+}
+
+# run_installer [options...]: the installer on a terminal, its output into the results.
+run_installer() {
+  local status=0
+  on_server env TEST_ADMIN_PASSWORD="$TEST_ADMIN_PASSWORD" /etc/seasonal-test/run-installer.exp \
+    "$REMOTE/deploy/install.sh" "$@" 2>&1 | tr -d '\r' | sed 's/^/    /' | tee -a "$RESULTS" || status=$?
+  return "$status"
+}
+
+check() { on_server /etc/seasonal-test/checks.sh "$@" | tee -a "$RESULTS"; }
+
+# ok "what" command...: a check made here rather than in checks.sh.
+ok() {
+  local what="$1"
+  shift
+  if "$@"; then say "PASS $what"; else say "FAIL $what"; return 1; fi
+}
+
+same_secrets() { [[ "$(check secrets-hash)" == "$1" ]]; }
+livekit_started_at() { on_server docker inspect -f '{{.State.StartedAt}}' seasonal-calls-livekit-1; }
+same_livekit() { [[ "$(livekit_started_at)" == "$1" ]]; }
+
+# The answers file: the same keys a person would fill in (deploy/install/answers.example).
+answers() {
+  local calls="$1" recording="$2" www="$3" backups="$4" price_bot="$5" recipient=""
+  [[ "$backups" == yes ]] && recipient="$(on_server age-keygen -y /etc/seasonal-test/age-key.txt)"
+  on_server sh -c 'cat > /etc/seasonal-test/answers' <<EOF
+SITE_DOMAIN=example.org
+WWW_REDIRECT=$www
+CALLS_DOMAIN=$calls
+RECORDING=$recording
+ACME_EMAIL=admin@example.org
+ADMIN_NAME=admin
+ADMIN_EMAIL=admin@example.org
+PRICE_BOT_DB=$price_bot
+PRICE_BOT_MINING_RATES=
+EVENT_BOT_DB=
+BACKUP_RECIPIENT=$recipient
+ACME_SERVER=https://pebble:14000/dir
+ACME_CA_BUNDLE=/etc/seasonal-test/pebble.minica.pem
+EOF
+}
+
+scenario() {
+  local name="$1" ubuntu mode calls="" recording=no www=no backups=no price_bot="" own_ports=()
+  case "$name" in
+    caddy) ubuntu=24.04 mode=caddy calls=calls.example.org recording=yes www=yes backups=yes ;;
+    nginx) ubuntu=24.04 mode=nginx calls=calls.example.org www=yes price_bot=/srv/bots/snapshots.db
+      own_ports=(7881/tcp 3478/udp 5349/tcp 50000:50499/udp) ;;
+    jammy) ubuntu=22.04 mode=caddy ;;
+    *) say "unknown scenario $name"; return 1 ;;
+  esac
+  say "=== scenario $name: Ubuntu $ubuntu, expected mode $mode, calls ${calls:-none}, recording $recording"
+  start_server "$ubuntu"
+  if [[ "$mode" == nginx ]]; then
+    on_server /etc/seasonal-test/prepare-nginx.sh | tee -a "$RESULTS"
+    on_server sh -c 'mkdir -p /srv/bots && : > /srv/bots/snapshots.db'
+  fi
+  answers "$calls" "$recording" "$www" "$backups" "$price_bot"
+
+  say "--- first install"
+  run_installer --answers /etc/seasonal-test/answers --yes
+  check health
+  [[ "$www" == no ]] || check www
+  [[ "$mode" == caddy ]] || check other
+  [[ -z "$calls" ]] || check wss
+  [[ -z "$calls" ]] || check modes "$REMOTE/deploy/calls/.env"
+  [[ -n "$calls" ]] || check modes
+  check admin
+  [[ "$backups" == no ]] || check backup
+  [[ "$recording" == no ]] || check containers seasonal-calls-livekit-1 seasonal-calls-egress-1 seasonal-calls-redis-1
+  [[ -z "$price_bot" ]] || ok "the bot's file is mounted read-only" on_server docker exec seasonal-site-site-1 \
+    sh -c 'test -f /bots/snapshots.db && ! touch /bots/snapshots.db 2>/dev/null'
+  [[ "$mode" == caddy ]] || { check ufw "${own_ports[@]}"; check ufw-own "${own_ports[*]}"; }
+  check status "$mode"
+  check marker-write
+  local before livekit_started=""
+  before="$(check secrets-hash)"
+  [[ -z "$calls" ]] || livekit_started="$(livekit_started_at)"
+
+  say "--- second install (idempotent)"
+  run_installer --answers /etc/seasonal-test/answers --yes
+  ok "secrets kept on re-run" same_secrets "$before"
+  # An update must not cut running calls: LiveKit keeps running when nothing of it changed.
+  [[ -z "$calls" ]] || ok "LiveKit not restarted by the re-run" same_livekit "$livekit_started"
+  check health
+  check marker
+  [[ "$mode" == caddy ]] || check other
+
+  say "--- uninstall"
+  on_server "$REMOTE/deploy/install.sh" --uninstall | tee -a "$RESULTS"
+  check uninstalled
+  check marker
+  [[ "$mode" == caddy ]] || { check other; check ufw; }
+  [[ "$mode" == caddy ]] || ok "the installer's firewall rules are removed" on_server test ! -s /etc/seasonal/ufw-added
+
+  say "--- install after uninstall (data kept)"
+  run_installer --answers /etc/seasonal-test/answers --yes
+  check health
+  check marker
+  check admin
+  [[ -z "$calls" ]] || check wss
+  [[ "$mode" == caddy ]] || check other
+  say "=== scenario $name: all checks passed"
+}
+
+stop_server() { docker rm -f "$SERVER" >/dev/null 2>&1 || true; docker volume ls -q --filter "label=$LABEL" | xargs -r docker volume rm >/dev/null 2>&1 || true; }
+
+main() {
+  local name failed=()
+  (($#)) || set -- caddy nginx jammy
+  say "results: $RESULTS"
+  infrastructure
+  for name in "$@"; do
+    # A failed scenario is recorded and the next one still runs. In the background, because
+    # bash ignores set -e inside a subshell whose status is tested.
+    scenario "$name" &
+    if ! wait "$!"; then
+      say "=== scenario $name: FAILED (see above)"
+      failed+=("$name")
+    fi
+    [[ "${KEEP:-}" == 1 ]] || stop_server
+  done
+  if ((${#failed[@]})); then
+    say "FAILED: ${failed[*]}"
+    exit 1
+  fi
+  say "all scenarios passed: $*"
+}
+
+main "$@"
