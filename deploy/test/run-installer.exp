@@ -9,9 +9,11 @@
 #              character, so the password never shows in the log. With TEST_PASSWORD_MISTAKES=1
 #              it types as a person might: first a too-short password, then the right one with
 #              a typo removed by backspace and a confirmation that differs, then both right; the
-#              installer must say why and ask again each time, never stop. The CoinGecko key,
-#              asked on a terminal while none is set, is answered empty. Exits with the
-#              installer's own exit code (1 when a mistake was not answered by a new question).
+#              installer must say why and ask again each time, never stop. The CoinGecko key is
+#              answered empty when asked; TEST_COINGECKO=ask requires the question (a first
+#              answer), TEST_COINGECKO=never forbids it (an empty answer is remembered). Exits
+#              with the installer's own exit code (1 when a mistake was not answered by a new
+#              question, or the CoinGecko question was missing or came again).
 #              Usage: run-installer.exp <installer> [options]
 # ============================================================
 
@@ -23,6 +25,8 @@ set step [expr {$mistakes ? 0 : 2}]
 set asked 0
 set told_short 0
 set told_differ 0
+set coingecko [expr {[info exists env(TEST_COINGECKO)] ? $env(TEST_COINGECKO) : "any"}]
+set coingecko_asked 0
 spawn {*}$argv
 expect {
   "Password for" {
@@ -46,8 +50,8 @@ expect {
     }
     exp_continue
   }
-  # Asked on a terminal while no key is set, also by a re-run without --yes (--update): none.
-  "CoinGecko Demo API key" { send -- "\r"; exp_continue }
+  # Asked on a terminal until answered once: none.
+  "CoinGecko Demo API key" { set coingecko_asked 1; send -- "\r"; exp_continue }
   "at least 10 characters long" { set told_short 1; exp_continue }
   "passwords differ" { set told_differ 1; exp_continue }
   timeout { puts "\[test\] the installer took longer than an hour"; exit 1 }
@@ -57,6 +61,14 @@ lassign [wait] pid spawn_id os_error status
 # A re-run asks no password (the admin exists): nothing to check then.
 if {$mistakes && $asked && !($told_short && $told_differ)} {
   puts "\[test\] the installer did not explain and ask again after a wrong password"
+  exit 1
+}
+if {$coingecko eq "never" && $coingecko_asked} {
+  puts "\[test\] FAIL the CoinGecko key was asked again after an empty answer"
+  exit 1
+}
+if {$coingecko eq "ask" && !$coingecko_asked} {
+  puts "\[test\] FAIL the CoinGecko key was not asked"
   exit 1
 }
 exit $status

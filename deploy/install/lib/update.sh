@@ -8,7 +8,9 @@
 #              the checkout forward to origin's default branch (fast-forward only: never a
 #              reset, a stash or a discarded change), and hands over to that commit's own
 #              installer, which re-runs as a plain re-run does (reexec_installer, also used by
-#              --commit). Anything else it refuses with the reason, before changing anything.
+#              --commit) except that it takes no second backup (SEASONAL_UPDATE_BACKUP names
+#              the one taken here). Anything else it refuses with the reason, before changing
+#              anything.
 # ============================================================
 
 # reexec_installer: runs the installer of the commit now checked out, in place of this one
@@ -18,6 +20,7 @@ reexec_installer() {
   local args=()
   [[ -z "$ANSWERS" ]] || args+=(--answers "$ANSWERS")
   [[ "$UNATTENDED" == no ]] || args+=(--yes)
+  [[ "$ASK_COINGECKO" == no ]] || args+=(--coingecko)
   SEASONAL_REEXEC=1 exec "$INSTALL_DIR/deploy/install.sh" "${args[@]}"
 }
 
@@ -62,6 +65,9 @@ update_installed() {
     say "a fresh backup before the update"
     backup_now "the backup before the update"
     say "backup before the update: $BACKUP_HOST_DIR/$NEWEST_BACKUP"
+    # One backup per --update: the new installer's install_backups names this one instead of
+    # taking a second right after the restart.
+    export SEASONAL_UPDATE_BACKUP="$BACKUP_HOST_DIR/$NEWEST_BACKUP"
   else
     warn "backups are not set up: updating without a backup first (sudo $INSTALL_DIR/deploy/install.sh --backups)"
   fi

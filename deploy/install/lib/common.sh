@@ -217,9 +217,11 @@ new_secret() {
 }
 
 # The answers the installer remembers (no secrets): written after every successful step.
+# COINGECKO is "none" once the CoinGecko key was declined (the key itself lives in site.env
+# only); KEY_NOTE is "pending" until the KEEP SAFE note for the 2FA key was shown once.
 STATE_KEYS="MODE SITE_DOMAIN WWW_REDIRECT CALLS_DOMAIN RECORDING ACME_EMAIL ADMIN_NAME
 ADMIN_EMAIL PRICE_BOT_DB PRICE_BOT_MINING_RATES EVENT_BOT_DB BACKUP_RECIPIENT ACME_SERVER
-ACME_CA_BUNDLE ADMIN_DONE INSTALL_DIR NGINX_CONF_STYLE"
+ACME_CA_BUNDLE ADMIN_DONE INSTALL_DIR NGINX_CONF_STYLE COINGECKO KEY_NOTE"
 
 save_state() {
   local key
