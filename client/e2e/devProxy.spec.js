@@ -34,12 +34,12 @@ test('through the Vite dev proxy: guest chat post, register and login work', asy
     .getByRole('dialog', { name: 'Protect your private messages' })
     .getByRole('button', { name: 'Skip' })
     .click();
-  await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Account', exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'Log out' }).click();
   await page.goto('/login');
   await page.getByLabel('Username').fill(name);
   await page.getByLabel('Password').fill('correct-horse-1');
   await page.getByRole('button', { name: 'Log in' }).click();
-  await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Account', exact: true })).toBeVisible();
 });

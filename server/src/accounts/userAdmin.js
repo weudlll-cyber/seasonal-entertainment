@@ -3,8 +3,9 @@
 // Path:        server/src/accounts/userAdmin.js
 // Project:     Seasonal Entertainment
 // Description: Admin-side changes to accounts: list/search, role, "can start games", lock.
-//              The last active admin can be neither demoted nor locked: enforced here, in the
-//              data layer, so no route can bypass it (as in the race game).
+//              The last active admin can be neither demoted nor locked, nor deleted
+//              (deletion.js): enforced here, in the data layer, so no route can bypass it (as
+//              in the race game).
 // ============================================================
 
 import { escapeLike } from '../db/like.js';
@@ -44,9 +45,10 @@ function countActiveAdmins(db) {
 }
 
 // Would this change leave no active admin? Checked inside the same transaction as the write.
-function guardLastAdmin(db, user, { role, locked }) {
+// deleted: the account goes altogether (accounts/deletion.js).
+export function guardLastAdmin(db, user, { role, locked, deleted = false }) {
   const activeNow = user.role === 'admin' && !user.locked;
-  const activeAfter = (role ?? user.role) === 'admin' && !(locked ?? user.locked);
+  const activeAfter = !deleted && (role ?? user.role) === 'admin' && !(locked ?? user.locked);
   if (activeNow && !activeAfter && countActiveAdmins(db) <= 1) throw new LastAdminError();
 }
 
