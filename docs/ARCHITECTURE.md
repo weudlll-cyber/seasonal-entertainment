@@ -155,6 +155,15 @@ official site); `server/test/infoSeed.test.js` guards these rules. Imprint and P
 drafts with `[TO BE FILLED BY OWNER]` placeholders until the owner's details and a legal review
 are in.
 
+**Seed texts that changed later** (2026-11-01): the seed never runs again once pages exist, so a
+changed seed text would not reach a running site. On every start `refreshSeedPages`
+(`server/src/info/seed.js`, called by `server/src/index.js`) gives a stored page the current seed
+text when its body is still **exactly** an earlier seed text of that page, recognised by its
+SHA-256 in `server/src/info/seed/earlier-seeds.json` (Privacy: every version before account
+deletion was described). Title, status, order and slug stay; a page an admin edited is never
+touched. When a seed page listed there changes again, its text before the change is added to the
+list.
+
 ## Events
 
 Events come **only from the owner's event bot** (decided 2026-10-20; docs/BOTS.md): the site
@@ -341,7 +350,9 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
   uploaded files, files whose message was removed in any other way and uploads never sent
   within an hour go too (no orphans), unused link previews after the cache time, and guest
   names unused for 30 days are released, at start and every six hours
-  (`server/src/chat/retention.js`, `runChatRetention`).
+  (`server/src/chat/retention.js`, `runChatRetention`). A deleted account's room messages and
+  uploaded files go at once, not with the retention (decided 2026-11-01; docs/AUTH.md, "Deleting
+  an account").
 
 ## Security headers
 
@@ -426,17 +437,20 @@ server/
   src/db/database.js       opens the database, applies every area's schema and migrations
   src/db/addColumns.js     adds columns to older databases (each area's migrate function)
   src/accounts/            accounts area: schema, user store, passwords, routes (login:
-                           loginRoutes.js, pre-login and login), credentials, bootstrap
+                           loginRoutes.js, pre-login and login), credentials, bootstrap,
+                           account deletion (deletion.js; own deletion: deleteRoutes.js)
   src/twofa/               two-factor area: TOTP, schema, store, routes, staff gate
   src/keys/                members' keys: public keys, sealed private keys, recovery seal
   src/audit/               audit log: schema and the one recordAudit helper
   src/admin/               /api/admin routes (users, audit); areas add their own editors
-  src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md)
+  src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md,
+                           seed/earlier-seeds.json)
   src/games/               games hub: schema, store, public and admin routes, seed
   src/chat/                chat area, mounted by mount.js (the only entry for the rest of the
                            server): schema, store, messages and what may be sent, viewer rules,
                            routes, moderation, WebSocket endpoint (socket.js) and hub, sender
-                           rate limit, retention, seed
+                           rate limit, retention, seed, the chat's part of deleting an
+                           account (accountData.js)
   src/media/               chat media library: schema, store, image validator, files on disk,
                            picker and admin routes, first-start seed
   src/previews/            chat link previews: safe fetching (SSRF rules), meta parsing, cache,

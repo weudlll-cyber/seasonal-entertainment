@@ -1,0 +1,25 @@
+{
+  "description": "SHA-256 (hex) of every earlier text of a seed page (the body as readSeedPage in server/src/info/seed.js reads it: without the title line, trimmed, one final newline), by slug. On start, refreshSeedPages() gives a stored page whose body is still exactly one of these the current seed text; an edited page is left alone. When a seed page listed here changes, add the hash of its text before the change. privacy: every version from its first (ac4d1c8) to 27b5550, before account deletion was described (2026-11-01).",
+  "privacy": [
+    "eb0907c59d95a51e9e959501dfe1b094b75be782c4c919d15bb0c8bf0a9ec0e5",
+    "5a8fbc5bb85ec73ab72b0d938e15eb5edc28542d218a6bb05f01ee0f79dc25d9",
+    "79631029d7d1dc5414a7b7f196df39ae20d2dce1654b6cc6735a03b01ed09cc2",
+    "3c8b8ec0f0f212ed239f39b53d867f10ddfdcadc5d57b3df16eff9d8d4ac1bf6",
+    "8dbe217dd8771dcaae29ddfaed0c407a866a27a89dc4623c62fcc63a166476d0",
+    "93fc14d9f14097f7db5a5c1054bb95dca87937467ee80161071dabe4c0a0d59f",
+    "5fe674a9a923001c366a5fce20d56f66f5e61e9b15d37f67c87fe3e46008fb97",
+    "ae314cf9270bcec248a0d0f68f5a89ea9728bd9df4d806e9ad98930480a56e3f",
+    "61140e2f0d1b96f9f8527c047438f5f2fc1e42c57a1ed36734331beba452cef6",
+    "70fd9e31da943372731a6c11858a116867e3c0de52979848500ded4bccd984a4",
+    "ad62677d949b7cc3ed1f61e5d8a39e929959d37e471c9723eb9d3f2765d0a63c",
+    "e33d7f24d20aaaa02087445e7cdb2b2da0f32ab27346fd5a490d4900ea26fad8",
+    "d357bf74886df28795c24ebca29b70d2ec4a74653abc544082aa8ec3a2c76d45",
+    "b62a7a664add37f085d23250dd5dccbe7efec80f3e3bcdc87cf7c5c481dd7c81",
+    "cd8474a0d63de73b8bae0ba920c2de06017d932afd113a4e640b272bb29b6898",
+    "b0c8bede1e062e323fdcfba3b120442e9b899c7fe8b61a643ba200616567e158",
+    "69a98abc054e311aca91d8a0c60b454f534111b5158dfe2fa9f4bc1e3ba34466",
+    "29e82355617d347b619f82a1b6aa9ae4a6ce8ebc5b272a07cd446ab61fed0980",
+    "e6786866d4bf4627da3b6482cd297c2244af338700fa68172799363edd1ad363",
+    "1be608fc8c32bcdc59568afd075faa3a545a6b5a061575ff26752643fc60acb8"
+  ]
+}

@@ -34,8 +34,9 @@ import { generateSecret, matchStep, otpauthUrl } from './totp.js';
 export const ISSUER = 'Seasonal Entertainment'; // the name authenticator apps show
 const PENDING_LOGIN_MS = 5 * 60_000;
 
-// Either a 6-digit code or a recovery code, not both missing.
-const secondFactor = (body) => ({
+// Either a 6-digit code or a recovery code, not both missing. Also read by the account's own
+// deletion (accounts/deleteRoutes.js).
+export const secondFactor = (body) => ({
   code: typeof body?.code === 'string' ? body.code.trim() : undefined,
   recoveryCode: typeof body?.recoveryCode === 'string' ? body.recoveryCode : undefined,
 });
