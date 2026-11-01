@@ -62,6 +62,20 @@ test.describe('on a phone, late data hardly moves the page', () => {
   test.use({ viewport: PHONE });
 
   test('home: the game and the events arrive into kept room', async ({ page }) => {
+    // No call: other specs start their own calls meanwhile, and a call then joining "Up next"
+    // and adding the Next call box measured 0.053 on CI (twice, 2026-11-01) instead of this
+    // test's case. A call's own shift is a backlog entry (docs/BACKLOG.md).
+    await page.route('**/api/calls', (route) =>
+      route.fulfill({
+        json: {
+          ok: true,
+          configured: true,
+          canManage: false,
+          calls: { live: [], upcoming: [], recent: [] },
+          reminders: [],
+        },
+      })
+    );
     await slowData(page, ['games', 'bot-events', 'prices']);
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
