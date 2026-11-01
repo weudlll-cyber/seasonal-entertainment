@@ -63,7 +63,8 @@ test.describe('staff', () => {
 
   test('not set up on this server: no item', async ({ page }) => {
     await page.goto('/games');
-    await expect(page.getByRole('link', { name: 'Admin' })).toBeVisible();
+    const nav = page.getByRole('navigation', { name: 'Main' });
+    await expect(nav.getByRole('link', { name: 'Admin', exact: true })).toBeVisible();
     await expect(manageLink(page)).toHaveCount(0);
   });
 
