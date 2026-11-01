@@ -95,6 +95,7 @@ commit, which the client build carries for the update notice):
 | `EVENT_BOT_DB`                      | (unset: bot events off)                       | the event bot's database, read-only (docs/BOTS.md)                        |
 | `PRICE_BOT_MINING_RATES`            | (unset: no fair price, no mining times)       | the price bot's `mining_rates.json`, read-only (docs/BOTS.md)             |
 | `COINGECKO_API_KEY`                 | (unset: ETH, POL, BTC not connected)          | CoinGecko Demo key: the server fetches ETH/POL/BTC history (docs/BOTS.md) |
+| `BOT_ADMIN_EMBEDDED`                | (unset: off; `1` on)                          | embeds the event bot's admin page at `/bot-admin/` (docs/BOTS.md)         |
 
 Four of these are only the start of a site setting since 2026-10-23 (`CHAT_RETENTION_DAYS`,
 `CHAT_MAX_CONNECTIONS_PER_MEMBER`, `CHAT_MAX_GUEST_CONNECTIONS_PER_IP`, `LINK_PREVIEWS`): an
@@ -131,8 +132,11 @@ would have to rebuild all of that; react-router is the maintained standard for R
 - `client/src/app/App.jsx` is the one route table; every route renders inside `Layout`, the
   app shell (sidebar and main column, docs/DESIGN.md). Unknown paths render `NotFoundPage`.
 - `client/src/app/navigation.js` is the one definition of the navigation: sidebar items,
-  who sees the staff items (Admin for admins, Site banner for organisers), legal links, admin
-  sections.
+  who sees the staff items (Admin for admins, Site banner for organisers, Manage events for both
+  while the server has `features.botAdmin`), legal links, admin sections.
+- What the server is set up for reaches the client with the session answer
+  (`GET /api/auth/session`: `features`, e.g. `features.botAdmin`; `SessionContext.jsx`), never as
+  a build-time value.
 - `main.jsx` supplies `BrowserRouter`; tests supply `MemoryRouter`.
 
 ## Info pages and user-written content
@@ -411,7 +415,8 @@ client/                    React + Vite client
   e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels,
                            opticalCentres.js defines each season motif's optical centre
   src/main.jsx             entry point
-  src/pages/               one folder entry per page (component, CSS, test side by side)
+  src/pages/               one folder entry per page (component, CSS, test side by side);
+                           ManageEventsPage: the event bot's admin page in a frame (docs/BOTS.md)
   src/styles/              tokens.css (all design tokens, light and dark), fonts.css, base.css
   src/theme/               light/dark theme: rule, provider, toggle (docs/DESIGN.md)
   src/calls/               community calls: /calls list, call form and card, LIVE badge,
@@ -492,7 +497,8 @@ server/
   src/bots/                the owner's bots' databases, read-only: prices, event occurrences,
                            public routes with a cache, the events' images (fetched by the
                            server); fixtures.js and fixtureNetwork.js: fake development data
-                           and its image host (docs/BOTS.md)
+                           and its image host; adminAuthorizeRoutes.js: nginx's authorize
+                           step for the event bot's admin page (docs/BOTS.md, AUTH.md)
   src/buildInfo.js         version and commit for /api/health
   test/                    Vitest tests
 shared/                    rules used by server and client (accountRules.js, localWeek.js,

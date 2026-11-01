@@ -4,8 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: The site's navigation (docs/DESIGN.md, "Shell"). From 760px a 248px sidebar:
 //              the emblem and wordmark, main items as pills with icons and their quarter's
-//              season dot (Calls with its LIVE badge after Chat), the admin
-//              item behind a divider, the account card with the theme toggle, legal links. On
+//              season dot (Calls with its LIVE badge after Chat), the staff
+//              items (navigation.js: Admin, Site banner, Manage events) behind a divider, the account card with the theme toggle, legal links. On
 //              a call page (rail) it is an icon rail with tooltips and a LIVE dot, expanded by
 //              its menu button or, as an overlay, by pointing or keyboard focus (useRail.js).
 //              Below 760px a top bar (brand, theme toggle, menu button) whose menu opens the
@@ -69,7 +69,7 @@ function CallsNavItem({ user }) {
 
 // rail: the call page's icon rail instead of the full sidebar (from 760px).
 export default function Sidebar({ rail = false }) {
-  const { user, settings } = useSession();
+  const { user, settings, features } = useSession();
   const { pathname } = useLocation();
   const railState = useRail(rail);
   // The page the menu was opened on: following a link changes the page and so closes it.
@@ -77,7 +77,7 @@ export default function Sidebar({ rail = false }) {
   const menuOpen = menuPage === pathname;
   const menuButton = useRef(null);
   const closeButton = useRef(null);
-  const staffNav = staffNavFor(user);
+  const staffNav = staffNavFor(user, features);
 
   function closeMenu() {
     setMenuPage(null);

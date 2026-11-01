@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: The one definition of the site's navigation: the sidebar's main items (with
 //              their icons and season dots), the Calls item, the staff items (Site banner,
-//              Admin) and who sees them, the legal links (with "Not financial advice"), and the admin area's sections.
+//              Admin, Manage events) and who sees them, the legal links (with "Not financial
+//              advice"), and the admin area's sections.
 //              Used by the sidebar, the admin layout and their tests.
 // ============================================================
 
@@ -31,12 +32,21 @@ export const CALLS_ITEM = { to: '/calls', label: 'Calls', icon: 'mic', dot: 'win
 const ADMIN_ITEM = { to: '/admin', label: 'Admin', icon: 'admin' };
 // Organisers set the site banner (2026-11-01); admins do it on Admin → Settings.
 const BANNER_ITEM = { to: '/banner', label: 'Site banner', icon: 'megaphone' };
+// The event bot's admin page inside the site (decided 2026-10-20), for organisers and admins
+// (2026-11-01); only while the server is set up for it (features.botAdmin, the session answer).
+export const MANAGE_EVENTS_ITEM = {
+  to: '/manage-events',
+  label: 'Manage events',
+  icon: 'manageEvents',
+};
 
 // The items below the divider for this account: Admin for admins only (as before the shell),
-// Site banner for organisers. The pages check the role again, and the server on every request.
-export function staffNavFor(user) {
-  if (user?.role === 'admin') return [ADMIN_ITEM];
-  if (user?.role === 'organiser') return [BANNER_ITEM];
+// Site banner for organisers, Manage events for both while it is set up. The pages check the
+// role again, and the server on every request. features: the session's (SessionContext.jsx).
+export function staffNavFor(user, features = {}) {
+  const manage = features.botAdmin ? [MANAGE_EVENTS_ITEM] : [];
+  if (user?.role === 'admin') return [ADMIN_ITEM, ...manage];
+  if (user?.role === 'organiser') return [BANNER_ITEM, ...manage];
   return [];
 }
 

@@ -32,8 +32,8 @@ import { lazyPage } from './staleChunks.js';
 // Loaded when first opened, each as its own chunk, so the first page of a visit does not wait
 // for them (docs/DESIGN.md, "Speed"): the call page with the call service's client, the
 // prices page with its chart, info pages with the Markdown renderer, the admin area, the
-// organisers' Site banner page and the embedded chat. Layout and AdminLayout hold the boundaries (LazyBoundary) around their
-// outlets. lazyPage reloads the page once when a part's file is gone after an update
+// organisers' Site banner page, Manage events (the event bot's admin page) and the embedded
+// chat. Layout and AdminLayout hold the boundaries (LazyBoundary) around their outlets. lazyPage reloads the page once when a part's file is gone after an update
 // (staleChunks.js).
 const AdminAuditPage = lazyPage(() => import('../admin/AdminAuditPage.jsx'));
 const AdminChatMediaPage = lazyPage(() => import('../admin/AdminChatMediaPage.jsx'));
@@ -52,6 +52,7 @@ const EmbedChatPage = lazyPage(() => import('../embed/EmbedChatPage.jsx'));
 const EmbedLoginPage = lazyPage(() => import('../embed/EmbedLoginPage.jsx'));
 const InfoEditorPage = lazyPage(() => import('../admin/InfoEditorPage.jsx'));
 const InfoPage = lazyPage(() => import('../pages/InfoPage.jsx'));
+const ManageEventsPage = lazyPage(() => import('../pages/ManageEventsPage.jsx'));
 const PricesPage = lazyPage(() => import('../prices/PricesPage.jsx'));
 
 // Test-only pages: routed by the Vite dev server only. In a production build DEV is false, so
@@ -114,6 +115,14 @@ export default function App() {
                 element={
                   <RequireUser role="organiser">
                     <BannerPage />
+                  </RequireUser>
+                }
+              />
+              <Route
+                path="manage-events"
+                element={
+                  <RequireUser role="organiser">
+                    <ManageEventsPage />
                   </RequireUser>
                 }
               />
