@@ -148,6 +148,8 @@ rate limit, the lockout, locked accounts, the session epoch.
   signed in _(race game)_. An admin password reset bumps the epoch too and ends all of that user's
   sessions.
 - **Logout** destroys the server-side session and clears the cookie.
+- **Deleting the account** deletes every session of it, also one half-way through the 2FA login
+  ("Deleting an account" below).
 - **Open chat sockets follow the account:** logout closes that session's chat WebSocket; a role,
   lock or password change closes the account's sockets (except the session making its own
   change); and every push re-checks the account (`server/src/chat/hub.js`).
@@ -298,6 +300,7 @@ All answer `429 too_many_attempts`. Numbers are in `server/src/config.js` (`rate
 | `POST /api/auth/prelogin`  | 15 min | 60    | IP       | every request   |
 | `POST /api/auth/register`  | 1 h    | 5     | IP       | every attempt   |
 | `POST /api/auth/password`  | 15 min | 5     | account  | failed attempts |
+| `DELETE /api/auth/account` | 15 min | 5     | account  | failed attempts |
 | `POST /api/auth/bootstrap` | 1 h    | 10    | IP       | every attempt   |
 | every `GET` under `/api`   | 1 min  | 1200  | IP       | every request   |
 | `POST /api/keys/handover`  | 1 h    | 10    | account  | every request   |
@@ -312,8 +315,9 @@ The per-username login limit is kept as it is on purpose (decided 2026-10-23): a
 name can block its logins for 15 minutes with wrong passwords, and a correct password does not
 pass the block either. That is the price of stopping guesses spread over many addresses.
 
-The password-change limit keys on the account, not the IP _(race game)_: people behind one
-address must not lock each other out. Login is limited twice: per IP, and per username as typed
+The account deletion shares the password change's counter (one limiter, so guesses on either
+route count together). The password-change limit keys on the account, not the IP _(race
+game)_: people behind one address must not lock each other out. Login is limited twice: per IP, and per username as typed
 (case-insensitive), whether that account exists or not, so the 429 reveals nothing. The
 per-username limit means someone failing ten times can block that name's logins for up to 15
 minutes; that is the accepted price of stopping guessing from many addresses. Behind a reverse
@@ -354,15 +358,70 @@ never reset or changed, since an authenticator app uses it.
 ## Admin: users and the audit log
 
 `/admin` (admins only, with 2FA) manages accounts through `/api/admin/users`: list and search,
-change role, grant or revoke "can start games", lock or unlock, and reset a password (the admin
-sets the new one; all of that user's sessions end). **The last active admin can be neither
-demoted nor locked** — refused in the data layer itself (`server/src/accounts/userAdmin.js`), so
-no route can bypass it _(race game)_; an admin cannot lock their own account either.
+change role, grant or revoke "can start games", lock or unlock, reset a password (the admin
+sets the new one; all of that user's sessions end), and delete an account (next section).
+**The last active admin can be neither demoted nor locked nor deleted** — refused in the data
+layer itself (`guardLastAdmin`, `server/src/accounts/userAdmin.js`), so no route can bypass it
+_(race game)_; an admin cannot lock their own account either.
 
 Every admin action writes **exactly one** entry to the audit log (who, when, what, target, before
 and after, never a password) through the one helper `recordAudit`
 (`server/src/audit/auditLog.js`); the Audit page lists it newest first. Every later admin or
 moderation action uses the same helper.
+
+## Deleting an account
+
+Decided 2026-11-01: deleting an account deletes its room messages at once (not only after the
+chat retention).
+
+- **By the member** (`DELETE /api/auth/account`, `server/src/accounts/deleteRoutes.js`; the
+  account page's "Delete my account", `client/src/components/DeleteAccountForm.jsx`): the account
+  comes from the session, never the body. It needs the current password as its auth key (never
+  the password; as for the password change) and, with 2FA on, a code or a recovery code (the
+  same check as turning 2FA off; the code is looked at only after the password is right). Wrong
+  ones answer `401 invalid_credentials` and delete nothing; failed attempts count on the password
+  change's limiter. The page says in plain words what goes and what stays and asks for a ticked
+  confirmation. Afterwards this session ends, the cookie is cleared and the page becomes a
+  guest's (which clears the private key kept on the device). Not open to the embedded chat on
+  other sites (`403 embed_not_allowed`). Not audited: the account is gone, and the audit log is
+  for admin and moderation actions.
+- **By an admin** (`DELETE /api/admin/users/:id`, the "Delete" button in the users list after a
+  browser confirmation naming the account): writes one audit entry `user.delete` in the same
+  transaction (who, when, and the deleted account's username and role in `before`). An admin
+  cannot delete their own account there (`409 self_delete`; that is the account page's, with the
+  password).
+- **The last active admin** cannot be deleted (`409 last_admin`), on either route.
+- **What goes, at once, in one transaction** (`deleteAccount`, `server/src/accounts/deletion.js`):
+  - by the schemas' `ON DELETE CASCADE` on `users`: the 2FA secret and recovery codes, the keys
+    (public and sealed private), favourite rooms and members (both ways), read marks and muted
+    rooms, mentions of the account, chat sanctions, every direct message sent or received (so the
+    partner's copy of the conversation too), direct files of both partners, direct reports made
+    by or about the account with their copies and shared files, embed tokens, call participation
+    and call reminders;
+  - deleted explicitly, because the schemas keep them (`ON DELETE SET NULL`) or name the account
+    only as text: by the chat handle (`chat.accounts.deleteData`, `server/src/chat/accountData.js`,
+    as the rest of the server reaches into the chat only through `mountChat()`) the account's
+    room messages (call chats included; the reports of them and the mentions in them follow by
+    cascade), its room uploads, its room reports (`reporter` is `user:<id>`) and the partners'
+    read marks of its conversations (`chat_reads.target_id`); by `deletion.js` its sessions (JSON
+    in the `sessions` table);
+  - after the commit, the files on disk of those room uploads (with thumbnails), direct files and
+    shared report files (`chat.accounts.deleteFiles`).
+- **Open sockets** of the account close (`chatSessions.accountChanged`, all of them, embedded
+  chats included).
+- **What stays**: the audit log (entries keep their `actor_name`; `actor_id` becomes empty), call
+  recordings and their chapter marks (they name the organiser who started them as text, and hold
+  the sound and pictures of whoever spoke or showed a camera or screen), calls the account
+  created (`created_by` becomes empty), and staff names noted as text on others' records
+  (`hidden_by`, `removed_by`, `reviewed_by`, a sanction's `created_by`). Guests' embed tokens are
+  signed, not stored, and belong to no account. Link previews the deleted messages used go with
+  the retention job's usual cleanup.
+- Tests: `server/test/accountDelete.test.js` (the rules), `server/test/accountDeleteData.test.js`
+  (every kind of data gone, the audit log and recordings kept),
+  `client/src/components/deleteAccount.test.jsx`, `client/src/admin/adminPages.test.jsx`,
+  `client/e2e/accountDelete.spec.js` (the member's own deletion),
+  `client/e2e/accountDeleteAdmin.spec.js` (an admin's, confirmed and dismissed, the audit entry,
+  and the refused own Delete).
 
 ## Chat identities
 
@@ -374,6 +433,14 @@ write text and emojis); `GET /api/chat/media` (the picker's library) is a member
 library itself is managed by admins (with 2FA) at `/api/admin/chat/media`. Removing a link
 preview and marking a message's reports reviewed are organiser/admin routes (with 2FA), like
 the rest of chat moderation.
+
+## Site banner
+
+Organisers (with 2FA, `allow('organiser')`) change exactly two settings, the site banner's
+on/off and text (`banner.enabled`, `banner.text`; decided 2026-11-01), at `/api/banner` and on
+the page `/banner`. The banner's link and style, every other setting and the admin route
+`/api/admin/settings` stay admin-only; `/api/banner` takes the same two keys from admins. Each change is audited like an admin's
+setting change (`setting.change`). Details: docs/SETTINGS.md, "Who".
 
 **Chat file uploads** are a member route (`POST /api/chat/uploads`); guests cannot upload or
 attach. **Every request for an uploaded file applies the chat's read rule** (`GET

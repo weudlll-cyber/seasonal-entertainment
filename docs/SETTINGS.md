@@ -2,7 +2,8 @@
 
 Admin → Settings (`/admin/settings`) lists every site setting in its group. A setting's default
 is the site's usual behaviour, so nothing changes until an admin changes it (decided
-2026-10-23).
+2026-10-23). Organisers change the site banner's on/off and text, and nothing else, on their own page
+(below, "Who").
 
 ## How settings work
 
@@ -12,8 +13,21 @@ is the site's usual behaviour, so nothing changes until an admin changes it (dec
 - **Kinds** (`server/src/settings/types.js`): on/off, whole number (from a minimum to a maximum,
   both included), short text (one line, at most a length, optionally a rule of its own) and a
   choice from a list.
-- **Who**: admins only, with 2FA like every admin route (`/api/admin/settings`). Every change is
-  audited (`setting.change`, with the old and the new value).
+- **Who**: admins, with 2FA like every admin route (`/api/admin/settings`), every setting.
+  Organisers, with 2FA like every staff route, exactly two settings: `banner.enabled` and
+  `banner.text` (decided 2026-11-01; `ORGANISER_BANNER_KEYS` in
+  `server/src/settings/bannerRoutes.js`). The banner's link and style stay admin-only.
+  `GET /api/banner` returns the whole "Site banner" group (link and style read-only) and the
+  keys it may change (`editable`); `PUT /api/banner` sends several values, all checked before
+  any is stored, and any other key, the link and the style included, refuses the request (403,
+  nothing stored). The route takes the same two keys from admins too; they change the rest on
+  Admin → Settings. The page Site banner (`/banner`, in the sidebar below the divider for
+  organisers; `client/src/pages/BannerPage.jsx`) shows the banner now on the site, on/off and
+  text as on Admin → Settings, the link and style read-only ("Link and style: an admin changes
+  them in Admin → Settings."), a live preview and one Save. The admin route stays admins only.
+- **Audit**: every change, on either route, writes one entry (`setting.change`, with the old
+  and the new value) through the one helper `changeSetting` (`server/src/settings/change.js`);
+  the values are checked by the same rules (`checkSetting`, `store.js`).
 - **When**: a value is read at its use and kept in memory per database; a change drops it, so it
   takes effect at the next use, without a restart (`server/src/settings/store.js`).
 - **Stored**: only changed values, as text in `site_settings`. Nothing else is stored there by
@@ -21,7 +35,8 @@ is the site's usual behaviour, so nothing changes until an admin changes it (dec
   under their own keys.
 - **The page**: one section per group (Chat, Other sites, Calls, Accounts, Home, Weekly recap,
   Site banner; empty groups are left out), one card per setting with its explanation, bounds and
-  default, saved on its own (`client/src/admin/AdminSettingsPage.jsx`, `SettingForm.jsx`).
+  default, saved on its own (`client/src/admin/AdminSettingsPage.jsx`, `SettingForm.jsx`; the
+  organisers' Site banner page reuses its fields).
 
 ## The settings
 
@@ -67,6 +82,7 @@ is the site's usual behaviour, so nothing changes until an admin changes it (dec
 - The recording notice and its confirmation: everyone in a call must know it is recorded.
 - What production refuses to start with (`server/src/productionConfig.js`): a wrong setup must
   never reach visitors.
-- The audit log: it records every admin action, including setting changes.
+- The audit log: it records every admin action, including setting changes (also the
+  organisers' banner changes).
 - 2FA for organisers and admins.
 - The guest-name release (30 days) and the reported copies of direct messages (kept 90 days).

@@ -4,14 +4,17 @@
 // Project:     Seasonal Entertainment
 // Description: /api/admin/users (admins only): list/search, change role, grant/revoke "can
 //              start games", lock/unlock, reset password (a new salt and auth key derived in
-//              the admin's browser, docs/AUTH.md). Each change writes exactly one audit
-//              entry; a password reset ends all of that user's sessions (epoch bump). Role,
-//              lock and password changes close that user's chat sockets (chat/mount.js).
+//              the admin's browser, docs/AUTH.md), delete an account (accounts/deletion.js;
+//              never the last admin, never the admin's own: that is the account page's, with
+//              the password). Each change writes exactly one audit entry; a password reset
+//              ends all of that user's sessions (epoch bump). Role, lock, password changes and
+//              deletion close that user's chat sockets (chat/mount.js).
 // ============================================================
 
 import express from 'express';
 import { ROLES } from '@seasonal-entertainment/shared/accountRules.js';
 import { authKeyField, saltField } from '../accounts/credentials.js';
+import { deleteAccount } from '../accounts/deletion.js';
 import { hashPassword } from '../accounts/passwords.js';
 import {
   LastAdminError,
@@ -30,8 +33,9 @@ import { validBody } from '../http/validate.js';
 const isBoolean = (label) => (value) =>
   typeof value === 'boolean' ? null : `${label} must be true or false.`;
 
-// chatSessions: the chat handle's sessions interface (chat/mount.js).
-export function adminUserRoutes(db, config, chatSessions) {
+// chat: the chat handle (chat/mount.js): its sessions interface (open sockets follow account
+// changes) and its accounts interface (the chat's part of deleting an account).
+export function adminUserRoutes(db, config, { sessions: chatSessions, accounts: chatAccounts }) {
   const router = express.Router();
 
   // Loaded after allow(): who may not use these routes cannot probe which ids exist.
@@ -116,6 +120,25 @@ export function adminUserRoutes(db, config, chatSessions) {
     setPasswordHash(db, req.target.id, verifier, input.salt);
     chatSessions.accountChanged(req.target.id);
     audit(req, 'user.password_reset', null, { sessionsEnded: true });
+    res.json({ ok: true });
+  });
+
+  // Everything of the account goes at once (accounts/deletion.js); the audit entry keeps who
+  // deleted which account name, and is written in the same transaction.
+  router.delete('/:id', allow('admin'), loadTarget, (req, res) => {
+    if (req.target.id === req.user.id) {
+      return sendError(
+        res,
+        409,
+        'self_delete',
+        'Delete your own account on your account page, with your password.'
+      );
+    }
+    const deleted = { username: req.target.username, role: req.target.role };
+    const deletion = () =>
+      deleteAccount(db, chatAccounts, req.target, () => audit(req, 'user.delete', deleted));
+    if (!guarded(res, deletion)) return;
+    chatSessions.accountChanged(req.target.id);
     res.json({ ok: true });
   });
 

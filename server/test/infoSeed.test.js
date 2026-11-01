@@ -10,11 +10,21 @@
 //              says when calls are recorded (only after an organiser starts it, always announced)
 //              and what the call server processes, and its recording section is a proposal for the
 //              owner (consent as legal basis, no automatic deletion, the rights and where to
-//              complain) with only the contact left to fill.
+//              complain) with only the contact left to fill; it describes account deletion
+//              (what goes, what stays, how long backups keep it). A stored page still holding an
+//              earlier seed text gets the current one on start; an edited one is left alone.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { SEED_DRAFTS, SEED_ORDER, readSeedPage, seedInfoPages } from '../src/info/seed.js';
+import {
+  SEED_DRAFTS,
+  SEED_ORDER,
+  earlierSeeds,
+  readSeedPage,
+  refreshSeedPages,
+  seedInfoPages,
+  sha256,
+} from '../src/info/seed.js';
 import { makeTestApp } from './helpers/testApp.js';
 
 let t;
@@ -115,4 +125,59 @@ it('the privacy draft proposes the recording terms, leaving only the contact to 
   expect(section).toContain('Datenschutzbehörde');
   expect(section.match(/\[TO BE FILLED BY OWNER/g)).toEqual(['[TO BE FILLED BY OWNER']);
   expect(section).toContain('[TO BE FILLED BY OWNER: contact email');
+});
+
+it('the privacy draft describes account deletion: what goes, what stays, the backups', () => {
+  const { body } = readSeedPage('privacy');
+  const start = body.indexOf('## Deleting your account');
+  const section = body.slice(start, body.indexOf('\n## ', start + 1));
+  expect(start).toBeGreaterThan(0);
+  expect(section).toContain('"Delete my account"');
+  expect(section).toContain('The last remaining admin account cannot be deleted');
+  expect(section).toMatch(/whole conversation\s+is deleted for the other member too/);
+  expect(section).toMatch(/admin and moderation log/);
+  expect(section).toMatch(/call recordings/);
+  // The real retention of the backups (server/src/backup/backup.js, docs/DEPLOYMENT.md).
+  expect(section).toContain('**14 days**');
+  expect(section).toContain('**newest 30 backups**');
+});
+
+describe('refreshing unedited seed pages', () => {
+  const OLD = 'An earlier seed text.\n';
+  const privacyRow = () =>
+    t.db.prepare("SELECT title, body, status FROM info_pages WHERE slug = 'privacy'").get();
+  const setPrivacyBody = (body) =>
+    t.db.prepare("UPDATE info_pages SET body = ? WHERE slug = 'privacy'").run(body);
+
+  it('gives a page still holding an earlier seed text the current one, once', () => {
+    t = makeTestApp();
+    seedInfoPages(t.db);
+    setPrivacyBody(OLD);
+    expect(refreshSeedPages(t.db, { privacy: [sha256(OLD)] })).toBe(1);
+    expect(privacyRow()).toEqual({
+      title: 'Privacy',
+      body: readSeedPage('privacy').body,
+      status: 'draft',
+    });
+    expect(refreshSeedPages(t.db, { privacy: [sha256(OLD)] })).toBe(0);
+  });
+
+  it('leaves an edited page alone', () => {
+    t = makeTestApp();
+    seedInfoPages(t.db);
+    setPrivacyBody(`${OLD}Edited by an admin.\n`);
+    expect(refreshSeedPages(t.db, { privacy: [sha256(OLD)] })).toBe(0);
+    expect(privacyRow().body).toBe(`${OLD}Edited by an admin.\n`);
+    // And so does the real list: the current seed text is not an earlier one.
+    setPrivacyBody(readSeedPage('privacy').body);
+    expect(refreshSeedPages(t.db)).toBe(0);
+  });
+
+  it('lists only seed pages, as SHA-256 hashes', () => {
+    for (const [slug, hashes] of Object.entries(earlierSeeds())) {
+      expect(SEED_ORDER).toContain(slug);
+      for (const hash of hashes) expect(hash).toMatch(/^[0-9a-f]{64}$/);
+    }
+    expect(earlierSeeds().privacy).not.toContain(sha256(readSeedPage('privacy').body));
+  });
 });

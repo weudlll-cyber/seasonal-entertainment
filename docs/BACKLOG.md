@@ -29,8 +29,6 @@ entry waits for.
 
 ### Owner proposals (2026-11-01)
 
-- **Organisers set the site banner** — today the banner is one of the site settings, which only
-  admins change (`server/src/settings/adminRoutes.js`, docs/SETTINGS.md).
 - **Organisers create event-bot appointments on the site** — needs the bot-project change named
   in "Event bot admin page inside the site" above.
 
@@ -62,6 +60,24 @@ entry waits for.
   over the event images' 2 MB download limit (`server/src/config.js`, `bots.images`). The limit
   is now 10 MB and 15 s for event images only; the site keeps and serves its own 640px WebP copy
   as before (`server/src/bots/images.js`); the bot and its files are untouched.
+
+- **Organisers set the site banner** — closed by `feat/se-organiser-banner` (owner proposal
+  2026-11-01): organisers (with 2FA) change exactly the banner's on/off and text
+  (`banner.enabled`, `banner.text`; link and style stay admin-only), and no other setting, at
+  `/api/banner` (`server/src/settings/bannerRoutes.js`) on the page Site banner (`/banner`, in
+  their sidebar) with a live preview; each change is audited like an admin's (`change.js`), with
+  the same rules (docs/SETTINGS.md, "Who"; AUTH.md, "Site banner").
+
+- **Home on a phone moved while its data arrived** — closed by `fix/test-home-shift-2`:
+  `speed.spec.js`'s phone home test measured exactly 0.0530 on CI (limit 0.05) from 2026-11-01,
+  also on master. `fix/test-home-shift` (PR #30) blamed other specs' calls and made the test
+  answer "no call"; that was wrong, the test failed the same with it. The test now names what
+  moved: the banner's season clock lost a line when the web font arrived (the page below moved
+  19px), the featured game's centred label jumped 87px when the game arrived, and "Up next"
+  outgrew its kept room with names that wrap. Fixed on a phone: the clock has fixed room, the
+  game's content starts at the top, "Up next" keeps 16.5rem. The test pins three dates (the
+  season clock's longest and shortest lines) and UTC, answers games and events itself, and no
+  longer answers "no call". Before / after locally: 0.022-0.030 / 0.0012-0.0013 on each date.
 
 - **Installer: one-command update** — closed by `feat/se-install-2` (SE-INSTALL-2; requested
   2026-11-01): `sudo /opt/seasonal-entertainment/deploy/install.sh --update` takes a fresh backup

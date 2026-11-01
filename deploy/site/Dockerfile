@@ -8,8 +8,9 @@
 #              gets only production dependencies, the server, the shared code, the built client
 #              and the operations scripts (backup, restore, first admin). Base image pinned by
 #              digest. Build from the repository root: docker build -f deploy/site/Dockerfile
-#              --build-arg COMMIT_SHA=$(git rev-parse HEAD) . (docs/DEPLOYMENT.md). CI builds it
-#              on every pull request.
+#              --build-arg COMMIT_SHA=$(git rev-parse HEAD) . (docs/DEPLOYMENT.md). The commit
+#              goes into the built client too (client/vite.config.js), so an open page can tell
+#              that the site was updated. CI builds it on every pull request.
 # ============================================================
 
 # node 24.22.0 on Debian 12 (glibc: the prebuilt better-sqlite3, bcrypt and sharp binaries
@@ -32,6 +33,9 @@ COPY shared shared
 COPY server server
 COPY client client
 COPY scripts/backup.mjs scripts/restore.mjs scripts/bootstrap-admin.mjs scripts/
+# The client is built with the commit /api/health will report (.git is not in the build
+# context); declared only here, so the dependency layers above stay cached across commits.
+ARG COMMIT_SHA=unknown
 # Then only what runs stays: production dependencies, no tests.
 RUN npm run build && npm prune --omit=dev && rm -rf server/test shared/*.test.js
 
