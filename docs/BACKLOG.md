@@ -12,7 +12,7 @@ entry waits for.
 - **Real sites to approve for the chat embed** — which game sites go on Admin → Embedding once
   the site is live (only exact `https://` origins).
 - **Site and bots on the same VPS** — reading the bots' files through read-only mounts assumes
-  it (docs/DEPLOYMENT.md, "The owner's bots").
+  it (the installer's bot-file answers, docs/DEPLOYMENT.md, "What it asks").
 - **Imprint and Privacy** — drafts; need the owner's details and a legal review. Privacy's "Call
   recordings" holds a proposal to review; only its contact address is left to fill.
 - **Event bot admin page inside the site** — waits for a change in the bot project: its page
@@ -21,8 +21,13 @@ entry waits for.
 
 ### Waits for going online
 
-- **VPS deployment** — prepared (image, compose with Caddy, backups, runbook in
-  docs/DEPLOYMENT.md); waits for the domains, VPS access and the backup key pair.
+- **VPS deployment** — prepared (image, compose with Caddy, backups, the one-command installer
+  and runbook in docs/DEPLOYMENT.md); waits for the domains, VPS access and the backup key pair.
+- **Installer: first real deployment** — `deploy/install.sh` (SE-INSTALL-1) passed its end-to-end
+  tests on the PC in both modes (`deploy/test/run.sh`: an empty server with Caddy, and beside an
+  nginx that already serves another site) on Ubuntu 24.04 and 22.04. Still untested there: real
+  Let's Encrypt, real DNS, call media over UDP from outside. Its draft PR merges after the first
+  real deployment succeeds.
 - **Age key pair for the backups** — made on the owner's PC at deployment (docs/DEPLOYMENT.md,
   "Backups"); the VPS gets only the public key (backups go there, decided 2026-10-19).
 - **A recorded call on the VPS** — call recording is tested with a real egress on the PC; one
@@ -381,7 +386,7 @@ entry waits for.
 - **2FA secrets encrypted at rest** — closed by SE-NIGHT-2 part 8 (PR #7, merged 2026-10-20): TOTP
   secrets sealed with libsodium under `SECRET_ENCRYPTION_KEY` (required in production), plain
   rows encrypted on start, a wrong key refuses with a clear log line (docs/AUTH.md).
-- **Deployment preparation for the Contabo VPS** — closed by SE-NIGHT-2 part 7 (PR #7, merged
+- **Deployment preparation for the VPS** — closed by SE-NIGHT-2 part 7 (PR #7, merged
   2026-10-20): deploy/site/ (Dockerfile, compose with Caddy, Caddyfiles, systemd timers),
   nightly SQLite online backups with restore, production refuses development defaults, the
   first-admin script, CI builds the image; runbook docs/DEPLOYMENT.md.
