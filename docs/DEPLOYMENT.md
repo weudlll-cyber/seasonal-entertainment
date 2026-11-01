@@ -4,8 +4,9 @@ How the site goes onto a server: **one command** on an Ubuntu 22.04 or 24.04 ser
 (`deploy/install.sh`, SE-INSTALL-1). The installer puts the site in Docker with automatic HTTPS,
 adds the call service (optionally with recording) and the encrypted nightly backups, and creates
 the first admin. It works on an empty server (the site brings its own Caddy) and beside an nginx
-that already serves other sites. **Nothing has been deployed yet.** The manual steps the installer
-automates are kept at the end as a reference.
+that already serves other sites. **First real deployment: 2026-11-01** (commit `d1f8837`, nginx
+mode beside an existing nginx site, with calls, recording and backups). The manual steps the
+installer automates are kept at the end as a reference.
 
 Examples use `example.org` for the site and `calls.example.org` for the call service; put your
 own names in their place.
@@ -31,14 +32,16 @@ own names in their place.
 On the server, get the code and run the installer as root:
 
 ```sh
-git clone <repository URL> /opt/seasonal-entertainment     # or unpack a downloaded copy there
+git clone https://github.com/weudlll-cyber/seasonal-entertainment.git /opt/seasonal-entertainment
 cd /opt/seasonal-entertainment
 sudo ./deploy/install.sh
 ```
 
-Any folder works; the installer remembers where it ran. It writes one plain line per step
-(`[install] …`). On any failure it stops, says what failed, and prints the command that undoes the
-run (see "Rollback").
+The repository is public, so the clone needs no GitHub login on the server. Any folder works; the
+installer remembers where it ran. After the questions, a run on a fresh server took about 6
+minutes (first deployment), most of it installing Docker and building the image. It writes one
+plain line per step (`[install] …`). On any failure it stops, says what failed, and prints the
+command that undoes the run (see "Rollback").
 
 ### What it asks
 
@@ -75,8 +78,11 @@ secrets), so a later run asks nothing it already knows.
    to `deploy/site/site.env`, `deploy/site/.env` and `deploy/calls/.env` (mode 600, never
    committed). A secret that already exists is kept.
 5. Firewall: if **ufw is active**, it adds only the rules the chosen features need and lists
-   them. A rule ufw already had is not counted as the installer's. If ufw is inactive, it enables
-   nothing and prints the ports that must be open. It never changes SSH, users or existing rules.
+   them. A rule ufw already had is not counted as the installer's. ufw only recognises the same
+   rule: an existing combined rule such as `80,443/tcp` does not cover `80/tcp`, so the installer
+   adds `80/tcp` and `443/tcp` beside it. They are redundant, change nothing, and `--uninstall`
+   removes only them. If ufw is inactive, it enables nothing and prints the ports that must be
+   open. It never changes SSH, users or existing rules.
 6. Builds the site image with the commit, starts the site, and waits for
    `https://<site>/api/health` over HTTPS.
 7. Starts the call service (and the recording add-on) and checks it answers on
@@ -97,6 +103,14 @@ secrets), so a later run asks nothing it already knows.
 
 In nginx mode every change runs `nginx -t` before `systemctl reload nginx` (never a restart), and
 a file that fails the test is put back as it was.
+
+The other sites keep answering for their own names, with their own certificates. One thing can
+change: requests on 443 for **no known name** (by IP address, or without SNI). nginx answers them
+with the `default_server` for 443 or, if no block is marked so, with the first 443 block it loads.
+Files load in name order, so `seasonal-calls.conf` can come before an existing site's file, and
+it then answers those requests with the calls certificate (seen on the first deployment,
+2026-11-01). To keep the old answer, mark your own catch-all block as
+`listen 443 ssl default_server;`. The installer does not edit other files.
 
 ### What you still do yourself
 
@@ -288,6 +302,7 @@ Then delete `restore.tar` on the PC too.
 | "another nginx server block already serves …"     | an existing nginx file claims the site's or calls name: remove that block or pick other names                                                    |
 | "port 3800 is taken" (nginx mode)                 | something else listens on 127.0.0.1:3800                                                                                                         |
 | calls connect but no audio/video                  | the UDP ports (50000–50499, 3478) and 7881/tcp in a provider firewall; LiveKit's log                                                             |
+| LiveKit logs "could not validate external IP"     | a warning at start: it checks its public IP by reaching itself (seen on the first deployment, 2026-11-01); it matters only if audio/video fail   |
 | "no terminal: the first admin was not created"    | run `sudo ./deploy/install.sh --admin` on a terminal                                                                                             |
 | a run stopped half-way                            | fix the cause and run the installer again (it continues), or `--rollback` the printed snapshot                                                   |
 
