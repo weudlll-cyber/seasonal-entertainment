@@ -60,6 +60,14 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Flaky test `devAdminScript.test.js`** — closed by `fix/test-dev-admin` (timed out twice under
+  load on 2026-11-01, passed alone): its 20-second limit covered the whole run, and the run
+  starts the whole server app, whose module loading alone took 7 of 11 s on an idle PC and far
+  longer while other tests ran. The script now ends its output with "Dev admin ready." once
+  everything is closed, and the test limits only the step from that line to the exit (5 s; a
+  timer left running still fails it), with 150 s for the run itself. Checked: a 30-second timer
+  left running and an unclosed server both fail it; a run under load that took 38 s passes.
+
 - **Installer: one-command update** — closed by `feat/se-install-2` (SE-INSTALL-2; requested
   2026-11-01): `sudo /opt/seasonal-entertainment/deploy/install.sh --update` takes a fresh backup
   (if set up), fast-forwards the checkout to origin's default branch (refusing modified tracked

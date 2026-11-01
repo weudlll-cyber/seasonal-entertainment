@@ -349,7 +349,9 @@ the same file. It also adds a `SESSION_SECRET` to `.env` if missing, so dev logi
 restarts. Run again when the account already has 2FA, it rewrites the file's 2FA part from the
 secret stored now (it may have been set up again since), keeping the username and password; the
 recovery codes are stored hashed and are not shown again. It only reads: the account's 2FA is
-never reset or changed, since an authenticator app uses it.
+never reset or changed, since an authenticator app uses it. Its last line, "Dev admin ready.",
+comes once everything is closed; from there the process ends on its own
+(`server/test/devAdminScript.test.js` limits that step, not the whole run).
 
 ## Admin: users and the audit log
 
