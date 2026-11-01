@@ -23,14 +23,15 @@ case "$lineage" in
   *) exit 0 ;; # not one of ours
 esac
 
-if [[ "$lineage" == */seasonal-calls ]]; then
+# An unchanged certificate (every installer re-run calls this) leaves LiveKit and its calls alone.
+if [[ "$lineage" == */seasonal-calls ]] && ! cmp -s "$lineage/fullchain.pem" "$CERT_DIR/fullchain.pem"; then
   install -d -m 755 "$CERT_DIR"
   install -m 644 "$lineage/fullchain.pem" "$CERT_DIR/fullchain.pem"
   install -m 600 "$lineage/privkey.pem" "$CERT_DIR/privkey.pem"
   install_dir="$(sed -n 's/^INSTALL_DIR=//p' "$STATE_FILE" 2>/dev/null | tail -n 1)"
   # Restarted only when it runs: on the first install the certificate comes before LiveKit.
   if [[ -n "$install_dir" ]] && docker ps --format '{{.Names}}' | grep -qx 'seasonal-calls-livekit-1'; then
-    (cd "$install_dir/deploy/calls" && docker compose restart livekit >/dev/null)
+    (cd "$install_dir/deploy/calls" && docker compose --progress quiet restart livekit >/dev/null)
   fi
 fi
 

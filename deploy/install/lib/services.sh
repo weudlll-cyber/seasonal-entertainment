@@ -17,7 +17,7 @@ compose_calls() { (cd "$INSTALL_DIR/$CALLS_DIR_REL" && docker compose "$@"); }
 start_site() {
   install -d -m 755 -o 1000 -g 1000 "$BACKUP_HOST_DIR" # the image's "node" user is uid 1000
   say "building the site image (commit $(commit_sha | cut -c1-12)); this takes a few minutes"
-  compose_site build --quiet site >/dev/null || die "the site image did not build"
+  compose_site --progress quiet build site >/dev/null || die "the site image did not build"
   say "starting the site$([[ "$MODE" == caddy ]] && echo ' and Caddy')"
   compose_site up -d --remove-orphans >/dev/null 2>&1 || die "docker compose up failed (docker compose logs in $SITE_DIR_REL)"
 }
@@ -118,6 +118,8 @@ install_admin() {
   # The bootstrap route stays closed once an admin exists; the token goes anyway.
   kv_unset "$(site_env)" BOOTSTRAP_TOKEN
   compose_site up -d site >/dev/null 2>&1 || die "the site did not restart without BOOTSTRAP_TOKEN"
+  # The container is replaced: "done" only once the new one answers.
+  wait_health >/dev/null
   say "BOOTSTRAP_TOKEN removed, site restarted"
 }
 

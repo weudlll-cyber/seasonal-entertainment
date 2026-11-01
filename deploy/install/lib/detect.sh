@@ -24,10 +24,11 @@ check_os() {
   say "server: Ubuntu $version"
 }
 
-# The process names listening on TCP 80 or 443, one per line (empty: nobody).
+# The process names listening on TCP 80 or 443, one per line (empty: nobody). "|| true": grep
+# finding nothing is the normal answer, not a failure (pipefail).
 web_listeners() {
-  ss -Hltnp '( sport = :80 or sport = :443 )' 2>/dev/null |
-    grep -o 'users:(("[^"]*"' | sed 's/users:(("//; s/"$//' | sort -u
+  { ss -Hltnp '( sport = :80 or sport = :443 )' 2>/dev/null |
+    grep -o 'users:(("[^"]*"' || true; } | sed 's/users:(("//; s/"$//' | sort -u
 }
 
 # Our own Caddy from an earlier run: Docker publishes its ports through docker-proxy (or the
@@ -81,5 +82,5 @@ nginx_name_taken() {
   nginx -T 2>/dev/null | awk -v name="$name" '
     /^# configuration file / { file = $4; sub(/:$/, "", file) }
     $1 == "server_name" { for (i = 2; i <= NF; i++) { n = $i; sub(/;$/, "", n); if (n == name) print file } }
-  ' | grep -v '/seasonal-' | head -n 1
+  ' | { grep -v '/seasonal-' || true; } | head -n 1
 }

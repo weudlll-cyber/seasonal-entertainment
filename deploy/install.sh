@@ -15,7 +15,7 @@
 #              live in deploy/install/lib/.
 # ============================================================
 
-set -euo pipefail
+set -Eeuo pipefail
 
 INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LIB="$INSTALL_DIR/deploy/install/lib"
@@ -35,6 +35,9 @@ source "$LIB/nginx.sh"
 source "$LIB/services.sh"
 # shellcheck source=install/lib/manage.sh
 source "$LIB/manage.sh"
+
+# Any command failing where no step expected it still stops with a message and the rollback.
+trap 'die "unexpected failure (line $LINENO: $BASH_COMMAND)"' ERR
 
 ANSWER_KEYS="SITE_DOMAIN WWW_REDIRECT CALLS_DOMAIN RECORDING ACME_EMAIL ADMIN_NAME ADMIN_EMAIL
 COINGECKO_API_KEY PRICE_BOT_DB PRICE_BOT_MINING_RATES EVENT_BOT_DB BACKUP_RECIPIENT ACME_SERVER

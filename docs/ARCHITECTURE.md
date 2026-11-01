@@ -498,6 +498,8 @@ scripts/
   bootstrap-admin.mjs      the first admin of a running production site
 deploy/install.sh          the one-command installer for a server (deploy/install/: its parts,
                            answers.example, the certbot hook; docs/DEPLOYMENT.md)
+deploy/test/               the installer's end-to-end tests: run.sh (systemd Ubuntu containers,
+                           Pebble, test DNS); not part of npm run verify or CI
 deploy/site/               the site for a server: Dockerfile, docker-compose.yml (site + Caddy),
                            Caddyfile, systemd timers (docs/DEPLOYMENT.md)
 deploy/pc/                 the owner's PC: fetches the encrypted backups (PowerShell, sftp)

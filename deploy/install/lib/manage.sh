@@ -80,7 +80,7 @@ status() {
     say "health: NOT answering on https://$SITE_DOMAIN/api/health"
   fi
   if [[ "$MODE" == nginx ]] && command -v certbot >/dev/null; then
-    certbot certificates 2>/dev/null | awk '/Certificate Name: seasonal-/ { n = $3 } n && /Expiry Date/ { print "[install] certificate " n ": " $3 " " $4 " " $5; n = "" }'
+    certbot certificates 2>/dev/null | awk '/Certificate Name: seasonal-/ { n = $3 } n && /Expiry Date/ { sub(/.*Expiry Date: */, ""); print "[install] certificate " n ": " $0; n = "" }'
   fi
   systemctl list-timers --all --no-legend 'seasonal-*' 2>/dev/null | awk '{ print "[install] timer " $NF ": next " $1 " " $2 " " $3 }'
   [[ -f "$UFW_ADDED" ]] && say "firewall rules added by the installer: $(tr '\n' ' ' <"$UFW_ADDED")"
