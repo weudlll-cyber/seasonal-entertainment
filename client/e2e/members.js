@@ -10,6 +10,7 @@
 //              in, in a browser of its own, and records what that browser sends; it works for
 //              a first login and a later one alike (a spec run again in the same run, e.g.
 //              --repeat-each). E2E_DATABASE: the run's database, for specs that look into it.
+//              addMember() adds one more the same way, for a spec that uses one up (deletes it).
 // ============================================================
 
 import path from 'node:path';
@@ -40,16 +41,27 @@ const MEMBERS = [
   'embedpal',
 ];
 
+async function insertMember(db, username) {
+  const salt = await newSalt();
+  const { authKey } = await deriveAccountKeys(MEMBER_PASSWORD, salt);
+  db.prepare(
+    'INSERT INTO users (username, email, password_hash, kdf_salt) VALUES (?, ?, ?, ?)'
+  ).run(username, `${username}@example.org`, await hashPassword(authKey, 4), salt);
+}
+
 export async function seedMembers(databasePath) {
   const db = new Database(databasePath);
   try {
-    for (const username of MEMBERS) {
-      const salt = await newSalt();
-      const { authKey } = await deriveAccountKeys(MEMBER_PASSWORD, salt);
-      db.prepare(
-        'INSERT INTO users (username, email, password_hash, kdf_salt) VALUES (?, ?, ?, ?)'
-      ).run(username, `${username}@example.org`, await hashPassword(authKey, 4), salt);
-    }
+    for (const username of MEMBERS) await insertMember(db, username);
+  } finally {
+    db.close();
+  }
+}
+
+export async function addMember(username) {
+  const db = new Database(E2E_DATABASE);
+  try {
+    await insertMember(db, username);
   } finally {
     db.close();
   }

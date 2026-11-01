@@ -4,12 +4,13 @@
 // Project:     Seasonal Entertainment
 // Description: Guards the admin area screens: who can open them, the users list and its
 //              controls (including a refusal shown in the row, and a password reset that checks
-//              the password rules and sends only a new salt and auth key), and the audit log.
+//              the password rules and sends only a new salt and auth key, and a deletion only
+//              after the admin confirms it), and the audit log.
 // ============================================================
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { deriveAccountKeys } from '@seasonal-entertainment/shared/crypto.js';
 import App from '../app/App.jsx';
 import { formatWhen } from '../app/dates.js';
@@ -100,6 +101,47 @@ describe('users page', () => {
     expect(Object.keys(body).sort()).toEqual(['authKey', 'salt']);
     expect(body.authKey).toBe((await deriveAccountKeys('brand-new-pass-1', body.salt)).authKey);
     expect(JSON.stringify(calls.map((c) => c.body))).not.toContain('brand-new-pass-1');
+  });
+
+  describe('deleting an account', () => {
+    afterEach(() => vi.restoreAllMocks());
+    const deletes = (calls) => calls.filter((c) => c.key === 'DELETE /admin/users/2');
+    const lists = (calls) => calls.filter((c) => c.key === 'GET /admin/users?q=');
+
+    it('asks first, naming the account; nothing is sent when the admin cancels', async () => {
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+      const calls = mockApi(answers({ 'DELETE /admin/users/2': { body: { ok: true } } }));
+      renderAt('/admin/users');
+      fireEvent.click(await screen.findByRole('button', { name: 'Delete account for bert' }));
+      expect(confirm).toHaveBeenCalledWith(expect.stringContaining('Delete the account bert?'));
+      expect(deletes(calls)).toEqual([]);
+    });
+
+    it('deletes after the confirmation and reloads the list', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const calls = mockApi(answers({ 'DELETE /admin/users/2': { body: { ok: true } } }));
+      renderAt('/admin/users');
+      fireEvent.click(await screen.findByRole('button', { name: 'Delete account for bert' }));
+      await vi.waitFor(() => expect(lists(calls)).toHaveLength(2));
+      expect(deletes(calls)).toHaveLength(1);
+    });
+
+    it('shows a refusal in the row', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const message = 'The last admin cannot be removed.';
+      mockApi(
+        answers({
+          'DELETE /admin/users/2': {
+            status: 409,
+            body: { ok: false, error: 'last_admin', message },
+          },
+        })
+      );
+      renderAt('/admin/users');
+      fireEvent.click(await screen.findByRole('button', { name: 'Delete account for bert' }));
+      const row = screen.getByText('bert').closest('tr');
+      expect(await within(row).findByText(message)).toBeInTheDocument();
+    });
   });
 });
 

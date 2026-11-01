@@ -324,9 +324,11 @@ mediaItemId?, preview? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh
     as plain data.
   - **No server-side thumbnails or content checks**: the server cannot see the content. It
     enforces size and participant access only.
-  - **Deletion**: a file lives as long as its message. When the message goes (retention) or an
-    account is deleted, the retention job deletes the row and the file on disk; it also removes
-    any file in `direct/` that no row names. Direct messages have no delete action of their own.
+  - **Deletion**: a file lives as long as its message. When the message goes (retention), the
+    retention job deletes the row and the file on disk; when an account is deleted, its direct
+    files and its partners' go at once, rows and files (docs/AUTH.md, "Deleting an account").
+    The retention job also removes any file in `direct/` that no row names. Direct messages have
+    no delete action of their own.
   - Tests: `server/test/directFiles.test.js`, `client/src/chat/directFiles.test.jsx`,
     `shared/crypto.test.js`.
 - **Rules** (`server/src/chat/directRoutes.js`): the same mute/ban and the same per-sender rate
@@ -346,6 +348,9 @@ mediaItemId?, preview? }, nonce, recipientPublicKey, senderPrivateKey)`, a fresh
   (`mergeMessages`, shared with the rooms), so a live reload of the newest page keeps them. Only
   the two members of a conversation can page through it, as with the newest page.
 - **Retention**: direct messages follow the same `CHAT_RETENTION_DAYS` as room messages.
+- **A deleted account** takes every conversation it was in along at once, for the partner too
+  (decided 2026-11-01; docs/AUTH.md, "Deleting an account"), and with it the partner's read mark
+  of it.
 - **Safety numbers** (decided 2026-10-21): the server hands out the public keys, so a
   compromised server could give a member a key of its own instead of the partner's and read
   what is then sent (an active attack). Two members detect that by comparing their safety
@@ -506,7 +511,8 @@ Moderators and admins may see direct messages **only when the affected member re
   (`chat.direct_report`, with the number of copies, never their text) and the review
   (`chat.direct_report_review`).
 - **Deletion**: shared copies are deleted 90 days after the report was marked reviewed (decided
-  2026-10-18; the retention job, `server/src/chat/retention.js`).
+  2026-10-18; the retention job, `server/src/chat/retention.js`). A report goes at once, with its
+  copies and shared files, when the reporter's or the reported member's account is deleted.
 
 ## Weekly recap
 

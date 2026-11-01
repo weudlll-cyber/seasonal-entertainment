@@ -5,7 +5,8 @@
 // Description: One row of the admin users list. Every control calls its own admin route;
 //              a refusal (e.g. "the last admin cannot be removed") is shown in the row. A
 //              password reset checks the shared password rules here and sends only a new salt
-//              and auth key derived from the password (session/credentials.js).
+//              and auth key derived from the password (session/credentials.js). Deleting the
+//              account asks for a confirmation first (docs/AUTH.md, "Deleting an account").
 // ============================================================
 
 import { useState } from 'react';
@@ -27,6 +28,21 @@ export default function UserRow({ user, onChanged }) {
     } catch (err) {
       setMessage(err.message);
       return false;
+    }
+  }
+
+  async function deleteAccount() {
+    const sure = window.confirm(
+      `Delete the account ${user.username}? Everything of it goes at once and cannot be restored: ` +
+        'its chat messages and files, its private conversations (for the other members too), ' +
+        'its keys, favourites and reports.'
+    );
+    if (!sure) return;
+    try {
+      await api(`/admin/users/${user.id}`, { method: 'DELETE' });
+      onChanged();
+    } catch (err) {
+      setMessage(err.message);
     }
   }
 
@@ -108,6 +124,16 @@ export default function UserRow({ user, onChanged }) {
             Reset password
           </button>
         )}
+      </td>
+      <td>
+        <button
+          className="link-button"
+          type="button"
+          aria-label={label('Delete account')}
+          onClick={deleteAccount}
+        >
+          Delete
+        </button>
       </td>
     </tr>
   );

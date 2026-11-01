@@ -13,7 +13,8 @@
 //              (chat/mount.js); logout also ends the member's embed tokens (embed/tokens.js). PUT
 //              /api/auth/privacy: the member's own "Show when I'm online" and "Link previews in
 //              direct messages"; PUT /api/auth/notifications: which browser notifications they want
-//              (a mention, a new direct message, the weekly recap).
+//              (a mention, a new direct message, the weekly recap). DELETE /api/auth/account: the
+//              member's own deletion (deleteRoutes.js).
 // ============================================================
 
 import express from 'express';
@@ -32,6 +33,7 @@ import { getSetting, publicSettings } from '../settings/store.js';
 import { twoFactorStatus } from '../twofa/gate.js';
 import { resealKey } from '../keys/store.js';
 import { authKeyField, optional, saltField, sealedKeyField } from './credentials.js';
+import { accountDeleteRoutes } from './deleteRoutes.js';
 import { loginRoutes } from './loginRoutes.js';
 import { provesPassword } from './passwordProof.js';
 import { hashPassword } from './passwords.js';
@@ -56,6 +58,7 @@ export function accountRoutes(db, config, chatSessions) {
     failedOnly: true,
     keyGenerator: (req) => `user:${req.user.id}`,
   });
+  router.use(accountDeleteRoutes(db, config, chatSessions, passwordLimiter));
 
   // The settings every visitor's browser needs (shared/siteSettings.js) travel with it.
   router.get('/session', allow('public'), (req, res) => {
