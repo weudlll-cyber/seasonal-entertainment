@@ -49,34 +49,43 @@ test('the same commit as the build: no notice', async ({ page }) => {
   await expect(notice(page)).toHaveCount(0);
 });
 
+// Counts the page's document loads (the first one and every reload); a link followed inside the
+// app is no document load.
+function countDocumentLoads(page) {
+  const count = { loads: 0 };
+  page.on('request', (request) => {
+    if (request.isNavigationRequest() && request.frame() === page.mainFrame()) count.loads++;
+  });
+  return count;
+}
+
 test('a page part whose file is gone reloads the page once and then loads', async ({ page }) => {
-  let missing = 1;
+  const documents = countDocumentLoads(page);
+  // Gone for the page that was open; the reloaded page gets the file (Vite asks for it twice:
+  // a modulepreload link and the import).
   await page.route(START_CHUNK, (route) =>
-    missing-- > 0 ? route.fulfill({ status: 404, body: 'gone' }) : route.continue()
+    documents.loads < 2 ? route.fulfill({ status: 404, body: 'gone' }) : route.continue()
   );
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  const reloaded = page.waitForEvent('load');
   await page
     .getByRole('navigation', { name: 'Main' })
     .getByRole('link', { name: 'Start here' })
     .click();
-  await reloaded;
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Start here');
   await expect(page).toHaveURL(/\/start$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/./);
+  expect(documents.loads).toBe(2); // reloaded once
   await expect(page.getByText(ERROR)).toHaveCount(0);
-  expect(missing).toBe(-1); // asked twice: gone, then loaded after the reload
 });
 
 test('a page part that stays gone: its error with a Reload button, the shell stays', async ({
   page,
 }) => {
-  let loads = 0;
-  page.on('load', () => loads++);
+  const documents = countDocumentLoads(page);
   await page.route(START_CHUNK, (route) => route.fulfill({ status: 404, body: 'gone' }));
   await page.goto('/start');
   await expect(page.getByRole('alert')).toHaveText(new RegExp(ERROR));
   await expect(page.getByRole('button', { name: 'Reload' })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
-  expect(loads).toBe(2); // the first load and the one reload, no loop
+  expect(documents.loads).toBe(2); // the first load and the one reload, no loop
 });

@@ -7,8 +7,9 @@
 //              the new files (docs/DEPLOYMENT.md, "Updating"). A reload in this tab within the
 //              last minute means reloading did not help: then the load error goes on to
 //              LazyBoundary, which shows it with a Reload button instead of a blank page.
-//              Vite's vite:preloadError (a page part's CSS or shared file missing) is handled
-//              the same way (reloadOnPreloadError, main.jsx).
+//              Vite's vite:preloadError (a page part's files failed to preload; in the build this
+//              usually comes first, the import's own error after it) is handled the same way
+//              (reloadOnPreloadError, main.jsx).
 // ============================================================
 
 import { lazy } from 'react';
