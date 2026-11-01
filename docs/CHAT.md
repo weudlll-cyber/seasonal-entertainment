@@ -561,6 +561,9 @@ const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork, em
 // chat.sessions.accountChanged(userId, keepSid)  role, lock, password, 2FA: close the account's sockets
 // chat.sessions.presenceChanged()                 someone showed or hid their online status
 // chat.sessions.embedRevoked(which)              embed tokens ended: their sockets close
+// chat.accounts.deleteData(userId)               an account's deletion, in its transaction: the
+//                                                chat rows the schemas keep; returns the files
+// chat.accounts.deleteFiles(files)               those files on disk, after the commit
 // chat.notify.member(userId, event)              an event to every open page of a member
 //                                                (call reminders); returns how many got it
 // chat.system.post(slugs, body)                  the site's own message (weekly recap) in

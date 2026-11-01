@@ -33,8 +33,9 @@ import { validBody } from '../http/validate.js';
 const isBoolean = (label) => (value) =>
   typeof value === 'boolean' ? null : `${label} must be true or false.`;
 
-// chatSessions: the chat handle's sessions interface (chat/mount.js).
-export function adminUserRoutes(db, config, chatSessions) {
+// chat: the chat handle (chat/mount.js): its sessions interface (open sockets follow account
+// changes) and its accounts interface (the chat's part of deleting an account).
+export function adminUserRoutes(db, config, { sessions: chatSessions, accounts: chatAccounts }) {
   const router = express.Router();
 
   // Loaded after allow(): who may not use these routes cannot probe which ids exist.
@@ -135,7 +136,7 @@ export function adminUserRoutes(db, config, chatSessions) {
     }
     const deleted = { username: req.target.username, role: req.target.role };
     const deletion = () =>
-      deleteAccount(db, config, req.target, () => audit(req, 'user.delete', deleted));
+      deleteAccount(db, chatAccounts, req.target, () => audit(req, 'user.delete', deleted));
     if (!guarded(res, deletion)) return;
     chatSessions.accountChanged(req.target.id);
     res.json({ ok: true });

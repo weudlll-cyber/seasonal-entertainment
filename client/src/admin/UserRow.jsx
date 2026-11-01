@@ -126,14 +126,17 @@ export default function UserRow({ user, onChanged }) {
         )}
       </td>
       <td>
-        <button
-          className="link-button"
-          type="button"
-          aria-label={label('Delete account')}
-          onClick={deleteAccount}
-        >
-          Delete
-        </button>
+        {/* admin-row-actions: a full 44px target for the small text button. */}
+        <div className="admin-row-actions">
+          <button
+            className="link-button"
+            type="button"
+            aria-label={label('Delete account')}
+            onClick={deleteAccount}
+          >
+            Delete
+          </button>
+        </div>
       </td>
     </tr>
   );

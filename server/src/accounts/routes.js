@@ -45,8 +45,9 @@ import {
   setSwitches,
 } from './userStore.js';
 
-// chatSessions: the chat handle's sessions interface (chat/mount.js).
-export function accountRoutes(db, config, chatSessions) {
+// chat: the chat handle (chat/mount.js): its sessions interface (open sockets follow logouts and
+// changes) and its accounts interface (the chat's part of deleting an account).
+export function accountRoutes(db, config, { sessions: chatSessions, accounts: chatAccounts }) {
   const router = express.Router();
   const limits = config.rateLimits;
   // What the client sees about the signed-in account, including its 2FA state.
@@ -58,7 +59,7 @@ export function accountRoutes(db, config, chatSessions) {
     failedOnly: true,
     keyGenerator: (req) => `user:${req.user.id}`,
   });
-  router.use(accountDeleteRoutes(db, config, chatSessions, passwordLimiter));
+  router.use(accountDeleteRoutes(db, config, { chatSessions, chatAccounts }, passwordLimiter));
 
   // The settings every visitor's browser needs (shared/siteSettings.js) travel with it.
   router.get('/session', allow('public'), (req, res) => {

@@ -398,13 +398,15 @@ chat retention).
     partner's copy of the conversation too), direct files of both partners, direct reports made
     by or about the account with their copies and shared files, embed tokens, call participation
     and call reminders;
-  - deleted by `deletion.js`, because the schemas keep them (`ON DELETE SET NULL`) or name the
-    account only as text: the account's room messages (call chats included; the reports of them
-    and the mentions in them follow by cascade), its room uploads, its room reports (`reporter`
-    is `user:<id>`), the partners' read marks of its conversations (`chat_reads.target_id`), and
-    its sessions (JSON in the `sessions` table);
+  - deleted explicitly, because the schemas keep them (`ON DELETE SET NULL`) or name the account
+    only as text: by the chat handle (`chat.accounts.deleteData`, `server/src/chat/accountData.js`,
+    as the rest of the server reaches into the chat only through `mountChat()`) the account's
+    room messages (call chats included; the reports of them and the mentions in them follow by
+    cascade), its room uploads, its room reports (`reporter` is `user:<id>`) and the partners'
+    read marks of its conversations (`chat_reads.target_id`); by `deletion.js` its sessions (JSON
+    in the `sessions` table);
   - after the commit, the files on disk of those room uploads (with thumbnails), direct files and
-    shared report files.
+    shared report files (`chat.accounts.deleteFiles`).
 - **Open sockets** of the account close (`chatSessions.accountChanged`, all of them, embedded
   chats included).
 - **What stays**: the audit log (entries keep their `actor_name`; `actor_id` becomes empty), call

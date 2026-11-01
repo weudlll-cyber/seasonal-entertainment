@@ -175,7 +175,9 @@ describe('an admin deleting an account', () => {
   it('the data layer refuses to delete the last active admin, and deletes nothing', async () => {
     t = makeTestApp();
     const { user: ada } = await makeStaff(t, 'ada', 'admin');
-    expect(() => deleteAccount(t.db, t.config, findUserById(t.db, ada.id))).toThrow(LastAdminError);
+    expect(() =>
+      deleteAccount(t.db, t.app.locals.chat.accounts, findUserById(t.db, ada.id))
+    ).toThrow(LastAdminError);
     expect(exists(ada.id)).toBe(true);
     expect(t.db.prepare('SELECT COUNT(*) AS n FROM two_factor').get().n).toBe(1);
   });

@@ -21,10 +21,10 @@ import { deleteAccount } from './deletion.js';
 import { provesPassword } from './passwordProof.js';
 import { LastAdminError } from './userAdmin.js';
 
-// chatSessions: the chat handle's sessions interface (chat/mount.js). failedLimiter: the
-// password change's per-account limiter (routes.js), shared so that guesses on either route
-// count together.
-export function accountDeleteRoutes(db, config, chatSessions, failedLimiter) {
+// chatSessions, chatAccounts: the chat handle's sessions and accounts interfaces
+// (chat/mount.js). failedLimiter: the password change's per-account limiter (routes.js), shared
+// so that guesses on either route count together.
+export function accountDeleteRoutes(db, config, { chatSessions, chatAccounts }, failedLimiter) {
   const router = express.Router();
 
   router.delete('/account', allow('member'), failedLimiter, async (req, res) => {
@@ -42,7 +42,7 @@ export function accountDeleteRoutes(db, config, chatSessions, failedLimiter) {
       return sendError(res, 401, 'invalid_credentials', 'Password or code is wrong.');
     }
     try {
-      deleteAccount(db, config, user);
+      deleteAccount(db, chatAccounts, user);
     } catch (err) {
       if (!(err instanceof LastAdminError)) throw err;
       return sendError(

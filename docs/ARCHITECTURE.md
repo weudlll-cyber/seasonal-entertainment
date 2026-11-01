@@ -449,7 +449,8 @@ server/
   src/chat/                chat area, mounted by mount.js (the only entry for the rest of the
                            server): schema, store, messages and what may be sent, viewer rules,
                            routes, moderation, WebSocket endpoint (socket.js) and hub, sender
-                           rate limit, retention, seed
+                           rate limit, retention, seed, the chat's part of deleting an
+                           account (accountData.js)
   src/media/               chat media library: schema, store, image validator, files on disk,
                            picker and admin routes, first-start seed
   src/previews/            chat link previews: safe fetching (SSRF rules), meta parsing, cache,
