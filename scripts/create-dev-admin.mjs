@@ -15,7 +15,8 @@
 //              auth key from it with the shared crypto helper (docs/AUTH.md, "Login key split").
 //              Password, TOTP secret and recovery codes go ONLY to data/DEV-ADMIN.txt
 //              (gitignored). Also adds a SESSION_SECRET to .env so dev logins survive
-//              restarts. Safe to run again. Refuses to run with NODE_ENV=production.
+//              restarts. Safe to run again. Refuses to run with NODE_ENV=production. Ends with
+//              "Dev admin ready." once everything is closed.
 // ============================================================
 
 import { randomBytes } from 'node:crypto';
@@ -33,6 +34,8 @@ import { getTwoFactor } from '../server/src/twofa/store.js';
 import { codeForStep, otpauthUrl, stepAt } from '../server/src/twofa/totp.js';
 
 const USERNAME = 'devadmin';
+// The last line on success (devAdminScript.test.js waits for it).
+const DONE_LINE = 'Dev admin ready.';
 const random = (bytes) => randomBytes(bytes).toString('base64url');
 
 if (!existsSync(ENV_FILE) || !/^SESSION_SECRET=./m.test(readFileSync(ENV_FILE, 'utf8'))) {
@@ -167,3 +170,6 @@ try {
   server.close();
   db.close();
 }
+// The work is done and everything is closed: from here the process must end on its own (its
+// test measures the time from this line to the exit, devAdminScript.test.js).
+console.log(DONE_LINE);

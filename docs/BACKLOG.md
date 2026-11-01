@@ -55,6 +55,14 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Flaky test `devAdminScript.test.js`** — closed by `fix/test-dev-admin` (timed out twice under
+  load on 2026-11-01, passed alone): its 20-second limit covered the whole run, and the run
+  starts the whole server app, whose module loading alone took 7 of 11 s on an idle PC and far
+  longer while other tests ran. The script now ends its output with "Dev admin ready." once
+  everything is closed, and the test limits only the step from that line to the exit (5 s; a
+  timer left running still fails it), with 150 s for the run itself. Checked: a 30-second timer
+  left running and an unclosed server both fail it; a run under load that took 38 s passes.
+
 - **Event bot images too large** — closed by `fix/se-event-images`: the live site refused six of
   the event bot's images (seen 2026-11-01). They are designer PNGs of 3.0-3.5 MB at 1536 x 1024,
   over the event images' 2 MB download limit (`server/src/config.js`, `bots.images`). The limit

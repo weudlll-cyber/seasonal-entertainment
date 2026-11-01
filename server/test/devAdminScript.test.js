@@ -6,7 +6,9 @@
 //              database, it creates the admin with 2FA and exits on its own, also a second time;
 //              run again with a stale secret in DEV-ADMIN.txt, it writes the stored secret back
 //              into the file and leaves the 2FA row exactly as it was. A timer left running
-//              would keep it alive until the time-out. Runs at the tests' bcrypt cost, as every
+//              would keep it alive: only the time from its last line ("Dev admin ready.") to
+//              its exit is limited, so a slow, loaded machine does not count as a hang. Runs
+//              at the tests' bcrypt cost, as every
 //              other server test (helpers/testApp.js): the hashing strength is not what is
 //              tested, and the production cost made each run several times slower.
 // ============================================================
@@ -33,19 +35,39 @@ function throwAwayEnv() {
   };
 }
 
-// Resolves the exit code, or "still running" after the time-out (then it is stopped, and
-// awaited: on Windows its open database would otherwise block deleting the folder).
+// The script's last line once its work is done and everything is closed.
+const DONE_LINE = 'Dev admin ready.';
+// How long the process may take to end after that line. Only this is timed, not the whole run:
+// the run starts the whole server app, and loading its modules alone took 7 of its 11 s on an
+// idle PC and much longer under load (two runs per test went past a 20 s limit on 2026-11-01).
+// Ending after the work is done costs no I/O, so a timer left running stands out from load.
+const EXIT_AFTER_DONE_MS = 5_000;
+// The whole run's limit, only against a script that never finishes its work.
+const RUN_LIMIT_MS = 150_000;
+
+// Resolves the exit code, or "still running" when the process does not end on its own after
+// its last line (or never gets there); then it is stopped and awaited: on Windows its open
+// database would otherwise block deleting the folder.
 function run(env) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [script], {
       env: { ...process.env, ...env },
-      stdio: 'ignore',
+      stdio: ['ignore', 'pipe', 'ignore'],
     });
     let result;
-    const timer = setTimeout(() => {
+    const stop = () => {
       result = 'still running';
       child.kill();
-    }, 20_000);
+    };
+    let timer = setTimeout(stop, RUN_LIMIT_MS);
+    let output = '';
+    child.stdout.on('data', (chunk) => {
+      output += chunk;
+      if (output.includes(DONE_LINE)) {
+        clearTimeout(timer);
+        timer = setTimeout(stop, EXIT_AFTER_DONE_MS);
+      }
+    });
     child.on('exit', (code) => {
       clearTimeout(timer);
       resolve(result ?? code);
@@ -53,16 +75,20 @@ function run(env) {
   });
 }
 
-it('creates the dev admin and exits on its own, twice', { timeout: 60_000 }, async () => {
-  const env = throwAwayEnv();
-  expect(await run(env)).toBe(0);
-  expect(readFileSync(path.join(dir, 'DEV-ADMIN.txt'), 'utf8')).toMatch(/TOTP secret: [A-Z2-7]+/);
-  expect(await run(env)).toBe(0);
-});
+it(
+  'creates the dev admin and exits on its own, twice',
+  { timeout: 2 * RUN_LIMIT_MS + 10_000 },
+  async () => {
+    const env = throwAwayEnv();
+    expect(await run(env)).toBe(0);
+    expect(readFileSync(path.join(dir, 'DEV-ADMIN.txt'), 'utf8')).toMatch(/TOTP secret: [A-Z2-7]+/);
+    expect(await run(env)).toBe(0);
+  }
+);
 
 it(
   'rewrites a stale secret in the file from the stored one, never touching the 2FA',
-  { timeout: 60_000 },
+  { timeout: 2 * RUN_LIMIT_MS + 10_000 },
   async () => {
     const env = throwAwayEnv();
     const file = path.join(dir, 'DEV-ADMIN.txt');
