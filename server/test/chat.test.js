@@ -5,13 +5,14 @@
 // Description: Guards the chat API for writers: room access for guests, members and staff;
 //              no links from guests; unique guest names; per-sender rate limits (stricter for
 //              guests) and per-IP limits on guest posts and new guest names, which a cleared
-//              cookie does not reset. Moderation and retention: chatModeration.test.js.
+//              cookie does not reset; staff badges from the author's current role. Moderation
+//              and retention: chatModeration.test.js.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
 import { assignGuestName } from '../src/chat/store.js';
 import { bodies, chatApp, post } from './helpers/chat.js';
-import { makeStaff, registerUser } from './helpers/testApp.js';
+import { makeStaff, registerUser, setRole } from './helpers/testApp.js';
 
 let t;
 afterEach(() => t?.close());
@@ -66,6 +67,34 @@ describe('rooms and guests', () => {
     t = chatApp();
     expect((await post(t.client(), 'general', '   ')).status).toBe(400);
     expect((await post(t.client(), 'general', 'x'.repeat(501))).status).toBe(400);
+  });
+});
+
+describe('staff badges', () => {
+  it("name an admin's and an organiser's messages by the account's role now, never a claim", async () => {
+    t = chatApp();
+    const { agent: admin } = await makeStaff(t, 'adele', 'admin');
+    const { agent: organiser, user: olga } = await makeStaff(t, 'olga', 'organiser');
+    const { agent: member } = await registerUser(t, 'mia');
+    await post(admin, 'general', 'from the admin');
+    await post(organiser, 'general', 'from the organiser');
+    // A member claiming a role in the request gets none.
+    await member.post('/api/chat/rooms/general/messages').send({ body: 'me', authorRole: 'admin' });
+    await post(t.client(), 'general', 'from a guest');
+    const roles = async () =>
+      (await t.client().get('/api/chat/rooms/general/messages')).body.messages.map((m) => [
+        m.body,
+        m.authorRole,
+      ]);
+    expect(await roles()).toEqual([
+      ['from the admin', 'admin'],
+      ['from the organiser', 'organiser'],
+      ['me', null],
+      ['from a guest', null],
+    ]);
+    // The role as it is now: an organiser made a member loses the badge on old messages too.
+    setRole(t, olga.id, 'member');
+    expect((await roles())[1]).toEqual(['from the organiser', null]);
   });
 });
 

@@ -18,8 +18,11 @@ import { fileView } from '../uploads/view.js';
 const now = () => new Date().toISOString();
 
 // authorId: the author's account id (null for guests), for the name menu (favourites).
+// authorRole: 'admin' or 'organiser' when the author's account has that role now (the staff
+// badge, docs/CHAT.md), from the accounts table, never from what a client sent; else null.
 const MESSAGE_COLUMNS = `m.id, r.slug AS room, m.author_name AS author,
   m.author_user_id AS authorId, (m.author_guest IS NOT NULL) AS isGuest,
+  CASE WHEN a.role IN ('admin', 'organiser') THEN a.role END AS authorRole,
   m.author_system AS isSystem, m.kind, m.body, m.created_at AS createdAt,
   m.hidden_at AS hiddenAt, m.hidden_by AS hiddenBy,
   i.file AS mediaFile, i.alt AS mediaAlt, i.credit AS mediaCredit, i.width AS mediaWidth,
@@ -33,6 +36,7 @@ const MESSAGE_COLUMNS = `m.id, r.slug AS room, m.author_name AS author,
     AS reported`;
 // Only an item that is active and in an active pack still shows.
 const MESSAGE_FROM = `chat_messages m JOIN chat_rooms r ON r.id = m.room_id
+  LEFT JOIN users a ON a.id = m.author_user_id
   LEFT JOIN media_items i ON i.id = m.media_item_id AND i.active = 1
     AND EXISTS (SELECT 1 FROM media_packs p WHERE p.id = i.pack_id AND p.active = 1)
   LEFT JOIN link_previews lp ON lp.id = m.preview_id AND lp.ok = 1

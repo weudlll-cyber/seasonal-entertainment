@@ -9,8 +9,9 @@
 //              A socket of the embedded chat on a foreign site (embed/) holds an embed token
 //              instead of a session: it is closed as soon as that token no longer works. The
 //              number of members shown online goes to the readers of "general" whenever it
-//              changes (the home page's Community box). It also counts the open sockets per
-//              account and per guest address, for the connection limits (socket.js).
+//              changes, and to each new reader as it subscribes (the home page's Community
+//              box). It also counts the open sockets per account and per guest address, for
+//              the connection limits (socket.js).
 // ============================================================
 
 import { WebSocket } from 'ws';
@@ -21,6 +22,8 @@ import { canRead, sessionViewer } from './viewer.js';
 
 // Close code from the private range: the client reconnects and is judged afresh.
 const SESSION_CHANGED = 4001;
+// The room whose readers get the online count (the home page's Community box).
+const ONLINE_ROOM = 'general';
 
 export class ChatHub {
   // embedOrigins: the approved sites (embed/origins.js), to judge embed-token sockets.
@@ -53,7 +56,7 @@ export class ChatHub {
     const count = this.onlineUserIds().size;
     if (count === this.onlineShown) return;
     this.onlineShown = count;
-    const general = findRoomBySlug(this.db, 'general');
+    const general = findRoomBySlug(this.db, ONLINE_ROOM);
     if (general) this.broadcast(general.id, { type: 'online', count });
   }
 
@@ -85,6 +88,14 @@ export class ChatHub {
     if (!viewer || !canRead(room, viewer)) return false;
     if (!this.rooms.has(room.id)) this.rooms.set(room.id, new Set());
     this.rooms.get(room.id).add(socket);
+    // A new reader of "general" gets the current count at once: the count pushed when its own
+    // connection was added went out before it had subscribed, and the page's GET of the count
+    // may have been answered before that connection counted (the member saw "0 online").
+    if (room.slug === ONLINE_ROOM && socket.readyState === WebSocket.OPEN) {
+      socket.send(
+        JSON.stringify({ type: 'online', count: this.onlineUserIds().size, room: room.slug })
+      );
+    }
     return true;
   }
 

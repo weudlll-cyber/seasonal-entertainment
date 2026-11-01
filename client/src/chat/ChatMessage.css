@@ -3,8 +3,9 @@
    Path:        client/src/chat/ChatMessage.css
    Project:     Seasonal Entertainment
    Description: One chat message inside the module (under .se-chat): meta line, guest badge,
-                text, stickers / GIFs, link preview card, and its "…" button (top right; shown
-                on hover and focus, always on touch screens).
+                staff names and badges in their role colour, text, stickers / GIFs, link preview
+                card, and its "…" button (top right; shown on hover and focus, always on touch
+                screens).
    ============================================================ */
 
 .se-chat .chat-message {
@@ -113,6 +114,30 @@
   border: 1px solid var(--chat-border-strong);
   border-radius: var(--chat-radius);
   font-size: 0.75rem;
+}
+
+/* Staff: the name and its badge in the role's colour (decided 2026-11-01). The ETH and POL
+   coin colours: far from the four season colours and the plain Guest / Site badges, readable on
+   both themes (tokens.css has a light and a dark value for each). */
+.se-chat .chat-message__meta--admin {
+  --chat-role: var(--color-coin-eth, #6d4fd6);
+}
+
+.se-chat .chat-message__meta--organiser {
+  --chat-role: var(--color-coin-pol, #c0368a);
+}
+
+.se-chat .chat-message__meta--admin :is(strong, .chat-name),
+.se-chat .chat-message__meta--organiser :is(strong, .chat-name),
+.se-chat .chat-badge--admin,
+.se-chat .chat-badge--organiser {
+  color: var(--chat-role);
+}
+
+.se-chat .chat-badge--admin,
+.se-chat .chat-badge--organiser {
+  border-color: var(--chat-role);
+  font-weight: var(--chat-strong);
 }
 
 /* Link preview card: compact, image left when there is room. */
