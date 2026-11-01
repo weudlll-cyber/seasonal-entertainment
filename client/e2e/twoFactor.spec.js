@@ -27,11 +27,17 @@ test('turn on 2FA and log in with a code', async ({ page }) => {
     .getByRole('button', { name: 'Skip' })
     .click();
 
-  // Wait for the account page: the register page has a "Password" field too. Exact: the
-  // account page also has "Current password" and "New password".
+  // Wait for the account page: the register page has a "Password" field too. Within the setup's
+  // own form: the account page also has "Current password", "New password" and the "Password"
+  // of "Delete my account".
   await expect(page.getByRole('heading', { name: 'Account', exact: true })).toBeVisible();
-  await page.getByLabel('Password', { exact: true }).fill('correct-horse-1');
-  await page.getByRole('button', { name: 'Set up two-factor authentication' }).click();
+  const setUp = page.getByRole('button', { name: 'Set up two-factor authentication' });
+  await page
+    .locator('form')
+    .filter({ has: setUp })
+    .getByLabel('Password', { exact: true })
+    .fill('correct-horse-1');
+  await setUp.click();
   const qr = page.getByAltText('QR code for your authenticator app');
   await expect
     .poll(() => qr.evaluate((img) => img.complete && img.naturalWidth))
