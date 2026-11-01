@@ -4,8 +4,9 @@
 // Project:     Seasonal Entertainment
 // Description: Guards the app shell: the sidebar's main navigation (with the current page
 //              marked), legal links, the account card for guests and members, the Admin item
-//              for admins only, the season dots of Games, Events and Chat (their logo quarters'
-//              colours), the home page on "/" and the 404 page, both inside the shell.
+//              for admins only and the Site banner item for organisers, the season dots of
+//              Games, Events and Chat (their logo quarters' colours), the home page on "/" and
+//              the 404 page, both inside the shell.
 // ============================================================
 
 import { render, screen, within } from '@testing-library/react';
@@ -123,7 +124,7 @@ describe('who sees what below the divider', () => {
   it.each([
     [null, []],
     [{ role: 'member' }, []],
-    [{ role: 'organiser' }, []],
+    [{ role: 'organiser' }, ['/banner']],
     [{ role: 'admin' }, ['/admin']],
   ])('%o: %o', (user, targets) => {
     expect(staffNavFor(user).map((item) => item.to)).toEqual(targets);

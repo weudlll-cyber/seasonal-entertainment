@@ -129,7 +129,8 @@ would have to rebuild all of that; react-router is the maintained standard for R
 - `client/src/app/App.jsx` is the one route table; every route renders inside `Layout`, the
   app shell (sidebar and main column, docs/DESIGN.md). Unknown paths render `NotFoundPage`.
 - `client/src/app/navigation.js` is the one definition of the navigation: sidebar items,
-  who sees the Admin item, legal links, admin sections.
+  who sees the staff items (Admin for admins, Site banner for organisers), legal links, admin
+  sections.
 - `main.jsx` supplies `BrowserRouter`; tests supply `MemoryRouter`.
 
 ## Info pages and user-written content
@@ -464,7 +465,8 @@ server/
                            recordings with their length and chapters and the archive
                            (recordings.js, chapters.js, recordingRoutes.js, chapterRoutes.js)
   src/settings/            admin-editable site settings (docs/SETTINGS.md): kinds, groups/,
-                           definitions, store, admin routes
+                           definitions, store, admin routes, the organisers' banner routes
+                           (bannerRoutes.js), one change with its audit entry (change.js)
   src/embed/               the chat on approved other sites: the approved list (a setting),
                            embed tokens, their route allow-list, routes (docs/EMBED.md, AUTH.md)
   src/reference/           ETH, POL and BTC prices from CoinGecko: schema, the API call, the daily

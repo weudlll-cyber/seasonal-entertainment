@@ -29,8 +29,6 @@ entry waits for.
 
 ### Owner proposals (2026-11-01)
 
-- **Organisers set the site banner** — today the banner is one of the site settings, which only
-  admins change (`server/src/settings/adminRoutes.js`, docs/SETTINGS.md).
 - **Organisers create event-bot appointments on the site** — needs the bot-project change named
   in "Event bot admin page inside the site" above.
 
@@ -59,6 +57,12 @@ entry waits for.
   two failed on CI is what the trace will show.
 
 ## PART TWO — closed
+
+- **Organisers set the site banner** — closed by `feat/se-organiser-banner` (owner proposal
+  2026-11-01): organisers (with 2FA) change the four "Site banner" settings, and no other, at
+  `/api/banner` (`server/src/settings/bannerRoutes.js`) on the page Site banner (`/banner`, in
+  their sidebar) with a live preview; each change is audited like an admin's (`change.js`), with
+  the same rules (docs/SETTINGS.md, "Who"; AUTH.md, "Site banner").
 
 - **Installer: one-command update** — closed by `feat/se-install-2` (SE-INSTALL-2; requested
   2026-11-01): `sudo /opt/seasonal-entertainment/deploy/install.sh --update` takes a fresh backup

@@ -375,6 +375,13 @@ library itself is managed by admins (with 2FA) at `/api/admin/chat/media`. Remov
 preview and marking a message's reports reviewed are organiser/admin routes (with 2FA), like
 the rest of chat moderation.
 
+## Site banner
+
+Organisers and admins (with 2FA, `allow('organiser')`) change the site banner's four settings
+(on/off, text, link, style) at `/api/banner` and on the page `/banner`; no other setting, and
+not the admin route `/api/admin/settings` (admins only). Each change is audited like an admin's
+setting change (`setting.change`). Details: docs/SETTINGS.md, "Who".
+
 **Chat file uploads** are a member route (`POST /api/chat/uploads`); guests cannot upload or
 attach. **Every request for an uploaded file applies the chat's read rule** (`GET
 /api/chat/files/...`, `server/src/uploads/routes.js`): the viewer must be able to read the room

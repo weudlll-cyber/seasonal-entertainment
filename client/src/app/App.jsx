@@ -29,8 +29,9 @@ import Layout from './Layout.jsx';
 
 // Loaded when first opened, each as its own chunk, so the first page of a visit does not wait
 // for them (docs/DESIGN.md, "Speed"): the call page with the call service's client, the
-// prices page with its chart, info pages with the Markdown renderer, the admin area and the
-// embedded chat. Layout and AdminLayout hold the Suspense boundaries around their outlets.
+// prices page with its chart, info pages with the Markdown renderer, the admin area, the
+// organisers' Site banner page and the embedded chat. Layout and AdminLayout hold the Suspense
+// boundaries around their outlets.
 const AdminAuditPage = lazy(() => import('../admin/AdminAuditPage.jsx'));
 const AdminChatMediaPage = lazy(() => import('../admin/AdminChatMediaPage.jsx'));
 const AdminChatPage = lazy(() => import('../admin/AdminChatPage.jsx'));
@@ -40,6 +41,7 @@ const AdminInfoListPage = lazy(() => import('../admin/AdminInfoListPage.jsx'));
 const AdminLayout = lazy(() => import('../admin/AdminLayout.jsx'));
 const AdminSettingsPage = lazy(() => import('../admin/AdminSettingsPage.jsx'));
 const AdminUsersPage = lazy(() => import('../admin/AdminUsersPage.jsx'));
+const BannerPage = lazy(() => import('../pages/BannerPage.jsx'));
 const CallPage = lazy(() => import('../pages/CallPage.jsx'));
 const RecordingsPage = lazy(() => import('../pages/RecordingsPage.jsx'));
 const StartPage = lazy(() => import('../pages/StartPage.jsx'));
@@ -101,6 +103,14 @@ export default function App() {
                 element={
                   <RequireUser>
                     <AccountPage />
+                  </RequireUser>
+                }
+              />
+              <Route
+                path="banner"
+                element={
+                  <RequireUser role="organiser">
+                    <BannerPage />
                   </RequireUser>
                 }
               />
