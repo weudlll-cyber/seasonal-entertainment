@@ -19,14 +19,13 @@ entry waits for.
   skips its own login when the site's server supplies the bot token, and its API paths can sit
   under a prefix (today absolute `/api/...`, which collide with the site's `/api`).
 
-### Waits for going online
+### To try on the live server
 
-- **VPS deployment** — prepared (image, compose with Caddy, backups, the one-command installer
-  and runbook in docs/DEPLOYMENT.md); waits for the domains, VPS access and the backup key pair.
-- **Age key pair for the backups** — made on the owner's PC at deployment (docs/DEPLOYMENT.md,
-  "Backups"); the VPS gets only the public key (backups go there, decided 2026-10-19).
 - **A recorded call on the VPS** — call recording is tested with a real egress on the PC; one
-  real recorded call on the server is still to try (docs/CALLS.md, "Recording").
+  real recorded call on the server is still to try (docs/CALLS.md, "Recording"). Also untested
+  there: call media over UDP from outside (signalling through nginx answered 101 on 2026-11-01).
+  LiveKit logged "could not validate external IP" at start (docs/DEPLOYMENT.md,
+  "Troubleshooting").
 
 ### Owner proposals (2026-11-01)
 
@@ -67,6 +66,13 @@ entry waits for.
   docs/DEPLOYMENT.md, "What it does").
 
 ## PART TWO — closed
+
+- **VPS deployment** — closed by the first deployment on 2026-11-01, commit `d1f8837`: the site,
+  the call service with recording and the nightly encrypted backups run on the VPS in nginx mode
+  beside its existing site (docs/DEPLOYMENT.md).
+- **Age key pair for the backups** — closed by the first deployment on 2026-11-01, commit
+  `d1f8837`: the key pair was made on the owner's PC (docs/DEPLOYMENT.md, "Backups to your PC");
+  only the public key is on the VPS, and the first backup decrypted on the PC.
 
 - **Installer: first real deployment** — closed by the first deployment on 2026-11-01, commit
   `d1f8837` (merge of PR #21, SE-INSTALL-1): cloned from GitHub on the server and run
