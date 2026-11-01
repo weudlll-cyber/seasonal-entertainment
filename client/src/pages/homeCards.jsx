@@ -5,13 +5,14 @@
 // Description: The boxes of the home page in the SE style (docs/DESIGN.md, "Home"), all from
 //              real data: the featured game (the first game of the games list), "Up next" (the
 //              event bot's occurrences and the site's calls, merged by LandingPage.jsx; a call
-//              with the calls quarter, linking to its page), the four season price tiles (price
-//              bot, docs/BOTS.md) and the link to the fair prices and charts (with the notice
-//              "Information only — not financial advice."); the faint logo part (Wash) the boxes
-//              share. Community and Next call have files of their own (CommunityCard.jsx,
+//              with the calls quarter, linking to its page; only the entries that fit whole,
+//              useWholeItems.js), the four season price tiles (price bot, docs/BOTS.md) and the
+//              link to the fair prices and charts (with the notice "Information only — not
+//              financial advice."); the faint logo part (Wash) the boxes share. Community and Next call have files of their own (CommunityCard.jsx,
 //              NextCallCard.jsx). Each box but the tiles carries a faint part of the logo.
 // ============================================================
 
+import { useRef } from 'react';
 import { Link } from 'react-router';
 import { GAME_STATUS_LABELS } from '@seasonal-entertainment/shared/gameRules.js';
 import { formatWhen } from '../app/dates.js';
@@ -19,6 +20,7 @@ import { EMBLEM, QUARTERS, SEASON_ICONS } from '../brand/brand.js';
 import NotAdvice from '../components/NotAdvice.jsx';
 import { formatChange, formatUsd, TOKENS } from '../prices/priceFormat.js';
 import './priceTiles.css';
+import { useWholeItems } from './useWholeItems.js';
 
 // A box's faint logo part: decoration behind its content; lazy, as on a phone most boxes start
 // below the fold.
@@ -60,6 +62,10 @@ export function FeaturedGameCard({ game }) {
 // next: { connected | failed, next: the bot's occurrences and the site's calls (withCalls),
 // soonest first }; null while loading.
 export function UpNextCard({ next, timeZone }) {
+  const list = useRef(null);
+  const entries = next?.next ?? [];
+  // Only whole entries: one that does not fit the box's height is hidden, never shown cut.
+  const whole = useWholeItems(list, entries.length);
   return (
     <section className="card home__card home__upnext" aria-label="Up next">
       <Wash src={QUARTERS.events} />
@@ -74,12 +80,22 @@ export function UpNextCard({ next, timeZone }) {
       {next?.connected && next.next.length === 0 && (
         <p className="home__text">No events in the next seven days.</p>
       )}
-      <ul className="home__events">
-        {next?.next?.map((entry) =>
+      <ul className="home__events" ref={list}>
+        {entries.map((entry, index) =>
           entry.call ? (
-            <CallEntry key={`call-${entry.id}`} entry={entry} timeZone={timeZone} />
+            <CallEntry
+              key={`call-${entry.id}`}
+              entry={entry}
+              timeZone={timeZone}
+              cut={index >= whole}
+            />
           ) : (
-            <BotEntry key={`${entry.id}-${entry.start}`} entry={entry} timeZone={timeZone} />
+            <BotEntry
+              key={`${entry.id}-${entry.start}`}
+              entry={entry}
+              timeZone={timeZone}
+              cut={index >= whole}
+            />
           )
         )}
       </ul>
@@ -87,11 +103,15 @@ export function UpNextCard({ next, timeZone }) {
   );
 }
 
+// An entry that does not fit the box (cut): kept in the layout for measuring, but invisible
+// and out of reach of focus and screen readers.
+const cutProps = (cut) => (cut ? { className: 'home__event--cut', inert: true } : {});
+
 // A bot event; with a call linked to it (listen), "Listen on this site" and, while that call
 // is live, "Live now" instead of the date.
-function BotEntry({ entry: { name, start, image, listen }, timeZone }) {
+function BotEntry({ entry: { name, start, image, listen }, timeZone, cut }) {
   return (
-    <li>
+    <li {...cutProps(cut)}>
       {/* The event's own image when it has one, else a dot in a season colour. */}
       {image ? (
         <img className="home__event-image" src={image} alt={name} loading="lazy" />
@@ -113,9 +133,9 @@ function BotEntry({ entry: { name, start, image, listen }, timeZone }) {
 }
 
 // A site call: the calls quarter as its picture, its title leading to its page.
-function CallEntry({ entry: { id, name, start, live }, timeZone }) {
+function CallEntry({ entry: { id, name, start, live }, timeZone, cut }) {
   return (
-    <li>
+    <li {...cutProps(cut)}>
       <img className="home__event-image" src={QUARTERS.calls} alt="" loading="lazy" />
       {/* One line (ellipsis), so a long title never pushes the box past the window; the
           whole title stays the link's text and is its tooltip. */}
@@ -138,10 +158,15 @@ export function PriceTiles({ prices }) {
       <ul className="price-tiles" aria-label="Prices in US dollars">
         {TOKENS.map(({ id, name }) => {
           const price = byToken[id];
+          const text = formatUsd(price?.price);
           const content = (
             <>
               <span className="price-tile__name">{name}</span>
-              <span className="price-tile__price">{formatUsd(price?.price)}</span>
+              {/* Its length sizes it to the tile's text column (priceTiles.css): never under
+                  the mark, whatever its digits. */}
+              <span className="price-tile__price" style={{ '--chars': text.length }}>
+                {text}
+              </span>
               <span className="price-tile__change">{formatChange(price?.change24h)} · 24 h</span>
               <span className="price-tile__mark">
                 <img src={SEASON_ICONS[id]} alt="" width="48" height="48" />

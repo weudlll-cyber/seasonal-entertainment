@@ -136,9 +136,12 @@
 
 .sidebar__legal {
   display: flex;
-  /* Three links do not fit one line of the sidebar: "Not financial advice" wraps below. */
+  /* The three links on one line (215px): each is a 44px target already, so a small gap is
+     enough between them, and the sidebar fits a short window without scrolling (a 16px gap
+     pushed "Not financial advice" onto a second 44px line). It still wraps if a font is
+     wider. */
   flex-wrap: wrap;
-  column-gap: var(--space-2);
+  column-gap: 0.375rem;
   font-size: 0.8125rem;
 }
 

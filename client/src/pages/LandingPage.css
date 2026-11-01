@@ -6,8 +6,9 @@
                 grid: featured game and "Up next" (two columns each), the four season price
                 tiles in one row (priceTiles.css), then Community, Next call and the fair-price
                 box (homeBottomRow.css). From 1000px wide the page fits the window without
-                scrolling from 1280 x 720 on, and no box is ever cut; narrower, the boxes stack
-                two columns wide and the main column scrolls.
+                scrolling from 1280 x 720 on, and no box is ever cut (on a shorter window the
+                main column scrolls instead; "Up next" shows only whole entries); narrower, the
+                boxes stack two columns wide and the main column scrolls.
    ============================================================ */
 
 .home {
@@ -132,8 +133,15 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   /* The bottom row holds the most text (messages, the next call with its actions); the top
-     row needs a little more than the tiles (two events with their pictures). */
-  grid-template-rows: minmax(0, 1.05fr) minmax(0, 0.8fr) minmax(0, 1.15fr);
+     row needs a little more than the tiles (two events with their pictures). No row gets
+     lower than its boxes' content (on a short window a box was cut, the featured game's label
+     at the top); "Up next" shows only the entries that fit and does not count here. Below
+     1280 x 720 the content may not fit: then the rows keep their content's height and the
+     main column scrolls (the grid's own height stays the window's, so the rows do not grow
+     either). */
+  grid-template-rows:
+    minmax(min-content, 1.05fr) minmax(min-content, 0.8fr)
+    minmax(min-content, 1.15fr);
   gap: var(--space-1);
   min-height: 0;
 }
@@ -208,8 +216,10 @@
   font-weight: var(--font-weight-strong);
 }
 
+/* Centred while it fits; "safe": content taller than the box starts at its top, never cut
+   there. */
 .home__game {
-  justify-content: center;
+  justify-content: safe center;
 }
 
 .home__game-name {
@@ -244,9 +254,15 @@
 /* "Up next": one row per occurrence, a dot (or the event's image), name and time. */
 .home__events {
   display: grid;
+  align-content: start;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* An entry that does not fit whole (useWholeItems.js): hidden, never shown cut. */
+.home__event--cut {
+  visibility: hidden;
 }
 
 .home__events li {
@@ -297,6 +313,17 @@
 
 .home__events li:nth-child(4n + 4) .home__event-dot {
   background: var(--color-autumn);
+}
+
+/* Side by side, the box has the row's height: the list takes what is left below the heading
+   and does not make the row taller (contain), so the entries that fit are measured there. */
+@media (min-width: 1000px) {
+  .home__upnext .home__events {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+    contain: size;
+  }
 }
 
 @media (max-width: 999.98px) {

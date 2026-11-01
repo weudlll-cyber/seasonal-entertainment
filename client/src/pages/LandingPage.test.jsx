@@ -9,8 +9,10 @@
 //              connected"), merged in time order with the site's live and planned calls (the
 //              Calls page's answer, never an ended call; each linking to its page, a live one
 //              "Live now"), the Next call box only with a live or planned call, the four season
-//              tiles in calendar order with their marks, and the Community box leading to the
-//              chat. Prices themselves: prices.test.jsx.
+//              tiles in calendar order with their marks (each price carrying its length, which
+//              sizes it beside the mark), only whole entries in "Up next" (one that would be cut
+//              is hidden and inert), and the Community box leading to the chat. Prices
+//              themselves: prices.test.jsx.
 // ============================================================
 
 import { render, screen, within } from '@testing-library/react';
@@ -19,6 +21,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionProvider } from '../session/SessionContext.jsx';
 import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
 import LandingPage from './LandingPage.jsx';
+import { wholeItemCount } from './useWholeItems.js';
 
 const game = (overrides) => ({
   id: 1,
@@ -181,6 +184,75 @@ describe('home', () => {
       'href',
       '/chat'
     );
+  });
+
+  it("each tile's price carries its length, which sizes it beside the mark", async () => {
+    mockApi({
+      ...GUEST,
+      'GET /games': { body: { ok: true, games: [] } },
+      [UP_NEXT]: { body: { ok: true, connected: true, occurrences: [] } },
+      'GET /calls': { body: { ok: true, reminders: [], configured: false } },
+      'GET /prices': {
+        body: { ok: true, connected: true, prices: [{ token: 'summer', price: 0.0002117 }] },
+      },
+    });
+    render(
+      <MemoryRouter>
+        <SessionProvider>
+          <LandingPage timeZone="UTC" />
+        </SessionProvider>
+      </MemoryRouter>
+    );
+    const price = await screen.findByText('$0.0002117');
+    expect(price.style.getPropertyValue('--chars')).toBe('10');
+  });
+});
+
+describe('home: only whole entries in Up next', () => {
+  // The layout jsdom lacks: the list ends at 100px, the entries at 80px and 140px.
+  beforeEach(() => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        disconnect() {}
+      }
+    );
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function box() {
+      if (this.classList.contains('home__events')) return { bottom: 100 };
+      const index = [...(this.parentElement?.children ?? [])].indexOf(this);
+      return { bottom: this.tagName === 'LI' ? [80, 140][index] : 0 };
+    });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('an entry that would be cut is hidden and out of reach; the whole one stays', async () => {
+    home({
+      bot: {
+        connected: true,
+        occurrences: [occurrence(3, '2026-10-22T09:00:00Z'), occurrence(4, '2026-10-23T09:00:00Z')],
+      },
+    });
+    const items = await within(screen.getByRole('region', { name: 'Up next' })).findAllByRole(
+      'listitem',
+      { hidden: true }
+    );
+    await vi.waitFor(() => expect(items[1]).toHaveClass('home__event--cut'));
+    expect(items[1]).toHaveAttribute('inert');
+    expect(items[0]).not.toHaveClass('home__event--cut');
+    expect(items[0]).not.toHaveAttribute('inert');
+  });
+});
+
+describe('wholeItemCount', () => {
+  it('counts the leading items that end inside the list', () => {
+    expect(wholeItemCount(100, [40, 80, 120])).toBe(2);
+    expect(wholeItemCount(100, [40, 100.4])).toBe(2); // rounding, not a cut
+    expect(wholeItemCount(100, [120, 60])).toBe(0); // the first does not fit: none shown
+    expect(wholeItemCount(100, [])).toBe(0);
   });
 });
 

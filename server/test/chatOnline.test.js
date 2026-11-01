@@ -5,7 +5,8 @@
 // Description: The home page's Community box from the server: GET /api/chat/glimpse for
 //              everyone — the number of members shown online (a member who hides it is never
 //              counted; only the number goes out, never who; a new number is pushed to the
-//              readers of "general") and the newest 3 messages of "general", never a hidden one
+//              readers of "general", the current one to each new reader, its own member
+//              included) and the newest 3 messages of "general", never a hidden one
 //              and nothing once that room is for members only.
 // ============================================================
 
@@ -52,6 +53,25 @@ it('counts members shown online and pushes the number to readers of general', as
   );
   expect(await count()).toBe(1);
   expect(JSON.stringify(pushed())).not.toMatch(/mia|ben/);
+});
+
+it('tells a new reader of general the count at once, the member itself included', async () => {
+  // The member's own page: its socket was counted only after the page asked for the count, and
+  // the push for its arrival went out before it subscribed. It must not stay at "0 online".
+  let url;
+  ({ t, server, url } = await listeningChat());
+  const { agent: mia } = await registerUser(t, 'mia');
+  const page = connect(url, { cookie: cookieOf(mia) });
+  sockets.push(page);
+  await page.opened;
+  await page.subscribe('general');
+  await vi.waitFor(() =>
+    expect(page.events.filter((e) => e.type === 'online').at(-1)).toEqual({
+      type: 'online',
+      count: 1,
+      room: 'general',
+    })
+  );
 });
 
 it('shows the newest 3 visible messages of general, and none once it is for members', async () => {

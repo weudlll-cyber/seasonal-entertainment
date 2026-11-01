@@ -81,6 +81,22 @@ describe('Community box', () => {
     );
   });
 
+  it('keeps the live count when the first answer arrives after it (counted earlier)', async () => {
+    let answer;
+    mockApi({
+      ...GUEST,
+      'GET /chat/glimpse': () => new Promise((resolve) => (answer = resolve)),
+    });
+    inRouter(<CommunityCard now={() => NOW} />);
+    await vi.waitFor(() => expect(FakeSocket.all.length).toBe(1));
+    await vi.waitFor(() => expect(answer).toBeTypeOf('function'));
+    // The connection tells the count with this member in it; the answer was counted before.
+    act(() => FakeSocket.all[0].push({ type: 'online', room: 'general', count: 1 }));
+    await act(async () => answer({ body: { ok: true, online: 0, room: 'general', messages: [] } }));
+    expect(await screen.findByText('● 1 online')).toBeInTheDocument();
+    expect(screen.queryByText('● 0 online')).toBeNull();
+  });
+
   it('adds nothing while the room is not public (the server answered no room)', async () => {
     mockApi({ ...GUEST, ...glimpse({ online: 1, room: null, messages: [] }) });
     inRouter(<CommunityCard now={() => NOW} />);
