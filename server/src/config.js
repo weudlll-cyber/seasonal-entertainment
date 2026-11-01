@@ -139,10 +139,13 @@ export function readConfig(env = process.env) {
       miningRates: env.PRICE_BOT_MINING_RATES ? path.resolve(env.PRICE_BOT_MINING_RATES) : null,
       cacheMs: 5 * 60_000, // answers kept in memory this long
       // The event bot's images, fetched by this server (bots/images.js), once a day per URL.
+      // Up to 10 MB and 15 s per download (link previews keep 2 MB): the bot's own images are
+      // designer PNGs of 3-3.5 MB at 1536 x 1024 (six were refused at 2 MB, 2026-11-01). Only the
+      // 640px WebP copy is kept and served; the pixel limit still guards the decoding.
       images: {
-        maxBytes: 2 * 1024 * 1024,
+        maxBytes: 10 * 1024 * 1024,
         maxWidth: 640,
-        timeoutMs: 5000,
+        timeoutMs: 15_000,
         maxRedirects: 3,
         userAgent: 'SeasonalEntertainmentEventImages/1.0 (event images for Seasonal Entertainment)',
       },

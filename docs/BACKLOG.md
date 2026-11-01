@@ -46,9 +46,6 @@ entry waits for.
 
 ### Technical debt
 
-- **Event bot images too large** — the live site logs "event image not used (too large)" for six
-  of the event bot's images (seen 2026-11-01): those events show without their picture (a dot in
-  "Up next"). The limits are in `server/src/bots/images.js` (`config.bots.images`).
 - **A call test that sometimes hangs on CI** — `client/e2e/callShare.spec.js:57` (once also
   `calls.spec.js:61`) waits minutes for "Join call" on CI only. Since 2026-10-23 a failed browser
   test's trace and screenshot are uploaded (`playwright-test-results`, 7 days): the next hang shows
@@ -59,6 +56,12 @@ entry waits for.
   two failed on CI is what the trace will show.
 
 ## PART TWO — closed
+
+- **Event bot images too large** — closed by `fix/se-event-images`: the live site refused six of
+  the event bot's images (seen 2026-11-01). They are designer PNGs of 3.0-3.5 MB at 1536 x 1024,
+  over the event images' 2 MB download limit (`server/src/config.js`, `bots.images`). The limit
+  is now 10 MB and 15 s for event images only; the site keeps and serves its own 640px WebP copy
+  as before (`server/src/bots/images.js`); the bot and its files are untouched.
 
 - **Installer: one-command update** — closed by `feat/se-install-2` (SE-INSTALL-2; requested
   2026-11-01): `sudo /opt/seasonal-entertainment/deploy/install.sh --update` takes a fresh backup
