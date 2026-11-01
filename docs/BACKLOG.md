@@ -33,9 +33,6 @@ entry waits for.
   admins change (`server/src/settings/adminRoutes.js`, docs/SETTINGS.md).
 - **Organisers create event-bot appointments on the site** — needs the bot-project change named
   in "Event bot admin page inside the site" above.
-- **Backups to a Linux or macOS PC** — docs/DEPLOYMENT.md "Backups to your PC" and `deploy/pc/`
-  cover Windows (PowerShell) only; the same for Linux and macOS is missing: the age key pair,
-  fetching and checking the backups, the copy of the 2FA encryption key.
 
 ### Proposals not decided
 
@@ -60,6 +57,12 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Backups to a Linux or macOS PC** — closed by `feat/se-install-2` (SE-INSTALL-2; owner proposal
+  2026-11-01): docs/DEPLOYMENT.md "Backups to your PC", "Linux and macOS": age 1.2.1 from the
+  release tarball, the key pair, `deploy/pc/get-seasonal-backups.sh` (POSIX sh; the same as the
+  Windows script: sftp as the read-only backup user, every missing backup, the newest 30 kept,
+  `download.log`), checking that one decrypts, the 2FA key copy readable for the owner only, and
+  the daily run with cron or launchd. `get-seasonal-backups.test.sh` (a fake sftp) runs in CI.
 - **Installer: the calls file as nginx's catch-all for 443** — closed by `feat/se-install-2`
   (SE-INSTALL-2; found on the first deployment, 2026-11-01): requests by IP address or without
   SNI get the same answer after a run as before it. The installer's files are now

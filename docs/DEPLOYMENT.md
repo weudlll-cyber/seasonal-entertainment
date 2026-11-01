@@ -193,6 +193,8 @@ it is no longer one of the installer's files where other sites listen).
   scp root@<server>:/etc/seasonal/secret-encryption-key ./seasonal-secret-encryption-key
   ```
 
+  On Linux or macOS, keep it readable for you only (step 5 of "Linux and macOS" below).
+
 - **Keep the age private key safe.** It is the only way to read the backups. Keep it on your PC
   plus one offline copy, and never on the server ("Backups to your PC").
 - SSH hardening (keys only, no root login) is your decision. The installer does not touch SSH.
@@ -253,7 +255,8 @@ the `age1…` key, enables the timer, runs one backup and checks it.
 
 ### Backups to your PC
 
-On a Windows PC, once (all commands are PowerShell; `deploy/pc/` holds the scripts).
+On a Windows PC, once (all commands are PowerShell; `deploy/pc/` holds the scripts). Linux and
+macOS follow below; the server side (step 2) is the same for all three.
 
 **1. The age key pair.** Install the age tool, version **1.2.1** (the version the encryption is
 checked against): `winget install --id FiloSottile.age --version 1.2.1`. Or download
@@ -326,6 +329,103 @@ Register-ScheduledTask -TaskName 'Seasonal backups' -Action $action -Trigger $tr
 Check with `Get-ScheduledTaskInfo -TaskName 'Seasonal backups'` (`LastTaskResult` 0 = fine) and
 `Get-Content "$HOME\SeasonalBackups\download.log" -Tail 10`.
 
+#### Linux and macOS
+
+The same, with a shell (`deploy/pc/get-seasonal-backups.sh` does what `Get-SeasonalBackups.ps1`
+does: the same sftp user and key, every missing backup fetched as `.partial` first, the newest
+30 kept, each run logged to `download.log`, exit code 1 when something failed).
+
+**1. age 1.2.1** from the release tarball, so the version is exactly the one the encryption is
+checked against (distribution packages are often older; Homebrew's `brew install age` gives the
+newest, which reads the same files). Pick `linux-amd64`, `linux-arm64`, `darwin-arm64` (Apple
+silicon) or `darwin-amd64` (Intel Mac):
+
+```sh
+curl -fsSLO https://github.com/FiloSottile/age/releases/download/v1.2.1/age-v1.2.1-linux-amd64.tar.gz
+tar -xzf age-v1.2.1-linux-amd64.tar.gz
+sudo install -m 755 age/age age/age-keygen /usr/local/bin/
+age --version                      # v1.2.1
+```
+
+**2. The key pair** (the private key file is written readable for you only):
+
+```sh
+mkdir -p ~/SeasonalBackupKey && chmod 700 ~/SeasonalBackupKey
+age-keygen -o ~/SeasonalBackupKey/backup-key.txt     # prints "Public key: age1…"
+```
+
+As on Windows: the public key is the installer's backup answer, the private key file stays on
+this PC (plus one offline copy), never in the backup folder and never on the server. The backup
+user on the server is the same (step 2 above).
+
+**3. Its SSH key** without a passphrase, then the first run by hand. Put the `.pub` line into the
+server's `/home/seasonal-backup/.ssh/authorized_keys` as in step 3 above, and copy the script:
+
+```sh
+ssh-keygen -t ed25519 -f ~/.ssh/seasonal-backup -N '' -C seasonal-backup
+cat ~/.ssh/seasonal-backup.pub
+mkdir -p ~/SeasonalBackupTools
+install -m 755 deploy/pc/get-seasonal-backups.sh ~/SeasonalBackupTools/
+sftp -i ~/.ssh/seasonal-backup seasonal-backup@example.org     # "yes", then: ls /backups, bye
+~/SeasonalBackupTools/get-seasonal-backups.sh --server example.org --key-file ~/.ssh/seasonal-backup
+```
+
+It fetches into `~/SeasonalBackups` (`--local-dir`), keeps the newest 30 (`--keep`) and logs to
+`~/SeasonalBackups/download.log` (`--log-file`).
+
+**4. Check that one decrypts** (the list ends with the database):
+
+```sh
+newest="$(ls ~/SeasonalBackups/*.tar.age | tail -n 1)"
+age -d -i ~/SeasonalBackupKey/backup-key.txt "$newest" | tar -tf - | grep '/seasonal.db$'
+```
+
+**5. The 2FA encryption key** ("What you still do yourself"), readable for you only and apart
+from the backups:
+
+```sh
+mkdir -p ~/SeasonalSecrets && chmod 700 ~/SeasonalSecrets
+scp root@example.org:/etc/seasonal/secret-encryption-key ~/SeasonalSecrets/secret-encryption-key
+chmod 600 ~/SeasonalSecrets/secret-encryption-key
+```
+
+**6. The daily run.** On **Linux**, with cron (`crontab -e`, one line):
+
+```sh
+0 9 * * * $HOME/SeasonalBackupTools/get-seasonal-backups.sh --server example.org --key-file $HOME/.ssh/seasonal-backup >/dev/null 2>&1
+```
+
+cron skips a run while the PC is off; the next run fetches everything missed (the server keeps
+14 days). On **macOS**, a launchd agent also runs a missed start once the Mac wakes from sleep.
+Save this as `~/Library/LaunchAgents/seasonal-backups.plist`, with your home folder in place of
+`/Users/you`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>seasonal-backups</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/you/SeasonalBackupTools/get-seasonal-backups.sh</string>
+    <string>--server</string><string>example.org</string>
+    <string>--key-file</string><string>/Users/you/.ssh/seasonal-backup</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+</dict>
+</plist>
+```
+
+```sh
+launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/seasonal-backups.plist
+```
+
+(cron works on macOS too, with the Linux line.) Check with
+`tail -n 10 ~/SeasonalBackups/download.log`: each run ends with `done`, or with `RUN FAILED` and
+the reason.
+
 ### Restoring
 
 From a backup on the PC (only the PC can open them):
@@ -333,6 +433,13 @@ From a backup on the PC (only the PC can open them):
 ```powershell
 age -d -i "$HOME\SeasonalBackupKey\backup-key.txt" -o "$HOME\restore.tar" "$HOME\SeasonalBackups\<time>.tar.age"
 scp "$HOME\restore.tar" root@example.org:/var/backups/seasonal/restore.tar
+```
+
+On Linux or macOS:
+
+```sh
+age -d -i ~/SeasonalBackupKey/backup-key.txt -o ~/restore.tar ~/SeasonalBackups/<time>.tar.age
+scp ~/restore.tar root@example.org:/var/backups/seasonal/restore.tar
 ```
 
 On the server:
@@ -617,26 +724,27 @@ systemctl start seasonal-backup.service && ls /var/backups/seasonal
 
 ## Files
 
-| File                                                                       | What                                                                                                                                                                |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `deploy/install.sh`                                                        | the one-command installer (entry: options, the install flow)                                                                                                        |
-| `deploy/install/lib/`                                                      | its parts: prompts, long steps and state, detection, packages, configuration, nginx and its answer for unknown names, firewall, services, snapshot/status/uninstall |
-| `deploy/install/answers.example`                                           | the answers file for unattended runs                                                                                                                                |
-| `deploy/install/certbot-hook.sh`, `deploy/install/caddy/www.caddy`         | nginx mode: hands renewed certificates on; Caddy mode: the www redirect                                                                                             |
-| `deploy/test/`                                                             | the installer's end-to-end tests (`run.sh`; systemd Ubuntu containers, Pebble, test DNS)                                                                            |
-| `deploy/site/Dockerfile`                                                   | the image: multi-stage, production build, non-root `node` user, base image pinned by digest                                                                         |
-| `deploy/site/docker-compose.yml`                                           | site + Caddy; volumes for the database and media, backups on the host                                                                                               |
-| `deploy/site/Caddyfile`, `caddy/calls.caddy`                               | HTTPS for both domains; wss to LiveKit                                                                                                                              |
-| `deploy/site/.env.example`                                                 | compose settings (domains, ACME email and CA, commit, sites folder)                                                                                                 |
-| `deploy/site/calls-cert.sh`                                                | Caddy mode: Caddy's calls certificate → LiveKit's TURN                                                                                                              |
-| `deploy/site/systemd/`                                                     | the backup and certificate timers                                                                                                                                   |
-| `deploy/calls/`                                                            | the call service (docs/CALLS.md); `Caddyfile` for its own server                                                                                                    |
-| `deploy/calls/docker-compose.recording.yml`                                | optional: call recording (egress and Redis)                                                                                                                         |
-| `scripts/backup.mjs`, `scripts/restore.mjs`, `scripts/bootstrap-admin.mjs` | operations, inside the site container                                                                                                                               |
-| `deploy/pc/`                                                               | the PC side of the backups: `Get-SeasonalBackups.ps1` (the daily task), `SeasonalBackups.psm1`, `SeasonalBackups.Tests.ps1`                                         |
-| `.dockerignore`                                                            | keeps data, secrets and build output out of the image                                                                                                               |
+| File                                                                       | What                                                                                                                                                                                                                             |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `deploy/install.sh`                                                        | the one-command installer (entry: options, the install flow)                                                                                                                                                                     |
+| `deploy/install/lib/`                                                      | its parts: prompts, long steps and state, detection, packages, configuration, nginx and its answer for unknown names, firewall, services, snapshot/status/uninstall                                                              |
+| `deploy/install/answers.example`                                           | the answers file for unattended runs                                                                                                                                                                                             |
+| `deploy/install/certbot-hook.sh`, `deploy/install/caddy/www.caddy`         | nginx mode: hands renewed certificates on; Caddy mode: the www redirect                                                                                                                                                          |
+| `deploy/test/`                                                             | the installer's end-to-end tests (`run.sh`; systemd Ubuntu containers, Pebble, test DNS)                                                                                                                                         |
+| `deploy/site/Dockerfile`                                                   | the image: multi-stage, production build, non-root `node` user, base image pinned by digest                                                                                                                                      |
+| `deploy/site/docker-compose.yml`                                           | site + Caddy; volumes for the database and media, backups on the host                                                                                                                                                            |
+| `deploy/site/Caddyfile`, `caddy/calls.caddy`                               | HTTPS for both domains; wss to LiveKit                                                                                                                                                                                           |
+| `deploy/site/.env.example`                                                 | compose settings (domains, ACME email and CA, commit, sites folder)                                                                                                                                                              |
+| `deploy/site/calls-cert.sh`                                                | Caddy mode: Caddy's calls certificate → LiveKit's TURN                                                                                                                                                                           |
+| `deploy/site/systemd/`                                                     | the backup and certificate timers                                                                                                                                                                                                |
+| `deploy/calls/`                                                            | the call service (docs/CALLS.md); `Caddyfile` for its own server                                                                                                                                                                 |
+| `deploy/calls/docker-compose.recording.yml`                                | optional: call recording (egress and Redis)                                                                                                                                                                                      |
+| `scripts/backup.mjs`, `scripts/restore.mjs`, `scripts/bootstrap-admin.mjs` | operations, inside the site container                                                                                                                                                                                            |
+| `deploy/pc/`                                                               | the PC side of the backups: Windows `Get-SeasonalBackups.ps1` (the daily task), `SeasonalBackups.psm1`, `SeasonalBackups.Tests.ps1`; Linux and macOS `get-seasonal-backups.sh` (cron or launchd), `get-seasonal-backups.test.sh` |
+| `.dockerignore`                                                            | keeps data, secrets and build output out of the image                                                                                                                                                                            |
 
 CI (`.github/workflows/ci.yml`, job "deployment files") builds the image (no push) and starts it
 in production mode against `/api/health`. It validates both compose projects and all Caddyfiles
-(also with the installer's sites folder), and runs shellcheck over the installer and its tests,
-on every pull request.
+(also with the installer's sites folder), runs the PC side's tests (PowerShell for Windows, POSIX
+sh for Linux and macOS), and runs shellcheck over the installer, its tests and the PC side's
+shell script, on every pull request.

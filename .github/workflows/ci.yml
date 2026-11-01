@@ -11,9 +11,10 @@
 #              uploaded as an artefact, kept 7 days.
 #              A second job builds the production image (deploy/site/Dockerfile; never pushed)
 #              and checks the compose files and Caddyfiles, so the deployment files cannot rot;
-#              it also decrypts an encrypted backup with the real age tool and runs the PC-side
-#              PowerShell tests (deploy/pc/) and shellcheck over the installer and its tests
-#              (deploy/install.sh, deploy/install/, deploy/test/).
+#              it also decrypts an encrypted backup with the real age tool, runs the PC-side
+#              tests (deploy/pc/: PowerShell for Windows, POSIX sh for Linux and macOS) and
+#              shellcheck over the installer, its tests and the PC-side shell scripts
+#              (deploy/install.sh, deploy/install/, deploy/test/, deploy/pc/).
 # ============================================================
 
 name: CI
@@ -101,6 +102,9 @@ jobs:
       - name: The PC side of the backups (PowerShell)
         run: pwsh -NoProfile -File deploy/pc/SeasonalBackups.Tests.ps1
 
+      - name: The PC side of the backups (Linux and macOS, POSIX sh)
+        run: sh deploy/pc/get-seasonal-backups.test.sh
+
       - name: Compose files are valid
         run: |
           cp .env.example deploy/site/site.env
@@ -135,10 +139,11 @@ jobs:
             caddy validate --config /etc/caddy/Caddyfile
 
       # The installer, the scripts it runs and its tests (deploy/install.sh, deploy/test/,
-      # docs/DEPLOYMENT.md).
+      # docs/DEPLOYMENT.md), and the PC side of the backups for Linux and macOS (deploy/pc/).
       - name: Installer scripts pass shellcheck
         run: >-
           docker run --rm -v "$PWD:/mnt" -w /mnt koalaman/shellcheck:v0.10.0 -x
           deploy/install.sh deploy/install/lib/*.sh deploy/install/certbot-hook.sh
           deploy/site/calls-cert.sh deploy/test/run.sh deploy/test/checks.sh
           deploy/test/prepare-nginx.sh deploy/test/prepare-ufw.sh
+          deploy/pc/get-seasonal-backups.sh deploy/pc/get-seasonal-backups.test.sh
