@@ -31,8 +31,8 @@ import { lazyPage } from './staleChunks.js';
 
 // Loaded when first opened, each as its own chunk, so the first page of a visit does not wait
 // for them (docs/DESIGN.md, "Speed"): the call page with the call service's client, the
-// prices page with its chart, info pages with the Markdown renderer, the admin area and the
-// embedded chat. Layout and AdminLayout hold the boundaries (LazyBoundary) around their
+// prices page with its chart, info pages with the Markdown renderer, the admin area, the
+// organisers' Site banner page and the embedded chat. Layout and AdminLayout hold the boundaries (LazyBoundary) around their
 // outlets. lazyPage reloads the page once when a part's file is gone after an update
 // (staleChunks.js).
 const AdminAuditPage = lazyPage(() => import('../admin/AdminAuditPage.jsx'));
@@ -44,6 +44,7 @@ const AdminInfoListPage = lazyPage(() => import('../admin/AdminInfoListPage.jsx'
 const AdminLayout = lazyPage(() => import('../admin/AdminLayout.jsx'));
 const AdminSettingsPage = lazyPage(() => import('../admin/AdminSettingsPage.jsx'));
 const AdminUsersPage = lazyPage(() => import('../admin/AdminUsersPage.jsx'));
+const BannerPage = lazyPage(() => import('../pages/BannerPage.jsx'));
 const CallPage = lazyPage(() => import('../pages/CallPage.jsx'));
 const RecordingsPage = lazyPage(() => import('../pages/RecordingsPage.jsx'));
 const StartPage = lazyPage(() => import('../pages/StartPage.jsx'));
@@ -105,6 +106,14 @@ export default function App() {
                 element={
                   <RequireUser>
                     <AccountPage />
+                  </RequireUser>
+                }
+              />
+              <Route
+                path="banner"
+                element={
+                  <RequireUser role="organiser">
+                    <BannerPage />
                   </RequireUser>
                 }
               />

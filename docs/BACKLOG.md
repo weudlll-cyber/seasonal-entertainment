@@ -29,8 +29,6 @@ entry waits for.
 
 ### Owner proposals (2026-11-01)
 
-- **Organisers set the site banner** — today the banner is one of the site settings, which only
-  admins change (`server/src/settings/adminRoutes.js`, docs/SETTINGS.md).
 - **Organisers create event-bot appointments on the site** — needs the bot-project change named
   in "Event bot admin page inside the site" above.
 
@@ -59,6 +57,13 @@ entry waits for.
   two failed on CI is what the trace will show.
 
 ## PART TWO — closed
+
+- **Organisers set the site banner** — closed by `feat/se-organiser-banner` (owner proposal
+  2026-11-01): organisers (with 2FA) change exactly the banner's on/off and text
+  (`banner.enabled`, `banner.text`; link and style stay admin-only), and no other setting, at
+  `/api/banner` (`server/src/settings/bannerRoutes.js`) on the page Site banner (`/banner`, in
+  their sidebar) with a live preview; each change is audited like an admin's (`change.js`), with
+  the same rules (docs/SETTINGS.md, "Who"; AUTH.md, "Site banner").
 
 - **Home on a phone moved while its data arrived** — closed by `fix/test-home-shift-2`:
   `speed.spec.js`'s phone home test measured exactly 0.0530 on CI (limit 0.05) from 2026-11-01,
