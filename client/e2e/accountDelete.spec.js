@@ -10,24 +10,8 @@
 //              this spec uses it up.
 // ============================================================
 
-import Database from 'better-sqlite3';
 import { expect, test } from '@playwright/test';
-import { E2E_DATABASE, MEMBER_PASSWORD, addMember, memberPage } from './members.js';
-
-// What the run's database holds about the account: its row and its room messages.
-function stored(username) {
-  const db = new Database(E2E_DATABASE, { readonly: true });
-  try {
-    return {
-      accounts: db.prepare('SELECT COUNT(*) AS n FROM users WHERE username = ?').get(username).n,
-      messages: db
-        .prepare('SELECT COUNT(*) AS n FROM chat_messages WHERE author_name = ?')
-        .get(username).n,
-    };
-  } finally {
-    db.close();
-  }
-}
+import { MEMBER_PASSWORD, addMember, memberPage, postInChat, stored } from './members.js';
 
 test('a member deletes their own account with the password', async ({ browser }) => {
   const name = `del${Date.now().toString(36)}`;
@@ -35,11 +19,7 @@ test('a member deletes their own account with the password', async ({ browser })
   const { page, requests } = await memberPage(browser, name);
 
   // Something to delete: a message in the chat.
-  await page.goto('/chat');
-  const text = `before deletion ${Date.now()}`;
-  await page.getByLabel('Message', { exact: true }).fill(text);
-  await page.getByRole('button', { name: 'Send' }).click();
-  await expect(page.getByRole('listitem').filter({ hasText: text })).toBeVisible();
+  await postInChat(page);
   expect(stored(name)).toEqual({ accounts: 1, messages: 1 });
 
   await page.goto('/account');

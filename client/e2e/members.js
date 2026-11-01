@@ -10,7 +10,9 @@
 //              in, in a browser of its own, and records what that browser sends; it works for
 //              a first login and a later one alike (a spec run again in the same run, e.g.
 //              --repeat-each). E2E_DATABASE: the run's database, for specs that look into it.
-//              addMember() adds one more the same way, for a spec that uses one up (deletes it).
+//              addMember() adds one more the same way, for a spec that uses one up (deletes it);
+//              postInChat() writes a message as that member, stored() says what the database
+//              still holds of the account (its row, its room messages).
 // ============================================================
 
 import path from 'node:path';
@@ -101,4 +103,28 @@ export async function memberPage(browser, username) {
     await expect(page).not.toHaveURL(/\/login$/);
   }
   return { page, requests };
+}
+
+// Posts a message in the chat page as the page's member and waits until it shows.
+export async function postInChat(page) {
+  await page.goto('/chat');
+  const text = `before deletion ${Date.now()}`;
+  await page.getByLabel('Message', { exact: true }).fill(text);
+  await page.getByRole('button', { name: 'Send' }).click();
+  await expect(page.getByRole('listitem').filter({ hasText: text })).toBeVisible();
+}
+
+// What the run's database holds about the account: its row and its room messages.
+export function stored(username) {
+  const db = new Database(E2E_DATABASE, { readonly: true });
+  try {
+    return {
+      accounts: db.prepare('SELECT COUNT(*) AS n FROM users WHERE username = ?').get(username).n,
+      messages: db
+        .prepare('SELECT COUNT(*) AS n FROM chat_messages WHERE author_name = ?')
+        .get(username).n,
+    };
+  } finally {
+    db.close();
+  }
 }

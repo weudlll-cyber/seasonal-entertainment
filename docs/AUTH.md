@@ -419,7 +419,9 @@ chat retention).
 - Tests: `server/test/accountDelete.test.js` (the rules), `server/test/accountDeleteData.test.js`
   (every kind of data gone, the audit log and recordings kept),
   `client/src/components/deleteAccount.test.jsx`, `client/src/admin/adminPages.test.jsx`,
-  `client/e2e/accountDelete.spec.js`.
+  `client/e2e/accountDelete.spec.js` (the member's own deletion),
+  `client/e2e/accountDeleteAdmin.spec.js` (an admin's, confirmed and dismissed, the audit entry,
+  and the refused own Delete).
 
 ## Chat identities
 
