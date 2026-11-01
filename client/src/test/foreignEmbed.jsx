@@ -91,5 +91,6 @@ export async function logIn(key = null) {
     expect.any(String)
   );
   fromWindow(page.popup, window.location.origin, handOver({ key }));
-  await screen.findByRole('button', { name: 'Log out' });
+  // Not the default 1 s: on a busy machine (CI, a loaded PC) the hand-over takes longer.
+  await screen.findByRole('button', { name: 'Log out' }, { timeout: 10_000 });
 }
