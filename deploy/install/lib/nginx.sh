@@ -4,9 +4,12 @@
 # Path:        deploy/install/lib/nginx.sh
 # Project:     Seasonal Entertainment
 # Description: nginx mode (docs/DEPLOYMENT.md, "The two modes"): the installer's own server
-#              files seasonal-site.conf and seasonal-calls.conf (never an existing file), always
-#              checked with nginx -t before a reload (never a restart; a failed check puts the
-#              previous file back). First only port 80 (redirect, and the folder certbot proves
+#              files zz-seasonal-site.conf and zz-seasonal-calls.conf (never an existing file;
+#              the names before 2026-11-01, seasonal-site.conf and seasonal-calls.conf, are
+#              moved to these), always checked with nginx -t and the load order before a reload
+#              (never a restart), and the answer for unknown names compared after it
+#              (nginx-default.sh); a failed check puts the previous files back. Before a
+#              certificate exists, first only port 80 (redirect, and the folder certbot proves
 #              the names with), then, once certbot has the certificates (webroot: certbot never
 #              edits nginx), the TLS servers forwarding to the site on 127.0.0.1 and to the call
 #              service on 127.0.0.1:7880, WebSockets included.
@@ -16,35 +19,118 @@ ACME_WEBROOT=/var/www/seasonal-acme
 CERT_LIVE=/etc/letsencrypt/live
 CERTBOT_HOOK=/etc/letsencrypt/renewal-hooks/deploy/seasonal.sh
 
+# The installer's file for NAME (site, calls). nginx reads a folder in name order and gives
+# unknown names to the first server it loaded: "zz-" puts ours after the other sites' files.
 nginx_conf_path() {
   if [[ "$NGINX_CONF_STYLE" == sites ]]; then
-    echo "/etc/nginx/sites-available/seasonal-$1.conf"
+    echo "/etc/nginx/sites-available/zz-seasonal-$1.conf"
   else
-    echo "/etc/nginx/conf.d/seasonal-$1.conf"
+    echo "/etc/nginx/conf.d/zz-seasonal-$1.conf"
   fi
 }
 
-# nginx_install_conf NAME: puts the server file from stdin in place, nginx -t, reload; when the
-# check fails the earlier version (or none) comes back and the run stops.
-nginx_install_conf() {
-  local name="$1" path link backup=""
-  path="$(nginx_conf_path "$name")"
-  [[ -f "$path" ]] && backup="$(mktemp)" && cp -p "$path" "$backup"
-  cat >"$path.new"
-  chmod 644 "$path.new"
-  mv "$path.new" "$path"
-  if [[ "$NGINX_CONF_STYLE" == sites ]]; then
-    link="/etc/nginx/sites-enabled/seasonal-$name.conf"
-    ln -sfn "$path" "$link"
-  fi
+# Every path the installer's files may have, in every folder, under today's and the old names.
+nginx_own_paths() {
+  local dir name
+  for dir in sites-available sites-enabled conf.d; do
+    for name in site calls; do
+      echo "/etc/nginx/$dir/zz-seasonal-$name.conf"
+      echo "/etc/nginx/$dir/seasonal-$name.conf"
+    done
+  done
+}
+
+# The installer's nginx files that exist (links included).
+nginx_own_files() {
+  local path
+  for path in $(nginx_own_paths); do
+    if [[ -e "$path" || -L "$path" ]]; then echo "$path"; fi
+  done
+}
+
+# A tar of the installer's files as they are now (its path is printed), for nginx_put_back.
+nginx_save_own() {
+  local saved
+  saved="$(mktemp)"
+  # shellcheck disable=SC2046 # one path per word; the paths hold no spaces
+  tar -C / -cf "$saved" --files-from /dev/null $(nginx_own_files | sed 's|^/||')
+  echo "$saved"
+}
+
+# nginx_put_back SAVED: the installer's files as nginx_save_own saved them, then nginx reloaded
+# if it accepts them.
+nginx_put_back() {
+  # shellcheck disable=SC2046
+  rm -f $(nginx_own_paths)
+  tar -C / -xf "$1"
+  rm -f "$1"
+  if nginx -t >/dev/null 2>&1; then systemctl reload nginx; fi
+}
+
+# nginx_commit WHAT SAVED: after a change to the installer's files, nginx -t and the load order
+# (nginx-default.sh), the reload, then the answer for unknown names; when a check fails the
+# files saved before the change come back and the run stops.
+nginx_commit() {
+  local what="$1" saved="$2" problem
   if ! nginx -t >/dev/null 2>&1; then
-    if [[ -n "$backup" ]]; then mv "$backup" "$path"; else rm -f "$path" "${link:-}"; fi
-    nginx -t >/dev/null 2>&1 && systemctl reload nginx
-    die "nginx rejected seasonal-$name.conf (nginx -t); the earlier state is back"
+    nginx_put_back "$saved"
+    die "nginx rejected $what (nginx -t); the earlier state is back"
   fi
-  [[ -z "$backup" ]] || rm -f "$backup"
+  problem="$(nginx_order_problems | tr '\n' ' ')"
+  if [[ -n "$problem" ]]; then
+    nginx_put_back "$saved"
+    die "with $what a server of the installer's would load before the other sites' servers on $problem(another file sorts after zz-seasonal-*.conf), so nginx would answer requests by IP address with it. Mark the server that should answer them \"listen ... default_server\" in your own file, then run the installer again; the earlier state is back"
+  fi
   systemctl reload nginx || die "nginx reload failed"
-  say "nginx: seasonal-$name.conf in place (nginx -t passed, reloaded)"
+  if problem="$(nginx_default_changed)"; then
+    nginx_put_back "$saved"
+    die "after the reload with $what nginx answered requests without a known name (by IP address, no SNI) differently ($problem); the earlier state is back"
+  fi
+  rm -f "$saved"
+}
+
+# nginx_place NAME FILE: FILE becomes the installer's file for NAME under today's name; the old
+# name and its link go.
+nginx_place() {
+  local name="$1" file="$2" path
+  path="$(nginx_conf_path "$name")"
+  chmod 644 "$file"
+  rm -f "/etc/nginx/sites-enabled/seasonal-$name.conf" "/etc/nginx/sites-available/seasonal-$name.conf" \
+    "/etc/nginx/conf.d/seasonal-$name.conf"
+  mv "$file" "$path"
+  [[ "$NGINX_CONF_STYLE" != sites ]] || ln -sfn "$path" "/etc/nginx/sites-enabled/zz-seasonal-$name.conf"
+}
+
+# Files from before 2026-11-01 (seasonal-*.conf) get today's names, all in one step: with only
+# one of them moved, the other would still load before the other sites' files.
+nginx_migrate_names() {
+  local name old saved moved=""
+  saved="$(nginx_save_own)"
+  for name in site calls; do
+    for old in "/etc/nginx/sites-available/seasonal-$name.conf" "/etc/nginx/conf.d/seasonal-$name.conf"; do
+      [[ -f "$old" ]] || continue
+      mv "$old" "$old.move"
+      nginx_place "$name" "$old.move"
+      moved+=" seasonal-$name.conf"
+    done
+  done
+  if [[ -z "$moved" ]]; then
+    rm -f "$saved"
+    return 0
+  fi
+  nginx_commit "the new file names" "$saved"
+  say "nginx:$moved renamed to zz-seasonal-*.conf (they now load after the other sites' files)"
+}
+
+# nginx_install_conf NAME: puts the server file from stdin in place, checked by nginx_commit.
+nginx_install_conf() {
+  local name="$1" saved new
+  saved="$(nginx_save_own)"
+  new="$(nginx_conf_path "$name").new"
+  cat >"$new"
+  nginx_place "$name" "$new"
+  nginx_commit "zz-seasonal-$name.conf" "$saved"
+  say "nginx: zz-seasonal-$name.conf in place (nginx -t passed, load order and the answer for unknown names unchanged, reloaded)"
 }
 
 # The listen lines of one server: IPv4, and IPv6 when the server speaks it.
@@ -107,6 +193,7 @@ nginx_site_conf() {
   # shellcheck disable=SC2046 # the names are separate words on purpose
   nginx_http_server "$SITE_DOMAIN" $(site_names)
   [[ "$with_tls" == yes ]] || return 0
+  nginx_reject_servers
   if [[ "${WWW_REDIRECT:-no}" == yes ]]; then
     echo "server {"
     tls_lines seasonal-site
@@ -158,9 +245,9 @@ certbot_cert() {
   for domain in "$@"; do args+=(-d "$domain"); done
   [[ -z "${ACME_SERVER:-}" ]] || args+=(--server "$ACME_SERVER")
   say "certbot: certificate $name for $*"
-  REQUESTS_CA_BUNDLE="${ACME_CA_BUNDLE:-}" certbot certonly --webroot -w "$ACME_WEBROOT" \
-    --cert-name "$name" "${args[@]}" --email "$ACME_EMAIL" --agree-tos --non-interactive \
-    --keep-until-expiring --quiet ||
+  run_step "certbot for $*" env REQUESTS_CA_BUNDLE="${ACME_CA_BUNDLE:-}" certbot certonly \
+    --webroot -w "$ACME_WEBROOT" --cert-name "$name" "${args[@]}" --email "$ACME_EMAIL" \
+    --agree-tos --non-interactive --keep-until-expiring ||
     die "certbot could not get the certificate for $* (DNS A records pointing here? port 80 open?)"
 }
 
@@ -182,9 +269,17 @@ nginx_check_names() {
 setup_nginx() {
   detect_nginx_style
   nginx_check_names
+  # Before anything changes: what unknown names get now, and where a server of ours must
+  # reject them (nginx-default.sh).
+  nginx_record_default
+  nginx_plan_default
+  nginx_migrate_names
   install -d -m 755 "$ACME_WEBROOT"
-  nginx_site_conf no | nginx_install_conf site
-  [[ -z "${CALLS_DOMAIN:-}" ]] || nginx_calls_conf no | nginx_install_conf calls
+  # Port 80 alone only before a certificate exists: on a re-run the TLS servers stay in place,
+  # so the site never loses HTTPS and the answer for unknown names never changes in between.
+  [[ -f "$CERT_LIVE/seasonal-site/fullchain.pem" ]] || nginx_site_conf no | nginx_install_conf site
+  [[ -z "${CALLS_DOMAIN:-}" || -f "$CERT_LIVE/seasonal-calls/fullchain.pem" ]] ||
+    nginx_calls_conf no | nginx_install_conf calls
   ensure_certbot
   # shellcheck disable=SC2046
   certbot_cert seasonal-site $(site_names)
@@ -195,12 +290,10 @@ setup_nginx() {
 }
 
 remove_nginx_files() {
-  local name path removed=no
-  detect_nginx_style
-  for name in site calls; do
-    for path in "$(nginx_conf_path "$name")" "/etc/nginx/sites-enabled/seasonal-$name.conf"; do
-      [[ -e "$path" || -L "$path" ]] && rm -f "$path" && removed=yes
-    done
+  local path removed=no
+  for path in $(nginx_own_files); do
+    rm -f "$path"
+    removed=yes
   done
   if [[ "$removed" == yes ]]; then
     nginx -t >/dev/null 2>&1 || die "nginx -t fails after removing the installer's files"

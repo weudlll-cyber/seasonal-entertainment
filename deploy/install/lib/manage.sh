@@ -6,10 +6,10 @@
 # Description: Everything around an install (docs/DEPLOYMENT.md): the snapshot taken before a
 #              run changes anything (/var/backups/seasonal-install/<time>/: the nginx folder, the
 #              ufw rules, the installer's state and the commit) and --rollback to it; --status;
-#              --uninstall, which removes only what the installer added (its nginx files, the
-#              containers, its ufw rules, timers, the certbot hook) and keeps data, secrets and
-#              certificates; --purge-data, which also deletes the site's data after a typed
-#              confirmation.
+#              --uninstall, which removes only what the installer added (its nginx files, also
+#              under their names before 2026-11-01, the containers, its ufw rules, timers, the
+#              certbot hook) and keeps data, secrets and certificates; --purge-data, which also
+#              deletes the site's data after a typed confirmation.
 # ============================================================
 
 take_snapshot() {
@@ -26,25 +26,23 @@ take_snapshot() {
 
 # --rollback DIR: the installer's nginx files, ufw rules, state and commit as they were.
 rollback() {
-  local snap="$1" path name spec
+  local snap="$1" path rule
   [[ -f "$snap/commit" ]] || die "$snap is not an installer snapshot"
   say "rolling back to $snap"
   if [[ -f "$snap/nginx.tar.gz" ]] && command -v nginx >/dev/null; then
-    detect_nginx_style
-    for name in site calls; do
-      for path in "$(nginx_conf_path "$name")" "/etc/nginx/sites-enabled/seasonal-$name.conf"; do
-        rm -f "$path"
-        tar -C /etc -xzf "$snap/nginx.tar.gz" "${path#/etc/}" 2>/dev/null || true
-      done
+    # Today's and the old file names: a snapshot from before the rename brings the old ones back.
+    for path in $(nginx_own_paths); do
+      rm -f "$path"
+      tar -C /etc -xzf "$snap/nginx.tar.gz" "${path#/etc/}" 2>/dev/null || true
     done
     nginx -t >/dev/null 2>&1 || die "nginx -t fails with the snapshot's files; check /etc/nginx by hand"
     systemctl reload nginx
     say "nginx: the installer's files as in the snapshot (nginx -t passed, reloaded)"
   fi
   if [[ -f "$UFW_ADDED" ]] && ufw_active; then
-    while read -r spec; do
-      [[ -n "$spec" ]] || continue
-      grep -qxF "$spec" "$snap/ufw-added" 2>/dev/null || { ufw delete allow "$spec" >/dev/null 2>&1 && say "firewall: removed $spec"; }
+    while read -r rule; do
+      [[ -n "$rule" ]] || continue
+      grep -qxF "$rule" "$snap/ufw-added" 2>/dev/null || ufw_delete "$rule"
     done <"$UFW_ADDED"
     if [[ -f "$snap/ufw-added" ]]; then cp -p "$snap/ufw-added" "$UFW_ADDED"; else rm -f "$UFW_ADDED"; fi
   fi
@@ -79,11 +77,12 @@ status() {
   else
     say "health: NOT answering on https://$SITE_DOMAIN/api/health"
   fi
+  [[ "$MODE" != nginx ]] || say "nginx files: $(nginx_own_files | tr '\n' ' ')"
   if [[ "$MODE" == nginx ]] && command -v certbot >/dev/null; then
     certbot certificates 2>/dev/null | awk '/Certificate Name: seasonal-/ { n = $3 } n && /Expiry Date/ { sub(/.*Expiry Date: */, ""); print "[install] certificate " n ": " $0; n = "" }'
   fi
   systemctl list-timers --all --no-legend 'seasonal-*' 2>/dev/null | awk '{ print "[install] timer " $NF ": next " $1 " " $2 " " $3 }'
-  [[ -f "$UFW_ADDED" ]] && say "firewall rules added by the installer: $(tr '\n' ' ' <"$UFW_ADDED")"
+  [[ -f "$UFW_ADDED" ]] && say "firewall rules added by the installer: $(paste -sd ';' "$UFW_ADDED" | sed 's/;/; /g')"
   # shellcheck disable=SC2012 # backup names are plain timestamps
   say "backups: $(ls -t "$BACKUP_HOST_DIR" 2>/dev/null | head -n 1 || true) ($(ls "$BACKUP_HOST_DIR" 2>/dev/null | wc -l) kept)"
   [[ "$ADMIN_DONE" == yes ]] || say "the first admin is not created yet: sudo $INSTALL_DIR/deploy/install.sh --admin"

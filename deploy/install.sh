@@ -31,6 +31,8 @@ source "$LIB/config.sh"
 source "$LIB/firewall.sh"
 # shellcheck source=install/lib/nginx.sh
 source "$LIB/nginx.sh"
+# shellcheck source=install/lib/nginx-default.sh
+source "$LIB/nginx-default.sh"
 # shellcheck source=install/lib/services.sh
 source "$LIB/services.sh"
 # shellcheck source=install/lib/manage.sh
@@ -99,6 +101,31 @@ if [[ -n "$COMMIT_REF" && -z "${SEASONAL_REEXEC:-}" ]]; then
   SEASONAL_REEXEC=1 exec "$INSTALL_DIR/deploy/install.sh" "${args[@]}"
 fi
 
+# Shown before the calls and recording questions, only when they are really asked: what the
+# feature is, what it needs, and the safe answer for someone who is not sure.
+calls_explanation() {
+  cat <<EOF
+Calls are voice and video rooms on the site: a stage with up to 10 speakers (camera, screen
+sharing) and up to 200 listeners, with a chat beside it. They need:
+  - a second domain name for the call service, e.g. calls.$SITE_DOMAIN, whose DNS A record
+    already points at this server;
+  - more open ports: 7881/tcp, 3478/udp, 5349/tcp and 50000-50499/udp;
+  - about one more CPU core per busy call.
+Not sure? Leave it empty: the site works fully without calls, and they can be added later
+(docs/DEPLOYMENT.md, "Changing an answer later").
+EOF
+}
+
+recording_explanation() {
+  cat <<'EOF'
+Recording lets organisers and admins record a call (video and sound). Everyone in the call
+sees that it is recorded and must agree before joining. Recordings are kept on this server
+with the site's uploads (up to about 480 MB per recorded hour) and go into the backups; a
+running recording needs about one more CPU core.
+Not sure? Answer no: it can be switched on later the same way.
+EOF
+}
+
 # The answers: a file first, then what an earlier run remembered, then the questions.
 gather_answers() {
   # shellcheck disable=SC2086 # the key list is split into words on purpose
@@ -106,9 +133,9 @@ gather_answers() {
   load_state
   ask SITE_DOMAIN "The site's domain (e.g. example.org)"
   ask WWW_REDIRECT "Should www.$SITE_DOMAIN redirect to it? (yes/no)" yes
-  ask_optional CALLS_DOMAIN "The call service's domain (e.g. calls.$SITE_DOMAIN)"
+  ask_optional CALLS_DOMAIN "The call service's domain (e.g. calls.$SITE_DOMAIN)" "$(calls_explanation)"
   [[ -z "$CALLS_DOMAIN" ]] && RECORDING=no
-  ask RECORDING "Record calls? (yes/no)" no
+  ask RECORDING "Record calls? (yes/no)" no "$(recording_explanation)"
   ask ACME_EMAIL "Email address for Let's Encrypt (certificate notices)"
   ask_optional PRICE_BOT_DB "The price bot's snapshots.db on this server"
   ask_optional PRICE_BOT_MINING_RATES "The price bot's mining_rates.json"

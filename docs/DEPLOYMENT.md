@@ -40,29 +40,60 @@ sudo ./deploy/install.sh
 The repository is public, so the clone needs no GitHub login on the server. Any folder works; the
 installer remembers where it ran. After the questions, a run on a fresh server took about 6
 minutes (first deployment), most of it installing Docker and building the image. It writes one
-plain line per step (`[install] …`). On any failure it stops, says what failed, and prints the
-command that undoes the run (see "Rollback").
+plain line per step (`[install] …`) and says before the long ones (installing Docker, building
+the image, starting the call service) roughly how long they take. While a step runs longer than
+15 seconds, a line `still working (m:ss): <step>` follows every 20 seconds, so a pause is never
+silent; the output of apt and Docker is kept aside and shown (its last 25 lines) only when the
+step fails. On any failure it stops, says what failed, and prints the command that undoes the
+run (see "Rollback").
 
 ### What it asks
 
-| Question                         | Answers-file key                                         | Notes                                                                      |
-| -------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------- |
-| The site's domain                | `SITE_DOMAIN`                                            | e.g. `example.org`                                                         |
-| Should www redirect to it?       | `WWW_REDIRECT`                                           | `yes`/`no`; `www.example.org` then needs its own A record                  |
-| The call service's domain        | `CALLS_DOMAIN`                                           | e.g. `calls.example.org`; empty: no calls                                  |
-| Record calls?                    | `RECORDING`                                              | `yes`/`no`; only with calls (docs/CALLS.md, "Recording")                   |
-| Email for Let's Encrypt          | `ACME_EMAIL`                                             | certificate notices                                                        |
-| The bots' files                  | `PRICE_BOT_DB`, `PRICE_BOT_MINING_RATES`, `EVENT_BOT_DB` | paths on this server; empty: that data source stays off (docs/BOTS.md)     |
-| The age public key for backups   | `BACKUP_RECIPIENT`                                       | `age1…`; empty: add later with `--backups` (see "Backups")                 |
-| CoinGecko Demo API key           | —                                                        | asked hidden, only on a terminal; empty: no ETH/POL/BTC prices             |
-| The first admin's name and email | `ADMIN_NAME`, `ADMIN_EMAIL`                              | asked at the end                                                           |
-| The first admin's password       | —                                                        | **always** typed on the terminal, hidden; never from a file, flag or stdin |
+| Question                         | Answers-file key                                         | Notes                                                                     |
+| -------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------- |
+| The site's domain                | `SITE_DOMAIN`                                            | e.g. `example.org`                                                        |
+| Should www redirect to it?       | `WWW_REDIRECT`                                           | `yes`/`no`; `www.example.org` then needs its own A record                 |
+| The call service's domain        | `CALLS_DOMAIN`                                           | e.g. `calls.example.org`; empty: no calls (explained below)               |
+| Record calls?                    | `RECORDING`                                              | `yes`/`no`; only with calls (explained below; docs/CALLS.md, "Recording") |
+| Email for Let's Encrypt          | `ACME_EMAIL`                                             | certificate notices                                                       |
+| The bots' files                  | `PRICE_BOT_DB`, `PRICE_BOT_MINING_RATES`, `EVENT_BOT_DB` | paths on this server; empty: that data source stays off (docs/BOTS.md)    |
+| The age public key for backups   | `BACKUP_RECIPIENT`                                       | `age1…`; empty: add later with `--backups` (see "Backups")                |
+| CoinGecko Demo API key           | —                                                        | asked hidden, only on a terminal; empty: no ETH/POL/BTC prices            |
+| The first admin's name and email | `ADMIN_NAME`, `ADMIN_EMAIL`                              | asked at the end                                                          |
+| The first admin's password       | —                                                        | **always** typed on the terminal, shown as `*`; never from a file or flag |
+
+Before the calls question, the installer explains on the terminal what calls are (voice and
+video rooms on the site: a stage with up to 10 speakers and up to 200 listeners), what they need
+(a second domain whose A record points at the server, the extra ports, about one CPU core per
+busy call), and that an empty answer is the safe choice when unsure. Before "Record calls?" it
+says the same for recording (organisers and admins record, everyone is told and must agree, up
+to about 480 MB per recorded hour on the server and in the backups, one more CPU core while it
+runs; "no" when unsure). A question answered by the answers file or an earlier run is not asked,
+and its explanation is not shown.
+
+The password is typed with one `*` per character (backspace and Ctrl-U work). Before the
+confirmation, the installer checks it against the site's own rules (`validatePassword` in
+`shared/accountRules.js`: at least 10 characters, at most 72 bytes); a password that breaks
+them, or a confirmation that differs, is explained and asked again, and the run goes on. The
+password is never printed, logged or stored: it goes to `scripts/bootstrap-admin.mjs` on stdin.
 
 For an unattended run, copy `deploy/install/answers.example` somewhere **outside** the checkout,
 fill it in, and run `sudo ./deploy/install.sh --answers /root/answers.txt` (add `--yes` so it
 never asks; the admin password is still typed when it gets there). The answers file holds no
 secrets. Answers given once are remembered in `/etc/seasonal/install.conf` (root only, no
 secrets), so a later run asks nothing it already knows.
+
+#### Changing an answer later
+
+Run the installer again with an answers file that holds only the keys to change; the others come
+from `/etc/seasonal/install.conf`. For example, to add calls later:
+
+```sh
+printf 'CALLS_DOMAIN=calls.example.org\nRECORDING=no\n' > /root/calls.txt
+sudo ./deploy/install.sh --answers /root/calls.txt
+```
+
+An empty value in the file does not remove a remembered answer.
 
 ### What it does
 
@@ -73,15 +104,23 @@ secrets), so a later run asks nothing it already knows.
    command.
 3. Installs what is missing: curl, openssl, git, Docker Engine with the Compose plugin (from
    Docker's repository), and certbot in nginx mode. It never upgrades or removes other packages.
+   apt runs with `NEEDRESTART_MODE=l`: Ubuntu's needrestart still scans the processes after an
+   install (shown as "still working"), but only lists what would need a restart and never asks
+   or restarts another service (another site's nginx, ssh) during the run; `sudo needrestart`
+   shows the list later.
 4. Makes every secret on the server: the session secret, the key that encrypts 2FA secrets, the
    bootstrap token, and the call service's key pair. Secrets are never printed. They are written
    to `deploy/site/site.env`, `deploy/site/.env` and `deploy/calls/.env` (mode 600, never
    committed). A secret that already exists is kept.
-5. Firewall: if **ufw is active**, it adds only the rules the chosen features need and lists
-   them. A rule ufw already had is not counted as the installer's. ufw only recognises the same
-   rule: an existing combined rule such as `80,443/tcp` does not cover `80/tcp`, so the installer
-   adds `80/tcp` and `443/tcp` beside it. They are redundant, change nothing, and `--uninstall`
-   removes only them. If ufw is inactive, it enables nothing and prints the ports that must be
+5. Firewall: if **ufw is active**, it adds only the rules the chosen features need **and no
+   existing rule allows yet**, and lists them in `/etc/seasonal/ufw-added`. An existing rule
+   counts when it lets the port in from anywhere: also a combined rule (`80,443/tcp`), a range
+   (`50000:60000/udp`), a port without protocol (`7881`) or an app profile (`Nginx Full`). A
+   rule limited to one source address, one interface or a rate (`limit`) does not count. IPv4
+   and IPv6 are checked separately (ufw keeps them in `user.rules` and `user6.rules`): when only
+   one of them is missing, only that one is added (e.g. `ufw allow to ::/0 port 5349 proto tcp`).
+   A rule ufw already had is never counted as the installer's, and `--uninstall` removes exactly
+   the ones listed. If ufw is inactive, it enables nothing and prints the ports that must be
    open. It never changes SSH, users or existing rules.
 6. Builds the site image with the commit, starts the site, and waits for
    `https://<site>/api/health` over HTTPS.
@@ -95,22 +134,51 @@ secrets), so a later run asks nothing it already knows.
 
 ### The two modes
 
-| On ports 80/443 | Mode      | What the installer does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| --------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| nothing         | **Caddy** | The site's own Caddy (`deploy/site/docker-compose.yml`) gets and renews the certificates and forwards both names. The calls certificate goes to LiveKit's TURN through `seasonal-calls-cert.timer`.                                                                                                                                                                                                                                                                                                                                                                                                       |
-| nginx           | **nginx** | Adds **only its own** files (`seasonal-site.conf`, `seasonal-calls.conf` in `sites-available`, linked into `sites-enabled`, or in `conf.d`). It never edits existing files, and it stops if another server block already claims one of its names. Certificates come from certbot by webroot (`seasonal-site`, `seasonal-calls`); an existing certbot setup and its renewal timer are reused. A deploy hook (`/etc/letsencrypt/renewal-hooks/deploy/seasonal.sh`) hands the renewed calls certificate to LiveKit and reloads nginx. The site listens on `127.0.0.1:3800` only, and Caddy is never started. |
-| anything else   | —         | Stops with a message and changes nothing.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| On ports 80/443 | Mode      | What the installer does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| --------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| nothing         | **Caddy** | The site's own Caddy (`deploy/site/docker-compose.yml`) gets and renews the certificates and forwards both names. The calls certificate goes to LiveKit's TURN through `seasonal-calls-cert.timer`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| nginx           | **nginx** | Adds **only its own** files (`zz-seasonal-site.conf`, `zz-seasonal-calls.conf` in `sites-available`, linked into `sites-enabled`, or in `conf.d`; the names before 2026-11-01, `seasonal-site.conf` and `seasonal-calls.conf`, are moved to these on the next run). It never edits existing files, and it stops if another server block already claims one of its names. Certificates come from certbot by webroot (`seasonal-site`, `seasonal-calls`); an existing certbot setup and its renewal timer are reused. A deploy hook (`/etc/letsencrypt/renewal-hooks/deploy/seasonal.sh`) hands the renewed calls certificate to LiveKit and reloads nginx. The site listens on `127.0.0.1:3800` only, and Caddy is never started. |
+| anything else   | —         | Stops with a message and changes nothing.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 In nginx mode every change runs `nginx -t` before `systemctl reload nginx` (never a restart), and
-a file that fails the test is put back as it was.
+a file that fails the test is put back as it was. Only the first run starts with port 80 alone
+(certbot proves the names there); once the certificates exist, a re-run writes the full files at
+once, so the site never loses HTTPS during an update.
 
-The other sites keep answering for their own names, with their own certificates. One thing can
-change: requests on 443 for **no known name** (by IP address, or without SNI). nginx answers them
-with the `default_server` for 443 or, if no block is marked so, with the first 443 block it loads.
-Files load in name order, so `seasonal-calls.conf` can come before an existing site's file, and
-it then answers those requests with the calls certificate (seen on the first deployment,
-2026-11-01). To keep the old answer, mark your own catch-all block as
-`listen 443 ssl default_server;`. The installer does not edit other files.
+The other sites keep answering for their own names, with their own certificates.
+
+#### Unknown names stay with the other sites
+
+Requests on 443 for **no known name** (by IP address, or without SNI) get the same answer after a
+run as before it (`deploy/install/lib/nginx-default.sh`). nginx gives them to the
+`default_server` of the address or, if no server is marked so, to the first server it loaded that
+listens there; it reads a folder in name order. On the first deployment (2026-11-01) the old
+`seasonal-calls.conf` sorted before the existing site's file and took those requests over. Now,
+for IPv4 and IPv6 separately:
+
+- **Another site has a `default_server` for 443**: it stays the answer; the installer's files
+  never carry `default_server` then.
+- **Other sites listen on 443, none marked `default_server`**: the installer's files are named
+  `zz-seasonal-*.conf`, so they load after the other sites' files. Before every reload it reads
+  the load order from `nginx -T`; if one of its servers would still come first on port 80 or 443
+  (a file that sorts after `zz-`, or a server in `nginx.conf` itself), it puts its files back and
+  stops: mark the server that should answer with `listen 443 ssl default_server;` in your own
+  file and run it again.
+- **No other site listens on 443** (nginx only on port 80, or only on IPv4 while the installer
+  also listens on IPv6): before the run nothing answered TLS there. A server of the installer's,
+  marked `default_server` with `ssl_reject_handshake on`, keeps it that way: such a request gets
+  no certificate and no page. This needs nginx 1.19.4 or newer (Ubuntu 24.04 has 1.24). Ubuntu
+  22.04's nginx 1.18 cannot reject a handshake: there the site's own server becomes the answer
+  for unknown names, the installer says so in a warning, and the check below allows exactly that
+  change (a self-signed catch-all instead would only trade one wrong certificate for
+  another).
+
+After every reload the installer compares the certificate nginx shows without SNI
+(`openssl s_client -connect 127.0.0.1:443 -noservername`, and `[::1]:443` with IPv6) with the
+one before the run. If it changed, the previous files come back, nginx reloads, and the run stops
+with both fingerprints. On a re-run of a server installed before 2026-11-01, where the old calls
+file was the answer, any other answer is the fix and passes (the load-order check has made sure
+it is no longer one of the installer's files where other sites listen).
 
 ### What you still do yourself
 
@@ -300,6 +368,8 @@ Then delete `restore.tar` on the PC too.
 | certbot fails (nginx mode)                        | the same DNS and port checks; `/var/log/letsencrypt/letsencrypt.log`; Let's Encrypt's rate limits after many failed tries                        |
 | "ports 80/443 are served by …"                    | another web server (Apache, Traefik, …) holds the ports; the installer supports only an empty server or nginx                                    |
 | "another nginx server block already serves …"     | an existing nginx file claims the site's or calls name: remove that block or pick other names                                                    |
+| "… would load before the other sites' servers"    | a file sorts after `zz-seasonal-*.conf`: mark the server that should answer requests by IP address `listen … default_server` in your own file    |
+| "… answered requests without a known name …"      | the certificate shown without SNI changed after the reload; the files are back. Mark your own `default_server` for 443, then run again           |
 | "port 3800 is taken" (nginx mode)                 | something else listens on 127.0.0.1:3800                                                                                                         |
 | calls connect but no audio/video                  | the UDP ports (50000–50499, 3478) and 7881/tcp in a provider firewall; LiveKit's log                                                             |
 | LiveKit logs "could not validate external IP"     | a warning at start: it checks its public IP by reaching itself (seen on the first deployment, 2026-11-01); it matters only if audio/video fail   |
@@ -327,9 +397,11 @@ Docker once.
 starts a systemd Ubuntu container as the server. Pebble (a local ACME server) stands in for
 Let's Encrypt, and a small DNS points the test names at the server. Each scenario runs:
 
-1. install from the working tree, with an answers file and a typed password;
+1. install from the working tree, with an answers file and a typed password (it must show only
+   as `*` in the output);
 2. checks: health over HTTPS against Pebble's root, the www redirect, call signalling over wss,
-   the admin, file modes, the backup decrypting with the age key;
+   the admin, file modes, the backup decrypting with the age key, ufw's rules (the server's own
+   kept, exactly the missing ones added), and in nginx mode the answer for unknown names;
 3. install again (the secrets must stay the same);
 4. `--status`;
 5. `--uninstall` (data and secrets must stay);
@@ -338,9 +410,17 @@ Let's Encrypt, and a small DNS points the test names at the server. Each scenari
 The scenarios:
 
 - `caddy`: an empty 24.04 server, calls with recording, backups;
-- `nginx`: a 24.04 server whose nginx already serves another site with its own certificate, with
-  ufw active. That site must keep answering, unchanged, with its own certificate.
-- `jammy`: an empty 22.04 server, the site alone.
+- `nginx`: a 24.04 server whose nginx already serves another site with its own certificate and
+  no `default_server`; its file name sorts after the old `seasonal-*.conf`, as on the first
+  deployment. That site must keep answering, unchanged, with its own certificate, also for
+  requests by IP address and without SNI (`checks.sh unknown-name`, compared with the answer
+  before the install). Before the second install the installer's files get their old names: the
+  same check must then fail (the old behaviour), and the second install must move them and pass
+  it again. ufw is active with `80,443/tcp`, `7881`, `50000:60000/udp` and `5349/tcp` for IPv4
+  only: the installer may add only `3478/udp` and the IPv6 rule for `5349/tcp`.
+- `jammy`: a 22.04 server, the site alone, ufw active with the app profile `Nginx Full`: the
+  installer may add only `443/udp`. The admin password is typed first too short, then with a
+  differing confirmation; the installer must explain and ask again each time.
 
 The script takes the scenarios as arguments (`bash deploy/test/run.sh nginx`). It is not part of
 `npm run verify` or CI: it takes long and needs privileged containers. Everything it creates
@@ -537,26 +617,26 @@ systemctl start seasonal-backup.service && ls /var/backups/seasonal
 
 ## Files
 
-| File                                                                       | What                                                                                                                        |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `deploy/install.sh`                                                        | the one-command installer (entry: options, the install flow)                                                                |
-| `deploy/install/lib/`                                                      | its parts: prompts and state, detection, packages, configuration, nginx, firewall, services, snapshot/status/uninstall      |
-| `deploy/install/answers.example`                                           | the answers file for unattended runs                                                                                        |
-| `deploy/install/certbot-hook.sh`, `deploy/install/caddy/www.caddy`         | nginx mode: hands renewed certificates on; Caddy mode: the www redirect                                                     |
-| `deploy/test/`                                                             | the installer's end-to-end tests (`run.sh`; systemd Ubuntu containers, Pebble, test DNS)                                    |
-| `deploy/site/Dockerfile`                                                   | the image: multi-stage, production build, non-root `node` user, base image pinned by digest                                 |
-| `deploy/site/docker-compose.yml`                                           | site + Caddy; volumes for the database and media, backups on the host                                                       |
-| `deploy/site/Caddyfile`, `caddy/calls.caddy`                               | HTTPS for both domains; wss to LiveKit                                                                                      |
-| `deploy/site/.env.example`                                                 | compose settings (domains, ACME email and CA, commit, sites folder)                                                         |
-| `deploy/site/calls-cert.sh`                                                | Caddy mode: Caddy's calls certificate → LiveKit's TURN                                                                      |
-| `deploy/site/systemd/`                                                     | the backup and certificate timers                                                                                           |
-| `deploy/calls/`                                                            | the call service (docs/CALLS.md); `Caddyfile` for its own server                                                            |
-| `deploy/calls/docker-compose.recording.yml`                                | optional: call recording (egress and Redis)                                                                                 |
-| `scripts/backup.mjs`, `scripts/restore.mjs`, `scripts/bootstrap-admin.mjs` | operations, inside the site container                                                                                       |
-| `deploy/pc/`                                                               | the PC side of the backups: `Get-SeasonalBackups.ps1` (the daily task), `SeasonalBackups.psm1`, `SeasonalBackups.Tests.ps1` |
-| `.dockerignore`                                                            | keeps data, secrets and build output out of the image                                                                       |
+| File                                                                       | What                                                                                                                                                                |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `deploy/install.sh`                                                        | the one-command installer (entry: options, the install flow)                                                                                                        |
+| `deploy/install/lib/`                                                      | its parts: prompts, long steps and state, detection, packages, configuration, nginx and its answer for unknown names, firewall, services, snapshot/status/uninstall |
+| `deploy/install/answers.example`                                           | the answers file for unattended runs                                                                                                                                |
+| `deploy/install/certbot-hook.sh`, `deploy/install/caddy/www.caddy`         | nginx mode: hands renewed certificates on; Caddy mode: the www redirect                                                                                             |
+| `deploy/test/`                                                             | the installer's end-to-end tests (`run.sh`; systemd Ubuntu containers, Pebble, test DNS)                                                                            |
+| `deploy/site/Dockerfile`                                                   | the image: multi-stage, production build, non-root `node` user, base image pinned by digest                                                                         |
+| `deploy/site/docker-compose.yml`                                           | site + Caddy; volumes for the database and media, backups on the host                                                                                               |
+| `deploy/site/Caddyfile`, `caddy/calls.caddy`                               | HTTPS for both domains; wss to LiveKit                                                                                                                              |
+| `deploy/site/.env.example`                                                 | compose settings (domains, ACME email and CA, commit, sites folder)                                                                                                 |
+| `deploy/site/calls-cert.sh`                                                | Caddy mode: Caddy's calls certificate → LiveKit's TURN                                                                                                              |
+| `deploy/site/systemd/`                                                     | the backup and certificate timers                                                                                                                                   |
+| `deploy/calls/`                                                            | the call service (docs/CALLS.md); `Caddyfile` for its own server                                                                                                    |
+| `deploy/calls/docker-compose.recording.yml`                                | optional: call recording (egress and Redis)                                                                                                                         |
+| `scripts/backup.mjs`, `scripts/restore.mjs`, `scripts/bootstrap-admin.mjs` | operations, inside the site container                                                                                                                               |
+| `deploy/pc/`                                                               | the PC side of the backups: `Get-SeasonalBackups.ps1` (the daily task), `SeasonalBackups.psm1`, `SeasonalBackups.Tests.ps1`                                         |
+| `.dockerignore`                                                            | keeps data, secrets and build output out of the image                                                                                                               |
 
 CI (`.github/workflows/ci.yml`, job "deployment files") builds the image (no push) and starts it
 in production mode against `/api/health`. It validates both compose projects and all Caddyfiles
-(also with the installer's sites folder), and runs shellcheck over the installer, on every pull
-request.
+(also with the installer's sites folder), and runs shellcheck over the installer and its tests,
+on every pull request.

@@ -12,8 +12,8 @@
 #              A second job builds the production image (deploy/site/Dockerfile; never pushed)
 #              and checks the compose files and Caddyfiles, so the deployment files cannot rot;
 #              it also decrypts an encrypted backup with the real age tool and runs the PC-side
-#              PowerShell tests (deploy/pc/) and shellcheck over the installer
-#              (deploy/install.sh, deploy/install/).
+#              PowerShell tests (deploy/pc/) and shellcheck over the installer and its tests
+#              (deploy/install.sh, deploy/install/, deploy/test/).
 # ============================================================
 
 name: CI
@@ -134,9 +134,11 @@ jobs:
             -v "$PWD/deploy/install/caddy:/etc/caddy/sites:ro" "$image" \
             caddy validate --config /etc/caddy/Caddyfile
 
-      # The installer and the scripts it runs (deploy/install.sh, docs/DEPLOYMENT.md).
+      # The installer, the scripts it runs and its tests (deploy/install.sh, deploy/test/,
+      # docs/DEPLOYMENT.md).
       - name: Installer scripts pass shellcheck
         run: >-
           docker run --rm -v "$PWD:/mnt" -w /mnt koalaman/shellcheck:v0.10.0 -x
           deploy/install.sh deploy/install/lib/*.sh deploy/install/certbot-hook.sh
-          deploy/site/calls-cert.sh
+          deploy/site/calls-cert.sh deploy/test/run.sh deploy/test/checks.sh
+          deploy/test/prepare-nginx.sh deploy/test/prepare-ufw.sh

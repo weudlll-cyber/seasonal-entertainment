@@ -82,5 +82,5 @@ nginx_name_taken() {
   nginx -T 2>/dev/null | awk -v name="$name" '
     /^# configuration file / { file = $4; sub(/:$/, "", file) }
     $1 == "server_name" { for (i = 2; i <= NF; i++) { n = $i; sub(/;$/, "", n); if (n == name) print file } }
-  ' | { grep -v '/seasonal-' || true; } | head -n 1
+  ' | { grep -Ev "$NGINX_OWN_FILE_RE" || true; } | head -n 1
 }
