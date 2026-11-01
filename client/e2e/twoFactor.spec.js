@@ -27,11 +27,17 @@ test('turn on 2FA and log in with a code', async ({ page }) => {
     .getByRole('button', { name: 'Skip' })
     .click();
 
-  // Wait for the account page: the register page has a "Password" field too. Exact: the
-  // account page also has "Current password" and "New password".
-  await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible();
-  await page.getByLabel('Password', { exact: true }).fill('correct-horse-1');
-  await page.getByRole('button', { name: 'Set up two-factor authentication' }).click();
+  // Wait for the account page: the register page has a "Password" field too. Within the setup's
+  // own form: the account page also has "Current password", "New password" and the "Password"
+  // of "Delete my account".
+  await expect(page.getByRole('heading', { name: 'Account', exact: true })).toBeVisible();
+  const setUp = page.getByRole('button', { name: 'Set up two-factor authentication' });
+  await page
+    .locator('form')
+    .filter({ has: setUp })
+    .getByLabel('Password', { exact: true })
+    .fill('correct-horse-1');
+  await setUp.click();
   const qr = page.getByAltText('QR code for your authenticator app');
   await expect
     .poll(() => qr.evaluate((img) => img.complete && img.naturalWidth))
@@ -52,7 +58,7 @@ test('turn on 2FA and log in with a code', async ({ page }) => {
   // The next step's code: the one used to enable is already spent (replay guard).
   await page.getByLabel('Authentication code').fill(codeForStep(secret, step + 1));
   await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Account', exact: true })).toBeVisible();
   // Registration, 2FA setup and login: the password itself was never sent.
   expect(requests.text()).toContain('/api/2fa/setup');
   expect(requests.text()).not.toContain('correct-horse-1');

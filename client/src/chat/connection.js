@@ -21,7 +21,9 @@
 //              server closes the new one with TOO_MANY_CONNECTIONS (server/src/chat/socket.js).
 //              Then no retry loop: the page says so (ConnectionLimitNotice.jsx) and tries again
 //              when the reader asks (retryConnection) or another tab of this browser closes
-//              its connection (a BroadcastChannel message).
+//              its connection (a BroadcastChannel message). Open again after a drop, it tells
+//              onReconnect's listeners: the server may have been updated meanwhile
+//              (app/UpdateNotice.jsx).
 // ============================================================
 
 import { api, socketProtocols } from '../api/http.js';
@@ -53,6 +55,9 @@ let idle = null;
 let account;
 let refused = false; // the last socket was closed as one too many
 const refusedListeners = new Set();
+// A drop by the server or the network (not a close of our own) makes the next open a reconnect.
+let dropped = false;
+const reconnectListeners = new Set();
 // Tabs of this browser tell each other when one closes its connection: a refused tab may fit
 // then. Not every browser (or test) has a BroadcastChannel.
 const freed = typeof BroadcastChannel === 'function' ? new BroadcastChannel('se-chat') : null;
@@ -75,7 +80,12 @@ function open() {
   const protocols = socketProtocols();
   const current = new WebSocket(socketUrl(), protocols);
   socket = current;
-  current.onopen = () => listeners.forEach((_handlers, room) => subscribeOn(current, room));
+  current.onopen = () => {
+    listeners.forEach((_handlers, room) => subscribeOn(current, room));
+    if (!dropped) return;
+    dropped = false;
+    reconnectListeners.forEach((listener) => listener());
+  };
   current.onmessage = (event) => {
     const data = JSON.parse(event.data);
     if (PERSONAL.has(data.type)) return personal.forEach((handler) => handler(data));
@@ -90,6 +100,7 @@ function open() {
     // Closed for a token that ended? The answer drops it (api/http.js), and the page then
     // reconnects as a guest.
     if (protocols.length > 0) api('/embed/me').catch(() => {});
+    dropped = true;
     if (inUse()) retry = setTimeout(open, RECONNECT_MS);
   };
 }
@@ -120,6 +131,13 @@ export const connectionRefused = () => refused;
 export function onConnectionRefused(listener) {
   refusedListeners.add(listener);
   return () => refusedListeners.delete(listener);
+}
+
+// listener() each time the connection is open again after a drop; returns the function that
+// stops it.
+export function onReconnect(listener) {
+  reconnectListeners.add(listener);
+  return () => reconnectListeners.delete(listener);
 }
 
 // "Try again": the reader closed a window, or simply asks.

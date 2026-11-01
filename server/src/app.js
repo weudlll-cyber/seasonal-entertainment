@@ -56,6 +56,7 @@ import { makeLimiter } from './http/rateLimit.js';
 import { securityHeaders } from './http/securityHeaders.js';
 import { currentUser, sessionMiddleware } from './http/session.js';
 import { adminSettingRoutes } from './settings/adminRoutes.js';
+import { bannerSettingRoutes } from './settings/bannerRoutes.js';
 import { bindSettingsConfig } from './settings/store.js';
 import { twoFactorGate } from './twofa/gate.js';
 import { twoFactorRoutes } from './twofa/routes.js';
@@ -115,11 +116,11 @@ export function createApp({
   api.get('/health', allow('public'), (_req, res) => {
     res.json({ ok: true, version: buildInfo.version, commit: buildInfo.commit });
   });
-  api.use('/auth', accountRoutes(db, config, chat.sessions));
+  api.use('/auth', accountRoutes(db, config, chat));
   api.use('/auth', bootstrapRoutes(db, config));
   api.use('/2fa', twoFactorRoutes(db, config, chat.sessions));
   api.use('/keys', keyRoutes(db, config));
-  api.use('/admin/users', adminUserRoutes(db, config, chat.sessions));
+  api.use('/admin/users', adminUserRoutes(db, config, chat));
   api.use('/admin/audit', adminAuditRoutes(db));
   api.use('/info', infoRoutes(db));
   api.use('/admin/info', adminInfoRoutes(db));
@@ -130,6 +131,8 @@ export function createApp({
   api.use('/games', gameRoutes(db));
   api.use('/admin/games', adminGameRoutes(db));
   api.use('/admin/settings', adminSettingRoutes(db));
+  // Organisers change the site banner, and only it (docs/SETTINGS.md, "Who").
+  api.use('/banner', bannerSettingRoutes(db));
   api.use('/embed', embedRoutes(db, config, embedOrigins, chat.sessions));
   api.use('/admin/embed-origins', adminEmbedRoutes(db, config, embedOrigins, chat.sessions));
   // Call reminders reach a member's open pages over the chat's live connection.

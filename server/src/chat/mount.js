@@ -22,6 +22,7 @@ import { directPreviewRoutes } from '../previews/directPreview.js';
 import { previewModerationRoutes } from '../previews/routes.js';
 import { createPreviewService } from '../previews/service.js';
 import { uploadRoutes } from '../uploads/routes.js';
+import { deleteChatData, deleteChatFiles } from './accountData.js';
 import { directReportRoutes } from './directReportRoutes.js';
 import { directRoutes } from './directRoutes.js';
 import { favouriteRoutes } from './favouriteRoutes.js';
@@ -119,6 +120,12 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
       },
       // Embed tokens ended (embed/): { tokenId } | { origin } | { userId } — their sockets close.
       embedRevoked: (which) => hub.disconnectEmbeds(which),
+    },
+    // For deleting an account (accounts/deletion.js): its chat rows the schemas keep, inside the
+    // caller's transaction (returns the files), then those files on disk after the commit.
+    accounts: {
+      deleteData: (userId) => deleteChatData(db, userId),
+      deleteFiles: (files) => deleteChatFiles(config, files),
     },
     // For areas with a chat room of their own (a call's chat, calls/): an unlisted room,
     // shown only where a panel names it, closed (read-only for everyone) when it is over.

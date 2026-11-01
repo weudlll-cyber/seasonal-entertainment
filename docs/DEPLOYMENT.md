@@ -257,6 +257,39 @@ Secrets, data, certificates and answers are kept. The site is down for the few s
 container needs to start. Chat connections reconnect by themselves, and running calls continue
 when only the site changes. Database changes are additive (added on start).
 
+### What visitors see
+
+A page that was open during the update keeps working and never reloads by itself in the middle
+of something (decided 2026-11-01):
+
+- It shows **"A new version of this site is available."** with a **Reload** button at the top of
+  the main column (`client/src/app/UpdateNotice.jsx`) once `/api/health` reports another commit
+  than the one the page was built from. The page asks every 5 minutes while its tab is visible
+  (one small request; a hidden tab does not ask) and at once when its chat connection is back
+  after the restart, so a signed-in visitor usually sees it within seconds.
+- A part of the site loaded on first use (call page, prices, info pages, admin, embedded chat)
+  whose file is gone after the update: the page reloads once by itself and opens it. Fails it
+  again within a minute of that reload, the page says "This part of the page could not be
+  loaded." with a Reload button instead of staying blank (`client/src/app/staleChunks.js`).
+
+The build commit comes from the same place as the server's: the image is built with
+`--build-arg COMMIT_SHA` (the installer passes it), outside Docker from `git`
+(`client/vite.config.js`, `server/src/buildInfo.js`). A build without either (`unknown`) never
+shows the notice.
+
+**Seeing the notice on your PC**: `npm run dev` has no build commit, so it never shows the notice
+there. To see it, start it with a pretended one, which differs from the server's real commit:
+
+```powershell
+$env:SE_DEV_BUILD_COMMIT = 'test'; npm run dev     # sh: SE_DEV_BUILD_COMMIT=test npm run dev
+```
+
+(or `SE_DEV_BUILD_COMMIT=test` in `.env`). Open http://localhost:5380, sign in (so the chat
+connection is open) and save any file in `server/src`: the server restarts, the connection comes
+back and the notice shows within seconds; without that, after 5 minutes. The production shape
+shows it too: `npm run build`, `npm start`, open http://localhost:3800, then make a commit and
+restart `npm start` without building again.
+
 ## Status, uninstall, rollback
 
 ```sh

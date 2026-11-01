@@ -5,15 +5,16 @@
 // Description: /api/admin/settings (admins only, with 2FA as every admin route): every site
 //              setting with its group, rules and current value, and changing one after its
 //              kind's check (types.js). Each change writes one audit entry with the old and
-//              new value.
+//              new value (change.js). Organisers change the site banner on their own route
+//              (bannerRoutes.js).
 // ============================================================
 
 import express from 'express';
-import { recordAudit } from '../audit/auditLog.js';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
+import { changeSetting } from './change.js';
 import { GROUPS, SETTINGS } from './definitions.js';
-import { checkSetting, getSetting, listSettings, setSetting } from './store.js';
+import { checkSetting, listSettings } from './store.js';
 
 export function adminSettingRoutes(db) {
   const router = express.Router();
@@ -27,15 +28,7 @@ export function adminSettingRoutes(db) {
     const { value } = req.body ?? {};
     const problem = checkSetting(db, req.params.key, value);
     if (problem) return sendError(res, 400, 'invalid_input', problem);
-    const before = getSetting(db, req.params.key);
-    setSetting(db, req.params.key, value);
-    recordAudit(db, req.user, {
-      action: 'setting.change',
-      targetType: 'setting',
-      targetId: req.params.key,
-      before: { value: before },
-      after: { value },
-    });
+    changeSetting(db, req.user, req.params.key, value);
     res.json({ ok: true, groups: GROUPS, settings: listSettings(db) });
   });
 

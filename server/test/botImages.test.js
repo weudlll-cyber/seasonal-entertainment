@@ -6,8 +6,9 @@
 //              bot and a pretend internet (helpers/previewNet.js): the server fetches an event's
 //              image, re-encodes it as WebP without metadata, stores it by a hash of its URL and
 //              serves it from the public media route, and the event then carries its address on
-//              this site (never the bot's URL); a private address, plain http or a non-image or an
-//              image over 50 megapixels is refused and the event shows without one; each URL is
+//              this site (never the bot's URL); a designer PNG of over 3 MB is used, scaled down;
+//              a private address, plain http, a non-image, a file over 10 MB or an image over 50
+//              megapixels is refused and the event shows without one; each URL is
 //              fetched at most once a day. In development the fixture's own image host is served
 //              from its files (bots/fixtureNetwork.js), and that network reaches no other host.
 // ============================================================
@@ -134,6 +135,42 @@ it('an image over 50 megapixels is refused, one of 48 is used', { timeout: 60_00
   const week = (await api.get(WEEK)).body.occurrences;
   expect(week.find((o) => o.name === '[Sample] Bot Community Call').image).toBeNull();
 });
+
+// Random pixels: a PNG that does not compress, as large in bytes as the bot's real images.
+const noisePng = (width, height) =>
+  sharp(Buffer.from(Array.from({ length: width * height * 3 }, () => Math.random() * 256)), {
+    raw: { width, height, channels: 3 },
+  })
+    .png()
+    .toBuffer();
+
+// The bot's real images are designer PNGs of 3-3.5 MB at 1536 x 1024 (refused at the old 2 MB
+// limit, 2026-11-01): one like them is used, scaled down; one over 10 MB is still refused.
+it(
+  'a designer PNG of over 3 MB is used, scaled down; one over 10 MB is refused',
+  {
+    timeout: 60_000,
+  },
+  async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const designer = await noisePng(1536, 1024);
+    const huge = await noisePng(2048, 1800);
+    expect(designer.length).toBeGreaterThan(3 * 1024 * 1024);
+    expect(huge.length).toBeGreaterThan(10 * 1024 * 1024);
+    const api = await appOn({
+      [`${HOST}/quiz.png`]: image(designer, 'image/png'),
+      [`${HOST}/call.png`]: image(huge, 'image/png'),
+    });
+    await api.get(WEEK);
+    const timeout = { timeout: 30_000 };
+    await vi.waitFor(async () => expect((await quizOf(api)).image).not.toBeNull(), timeout);
+    const stored = readFileSync(path.join(t.config.mediaDir, botImageFile(QUIZ)));
+    expect(await sharp(stored).metadata()).toMatchObject({ format: 'webp', width: 640 });
+    const warned = () => warn.mock.calls.join('\n');
+    await vi.waitFor(() => expect(warned()).toMatch(/call\.png/), timeout);
+    expect(warned()).toMatch(/event image not used \(too large\).*call\.png/);
+  }
+);
 
 it('fetches each image at most once a day', async () => {
   vi.useFakeTimers({ toFake: ['Date'] });

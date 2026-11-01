@@ -3,8 +3,8 @@
 // Path:        client/src/app/navigation.js
 // Project:     Seasonal Entertainment
 // Description: The one definition of the site's navigation: the sidebar's main items (with
-//              their icons and season dots), the Calls item, the admin item and who sees it,
-//              the legal links (with "Not financial advice"), and the admin area's sections.
+//              their icons and season dots), the Calls item, the staff items (Site banner,
+//              Admin) and who sees them, the legal links (with "Not financial advice"), and the admin area's sections.
 //              Used by the sidebar, the admin layout and their tests.
 // ============================================================
 
@@ -29,10 +29,15 @@ export const isCallPage = (pathname) => /^\/calls\/\d+/.test(pathname);
 export const CALLS_ITEM = { to: '/calls', label: 'Calls', icon: 'mic', dot: 'winter' };
 
 const ADMIN_ITEM = { to: '/admin', label: 'Admin', icon: 'admin' };
+// Organisers set the site banner (2026-11-01); admins do it on Admin → Settings.
+const BANNER_ITEM = { to: '/banner', label: 'Site banner', icon: 'megaphone' };
 
-// The items below the divider for this account: Admin for admins only (as before the shell).
+// The items below the divider for this account: Admin for admins only (as before the shell),
+// Site banner for organisers. The pages check the role again, and the server on every request.
 export function staffNavFor(user) {
-  return user?.role === 'admin' ? [ADMIN_ITEM] : [];
+  if (user?.role === 'admin') return [ADMIN_ITEM];
+  if (user?.role === 'organiser') return [BANNER_ITEM];
+  return [];
 }
 
 // Imprint, Privacy and the Disclaimer are info pages (slugs "imprint", "privacy" and

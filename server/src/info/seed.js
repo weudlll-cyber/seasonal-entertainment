@@ -9,9 +9,12 @@
 //              (linked as "Not financial advice" from every page, 2026-10-23); Imprint and Privacy
 //              (SEED_DRAFTS) stay drafts until the owner's details and a legal review are in.
 //              Never runs again once pages exist, so later edits, renames and reorders are
-//              never undone.
+//              never undone. One exception, refreshSeedPages(): a stored page whose body is still
+//              exactly an earlier seed text (seed/earlier-seeds.json) was never edited, and gets
+//              the current seed text on every start; an edited page is left alone.
 // ============================================================
 
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
 export const SEED_ORDER = [
@@ -53,4 +56,30 @@ export function seedInfoPages(db) {
     });
   })();
   return SEED_ORDER.length;
+}
+
+export const sha256 = (text) => createHash('sha256').update(text).digest('hex');
+
+// Seed pages with earlier texts: { slug: [SHA-256 of each earlier body] }.
+export const earlierSeeds = () => {
+  const { description: _about, ...bySlug } = JSON.parse(
+    readFileSync(new URL('./seed/earlier-seeds.json', import.meta.url), 'utf8')
+  );
+  return bySlug;
+};
+
+// Returns how many pages got the current seed text. Status, title, order and slug stay.
+// earlier: the hashes to match (tests hand in their own).
+export function refreshSeedPages(db, earlier = earlierSeeds()) {
+  const update = db.prepare(
+    "UPDATE info_pages SET body = ?, updated_by_name = 'seed', updated_at = ? WHERE id = ?"
+  );
+  let refreshed = 0;
+  for (const [slug, hashes] of Object.entries(earlier)) {
+    const stored = db.prepare('SELECT id, body FROM info_pages WHERE slug = ?').get(slug);
+    if (!stored || !hashes.includes(sha256(stored.body))) continue;
+    update.run(readSeedPage(slug).body, new Date().toISOString(), stored.id);
+    refreshed += 1;
+  }
+  return refreshed;
 }

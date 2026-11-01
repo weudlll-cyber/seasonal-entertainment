@@ -86,8 +86,9 @@ event's name as alt text (owner decision 2026-10-20; `server/src/bots/images.js`
   (`server/src/previews/fetchImage.js`, handed over by the chat area's `mountChat`) and its
   network guard (`safeFetch.js`, `ipPolicy.js`):
   https on port 443 only, every DNS answer a public address (no private, loopback or cloud
-  metadata addresses), redirects checked, 5 seconds, at most 2 MB, a real JPEG, PNG, WebP or GIF
-  of at most 50 megapixels (read from the header before decoding, `config.imageMaxPixels`, since
+  metadata addresses), redirects checked, 15 seconds, at most 10 MB (the bot's own images are
+  designer PNGs of 3-3.5 MB; at the earlier 2 MB six were refused, 2026-11-01; link previews keep
+  2 MB), a real JPEG, PNG, WebP or GIF of at most 50 megapixels (read from the header before decoding, `config.imageMaxPixels`, since
   2026-10-23). A plain `http://` image is refused like any other.
 - **Re-encoded like uploaded images**: turned upright, every metadata block (EXIF with GPS, XMP,
   comments) dropped, scaled down to 640 px wide, stored as WebP in the media folder as

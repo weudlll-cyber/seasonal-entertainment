@@ -6,10 +6,13 @@
 //              both themes: info has the winter tint and warning the warning surface, so they
 //              differ, and neither is the shell's plain .banner look. The page's session answer
 //              is changed in this page only (page.route), so the run's shared settings stay as
-//              they are for the tests beside it.
+//              they are for the tests beside it. The Site banner page (/banner) previews
+//              the edited banner in the stored style (info, as the run leaves it); nothing is
+//              saved there, for the same reason.
 // ============================================================
 
 import { expect, test } from '@playwright/test';
+import { ADMIN_STATE } from './adminState.js';
 
 const TEXT = 'A message from the admins';
 
@@ -27,6 +30,17 @@ async function withBanner(page, style) {
     await route.fulfill({ json: { ...answer, settings } });
   });
 }
+
+// A colour token (tokens.css) as the page's theme resolves it.
+const token = (page, name) =>
+  page.evaluate((n) => {
+    const probe = document.createElement('div');
+    probe.style.background = `var(${n})`;
+    document.body.append(probe);
+    const colour = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return colour;
+  }, name);
 
 // The banner's background and bottom edge colours, as computed.
 async function look(page, style) {
@@ -49,17 +63,27 @@ for (const scheme of ['light', 'dark']) {
     expect(info.background).not.toBe(warning.background);
     expect(info.edge).not.toBe(warning.edge);
     // The tokens each style is meant to use (tokens.css), as this theme resolves them.
-    const token = (name) =>
-      page.evaluate((n) => {
-        const probe = document.createElement('div');
-        probe.style.background = `var(${n})`;
-        document.body.append(probe);
-        const colour = getComputedStyle(probe).backgroundColor;
-        probe.remove();
-        return colour;
-      }, name);
-    expect(info.background).toBe(await token('--color-info-surface'));
-    expect(warning.background).toBe(await token('--color-warning-surface'));
+    expect(info.background).toBe(await token(page, '--color-info-surface'));
+    expect(warning.background).toBe(await token(page, '--color-warning-surface'));
     await context.close();
   });
 }
+
+test.describe('the Site banner page', () => {
+  // The run's admin: the page is for organisers and admins alike.
+  test.use({ storageState: ADMIN_STATE });
+
+  test('its preview follows the edits in the banner style', async ({ page }) => {
+    await page.goto('/banner');
+    const form = page.getByRole('form', { name: 'Site banner' });
+    await form.getByLabel('Banner text').fill(`${TEXT} (preview)`);
+    await form.getByLabel('Show the banner').check();
+    const preview = page.getByRole('region', { name: 'Preview' }).locator('.site-banner');
+    await expect(preview).toContainText(`${TEXT} (preview)`);
+    const background = () => preview.evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(await background()).toBe(await token(page, '--color-info-surface'));
+    // On/off and text only: link and style are changed in Admin → Settings.
+    await expect(form.getByLabel('Banner style')).toHaveCount(0);
+    await expect(form.getByRole('button', { name: 'Save' })).toBeEnabled();
+  });
+});

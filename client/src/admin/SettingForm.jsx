@@ -6,6 +6,8 @@
 //              settings/types.js): on/off as a checkbox, a whole number with its unit and
 //              bounds, a short text with its length, a choice as a list. The explanation, the
 //              bounds and the default sit under the field; Save sends the value as its kind.
+//              The field (SettingControl), its hint (hintOf) and a value as it reads (shown)
+//              also serve the organisers' Site banner page (pages/BannerPage.jsx).
 // ============================================================
 
 import { useId, useState } from 'react';
@@ -13,7 +15,7 @@ import { api } from '../api/http.js';
 import { FormField, FormMessage } from '../components/FormField.jsx';
 
 // How a value reads on the page: on/off, an empty text, a choice by its label.
-function shown(setting, value) {
+export function shown(setting, value) {
   if (setting.type === 'boolean') return value ? 'on' : 'off';
   if (setting.type === 'choice') return setting.choices.find((c) => c.value === value)?.label;
   if (setting.type === 'text') return value ? `"${value}"` : 'empty';
@@ -21,7 +23,7 @@ function shown(setting, value) {
 }
 
 // "<explanation> <bounds>. Default: <value>."
-function hintOf(setting) {
+export function hintOf(setting) {
   const bounds =
     setting.type === 'integer'
       ? ` ${`${setting.min}–${setting.max} ${setting.unit ?? ''}`.trimEnd()}.`
@@ -34,7 +36,7 @@ function hintOf(setting) {
 // The value as the server expects it: a number field holds text until it is sent.
 const outgoing = (setting, value) => (setting.type === 'integer' ? Number(value) : value);
 
-function Control({ setting, value, onChange, hint }) {
+export function SettingControl({ setting, value, onChange, hint }) {
   const hintId = useId();
   if (setting.type === 'boolean') {
     // Not a .form-field: its label rule would stack the box above the text.
@@ -115,7 +117,7 @@ export default function SettingForm({ setting, onSaved }) {
 
   return (
     <form className="form" aria-label={setting.label} onSubmit={save}>
-      <Control setting={setting} value={value} onChange={setValue} hint={hintOf(setting)} />
+      <SettingControl setting={setting} value={value} onChange={setValue} hint={hintOf(setting)} />
       <FormMessage error={error} />
       <button className="button" type="submit">
         Save
