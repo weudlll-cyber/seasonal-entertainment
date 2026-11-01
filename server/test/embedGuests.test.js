@@ -57,7 +57,10 @@ describe('guests writing on another site', () => {
     expect(second.headers['x-embed-guest']).toBeUndefined(); // nothing new to keep
     // Without the token it is another guest; with a damaged one too.
     expect((await say(frame(), 'someone else')).body.message.author).not.toBe(name);
-    const damaged = `${token.slice(0, -2)}xx`;
+    // One character inside the signature, always a different one: the last base64url character
+    // carries only padding bits in part, so changing the end could leave the signature intact.
+    const at = token.length - 10;
+    const damaged = `${token.slice(0, at)}${token[at] === 'A' ? 'B' : 'A'}${token.slice(at + 1)}`;
     expect((await say(frame(SITE, damaged), 'forged')).body.message.author).not.toBe(name);
   });
 
