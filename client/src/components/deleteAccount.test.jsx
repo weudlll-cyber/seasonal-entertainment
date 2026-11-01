@@ -14,6 +14,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { deriveAccountKeys } from '@seasonal-entertainment/shared/crypto.js';
+import RequireUser from '../session/RequireUser.jsx';
 import { SessionProvider, useSession } from '../session/SessionContext.jsx';
 import { PRELOGIN, PRELOGIN_SALT, mockApi, signedIn } from '../test/mockApi.js';
 import DeleteAccountForm from './DeleteAccountForm.jsx';
@@ -39,7 +40,16 @@ async function submit(deletion, { user = anna, factor } = {}) {
       <MemoryRouter initialEntries={['/account']}>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/account" element={<Account />} />
+          <Route path="/login" element={<p>Login page</p>} />
+          {/* Guarded as in the app: a guest there is sent to the login page. */}
+          <Route
+            path="/account"
+            element={
+              <RequireUser>
+                <Account />
+              </RequireUser>
+            }
+          />
         </Routes>
       </MemoryRouter>
     </SessionProvider>

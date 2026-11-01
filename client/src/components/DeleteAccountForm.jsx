@@ -10,7 +10,7 @@
 //              kept on this device, keys/KeyContext.jsx) and goes home.
 // ============================================================
 
-import { useState } from 'react';
+import { startTransition, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { api } from '../api/http.js';
 import { keysForPassword } from '../session/credentials.js';
@@ -40,8 +40,12 @@ export default function DeleteAccountForm() {
         ...(user.twoFactorEnabled && secondFactor(String(form.get('factor')))),
       };
       await api('/auth/account', { method: 'DELETE', body });
-      setUser(null);
-      navigate('/', { replace: true });
+      // react-router navigates inside a transition: a plain setUser(null) would render first,
+      // and the account page's guard would send the new guest to the login page instead.
+      startTransition(() => {
+        setUser(null);
+        navigate('/', { replace: true });
+      });
     } catch (err) {
       setError(err.message);
       setBusy(false);
