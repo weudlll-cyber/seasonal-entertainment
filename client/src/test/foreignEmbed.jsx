@@ -90,7 +90,20 @@ export async function logIn(key = null) {
     'se-embed-login',
     expect.any(String)
   );
-  fromWindow(page.popup, window.location.origin, handOver({ key }));
-  // Not the default 1 s: on a busy machine (CI, a loaded PC) the hand-over takes longer.
-  await screen.findByRole('button', { name: 'Log out' }, { timeout: 10_000 });
+  await takeHandOver({ key });
+}
+
+// The popup's valid hand-over, until the embed is logged in. The listener takes the verified host
+// in an effect that can run after "Log in" is enabled; a hand-over sent in between is dropped. So
+// it is sent again until it is taken (taking the same one twice changes nothing), with room for a
+// busy machine.
+export async function takeHandOver(extra = {}) {
+  const message = { data: handOver(extra), origin: window.location.origin, source: page.popup };
+  await waitFor(
+    () => {
+      window.dispatchEvent(new MessageEvent('message', message));
+      expect(screen.getByRole('button', { name: 'Log out' })).toBeInTheDocument();
+    },
+    { timeout: 10_000 }
+  );
 }

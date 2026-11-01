@@ -25,6 +25,7 @@ import {
   sentToHost,
   setUpForeignHost,
   showEmbed,
+  takeHandOver,
   tearDownForeignHost,
 } from '../test/foreignEmbed.jsx';
 import { mockApi } from '../test/mockApi.js';
@@ -70,8 +71,8 @@ it('takes the hand-over only from its popup; then the token rides on requests an
   fromWindow(page.popup, window.location.origin, handOver({ origin: 'https://evil.example' }));
   expect(screen.queryByRole('button', { name: 'Log out' })).toBeNull();
 
-  fromWindow(page.popup, window.location.origin, handOver());
-  expect(await screen.findByText('mia')).toBeInTheDocument();
+  await takeHandOver();
+  expect(screen.getByText('mia')).toBeInTheDocument();
   await waitFor(() => expect(calls.some((c) => c.headers['X-Embed-Token'] === TOKEN)).toBe(true));
   await waitFor(() =>
     expect(FakeSocket.all.at(-1).protocols).toEqual(['se-chat', `se-embed.${TOKEN}`])

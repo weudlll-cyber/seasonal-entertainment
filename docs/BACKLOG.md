@@ -19,19 +19,13 @@ entry waits for.
   skips its own login when the site's server supplies the bot token, and its API paths can sit
   under a prefix (today absolute `/api/...`, which collide with the site's `/api`).
 
-### Waits for going online
+### To try on the live server
 
-- **VPS deployment** — prepared (image, compose with Caddy, backups, the one-command installer
-  and runbook in docs/DEPLOYMENT.md); waits for the domains, VPS access and the backup key pair.
-- **Installer: first real deployment** — `deploy/install.sh` (SE-INSTALL-1) passed its end-to-end
-  tests on the PC in both modes (`deploy/test/run.sh`: an empty server with Caddy, and beside an
-  nginx that already serves another site) on Ubuntu 24.04 and 22.04. Still untested there: real
-  Let's Encrypt, real DNS, call media over UDP from outside. Its draft PR merges after the first
-  real deployment succeeds.
-- **Age key pair for the backups** — made on the owner's PC at deployment (docs/DEPLOYMENT.md,
-  "Backups"); the VPS gets only the public key (backups go there, decided 2026-10-19).
 - **A recorded call on the VPS** — call recording is tested with a real egress on the PC; one
-  real recorded call on the server is still to try (docs/CALLS.md, "Recording").
+  real recorded call on the server is still to try (docs/CALLS.md, "Recording"). Also untested
+  there: call media over UDP from outside (signalling through nginx answered 101 on 2026-11-01).
+  LiveKit logged "could not validate external IP" at start (docs/DEPLOYMENT.md,
+  "Troubleshooting").
 
 ### Owner proposals (2026-11-01)
 
@@ -63,8 +57,30 @@ entry waits for.
   of 104 passed each (7.1, 12.0 and 10.8 min; the two call tests 12–22 s). The test is unchanged.
   The button needs the call `live` and the page's one `GET /api/calls/:id` answered; which of the
   two failed on CI is what the trace will show.
+- **Installer: the calls file as nginx's catch-all for 443** — in nginx mode, without a
+  `default_server` for 443, `seasonal-calls.conf` can load first and then answers requests by IP
+  address or without SNI with the calls certificate (first deployment, 2026-11-01; documented in
+  docs/DEPLOYMENT.md, "The two modes"). Named sites are not affected.
+- **Installer: combined ufw rules** — an existing `80,443/tcp` rule is not recognised as covering
+  `80/tcp` and `443/tcp`, so redundant rules are added beside it (first deployment, 2026-11-01;
+  docs/DEPLOYMENT.md, "What it does").
 
 ## PART TWO — closed
+
+- **VPS deployment** — closed by the first deployment on 2026-11-01, commit `d1f8837`: the site,
+  the call service with recording and the nightly encrypted backups run on the VPS in nginx mode
+  beside its existing site (docs/DEPLOYMENT.md).
+- **Age key pair for the backups** — closed by the first deployment on 2026-11-01, commit
+  `d1f8837`: the key pair was made on the owner's PC (docs/DEPLOYMENT.md, "Backups to your PC");
+  only the public key is on the VPS, and the first backup decrypted on the PC.
+
+- **Installer: first real deployment** — closed by the first deployment on 2026-11-01, commit
+  `d1f8837` (merge of PR #21, SE-INSTALL-1): cloned from GitHub on the server and run
+  interactively as any user would; nginx mode beside the existing nginx site. Checked:
+  `--status` healthy; the site, `www` redirect and calls name have Let's Encrypt certificates; call
+  signalling upgrades to WebSocket (101); the existing named site answers as before with its own
+  certificate; the bots' files are mounted read-only and the bots kept running untouched; the
+  first backup decrypts on the PC. Still untested: call media over UDP from outside.
 
 - **Admin-controlled settings (SE-SETTINGS-1)** — on `feat/se-settings-1` (not merged yet; owner
   requests 2026-10-23): site settings admins change on Admin → Settings instead of code
