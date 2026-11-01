@@ -6,7 +6,8 @@
 # Description: The installer's configuration files (docs/DEPLOYMENT.md): deploy/site/site.env
 #              (the app), deploy/site/.env and deploy/calls/.env (compose), all mode 600, with
 #              every secret made here and never printed; a secret already there is kept, so a
-#              re-run changes nothing that works. Also the installer's compose file
+#              re-run changes nothing that works (the KEEP SAFE note for the 2FA key is due only
+#              when the key is made here). Also the installer's compose file
 #              (deploy/site/docker-compose.install.yml, chosen through COMPOSE_FILE) and the
 #              extra Caddy site files (www redirect, calls domain) in /etc/seasonal/caddy-sites.
 # ============================================================
@@ -41,6 +42,9 @@ write_site_env() {
   file="$(site_env)"
   say "writing $SITE_DIR_REL/site.env (mode 600; secrets generated here, never shown)"
   kv_keep "$file" SESSION_SECRET new_secret hex
+  # A key made now must be copied off the server: install_all says so once (KEY_NOTE, state).
+  # shellcheck disable=SC2034 # read by install_all (install.sh) and save_state
+  [[ -n "$(kv_get "$file" SECRET_ENCRYPTION_KEY)" ]] || KEY_NOTE=pending
   kv_keep "$file" SECRET_ENCRYPTION_KEY new_secret base64
   # A root-only copy of the key that encrypts 2FA secrets: losing it locks every 2FA login.
   install -d -m 700 "$STATE_DIR"
@@ -67,7 +71,13 @@ write_site_env() {
   if [[ -n "${PRICE_BOT_DB:-}" ]]; then kv_set "$file" PRICE_BOT_DB /bots/snapshots.db; else kv_unset "$file" PRICE_BOT_DB; fi
   if [[ -n "${PRICE_BOT_MINING_RATES:-}" ]]; then kv_set "$file" PRICE_BOT_MINING_RATES /bots/mining_rates.json; else kv_unset "$file" PRICE_BOT_MINING_RATES; fi
   if [[ -n "${EVENT_BOT_DB:-}" ]]; then kv_set "$file" EVENT_BOT_DB /bots/events.db; else kv_unset "$file" EVENT_BOT_DB; fi
-  [[ -z "${COINGECKO_API_KEY:-}" ]] || kv_set "$file" COINGECKO_API_KEY "$COINGECKO_API_KEY"
+  if [[ -n "${COINGECKO_API_KEY:-}" ]]; then
+    kv_set "$file" COINGECKO_API_KEY "$COINGECKO_API_KEY"
+  elif [[ "${ASK_COINGECKO:-no}" == yes && "${COINGECKO:-}" == none ]]; then
+    # --coingecko answered with Enter: no key any more (only then; a key put into site.env by
+    # hand stays on a plain re-run).
+    kv_unset "$file" COINGECKO_API_KEY
+  fi
   [[ -z "${BACKUP_RECIPIENT:-}" ]] || kv_set "$file" BACKUP_RECIPIENT "$BACKUP_RECIPIENT"
 }
 

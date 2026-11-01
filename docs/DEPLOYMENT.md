@@ -58,7 +58,7 @@ run (see "Rollback").
 | Email for Let's Encrypt          | `ACME_EMAIL`                                             | certificate notices                                                       |
 | The bots' files                  | `PRICE_BOT_DB`, `PRICE_BOT_MINING_RATES`, `EVENT_BOT_DB` | paths on this server; empty: that data source stays off (docs/BOTS.md)    |
 | The age public key for backups   | `BACKUP_RECIPIENT`                                       | `age1…`; empty: add later with `--backups` (see "Backups")                |
-| CoinGecko Demo API key           | —                                                        | asked hidden, only on a terminal; empty: no ETH/POL/BTC prices            |
+| CoinGecko Demo API key           | —                                                        | hidden, on a terminal, once; empty: no prices; later with `--coingecko`   |
 | The first admin's name and email | `ADMIN_NAME`, `ADMIN_EMAIL`                              | asked at the end                                                          |
 | The first admin's password       | —                                                        | **always** typed on the terminal, shown as `*`; never from a file or flag |
 
@@ -83,6 +83,11 @@ never asks; the admin password is still typed when it gets there). The answers f
 secrets. Answers given once are remembered in `/etc/seasonal/install.conf` (root only, no
 secrets), so a later run asks nothing it already knows.
 
+The CoinGecko key is a secret: it is typed on the terminal (shown as `*`) and stored only in
+`deploy/site/site.env`. It is asked once. An empty answer (Enter) is remembered as
+`COINGECKO=none` in `install.conf` (the answer, never a key), so re-runs and `--update` do not
+ask again. A run with `--yes` or without a terminal never asks and remembers nothing.
+
 #### Changing an answer later
 
 Run the installer again with an answers file that holds only the keys to change; the others come
@@ -94,6 +99,10 @@ sudo ./deploy/install.sh --answers /root/calls.txt
 ```
 
 An empty value in the file does not remove a remembered answer.
+
+To set the CoinGecko key later (or change it), run `sudo ./deploy/install.sh --coingecko`: a
+re-run that asks for the key again on the terminal. Enter there removes a stored key. It also
+goes with `--update` (`--update --coingecko`), not with `--yes`.
 
 ### What it does
 
@@ -111,7 +120,9 @@ An empty value in the file does not remove a remembered answer.
 4. Makes every secret on the server: the session secret, the key that encrypts 2FA secrets, the
    bootstrap token, and the call service's key pair. Secrets are never printed. They are written
    to `deploy/site/site.env`, `deploy/site/.env` and `deploy/calls/.env` (mode 600, never
-   committed). A secret that already exists is kept.
+   committed). A secret that already exists is kept. When the key that encrypts 2FA secrets is
+   made, the end of that run says once "KEEP SAFE" and how to copy it off the server (see "What
+   you still do yourself"); later runs do not repeat it (`--help` always says it).
 5. Firewall: if **ufw is active**, it adds only the rules the chosen features need **and no
    existing rule allows yet**, and lists them in `/etc/seasonal/ufw-added`. An existing rule
    counts when it lets the port in from anywhere: also a combined rule (`80,443/tcp`), a range
@@ -120,8 +131,11 @@ An empty value in the file does not remove a remembered answer.
    and IPv6 are checked separately (ufw keeps them in `user.rules` and `user6.rules`): when only
    one of them is missing, only that one is added (e.g. `ufw allow to ::/0 port 5349 proto tcp`).
    A rule ufw already had is never counted as the installer's, and `--uninstall` removes exactly
-   the ones listed. If ufw is inactive, it enables nothing and prints the ports that must be
-   open. It never changes SSH, users or existing rules.
+   the ones listed. A rule in that list that other rules now cover is removed and taken off the
+   list, with a line `firewall: removed …` (the installer of the first deployment, 2026-11-01,
+   added `80/tcp` and `443/tcp` beside the server's own `80,443/tcp`; the next run removes those
+   two, for IPv4 and IPv6). Only rules in the list are ever removed. If ufw is inactive, it enables nothing and
+   prints the ports that must be open. It never changes SSH, users or rules it did not add.
 6. Builds the site image with the commit, starts the site, and waits for
    `https://<site>/api/health` over HTTPS.
 7. Starts the call service (and the recording add-on) and checks it answers on
@@ -130,7 +144,9 @@ An empty value in the file does not remove a remembered answer.
    `BOOTSTRAP_TOKEN` and restarts the site. Log in at `https://<site>/login`; admins set up 2FA
    first.
 9. With an age public key: sets up the nightly backup, runs one at once, and checks that it is an
-   encrypted `.tar.age`.
+   encrypted `.tar.age`. Every run does so (one backup per run); its line says "the first one"
+   only when there was no backup yet, "a new one now" otherwise. The re-run of `--update` takes
+   none: the update took its own before the new code ("Updating").
 
 ### The two modes
 
@@ -185,7 +201,8 @@ it is no longer one of the installer's files where other sites listen).
 - **DNS records** (see "Requirements").
 - **A provider firewall**, if your host has one in front of the server: open the same ports
   there. The installer prints them.
-- **Copy the 2FA encryption key off the server**, right after the first run. Store it apart from
+- **Copy the 2FA encryption key off the server**, right after the first run (its end says
+  "KEEP SAFE" once; `sudo ./deploy/install.sh --help` says it any time). Store it apart from
   the backups: without it, 2FA logins cannot be restored onto a new server (docs/AUTH.md). From
   your PC:
 
@@ -213,12 +230,18 @@ sudo /opt/seasonal-entertainment/deploy/install.sh --update
    branch does not have (diverged), it is on another branch, or origin's default branch is
    unknown. It never resets, stashes or discards anything; fix such a checkout by hand.
 2. With backups set up, takes a fresh backup and prints where it is
-   (`/var/backups/seasonal/<time>.tar.age`). Without, it warns and goes on.
+   (`/var/backups/seasonal/<time>.tar.age`). Without, it warns and goes on. This is the
+   update's only backup: the re-run in step 4 names it instead of taking a second one.
 3. Fetches and fast-forwards the checkout to origin's default branch (`master`), also from a
    detached checkout left by `--commit`, and prints the old and the new commit.
 4. Runs **that** commit's installer as a plain re-run: no questions for remembered answers; it
-   rebuilds the image and restarts what changed. Like every re-run on a terminal, it asks for the
-   CoinGecko key while none is set (Enter: none); `--update --yes` never asks.
+   rebuilds the image and restarts what changed. The CoinGecko key is asked only if it was never
+   answered (Enter: none, then never again); `--update --coingecko` asks it again,
+   `--update --yes` never asks.
+
+An older installer, such as the first deployment's (2026-11-01), does not tell the new one that
+it took the backup, so the first `--update` from it still ends with a second backup; later ones
+take one.
 
 For a specific version instead, `sudo ./deploy/install.sh --commit <tag or commit>` checks out
 the ref and runs that commit's installer the same way (take a backup first:
@@ -283,7 +306,8 @@ sudo ./deploy/install.sh --rollback /var/backups/seasonal-install/<time>
 - `--purge-data` also deletes the data volume and the remembered answers. Backups, secrets and
   certificates still stay.
 - `--rollback` puts the installer's nginx files, its ufw rules, its state and the commit back as
-  they were in that snapshot. Then run the installer again to rebuild at that commit. Older code
+  they were in that snapshot (a redundant rule the run removed is not added again: the other
+  rule still opens the port). Then run the installer again to rebuild at that commit. Older code
   runs on a newer database (changes are additive); if an update ever changed data in a way the
   old code cannot read, restore the backup taken before it ("Restoring").
 
@@ -577,12 +601,17 @@ The scenarios:
   before the install). Before the second install the installer's files get their old names: the
   same check must then fail (the old behaviour), and the second install must move them and pass
   it again. ufw is active with `80,443/tcp`, `7881`, `50000:60000/udp` and `5349/tcp` for IPv4
-  only: the installer may add only `3478/udp` and the IPv6 rule for `5349/tcp`. With backups set
-  up, the checkout tracks a bare "origin" repository inside the server; after the re-run origin
-  gets a newer commit. `--update` must first refuse while a tracked file is modified (same commit,
-  site not restarted), then take a backup, keep the secrets and the remembered answers, move the
-  checkout to the new commit on `master` and serve it (`/api/health`), with the same answer for
-  unknown names.
+  only: the installer may add only `3478/udp` and the IPv6 rule for `5349/tcp`. Before the second
+  install, `80/tcp` and `443/tcp` are added and recorded in `ufw-added` beside `80,443/tcp`, as
+  an earlier installer left the first server: the second install must remove exactly those two
+  and say so. Every run is on a terminal without `--yes`: the first install must ask the
+  CoinGecko key (answered empty), the later runs must not (`run-installer.exp` fails if they
+  do). The "KEEP SAFE" note must show on the first install only, each run takes one backup ("the
+  first one" only the first time). With backups set up, the checkout tracks a bare "origin"
+  repository inside the server; after the re-run origin gets a newer commit. `--update` must
+  first refuse while a tracked file is modified (same commit, site not restarted), then take
+  exactly one backup, keep the secrets and the remembered answers, move the checkout to the new
+  commit on `master` and serve it (`/api/health`), with the same answer for unknown names.
 - `jammy`: a 22.04 server, the site alone, ufw active with the app profile `Nginx Full`: the
   installer may add only `443/udp`. The admin password is typed first too short, then with a
   differing confirmation; the installer must explain and ask again each time.
