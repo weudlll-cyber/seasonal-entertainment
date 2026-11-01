@@ -12,8 +12,9 @@
 #              call service with recording, if chosen), creates the first admin and sets up the
 #              encrypted backups. Re-running keeps secrets, data and answers. --update (a backup,
 #              then the newest commit of origin's default branch), --commit <ref>, --coingecko
-#              (ask the CoinGecko key again), --status, --uninstall [--purge-data], --rollback
-#              <snapshot>, --admin, --backups. The parts live in deploy/install/lib/.
+#              (ask the CoinGecko key again), --bot-admin (ask about the event bot's admin page
+#              again; nginx mode), --status, --uninstall [--purge-data], --rollback <snapshot>,
+#              --admin, --backups. The parts live in deploy/install/lib/.
 # ============================================================
 
 set -Eeuo pipefail
@@ -40,13 +41,15 @@ source "$LIB/services.sh"
 source "$LIB/manage.sh"
 # shellcheck source=install/lib/update.sh
 source "$LIB/update.sh"
+# shellcheck source=install/lib/bot-admin.sh
+source "$LIB/bot-admin.sh"
 
 # Any command failing where no step expected it still stops with a message and the rollback.
 trap 'die "unexpected failure (line $LINENO: $BASH_COMMAND)"' ERR
 
 ANSWER_KEYS="SITE_DOMAIN WWW_REDIRECT CALLS_DOMAIN RECORDING ACME_EMAIL ADMIN_NAME ADMIN_EMAIL
 COINGECKO_API_KEY PRICE_BOT_DB PRICE_BOT_MINING_RATES EVENT_BOT_DB BACKUP_RECIPIENT ACME_SERVER
-ACME_CA_BUNDLE"
+ACME_CA_BUNDLE BOT_ADMIN_URL BOT_ADMIN_TOKEN_FILE BOT_ADMIN_TOKEN_KEY"
 
 usage() {
   cat <<'EOF'
@@ -59,6 +62,8 @@ Usage: sudo ./deploy/install.sh [options]
                          branch (fast-forward only), installed as a plain re-run does
   --coingecko            ask for the CoinGecko Demo API key again (once answered, also with
                          Enter for none, it is not asked again); Enter now removes a key
+  --bot-admin            nginx mode: ask again about the event bot's admin page inside the
+                         site (its address and token); Enter now removes it
   --commit REF           check out REF (a commit, tag or branch) first, then install it
   --admin                create the first admin (password asked on the terminal)
   --backups              set up or change the encrypted backups (asks for the age public key)
@@ -81,6 +86,7 @@ ANSWERS=""
 COMMIT_REF=""
 UPDATE=no
 ASK_COINGECKO=no
+ASK_BOT_ADMIN=no
 ROLLBACK_DIR=""
 while (($#)); do
   case "$1" in
@@ -89,6 +95,7 @@ while (($#)); do
     --commit) COMMIT_REF="${2:?--commit needs a ref}"; shift ;;
     --update) UPDATE=yes ;;
     --coingecko) ASK_COINGECKO=yes ;;
+    --bot-admin) ASK_BOT_ADMIN=yes ;;
     --admin) ACTION='admin' ;;
     --backups) ACTION=backups ;;
     --status) ACTION=status ;;
@@ -105,9 +112,11 @@ done
 [[ "$PURGE" == no || "$ACTION" == uninstall ]] || die "--purge-data goes with --uninstall"
 [[ "$UPDATE" == no || -z "$COMMIT_REF" ]] ||
   die "--update and --commit do not go together: --update takes the newest code, --commit REF a chosen one"
-[[ "$UPDATE" == no || "$ACTION" == install ]] || die "--update goes alone (with --answers, --yes or --coingecko at most)"
+[[ "$UPDATE" == no || "$ACTION" == install ]] || die "--update goes alone (with --answers, --yes, --coingecko or --bot-admin at most)"
 [[ "$ASK_COINGECKO" == no || "$ACTION" == install ]] || die "--coingecko goes with an install, a re-run or --update"
 [[ "$ASK_COINGECKO" == no || "$UNATTENDED" == no ]] || die "--coingecko asks on the terminal: not with --yes"
+[[ "$ASK_BOT_ADMIN" == no || "$ACTION" == install ]] || die "--bot-admin goes with an install, a re-run or --update"
+[[ "$ASK_BOT_ADMIN" == no || "$UNATTENDED" == no ]] || die "--bot-admin asks on the terminal: not with --yes"
 
 # A different commit: check it out, then run that commit's own installer (this file may change).
 if [[ -n "$COMMIT_REF" && -z "${SEASONAL_REEXEC:-}" ]]; then
@@ -148,6 +157,8 @@ EOF
 gather_answers() {
   # shellcheck disable=SC2086 # the key list is split into words on purpose
   [[ -z "$ANSWERS" ]] || read_kv_file "$ANSWERS" $ANSWER_KEYS
+  # --bot-admin: the remembered answer does not count, one in the answers file does.
+  [[ "$ASK_BOT_ADMIN" == no || -n "${BOT_ADMIN_URL:-}" ]] || BOT_ADMIN_REASK=yes
   load_state
   ask SITE_DOMAIN "The site's domain (e.g. example.org)"
   ask WWW_REDIRECT "Should www.$SITE_DOMAIN redirect to it? (yes/no)" yes
@@ -203,6 +214,8 @@ install_all() {
   gather_answers
   validate_answers
   decide_mode
+  # Asked once the mode is known (nginx mode only), still before anything changes.
+  ask_bot_admin
   take_snapshot
   ensure_base_tools
   ensure_docker

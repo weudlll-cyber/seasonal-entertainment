@@ -79,6 +79,8 @@ write_site_env() {
     kv_unset "$file" COINGECKO_API_KEY
   fi
   [[ -z "${BACKUP_RECIPIENT:-}" ]] || kv_set "$file" BACKUP_RECIPIENT "$BACKUP_RECIPIENT"
+  # The site shows the bot's admin page and answers nginx's question about it only when on.
+  if bot_admin_on; then kv_set "$file" BOT_ADMIN_EMBEDDED 1; else kv_unset "$file" BOT_ADMIN_EMBEDDED; fi
 }
 
 write_site_compose_env() {

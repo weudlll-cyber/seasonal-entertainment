@@ -21,7 +21,12 @@
 #              the CoinGecko key asked once and answered empty, then never again; before the
 #              re-run 80/tcp and 443/tcp are added and recorded as the installer's beside the
 #              server's 80,443/tcp (as an earlier installer did), which the re-run must remove;
-#              the KEEP SAFE note only on the first install, one backup per run; "jammy" =
+#              the KEEP SAFE note only on the first install, one backup per run; the event
+#              bot's admin page asked once and answered empty (remembered "none", not asked
+#              again), then configured with an answers file naming a stub bot's env file and
+#              checked through the site's login (checks-bot-admin.sh; once with the installer's
+#              X-Acting-User line taken out, which the header check must see), kept by
+#              --update, removed by --uninstall and back after the install that follows; "jammy" =
 #              a 22.04 server with ufw active and the app profile "Nginx Full", the site alone,
 #              and a too-short password and a differing confirmation typed first.
 #              Not part of npm run verify or CI (it takes long and needs Docker with privileged
@@ -108,7 +113,7 @@ start_server() {
     cd $REMOTE && find . -type f -not -path './.git/*' -exec chmod 644 {} + && xargs -r chmod 755 &&
     git init -q && git add -A && git -c user.name=test -c user.email=test@example.org commit -qm test"
   on_server install -d -m 700 /etc/seasonal-test /etc/docker
-  for file in checks.sh prepare-nginx.sh prepare-ufw.sh run-installer.exp; do
+  for file in checks.sh checks-bot-admin.sh prepare-nginx.sh prepare-ufw.sh run-installer.exp stub-bot.py; do
     on_server install -m 755 "$REMOTE/deploy/test/$file" "/etc/seasonal-test/$file"
   done
   docker cp seasonal-install-test-pebble:/test/certs/pebble.minica.pem - | on_server tar -C /etc/seasonal-test -xf -
@@ -120,17 +125,20 @@ start_server() {
 }
 
 # run_installer [options...]: the installer on a terminal, its output into the results.
-# COINGECKO (ask|never|any) is what run-installer.exp requires of the CoinGecko question.
+# COINGECKO and BOT_ADMIN (ask|never|any) are what run-installer.exp requires of the CoinGecko
+# and the event bot's admin page questions.
 run_installer() {
   local status=0
   on_server env TEST_ADMIN_PASSWORD="$TEST_ADMIN_PASSWORD" TEST_PASSWORD_MISTAKES="${PASSWORD_MISTAKES:-0}" \
-    TEST_COINGECKO="${COINGECKO:-any}" \
+    TEST_COINGECKO="${COINGECKO:-any}" TEST_BOT_ADMIN="${BOT_ADMIN:-any}" \
     /etc/seasonal-test/run-installer.exp "$REMOTE/deploy/install.sh" "$@" 2>&1 | tr -d '\r' |
     sed 's/^/    /' | tee -a "$RESULTS" || status=$?
   return "$status"
 }
 
 check() { on_server /etc/seasonal-test/checks.sh "$@" | tee -a "$RESULTS"; }
+# The bot admin logins need the test admin's password (passed by name, never on a command line).
+check_login() { docker exec -i -e TEST_ADMIN_PASSWORD "$SERVER" /etc/seasonal-test/checks.sh bot-admin-login | tee -a "$RESULTS"; }
 
 # fails <check> [args]: the check must fail (its own FAIL line is kept out of the results).
 fails() { ! on_server /etc/seasonal-test/checks.sh "$@" >/dev/null; }
@@ -186,6 +194,39 @@ newer_origin_commit() {
     git -c user.name=test -c user.email=test@example.org commit -qm newer
     git push -q origin master
     git rev-parse HEAD"
+}
+
+# The event bot, as far as the site sees it: a stub on 127.0.0.1:8090 (stub-bot.py) and an env
+# file holding its admin token (random, root only, never printed) among other keys, as the
+# owner's bot has; the answers file names that file and key, as the owner does.
+start_stub_bot() {
+  # shellcheck disable=SC2016 # the server's shell makes the token
+  on_server sh -ec 'umask 077
+    printf "# the test bot\nSTANNOUNCEBOT_WEB_EMBEDDED=1\nSTANNOUNCEBOT_WEB_ADMIN_TOKEN=%s\nSTANNOUNCEBOT_WEB_BASE_PATH=/bot-admin\n" \
+      "$(openssl rand -base64 24)" > /etc/test-bot.env
+    systemd-run --quiet --unit=test-stub-bot python3 -I /etc/seasonal-test/stub-bot.py
+    for i in $(seq 30); do curl -fs http://127.0.0.1:8090/bot-admin/health >/dev/null && exit 0; sleep 1; done
+    exit 1'
+  on_server sh -c 'cat > /etc/seasonal-test/bot-answers' <<'EOF'
+BOT_ADMIN_URL=http://127.0.0.1:8090
+BOT_ADMIN_TOKEN_FILE=/etc/test-bot.env
+BOT_ADMIN_TOKEN_KEY=STANNOUNCEBOT_WEB_ADMIN_TOKEN
+EOF
+}
+
+# The installer's site file without its X-Acting-User line (kept aside), and back: the header
+# check must see the browser's own header reach the bot in between.
+SITE_CONF=/etc/nginx/sites-available/zz-seasonal-site.conf
+drop_acting_user_line() {
+  # shellcheck disable=SC2016 # $seasonal_acting_user is nginx's variable, not the shell's
+  on_server sh -ec 'cp '"$SITE_CONF"' /etc/seasonal-test/site.conf.kept
+    sed -i "/proxy_set_header X-Acting-User \$seasonal_acting_user;/d" '"$SITE_CONF"'
+    if grep -q "X-Acting-User \$seasonal" '"$SITE_CONF"'; then exit 1; fi
+    nginx -t 2>/dev/null
+    systemctl reload nginx'
+}
+restore_site_conf() {
+  on_server sh -ec "cp /etc/seasonal-test/site.conf.kept $SITE_CONF && nginx -t 2>/dev/null && systemctl reload nginx"
 }
 
 head_commit() { on_server git -C "$REMOTE" rev-parse HEAD; }
@@ -254,14 +295,14 @@ scenario() {
   local ufw_added=() ufw_own=() PASSWORD_MISTAKES=0
   # --yes, except in the nginx scenario: there every run is on a terminal as a person's would
   # be, so the CoinGecko question is asked once (COINGECKO=ask) and must not come again.
-  local yes=(--yes) COINGECKO=any
+  local yes=(--yes) COINGECKO=any BOT_ADMIN=any
   case "$name" in
     caddy) ubuntu=24.04 mode=caddy calls=calls.example.org recording=yes www=yes backups=yes ;;
     nginx) ubuntu=24.04 mode=nginx calls=calls.example.org www=yes price_bot=/srv/bots/snapshots.db ufw=yes
       backups=yes # --update takes one first
       # 80, 443, 7881 and the media range are covered already; 5349/tcp only for IPv4.
       ufw_added=(46:udp:3478 6:tcp:5349) ufw_own=(3478/udp 'to ::/0 port 5349 proto tcp')
-      yes=() COINGECKO=ask ;;
+      yes=() COINGECKO=ask BOT_ADMIN=ask ;;
     jammy) ubuntu=22.04 mode=caddy ufw=yes PASSWORD_MISTAKES=1
       # "Nginx Full" covers 80/tcp and 443/tcp; HTTP/3 needs 443/udp.
       ufw_added=(46:udp:443) ufw_own=(443/udp) ;;
@@ -286,6 +327,8 @@ scenario() {
   check health
   [[ "$www" == no ]] || check www
   [[ "$mode" == caddy ]] || { check other; check unknown-name; }
+  # Answered empty on the terminal: remembered as "none", nothing set up.
+  [[ "$BOT_ADMIN" != ask ]] || check bot-admin-absent none
   [[ -z "$calls" ]] || check wss
   [[ -z "$calls" ]] || check modes "$REMOTE/deploy/calls/.env"
   [[ -n "$calls" ]] || check modes
@@ -315,6 +358,7 @@ scenario() {
   backups_before="$(backup_count)"
   # Answered (empty) by the first install: from now on it must not be asked.
   [[ "$COINGECKO" == any ]] || COINGECKO=never
+  [[ "$BOT_ADMIN" == any ]] || BOT_ADMIN=never
   from=$(($(wc -l <"$RESULTS") + 1))
   run_installer --answers /etc/seasonal-test/answers "${yes[@]}"
   ok "secrets kept on re-run" same_secrets "$before"
@@ -336,6 +380,27 @@ scenario() {
   [[ "$ufw" == no ]] || { check ufw "${ufw_added[@]}"; check ufw-own "${ufw_own[@]}"; }
 
   if [[ "$mode" == nginx ]]; then
+    # On this server without the bot the remembered "none" was not asked (run-installer.exp).
+    check bot-admin-absent none
+    say "--- the event bot's admin page: a stub bot, configured with an answers file (its env file and key)"
+    start_stub_bot
+    from=$(($(wc -l <"$RESULTS") + 1))
+    run_installer --answers /etc/seasonal-test/bot-answers
+    ok "the run names the bot's page" output_has "$from" 'https://example.org/bot-admin/ (staff only)'
+    check_login
+    check bot-admin-page
+    check bot-admin-refused
+    check bot-admin-headers
+    check bot-admin-post
+    check bot-admin-secret
+    check other
+    check unknown-name
+    say "--- the installer's X-Acting-User line taken out by hand, then put back"
+    drop_acting_user_line
+    ok "without it the header check sees the browser's own X-Acting-User (it can fail)" fails bot-admin-headers
+    restore_site_conf
+    check bot-admin-headers
+
     say "--- --update to a newer commit of origin's default branch"
     local old_commit new_commit answers_before
     old_commit="$(head_commit)"
@@ -358,6 +423,9 @@ scenario() {
     ok "remembered answers unchanged by --update" test "$(answers_hash)" = "$answers_before"
     check served-commit "$new_commit"
     check unknown-name
+    check_login
+    check bot-admin-page
+    check bot-admin-headers
   fi
 
   say "--- uninstall"
@@ -367,6 +435,7 @@ scenario() {
   [[ "$mode" == caddy ]] || { check other; check unknown-name; }
   [[ "$ufw" == no ]] || check ufw
   [[ "$ufw" == no ]] || ok "the installer's firewall rules are removed" on_server test ! -s /etc/seasonal/ufw-added
+  [[ "$mode" == caddy ]] || check bot-admin-absent
 
   say "--- install after uninstall (data kept)"
   from=$(($(wc -l <"$RESULTS") + 1))
@@ -377,6 +446,19 @@ scenario() {
   check admin
   [[ -z "$calls" ]] || check wss
   [[ "$mode" == caddy ]] || { check other; check unknown-name; }
+  if [[ "$mode" == nginx ]]; then
+    # The token comes back from the bot's env file named in the remembered answers.
+    check_login
+    check bot-admin-page
+    check bot-admin-refused
+    check bot-admin-secret
+    # All the runs' output so far, searched on the server (the token never comes to this PC).
+    local output
+    output="$(mktemp)"
+    cp "$RESULTS" "$output"
+    on_server /etc/seasonal-test/checks.sh bot-admin-output <"$output" | tee -a "$RESULTS"
+    rm -f "$output"
+  fi
   say "=== scenario $name: all checks passed"
 }
 
