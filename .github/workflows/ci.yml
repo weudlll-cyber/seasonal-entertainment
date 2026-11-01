@@ -87,6 +87,12 @@ jobs:
           docker logs site
           exit 1
 
+      - name: The built client carries the commit /api/health reports (the update notice)
+        run: |
+          commit=$(curl -sf http://127.0.0.1:3800/api/health | jq -r .commit)
+          test "$commit" = "$(echo '${{ github.sha }}' | cut -c1-12)"
+          docker exec site grep -rqF "$commit" client/dist/assets
+
       - name: An encrypted backup decrypts with the age tool and passes the restore check
         run: |
           sudo apt-get install -y age > /dev/null

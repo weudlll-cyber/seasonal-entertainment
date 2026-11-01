@@ -5,11 +5,11 @@
 // Description: The client's route table inside the session provider. Every page renders
 //              inside Layout, except the embedded chat (/embed/chat, no site shell, for an
 //              iframe) and its login popup (/embed-login; docs/EMBED.md); unknown paths show
-//              the 404 page. Heavier pages are loaded on first use (lazy). The router itself is
-//              supplied by main.jsx (or a test).
+//              the 404 page. Heavier pages are loaded on first use (lazyPage: reloads once when
+//              the file is gone after an update). The router itself is supplied by main.jsx (or
+//              a test).
 // ============================================================
 
-import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { KeyProvider } from '../keys/KeyContext.jsx';
 import AccountPage from '../pages/AccountPage.jsx';
@@ -26,36 +26,40 @@ import RequireUser from '../session/RequireUser.jsx';
 import { SessionProvider } from '../session/SessionContext.jsx';
 import { ThemeProvider } from '../theme/ThemeContext.jsx';
 import Layout from './Layout.jsx';
+import LazyBoundary from './LazyBoundary.jsx';
+import { lazyPage } from './staleChunks.js';
 
 // Loaded when first opened, each as its own chunk, so the first page of a visit does not wait
 // for them (docs/DESIGN.md, "Speed"): the call page with the call service's client, the
 // prices page with its chart, info pages with the Markdown renderer, the admin area and the
-// embedded chat. Layout and AdminLayout hold the Suspense boundaries around their outlets.
-const AdminAuditPage = lazy(() => import('../admin/AdminAuditPage.jsx'));
-const AdminChatMediaPage = lazy(() => import('../admin/AdminChatMediaPage.jsx'));
-const AdminChatPage = lazy(() => import('../admin/AdminChatPage.jsx'));
-const AdminEmbeddingPage = lazy(() => import('../admin/AdminEmbeddingPage.jsx'));
-const AdminGamesPage = lazy(() => import('../admin/AdminGamesPage.jsx'));
-const AdminInfoListPage = lazy(() => import('../admin/AdminInfoListPage.jsx'));
-const AdminLayout = lazy(() => import('../admin/AdminLayout.jsx'));
-const AdminSettingsPage = lazy(() => import('../admin/AdminSettingsPage.jsx'));
-const AdminUsersPage = lazy(() => import('../admin/AdminUsersPage.jsx'));
-const CallPage = lazy(() => import('../pages/CallPage.jsx'));
-const RecordingsPage = lazy(() => import('../pages/RecordingsPage.jsx'));
-const StartPage = lazy(() => import('../pages/StartPage.jsx'));
-const EmbedChatPage = lazy(() => import('../embed/EmbedChatPage.jsx'));
-const EmbedLoginPage = lazy(() => import('../embed/EmbedLoginPage.jsx'));
-const InfoEditorPage = lazy(() => import('../admin/InfoEditorPage.jsx'));
-const InfoPage = lazy(() => import('../pages/InfoPage.jsx'));
-const PricesPage = lazy(() => import('../prices/PricesPage.jsx'));
+// embedded chat. Layout and AdminLayout hold the boundaries (LazyBoundary) around their
+// outlets. lazyPage reloads the page once when a part's file is gone after an update
+// (staleChunks.js).
+const AdminAuditPage = lazyPage(() => import('../admin/AdminAuditPage.jsx'));
+const AdminChatMediaPage = lazyPage(() => import('../admin/AdminChatMediaPage.jsx'));
+const AdminChatPage = lazyPage(() => import('../admin/AdminChatPage.jsx'));
+const AdminEmbeddingPage = lazyPage(() => import('../admin/AdminEmbeddingPage.jsx'));
+const AdminGamesPage = lazyPage(() => import('../admin/AdminGamesPage.jsx'));
+const AdminInfoListPage = lazyPage(() => import('../admin/AdminInfoListPage.jsx'));
+const AdminLayout = lazyPage(() => import('../admin/AdminLayout.jsx'));
+const AdminSettingsPage = lazyPage(() => import('../admin/AdminSettingsPage.jsx'));
+const AdminUsersPage = lazyPage(() => import('../admin/AdminUsersPage.jsx'));
+const CallPage = lazyPage(() => import('../pages/CallPage.jsx'));
+const RecordingsPage = lazyPage(() => import('../pages/RecordingsPage.jsx'));
+const StartPage = lazyPage(() => import('../pages/StartPage.jsx'));
+const EmbedChatPage = lazyPage(() => import('../embed/EmbedChatPage.jsx'));
+const EmbedLoginPage = lazyPage(() => import('../embed/EmbedLoginPage.jsx'));
+const InfoEditorPage = lazyPage(() => import('../admin/InfoEditorPage.jsx'));
+const InfoPage = lazyPage(() => import('../pages/InfoPage.jsx'));
+const PricesPage = lazyPage(() => import('../prices/PricesPage.jsx'));
 
 // Test-only pages: routed by the Vite dev server only. In a production build DEV is false, so
 // these and the pages' code are left out entirely.
 const ChatPanelsTestPage = import.meta.env.DEV
-  ? lazy(() => import('../devPages/ChatPanelsTestPage.jsx'))
+  ? lazyPage(() => import('../devPages/ChatPanelsTestPage.jsx'))
   : null;
 const EmbedDemoPage = import.meta.env.DEV
-  ? lazy(() => import('../devPages/EmbedDemoPage.jsx'))
+  ? lazyPage(() => import('../devPages/EmbedDemoPage.jsx'))
   : null;
 
 export default function App() {
@@ -68,17 +72,17 @@ export default function App() {
             <Route
               path="embed/chat"
               element={
-                <Suspense>
+                <LazyBoundary>
                   <EmbedChatPage />
-                </Suspense>
+                </LazyBoundary>
               }
             />
             <Route
               path="embed-login"
               element={
-                <Suspense>
+                <LazyBoundary>
                   <EmbedLoginPage />
-                </Suspense>
+                </LazyBoundary>
               }
             />
             <Route element={<Layout />}>
@@ -127,9 +131,9 @@ export default function App() {
                 <Route
                   path="test/chat-panels"
                   element={
-                    <Suspense>
+                    <LazyBoundary>
                       <ChatPanelsTestPage />
-                    </Suspense>
+                    </LazyBoundary>
                   }
                 />
               )}
@@ -137,9 +141,9 @@ export default function App() {
                 <Route
                   path="test/embed-chat"
                   element={
-                    <Suspense>
+                    <LazyBoundary>
                       <EmbedDemoPage />
-                    </Suspense>
+                    </LazyBoundary>
                   }
                 />
               )}
