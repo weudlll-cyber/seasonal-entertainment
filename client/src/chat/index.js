@@ -11,7 +11,8 @@
 //              the member's own live events for other areas of the site (usePersonalEvents: call
 //              reminders, a new device asking for the key, notifications) and a room's newest
 //              messages with the online count (useRoomGlimpse: the home page's Community box);
-//              onReconnect (the live connection is back after a drop: app/UpdateNotice.jsx).
+//              onReconnect (the live connection is back after a drop: app/UpdateNotice.jsx); the
+//              Discord steps' badge and list (StepBadge, StepList: the account page).
 //              Pages import only from here; everything else in this folder is internal
 //              (docs/CHAT.md).
 // ============================================================
@@ -31,3 +32,5 @@ export { useNewMessageCount } from './useNewMessageCount.js';
 export { usePersonalEvents } from './usePersonalEvents.js';
 export { useRoomGlimpse } from './useRoomGlimpse.js';
 export { onReconnect } from './connection.js';
+// Discord steps (variant C): the badge after a name, and the full names (the account page).
+export { default as StepBadge, StepList } from './StepBadge.jsx';

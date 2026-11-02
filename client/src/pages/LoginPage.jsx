@@ -11,7 +11,10 @@
 //              the browser: only the auth key derived from it is sent (session/credentials.js).
 //              Once logged in, the same derived keys open (or first create) the member's key
 //              pair for private messages (keys/), before the page moves on. The card shows the
-//              logo (FormLogo.jsx), except in the chat's login popup.
+//              logo (FormLogo.jsx), except in the chat's login popup. While Discord login is set
+//              up, "Log in with Discord" comes first (docs/AUTH.md, "Discord"); coming back from
+//              it, ?discord= says what went wrong, or (2fa) that the account's second step is
+//              due, which then shows right away.
 // ============================================================
 
 import { roleAtLeast } from '@seasonal-entertainment/shared/accountRules.js';
@@ -25,9 +28,11 @@ import { logIn } from '../session/credentials.js';
 import { inEmbedLoginFlow, safeNext, withNext } from '../session/nextPage.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { BusyButton } from '../components/BusyButton.jsx';
+import DiscordButton from '../discord/DiscordButton.jsx';
+import DiscordReason from '../discord/DiscordReason.jsx';
 
 export default function LoginPage() {
-  const { setUser } = useSession();
+  const { setUser, features } = useSession();
   const keys = useKeys();
   // The password's keys, kept until the login is complete (after the 2FA step too).
   const passwordKeys = useRef(null);
@@ -35,12 +40,15 @@ export default function LoginPage() {
   const [params] = useSearchParams();
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [needsCode, setNeedsCode] = useState(false);
+  // A Discord login of an account with 2FA comes back here for the second step.
+  const [needsCode, setNeedsCode] = useState(params.get('discord') === '2fa');
 
   async function finish(user) {
     // A key problem must not block the login: the account page and the Direct tab offer
-    // unlocking again.
-    await keys.openWithPassword(passwordKeys.current, user.id).catch(() => {});
+    // unlocking again. After a Discord login there is no password to open it with.
+    if (passwordKeys.current) {
+      await keys.openWithPassword(passwordKeys.current, user.id).catch(() => {});
+    }
     passwordKeys.current = null;
     setUser(user);
     const setUp2fa = user.twoFactorRequired && !roleAtLeast(user.role, 'organiser');
@@ -73,12 +81,23 @@ export default function LoginPage() {
     );
   }
 
+  // Not in the chat's login popup on other sites: it hands over a password's keys (embed/).
+  const discord = features.discord && !inEmbedLoginFlow(params);
   return (
     <section className="page">
       <h1>Login</h1>
       <form className="form" onSubmit={onSubmit}>
         {/* Not in the chat's small login popup: there the fields come first. */}
         {!inEmbedLoginFlow(params) && <FormLogo />}
+        <DiscordReason />
+        {discord && (
+          <>
+            <DiscordButton intent="login" next={params.get('next') ?? undefined}>
+              Log in with Discord
+            </DiscordButton>
+            <p className="discord-or">or with your password</p>
+          </>
+        )}
         <FormField label="Username" name="username" type="text" autoComplete="username" required />
         <FormField
           label="Password"

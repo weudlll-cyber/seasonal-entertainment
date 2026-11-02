@@ -147,6 +147,53 @@ from the four season colours (`client/src/chat/ChatMessage.css`).
   former organiser's old messages lose the badge; nothing a client sends can set it.
 - **Room messages only**: direct messages carry no role.
 
+## Rooms for Discord steps
+
+Some rooms are open only from a chosen Discord step on (decided 2026-11-02; steps:
+docs/AUTH.md, "Discord: steps"). An admin sets this per room, on top of its read and write
+levels.
+
+- **The rule** (`room_step_rules`, `server/src/discord/schema.js`): at most one step per ladder;
+  the room lets in anyone who has, in **any one** of those ladders, that step or a higher one
+  ("Holder ≥ Golden, or Farmer ≥ Farmer Silver"). Higher means the order the admins set now:
+  reordering the steps moves the rule along. A room without a rule is open as before. A step a
+  room names cannot be removed (the database refuses it, `ON DELETE RESTRICT`): removing it must
+  never open the room.
+- **Reading and writing alike** follow the rule (`canRead`, `canWrite` in
+  `server/src/chat/viewer.js`; one rule set for HTTP and the WebSocket). **Staff always pass.**
+  Guests have no steps; neither does an account whose Discord link needs a login again, or that
+  is not on the Seasonal Tokens server.
+- **Everywhere the chat decides access**: the room lists, history, sending, uploads, the files
+  of its messages, mentions, the member search's room filter, unread counters, and the live
+  socket: subscribing, and every push, re-check the viewer as they are now. The viewer's steps
+  are computed when a room with a rule asks (`stepsOfUser`, `server/src/discord/steps.js`).
+- **When steps drop** (the daily read, a login, linking or unlinking), the member's open sockets
+  leave every room now closed to them at once (`recheckRooms` in `server/src/chat/hub.js`, through
+  `chat.sessions.stepsChanged`), each told `not_allowed` for that room, and their pages hear
+  `access` to reload their room lists.
+
+## Accounts without a password
+
+An account made with Discord has no password to seal its private key with (docs/AUTH.md,
+"Discord: accounts without a password"; direction decided 2026-10-17 for passwordless logins).
+
+- **Before the first private message** it has no key pair. Where a password account would see
+  "Unlock private messages", it gets a plain choice (`client/src/keys/PasswordlessKeys.jsx`):
+  - **Save a recovery code**: a key pair is made in the browser and sealed with a new recovery
+    code alone. `POST /api/keys` carries the recovery seal along (`recovery: { salt, sealed }`),
+    stored in the same transaction; the stored sealed key is that same recovery seal. The code
+    is shown once, in the recovery dialog (`RecoveryOffer.jsx`, with no way to skip it).
+  - **Set a password**: as on the account page (`POST /api/auth/password/first`). The key pair is
+    then made and sealed for it as at a registration, and the recovery code offered.
+  - One is enough; the other can be added later on the account page. Both need the fresh Discord
+    login the server asks for instead of a password.
+- **On another device** (or after a logout): the recovery code opens the key (nothing to re-seal
+  without a password), or **Confirm on another device** hands it over, or **Start over** makes a
+  new pair with a new recovery code.
+- **A password set later** seals the key that is open on that device in the same request. A
+  device without it open leaves the stored seal as it was; the recovery code opens it there and
+  seals it for the password then (the usual "broken" path).
+
 ## Unread counters
 
 Members (never guests: no account to keep read state) see how many messages they have not read,

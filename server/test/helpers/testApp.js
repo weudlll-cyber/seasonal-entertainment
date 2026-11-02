@@ -34,10 +34,11 @@ const OFFLINE = {
 
 // previewNetwork: the pretend internet for link previews (helpers/previewNet.js);
 // botImageNetwork: the same for the event bot's images (offline unless a test hands one in);
-// callService: a stand-in call service (helpers/calls.js); without one, calls are off.
+// callService: a stand-in call service (helpers/calls.js); without one, calls are off;
+// discordFetch: the pretend Discord (helpers/fakeDiscord.js), with overrides.discord its config.
 export function makeTestApp(
   overrides = {},
-  { previewNetwork, botImageNetwork, callService = null } = {}
+  { previewNetwork, botImageNetwork, callService = null, discordFetch } = {}
 ) {
   const dir = mkdtempSync(path.join(tmpdir(), 'se-test-'));
   const base = readConfig({
@@ -71,6 +72,7 @@ export function makeTestApp(
     previewNetwork: previewNetwork ?? OFFLINE,
     botImageNetwork: botImageNetwork ?? OFFLINE,
     callService,
+    discordFetch: discordFetch ?? (() => Promise.reject(new Error('no Discord in tests'))),
   });
   return {
     app,

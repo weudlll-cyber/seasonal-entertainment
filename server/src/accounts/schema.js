@@ -4,17 +4,21 @@
 // Project:     Seasonal Entertainment
 // Description: Tables of the accounts area: users. Sessions live in the "sessions" table,
 //              which the session store creates itself. migrateAccounts() brings older
-//              databases up.
+//              databases up, including the one-time rebuild that made email and the password
+//              optional for accounts that log in with Discord (SE-DISCORD-1, docs/AUTH.md).
 // ============================================================
 
 import { addMissingColumns } from '../db/addColumns.js';
 
 // username/email: COLLATE NOCASE makes uniqueness case-insensitive in the database itself.
+// email:           NULL for an account made with Discord (no email is asked there; several
+//                  NULLs do not collide under UNIQUE).
 // session_epoch: bumped on every password change or reset; a session stamped with an older
 //                epoch is no longer valid (pattern from the race game).
 // can_start_games: separate permission granted by admins (admins have it implicitly).
 // password_hash:   bcrypt of the auth key the browser derives from the password (docs/AUTH.md,
-//                  "Login key split").
+//                  "Login key split"); NULL for an account without a password (made with
+//                  Discord and none set yet), which then cannot log in with a password.
 // kdf_salt:        the account's random 16-byte salt for that derivation (base64); NULL only
 //                  in a database from before the key split, whose accounts cannot log in any
 //                  more (an admin's password reset gives them a salt).
@@ -28,8 +32,8 @@ export const ACCOUNTS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
   id              INTEGER PRIMARY KEY,
   username        TEXT    NOT NULL UNIQUE COLLATE NOCASE,
-  email           TEXT    NOT NULL UNIQUE COLLATE NOCASE,
-  password_hash   TEXT    NOT NULL,
+  email           TEXT    UNIQUE COLLATE NOCASE,
+  password_hash   TEXT,
   role            TEXT    NOT NULL DEFAULT 'member'
                           CHECK (role IN ('member', 'organiser', 'admin')),
   can_start_games INTEGER NOT NULL DEFAULT 0 CHECK (can_start_games IN (0, 1)),
@@ -47,7 +51,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 // Columns that came later. (A "legacy" flag for accounts from before the key split existed
 // until SE-NIGHT-2; databases made before then still carry the unused column, harmlessly.)
-export const migrateAccounts = (db) =>
+export function migrateAccounts(db) {
   addMissingColumns(db, [
     ['users', 'kdf_salt', 'TEXT'],
     // Existing accounts keep today's behaviour: shown as online.
@@ -57,3 +61,34 @@ export const migrateAccounts = (db) =>
     ['users', 'notify_direct', 'INTEGER NOT NULL DEFAULT 0 CHECK (notify_direct IN (0, 1))'],
     ['users', 'notify_recap', 'INTEGER NOT NULL DEFAULT 0 CHECK (notify_recap IN (0, 1))'],
   ]);
+  relaxEmailAndPassword(db);
+}
+
+// Databases from before Discord logins have email and password_hash NOT NULL. SQLite cannot
+// drop a NOT NULL, so the table is rebuilt once from ACCOUNTS_SCHEMA (the documented 12-step
+// way: foreign keys off, copy, drop, rename, check) with every row and id kept; the other
+// tables' references name "users" and point at the new table afterwards. A database where
+// email is already optional is left alone.
+function relaxEmailAndPassword(db) {
+  const columns = db.prepare('PRAGMA table_info(users)').all();
+  if (!columns.find((c) => c.name === 'email')?.notnull) return;
+  const kept = columns
+    .map((c) => c.name)
+    .filter((name) => name !== 'legacy')
+    .join(', ');
+  db.pragma('foreign_keys = OFF');
+  try {
+    db.transaction(() => {
+      db.exec(
+        ACCOUNTS_SCHEMA.replace('CREATE TABLE IF NOT EXISTS users', 'CREATE TABLE users_new')
+      );
+      db.exec(`INSERT INTO users_new (${kept}) SELECT ${kept} FROM users`);
+      db.exec('DROP TABLE users');
+      db.exec('ALTER TABLE users_new RENAME TO users');
+      const broken = db.pragma('foreign_key_check');
+      if (broken.length) throw new Error(`users rebuild broke ${broken.length} references`);
+    })();
+  } finally {
+    db.pragma('foreign_keys = ON');
+  }
+}

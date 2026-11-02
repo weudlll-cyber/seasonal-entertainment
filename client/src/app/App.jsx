@@ -32,8 +32,8 @@ import { lazyPage } from './staleChunks.js';
 // Loaded when first opened, each as its own chunk, so the first page of a visit does not wait
 // for them (docs/DESIGN.md, "Speed"): the call page with the call service's client, the
 // prices page with its chart, info pages with the Markdown renderer, the admin area, the
-// organisers' Site banner page, Manage events (the event bot's admin page) and the embedded
-// chat. Layout and AdminLayout hold the boundaries (LazyBoundary) around their outlets. lazyPage reloads the page once when a part's file is gone after an update
+// organisers' Site banner page, Manage events (the event bot's admin page), the embedded
+// chat and the last step of a Discord sign-up. Layout and AdminLayout hold the boundaries (LazyBoundary) around their outlets. lazyPage reloads the page once when a part's file is gone after an update
 // (staleChunks.js).
 const AdminAuditPage = lazyPage(() => import('../admin/AdminAuditPage.jsx'));
 const AdminChatMediaPage = lazyPage(() => import('../admin/AdminChatMediaPage.jsx'));
@@ -46,6 +46,7 @@ const AdminSettingsPage = lazyPage(() => import('../admin/AdminSettingsPage.jsx'
 const AdminUsersPage = lazyPage(() => import('../admin/AdminUsersPage.jsx'));
 const BannerPage = lazyPage(() => import('../pages/BannerPage.jsx'));
 const CallPage = lazyPage(() => import('../pages/CallPage.jsx'));
+const DiscordSignupPage = lazyPage(() => import('../pages/DiscordSignupPage.jsx'));
 const RecordingsPage = lazyPage(() => import('../pages/RecordingsPage.jsx'));
 const StartPage = lazyPage(() => import('../pages/StartPage.jsx'));
 const EmbedChatPage = lazyPage(() => import('../embed/EmbedChatPage.jsx'));
@@ -102,6 +103,7 @@ export default function App() {
               <Route path="calls/:id" element={<CallPage />} />
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<RegisterPage />} />
+              <Route path="register/discord" element={<DiscordSignupPage />} />
               <Route
                 path="account"
                 element={

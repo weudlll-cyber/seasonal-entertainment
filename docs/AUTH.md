@@ -10,6 +10,8 @@ from the race game's `docs/AUTH.md` are marked _(race game)_.
   guests have no account and no stored role.
 - **"Can start games"** is a separate flag on the account, granted by admins; admins have it
   implicitly (`canStartGames` in the session answer is true for every admin).
+- **Two ways in** (decided 2026-11-02): Discord, the primary one (an account made with it has no
+  email and no password until it sets one; "Discord" below), and username and password.
 - **Registration is open to everyone** (decided 2026-10-16; admins can close it with the
   "Registration open" setting, docs/SETTINGS.md: the page and the route then say "Registration is
   closed at the moment.", while the first admin's bootstrap still works): username, email, password
@@ -108,10 +110,10 @@ registration, password change, unlock or recovery runs, its button reads **Check
     with a key.
   - Tests: `server/test/keyHandover.test.js`, `client/src/keys/deviceHandover.test.jsx`,
     `shared/crypto.test.js`.
-- **Telegram logins (decided direction, 2026-10-17; not built)**: recovery codes are to apply to
-  future Telegram logins too — an account that logs in through Telegram has no password to derive
-  a wrapping key from, so its private key needs the recovery code (or a start-over) to open on a
-  device. Open in docs/BACKLOG.md.
+- **Logins without a password** (direction decided 2026-10-17 for Telegram, built 2026-11-02 for
+  Discord; Telegram login is not planned any more): an account made with Discord has no password
+  to derive a wrapping key from. Before its first private message it chooses a recovery code or a
+  password to protect the key (docs/CHAT.md, "Accounts without a password").
 
 **Server-side checks lost** (they need the password): minimum length (10 characters) and maximum
 length (72 bytes) of a new password — on registration, own password change, admin reset and
@@ -153,6 +155,87 @@ rate limit, the lockout, locked accounts, the session epoch.
 - **Open chat sockets follow the account:** logout closes that session's chat WebSocket; a role,
   lock or password change closes the account's sockets (except the session making its own
   change); and every push re-checks the account (`server/src/chat/hub.js`).
+
+## Discord (SE-DISCORD-1, decided 2026-11-02)
+
+Discord is the primary login. Username and password registration stays for people without
+Discord; they have no steps. Telegram login is not planned any more. Code: `server/src/discord/`,
+`client/src/discord/`. The probe of 2026-11-02 found how Discord behaves; what follows relies on
+it.
+
+**Set up** with `DISCORD_CLIENT_ID`, `DISCORD_GUILD_ID` (the Seasonal Tokens server, 902220302199689266) and the client secret, given as `DISCORD_CLIENT_SECRET` or in the file named
+by `DISCORD_CLIENT_SECRET_FILE` (`server/src/discord/config.js`). All three or none. With none,
+the feature is off: no Discord button, and every `/api/auth/discord` path answers 404. The
+session answer says which (`features.discord`). The redirect is `DISCORD_REDIRECT_URI`, or
+`PUBLIC_ORIGIN` + `/api/auth/discord/callback`. It must be registered at Discord character for
+character: in the probe, invisible leading spaces in the portal broke it.
+
+**The flow** (`server/src/discord/routes.js`):
+
+- `GET /api/auth/discord/start?intent=login|link|confirm&next=/path` keeps a fresh `state` and
+  PKCE verifier in the session and sends the browser to Discord's consent page. It asks for the
+  scopes `identify` and `guilds.members.read` only: no `guilds` (it would list all of a member's
+  servers) and no `email`. There is no bot on the server.
+- `GET /api/auth/discord/callback` checks the state in constant time, once (the flow is deleted
+  from the session before anything else), within 10 minutes and for the same account that
+  started it. It trades the code with the verifier and reads `/users/@me`, keeping the id and the
+  name only. Then, by intent:
+  - **login**: the linked account is logged in under the password login's rules: a locked
+    account is refused, and an account with 2FA gets the second step (the page then shows
+    the code form at once, `/login?discord=2fa`). Without a linked account, it starts a
+    **sign-up**.
+  - **link**: the signed-in account is linked. A Discord user linked to another account is
+    refused (`?discord=taken`, and the database's UNIQUE on `discord_id` as well), and so is a
+    second Discord user for an account that has one (`other_user`).
+  - **confirm**: proves that it is the account's own Discord user (next section).
+- Every login and link also reads the member's roles, with the tokens just given (next
+  section, "Discord: steps").
+- Failures go back to the page with `?discord=<reason>` (`expired`, `denied`, `failed`,
+  `locked`, `closed`, `taken`, `other_user`, `not_linked`, `too_many`;
+  `client/src/discord/discordLinks.js` says them in words). They count on the login's per-IP
+  limit for failed attempts. A refused consent does not count.
+- **Sign-up** (`/register/discord`, `client/src/pages/DiscordSignupPage.jsx`): the server holds
+  the Discord user for 15 minutes, with the refresh token sealed. The page offers a username: the
+  Discord name made to fit the site's rules, with a number when it is taken
+  (`server/src/discord/username.js`). The member may change it, and must confirm their age as on
+  every registration. `POST /api/auth/discord/register` creates the account (no email, no
+  password: both columns are optional since 2026-11-02; older databases get the users table
+  rebuilt once, `relaxEmailAndPassword` in `server/src/accounts/schema.js`) and its link in one
+  transaction, and logs it in. It shares the registration's rate limit, and is refused while
+  registration is closed.
+- **Unlink** (`DELETE /api/auth/discord`, the account page): only for an account with a
+  password, proven with it. An account without one would have no way to log in, so it is told
+  to set a password first. The refresh token is revoked at Discord. Revoking it ends the whole
+  grant, which is why older refresh tokens are never revoked one by one.
+- Only the Discord user id (unique), its name and the role ids are stored, never an email. The
+  client secret and the tokens never reach a browser or a log. The secret goes only to Discord,
+  in the token calls' `Authorization` header.
+- Tests: `server/test/discordLogin.test.js`, against the pretend Discord
+  (`server/test/helpers/fakeDiscord.js`, which behaves as the probe found: codes bound to their
+  PKCE challenge, rotating refresh tokens, 10004); `server/test/accountsRebuild.test.js`;
+  `client/src/discord/discordPages.test.jsx`.
+
+### Discord: accounts without a password
+
+An account made with Discord has no password, so "enter your password again" cannot apply to
+it. It proves itself with a **fresh Discord login** instead: the callback (`intent=confirm`, or
+any Discord login on this session) stamps `discordProofAt` in the session, valid 10 minutes
+(`server/src/accounts/identityProof.js`). The session answer carries `discordProofUntil`, so the
+page can ask for it in time (`client/src/discord/DiscordConfirmGate.jsx`, "Confirm with
+Discord", which comes back to the same page). This proof stands in for the password where the
+password is asked: creating or changing the keys (`/api/keys`), setting a first password, and
+deleting the account. A taken-over session alone can do none of these.
+
+- **A first password** (`POST /api/auth/password/first`, the account page's "Set a password"):
+  only for an account without one, after the proof. It is sent as a salt and auth key like any
+  password. The private key, when this device has it open, is sealed for it in the same
+  transaction. Every other session ends, as after a password change. From then on the account
+  logs in either way, can unlink Discord and can turn on 2FA, which needs a password.
+- **The private-message key**: docs/CHAT.md, "Accounts without a password".
+- **Deleting** the account needs the proof instead of the password (an account without a
+  password has no 2FA either).
+- Staff roles are given by the owner only. Staff need 2FA, so an account made with Discord sets a
+  password before it can act as staff.
 
 ## Embed tokens (the chat on approved other sites)
 

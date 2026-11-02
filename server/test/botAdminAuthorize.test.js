@@ -199,9 +199,9 @@ describe('changes: the Origin rule and the audit log', () => {
 describe('the session answer', () => {
   it('says whether the bot admin page is set up', async () => {
     t = makeTestApp({ botAdminEmbedded: true });
-    expect((await t.client().get('/api/auth/session')).body.features).toEqual({ botAdmin: true });
+    expect((await t.client().get('/api/auth/session')).body.features.botAdmin).toBe(true);
     t.close();
     t = makeTestApp();
-    expect((await t.client().get('/api/auth/session')).body.features).toEqual({ botAdmin: false });
+    expect((await t.client().get('/api/auth/session')).body.features.botAdmin).toBe(false);
   });
 });

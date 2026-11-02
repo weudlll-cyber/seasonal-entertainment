@@ -10,7 +10,9 @@
 //              Afterwards it returns to the page that sent the visitor (?next=, e.g. the
 //              embedded chat's login popup), like the login page (session/nextPage.js). The card
 //              shows the logo (FormLogo.jsx), except in the chat's login popup. While the
-//              "Registration open" setting is off, the page says registration is closed.
+//              "Registration open" setting is off, the page says registration is closed. While
+//              Discord login is set up, "Sign up with Discord" comes first (no email or password
+//              needed there; DiscordSignupPage.jsx finishes it).
 // ============================================================
 
 import { useState } from 'react';
@@ -31,9 +33,10 @@ import { keysForNewPassword } from '../session/credentials.js';
 import { inEmbedLoginFlow, safeNext, withNext } from '../session/nextPage.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { BusyButton } from '../components/BusyButton.jsx';
+import DiscordButton from '../discord/DiscordButton.jsx';
 
 export default function RegisterPage() {
-  const { setUser, settings } = useSession();
+  const { setUser, settings, features } = useSession();
   const keys = useKeys();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -95,6 +98,14 @@ export default function RegisterPage() {
       <form className="form" onSubmit={onSubmit} noValidate>
         {/* Not in the chat's small login popup: there the fields come first. */}
         {!inEmbedLoginFlow(params) && <FormLogo />}
+        {features.discord && !inEmbedLoginFlow(params) && (
+          <>
+            <DiscordButton intent="login" next={params.get('next') ?? undefined}>
+              Sign up with Discord
+            </DiscordButton>
+            <p className="discord-or">or with email and a password (no Discord steps)</p>
+          </>
+        )}
         <FormField
           label="Username"
           name="username"

@@ -98,6 +98,11 @@ commit, which the client build carries for the update notice):
 | `PRICE_BOT_MINING_RATES`            | (unset: no fair price, no mining times)       | the price bot's `mining_rates.json`, read-only (docs/BOTS.md)             |
 | `COINGECKO_API_KEY`                 | (unset: ETH, POL, BTC not connected)          | CoinGecko Demo key: the server fetches ETH/POL/BTC history (docs/BOTS.md) |
 | `BOT_ADMIN_EMBEDDED`                | (unset: off; `1` on)                          | embeds the event bot's admin page at `/bot-admin/` (docs/BOTS.md)         |
+| `DISCORD_CLIENT_ID`                 | (unset: Discord login off)                    | the Discord application's client id (docs/AUTH.md, "Discord")             |
+| `DISCORD_GUILD_ID`                  | (unset: Discord login off)                    | the Seasonal Tokens Discord server whose roles are read                   |
+| `DISCORD_CLIENT_SECRET`             | (unset: Discord login off)                    | the application's client secret (or the file below)                       |
+| `DISCORD_CLIENT_SECRET_FILE`        | (unset)                                       | a file holding the client secret (the installer's way)                    |
+| `DISCORD_REDIRECT_URI`              | `PUBLIC_ORIGIN/api/auth/discord/callback`     | the callback registered at Discord, exactly                               |
 
 Four of these are only the start of a site setting since 2026-10-23 (`CHAT_RETENTION_DAYS`,
 `CHAT_MAX_CONNECTIONS_PER_MEMBER`, `CHAT_MAX_GUEST_CONNECTIONS_PER_IP`, `LINK_PREVIEWS`): an
@@ -137,8 +142,8 @@ would have to rebuild all of that; react-router is the maintained standard for R
   who sees the staff items (Admin for admins, Site banner for organisers, Manage events for both
   while the server has `features.botAdmin`), legal links, admin sections.
 - What the server is set up for reaches the client with the session answer
-  (`GET /api/auth/session`: `features`, e.g. `features.botAdmin`; `SessionContext.jsx`), never as
-  a build-time value.
+  (`GET /api/auth/session`: `features`, e.g. `features.botAdmin`, `features.discord`;
+  `SessionContext.jsx`), never as a build-time value.
 - `main.jsx` supplies `BrowserRouter`; tests supply `MemoryRouter`.
 
 ## Info pages and user-written content
@@ -431,7 +436,11 @@ client/                    React + Vite client
                            pages/RecordingsPage.jsx)
   src/keys/                a member's key pair in the browser: provider, device copy
                            (IndexedDB), unlock, recovery code, unlocking a new device from
-                           an unlocked one (docs/CHAT.md, AUTH.md)
+                           an unlocked one, the choice of an account without a password
+                           (PasswordlessKeys) (docs/CHAT.md, AUTH.md)
+  src/discord/             the Discord login in the browser: start links and reasons, the
+                           button, the confirm gate of accounts without a password, the
+                           account page's Discord section, the first password (docs/AUTH.md)
   src/notify/              browser notifications while the site is open: permission, the
                            switches, mentions, direct messages, the weekly recap (docs/CHAT.md)
   src/games/               the games hub's card images
@@ -452,6 +461,10 @@ server/
                            loginRoutes.js, pre-login and login), credentials, bootstrap,
                            account deletion (deletion.js; own deletion: deleteRoutes.js)
   src/twofa/               two-factor area: TOTP, schema, store, routes, staff gate
+  src/discord/             Discord login and steps (docs/AUTH.md, "Discord"): config, the API
+                           calls, schema and link store, the sealed refresh token, the role
+                           read and daily job (refresh.js), steps and their seed, the routes
+                           under /api/auth/discord, the handle app.js builds (index.js)
   src/keys/                members' keys: public keys, sealed private keys, recovery seal
   src/audit/               audit log: schema and the one recordAudit helper
   src/admin/               /api/admin routes (users, audit); areas add their own editors

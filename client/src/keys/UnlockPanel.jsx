@@ -8,6 +8,7 @@
 //              longer opens it (an admin reset it, or it was forgotten and reset): the recovery
 //              code, if one exists, and always "Start over without my old messages". Besides
 //              the password and the recovery code: "Confirm on another device" (DeviceUnlock).
+//              An account without a password (made with Discord) gets PasswordlessKeys instead.
 // ============================================================
 
 import { useState } from 'react';
@@ -17,9 +18,14 @@ import { useSession } from '../session/SessionContext.jsx';
 import { useKeys } from './KeyContext.jsx';
 import { BusyButton } from '../components/BusyButton.jsx';
 import DeviceUnlock from './DeviceUnlock.jsx';
+import PasswordlessKeys from './PasswordlessKeys.jsx';
 
 export default function UnlockPanel() {
   const { user } = useSession();
+  return user.hasPassword ? <PasswordUnlock user={user} /> : <PasswordlessKeys />;
+}
+
+function PasswordUnlock({ user }) {
   const keys = useKeys();
   // The keys of the password typed last: recovery and start-over need them again.
   const [passwordKeys, setPasswordKeys] = useState(null);

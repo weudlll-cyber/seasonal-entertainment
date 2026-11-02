@@ -1,0 +1,37 @@
+/* ============================================================
+   File:        Discord.css
+   Path:        client/src/discord/Discord.css
+   Project:     Seasonal Entertainment
+   Description: The Discord parts of the account pages: the start button (a link styled as the
+                site's button; no Discord brand colours, the site's own tokens), the "or" line
+                between it and the password form, and the account page's Discord section.
+   ============================================================ */
+
+.discord-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.discord-or {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.discord-or::before,
+.discord-or::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--color-border);
+}
+
+.discord-section__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+}

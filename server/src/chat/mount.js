@@ -48,8 +48,10 @@ import { attachChatSocket } from './socket.js';
 import { unreadRoutes } from './unreadRoutes.js';
 
 // Public media file names: <32 hex>.<ext> at the top (library) or in previews/.
-// Library files, link-preview images and the event bot's images (bots/images.js).
-const PUBLIC_MEDIA = /^\/(?:previews\/|bot-images\/)?[0-9a-f]{32}\.(?:webp|png|gif|jpg)$/;
+// Library files, link-preview images, the event bot's images (bots/images.js) and the Discord
+// steps' icons (step-icons/, discord/adminRoutes.js).
+const PUBLIC_MEDIA =
+  /^\/(?:previews\/|bot-images\/|step-icons\/)?[0-9a-f]{32}\.(?:webp|png|gif|jpg)$/;
 
 // app: the Express app (chat media files are served at /media); api: the /api router, after
 // sessions, current user and the 2FA gate; sessionParser: the session middleware, reused on
@@ -128,6 +130,8 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
       },
       // Embed tokens ended (embed/): { tokenId } | { origin } | { userId } — their sockets close.
       embedRevoked: (which) => hub.disconnectEmbeds(which),
+      // A member's Discord steps changed (discord/): their sockets leave rooms now closed to them.
+      stepsChanged: (userId) => hub.recheckRooms(userId),
     },
     // For deleting an account (accounts/deletion.js): chatAccounts above.
     accounts: chatAccounts(db, config),

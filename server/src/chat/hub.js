@@ -113,6 +113,25 @@ export class ChatHub {
     }
   }
 
+  // An account's Discord steps changed (discord/refresh.js, a link or unlink): its sockets leave
+  // every room it may no longer read (a room for higher steps, docs/CHAT.md), each told
+  // "not_allowed" for that room, and its pages hear "access" to reload their room lists.
+  recheckRooms(userId) {
+    for (const [roomId, sockets] of this.rooms) {
+      const room = findRoom(this.db, roomId);
+      for (const socket of sockets) {
+        if (this.sessions.get(socket)?.data.userId !== userId) continue;
+        const viewer = this.viewerOf(socket);
+        if (viewer && room && canRead(room, viewer)) continue;
+        sockets.delete(socket);
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: 'error', error: 'not_allowed', room: room?.slug }));
+        }
+      }
+    }
+    this.sendToUser(userId, { type: 'access' });
+  }
+
   // All sockets of an account, except those of the session `keepSessionId` (the session
   // making its own change stays connected; its rights are re-checked on every push anyway).
   disconnectUser(userId, keepSessionId) {

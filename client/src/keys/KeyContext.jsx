@@ -13,7 +13,9 @@
 //              copy (storage there is partitioned), handed over by the login popup (adopt), and
 //              gone the moment the member is (logout, token refused) or the page closes. A key
 //              handed over by another device of the member (DeviceUnlock.jsx) is kept like one
-//              the password opened.
+//              the password opened. hasKey: whether the account has a key pair at all (an account
+//              made with Discord has none until it chooses how to protect it, docs/CHAT.md,
+//              "Accounts without a password": setUpWithRecoveryCode or setUpWithPassword).
 // ============================================================
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
@@ -23,17 +25,18 @@ import { clearDeviceKey, loadDeviceKey, saveDeviceKey } from './deviceKey.js';
 import * as actions from './keyActions.js';
 
 const KeyContext = createContext(null);
-const NONE = { status: 'none', keyId: null, privateKey: null, hasRecovery: false };
+const NONE = { status: 'none', keyId: null, privateKey: null, hasRecovery: false, hasKey: false };
 
 // The account's key and this device's copy: unlocked only when both agree.
 async function loadState(forUser) {
   const key = await actions.fetchKey();
   const device = key && (await loadDeviceKey(forUser));
   const hasRecovery = Boolean(key?.recovery);
+  const hasKey = Boolean(key);
   if (device && device.keyId === key.keyId) {
-    return { ...NONE, status: 'unlocked', ...device, hasRecovery, forUser };
+    return { ...NONE, status: 'unlocked', ...device, hasRecovery, hasKey, forUser };
   }
-  return { ...NONE, status: 'locked', hasRecovery, forUser };
+  return { ...NONE, status: 'locked', hasRecovery, hasKey, forUser };
 }
 
 // status: 'none' (guest), 'loading', 'locked', 'broken' or 'unlocked'. The stored state names
@@ -45,7 +48,8 @@ export function KeyProvider({ children }) {
   // undefined while the session is still loading: that is not a logout.
   const guest = user === null;
   const [stored, setStored] = useState({ ...NONE, forUser: null });
-  // The recovery-code offer: { forUser, authKey } of the flow that just made a key pair.
+  // The recovery-code offer: { forUser, authKey } of the flow that just made a key pair, or
+  // { forUser, code } with the code an account without a password just made (shown once).
   const [offer, setOffer] = useState(null);
   const set = (forUser, next) => setStored({ ...NONE, ...next, forUser });
 
@@ -66,7 +70,7 @@ export function KeyProvider({ children }) {
   // A private key is open: keep it here and on this device.
   const unlocked = useCallback(async (forUser, { keyId, privateKey }, hasRecovery) => {
     if (!isForeignEmbed()) await saveDeviceKey(forUser, keyId, privateKey);
-    set(forUser, { status: 'unlocked', keyId, privateKey, hasRecovery });
+    set(forUser, { status: 'unlocked', keyId, privateKey, hasRecovery, hasKey: true });
   }, []);
 
   // passwordKeys: { authKey, wrapKey } from a password just typed (session/credentials.js).
@@ -75,7 +79,7 @@ export function KeyProvider({ children }) {
     async (passwordKeys, forUser = userId) => {
       const result = await actions.openWithPassword(passwordKeys);
       if (result.status === 'broken') {
-        set(forUser, { status: 'broken', hasRecovery: result.hasRecovery });
+        set(forUser, { status: 'broken', hasRecovery: result.hasRecovery, hasKey: true });
       } else {
         await unlocked(forUser, result, result.hasRecovery);
         if (result.created) setOffer({ forUser, authKey: passwordKeys.authKey });
@@ -94,7 +98,10 @@ export function KeyProvider({ children }) {
       keyId: state.keyId,
       privateKey: state.privateKey,
       hasRecovery: state.hasRecovery,
+      hasKey: state.hasKey,
       offerRecovery: userId !== null && offer?.forUser === userId,
+      // A recovery code already made (an account without a password), to show at once.
+      newCode: userId !== null && offer?.forUser === userId ? (offer.code ?? null) : null,
       // Closing the offer also forgets the auth key it held.
       dismissRecoveryOffer: () => setOffer(null),
       openWithPassword,
@@ -114,6 +121,21 @@ export function KeyProvider({ children }) {
       async startOver(passwordKeys) {
         await unlocked(userId, await actions.startOver(passwordKeys), false);
         setOffer({ forUser: userId, authKey: passwordKeys.authKey });
+      },
+      // An account without a password: a key pair protected by a recovery code alone (kind
+      // 'first', or 'replace' to start over). Returns the code, to be shown once.
+      // The code is shown once in the recovery dialog (RecoveryOffer.jsx, newCode below): this
+      // panel is gone the moment the key is unlocked.
+      async setUpWithRecoveryCode(kind = 'first') {
+        const result = await actions.newPairWithRecoveryCode(kind);
+        await unlocked(userId, result, true);
+        setOffer({ forUser: userId, code: result.code });
+      },
+      // An account without a password sets one: it seals the key from then on (made now when
+      // there is none yet, with the recovery-code offer as after a registration).
+      async setUpWithPassword(password) {
+        const passwordKeys = await actions.setFirstPassword(password, state.privateKey);
+        if (!state.hasKey) await openWithPassword(passwordKeys);
       },
       // authKey: the current password's; without one, the offer's (the flow that made the key).
       async createRecoveryCode(authKey = offer?.authKey) {
