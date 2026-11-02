@@ -151,5 +151,5 @@ jobs:
           docker run --rm -v "$PWD:/mnt" -w /mnt koalaman/shellcheck:v0.10.0 -x
           deploy/install.sh deploy/install/lib/*.sh deploy/install/certbot-hook.sh
           deploy/site/calls-cert.sh deploy/test/run.sh deploy/test/checks.sh
-          deploy/test/prepare-nginx.sh deploy/test/prepare-ufw.sh
+          deploy/test/checks-bot-admin.sh deploy/test/prepare-nginx.sh deploy/test/prepare-ufw.sh
           deploy/pc/get-seasonal-backups.sh deploy/pc/get-seasonal-backups.test.sh

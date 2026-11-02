@@ -11,9 +11,11 @@
 #              a typo removed by backspace and a confirmation that differs, then both right; the
 #              installer must say why and ask again each time, never stop. The CoinGecko key is
 #              answered empty when asked; TEST_COINGECKO=ask requires the question (a first
-#              answer), TEST_COINGECKO=never forbids it (an empty answer is remembered). Exits
-#              with the installer's own exit code (1 when a mistake was not answered by a new
-#              question, or the CoinGecko question was missing or came again).
+#              answer), TEST_COINGECKO=never forbids it (an empty answer is remembered). The
+#              event bot's admin page question likewise: answered empty, required or forbidden
+#              by TEST_BOT_ADMIN (ask|never|any). Exits with the installer's own exit code (1
+#              when a mistake was not answered by a new question, or the CoinGecko or bot admin
+#              question was missing or came again).
 #              Usage: run-installer.exp <installer> [options]
 # ============================================================
 
@@ -27,6 +29,8 @@ set told_short 0
 set told_differ 0
 set coingecko [expr {[info exists env(TEST_COINGECKO)] ? $env(TEST_COINGECKO) : "any"}]
 set coingecko_asked 0
+set bot_admin [expr {[info exists env(TEST_BOT_ADMIN)] ? $env(TEST_BOT_ADMIN) : "any"}]
+set bot_admin_asked 0
 spawn {*}$argv
 expect {
   "Password for" {
@@ -52,6 +56,8 @@ expect {
   }
   # Asked on a terminal until answered once: none.
   "CoinGecko Demo API key" { set coingecko_asked 1; send -- "\r"; exp_continue }
+  # nginx mode, until answered once: none (the scenario configures the bot by answers file).
+  "The event bot's admin page to embed" { set bot_admin_asked 1; send -- "\r"; exp_continue }
   "at least 10 characters long" { set told_short 1; exp_continue }
   "passwords differ" { set told_differ 1; exp_continue }
   timeout { puts "\[test\] the installer took longer than an hour"; exit 1 }
@@ -69,6 +75,14 @@ if {$coingecko eq "never" && $coingecko_asked} {
 }
 if {$coingecko eq "ask" && !$coingecko_asked} {
   puts "\[test\] FAIL the CoinGecko key was not asked"
+  exit 1
+}
+if {$bot_admin eq "never" && $bot_admin_asked} {
+  puts "\[test\] FAIL the event bot's admin page was asked again after an empty answer"
+  exit 1
+}
+if {$bot_admin eq "ask" && !$bot_admin_asked} {
+  puts "\[test\] FAIL the event bot's admin page was not asked"
   exit 1
 }
 exit $status

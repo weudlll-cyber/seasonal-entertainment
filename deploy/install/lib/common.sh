@@ -7,7 +7,8 @@
 #              messages, stopping with a reason and the rollback command, long steps with a
 #              "still working" line instead of a silent pause, questions on the terminal (with
 #              an explanation shown only when really asked; secrets echoed as one * per
-#              character), KEY=VALUE files read without executing them and edited key by key,
+#              character), KEY=VALUE files read without executing them and edited key by key
+#              (from someone else's file, such as the event bot's, only the one key asked for),
 #              and the installer's own state in /etc/seasonal/.
 # ============================================================
 
@@ -162,26 +163,52 @@ retry() {
   done
 }
 
+# kv_parse_line LINE: sets KV_KEY and KV_VALUE (surrounding quotes removed) from a KEY=VALUE
+# line; returns 1 for a blank or # comment line, 2 for anything else.
+kv_parse_line() {
+  local line="${1%$'\r'}"
+  [[ "$line" =~ ^[[:space:]]*(#|$) ]] && return 1
+  [[ "$line" =~ ^([A-Z_][A-Z0-9_]*)=(.*)$ ]] || return 2
+  KV_KEY="${BASH_REMATCH[1]}"
+  KV_VALUE="${BASH_REMATCH[2]}"
+  KV_VALUE="${KV_VALUE#\"}" && KV_VALUE="${KV_VALUE%\"}"
+  KV_VALUE="${KV_VALUE#\'}" && KV_VALUE="${KV_VALUE%\'}"
+}
+
 # Reads KEY=VALUE lines into variables, only for the keys listed: a file is data, never code.
 # Blank lines and # comments are skipped; surrounding quotes are removed.
 read_kv_file() {
-  local file="$1" line key value
+  local file="$1" line status
   shift
   [[ -r "$file" ]] || die "cannot read $file"
   while IFS= read -r line || [[ -n "$line" ]]; do
-    line="${line%$'\r'}"
-    [[ "$line" =~ ^[[:space:]]*(#|$) ]] && continue
-    [[ "$line" =~ ^([A-Z_][A-Z0-9_]*)=(.*)$ ]] || die "$file: not KEY=VALUE: $line"
-    key="${BASH_REMATCH[1]}"
-    value="${BASH_REMATCH[2]}"
-    value="${value#\"}" && value="${value%\"}"
-    value="${value#\'}" && value="${value%\'}"
-    if [[ " $* " == *" $key "* ]]; then
-      printf -v "$key" '%s' "$value"
+    kv_parse_line "$line" || {
+      status=$?
+      ((status == 1)) && continue
+      die "$file: not KEY=VALUE: ${line%$'\r'}"
+    }
+    if [[ " $* " == *" $KV_KEY "* ]]; then
+      printf -v "$KV_KEY" '%s' "$KV_VALUE"
     else
-      die "$file: unknown key $key"
+      die "$file: unknown key $KV_KEY"
     fi
   done <"$file"
+}
+
+# read_kv_key FILE KEY VAR: VAR gets KEY's value from someone else's KEY=VALUE file (such as a
+# bot's env file, which may hold "export KEY=..." and lines of its own), the last one if KEY
+# repeats, empty if it is missing. Only that key is taken; the file is never executed, and
+# nothing from it is printed, since its other lines may hold secrets too.
+read_kv_key() {
+  local file="$1" key="$2" var="$3" line found=""
+  [[ -r "$file" ]] || die "cannot read $file"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line#"${line%%[![:space:]]*}"}"
+    kv_parse_line "${line#export }" || continue
+    [[ "$KV_KEY" != "$key" ]] || found="$KV_VALUE"
+  done <"$file"
+  KV_VALUE=""
+  printf -v "$var" '%s' "$found"
 }
 
 # kv_get FILE KEY: the value of KEY in a KEY=VALUE file, or empty.
@@ -219,9 +246,12 @@ new_secret() {
 # The answers the installer remembers (no secrets): written after every successful step.
 # COINGECKO is "none" once the CoinGecko key was declined (the key itself lives in site.env
 # only); KEY_NOTE is "pending" until the KEEP SAFE note for the 2FA key was shown once.
+# BOT_ADMIN_URL is the event bot's admin page or "none" (bot-admin.sh); BOT_ADMIN_TOKEN_FILE and
+# BOT_ADMIN_TOKEN_KEY say where its token is read from, never the token itself.
 STATE_KEYS="MODE SITE_DOMAIN WWW_REDIRECT CALLS_DOMAIN RECORDING ACME_EMAIL ADMIN_NAME
 ADMIN_EMAIL PRICE_BOT_DB PRICE_BOT_MINING_RATES EVENT_BOT_DB BACKUP_RECIPIENT ACME_SERVER
-ACME_CA_BUNDLE ADMIN_DONE INSTALL_DIR NGINX_CONF_STYLE COINGECKO KEY_NOTE"
+ACME_CA_BUNDLE ADMIN_DONE INSTALL_DIR NGINX_CONF_STYLE COINGECKO KEY_NOTE BOT_ADMIN_URL
+BOT_ADMIN_TOKEN_FILE BOT_ADMIN_TOKEN_KEY"
 
 save_state() {
   local key

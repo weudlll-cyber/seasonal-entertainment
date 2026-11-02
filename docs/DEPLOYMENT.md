@@ -49,18 +49,19 @@ run (see "Rollback").
 
 ### What it asks
 
-| Question                         | Answers-file key                                         | Notes                                                                     |
-| -------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------- |
-| The site's domain                | `SITE_DOMAIN`                                            | e.g. `example.org`                                                        |
-| Should www redirect to it?       | `WWW_REDIRECT`                                           | `yes`/`no`; `www.example.org` then needs its own A record                 |
-| The call service's domain        | `CALLS_DOMAIN`                                           | e.g. `calls.example.org`; empty: no calls (explained below)               |
-| Record calls?                    | `RECORDING`                                              | `yes`/`no`; only with calls (explained below; docs/CALLS.md, "Recording") |
-| Email for Let's Encrypt          | `ACME_EMAIL`                                             | certificate notices                                                       |
-| The bots' files                  | `PRICE_BOT_DB`, `PRICE_BOT_MINING_RATES`, `EVENT_BOT_DB` | paths on this server; empty: that data source stays off (docs/BOTS.md)    |
-| The age public key for backups   | `BACKUP_RECIPIENT`                                       | `age1…`; empty: add later with `--backups` (see "Backups")                |
-| CoinGecko Demo API key           | —                                                        | hidden, on a terminal, once; empty: no prices; later with `--coingecko`   |
-| The first admin's name and email | `ADMIN_NAME`, `ADMIN_EMAIL`                              | asked at the end                                                          |
-| The first admin's password       | —                                                        | **always** typed on the terminal, shown as `*`; never from a file or flag |
+| Question                         | Answers-file key                                               | Notes                                                                                                  |
+| -------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| The site's domain                | `SITE_DOMAIN`                                                  | e.g. `example.org`                                                                                     |
+| Should www redirect to it?       | `WWW_REDIRECT`                                                 | `yes`/`no`; `www.example.org` then needs its own A record                                              |
+| The call service's domain        | `CALLS_DOMAIN`                                                 | e.g. `calls.example.org`; empty: no calls (explained below)                                            |
+| Record calls?                    | `RECORDING`                                                    | `yes`/`no`; only with calls (explained below; docs/CALLS.md, "Recording")                              |
+| Email for Let's Encrypt          | `ACME_EMAIL`                                                   | certificate notices                                                                                    |
+| The bots' files                  | `PRICE_BOT_DB`, `PRICE_BOT_MINING_RATES`, `EVENT_BOT_DB`       | paths on this server; empty: that data source stays off (docs/BOTS.md)                                 |
+| The age public key for backups   | `BACKUP_RECIPIENT`                                             | `age1…`; empty: add later with `--backups` (see "Backups")                                             |
+| CoinGecko Demo API key           | —                                                              | hidden, on a terminal, once; empty: no prices; later with `--coingecko`                                |
+| The event bot's admin page       | `BOT_ADMIN_URL`, `BOT_ADMIN_TOKEN_FILE`, `BOT_ADMIN_TOKEN_KEY` | nginx mode only; empty: none, not asked again; later with `--bot-admin` ("The event bot's admin page") |
+| The first admin's name and email | `ADMIN_NAME`, `ADMIN_EMAIL`                                    | asked at the end                                                                                       |
+| The first admin's password       | —                                                              | **always** typed on the terminal, shown as `*`; never from a file or flag                              |
 
 Before the calls question, the installer explains on the terminal what calls are (voice and
 video rooms on the site: a stage with up to 10 speakers and up to 200 listeners), what they need
@@ -103,6 +104,10 @@ An empty value in the file does not remove a remembered answer.
 To set the CoinGecko key later (or change it), run `sudo ./deploy/install.sh --coingecko`: a
 re-run that asks for the key again on the terminal. Enter there removes a stored key. It also
 goes with `--update` (`--update --coingecko`), not with `--yes`.
+
+To embed the event bot's admin page later, or change or remove it, run
+`sudo ./deploy/install.sh --bot-admin`, or give its keys in an answers file ("The event bot's
+admin page").
 
 ### What it does
 
@@ -195,6 +200,83 @@ one before the run. If it changed, the previous files come back, nginx reloads, 
 with both fingerprints. On a re-run of a server installed before 2026-11-01, where the old calls
 file was the answer, any other answer is the fix and passes (the load-order check has made sure
 it is no longer one of the installer's files where other sites listen).
+
+### The event bot's admin page
+
+The owner's event bot (`stannouncebot`) has its own admin page for its events. In nginx mode the
+installer can show it inside the site, at `https://example.org/bot-admin/`, for organisers and
+admins, with their site login and no second login (decided 2026-10-20; organisers may manage
+events, decided 2026-11-01). The site's side of it (who counts as staff, the page that embeds it,
+the audit entries) is in docs/BOTS.md.
+
+**The question.** In nginx mode the installer explains it on the terminal and asks for the bot's
+admin page address on this server: `http://127.0.0.1:<port>` or `http://[::1]:<port>` (loopback
+only: the bot takes its token only from this server itself); `yes` means
+`http://127.0.0.1:8090`. Empty means none: remembered as `BOT_ADMIN_URL=none` in
+`/etc/seasonal/install.conf` and not asked again, as the CoinGecko answer is. Then where the
+bot's admin token comes from: the bot's env file (`KEY=VALUE` lines) and the token's key in it
+(`STANNOUNCEBOT_WEB_ADMIN_TOKEN` by default), or, with an empty file answer, the token typed on
+the terminal (shown as `*`). Answers-file keys: `BOT_ADMIN_URL`, `BOT_ADMIN_TOKEN_FILE`,
+`BOT_ADMIN_TOKEN_KEY` (the token itself never goes into an answers file). A run with `--yes` or
+without a terminal never asks and remembers nothing. In Caddy mode it is not asked; the run says
+that it works in nginx mode only.
+
+```sh
+printf 'BOT_ADMIN_URL=http://127.0.0.1:8090\nBOT_ADMIN_TOKEN_FILE=/path/to/the/bot.env\nBOT_ADMIN_TOKEN_KEY=STANNOUNCEBOT_WEB_ADMIN_TOKEN\n' > /root/bot-admin.txt
+sudo ./deploy/install.sh --answers /root/bot-admin.txt
+```
+
+`sudo ./deploy/install.sh --bot-admin` asks the question again (also after "none"); Enter there
+removes the page. It also goes with `--update`, not with `--yes`. `BOT_ADMIN_URL=none` in an
+answers file removes it too.
+
+**In the bot's env file** (the owner sets these; the installer never touches the bot, its files
+or its env file): `STANNOUNCEBOT_WEB_EMBEDDED=1` and `STANNOUNCEBOT_WEB_BASE_PATH=/bot-admin`,
+then restart the bot. Its page and API then live under `/bot-admin/` on 127.0.0.1:8090. Until
+they do, the installer warns that the bot does not answer on `…/bot-admin/health`.
+
+**The token.** Read from the one key of the bot's env file, which is never executed (only that
+line is taken; nothing from the file is printed), or typed. It must be letters, digits and
+`. _ ~ + / = -` only, so it cannot break nginx's syntax; anything else is refused before a change.
+It is written only to `/etc/seasonal/bot-admin-token.conf` (root:root, mode 600, made with
+`umask 077` and moved into place in one step), as one `proxy_set_header X-Bot-Admin-Token "…";`
+line that nginx includes. It is never printed, never in `install.conf`, `site.env`, the site's
+nginx file or a snapshot. A token read from a file is read again on every run (a new token in
+the bot's file takes effect with the next run); a typed one stays in the include until
+`--bot-admin` or `--uninstall`.
+
+**How a request goes.** The site's server file (`zz-seasonal-site.conf`) gets two locations,
+only while the page is set up (`deploy/install/lib/bot-admin.sh`):
+
+- `location /bot-admin/`: nginx first makes an `auth_request` to the internal location
+  `/_seasonal_bot_admin_auth`, which asks the site (`GET /api/bot-admin/authorize` on
+  127.0.0.1:3800) with the visitor's cookie, `Origin`, `X-Original-Method` and `X-Original-URI`
+  (no body). The site answers 204 with `X-Acting-User: <username>` for staff, 401 for a guest and
+  403 for anyone else or a cross-origin change; nginx passes 401 and 403 to the visitor as they
+  are, and the bot never sees those requests.
+- With 204 the request goes to the bot, path unchanged (`/bot-admin/…`), with `Host`,
+  `X-Forwarded-Proto: https`, `X-Acting-User` from the site's answer and the token from the
+  include. What the visitor sent as `X-Bot-Admin-Token` or `X-Acting-User` never reaches the bot:
+  both are always replaced. `X-Forwarded-For`, `X-Real-IP` and `Forwarded` are dropped, so a bot
+  that trusts a proxy still sees the request coming from 127.0.0.1, the only address it takes
+  the token from. `Cookie` is dropped too: the bot logs in by the token on every request, and
+  the visitor's cookies (the site's session among them) stay with the site.
+
+Every change runs through the usual `nginx -t`, load-order check, reload and comparison of the
+answer for unknown names; a re-run keeps both locations. nginx logs no request headers with its
+default `combined` log format and error log level, and the installer sets no other: keep it so
+(a `log_format` with `$http_x_bot_admin_token` or `error_log … debug` would write the token to
+the logs). `site.env` gets `BOT_ADMIN_EMBEDDED=1` while the page is set up (removed otherwise),
+and the site restarts with it.
+
+**Caddy mode** is not built. It would need: a `forward_auth` to the site's
+`/api/bot-admin/authorize` (with `X-Original-Method` and `X-Original-URI`, copying
+`X-Acting-User` from its answer) before a `reverse_proxy` to the bot; the bot reachable from the
+Caddy container (its admin page listening on an address of the Docker network, or Caddy on the
+host network); the Caddy container's address in the bot's trusted-proxy and allowed-address
+list, since the bot takes the token only from allowed addresses; and the token header added by
+Caddy from a root-only file mounted into the container, never in the Caddyfile in the
+repository.
 
 ### What you still do yourself
 
@@ -300,13 +382,18 @@ sudo ./deploy/install.sh --rollback /var/backups/seasonal-install/<time>
 ```
 
 - `--uninstall` removes the containers, the installer's nginx files (then `nginx -t` and a
-  reload), the ufw rules it added, its timers and the certbot hook. It **keeps** the data (Docker
+  reload; with them the event bot's admin page locations), the bot's token include
+  `/etc/seasonal/bot-admin-token.conf` and `BOT_ADMIN_EMBEDDED` in `site.env`, the ufw rules it
+  added, its timers and the certbot hook. The remembered answers stay: installing again reads the
+  token from the bot's env file again (a typed token is asked again). It **keeps** the data (Docker
   volume `seasonal-site_site-data`), the backups, the secrets and the certificates. Installing
   again reuses all of them.
 - `--purge-data` also deletes the data volume and the remembered answers. Backups, secrets and
   certificates still stay.
 - `--rollback` puts the installer's nginx files, its ufw rules, its state and the commit back as
-  they were in that snapshot (a redundant rule the run removed is not added again: the other
+  they were in that snapshot (the bot's token include and `BOT_ADMIN_EMBEDDED` follow the nginx
+  files: removed when they have no bot locations, written from the bot's env file named in the
+  snapshot's answers when they have and it is missing) (a redundant rule the run removed is not added again: the other
   rule still opens the port). Then run the installer again to rebuild at that commit. Older code
   runs on a newer database (changes are additive); if an update ever changed data in a way the
   old code cannot read, restore the backup taken before it ("Restoring").
@@ -546,19 +633,20 @@ Then delete `restore.tar` on the PC too.
 
 ## Troubleshooting
 
-| Symptom                                           | Look at                                                                                                                                          |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| "the site did not answer on https://…/api/health" | DNS: does the A record point here (`dig +short example.org`)? Ports 80/443 open in a provider firewall? `docker compose logs caddy` (Caddy mode) |
-| certbot fails (nginx mode)                        | the same DNS and port checks; `/var/log/letsencrypt/letsencrypt.log`; Let's Encrypt's rate limits after many failed tries                        |
-| "ports 80/443 are served by …"                    | another web server (Apache, Traefik, …) holds the ports; the installer supports only an empty server or nginx                                    |
-| "another nginx server block already serves …"     | an existing nginx file claims the site's or calls name: remove that block or pick other names                                                    |
-| "… would load before the other sites' servers"    | a file sorts after `zz-seasonal-*.conf`: mark the server that should answer requests by IP address `listen … default_server` in your own file    |
-| "… answered requests without a known name …"      | the certificate shown without SNI changed after the reload; the files are back. Mark your own `default_server` for 443, then run again           |
-| "port 3800 is taken" (nginx mode)                 | something else listens on 127.0.0.1:3800                                                                                                         |
-| calls connect but no audio/video                  | the UDP ports (50000–50499, 3478) and 7881/tcp in a provider firewall; LiveKit's log                                                             |
-| LiveKit logs "could not validate external IP"     | a warning at start: it checks its public IP by reaching itself (seen on the first deployment, 2026-11-01); it matters only if audio/video fail   |
-| "no terminal: the first admin was not created"    | run `sudo ./deploy/install.sh --admin` on a terminal                                                                                             |
-| a run stopped half-way                            | fix the cause and run the installer again (it continues), or `--rollback` the printed snapshot                                                   |
+| Symptom                                               | Look at                                                                                                                                                 |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "the site did not answer on https://…/api/health"     | DNS: does the A record point here (`dig +short example.org`)? Ports 80/443 open in a provider firewall? `docker compose logs caddy` (Caddy mode)        |
+| certbot fails (nginx mode)                            | the same DNS and port checks; `/var/log/letsencrypt/letsencrypt.log`; Let's Encrypt's rate limits after many failed tries                               |
+| "ports 80/443 are served by …"                        | another web server (Apache, Traefik, …) holds the ports; the installer supports only an empty server or nginx                                           |
+| "another nginx server block already serves …"         | an existing nginx file claims the site's or calls name: remove that block or pick other names                                                           |
+| "… would load before the other sites' servers"        | a file sorts after `zz-seasonal-*.conf`: mark the server that should answer requests by IP address `listen … default_server` in your own file           |
+| "… answered requests without a known name …"          | the certificate shown without SNI changed after the reload; the files are back. Mark your own `default_server` for 443, then run again                  |
+| "port 3800 is taken" (nginx mode)                     | something else listens on 127.0.0.1:3800                                                                                                                |
+| calls connect but no audio/video                      | the UDP ports (50000–50499, 3478) and 7881/tcp in a provider firewall; LiveKit's log                                                                    |
+| LiveKit logs "could not validate external IP"         | a warning at start: it checks its public IP by reaching itself (seen on the first deployment, 2026-11-01); it matters only if audio/video fail          |
+| "no terminal: the first admin was not created"        | run `sudo ./deploy/install.sh --admin` on a terminal                                                                                                    |
+| "the event bot does not answer on …/bot-admin/health" | the bot's env file needs `STANNOUNCEBOT_WEB_EMBEDDED=1` and `STANNOUNCEBOT_WEB_BASE_PATH=/bot-admin`, then a bot restart ("The event bot's admin page") |
+| a run stopped half-way                                | fix the cause and run the installer again (it continues), or `--rollback` the printed snapshot                                                          |
 
 Logs:
 
@@ -611,7 +699,21 @@ The scenarios:
   repository inside the server; after the re-run origin gets a newer commit. `--update` must
   first refuse while a tracked file is modified (same commit, site not restarted), then take
   exactly one backup, keep the secrets and the remembered answers, move the checkout to the new
-  commit on `master` and serve it (`/api/health`), with the same answer for unknown names.
+  commit on `master` and serve it (`/api/health`), with the same answer for unknown names. The
+  event bot's admin page: asked on the first install and answered empty (remembered `none`, no
+  locations, no include), not asked again; then a stub bot on 127.0.0.1:8090 (`stub-bot.py`,
+  which records every request's headers) and a test env file with
+  `STANNOUNCEBOT_WEB_ADMIN_TOKEN=<random>` are configured with an answers file, as the owner
+  does. `checks-bot-admin.sh` logs in through the site's own API (the test admin with 2FA set up,
+  a registered member) and checks: the admin gets the bot's page and the bot got its token and
+  `X-Acting-User: admin`; a guest gets 401 (also with a forged token) and the member 403, none of
+  which reach the bot; a forged `X-Bot-Admin-Token`, `X-Acting-User` and `X-Forwarded-For` from
+  the browser never reach it; a cross-origin POST gets 403, a same-origin one passes with one
+  audit entry; the token is in no nginx log, answer, `site.env`, state, snapshot, site container
+  environment or log, nor in the installer's output; the answer for unknown names is unchanged.
+  With the installer's `X-Acting-User` line taken out by hand, the header check must fail. After
+  `--update` the page still works, `--uninstall` removes it, and the install after it brings it
+  back.
 - `jammy`: a 22.04 server, the site alone, ufw active with the app profile `Nginx Full`: the
   installer may add only `443/udp`. The admin password is typed first too short, then with a
   differing confirmation; the installer must explain and ask again each time.
@@ -814,10 +916,10 @@ systemctl start seasonal-backup.service && ls /var/backups/seasonal
 | File                                                                       | What                                                                                                                                                                                                                             |
 | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `deploy/install.sh`                                                        | the one-command installer (entry: options, the install flow)                                                                                                                                                                     |
-| `deploy/install/lib/`                                                      | its parts: prompts, long steps and state, detection, packages, configuration, nginx and its answer for unknown names, firewall, services, snapshot/status/uninstall, `--update`                                                  |
+| `deploy/install/lib/`                                                      | its parts: prompts, long steps and state, detection, packages, configuration, nginx and its answer for unknown names, the event bot's admin page, firewall, services, snapshot/status/uninstall, `--update`                      |
 | `deploy/install/answers.example`                                           | the answers file for unattended runs                                                                                                                                                                                             |
 | `deploy/install/certbot-hook.sh`, `deploy/install/caddy/www.caddy`         | nginx mode: hands renewed certificates on; Caddy mode: the www redirect                                                                                                                                                          |
-| `deploy/test/`                                                             | the installer's end-to-end tests (`run.sh`; systemd Ubuntu containers, Pebble, test DNS)                                                                                                                                         |
+| `deploy/test/`                                                             | the installer's end-to-end tests (`run.sh`, `checks.sh`, `checks-bot-admin.sh`, `stub-bot.py`; systemd Ubuntu containers, Pebble, test DNS)                                                                                      |
 | `deploy/site/Dockerfile`                                                   | the image: multi-stage, production build, non-root `node` user, base image pinned by digest                                                                                                                                      |
 | `deploy/site/docker-compose.yml`                                           | site + Caddy; volumes for the database and media, backups on the host                                                                                                                                                            |
 | `deploy/site/Caddyfile`, `caddy/calls.caddy`                               | HTTPS for both domains; wss to LiveKit                                                                                                                                                                                           |

@@ -10,7 +10,8 @@
 //              list of calls made ({ key, body, headers }). Unknown calls fail the test.
 //              PRELOGIN answers the login key split's pre-login step with a fixed salt; NO_KEY
 //              is a member without a key pair yet; withSettings() adds site settings to a
-//              session answer (they travel with it).
+//              session answer (they travel with it), withFeatures() the server's optional
+//              features (features.botAdmin).
 // ============================================================
 
 import { vi } from 'vitest';
@@ -58,6 +59,11 @@ export function signedIn(user) {
 // { 'chat.uploads': false }; the others keep their defaults.
 export const withSettings = (session, settings) => ({
   'GET /auth/session': { body: { ...session['GET /auth/session'].body, settings } },
+});
+
+// A session answer carrying the server's optional features, e.g. { botAdmin: true }.
+export const withFeatures = (session, features) => ({
+  'GET /auth/session': { body: { ...session['GET /auth/session'].body, features } },
 });
 
 // The pre-login answer for any username: a fixed salt (docs/AUTH.md, "Login key split").

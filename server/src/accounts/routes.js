@@ -2,8 +2,9 @@
 // File:        routes.js
 // Path:        server/src/accounts/routes.js
 // Project:     Seasonal Entertainment
-// Description: /api/auth: current session (with the public site settings), registration (while
-//              the "Registration open" setting is on), logout, own password change (login:
+// Description: /api/auth: current session (with the public site settings and which optional
+//              features the server has), registration (while the "Registration open" setting is
+//              on), logout, own password change (login:
 //              loginRoutes.js). No password ever arrives here: registration and password change
 //              carry the auth key the browser derived and its salt (docs/AUTH.md, "Login key
 //              split"); the server stores bcrypt of the auth key. The password rules are checked in
@@ -61,9 +62,16 @@ export function accountRoutes(db, config, { sessions: chatSessions, accounts: ch
   });
   router.use(accountDeleteRoutes(db, config, { chatSessions, chatAccounts }, passwordLimiter));
 
-  // The settings every visitor's browser needs (shared/siteSettings.js) travel with it.
+  // The settings every visitor's browser needs (shared/siteSettings.js) travel with it, and
+  // which optional parts this server is set up for: features.botAdmin, the event bot's admin
+  // page (BOT_ADMIN_EMBEDDED; the sidebar's "Manage events" for staff).
   router.get('/session', allow('public'), (req, res) => {
-    res.json({ ok: true, user: req.user ? view(req.user) : null, settings: publicSettings(db) });
+    res.json({
+      ok: true,
+      user: req.user ? view(req.user) : null,
+      settings: publicSettings(db),
+      features: { botAdmin: config.botAdminEmbedded },
+    });
   });
 
   router.post('/register', allow('public'), registerLimiter, async (req, res) => {

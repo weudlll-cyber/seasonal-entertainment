@@ -5,10 +5,12 @@
 # Project:     Seasonal Entertainment
 # Description: Everything around an install (docs/DEPLOYMENT.md): the snapshot taken before a
 #              run changes anything (/var/backups/seasonal-install/<time>/: the nginx folder, the
-#              ufw rules, the installer's state and the commit) and --rollback to it; --status;
-#              --uninstall, which removes only what the installer added (its nginx files, also
-#              under their names before 2026-11-01, the containers, its ufw rules, timers, the
-#              certbot hook) and keeps data, secrets and certificates; --purge-data, which also
+#              ufw rules, the installer's state and the commit; never the event bot's token)
+#              and --rollback to it (the bot's token include following the nginx files);
+#              --status; --uninstall, which removes only what the installer added (its nginx
+#              files, also under their names before 2026-11-01, the bot's token include, the
+#              containers, its ufw rules, timers, the certbot hook) and keeps data, secrets and
+#              certificates; --purge-data, which also
 #              deletes the site's data after a typed confirmation.
 # ============================================================
 
@@ -35,6 +37,8 @@ rollback() {
       rm -f "$path"
       tar -C /etc -xzf "$snap/nginx.tar.gz" "${path#/etc/}" 2>/dev/null || true
     done
+    # The event bot's token include (outside /etc/nginx, never in the snapshot) to match.
+    bot_admin_rollback "$snap"
     nginx -t >/dev/null 2>&1 || die "nginx -t fails with the snapshot's files; check /etc/nginx by hand"
     systemctl reload nginx
     say "nginx: the installer's files as in the snapshot (nginx -t passed, reloaded)"
@@ -78,6 +82,7 @@ status() {
     say "health: NOT answering on https://$SITE_DOMAIN/api/health"
   fi
   [[ "$MODE" != nginx ]] || say "nginx files: $(nginx_own_files | tr '\n' ' ')"
+  [[ "$MODE" != nginx ]] || bot_admin_status
   if [[ "$MODE" == nginx ]] && command -v certbot >/dev/null; then
     certbot certificates 2>/dev/null | awk '/Certificate Name: seasonal-/ { n = $3 } n && /Expiry Date/ { sub(/.*Expiry Date: */, ""); print "[install] certificate " n ": " $0; n = "" }'
   fi
@@ -92,10 +97,11 @@ uninstall() {
   local purge="$1" unit
   load_state
   [[ -f "$STATE_FILE" ]] || die "not installed on this server"
-  say "uninstalling: containers, the installer's nginx files, its firewall rules, timers, hook"
+  say "uninstalling: containers, the installer's nginx files (and the bot's token include), its firewall rules, timers, hook"
   stop_calls
   compose_site down --remove-orphans >/dev/null 2>&1 || true
   [[ "$MODE" == nginx ]] && remove_nginx_files
+  remove_bot_admin
   close_ports
   for unit in seasonal-backup seasonal-calls-cert; do
     systemctl disable --now "$unit.timer" >/dev/null 2>&1 || true

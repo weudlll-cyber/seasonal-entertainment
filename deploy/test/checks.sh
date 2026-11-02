@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck source-path=SCRIPTDIR
 # ============================================================
 # File:        checks.sh
 # Path:        deploy/test/checks.sh
@@ -9,7 +10,8 @@
 #              pass means a real ACME certificate, not just any answer. The answer for unknown
 #              names (by IP address, no SNI) and ufw's rules are compared with what
 #              prepare-nginx.sh and prepare-ufw.sh recorded before the install. Secrets are read
-#              from the server's files where needed but never printed (only their hashes).
+#              from the server's files where needed but never printed (only their hashes). The
+#              checks for the event bot's admin page (bot-admin-*) are in checks-bot-admin.sh.
 # ============================================================
 
 set -euo pipefail
@@ -198,6 +200,10 @@ case "$check" in
       [[ "$(docker inspect -f '{{.State.Running}}' "$name" 2>/dev/null)" == true ]] || fail containers "$name is not running"
     done
     pass "running: $*"
+    ;;
+  bot-admin-*)
+    # shellcheck source=checks-bot-admin.sh
+    source "$TEST_DIR/checks-bot-admin.sh"
     ;;
   *)
     fail "$check" "unknown check"
