@@ -86,6 +86,10 @@ export default defineConfig({
         // parallel workers: the chat connection limits (docs/CHAT.md) would count them as one.
         CHAT_MAX_CONNECTIONS_PER_MEMBER: '100',
         CHAT_MAX_GUEST_CONNECTIONS_PER_IP: '1000',
+        // The same for reads (GET under /api, 1200 a minute per address): a fast run of the
+        // whole suite makes about 1300 in a minute, and the last tests were refused (the call
+        // tests' hang on CI, 2026-10-23; docs/AUTH.md).
+        API_READS_PER_MINUTE: '100000',
         BCRYPT_COST: '4',
         COOKIE_SECURE: 'false',
         PUBLIC_ORIGIN: '',

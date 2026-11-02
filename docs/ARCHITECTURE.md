@@ -81,7 +81,9 @@ commit, which the client build carries for the update notice):
 | `CHAT_RETENTION_DAYS`               | `90`                                          | default of the "Keep messages" setting (docs/SETTINGS.md)                 |
 | `CHAT_MAX_CONNECTIONS_PER_MEMBER`   | `5`                                           | default of "Open connections per member" (docs/SETTINGS.md)               |
 | `CHAT_MAX_GUEST_CONNECTIONS_PER_IP` | `20`                                          | default of "Open connections per guest address" (docs/SETTINGS.md)        |
+| `API_READS_PER_MINUTE`              | `1200`                                        | reads (`GET` under `/api`) per address and minute before 429 (AUTH.md)    |
 | `MEDIA_DIR`                         | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`                |
+| `DELETION_JOURNAL`                  | `account-deletions.jsonl` beside the database | deleted accounts for a restore, 30 days (DEPLOYMENT.md, "Restoring")      |
 | `LINK_PREVIEWS`                     | `true`                                        | default of both link-preview settings (docs/SETTINGS.md)                  |
 | `CALLS_URL`                         | (unset: Calls off)                            | call service origin, `wss://...` (docs/CALLS.md)                          |
 | `CALLS_API_KEY`                     | (unset)                                       | call service API key; set with the other two or none                      |

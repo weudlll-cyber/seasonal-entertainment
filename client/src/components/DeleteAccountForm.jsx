@@ -61,8 +61,10 @@ export default function DeleteAccountForm() {
         reports and call reminders.
       </p>
       <p>
-        Kept: the admin and moderation log, and call recordings you are in. Backups of the site keep
-        deleted data for up to about 30 days; the privacy page has the details.
+        Kept: the admin and moderation log, and call recordings you are in; for 30 days a note that
+        your account was deleted (your username and when), so that restoring an older backup deletes
+        it again. Backups of the site keep deleted data for up to about 30 days; the privacy page
+        has the details.
       </p>
       <form className="form" onSubmit={onSubmit}>
         <FormField

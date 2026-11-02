@@ -176,7 +176,7 @@ describe('an admin deleting an account', () => {
     t = makeTestApp();
     const { user: ada } = await makeStaff(t, 'ada', 'admin');
     expect(() =>
-      deleteAccount(t.db, t.app.locals.chat.accounts, findUserById(t.db, ada.id))
+      deleteAccount(t.db, { chatAccounts: t.app.locals.chat.accounts }, findUserById(t.db, ada.id))
     ).toThrow(LastAdminError);
     expect(exists(ada.id)).toBe(true);
     expect(t.db.prepare('SELECT COUNT(*) AS n FROM two_factor').get().n).toBe(1);

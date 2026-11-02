@@ -6,13 +6,15 @@
 //              shell, with the site's login state; guests follow the room's rules; ?theme= is
 //              shown without being stored; the postMessage API talks only to its own parent on
 //              this origin (ready, unread while hidden; visible and theme from the host), and
-//              ignores messages from any other origin or window.
+//              ignores messages from any other origin or window; after an update of the site
+//              it offers the new version as the site does (UpdateNotice.jsx).
 // ============================================================
 
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import App from '../app/App.jsx';
+import { CHECK_MS } from '../app/UpdateNotice.jsx';
 import { FakeSocket } from '../test/fakeSocket.js';
 import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
 import { EMBED_SOURCE, HOST_SOURCE } from './embedProtocol.js';
@@ -145,4 +147,27 @@ it('counts new messages while its host has it out of sight', async () => {
   await waitFor(() =>
     expect(sentToHost()).toContainEqual(expect.objectContaining({ type: 'unread', count: 1 }))
   );
+});
+
+it('offers the new version after an update of the site, as the site does', async () => {
+  vi.stubEnv('SE_BUILD_COMMIT', 'aaaaaaaaaaaa');
+  vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+  try {
+    mockApi({
+      ...signedIn(MIA),
+      'GET /chat/rooms': rooms([GENERAL]),
+      'GET /chat/rooms/general/messages': MESSAGES,
+      'GET /keys/me': { body: { ok: true, key: null } },
+      'GET /health': { body: { ok: true, version: '0.1.0', commit: 'bbbbbbbbbbbb' } },
+    });
+    renderEmbed();
+    await screen.findByRole('region', { name: 'Chat: General' });
+    expect(screen.queryByText(/A new version/)).toBeNull();
+    await act(() => vi.advanceTimersByTimeAsync(CHECK_MS));
+    expect(await screen.findByText('A new version of the chat is available.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reload' })).toBeEnabled();
+  } finally {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+  }
 });

@@ -62,15 +62,23 @@ function readStaff2fa(env, isProduction) {
 
 export function readConfig(env = process.env) {
   const isProduction = env.NODE_ENV === 'production';
+  const databasePath = path.resolve(
+    env.DATABASE_PATH ?? path.join(repoRoot, 'data', 'seasonal.db')
+  );
   const config = {
     isProduction,
     host: env.HOST ?? '127.0.0.1',
     port: readInt(env, 'PORT', 3800, 1, 65535),
     // Built client served in production; missing folder simply means "API only".
     clientDist: path.resolve(env.CLIENT_DIST ?? path.join(repoRoot, 'client', 'dist')),
-    databasePath: path.resolve(env.DATABASE_PATH ?? path.join(repoRoot, 'data', 'seasonal.db')),
+    databasePath,
     // Chat media files (library and link-preview images), served at /media.
     mediaDir: path.resolve(env.MEDIA_DIR ?? path.join(repoRoot, 'data', 'media')),
+    // Deleted accounts (id, name, time; 30 days), outside the backups so a restore deletes them
+    // again (accounts/deletionJournal.js); beside the database unless set.
+    deletionJournal: path.resolve(
+      env.DELETION_JOURNAL ?? path.join(path.dirname(databasePath), 'account-deletions.jsonl')
+    ),
     // Chat file uploads by members (decided 2026-10-17): images and PDF.
     uploads: {
       maxBytes: 10 * 1024 * 1024, // per file; default of a site setting (in MB)
@@ -192,8 +200,9 @@ export function readConfig(env = process.env) {
       embedToken: { windowMs: 60 * 60_000, max: 30 }, // embed tokens per member (login popup)
       botRead: { windowMs: 60_000, max: 120 }, // price and bot-event reads per IP
       // Every GET under /api per IP (the public reads had none of their own): far above what
-      // pages ask for (a page load makes a handful), so only a flood meets it.
-      apiRead: { windowMs: 60_000, max: 1200 },
+      // pages ask for (a page load makes a handful), so only a flood meets it. The browser
+      // tests raise it: their hundred visitors all come from 127.0.0.1 (playwright.config.js).
+      apiRead: { windowMs: 60_000, max: readInt(env, 'API_READS_PER_MINUTE', 1200, 60, 1_000_000) },
     },
   };
   if (isProduction) checkProduction(env, config);

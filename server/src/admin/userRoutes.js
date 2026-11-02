@@ -136,7 +136,9 @@ export function adminUserRoutes(db, config, { sessions: chatSessions, accounts: 
     }
     const deleted = { username: req.target.username, role: req.target.role };
     const deletion = () =>
-      deleteAccount(db, chatAccounts, req.target, () => audit(req, 'user.delete', deleted));
+      deleteAccount(db, { chatAccounts, journal: config.deletionJournal }, req.target, () =>
+        audit(req, 'user.delete', deleted)
+      );
     if (!guarded(res, deletion)) return;
     chatSessions.accountChanged(req.target.id);
     res.json({ ok: true });

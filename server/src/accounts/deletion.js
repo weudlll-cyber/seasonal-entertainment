@@ -10,16 +10,20 @@
 //              reports and their copies, embed tokens, call participation and reminders). The
 //              chat's own rest (room messages and uploads, room reports, the partners' read
 //              marks) and the files come from the chat handle (chat/accountData.js); the
-//              sessions are deleted here. The audit log and call recordings stay.
+//              sessions are deleted here. The audit log and call recordings stay. After the
+//              commit the deletion is noted in the deletion journal (deletionJournal.js), so a
+//              restore of an older backup deletes the account again.
 // ============================================================
 
+import { noteDeletion } from './deletionJournal.js';
 import { guardLastAdmin } from './userAdmin.js';
 
-// chatAccounts: the chat handle's accounts interface (chat/mount.js). user: the account as
-// loaded now. alsoInTransaction: more writes that must commit with the deletion or not at all
-// (the admin route's audit entry). Throws LastAdminError (userAdmin.js) for the last active
+// chatAccounts: the chat handle's accounts interface (chat/mount.js); journal: the deletion
+// journal's file (config.deletionJournal; none when a restore deletes again). user: the account
+// as loaded now. alsoInTransaction: more writes that must commit with the deletion or not at
+// all (the admin route's audit entry). Throws LastAdminError (userAdmin.js) for the last active
 // admin, before anything is deleted.
-export function deleteAccount(db, chatAccounts, user, alsoInTransaction = () => {}) {
+export function deleteAccount(db, { chatAccounts, journal }, user, alsoInTransaction = () => {}) {
   const files = db.transaction(() => {
     guardLastAdmin(db, user, { deleted: true });
     const found = chatAccounts.deleteData(user.id);
@@ -32,6 +36,16 @@ export function deleteAccount(db, chatAccounts, user, alsoInTransaction = () => 
     alsoInTransaction();
     return found;
   })();
-  // Only after the commit: a deletion that failed leaves every file in place.
+  // Only after the commit: a deletion that failed leaves every file in place, and is never
+  // journaled (a restore would delete an account that still exists).
   chatAccounts.deleteFiles(files);
+  if (!journal) return;
+  try {
+    noteDeletion(journal, user);
+  } catch (error) {
+    // The account is gone; only a later restore would bring it back. Said loudly in the log.
+    console.error(
+      `[accounts] could not note deleted account ${user.id} in ${journal}: ${error.message}`
+    );
+  }
 }

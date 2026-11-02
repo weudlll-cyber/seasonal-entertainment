@@ -309,7 +309,11 @@ All answer `429 too_many_attempts`. Numbers are in `server/src/config.js` (`rate
 name or address gets neither salts nor logins. The limit on every read (since 2026-10-21) covers
 the public reads that have no limit of their own (session, info, games, calls, chat rooms and
 messages, files, the embed check); a page load makes a handful, so only a flood meets it. Routes
-with their own limits (bots' reads, member search) keep them as well.
+with their own limits (bots' reads, member search) keep them as well. `API_READS_PER_MINUTE`
+sets it (default 1200). The browser tests raise it (`playwright.config.js`): all their visitors
+come from 127.0.0.1, and a run that took under a minute met it (2026-10-23): the call page's one
+read was refused, it never asked again, and "Join call" never came. Since 2026-11-02 the call
+page asks again after a refusal that passes (429, a server error, no answer).
 
 The per-username login limit is kept as it is on purpose (decided 2026-10-23): anyone who knows a
 name can block its logins for 15 minutes with wrong passwords, and a correct password does not
@@ -418,7 +422,15 @@ chat retention).
   (`hidden_by`, `removed_by`, `reviewed_by`, a sanction's `created_by`). Guests' embed tokens are
   signed, not stored, and belong to no account. Link previews the deleted messages used go with
   the retention job's usual cleanup.
-- Tests: `server/test/accountDelete.test.js` (the rules), `server/test/accountDeleteData.test.js`
+- **The deletion journal** (decided 2026-11-02): after the commit, `deletion.js` notes the
+  account's id, username and the time, nothing else, as one line in the journal
+  (`server/src/accounts/deletionJournal.js`; `DELETION_JOURNAL`, by default
+  `account-deletions.jsonl` beside the database). It lies outside the backups, keeps 30 days
+  (older lines go whenever it is written) and lets a restore delete the account again
+  (docs/DEPLOYMENT.md, "Restoring"). A failed note is logged loudly; the account is gone either
+  way.
+- Tests: `server/test/accountDelete.test.js` (the rules), `server/test/deletionJournal.test.js`
+  (the journal, and a restore deleting again), `server/test/accountDeleteData.test.js`
   (every kind of data gone, the audit log and recordings kept),
   `client/src/components/deleteAccount.test.jsx`, `client/src/admin/adminPages.test.jsx`,
   `client/e2e/accountDelete.spec.js` (the member's own deletion),
