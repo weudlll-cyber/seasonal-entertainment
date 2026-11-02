@@ -201,6 +201,32 @@ with both fingerprints. On a re-run of a server installed before 2026-11-01, whe
 file was the answer, any other answer is the fix and passes (the load-order check has made sure
 it is no longer one of the installer's files where other sites listen).
 
+#### Unknown names: a catch-all
+
+An option for the server, not part of the installer (decided 2026-11-02, in use on the owner's
+server since then): unknown names get **no answer at all** instead of the distribution's welcome
+page on port 80 or another site's certificate on 443. `deploy/nginx/catch-all.conf` is one server
+marked `default_server` on port 80 (IPv4 and IPv6) and port 443 (IPv4): `return 444` closes the
+connection, and on 443 `ssl_reject_handshake on` refuses the handshake before a certificate is
+shown (nginx 1.19.4 or newer). IPv6 443 is left to the installer, which makes such a server there
+itself where no other site listens.
+
+```sh
+tar czf /root/etc-nginx-before-catch-all.tar.gz -C / etc/nginx    # to go back
+install -m 644 /opt/seasonal-entertainment/deploy/nginx/catch-all.conf /etc/nginx/sites-available/
+ln -s /etc/nginx/sites-available/catch-all.conf /etc/nginx/sites-enabled/catch-all.conf
+rm /etc/nginx/sites-enabled/default    # the link only; sites-available/default stays
+nginx -t && systemctl reload nginx     # never a restart
+```
+
+Then every site must answer as before (status, redirect, certificate), and
+`curl -H 'Host: unknown.invalid' http://127.0.0.1/` must end with "Empty reply from server". If
+`nginx -t` reports a duplicate default server for `0.0.0.0:443`, the installer already refuses
+unknown names there (no other site on 443): drop the `listen 443` line. The installer accepts the
+catch-all: it counts as another site on 443, keeps out of its way, and its check of the answer for
+unknown names compares with no answer before and after (the installer tests' nginx scenario adds
+it before `--update`).
+
 ### The event bot's admin page
 
 The owner's event bot (`stannouncebot`) has its own admin page for its events. In nginx mode the
