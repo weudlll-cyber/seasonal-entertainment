@@ -5,14 +5,17 @@
 // Description: The event bot's occurrences in a time window (docs/BOTS.md), as the bot itself
 //              shows them (stannouncebot parsing/query_service.py): active events only, the
 //              latest override per occurrence (highest id) replacing start, platform, location
-//              and status where it sets them. The site computes no recurrences of its own. Bot
-//              text stays text; a location URL is passed on only if it is http(s); the image
-//              URL (http(s) only) stays on the server, which fetches the image itself
-//              (images.js).
+//              and status where it sets them. The bot keeps one occurrence per announcement
+//              channel (Telegram, Discord, ...); the site lists an event at one start once:
+//              the copies are grouped by event and effective start (groupCopies). The site
+//              computes no recurrences of its own. Bot text stays text; a location URL is
+//              passed on only if it is http(s); the image URL (http(s) only) stays on the
+//              server, which fetches the image itself (images.js).
 // ============================================================
 
 const EFFECTIVE = `
-  SELECT o.id, e.name, e.description, e.category, e.image_url AS imageUrl,
+  SELECT o.id, o.event_id AS eventId, e.name, e.description, e.category,
+    e.image_url AS imageUrl,
     COALESCE(ov.new_start_ts_utc, o.start_ts_utc) AS start,
     COALESCE(ov.new_platform, o.platform) AS platform,
     COALESCE(ov.new_location_url, o.location_url) AS locationUrl,
@@ -46,24 +49,57 @@ function webUrl(value) {
   }
 }
 
-// Occurrences starting in [from, to) (milliseconds): the dates are matched loosely in SQL (a
-// day either side, whatever the stored format), the exact instants here.
+// The places of some copies: one per location (label and link), naming each platform that
+// announces it there once, in copy order.
+function placesOf(copies) {
+  const places = [];
+  for (const c of copies) {
+    const locationLabel = c.locationLabel ?? '';
+    const locationUrl = webUrl(c.locationUrl);
+    let place = places.find(
+      (p) => p.locationLabel === locationLabel && p.locationUrl === locationUrl
+    );
+    if (!place) places.push((place = { platforms: [], locationLabel, locationUrl }));
+    if (c.platform && !place.platforms.includes(c.platform)) place.platforms.push(c.platform);
+  }
+  return places;
+}
+
+// One entry per event and start from its copies (rows of one event at one instant, id order).
+// Canceled only if every copy is; otherwise the status and the places of the copies that are
+// not, so a channel dropped in the bot no longer shows. The id is the lowest copy's and ids
+// holds every copy's, canceled ones included: a call linked to any copy (also before the
+// grouping, docs/CALLS.md) still finds its entry.
+function groupCopies(copies) {
+  const [first] = copies;
+  const running = copies.filter((c) => c.status !== 'canceled');
+  const shown = running.length ? running : copies;
+  return {
+    id: first.id,
+    ids: copies.map((c) => c.id),
+    name: first.name,
+    description: first.description ?? '',
+    category: first.category ?? '',
+    start: first.start,
+    places: placesOf(shown),
+    // A running date counts as scheduled while any copy still is (one channel may be done).
+    status: running.some((c) => c.status === 'scheduled') ? 'scheduled' : shown[0].status,
+    imageUrl: webUrl(first.imageUrl), // for the server only (routes.js)
+  };
+}
+
+// Occurrences starting in [from, to) (milliseconds), one per event and start: the dates are
+// matched loosely in SQL (a day either side, whatever the stored format), the exact instants
+// here.
 export function botOccurrences(db, from, to) {
-  return db
-    .prepare(EFFECTIVE)
-    .all(day(from - DAY_MS), day(to + DAY_MS))
-    .map((row) => ({ ...row, start: parseBotTime(row.start) }))
-    .filter((row) => row.start >= from && row.start < to)
-    .map((row) => ({
-      id: row.id,
-      name: row.name,
-      description: row.description ?? '',
-      category: row.category ?? '',
-      start: row.start,
-      platform: row.platform ?? '',
-      locationLabel: row.locationLabel ?? '',
-      locationUrl: webUrl(row.locationUrl),
-      status: row.status,
-      imageUrl: webUrl(row.imageUrl), // for the server only (routes.js)
-    }));
+  const groups = new Map();
+  for (const row of db.prepare(EFFECTIVE).all(day(from - DAY_MS), day(to + DAY_MS))) {
+    const start = parseBotTime(row.start);
+    if (!(start >= from && start < to)) continue;
+    const key = `${row.eventId}@${start}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push({ ...row, start });
+  }
+  // Sorted by instant: the SQL orders by the stored text, whose formats may differ.
+  return [...groups.values()].map(groupCopies).sort((a, b) => a.start - b.start || a.id - b.id);
 }

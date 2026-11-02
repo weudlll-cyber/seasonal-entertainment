@@ -155,8 +155,13 @@ describe('bot events', () => {
     // Two overrides on Thursday 17:00; the later one (90 minutes later, new label) wins.
     expect(byName['[Sample] Bot Community Call']).toMatchObject({
       start: Date.parse('2026-10-22T18:30:00Z'),
-      locationLabel: 'Moved sample channel',
-      locationUrl: 'https://example.org/call',
+      places: [
+        {
+          platforms: ['discord'],
+          locationLabel: 'Moved sample channel',
+          locationUrl: 'https://example.org/call',
+        },
+      ],
       status: 'scheduled',
     });
     expect(byName['[Sample] Bot Weekend Stream']).toMatchObject({ status: 'canceled' });
@@ -171,8 +176,10 @@ describe('bot events', () => {
   it('passes on only web links, and never the image URL', async () => {
     const { occurrences } = (await appWith().get(week(MONDAY))).body;
     const stream = occurrences.find((o) => o.name === '[Sample] Bot Weekend Stream');
-    expect(stream.locationUrl).toBeNull(); // tg://… is not a web address
-    expect(stream.locationLabel).toBe('Not a web link');
+    // tg://… is not a web address
+    expect(stream.places).toEqual([
+      { platforms: ['discord'], locationLabel: 'Not a web link', locationUrl: null },
+    ]);
     expect(JSON.stringify(occurrences)).not.toContain('images.bot-fixtures.test');
   });
 

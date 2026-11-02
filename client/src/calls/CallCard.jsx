@@ -45,8 +45,9 @@ export default function CallCard({ call, reminded, onAction, onLink, events }) {
       {onLink && call.status === 'scheduled' && (
         <EventSelect
           label={`Event of ${call.title}`}
-          // An occurrence no longer in the bot's list shows as "No event".
-          value={events.some((o) => o.id === call.botOccurrenceId) ? call.botOccurrenceId : null}
+          // The entry holding the linked copy (a link may name any channel's copy); one no
+          // longer in the bot's list shows as "No event".
+          value={events.find((o) => o.ids.includes(call.botOccurrenceId))?.id ?? null}
           onChange={(id) => onLink(call, id)}
           occurrences={events}
         />

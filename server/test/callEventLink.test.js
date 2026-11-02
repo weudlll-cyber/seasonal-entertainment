@@ -7,7 +7,9 @@
 //              scheduled occurrences to organisers only; a link is stored on creation and when
 //              editing a planned call, and one call's answer names the event; an unknown
 //              occurrence is refused; an occurrence that vanishes or moves is harmless (no
-//              event, no error); an ended call cannot be relinked.
+//              event, no error); an ended call cannot be relinked; the bot's copies of one
+//              date (one per channel) are one entry, and a link to any copy finds it, links
+//              saved before the grouping included.
 // ============================================================
 
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -55,7 +57,8 @@ describe('calls linked to bot events', () => {
     const now = Date.now();
     expect(occurrences.length).toBeGreaterThan(0);
     for (const o of occurrences) {
-      expect(Object.keys(o).sort()).toEqual(['id', 'name', 'start']);
+      expect(Object.keys(o).sort()).toEqual(['id', 'ids', 'name', 'start']);
+      expect(o.ids[0]).toBe(o.id);
       expect(o.start).toBeGreaterThanOrEqual(now - 60_000);
       expect(o.start).toBeLessThan(now + 30 * 24 * 60 * 60_000);
     }
@@ -100,6 +103,21 @@ describe('calls linked to bot events', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('unknown_event');
     expect((await t.client().get('/api/calls')).body.calls.upcoming).toEqual([]);
+  });
+
+  it('a link to any channel’s copy finds the one entry, links saved before included', async () => {
+    const olga = await organiser(t);
+    const { occurrences } = (await olga.get('/api/calls/bot-occurrences')).body;
+    const shared = occurrences.find((o) => o.ids.length > 1);
+    const copy = shared.ids[1];
+    // A new link names the entry, whichever copy was sent.
+    const res = await olga.post('/api/calls').send({ title: 'Town hall', botOccurrenceId: copy });
+    expect(res.status).toBe(201);
+    expect(res.body.call.botOccurrenceId).toBe(shared.id);
+    // A link saved before the grouping may name any copy: it still names the event.
+    t.db.prepare('UPDATE calls SET bot_occurrence_id = ? WHERE id = ?').run(copy, res.body.call.id);
+    const one = (await t.client().get(`/api/calls/${res.body.call.id}`)).body.call;
+    expect(one.event).toEqual({ id: shared.id, name: shared.name, start: shared.start });
   });
 
   it('an occurrence that vanishes or moves is harmless: the call simply has no event', async () => {

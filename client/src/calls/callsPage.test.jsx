@@ -216,6 +216,38 @@ it('organisers create, start and end calls', async () => {
   expect(keys.filter((k) => k === 'GET /calls/summary').length).toBeGreaterThanOrEqual(2);
 });
 
+it("a planned call linked to one channel's copy shows its event picked", async () => {
+  // The bot keeps one occurrence per channel (41 and 42); the site lists them as entry 41, and
+  // a link saved before that may name copy 42.
+  const quiz = {
+    id: 41,
+    ids: [41, 42],
+    name: 'Bot Quiz Night',
+    start: Date.parse('2026-10-27T19:00:00Z'),
+  };
+  mockApi({
+    ...signedIn({ username: 'olga', role: 'organiser' }),
+    'GET /calls/summary': { body: { ok: true, configured: true, live: false } },
+    'GET /calls': {
+      body: {
+        ok: true,
+        configured: true,
+        canManage: true,
+        calls: {
+          live: [],
+          upcoming: [CALL(2, 'Race night', 'scheduled', { botOccurrenceId: 42 })],
+          recent: [],
+        },
+      },
+    },
+    'GET /calls/bot-occurrences': { body: { ok: true, occurrences: [quiz] } },
+  });
+  await renderApp('/calls');
+  const picker = await screen.findByLabelText('Event of Race night');
+  await within(picker).findByRole('option', { name: /^Bot Quiz Night — / });
+  expect(picker).toHaveValue('41');
+});
+
 it('without a call service: "not configured" for admins, no Calls item for others', async () => {
   const off = {
     'GET /calls/summary': { body: { ok: true, configured: false, live: false } },
@@ -236,7 +268,12 @@ it('without a call service: "not configured" for admins, no Calls item for other
 });
 
 it("organisers link a new call and a planned one to the event bot's occurrences", async () => {
-  const quiz = { id: 41, name: 'Bot Quiz Night', start: Date.parse('2026-10-27T19:00:00Z') };
+  const quiz = {
+    id: 41,
+    ids: [41],
+    name: 'Bot Quiz Night',
+    start: Date.parse('2026-10-27T19:00:00Z'),
+  };
   const calls = mockApi({
     ...signedIn({ username: 'olga', role: 'organiser' }),
     ...configured(false, true),

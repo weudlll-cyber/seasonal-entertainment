@@ -25,30 +25,36 @@ const TO = Date.parse('2026-10-25T23:00:00Z');
 const NEXT = Date.parse('2026-11-01T23:00:00Z');
 const occurrence = (id, name, start, extra = {}) => ({
   id,
+  ids: [id],
   name,
   description: '',
   category: '',
   start: Date.parse(start),
-  platform: 'discord',
-  locationLabel: '',
-  locationUrl: null,
+  places: [],
   status: 'scheduled',
   image: null,
   ...extra,
 });
 const WEEK = [
   occurrence(10, 'Monday Quiz', '2026-10-19T18:00:00Z', {
-    locationLabel: 'Quiz channel',
+    places: [{ platforms: ['discord'], locationLabel: 'Quiz channel', locationUrl: null }],
     image: '/media/bot-images/0123456789abcdef0123456789abcdef.webp?v=1',
   }),
   occurrence(11, 'Community <b>Call</b>', '2026-10-22T18:30:00Z', {
-    locationLabel: 'Voice',
-    locationUrl: 'https://example.org/call',
+    // Three channels, two places (server/src/bots/events.js): both named, each with its link.
+    places: [
+      {
+        platforms: ['discord', 'telegram'],
+        locationLabel: 'Voice',
+        locationUrl: 'https://example.org/call',
+      },
+      { platforms: ['youtube'], locationLabel: 'Stream', locationUrl: 'https://example.org/live' },
+    ],
     description: '<img src=x onerror=alert(1)>',
   }),
   occurrence(12, 'Weekend Stream', '2026-10-24T15:00:00Z', {
     status: 'canceled',
-    locationLabel: 'Not a web link',
+    places: [{ platforms: ['discord'], locationLabel: 'Not a web link', locationUrl: null }],
   }),
 ];
 
@@ -132,6 +138,18 @@ it('bot text stays text; only a passed-on web link becomes a link, opened safely
   const link = within(thursday).getByRole('link', { name: 'Open Voice' });
   expect(link).toHaveAttribute('href', 'https://example.org/call');
   expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+});
+
+it('an event announced on several channels is listed once, every place with its platforms', async () => {
+  showWeek({ thisWeek: { connected: true, occurrences: WEEK } });
+  const thursday = await screen.findByRole('region', { name: 'Thursday 22 October' });
+  expect(within(thursday).getAllByRole('listitem')).toHaveLength(1);
+  expect(thursday).toHaveTextContent('discord, telegram: Voice');
+  expect(thursday).toHaveTextContent('youtube: Stream');
+  expect(within(thursday).getByRole('link', { name: 'Open Stream' })).toHaveAttribute(
+    'href',
+    'https://example.org/live'
+  );
 });
 
 it("shows the event's image from this site, with the event's name as alt text", async () => {

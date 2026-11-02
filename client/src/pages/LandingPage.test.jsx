@@ -38,6 +38,7 @@ const FROM = Date.parse('2026-10-21T12:00:00Z');
 const UP_NEXT = `GET /bot-events?from=${FROM}&to=${FROM + 7 * 24 * 60 * 60_000}`;
 const occurrence = (id, start, status = 'scheduled') => ({
   id,
+  ids: [id, id * 10], // the bot's copies of this date, one per channel
   name: `Event ${id}`,
   start: Date.parse(start),
   status,
@@ -336,6 +337,25 @@ describe('home: calls linked to bot events', () => {
       'href',
       '/calls/7'
     );
+  });
+
+  it("a call linked to another channel's copy of the date still rides on it", async () => {
+    home({
+      bot: { connected: true, occurrences: [occurrence(3, '2026-10-22T09:00:00Z')] },
+      calls: configured({
+        upcoming: [
+          {
+            ...linked(7, 'scheduled', '2026-10-22T09:00:00Z', {
+              scheduledFor: '2026-10-22T09:00:00Z',
+            }),
+            botOccurrenceId: 30, // saved before the site grouped the copies
+          },
+        ],
+      }),
+    });
+    expect(await upNextItems()).toEqual([
+      'Event 3Thursday 22 October, 09:00 UTC · Listen on this site',
+    ]);
   });
 
   it('while the linked call is live, the event says "Live now"', async () => {
