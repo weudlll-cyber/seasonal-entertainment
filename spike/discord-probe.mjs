@@ -10,7 +10,8 @@
 //              not on. Tokens live in memory only, are revoked at the end and never printed;
 //              the client secret is read from the owner's file and never printed either. Not
 //              part of the site.
-// Usage:       node spike/discord-probe.mjs (listens on localhost:5380, the registered redirect)
+// Usage:       node spike/discord-probe.mjs, then open http://localhost:5380/start (it listens
+//              on 5380, the registered redirect, for 20 minutes)
 // ============================================================
 
 import { createHash, randomBytes } from 'node:crypto';
@@ -26,7 +27,7 @@ const DRAGON_WHALE_ROLE = '1530712031215226932';
 const PORT = 5380;
 const REDIRECT_URI = `http://localhost:${PORT}/api/auth/discord/callback`;
 const API = 'https://discord.com/api/v10';
-const WAIT_MS = 10 * 60_000;
+const WAIT_MS = 20 * 60_000;
 
 const secret = readFileSync(
   join(homedir(), '.seasonal', 'discord-client-secret.txt'),
@@ -173,8 +174,26 @@ async function probe(code) {
   console.log('access token after revoking:', after.status);
 }
 
+const authorize = new URL('https://discord.com/oauth2/authorize');
+authorize.search = new URLSearchParams({
+  response_type: 'code',
+  client_id: CLIENT_ID,
+  scope: 'identify guilds.members.read',
+  redirect_uri: REDIRECT_URI,
+  state,
+  code_challenge: challenge,
+  code_challenge_method: 'S256',
+  prompt: 'consent',
+});
+const START = `http://localhost:${PORT}/start`;
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
+  // A short address to type: a copied authorize link can lose its parameters on the way.
+  if (url.pathname === '/start') {
+    res.writeHead(302, { Location: authorize.href }).end();
+    return;
+  }
   if (url.pathname !== '/api/auth/discord/callback') {
     res.writeHead(404).end();
     return;
@@ -202,20 +221,8 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  const authorize = new URL('https://discord.com/oauth2/authorize');
-  authorize.search = new URLSearchParams({
-    response_type: 'code',
-    client_id: CLIENT_ID,
-    scope: 'identify guilds.members.read',
-    redirect_uri: REDIRECT_URI,
-    state,
-    code_challenge: challenge,
-    code_challenge_method: 'S256',
-    prompt: 'consent',
-  });
-  console.log('waiting on port', PORT, '- authorize URL:', authorize.href);
-  // rundll32 hands the URL to the default browser untouched (cmd's start would split it at &).
-  spawn('rundll32', ['url.dll,FileProtocolHandler', authorize.href], {
+  console.log('waiting on port', PORT, '- open', START);
+  spawn('rundll32', ['url.dll,FileProtocolHandler', START], {
     detached: true,
     stdio: 'ignore',
   }).unref();
