@@ -82,7 +82,7 @@ describe('deleting your own account', () => {
       /every chat message you wrote.*all your private conversations, for the other member too/
     );
     expect(screen.getByText(/^Kept:/)).toHaveTextContent(
-      /admin and moderation log, and call recordings.*up to about 30 days/
+      /admin and moderation log, and call recordings.*for 30 days a note.*up to about 30 days/
     );
     expect(screen.getByRole('checkbox')).toBeRequired();
     // Without 2FA there is no code to give.

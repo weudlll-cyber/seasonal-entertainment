@@ -154,6 +154,9 @@ It does not delete:
   organiser or admin deletes it; ask for it as described under "Call recordings";
 - a moderator's or admin's name where the site noted it on an action they took (for example
   who hid a message, removed a file, or muted someone);
+- for **30 days**, a note that your account was deleted: its number, your username and when,
+  nothing else. It is kept apart from the backups, so that restoring an older backup after a
+  failure deletes your account again instead of bringing it back; after 30 days it is deleted;
 - the backups (next paragraph).
 
 **Backups**: every night the site makes an encrypted backup of its database and files. What a

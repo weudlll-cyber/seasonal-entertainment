@@ -34,19 +34,28 @@ entry waits for.
 - **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
   own repository and is not connected.
 
-### Technical debt
-
-- **A call test that sometimes hangs on CI** — `client/e2e/callShare.spec.js:57` (once also
-  `calls.spec.js:61`) waits minutes for "Join call" on CI only. Since 2026-10-23 a failed browser
-  test's trace and screenshot are uploaded (`playwright-test-results`, 7 days): the next hang shows
-  what the page held. Not reproduced on the PC (2026-10-23, `CI=1`, 2 workers as on CI, 12 extra
-  busy CPU threads): `callShare.spec.js` alone 20 times, 20 passed; three full browser runs, 104
-  of 104 passed each (7.1, 12.0 and 10.8 min; the two call tests 12–22 s). The test is unchanged.
-  The button needs the call `live` and the page's one `GET /api/calls/:id` answered; which of the
-  two failed on CI is what the trace will show.
-
 ## PART TWO — closed
 
+- **A call test that sometimes hangs on CI** — closed by `fix/se-small-2`. The cause: the read
+  limit of 1200 `GET`s under `/api` per address and minute (since 2026-10-21). Every browser
+  test comes from 127.0.0.1; the runs that hung (2026-10-23) went through 102 tests in about 53
+  seconds (a run makes about 12.5 reads per test), the call tests ran last, and their page's one
+  `GET /api/calls/:id` was refused with 429, which the server does not log. `CallPage.jsx`
+  never asked again, so "Join call" never came. Runs since took 1.8 to 2 minutes and stayed under
+  the limit. Fixed on both sides: the call page asks again after a refusal that passes (429, a
+  server error, no answer; not after "no such call"), and the browser tests set
+  `API_READS_PER_MINUTE` high (`playwright.config.js`), as they do for the chat connections.
+  The call tests now check their start answer. Reproduced with the limit at 60 (2026-11-02): the
+  old page hung at "Join call" (`callLayout.spec.js:74`), the new one passed.
+- **The embedded chat shows the new-version notice** — closed by `fix/se-small-2`: "A new version
+  of the chat is available." with Reload at the top of `/embed/chat`, by the site's own rule
+  (`UpdateNotice.jsx`; docs/EMBED.md, docs/DEPLOYMENT.md "What visitors see").
+- **A restore no longer brings back deleted accounts** — closed by `fix/se-small-2` (decided
+  2026-11-02): each deletion notes the account's id, username and time in a journal beside the
+  database, outside the backups, kept 30 days (`server/src/accounts/deletionJournal.js`); after a
+  restore every account deleted since the backup is deleted again and named
+  (`scripts/restore.mjs`; docs/DEPLOYMENT.md "Restoring", docs/AUTH.md; the privacy page and the
+  account page name the 30-day note).
 - **Event bot admin page inside the site** — closed by `feat/se-bot-admin`: the bot's own admin
   page is embedded, not rebuilt, with no second login (decided 2026-10-20). The host's nginx serves
   `/bot-admin/` and asks the site's `GET /api/bot-admin/authorize` before every request

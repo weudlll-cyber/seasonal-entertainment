@@ -1,5 +1,5 @@
 {
-  "description": "SHA-256 (hex) of every earlier text of a seed page (the body as readSeedPage in server/src/info/seed.js reads it: without the title line, trimmed, one final newline), by slug. On start, refreshSeedPages() gives a stored page whose body is still exactly one of these the current seed text; an edited page is left alone. When a seed page listed here changes, add the hash of its text before the change. privacy: every version from its first (ac4d1c8) to 27b5550, before account deletion was described (2026-11-01).",
+  "description": "SHA-256 (hex) of every earlier text of a seed page (the body as readSeedPage in server/src/info/seed.js reads it: without the title line, trimmed, one final newline), by slug. On start, refreshSeedPages() gives a stored page whose body is still exactly one of these the current seed text; an edited page is left alone. When a seed page listed here changes, add the hash of its text before the change. privacy: every version from its first (ac4d1c8) to 27b5550, before account deletion was described (2026-11-01); and the text of 2026-11-01 to 2026-11-02, before the 30-day deletion note was described.",
   "privacy": [
     "eb0907c59d95a51e9e959501dfe1b094b75be782c4c919d15bb0c8bf0a9ec0e5",
     "5a8fbc5bb85ec73ab72b0d938e15eb5edc28542d218a6bb05f01ee0f79dc25d9",
@@ -20,6 +20,7 @@
     "69a98abc054e311aca91d8a0c60b454f534111b5158dfe2fa9f4bc1e3ba34466",
     "29e82355617d347b619f82a1b6aa9ae4a6ce8ebc5b272a07cd446ab61fed0980",
     "e6786866d4bf4627da3b6482cd297c2244af338700fa68172799363edd1ad363",
-    "1be608fc8c32bcdc59568afd075faa3a545a6b5a061575ff26752643fc60acb8"
+    "1be608fc8c32bcdc59568afd075faa3a545a6b5a061575ff26752643fc60acb8",
+    "8411a80640666d797af98f76405397c648b3c4131453d87f6d48b46bffad2c67"
   ]
 }

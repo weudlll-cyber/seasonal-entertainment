@@ -38,7 +38,7 @@ test('a screen share shows large even when the spotlight update fails', async ({
   });
   const call = (await (await api.post('/api/calls', { data: { title: 'Share test' } })).json())
     .call;
-  await api.post(`/api/calls/${call.id}/start`);
+  expect((await api.post(`/api/calls/${call.id}/start`)).status()).toBe(200);
 
   // The presenter (the run's admin, on the stage with the camera on).
   const presenter = await (await browser.newContext({ storageState: ADMIN_STATE })).newPage();

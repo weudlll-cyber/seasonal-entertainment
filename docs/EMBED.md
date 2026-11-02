@@ -20,6 +20,9 @@ header, sidebar or footer (`client/src/embed/EmbedChatPage.jsx`): the room, and 
 - **Room rules apply unchanged**: a guest can read `general` but not `seasonal-race` (members
   only); there the frame shows "No such room." and no message field, exactly as the API answers
   a guest.
+- **After an update of the site** the frame shows "A new version of the chat is available." with
+  a Reload button at its top, by the site's own rule (`client/src/app/UpdateNotice.jsx`;
+  docs/DEPLOYMENT.md, "What visitors see"; since 2026-11-02). Reload reloads only the frame.
 
 ### On this site's own pages
 

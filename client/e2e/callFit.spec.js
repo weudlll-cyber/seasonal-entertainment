@@ -84,7 +84,7 @@ test('cameras keep their picture; the listener panel scrolls only when it must',
     extraHTTPHeaders: { Origin: baseURL },
   });
   const call = (await (await api.post('/api/calls', { data: { title: 'Fit' } })).json()).call;
-  await api.post(`/api/calls/${call.id}/start`);
+  expect((await api.post(`/api/calls/${call.id}/start`)).status()).toBe(200);
 
   const host = await (await browser.newContext({ storageState: ADMIN_STATE })).newPage();
   await openCall(host, call.id);

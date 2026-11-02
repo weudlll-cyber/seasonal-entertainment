@@ -15,13 +15,15 @@
 //              links) only where it allows images. Until the site is verified the room waits. Talks
 //              to the framing page only once its origin is verified (embedProtocol.js): ready,
 //              unread (messages while the host says the chat is out of sight), resize; it takes
-//              visible and theme.
+//              visible and theme. After an update of the site it says "A new version of the chat
+//              is available" with Reload, by the site's own rule (UpdateNotice.jsx).
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import ChatTabs from '../app/ChatTabs.jsx';
 import DirectTab from '../app/DirectTab.jsx';
+import UpdateNotice from '../app/UpdateNotice.jsx';
 import { ChatPanel, onDirectRequest, useNewMessageCount, useUnread } from '../chat/index.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
@@ -108,6 +110,7 @@ export default function EmbedChatPage() {
   const shown = user ? tab : 'rooms';
   return (
     <main ref={root} className="embed-chat">
+      <UpdateNotice what="the chat" />
       {foreign && <EmbedAccount login={login} ready={Boolean(host)} />}
       {user && (
         <ChatTabs

@@ -3,9 +3,12 @@
 // Path:        server/test/config.test.js
 // Project:     Seasonal Entertainment
 // Description: Guards that the listen address comes from the environment at start time, and
-//              how the BOT_ADMIN_EMBEDDED switch is read (1 on; 0 or unset off; else an error).
+//              how the BOT_ADMIN_EMBEDDED switch is read (1 on; 0 or unset off; else an error),
+//              the read limit per address (API_READS_PER_MINUTE, 1200 unless set) and where the
+//              deletion journal lies (beside the database unless DELETION_JOURNAL is set).
 // ============================================================
 
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { readConfig } from '../src/config.js';
 
@@ -30,5 +33,19 @@ describe('readConfig', () => {
     expect(readConfig({ BOT_ADMIN_EMBEDDED: '1' }).botAdminEmbedded).toBe(true);
     // A typo must not silently leave the page off (or on).
     expect(() => readConfig({ BOT_ADMIN_EMBEDDED: 'yes' })).toThrow(/BOT_ADMIN_EMBEDDED/);
+  });
+
+  it('reads the read limit per address, 1200 a minute unless set', () => {
+    expect(readConfig({}).rateLimits.apiRead).toEqual({ windowMs: 60_000, max: 1200 });
+    expect(readConfig({ API_READS_PER_MINUTE: '100000' }).rateLimits.apiRead.max).toBe(100000);
+    expect(() => readConfig({ API_READS_PER_MINUTE: '10' })).toThrow(/API_READS_PER_MINUTE/);
+  });
+
+  it('keeps the deletion journal beside the database unless set', () => {
+    const config = readConfig({ DATABASE_PATH: '/srv/site/seasonal.db' });
+    expect(config.deletionJournal).toBe(path.resolve('/srv/site/account-deletions.jsonl'));
+    expect(readConfig({ DELETION_JOURNAL: '/srv/journal.jsonl' }).deletionJournal).toBe(
+      path.resolve('/srv/journal.jsonl')
+    );
   });
 });

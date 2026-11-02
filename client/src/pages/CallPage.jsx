@@ -14,11 +14,14 @@
 //              the call shows a red "Recording" (and, to someone not in it, "Being recorded"),
 //              a start during the call shows a banner, and joining or sending asks first
 //              (RecordingConsent); the recordings are listed with a player (CallRecordings).
+//              Loading the call is asked again while it is refused for the moment (too many
+//              reads from one address, a restart, the network): without the answer there is no
+//              Join button, and one lost answer must not leave the page without it.
 // ============================================================
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
-import { api } from '../api/http.js';
+import { api, ApiError } from '../api/http.js';
 import CallChat, { useChatCollapsed } from '../calls/CallChat.jsx';
 import CallRecordings from '../calls/CallRecordings.jsx';
 import CallStage from '../calls/CallStage.jsx';
@@ -30,6 +33,11 @@ import { formatWhen } from '../app/dates.js';
 import Icon from '../app/icons.jsx';
 import { FormMessage } from '../components/FormField.jsx';
 import '../calls/callPage.css';
+
+export const RETRY_MS = 5000;
+
+// A refusal that passes (429, a server error, no answer at all), unlike "no such call".
+const passing = (err) => !(err instanceof ApiError) || err.status === 429 || err.status >= 500;
 
 const STATUS_TEXT = {
   idle: null,
@@ -43,22 +51,38 @@ export default function CallPage() {
   // GET /api/calls/:id: { call, canManage, recordingEnabled }.
   const [answer, setAnswer] = useState(null);
   const [version, setVersion] = useState(0); // after a recording starts or stops
+  const [attempt, setAttempt] = useState(0); // a load refused for the moment, asked again
+  const [loadError, setLoadError] = useState(null);
   const [error, setError] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatCollapsed, setChatCollapsed] = useChatCollapsed();
   const live = useCallRoom(id);
 
   useEffect(() => {
+    let stopped = false;
+    let retry = null;
     api(`/calls/${id}`)
-      .then(setAnswer)
-      .catch((err) => setError(err.message));
-  }, [id, live.status, live.recording, version]);
+      .then((next) => {
+        if (stopped) return;
+        setAnswer(next);
+        setLoadError(null);
+      })
+      .catch((err) => {
+        if (stopped) return;
+        setLoadError(err.message);
+        if (passing(err)) retry = setTimeout(() => setAttempt((n) => n + 1), RETRY_MS);
+      });
+    return () => {
+      stopped = true;
+      clearTimeout(retry);
+    };
+  }, [id, live.status, live.recording, version, attempt]);
   // An ended call changes the list and the sidebar's LIVE badge.
   useEffect(() => {
     if (live.status === 'ended') callsChanged();
   }, [live.status]);
 
-  if (!answer) return <FormMessage error={error} />;
+  if (!answer) return <FormMessage error={loadError} />;
   const info = answer.call;
   const joined = live.status === 'joined';
   const recording = joined ? live.recording : info.recording;
@@ -123,7 +147,7 @@ export default function CallPage() {
             </button>
           </p>
         )}
-        <FormMessage error={error} />
+        <FormMessage error={error ?? loadError} />
       </header>
       <div className="call-page__main">
         {joined ? (

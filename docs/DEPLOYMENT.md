@@ -356,8 +356,10 @@ A page that was open during the update keeps working and never reloads by itself
 of something (decided 2026-11-01):
 
 - It shows **"A new version of this site is available."** with a **Reload** button at the top of
-  the main column (`client/src/app/UpdateNotice.jsx`) once `/api/health` reports another commit
-  than the one the page was built from. The page asks every 5 minutes while its tab is visible
+  the main column (`client/src/app/UpdateNotice.jsx`), and the embedded chat (docs/EMBED.md)
+  shows **"A new version of the chat is available."** the same way at its top (since 2026-11-02;
+  in a frame on another site "this site" would be that site), once `/api/health` reports another
+  commit than the one the page was built from. The page asks every 5 minutes while its tab is visible
   (one small request; a hidden tab does not ask) and at once when its chat connection is back
   after the restart, so a signed-in visitor usually sees it within seconds.
 - A part of the site loaded on first use (call page, prices, info pages, admin, embedded chat)
@@ -632,6 +634,18 @@ Then delete `restore.tar` on the PC too.
 
 - `--check` verifies the checksum, the SQLite integrity and the media count, and touches
   nothing.
+- **Deleted accounts stay deleted** (decided 2026-11-02): every account deleted after the backup
+  was taken is deleted again right after the restore, with its messages and files, exactly as the
+  site deletes one. The site notes each deletion (account id, username, time; nothing else) in
+  `/data/account-deletions.jsonl` in the site's volume (`DELETION_JOURNAL`), which no backup
+  contains and which keeps 30 days. The restore names each account it deleted again
+  ("deleted again: account 12 (mia), deleted …"), or says no account was deleted after the
+  backup. An account found under the same id but another name is a different one and stays; the
+  restored site's last admin is never deleted ("NOT deleted again: … the last admin of the
+  restored site"). **On a new server** the journal is not there yet: copy
+  `account-deletions.jsonl` from the old server's volume `seasonal-site_site-data` (its path:
+  `docker volume inspect seasonal-site_site-data --format '{{ .Mountpoint }}'`) into the new
+  one before the restore, or the accounts deleted after the backup come back.
 - Without `--force` the restore refuses existing data. A new server always has some: the first
   start creates the starting content. With `--force` the current database and media are moved
   aside to `….before-restore-<time>` in the volume, never deleted. Delete those once the restored

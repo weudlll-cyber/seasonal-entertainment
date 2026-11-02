@@ -42,7 +42,7 @@ export function accountDeleteRoutes(db, config, { chatSessions, chatAccounts }, 
       return sendError(res, 401, 'invalid_credentials', 'Password or code is wrong.');
     }
     try {
-      deleteAccount(db, chatAccounts, user);
+      deleteAccount(db, { chatAccounts, journal: config.deletionJournal }, user);
     } catch (err) {
       if (!(err instanceof LastAdminError)) throw err;
       return sendError(

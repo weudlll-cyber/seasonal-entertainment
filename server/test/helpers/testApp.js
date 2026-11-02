@@ -49,6 +49,7 @@ export function makeTestApp(
     ...base,
     databasePath: path.join(dir, 'test.db'),
     mediaDir: path.join(dir, 'media'),
+    deletionJournal: path.join(dir, 'account-deletions.jsonl'),
     clientDist: path.join(dir, 'no-client'),
     publicOrigin: ORIGIN,
     backgroundJobs: false,

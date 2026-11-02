@@ -56,6 +56,14 @@ const PUBLIC_MEDIA = /^\/(?:previews\/|bot-images\/)?[0-9a-f]{32}\.(?:webp|png|g
 // the WebSocket upgrade; previewNetwork: how link previews reach the internet (tests replace
 // it); embedOrigins: the sites approved for the embedded chat (embed/origins.js), for sockets
 // that connect with an embed token. Call before the API's catch-all 404.
+// The chat's part of deleting an account, also without a running chat (a restore deleting
+// again, accounts/deletionJournal.js): its rows inside the caller's transaction (returns the
+// files), then those files on disk after the commit.
+export const chatAccounts = (db, config) => ({
+  deleteData: (userId) => deleteChatData(db, userId),
+  deleteFiles: (files) => deleteChatFiles(config, files),
+});
+
 export function mountChat({ app, api, db, config, sessionParser, previewNetwork, embedOrigins }) {
   const hub = new ChatHub(db, config, embedOrigins);
   const previews = createPreviewService(db, config, hub, previewNetwork);
@@ -121,12 +129,8 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
       // Embed tokens ended (embed/): { tokenId } | { origin } | { userId } — their sockets close.
       embedRevoked: (which) => hub.disconnectEmbeds(which),
     },
-    // For deleting an account (accounts/deletion.js): its chat rows the schemas keep, inside the
-    // caller's transaction (returns the files), then those files on disk after the commit.
-    accounts: {
-      deleteData: (userId) => deleteChatData(db, userId),
-      deleteFiles: (files) => deleteChatFiles(config, files),
-    },
+    // For deleting an account (accounts/deletion.js): chatAccounts above.
+    accounts: chatAccounts(db, config),
     // For areas with a chat room of their own (a call's chat, calls/): an unlisted room,
     // shown only where a panel names it, closed (read-only for everyone) when it is over.
     rooms: {

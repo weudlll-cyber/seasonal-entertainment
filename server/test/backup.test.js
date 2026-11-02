@@ -7,7 +7,8 @@
 //              integrity check, the same rows, the same files; backups older than 14 days and
 //              leftovers of failed runs are deleted, newer ones kept; a tampered or incomplete
 //              backup is refused; existing data is refused without force and moved aside (with
-//              its write-ahead log) with it; the two scripts do the same from the command line.
+//              its write-ahead log) with it; the two scripts do the same from the command line,
+//              and the restore script deletes again an account deleted after the backup.
 // ============================================================
 
 import { execFileSync } from 'node:child_process';
@@ -25,6 +26,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Database from 'better-sqlite3';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { noteDeletion } from '../src/accounts/deletionJournal.js';
 import { KEEP_DAYS, makeBackup } from '../src/backup/backup.js';
 import { checkDatabase } from '../src/backup/files.js';
 import { restoreBackup, verifyBackup } from '../src/backup/restore.js';
@@ -156,7 +158,18 @@ it('the scripts back up and restore from the command line', async () => {
   const dir = path.join(backupRoot(), name);
   expect(run('restore.mjs', [dir, '--check'])).toMatch(/is sound/);
   const restored = target();
-  const extra = { DATABASE_PATH: restored.databasePath, MEDIA_DIR: restored.mediaDir };
-  expect(run('restore.mjs', [dir], extra)).toMatch(/restored the backup/);
-  expect(usernames(restored.databasePath)).toEqual(['anna', 'ben']);
+  // ben's account is deleted after the backup (accounts/deletionJournal.js): the restore
+  // deletes it again and says so.
+  const journal = path.join(work, 'account-deletions.jsonl');
+  const ben = t.db.prepare("SELECT id, username FROM users WHERE username = 'ben'").get();
+  noteDeletion(journal, ben);
+  const extra = {
+    DATABASE_PATH: restored.databasePath,
+    MEDIA_DIR: restored.mediaDir,
+    DELETION_JOURNAL: journal,
+  };
+  const out = run('restore.mjs', [dir], extra);
+  expect(out).toMatch(/restored the backup/);
+  expect(out).toContain(`deleted again: account ${ben.id} (ben)`);
+  expect(usernames(restored.databasePath)).toEqual(['anna']);
 });

@@ -7,7 +7,9 @@
 //              and audio starts; a speaker's screen share without sound shows the notice (in Chrome
 //              and Edge how to share with sound, and "Share again with sound", which asks the
 //              browser once more) and is reported to the server; the call ending for everyone shows
-//              so. Guests get no hand; calls not live offer no Join.
+//              so. Guests get no hand; calls not live offer no Join. A load refused for the
+//              moment (429) is asked again, so the Join button still comes; "no such call" is
+//              not asked again.
 // ============================================================
 
 import { act, fireEvent, screen } from '@testing-library/react';
@@ -16,6 +18,7 @@ import { FakeSocket } from '../test/fakeSocket.js';
 import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
 import { rooms } from '../test/fakeLiveKit.js';
 import { renderApp } from '../test/renderApp.jsx';
+import { RETRY_MS } from '../pages/CallPage.jsx';
 import { NO_SHARE_AUDIO, NO_SOUND_SHARED } from './stageModel.js';
 
 // The stand-in Room (test/fakeLiveKit.js): records what the page asks, lets a test send events.
@@ -153,4 +156,58 @@ it('a call linked to a bot event names the event; one without names none', async
   await renderApp('/calls/7');
   await screen.findByText(/This call has not started yet/);
   expect(screen.queryByText(/Event:/)).toBeNull();
+});
+
+it('a load refused for the moment is asked again, and Join comes', async () => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true });
+  try {
+    let refusals = 1;
+    const live = answers('live');
+    const calls = mockApi({
+      ...signedIn({ username: 'mia', role: 'member' }),
+      ...live,
+      // The server's read limit for one address (server/src/app.js), once.
+      'GET /calls/7': () =>
+        refusals-- > 0
+          ? {
+              status: 429,
+              body: {
+                ok: false,
+                error: 'too_many_attempts',
+                message: 'Too many attempts. Please try again later.',
+              },
+            }
+          : live['GET /calls/7'],
+    });
+    await renderApp('/calls/7');
+    expect(
+      await screen.findByText('Too many attempts. Please try again later.')
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Join call' })).toBeNull();
+    await act(() => vi.advanceTimersByTimeAsync(RETRY_MS));
+    expect(await screen.findByRole('button', { name: 'Join call' })).toBeInTheDocument();
+    expect(screen.queryByText('Too many attempts. Please try again later.')).toBeNull();
+    expect(calls.filter((c) => c.key === 'GET /calls/7')).toHaveLength(2);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it('"no such call" is not asked again', async () => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true });
+  try {
+    const calls = mockApi({
+      ...signedIn({ username: 'mia', role: 'member' }),
+      'GET /calls/7': {
+        status: 404,
+        body: { ok: false, error: 'not_found', message: 'No such call.' },
+      },
+    });
+    await renderApp('/calls/7');
+    expect(await screen.findByText('No such call.')).toBeInTheDocument();
+    await act(() => vi.advanceTimersByTimeAsync(3 * RETRY_MS));
+    expect(calls.filter((c) => c.key === 'GET /calls/7')).toHaveLength(1);
+  } finally {
+    vi.useRealTimers();
+  }
 });
