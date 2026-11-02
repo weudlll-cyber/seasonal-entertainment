@@ -24,9 +24,15 @@ export default [
     },
   },
 
-  // Node: server, root scripts and tool configs.
+  // Node: server, root scripts, the throwaway spikes and tool configs.
   {
-    files: ['server/**/*.js', 'scripts/**/*.mjs', '*.config.js', 'client/vite.config.js'],
+    files: [
+      'server/**/*.js',
+      'scripts/**/*.mjs',
+      'spike/**/*.mjs',
+      '*.config.js',
+      'client/vite.config.js',
+    ],
     languageOptions: { globals: globals.node },
   },
 
