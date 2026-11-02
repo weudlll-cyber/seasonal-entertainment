@@ -6,8 +6,8 @@
 //              the weekly recap's next seven days; docs/CALLS.md, "In the event lists"), from the
 //              /api/calls answer's shape ({ configured, calls: { live, upcoming } }). withCalls()
 //              merges them with the event bot's occurrences by start time. A call linked to an
-//              occurrence that is in the list (same id and start; docs/CALLS.md, "Linked to a bot
-//              event") is not listed a second time: the occurrence carries it instead (listen: {
+//              occurrence that is in the list (one of its copies' ids, and the same start;
+//              docs/CALLS.md, "Linked to a bot event") is not listed a second time: the occurrence carries it instead (listen: {
 //              id, live }, "Listen on this site"). Nothing while calls are not set up.
 // ============================================================
 
@@ -39,11 +39,12 @@ export function withCalls(occurrences, calls, { from = -Infinity, to }) {
   const linked = new Map(); // occurrence -> its call entry
   const own = [];
   for (const entry of callEntries(calls)) {
-    // Matched by id and start: an occurrence that moved has lost its call (the call keeps its
-    // own time and is listed as itself).
+    // Matched by any copy's id (a link may name the copy of one channel; server/src/bots/
+    // events.js) and the start: an occurrence that moved has lost its call (the call keeps
+    // its own time and is listed as itself).
     const occurrence =
       entry.event &&
-      occurrences.find((o) => o.id === entry.event.id && o.start === entry.event.start);
+      occurrences.find((o) => o.ids.includes(entry.event.id) && o.start === entry.event.start);
     if (occurrence && !linked.has(occurrence)) linked.set(occurrence, entry);
     else if (entry.start >= from && entry.start < to) own.push(entry);
   }

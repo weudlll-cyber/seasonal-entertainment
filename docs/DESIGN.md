@@ -265,14 +265,24 @@ minimum window:
   tile, its length from `PriceTiles`), so every price fits beside the mark, whatever its digits.
 - **The sidebar fits 650px without a scrollbar**: "Imprint", "Privacy" and "Not financial
   advice" share one line (a small gap between the 44px targets); with the old gap the third
-  wrapped onto a second line.
+  wrapped onto a second line. Since "Manage events" joined the staff items (2026-11-02) the
+  menu is tighter as well, so the fullest menu (Admin or Site banner, and Manage events) fits
+  609px of height: the owner's 1915 x 913 window at 150 % browser zoom leaves 1277 x 609 CSS
+  pixels, where it was 31px too tall and the scrollbar pushed "Not financial advice" out of
+  sight. 8px between nav, account card and legal links (was 16px), 2px between the pills (was
+  4px; they keep their 44px), 8px above the logo (was 16px), none between the logo bar and the
+  first pill (was 8px), 8px at the bottom (was 16px), 4px around the divider (was 8px) and 8px
+  above the account card (was 16px): about 9px to spare there. A shorter window or a larger zoom
+  scrolls the menu again (nothing is lost, it scrolls).
 - **A narrow Fair price box** (one column of a 1280px window, beside Next call) drops its four
   marks and takes the title on one line; its text wrapped so far that the Disclaimer link was
   cut.
 
 `client/e2e/layout.spec.js` checks this at 1200 x 650, 1366 x 768 and 1500 x 940 (no box cut, no
 price under its mark, the admin's sidebar without a scrollbar), with the widest prices on the
-tiles in every home test.
+tiles in every home test, and the full staff menu with Manage events set up, for an admin and
+for an organiser, light and dark, without a scrollbar, also at 1915 x 913, 1920 x 1080,
+1680 x 900, 2560 x 1080 and 1277 x 609 (150 % zoom).
 
 1. **Banner**: night blue (`--banner-background`) with the faint season pattern
    (`client/src/brand/seasonPattern.css`), the emblem, "SEASONAL" in the logo's gradient

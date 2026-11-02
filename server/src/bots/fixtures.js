@@ -10,7 +10,9 @@
 //              prices and 24-hour changes (LATEST: the widest cases), and fake mining rates
 //              (buildMiningRates). Events: a few weekly events
 //              around `now`, past ones done, one moved by an override (two overrides, the later
-//              wins), one canceled this week, one inactive and one with a non-web link; three
+//              wins), one canceled this week, one inactive and one with a non-web link; one
+//              occurrence per announcing channel as the bot keeps them, one event on two
+//              channels and one on three (two places, each with its own link); three
 //              with an image on the fixture's own image host (buildEventImages draws them), one
 //              with an image the network guard refuses (http).
 //              docs/BOTS.md, "Development data".
@@ -131,7 +133,9 @@ CREATE TABLE IF NOT EXISTS occurrence_overrides (
 
 // The fixture's own image host (bots/fixtureNetwork.js answers it in development only).
 const IMAGES = 'https://images.bot-fixtures.test';
-// weekday: ISO (1 = Monday); hour and minute in UTC; image: the bot's image_url.
+// weekday: ISO (1 = Monday); hour and minute in UTC; image: the bot's image_url; channels: the
+// platforms announcing it, each with its location: the bot keeps one occurrence per channel
+// (docs/BOTS.md), which the site shows as one entry.
 const SAMPLE_EVENTS = [
   {
     name: '[Sample] Bot Quiz Night',
@@ -139,9 +143,11 @@ const SAMPLE_EVENTS = [
     weekday: 2,
     hour: 20,
     minute: 0,
-    platform: 'telegram',
-    url: 'https://example.org/quiz',
-    label: 'Sample quiz group',
+    // Two channels, one place: shown once, as "Sample quiz group" (never the platforms).
+    channels: [
+      { platform: 'telegram', url: 'https://example.org/quiz', label: 'Sample quiz group' },
+      { platform: 'discord', url: 'https://example.org/quiz', label: 'Sample quiz group' },
+    ],
     image: `${IMAGES}/quiz.png`,
   },
   {
@@ -150,9 +156,9 @@ const SAMPLE_EVENTS = [
     weekday: 4,
     hour: 17,
     minute: 0,
-    platform: 'discord',
-    url: 'https://example.org/call',
-    label: 'Sample voice channel',
+    channels: [
+      { platform: 'discord', url: 'https://example.org/call', label: 'Sample voice channel' },
+    ],
     image: `${IMAGES}/call.png`,
   },
   {
@@ -162,9 +168,9 @@ const SAMPLE_EVENTS = [
     weekday: 6,
     hour: 15,
     minute: 0,
-    platform: 'discord',
-    url: 'tg://resolve?domain=example',
-    label: 'Not a web link',
+    channels: [
+      { platform: 'discord', url: 'tg://resolve?domain=example', label: 'Not a web link' },
+    ],
     image: 'http://images.bot-fixtures.test/stream.png',
   },
   {
@@ -173,9 +179,12 @@ const SAMPLE_EVENTS = [
     weekday: 5,
     hour: 22,
     minute: 0,
-    platform: 'discord',
-    url: 'https://example.org/battles',
-    label: 'Sample battle channel',
+    // Three channels, two places, each with its own link.
+    channels: [
+      { platform: 'discord', url: 'https://example.org/battles', label: 'Sample battle channel' },
+      { platform: 'telegram', url: 'https://example.org/battles', label: 'Sample battle channel' },
+      { platform: 'youtube', url: 'https://example.org/battles-live', label: 'Sample stream' },
+    ],
     image: `${IMAGES}/battles.png`,
   },
   {
@@ -184,9 +193,7 @@ const SAMPLE_EVENTS = [
     weekday: 3,
     hour: 12,
     minute: 0,
-    platform: 'telegram',
-    url: null,
-    label: null,
+    channels: [{ platform: 'telegram', url: null, label: null }],
     image: null,
     inactive: true,
   },
@@ -238,7 +245,7 @@ export function buildEventFixture(file, { now = Date.now() } = {}) {
   const monday = today - ((new Date(today).getUTCDay() + 6) % 7) * DAY_MS;
   db.transaction(() => {
     for (const event of SAMPLE_EVENTS) {
-      const { name, description, weekday, hour, minute, platform, url, label } = event;
+      const { name, description, weekday, hour, minute, channels } = event;
       const active = event.inactive ? 0 : 1;
       const eventId = Number(
         addEvent.run(name, description, 'sample', event.image, active, stamp, stamp).lastInsertRowid
@@ -248,9 +255,11 @@ export function buildEventFixture(file, { now = Date.now() } = {}) {
           monday + week * 7 * DAY_MS + (weekday - 1) * DAY_MS + (hour * 60 + minute) * 60_000;
         const canceled = week === 0 && name === '[Sample] Bot Weekend Stream';
         const status = canceled ? 'canceled' : start < now ? 'done' : 'scheduled';
-        const occurrenceId = Number(
-          addOccurrence.run(eventId, iso(start), platform, url, label, status, stamp, stamp)
-            .lastInsertRowid
+        const [occurrenceId] = channels.map(({ platform, url, label }) =>
+          Number(
+            addOccurrence.run(eventId, iso(start), platform, url, label, status, stamp, stamp)
+              .lastInsertRowid
+          )
         );
         if (week !== 0) continue;
         if (name === '[Sample] Bot Community Call') {

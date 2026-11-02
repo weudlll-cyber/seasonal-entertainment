@@ -115,9 +115,14 @@ Generate a production pair on the call server with
   by `POST /api/calls { botOccurrenceId }` and changed by `PUT /api/calls/:id/event
 { botOccurrenceId | null }` (planned calls only, audited as `call.event`). An occurrence that
   is not one of the upcoming ones is refused (`unknown_event`).
+  - **One entry per date** (decided 2026-11-02): the bot keeps one occurrence per channel, and
+    the site lists them as one entry with the lowest copy's id and `ids`, every copy's
+    (docs/BOTS.md). The picker sends the entry's id; any copy's id is accepted and the entry's id
+    is stored. A link saved before (naming whichever channel's copy) still finds its entry: the
+    call's page, "Up next", `/events` and the card's picker all match any copy's id.
   - **Shown**: in "Up next" and on `/events`, the linked occurrence offers "Listen on this
     site" (to the call's page), and the call is not listed a second time; while the call is
-    live, the event shows "Live now". The match is by the occurrence's id **and** start
+    live, the event shows "Live now". The match is by one of the occurrence's copy ids **and** its start
     (`withCalls` in `shared/callEntries.js`), from the Calls page's own answer, so a
     viewer sees the link only for the live and planned calls the Calls page shows them. The
     call's page names the event ("Event: <name>"; `GET /api/calls/:id` answers `event`).

@@ -25,30 +25,35 @@ const TO = Date.parse('2026-10-25T23:00:00Z');
 const NEXT = Date.parse('2026-11-01T23:00:00Z');
 const occurrence = (id, name, start, extra = {}) => ({
   id,
+  ids: [id],
   name,
   description: '',
   category: '',
   start: Date.parse(start),
-  platform: 'discord',
-  locationLabel: '',
-  locationUrl: null,
+  places: [],
   status: 'scheduled',
   image: null,
   ...extra,
 });
 const WEEK = [
   occurrence(10, 'Monday Quiz', '2026-10-19T18:00:00Z', {
-    locationLabel: 'Quiz channel',
+    places: [{ locationLabel: 'Quiz channel', locationUrl: null }],
     image: '/media/bot-images/0123456789abcdef0123456789abcdef.webp?v=1',
   }),
   occurrence(11, 'Community <b>Call</b>', '2026-10-22T18:30:00Z', {
-    locationLabel: 'Voice',
-    locationUrl: 'https://example.org/call',
+    // Three channels, two places (server/src/bots/events.js): each once, with its link.
+    places: [
+      {
+        locationLabel: 'Voice',
+        locationUrl: 'https://example.org/call',
+      },
+      { locationLabel: 'Stream', locationUrl: 'https://example.org/live' },
+    ],
     description: '<img src=x onerror=alert(1)>',
   }),
   occurrence(12, 'Weekend Stream', '2026-10-24T15:00:00Z', {
     status: 'canceled',
-    locationLabel: 'Not a web link',
+    places: [{ locationLabel: 'Not a web link', locationUrl: null }],
   }),
 ];
 
@@ -109,7 +114,8 @@ it('the week at local times with the zone and UTC beside them, across the DST ch
   const monday = await screen.findByRole('region', { name: 'Monday 19 October' });
   expect(monday).toHaveTextContent('20:00 CEST');
   expect(monday).toHaveTextContent('(18:00 UTC)');
-  expect(monday).toHaveTextContent('discord: Quiz channel');
+  expect(monday).toHaveTextContent('Quiz channel');
+  expect(monday).not.toHaveTextContent(/discord/i);
   fireEvent.click(screen.getByRole('button', { name: 'Next week →' }));
   const after = await screen.findByRole('region', { name: 'Monday 26 October' });
   expect(after).toHaveTextContent('19:00 CET');
@@ -132,6 +138,19 @@ it('bot text stays text; only a passed-on web link becomes a link, opened safely
   const link = within(thursday).getByRole('link', { name: 'Open Voice' });
   expect(link).toHaveAttribute('href', 'https://example.org/call');
   expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+});
+
+it('an event announced on several channels is listed once, each place once, no platform', async () => {
+  showWeek({ thisWeek: { connected: true, occurrences: WEEK } });
+  const thursday = await screen.findByRole('region', { name: 'Thursday 22 October' });
+  expect(within(thursday).getAllByRole('listitem')).toHaveLength(1);
+  expect(within(thursday).getByText('Voice', { exact: true })).toBeInTheDocument();
+  expect(within(thursday).getByText('Stream', { exact: true })).toBeInTheDocument();
+  expect(thursday).not.toHaveTextContent(/discord|telegram|youtube/i);
+  expect(within(thursday).getByRole('link', { name: 'Open Stream' })).toHaveAttribute(
+    'href',
+    'https://example.org/live'
+  );
 });
 
 it("shows the event's image from this site, with the event's name as alt text", async () => {

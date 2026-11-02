@@ -38,6 +38,23 @@ event calendar is not connected.".
   - The latest override per occurrence wins (the highest `id`, as the bot itself does it in
     `parsing/query_service.py`): its start, platform, location and status replace the
     occurrence's wherever it sets them.
+  - **One entry per event and start** (decided 2026-11-02). The bot keeps one occurrence per
+    announcement channel (Telegram, Discord, more later), all at the same start; the site groups
+    them by event and effective start (after the overrides), so the home page's "Up next",
+    `/events`, the weekly recap and the calls' event picker list each date once. In the live
+    data (2026-11-02) the copies differed only in platform and, for an old `both` copy, status.
+    - **Places**: each location (label and link) once, with its own link where it has one.
+      **The platforms never show** (decided 2026-11-02): they only tell the bot where to
+      announce, and never leave the server (`/api/bot-events` has none).
+    - **Status**: `canceled` only when every copy is; otherwise the running copies' status
+      (`scheduled` while any copy is) and only their places, so a dropped channel no longer
+      shows.
+    - **Id**: the lowest copy's id, plus `ids`, every copy's (canceled ones too). A call linked
+      to a bot event (docs/CALLS.md) names one copy; any copy's id finds the entry, so links saved
+      before the grouping (to whichever channel's copy) keep working, and a new link stores the
+      entry's id.
+    - A copy moved to another time by an override is an entry of its own: it really is at a
+      different time.
   - Statuses: `scheduled`, `done` (shown as usual), `canceled` (struck through, "canceled").
   - Times are ISO-8601 UTC text (`…Z` or `…+00:00`; no offset counts as UTC). `/events` shows
     them in the viewer's time zone with the UTC time beside them.
@@ -47,11 +64,11 @@ event calendar is not connected.".
 All public (guests too), read-only, rate limited per address (`botRead`: 120 a minute) and
 cached in memory for **5 minutes** per question (`server/src/bots/routes.js`):
 
-| Route                                   | Answer                                                                                                                                                  |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/prices`                       | `{ connected, prices: [{ token, price, at, change24h, spark }] }`                                                                                       |
-| `GET /api/prices/:token?range=7d`       | `{ connected, token, range, points: [[ms, price], …] }` (at most 500)                                                                                   |
-| `GET /api/bot-events?from=<ms>&to=<ms>` | `{ connected, occurrences: [{ id, name, description, category, start, platform, locationLabel, locationUrl, status }] }`; the window at most eight days |
+| Route                                   | Answer                                                                                                                                                                                           |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET /api/prices`                       | `{ connected, prices: [{ token, price, at, change24h, spark }] }`                                                                                                                                |
+| `GET /api/prices/:token?range=7d`       | `{ connected, token, range, points: [[ms, price], …] }` (at most 500)                                                                                                                            |
+| `GET /api/bot-events?from=<ms>&to=<ms>` | `{ connected, occurrences: [{ id, ids, name, description, category, start, places: [{ locationLabel, locationUrl }], status, image }] }`, one per event and start; the window at most eight days |
 
 A configured file that cannot be read (missing, locked, being replaced) answers **503**
 `bot_unavailable`; the reason goes to the server log, and the next request tries again
@@ -73,7 +90,7 @@ A configured file that cannot be read (missing, locked, being replaced) answers 
 
 ## Bot text is untrusted
 
-- Names, descriptions, platforms and labels are rendered as text only (React escapes them; no
+- Names, descriptions and labels are rendered as text only (React escapes them; no
   HTML is ever interpreted).
 - A `location_url` becomes a link only if it is `http:` or `https:`; anything else (`tg://…`,
   `javascript:…`) is dropped on the server. Links open with `rel="noopener noreferrer"`.
@@ -271,7 +288,9 @@ docs/DEPLOYMENT.md).
   mining rates (`mining_rates.json`: 40, 30, 60, 50);
 - a few weekly `[Sample]` events from two weeks back to four ahead: past ones `done`, one moved
   by two overrides (the later wins), one canceled this week, one inactive (never shown) and one
-  with a non-web link (shown as text);
+  with a non-web link (shown as text); one occurrence per announcing channel, as the bot keeps
+  them: the Quiz Night on two channels at one place, the Friday Battles on three (Discord and
+  Telegram at one place, YouTube at its own with its own link), each listed once;
 - event images: three events name one on the fixture's own host `images.bot-fixtures.test`
   (drawn into `data/bot-fixtures/images/`), one a plain `http://` image the guard refuses. In
   development only, the server answers that reserved host from those files

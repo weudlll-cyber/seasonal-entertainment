@@ -10,7 +10,12 @@
 //              lies under the floating chat button (owner decision 2026-10-17, confirmed
 //              2026-10-21), no price runs under its season mark. Shorter windows (1200 x 650,
 //              1366 x 768, 1500 x 940; 2026-11-01): Home the same, and the admin's sidebar fits
-//              without a scrollbar. At 390 x 844 (phone): no window scroll, a top bar, and the navigation drawer opens and closes (close button,
+//              without a scrollbar; so does the full staff menu with "Manage events" set up, for
+//              an admin and for an organiser (Site banner), light and dark, at those sizes, at
+//              1915 x 913, 1920 x 1080, 1680 x 900, 2560 x 1080 and at 1277 x 609 (a 1915 x 913
+//              window at 150 % zoom; 2026-11-02). At
+//              390 x 844 (phone): no window scroll, a top bar, and the navigation drawer opens
+//              and closes (close button,
 //              Escape, following a link), with focus going in and back. The chat button shows
 //              exactly on the pages that have no chat of their own (not /chat, not /admin); at
 //              phone width its drawer opens full width and closes.
@@ -260,6 +265,42 @@ for (const [width, height] of SHORT) {
       expect(await sidebarScrolls(page)).toBe(false);
     });
   });
+}
+
+// The fullest staff menu: the event bot's admin page set up (features.botAdmin) and the role
+// given, both only in this page's session answer (the pages check again; here only the menu
+// counts).
+async function staffMenu(page, role) {
+  await page.route('**/api/auth/session', async (route) => {
+    const answer = await (await route.fetch()).json();
+    answer.user.role = role;
+    answer.features = { ...answer.features, botAdmin: true };
+    await route.fulfill({ json: answer });
+  });
+}
+// Every window the menu was seen in (2026-11-02): the short ones above, wide ones, and the
+// owner's 1915 x 913 window at 150 % browser zoom, which leaves 1277 x 609 CSS pixels.
+const MENU_SIZES = [...SHORT, [1915, 913], [1920, 1080], [1680, 900], [2560, 1080], [1277, 609]];
+for (const [width, height] of MENU_SIZES) {
+  for (const role of ['admin', 'organiser']) {
+    for (const colorScheme of ['light', 'dark']) {
+      test(`${width} x ${height}: the ${role}'s full menu fits without a scrollbar (${colorScheme})`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height });
+        await page.emulateMedia({ colorScheme });
+        await staffMenu(page, role);
+        await page.goto('/');
+        const nav = page.getByRole('navigation', { name: 'Main' });
+        await expect(nav.getByRole('link', { name: 'Manage events' })).toBeVisible();
+        await expect(
+          nav.getByRole('link', { name: role === 'admin' ? 'Admin' : 'Site banner' })
+        ).toBeVisible();
+        await page.waitForLoadState('networkidle');
+        expect(await sidebarScrolls(page)).toBe(false);
+      });
+    }
+  }
 }
 
 test.describe('390 x 844 (phone)', () => {

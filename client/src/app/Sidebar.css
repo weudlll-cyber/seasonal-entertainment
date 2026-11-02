@@ -21,7 +21,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-1);
-  padding: var(--space-2) var(--space-2) var(--space-1);
+  /* 8px above the logo (was 16px): part of fitting the full menu, see .sidebar__panel. */
+  padding: var(--space-1) var(--space-2) var(--space-1);
 }
 
 .sidebar__brand {
@@ -61,14 +62,19 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-2) var(--space-2);
+  /* Tight enough that the fullest staff menu (Admin or Site banner, and Manage events) fits
+     609px of height without scrolling: a 1915 x 913 window at 150 % browser zoom, the
+     owner's (2026-11-02; client/e2e/layout.spec.js). 8px between nav, account card and legal
+     links, 2px between the pills (which keep their full 44px), no padding above the nav (the
+     bar's 8px is enough), 8px below, 4px around the divider, 8px above the account card. */
+  gap: var(--space-1);
+  padding: 0 var(--space-2) var(--space-1);
   overflow-y: auto;
 }
 
 .sidebar__nav ul {
   display: grid;
-  gap: 0.25rem;
+  gap: 0.125rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -129,7 +135,7 @@
 }
 
 .sidebar__divider {
-  margin: var(--space-1) 0;
+  margin: 0.25rem 0;
   border: 0;
   border-top: 1px solid var(--color-border);
 }

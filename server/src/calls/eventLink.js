@@ -6,8 +6,11 @@
 //              a bot event"), kept on the site's side only: the occurrence's id and its start
 //              when linked. The bot's file is only read (bots/botDb.js, bots/events.js): the
 //              occurrences of the next 30 days for the organisers' picker, and the linked
-//              occurrence as it is now. An occurrence that vanished or moved simply has no
-//              link any more; an unreadable bot file is logged and treated as no link.
+//              occurrence as it is now. The bot keeps one occurrence per channel and the site
+//              shows them as one (bots/events.js); a link names one copy's id, so any copy's
+//              id finds its entry, links saved before the grouping included, and a new link
+//              stores the entry's id. An occurrence that vanished or moved simply has no link
+//              any more; an unreadable bot file is logged and treated as no link.
 // ============================================================
 
 import { readBotDb } from '../bots/botDb.js';
@@ -28,11 +31,11 @@ function occurrencesBetween(config, from, to) {
   }
 }
 
-// The scheduled occurrences of the next 30 days, for the picker: [{ id, name, start }].
+// The scheduled occurrences of the next 30 days, for the picker: [{ id, ids, name, start }].
 export function upcomingOccurrences(config, now = Date.now()) {
   return occurrencesBetween(config, now, now + PICK_DAYS * DAY_MS)
     .filter((o) => o.status === 'scheduled')
-    .map(({ id, name, start }) => ({ id, name, start }));
+    .map(({ id, ids, name, start }) => ({ id, ids, name, start }));
 }
 
 // The linked occurrence as the bot has it now ({ id, name, start }), or null: not linked, or
@@ -40,8 +43,8 @@ export function upcomingOccurrences(config, now = Date.now()) {
 export function linkedOccurrence(config, call) {
   if (call.botOccurrenceId === null || call.botOccurrenceId === undefined) return null;
   const start = call.botOccurrenceStart;
-  const found = occurrencesBetween(config, start, start + 1).find(
-    (o) => o.id === call.botOccurrenceId
+  const found = occurrencesBetween(config, start, start + 1).find((o) =>
+    o.ids.includes(call.botOccurrenceId)
   );
   return found ? { id: found.id, name: found.name, start: found.start } : null;
 }
@@ -50,7 +53,7 @@ export function linkedOccurrence(config, call) {
 // there (not scheduled, past, beyond 30 days, or unknown); null when none was picked.
 export function pickedOccurrence(config, id) {
   if (id === undefined || id === null) return null;
-  return upcomingOccurrences(config).find((o) => o.id === id);
+  return upcomingOccurrences(config).find((o) => o.ids.includes(id));
 }
 
 // The body's botOccurrenceId: undefined or null (no link), else a positive whole number.
