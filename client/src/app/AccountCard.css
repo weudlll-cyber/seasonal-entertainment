@@ -11,7 +11,8 @@
   align-items: center;
   gap: var(--space-1);
   margin-top: auto;
-  padding-top: var(--space-2);
+  /* 8px (was 16px), so the full staff menu fits a short window (Sidebar.css, .sidebar__panel). */
+  padding-top: var(--space-1);
   border-top: 1px solid var(--color-border);
 }
 

@@ -11,7 +11,9 @@
 //              2026-10-21), no price runs under its season mark. Shorter windows (1200 x 650,
 //              1366 x 768, 1500 x 940; 2026-11-01): Home the same, and the admin's sidebar fits
 //              without a scrollbar; so does the full staff menu with "Manage events" set up, for
-//              an admin and for an organiser (Site banner), light and dark (2026-11-02). At
+//              an admin and for an organiser (Site banner), light and dark, at those sizes, at
+//              1915 x 913, 1920 x 1080, 1680 x 900, 2560 x 1080 and at 1277 x 609 (a 1915 x 913
+//              window at 150 % zoom; 2026-11-02). At
 //              390 x 844 (phone): no window scroll, a top bar, and the navigation drawer opens
 //              and closes (close button,
 //              Escape, following a link), with focus going in and back. The chat button shows
@@ -276,7 +278,10 @@ async function staffMenu(page, role) {
     await route.fulfill({ json: answer });
   });
 }
-for (const [width, height] of SHORT) {
+// Every window the menu was seen in (2026-11-02): the short ones above, wide ones, and the
+// owner's 1915 x 913 window at 150 % browser zoom, which leaves 1277 x 609 CSS pixels.
+const MENU_SIZES = [...SHORT, [1915, 913], [1920, 1080], [1680, 900], [2560, 1080], [1277, 609]];
+for (const [width, height] of MENU_SIZES) {
   for (const role of ['admin', 'organiser']) {
     for (const colorScheme of ['light', 'dark']) {
       test(`${width} x ${height}: the ${role}'s full menu fits without a scrollbar (${colorScheme})`, async ({
