@@ -34,8 +34,26 @@ entry waits for.
 - **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
   own repository and is not connected.
 
+### Known limits
+
+- **A deleted account's messages on pages already open** — deleting an account deletes its room
+  messages at once (docs/AUTH.md, "Deleting an account"), but chat pages that are already open
+  keep showing them until they reload: no event tells open pages to remove them.
+
 ## PART TWO — closed
 
+- **Bot events listed twice** — closed by `fix/se-event-dedupe` (decided 2026-11-02): the event
+  bot keeps one occurrence per announcement channel; the site lists an event at one start once,
+  with the platforms together per place, canceled only when every copy is, and the lowest copy's
+  id plus every copy's, so call links saved before keep working (`server/src/bots/events.js`;
+  docs/BOTS.md, docs/CALLS.md). Live data (2026-11-02): 629 occurrences in 308 dates.
+- **Unknown names on the owner's server** — done on the server 2026-11-02 (approved change): a
+  catch-all `default_server` (`/etc/nginx/sites-available/catch-all.conf`) answers nothing on
+  80 (IPv4, IPv6) and 443 (IPv4) instead of the distribution's welcome page, whose link is gone
+  (its file stays); IPv6 443 stays with the installer's refusing server. Every named site answered
+  exactly as before; the snapshot is in `/root/nginx-snapshots/`. For other servers:
+  `deploy/nginx/catch-all.conf` and docs/DEPLOYMENT.md, "Unknown names: a catch-all" (branch
+  `docs/se-next-2-backlog`); the installer tests' nginx scenario adds it before `--update`.
 - **A call test that sometimes hangs on CI** — closed by `fix/se-small-2`. The cause: the read
   limit of 1200 `GET`s under `/api` per address and minute (since 2026-10-21). Every browser
   test comes from 127.0.0.1; the runs that hung (2026-10-23) went through 102 tests in about 53

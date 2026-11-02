@@ -27,7 +27,9 @@
 #              token double-quoted, with punctuation, in a CRLF file) and
 #              checked through the site's login (checks-bot-admin.sh; once with the installer's
 #              X-Acting-User line taken out, which the header check must see), kept by
-#              --update, removed by --uninstall and back after the install that follows; "jammy" =
+#              --update, removed by --uninstall and back after the install that follows; before
+#              --update the optional catch-all for unknown names (deploy/nginx/catch-all.conf) is
+#              added, which --update must accept with no answer for unknown names; "jammy" =
 #              a 22.04 server with ufw active and the app profile "Nginx Full", the site alone,
 #              and a too-short password and a differing confirmation typed first.
 #              Not part of npm run verify or CI (it takes long and needs Docker with privileged
@@ -255,6 +257,24 @@ update_backup_taken() {
 
 # output_has FROM TEXT / output_lacks FROM TEXT: the results from line FROM on (one run's
 # output) hold TEXT, or do not.
+# The optional catch-all for unknown names (deploy/nginx/catch-all.conf; docs/DEPLOYMENT.md,
+# "Unknown names: a catch-all"), added as the docs say. From then on unknown names get no
+# answer, and every later check compares with that.
+add_catch_all() {
+  on_server sh -c "install -m 644 $REMOTE/deploy/nginx/catch-all.conf /etc/nginx/sites-available/ &&
+    ln -s /etc/nginx/sites-available/catch-all.conf /etc/nginx/sites-enabled/catch-all.conf &&
+    rm /etc/nginx/sites-enabled/default && nginx -t 2>/dev/null && systemctl reload nginx"
+  on_server sh -c '/etc/seasonal-test/checks.sh unknown-name-answer >/etc/seasonal-test/unknown-name-answer'
+}
+
+# true when port 80 closes the connection for an unknown name (curl: 52, empty reply).
+no_http_answer() {
+  local code=0
+  on_server curl -s -o /dev/null --max-time 10 -H 'Host: unknown.invalid' http://127.0.0.1/ || code=$?
+  [[ "$code" == 52 ]]
+}
+http_answer() { ! no_http_answer; }
+
 output_has() { tail -n +"$1" "$RESULTS" | grep -qF -- "$2"; }
 output_lacks() { ! output_has "$@"; }
 
@@ -404,6 +424,13 @@ scenario() {
     restore_site_conf
     check bot-admin-headers
 
+    say "--- the catch-all for unknown names (docs/DEPLOYMENT.md), added before --update"
+    ok "without it port 80 answers an unknown name (the check below can fail)" http_answer
+    add_catch_all
+    ok "with it port 80 closes the connection for an unknown name" no_http_answer
+    ok "and 443 shows no certificate to an unknown name" on_server sh -c       "! grep -v 'no TLS answer' /etc/seasonal-test/unknown-name-answer"
+    check other
+
     say "--- --update to a newer commit of origin's default branch"
     local old_commit new_commit answers_before
     old_commit="$(head_commit)"
@@ -426,6 +453,7 @@ scenario() {
     ok "remembered answers unchanged by --update" test "$(answers_hash)" = "$answers_before"
     check served-commit "$new_commit"
     check unknown-name
+    ok "--update keeps the catch-all: port 80 still closes the connection" no_http_answer
     check_login
     check bot-admin-page
     check bot-admin-headers
