@@ -239,8 +239,9 @@ docs/DEPLOYMENT.md).
    2FA, and checks a change's Origin and writes its audit entry (docs/AUTH.md, "The event bot's
    admin page"); anything else and nginx refuses the request.
 4. nginx proxies to the bot (`127.0.0.1:8090/bot-admin/...`) with `X-Acting-User` from that
-   answer and `X-Bot-Admin-Token` read from a root-only file. The browser never sees the token;
-   the site never gets it.
+   answer and `X-Bot-Admin-Token` read from a root-only file, without the browser's `Cookie` (the
+   bot logs in by the token on every request). The browser never sees the token; the site never
+   gets it.
 
 **The bot's contract** (bot project PR #58, commit `c5cf09e`)
 

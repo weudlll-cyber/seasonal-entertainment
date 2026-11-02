@@ -165,7 +165,9 @@ case "$check" in
     [[ "$code" == 200 ]] || fail bot-admin-headers "the admin got $code"
     bot_got_admin bot-admin-headers
     [[ -z "$(stub_header x-forwarded-for)" ]] || fail bot-admin-headers "the browser's X-Forwarded-For reached the bot"
-    pass "the browser's own X-Bot-Admin-Token, X-Acting-User and X-Forwarded-For never reach the bot (replaced or dropped)"
+    # The admin's jar holds the site's session cookie: neither it nor any other reaches the bot.
+    [[ -z "$(stub_header cookie)" ]] || fail bot-admin-headers "the browser's Cookie header reached the bot"
+    pass "the browser's own X-Bot-Admin-Token, X-Acting-User, X-Forwarded-For and Cookie never reach the bot (replaced or dropped)"
     ;;
   bot-admin-post)
     audits="$(audit_count)"

@@ -259,7 +259,8 @@ only while the page is set up (`deploy/install/lib/bot-admin.sh`):
   include. What the visitor sent as `X-Bot-Admin-Token` or `X-Acting-User` never reaches the bot:
   both are always replaced. `X-Forwarded-For`, `X-Real-IP` and `Forwarded` are dropped, so a bot
   that trusts a proxy still sees the request coming from 127.0.0.1, the only address it takes
-  the token from.
+  the token from. `Cookie` is dropped too: the bot logs in by the token on every request, and
+  the visitor's cookies (the site's session among them) stay with the site.
 
 Every change runs through the usual `nginx -t`, load-order check, reload and comparison of the
 answer for unknown names; a re-run keeps both locations. nginx logs no request headers with its
