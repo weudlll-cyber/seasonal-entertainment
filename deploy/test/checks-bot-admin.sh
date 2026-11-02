@@ -142,20 +142,20 @@ case "$check" in
     ;;
   bot-admin-page)
     before="$(stub_count)"
-    code="$(bot_request "$ADMIN_JAR" GET /bot-admin/)"
+    code="$(bot_request "$ADMIN_JAR" GET /bot-admin/admin)"
     if [[ "$code" != 200 ]] || ! grep -q 'stub bot admin page' "$LAST_BODY"; then
       fail bot-admin-page "the admin got $code, not the bot's page"
     fi
-    [[ "$(stub_count)" == $((before + 1)) && "$(stub_last path)" == /bot-admin/ ]] || fail bot-admin-page "the bot did not get exactly that request"
+    [[ "$(stub_count)" == $((before + 1)) && "$(stub_last path)" == /bot-admin/admin ]] || fail bot-admin-page "the bot did not get exactly that request"
     bot_got_admin bot-admin-page
-    pass "an admin gets the bot's page at /bot-admin/ (200); the bot got its token and X-Acting-User: admin"
+    pass "an admin gets the bot's page at /bot-admin/admin (200); the bot got its token and X-Acting-User: admin"
     ;;
   bot-admin-refused)
     before="$(stub_count)"
-    guest="$(bot_request /dev/null GET /bot-admin/)"
+    guest="$(bot_request /dev/null GET /bot-admin/admin)"
     health="$(bot_request /dev/null GET /bot-admin/health)"
     forged="$(bot_request /dev/null GET /bot-admin/api/events -H 'X-Bot-Admin-Token: guessed' -H 'X-Acting-User: admin')"
-    member="$(bot_request "$MEMBER_JAR" GET /bot-admin/)"
+    member="$(bot_request "$MEMBER_JAR" GET /bot-admin/admin)"
     [[ "$guest $health $forged $member" == '401 401 401 403' ]] ||
       fail bot-admin-refused "guest $guest, guest health $health, guest with forged headers $forged, member $member (expected 401 401 401 403)"
     [[ "$(stub_count)" == "$before" ]] || fail bot-admin-refused "the bot got $(($(stub_count) - before)) of these requests"

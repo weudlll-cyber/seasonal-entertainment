@@ -477,7 +477,7 @@ bot's admin page".
   `client/src/pages/manageEventsPage.test.jsx` and `client/e2e/manageEvents.spec.js` (the item and
   the frame).
 - The sidebar's **Manage events** (organisers and admins, while set up) opens `/manage-events`,
-  which shows `/bot-admin/` in a same-origin frame; the client learns that the page is set up from
+  which shows the bot's page `/bot-admin/admin` in a same-origin frame; the client learns that the page is set up from
   the session answer (`features.botAdmin`, `GET /api/auth/session`).
 
 **Chat file uploads** are a member route (`POST /api/chat/uploads`); guests cannot upload or

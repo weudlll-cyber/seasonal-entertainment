@@ -222,7 +222,7 @@ docs/DEPLOYMENT.md).
   `GET /api/auth/session`, from `BOT_ADMIN_EMBEDDED`; no domain is built into the client.
 - It opens `/manage-events` (`client/src/pages/ManageEventsPage.jsx`, loaded on first use like the
   other staff pages): it asks `GET /bot-admin/health` (same origin) first and on "Retry"; with an
-  OK it shows `/bot-admin/` in a frame filling the content area (title "Event bot admin"), without
+  OK it shows the bot's page `/bot-admin/admin` (its `/admin` under the base path) in a frame filling the content area (title "Event bot admin"), without
   one "The event bot's admin page does not answer right now." and a Retry button. The frame has no
   `sandbox`: the bot's page is same-origin and needs scripts, its own requests and forms, and a
   sandbox allowing all three protects nothing while it breaks the page's dialogs and downloads.

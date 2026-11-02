@@ -22,7 +22,7 @@ BOT_ADMIN_DEFAULT_KEY=STANNOUNCEBOT_WEB_ADMIN_TOKEN
 bot_admin_explanation() {
   cat <<EOF
 The owner's own event bot (stannouncebot) has an admin page for its events. If that bot runs
-on this server, the page can be shown inside the site at https://$SITE_DOMAIN/bot-admin/ for
+on this server, the page can be shown inside the site at https://$SITE_DOMAIN/manage-events for
 organisers and admins, with their site login (no second login). It needs the bot's admin page
 address on this server (http://127.0.0.1:<port>) and the bot's admin token, which is read from
 the bot's env file or typed (never shown or stored by the installer outside nginx's own file).
@@ -169,7 +169,7 @@ bot_admin_after_nginx() {
     rm -f "$BOT_ADMIN_TOKEN_CONF"
     return 0
   fi
-  say "the event bot's admin page: https://$SITE_DOMAIN/bot-admin/ (staff only) -> $BOT_ADMIN_URL"
+  say "the event bot's admin page: https://$SITE_DOMAIN/manage-events (staff only) -> $BOT_ADMIN_URL"
   code="$(curl -s -o /dev/null --max-time 5 -w '%{http_code}' "$BOT_ADMIN_URL/bot-admin/health" || true)"
   [[ "$code" == 2* ]] ||
     warn "the event bot does not answer on $BOT_ADMIN_URL/bot-admin/health (${code:-no answer}): set STANNOUNCEBOT_WEB_EMBEDDED=1 and STANNOUNCEBOT_WEB_BASE_PATH=/bot-admin in its env file and restart it"
@@ -260,7 +260,7 @@ remove_bot_admin() {
 
 bot_admin_status() {
   if bot_admin_on; then
-    say "event bot's admin page: https://$SITE_DOMAIN/bot-admin/ -> $BOT_ADMIN_URL (token $([[ -n "$BOT_ADMIN_TOKEN_FILE" ]] && echo "from $BOT_ADMIN_TOKEN_KEY in $BOT_ADMIN_TOKEN_FILE" || echo typed))"
+    say "event bot's admin page: https://$SITE_DOMAIN/manage-events -> $BOT_ADMIN_URL (token $([[ -n "$BOT_ADMIN_TOKEN_FILE" ]] && echo "from $BOT_ADMIN_TOKEN_KEY in $BOT_ADMIN_TOKEN_FILE" || echo typed))"
   else
     say "event bot's admin page: ${BOT_ADMIN_URL:-not asked yet}"
   fi

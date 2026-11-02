@@ -204,7 +204,8 @@ it is no longer one of the installer's files where other sites listen).
 ### The event bot's admin page
 
 The owner's event bot (`stannouncebot`) has its own admin page for its events. In nginx mode the
-installer can show it inside the site, at `https://example.org/bot-admin/`, for organisers and
+installer can show it inside the site ("Manage events", `https://example.org/manage-events`; the
+bot's page itself at `/bot-admin/admin`), for organisers and
 admins, with their site login and no second login (decided 2026-10-20; organisers may manage
 events, decided 2026-11-01). The site's side of it (who counts as staff, the page that embeds it,
 the audit entries) is in docs/BOTS.md.
