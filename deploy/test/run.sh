@@ -389,7 +389,7 @@ scenario() {
     start_stub_bot
     from=$(($(wc -l <"$RESULTS") + 1))
     run_installer --answers /etc/seasonal-test/bot-answers
-    ok "the run names the bot's page" output_has "$from" 'https://example.org/bot-admin/ (staff only)'
+    ok "the run names the bot's page" output_has "$from" 'https://example.org/manage-events (staff only)'
     check_login
     check bot-admin-page
     check bot-admin-refused
