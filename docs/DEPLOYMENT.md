@@ -204,7 +204,8 @@ it is no longer one of the installer's files where other sites listen).
 ### The event bot's admin page
 
 The owner's event bot (`stannouncebot`) has its own admin page for its events. In nginx mode the
-installer can show it inside the site, at `https://example.org/bot-admin/`, for organisers and
+installer can show it inside the site ("Manage events", `https://example.org/manage-events`; the
+bot's page itself at `/bot-admin/admin`), for organisers and
 admins, with their site login and no second login (decided 2026-10-20; organisers may manage
 events, decided 2026-11-01). The site's side of it (who counts as staff, the page that embeds it,
 the audit entries) is in docs/BOTS.md.
@@ -236,8 +237,18 @@ then restart the bot. Its page and API then live under `/bot-admin/` on 127.0.0.
 they do, the installer warns that the bot does not answer on `…/bot-admin/health`.
 
 **The token.** Read from the one key of the bot's env file, which is never executed (only that
-line is taken; nothing from the file is printed), or typed. It must be letters, digits and
-`. _ ~ + / = -` only, so it cannot break nginx's syntax; anything else is refused before a change.
+line is taken; nothing from the file is printed), or typed. The file is read as systemd's
+`EnvironmentFile=` reads it, since that is the value the bot compares: surrounding `"…"` or
+`'…'` removed (inside `"…"`, `\"`, `\\`, `` \` `` and `\$` stand for the character), a CR at
+the line's end and spaces after an unquoted value dropped, a `#` inside the value kept, and a
+line `export KEY=…` ignored (systemd ignores it; an unclosed quote stops the run). Checked
+against systemd 255 by `deploy/test/bot-admin-token.test.sh`.
+The token goes into nginx's configuration between double quotes, where any printable ASCII
+character is taken as it is (`; { } # '` and spaces included) except `"`, `$` and `\`. Those,
+control characters, characters outside ASCII (they would reach the bot changed), a space at
+either end and more than 1024 characters are refused before a change. The bot's token then has
+to be replaced: a new one of letters and digits (for example `openssl rand -hex 32`) under the
+same key in the bot's env file, the bot restarted, the installer run again.
 It is written only to `/etc/seasonal/bot-admin-token.conf` (root:root, mode 600, made with
 `umask 077` and moved into place in one step), as one `proxy_set_header X-Bot-Admin-Token "…";`
 line that nginx includes. It is never printed, never in `install.conf`, `site.env`, the site's
@@ -703,8 +714,8 @@ The scenarios:
   event bot's admin page: asked on the first install and answered empty (remembered `none`, no
   locations, no include), not asked again; then a stub bot on 127.0.0.1:8090 (`stub-bot.py`,
   which records every request's headers) and a test env file with
-  `STANNOUNCEBOT_WEB_ADMIN_TOKEN=<random>` are configured with an answers file, as the owner
-  does. `checks-bot-admin.sh` logs in through the site's own API (the test admin with 2FA set up,
+  `STANNOUNCEBOT_WEB_ADMIN_TOKEN="<random>!@%;{}#'"` (double-quoted, with punctuation, CRLF line
+  ends) are configured with an answers file, as the owner does. `checks-bot-admin.sh` logs in through the site's own API (the test admin with 2FA set up,
   a registered member) and checks: the admin gets the bot's page and the bot got its token and
   `X-Acting-User: admin`; a guest gets 401 (also with a forged token) and the member 403, none of
   which reach the bot; a forged `X-Bot-Admin-Token`, `X-Acting-User` and `X-Forwarded-For` from
@@ -722,6 +733,10 @@ The script takes the scenarios as arguments (`bash deploy/test/run.sh nginx`). I
 `npm run verify` or CI: it takes long and needs privileged containers. Everything it creates
 carries the label `seasonal.test` and is removed at the end (`KEEP=1` keeps it). Not testable
 there: UDP media from outside (the PC's Docker network is not the internet).
+
+A quick one runs in CI: `bash deploy/test/bot-admin-token.test.sh` (no root, no Docker) checks
+how the event bot's token is read from its env file and which tokens nginx can carry ("The
+event bot's admin page", "The token").
 
 ## Reference: the manual steps
 
@@ -935,5 +950,6 @@ systemctl start seasonal-backup.service && ls /var/backups/seasonal
 CI (`.github/workflows/ci.yml`, job "deployment files") builds the image (no push) and starts it
 in production mode against `/api/health`. It validates both compose projects and all Caddyfiles
 (also with the installer's sites folder), runs the PC side's tests (PowerShell for Windows, POSIX
-sh for Linux and macOS), and runs shellcheck over the installer, its tests and the PC side's
+sh for Linux and macOS) and the installer's token test (`deploy/test/bot-admin-token.test.sh`),
+and runs shellcheck over the installer, its tests and the PC side's
 shell script, on every pull request.

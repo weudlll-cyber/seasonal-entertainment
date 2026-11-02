@@ -79,7 +79,7 @@ describe('the page', () => {
     await renderApp('/manage-events');
     const frame = await screen.findByTitle('Event bot admin');
     expect(frame.tagName).toBe('IFRAME');
-    expect(frame).toHaveAttribute('src', '/bot-admin/');
+    expect(frame).toHaveAttribute('src', '/bot-admin/admin');
     expect(calls.map((c) => c.key)).toContain('GET /bot-admin/health');
     expect(screen.queryByText(MESSAGE)).toBeNull();
   });
@@ -92,7 +92,7 @@ describe('the page', () => {
     expect(screen.queryByTitle('Event bot admin')).toBeNull();
     answers['GET /bot-admin/health'] = HEALTHY['GET /bot-admin/health'];
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
-    expect(await screen.findByTitle('Event bot admin')).toHaveAttribute('src', '/bot-admin/');
+    expect(await screen.findByTitle('Event bot admin')).toHaveAttribute('src', '/bot-admin/admin');
     expect(calls.filter((c) => c.key === 'GET /bot-admin/health')).toHaveLength(2);
     expect(screen.queryByText(MESSAGE)).toBeNull();
   });

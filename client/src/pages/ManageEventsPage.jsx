@@ -3,7 +3,7 @@
 // Path:        client/src/pages/ManageEventsPage.jsx
 // Project:     Seasonal Entertainment
 // Description: Manage events (/manage-events), for organisers and admins: the event bot's own
-//              admin page (/bot-admin/, same origin, behind the host's nginx and the site's
+//              admin page (/bot-admin/admin, same origin, behind the host's nginx and the site's
 //              /api/bot-admin/authorize; docs/BOTS.md) in a frame filling the content area. It
 //              asks /bot-admin/health first (and again on Retry); without an OK it says so
 //              instead of showing a broken frame. Staff who still need 2FA are led to set it up;
@@ -17,14 +17,16 @@ import { FormMessage } from '../components/FormField.jsx';
 import { useSession } from '../session/SessionContext.jsx';
 import './ManageEventsPage.css';
 
-const BOT_ADMIN_PATH = '/bot-admin/';
+// The bot serves everything under its base path /bot-admin; its admin page is /admin there.
+const BOT_ADMIN_BASE = '/bot-admin';
+const BOT_ADMIN_PAGE = `${BOT_ADMIN_BASE}/admin`;
 // A health check that hangs counts as no answer.
 const HEALTH_TIMEOUT_MS = 10_000;
 
 // true when the bot's admin page answers OK through the site's nginx (and its authorize step).
 async function botAdminAnswers() {
   try {
-    const res = await fetch(`${BOT_ADMIN_PATH}health`, {
+    const res = await fetch(`${BOT_ADMIN_BASE}/health`, {
       credentials: 'same-origin',
       cache: 'no-store',
       signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
@@ -78,7 +80,7 @@ export default function ManageEventsPage() {
           forms, so a sandbox would have to allow all three and with them protect nothing,
           while it would still break the bot's confirm dialogs and downloads. */}
       {!blocked && state === 'up' && (
-        <iframe className="manage-events__frame" src={BOT_ADMIN_PATH} title="Event bot admin" />
+        <iframe className="manage-events__frame" src={BOT_ADMIN_PAGE} title="Event bot admin" />
       )}
     </section>
   );

@@ -196,19 +196,61 @@ read_kv_file() {
 }
 
 # read_kv_key FILE KEY VAR: VAR gets KEY's value from someone else's KEY=VALUE file (such as a
-# bot's env file, which may hold "export KEY=..." and lines of its own), the last one if KEY
-# repeats, empty if it is missing. Only that key is taken; the file is never executed, and
-# nothing from it is printed, since its other lines may hold secrets too.
+# bot's env file, with lines of its own), the last one if KEY repeats, empty if it is missing.
+# The file is read as systemd's EnvironmentFile= reads it, since that is what a bot started by
+# systemd compares against: "KEY = value" counts, "export KEY=..." does not (systemd ignores
+# it), the value as env_file_value gives it. Only that key is taken; the file is never
+# executed, and nothing from it is printed, since its other lines may hold secrets too.
 read_kv_key() {
   local file="$1" key="$2" var="$3" line found=""
   [[ -r "$file" ]] || die "cannot read $file"
   while IFS= read -r line || [[ -n "$line" ]]; do
-    line="${line#"${line%%[![:space:]]*}"}"
-    kv_parse_line "${line#export }" || continue
-    [[ "$KV_KEY" != "$key" ]] || found="$KV_VALUE"
+    [[ "$line" =~ ^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*=[[:space:]]*(.*)$ ]] || continue
+    [[ "${BASH_REMATCH[1]}" == "$key" ]] || continue
+    env_file_value "${BASH_REMATCH[2]}" || die "$file: the value of $key has an unclosed quote or continues on the next line (not supported)"
+    found="$KV_VALUE"
   done <"$file"
   KV_VALUE=""
   printf -v "$var" '%s' "$found"
+}
+
+# env_file_value RAW: KV_VALUE gets RAW (all after "KEY=" and its spaces) as systemd's
+# EnvironmentFile= reads it: '...' literal; "..." with \" \\ \` \$ unescaped (any other \x kept
+# as it is); outside quotes \x is x; quoted and unquoted parts join; spaces after the end, a
+# CR among them, are dropped; a # inside the value is part of it. Returns 2 for an unclosed
+# quote or a \ at the end (a continuation line, which this reader does not follow).
+env_file_value() {
+  local raw="$1" c state=plain trailing=0 i
+  KV_VALUE=""
+  for ((i = 0; i < ${#raw}; i++)); do
+    c="${raw:i:1}"
+    case "$state" in
+      plain)
+        case "$c" in
+          '"') state=double trailing=0 ;;
+          "'") state=single trailing=0 ;;
+          "\\") state=plain-escape ;;
+          [[:space:]]) KV_VALUE+="$c" && ((++trailing)) ;;
+          *) KV_VALUE+="$c" trailing=0 ;;
+        esac
+        ;;
+      plain-escape) KV_VALUE+="$c" state=plain trailing=0 ;;
+      single) if [[ "$c" == "'" ]]; then state=plain; else KV_VALUE+="$c"; fi ;;
+      double)
+        case "$c" in
+          '"') state=plain ;;
+          "\\") state=double-escape ;;
+          *) KV_VALUE+="$c" ;;
+        esac
+        ;;
+      double-escape)
+        if [[ "$c" == [\"\\\`\$] ]]; then KV_VALUE+="$c"; else KV_VALUE+="\\$c"; fi
+        state=double
+        ;;
+    esac
+  done
+  KV_VALUE="${KV_VALUE:0:${#KV_VALUE}-trailing}"
+  [[ "$state" == plain ]] || return 2
 }
 
 # kv_get FILE KEY: the value of KEY in a KEY=VALUE file, or empty.

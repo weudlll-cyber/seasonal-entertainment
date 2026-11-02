@@ -4,11 +4,12 @@
 # Project:     Seasonal Entertainment
 # Description: A stand-in for the event bot's admin page in embedded mode, for the installer
 #              tests (deploy/test/run.sh, nginx scenario): listens on 127.0.0.1:8090 inside the
-#              test server, answers /bot-admin/ (a small page), /bot-admin/health and
-#              /bot-admin/api/... (GET and POST), and records every request it gets (method,
-#              path, every header with all its values) as one JSON line in
-#              /var/log/stub-bot/requests.jsonl, which checks-bot-admin.sh reads. Python
-#              because the test server has it anyway (ufw is written in it).
+#              test server, answers /bot-admin/admin (a small page; like the real bot, nothing
+#              at /bot-admin/ itself), /bot-admin/health and /bot-admin/api/... (GET and POST),
+#              and records every request it gets (method, path, every header with all its
+#              values) as one JSON line in /var/log/stub-bot/requests.jsonl, which
+#              checks-bot-admin.sh reads. Python because the test server has it anyway (ufw is
+#              written in it).
 # ============================================================
 
 import json
@@ -34,7 +35,7 @@ class Handler(BaseHTTPRequestHandler):
             status, kind, body = 200, 'application/json', b'{"ok":true}\n'
         elif self.path.startswith('/bot-admin/api/'):
             status, kind, body = 200, 'application/json', b'{"ok":true,"stub":"api"}\n'
-        elif self.path.startswith('/bot-admin/'):
+        elif self.path == '/bot-admin/admin':
             status, kind, body = 200, 'text/html; charset=utf-8', PAGE
         else:
             status, kind, body = 404, 'text/plain', b'not found\n'

@@ -23,7 +23,8 @@
 #              server's 80,443/tcp (as an earlier installer did), which the re-run must remove;
 #              the KEEP SAFE note only on the first install, one backup per run; the event
 #              bot's admin page asked once and answered empty (remembered "none", not asked
-#              again), then configured with an answers file naming a stub bot's env file and
+#              again), then configured with an answers file naming a stub bot's env file (its
+#              token double-quoted, with punctuation, in a CRLF file) and
 #              checked through the site's login (checks-bot-admin.sh; once with the installer's
 #              X-Acting-User line taken out, which the header check must see), kept by
 #              --update, removed by --uninstall and back after the install that follows; "jammy" =
@@ -201,9 +202,11 @@ newer_origin_commit() {
 # owner's bot has; the answers file names that file and key, as the owner does.
 start_stub_bot() {
   # shellcheck disable=SC2016 # the server's shell makes the token
+  # The token as a bot's env file may hold it: double-quoted, with punctuation nginx carries
+  # inside its quotes, in a CRLF file (checks-bot-admin.sh's bot_token reads it back).
   on_server sh -ec 'umask 077
-    printf "# the test bot\nSTANNOUNCEBOT_WEB_EMBEDDED=1\nSTANNOUNCEBOT_WEB_ADMIN_TOKEN=%s\nSTANNOUNCEBOT_WEB_BASE_PATH=/bot-admin\n" \
-      "$(openssl rand -base64 24)" > /etc/test-bot.env
+    printf "# the test bot\r\nSTANNOUNCEBOT_WEB_EMBEDDED=1\r\nSTANNOUNCEBOT_WEB_ADMIN_TOKEN=\"%s\"\r\nSTANNOUNCEBOT_WEB_BASE_PATH=/bot-admin\r\n" \
+      "$(openssl rand -base64 24)!@%;{}#'"'"'" > /etc/test-bot.env
     systemd-run --quiet --unit=test-stub-bot python3 -I /etc/seasonal-test/stub-bot.py
     for i in $(seq 30); do curl -fs http://127.0.0.1:8090/bot-admin/health >/dev/null && exit 0; sleep 1; done
     exit 1'
@@ -386,7 +389,7 @@ scenario() {
     start_stub_bot
     from=$(($(wc -l <"$RESULTS") + 1))
     run_installer --answers /etc/seasonal-test/bot-answers
-    ok "the run names the bot's page" output_has "$from" 'https://example.org/bot-admin/ (staff only)'
+    ok "the run names the bot's page" output_has "$from" 'https://example.org/manage-events (staff only)'
     check_login
     check bot-admin-page
     check bot-admin-refused

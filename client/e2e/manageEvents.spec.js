@@ -28,7 +28,8 @@ async function setUp(page, { role } = {}) {
   });
 }
 
-// The bot behind /bot-admin/: its health answer (OK or not) and its admin page.
+// The bot behind /bot-admin/: its health answer (OK or not) and its admin page, only where the
+// real bot serves it (/bot-admin/admin; anything else is its 404).
 async function stubBot(page, healthy) {
   const state = { healthy };
   await page.route('**/bot-admin/**', (route) => {
@@ -36,7 +37,9 @@ async function stubBot(page, healthy) {
     if (pathname === '/bot-admin/health') {
       return route.fulfill(state.healthy ? { json: { ok: true } } : { status: 502, body: '' });
     }
-    return route.fulfill({ contentType: 'text/html', body: STUB });
+    if (pathname === '/bot-admin/admin')
+      return route.fulfill({ contentType: 'text/html', body: STUB });
+    return route.fulfill({ status: 404, json: { detail: 'Not Found' } });
   });
   return state;
 }

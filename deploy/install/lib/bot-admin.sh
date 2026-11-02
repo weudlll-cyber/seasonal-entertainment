@@ -22,7 +22,7 @@ BOT_ADMIN_DEFAULT_KEY=STANNOUNCEBOT_WEB_ADMIN_TOKEN
 bot_admin_explanation() {
   cat <<EOF
 The owner's own event bot (stannouncebot) has an admin page for its events. If that bot runs
-on this server, the page can be shown inside the site at https://$SITE_DOMAIN/bot-admin/ for
+on this server, the page can be shown inside the site at https://$SITE_DOMAIN/manage-events for
 organisers and admins, with their site login (no second login). It needs the bot's admin page
 address on this server (http://127.0.0.1:<port>) and the bot's admin token, which is read from
 the bot's env file or typed (never shown or stored by the installer outside nginx's own file).
@@ -45,12 +45,30 @@ bot_admin_token_from_file() {
   [[ -n "$BOT_ADMIN_TOKEN" ]] || die "$BOT_ADMIN_TOKEN_FILE has no value for $BOT_ADMIN_TOKEN_KEY"
 }
 
-# The token goes into nginx's configuration between double quotes: only characters that can
-# neither end the string nor start a variable ($) or an escape (\) there.
+# The token goes into nginx's configuration between double quotes, where any printable ASCII
+# character is taken as it is (; { } # ' and spaces included) except " (ends the string), $ (a
+# variable) and \ (an escape). Control characters cannot be in a header; other bytes (non-ASCII)
+# or spaces at either end would reach the bot changed (decoded as Latin-1, trimmed), so its
+# comparison would fail. Any of those: the bot's token has to be replaced.
 bot_admin_token_check() {
-  # The length apart: some regex libraries stop at 255 repetitions.
-  [[ "$BOT_ADMIN_TOKEN" =~ ^[A-Za-z0-9._~+/=-]+$ && ${#BOT_ADMIN_TOKEN} -le 1024 ]] ||
-    die "the bot's admin token holds characters other than letters, digits and . _ ~ + / = - (or is longer than 1024): it is not written into nginx's configuration; nothing was changed"
+  local LC_ALL=C why="" i code
+  if ((${#BOT_ADMIN_TOKEN} > 1024)); then
+    why="is longer than 1024 characters"
+  elif [[ "$BOT_ADMIN_TOKEN" == *[\$\"\\]* ]]; then
+    why='holds $, " or \, which nginx cannot pass on as they are'
+  elif [[ "$BOT_ADMIN_TOKEN" == " "* || "$BOT_ADMIN_TOKEN" == *" " ]]; then
+    why="starts or ends with a space"
+  fi
+  # Byte by byte (LC_ALL=C): character classes differ between platforms' regex libraries.
+  for ((i = 0; i < ${#BOT_ADMIN_TOKEN} && ${#why} == 0; i++)); do
+    printf -v code '%d' "'${BOT_ADMIN_TOKEN:i:1}"
+    ((code >= 32 && code <= 126)) || why="holds control characters or characters outside ASCII"
+  done
+  [[ -z "$why" ]] && return 0
+  die "the bot's admin token $why: it is not written into nginx's configuration; nothing was changed.
+  Give the bot a new token made of letters and digits, for example the output of
+  'openssl rand -hex 32', as ${BOT_ADMIN_TOKEN_KEY:-its admin token} in ${BOT_ADMIN_TOKEN_FILE:-its env file}, restart the bot,
+  then run this installer again (docs/DEPLOYMENT.md, \"The event bot's admin page\")"
 }
 
 # The question, on a terminal: the address ("yes" for the usual one, empty for none), then
@@ -151,7 +169,7 @@ bot_admin_after_nginx() {
     rm -f "$BOT_ADMIN_TOKEN_CONF"
     return 0
   fi
-  say "the event bot's admin page: https://$SITE_DOMAIN/bot-admin/ (staff only) -> $BOT_ADMIN_URL"
+  say "the event bot's admin page: https://$SITE_DOMAIN/manage-events (staff only) -> $BOT_ADMIN_URL"
   code="$(curl -s -o /dev/null --max-time 5 -w '%{http_code}' "$BOT_ADMIN_URL/bot-admin/health" || true)"
   [[ "$code" == 2* ]] ||
     warn "the event bot does not answer on $BOT_ADMIN_URL/bot-admin/health (${code:-no answer}): set STANNOUNCEBOT_WEB_EMBEDDED=1 and STANNOUNCEBOT_WEB_BASE_PATH=/bot-admin in its env file and restart it"
@@ -242,7 +260,7 @@ remove_bot_admin() {
 
 bot_admin_status() {
   if bot_admin_on; then
-    say "event bot's admin page: https://$SITE_DOMAIN/bot-admin/ -> $BOT_ADMIN_URL (token $([[ -n "$BOT_ADMIN_TOKEN_FILE" ]] && echo "from $BOT_ADMIN_TOKEN_KEY in $BOT_ADMIN_TOKEN_FILE" || echo typed))"
+    say "event bot's admin page: https://$SITE_DOMAIN/manage-events -> $BOT_ADMIN_URL (token $([[ -n "$BOT_ADMIN_TOKEN_FILE" ]] && echo "from $BOT_ADMIN_TOKEN_KEY in $BOT_ADMIN_TOKEN_FILE" || echo typed))"
   else
     say "event bot's admin page: ${BOT_ADMIN_URL:-not asked yet}"
   fi
