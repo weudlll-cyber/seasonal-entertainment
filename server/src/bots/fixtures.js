@@ -143,7 +143,7 @@ const SAMPLE_EVENTS = [
     weekday: 2,
     hour: 20,
     minute: 0,
-    // Two channels, one place: "telegram, discord: Sample quiz group".
+    // Two channels, one place: shown once, as "Sample quiz group" (never the platforms).
     channels: [
       { platform: 'telegram', url: 'https://example.org/quiz', label: 'Sample quiz group' },
       { platform: 'discord', url: 'https://example.org/quiz', label: 'Sample quiz group' },

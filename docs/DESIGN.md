@@ -265,14 +265,18 @@ minimum window:
   tile, its length from `PriceTiles`), so every price fits beside the mark, whatever its digits.
 - **The sidebar fits 650px without a scrollbar**: "Imprint", "Privacy" and "Not financial
   advice" share one line (a small gap between the 44px targets); with the old gap the third
-  wrapped onto a second line.
+  wrapped onto a second line. Since "Manage events" joined the staff items (2026-11-02) the
+  menu is tighter as well: 8px between nav, account card and legal links (was 16px) and 2px
+  between the pills (was 4px); the pills keep their 44px. The fullest menu (Admin or Site
+  banner, and Manage events) was 20px too tall at 1200 x 650 and now has 12px to spare.
 - **A narrow Fair price box** (one column of a 1280px window, beside Next call) drops its four
   marks and takes the title on one line; its text wrapped so far that the Disclaimer link was
   cut.
 
 `client/e2e/layout.spec.js` checks this at 1200 x 650, 1366 x 768 and 1500 x 940 (no box cut, no
 price under its mark, the admin's sidebar without a scrollbar), with the widest prices on the
-tiles in every home test.
+tiles in every home test, and the full staff menu with Manage events set up, for an admin and
+for an organiser, light and dark, without a scrollbar.
 
 1. **Banner**: night blue (`--banner-background`) with the faint season pattern
    (`client/src/brand/seasonPattern.css`), the emblem, "SEASONAL" in the logo's gradient

@@ -4,10 +4,12 @@
 // Project:     Seasonal Entertainment
 // Description: The event bot's occurrences in a time window (docs/BOTS.md), as the bot itself
 //              shows them (stannouncebot parsing/query_service.py): active events only, the
-//              latest override per occurrence (highest id) replacing start, platform, location
-//              and status where it sets them. The bot keeps one occurrence per announcement
-//              channel (Telegram, Discord, ...); the site lists an event at one start once:
-//              the copies are grouped by event and effective start (groupCopies). The site
+//              latest override per occurrence (highest id) replacing start, location and status
+//              where it sets them. The bot keeps one occurrence per announcement channel
+//              (Telegram, Discord, ...); the site lists an event at one start once: the copies
+//              are grouped by event and effective start (groupCopies). Which platforms announce
+//              it is the bot's business and never leaves the server (decided 2026-11-02): only
+//              the places show, each once. The site
 //              computes no recurrences of its own. Bot text stays text; a location URL is
 //              passed on only if it is http(s); the image URL (http(s) only) stays on the
 //              server, which fetches the image itself (images.js).
@@ -17,7 +19,6 @@ const EFFECTIVE = `
   SELECT o.id, o.event_id AS eventId, e.name, e.description, e.category,
     e.image_url AS imageUrl,
     COALESCE(ov.new_start_ts_utc, o.start_ts_utc) AS start,
-    COALESCE(ov.new_platform, o.platform) AS platform,
     COALESCE(ov.new_location_url, o.location_url) AS locationUrl,
     COALESCE(ov.new_location_label, o.location_label) AS locationLabel,
     COALESCE(ov.new_status, o.status) AS status
@@ -49,18 +50,14 @@ function webUrl(value) {
   }
 }
 
-// The places of some copies: one per location (label and link), naming each platform that
-// announces it there once, in copy order.
+// The places of some copies: each location (label and link) once, in copy order.
 function placesOf(copies) {
   const places = [];
   for (const c of copies) {
-    const locationLabel = c.locationLabel ?? '';
-    const locationUrl = webUrl(c.locationUrl);
-    let place = places.find(
-      (p) => p.locationLabel === locationLabel && p.locationUrl === locationUrl
-    );
-    if (!place) places.push((place = { platforms: [], locationLabel, locationUrl }));
-    if (c.platform && !place.platforms.includes(c.platform)) place.platforms.push(c.platform);
+    const place = { locationLabel: c.locationLabel ?? '', locationUrl: webUrl(c.locationUrl) };
+    const same = (p) =>
+      p.locationLabel === place.locationLabel && p.locationUrl === place.locationUrl;
+    if (!places.some(same)) places.push(place);
   }
   return places;
 }

@@ -43,8 +43,9 @@ event calendar is not connected.".
     them by event and effective start (after the overrides), so the home page's "Up next",
     `/events`, the weekly recap and the calls' event picker list each date once. In the live
     data (2026-11-02) the copies differed only in platform and, for an old `both` copy, status.
-    - **Places**: one per location (label and link), naming every platform that announces the
-      date there ("discord, telegram: Voice"), each with its own link where it has one.
+    - **Places**: each location (label and link) once, with its own link where it has one.
+      **The platforms never show** (decided 2026-11-02): they only tell the bot where to
+      announce, and never leave the server (`/api/bot-events` has none).
     - **Status**: `canceled` only when every copy is; otherwise the running copies' status
       (`scheduled` while any copy is) and only their places, so a dropped channel no longer
       shows.
@@ -63,11 +64,11 @@ event calendar is not connected.".
 All public (guests too), read-only, rate limited per address (`botRead`: 120 a minute) and
 cached in memory for **5 minutes** per question (`server/src/bots/routes.js`):
 
-| Route                                   | Answer                                                                                                                                                                                                      |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/prices`                       | `{ connected, prices: [{ token, price, at, change24h, spark }] }`                                                                                                                                           |
-| `GET /api/prices/:token?range=7d`       | `{ connected, token, range, points: [[ms, price], …] }` (at most 500)                                                                                                                                       |
-| `GET /api/bot-events?from=<ms>&to=<ms>` | `{ connected, occurrences: [{ id, ids, name, description, category, start, places: [{ platforms, locationLabel, locationUrl }], status, image }] }`, one per event and start; the window at most eight days |
+| Route                                   | Answer                                                                                                                                                                                           |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET /api/prices`                       | `{ connected, prices: [{ token, price, at, change24h, spark }] }`                                                                                                                                |
+| `GET /api/prices/:token?range=7d`       | `{ connected, token, range, points: [[ms, price], …] }` (at most 500)                                                                                                                            |
+| `GET /api/bot-events?from=<ms>&to=<ms>` | `{ connected, occurrences: [{ id, ids, name, description, category, start, places: [{ locationLabel, locationUrl }], status, image }] }`, one per event and start; the window at most eight days |
 
 A configured file that cannot be read (missing, locked, being replaced) answers **503**
 `bot_unavailable`; the reason goes to the server log, and the next request tries again
@@ -89,7 +90,7 @@ A configured file that cannot be read (missing, locked, being replaced) answers 
 
 ## Bot text is untrusted
 
-- Names, descriptions, platforms and labels are rendered as text only (React escapes them; no
+- Names, descriptions and labels are rendered as text only (React escapes them; no
   HTML is ever interpreted).
 - A `location_url` becomes a link only if it is `http:` or `https:`; anything else (`tg://…`,
   `javascript:…`) is dropped on the server. Links open with `rel="noopener noreferrer"`.

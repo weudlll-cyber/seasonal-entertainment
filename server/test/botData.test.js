@@ -8,8 +8,8 @@
 //              token's history per range with at most 500 points; the files are never written
 //              (query_only, bytes unchanged); answers are cached for five minutes; reads are
 //              rate limited; bot occurrences come with the latest override applied, canceled
-//              ones marked, inactive events left out, only web links and no image URL; a file
-//              that cannot be read answers 503.
+//              ones marked, inactive events left out, only web links, no image URL and no
+//              announcement platform; a file that cannot be read answers 503.
 // ============================================================
 
 import { createHash } from 'node:crypto';
@@ -157,7 +157,6 @@ describe('bot events', () => {
       start: Date.parse('2026-10-22T18:30:00Z'),
       places: [
         {
-          platforms: ['discord'],
           locationLabel: 'Moved sample channel',
           locationUrl: 'https://example.org/call',
         },
@@ -177,10 +176,10 @@ describe('bot events', () => {
     const { occurrences } = (await appWith().get(week(MONDAY))).body;
     const stream = occurrences.find((o) => o.name === '[Sample] Bot Weekend Stream');
     // tg://… is not a web address
-    expect(stream.places).toEqual([
-      { platforms: ['discord'], locationLabel: 'Not a web link', locationUrl: null },
-    ]);
+    expect(stream.places).toEqual([{ locationLabel: 'Not a web link', locationUrl: null }]);
     expect(JSON.stringify(occurrences)).not.toContain('images.bot-fixtures.test');
+    // The platforms only tell the bot where to announce: never on the site (2026-11-02).
+    expect(JSON.stringify(occurrences)).not.toMatch(/platform|telegram|discord|youtube/i);
   });
 
   it('refuses a window that is not one of at most eight days', async () => {

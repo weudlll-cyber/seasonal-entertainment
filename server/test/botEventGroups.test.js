@@ -4,7 +4,7 @@
 // Project:     Seasonal Entertainment
 // Description: One entry per event and start (server/src/bots/events.js, docs/BOTS.md): the
 //              bot keeps one occurrence per announcing channel, the site lists them once, with
-//              the platforms together per place and one link per place; canceled only when
+//              each place once (never the platforms) with its link; canceled only when
 //              every copy is, else the running copies' status and places; the lowest copy's id
 //              plus every copy's id; a copy moved to another time is an entry of its own. On
 //              the test's own fixture file, changed here as the bot would.
@@ -62,7 +62,7 @@ function override(id, { status = null, start = null }) {
   bot.close();
 }
 
-it('lists an event at one start once, the platforms together per place', () => {
+it('lists an event at one start once, each place once, without the platforms', () => {
   const entries = week();
   expect(entries.map((o) => o.name).sort()).toEqual(
     [QUIZ, '[Sample] Bot Community Call', '[Sample] Bot Weekend Stream', BATTLES].sort()
@@ -73,19 +73,16 @@ it('lists an event at one start once, the platforms together per place', () => {
   expect(battles.id).toBe(ids.discord); // the lowest copy's
   expect(battles.places).toEqual([
     {
-      platforms: ['discord', 'telegram'],
       locationLabel: 'Sample battle channel',
       locationUrl: 'https://example.org/battles',
     },
     {
-      platforms: ['youtube'],
       locationLabel: 'Sample stream',
       locationUrl: 'https://example.org/battles-live',
     },
   ]);
   expect(named(QUIZ)[0].places).toEqual([
     {
-      platforms: ['telegram', 'discord'],
       locationLabel: 'Sample quiz group',
       locationUrl: 'https://example.org/quiz',
     },
@@ -94,16 +91,20 @@ it('lists an event at one start once, the platforms together per place', () => {
 
 it('is canceled only when every copy is; otherwise shows the running copies', () => {
   const ids = copies(BATTLES);
-  override(ids.discord, { status: 'canceled' });
+  // The YouTube copy is the only one at its own place: canceled, the place no longer shows.
+  override(ids.youtube, { status: 'canceled' });
   const [one] = named(BATTLES);
   expect(one.status).toBe('scheduled');
   expect(one.ids).toHaveLength(3); // a canceled copy still counts for call links
-  expect(one.places.map((p) => p.platforms)).toEqual([['telegram'], ['youtube']]);
+  expect(one.places.map((p) => p.locationLabel)).toEqual(['Sample battle channel']);
+  override(ids.discord, { status: 'canceled' });
   override(ids.telegram, { status: 'canceled' });
-  override(ids.youtube, { status: 'canceled' });
   const [all] = named(BATTLES);
   expect(all.status).toBe('canceled');
-  expect(all.places.map((p) => p.platforms)).toEqual([['discord', 'telegram'], ['youtube']]);
+  expect(all.places.map((p) => p.locationLabel)).toEqual([
+    'Sample battle channel',
+    'Sample stream',
+  ]);
 });
 
 it('a done date with one canceled channel stays done', () => {

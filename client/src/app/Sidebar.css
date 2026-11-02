@@ -61,14 +61,17 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  gap: var(--space-2);
+  /* Tight enough that the fullest staff menu (Admin or Site banner, and Manage events) fits a
+     1200 x 650 window without scrolling (2026-11-02; client/e2e/layout.spec.js): 8px here and
+     2px between the pills, which keep their full 44px height. */
+  gap: var(--space-1);
   padding: var(--space-1) var(--space-2) var(--space-2);
   overflow-y: auto;
 }
 
 .sidebar__nav ul {
   display: grid;
-  gap: 0.25rem;
+  gap: 0.125rem;
   margin: 0;
   padding: 0;
   list-style: none;

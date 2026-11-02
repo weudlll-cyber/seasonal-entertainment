@@ -5,8 +5,9 @@
 // Description: Browser flow through the real server reading the event bot's database (the
 //              fixture built for the run, server/src/bots/fixtures.js; docs/BOTS.md): a guest in
 //              Berlin sees this week's "[Sample] Bot Quiz Night" (Tuesdays 20:00 UTC) at the
-//              right local time and once (the bot keeps one occurrence per channel; both
-//              platforms at its one place), and the canceled "[Sample] Bot Weekend Stream" struck through.
+//              right local time and once (the bot keeps one occurrence per channel; its one
+//              place, no platform names), and the canceled "[Sample] Bot Weekend Stream" struck
+//              through.
 //              The admin area has no events editor any more.
 // ============================================================
 
@@ -35,10 +36,11 @@ test("the bot's week in local time; a canceled one struck through", async ({ pag
   const entry = day.getByRole('listitem').filter({ hasText: '[Sample] Bot Quiz Night' });
   await expect(entry).toContainText(`${local.time} ${local.zone}`);
   await expect(entry).toContainText('(20:00 UTC)');
-  // The bot keeps one occurrence per channel; the page lists the date once, both platforms at
-  // their one place (docs/BOTS.md).
+  // The bot keeps one occurrence per channel; the page lists the date once, with its one place
+  // and no platform names (docs/BOTS.md).
   await expect(entry).toHaveCount(1);
-  await expect(entry).toContainText('telegram, discord: Sample quiz group');
+  await expect(entry).toContainText('Sample quiz group');
+  await expect(entry).not.toContainText(/telegram|discord/i);
   // Canceled in the fixture's current UTC week; that is this page's week except late on Sunday.
   if (quiz === mondayUtc + DAY_MS + 20 * 60 * 60 * 1000) {
     const stream = page.getByRole('listitem').filter({ hasText: '[Sample] Bot Weekend Stream' });

@@ -37,24 +37,23 @@ const occurrence = (id, name, start, extra = {}) => ({
 });
 const WEEK = [
   occurrence(10, 'Monday Quiz', '2026-10-19T18:00:00Z', {
-    places: [{ platforms: ['discord'], locationLabel: 'Quiz channel', locationUrl: null }],
+    places: [{ locationLabel: 'Quiz channel', locationUrl: null }],
     image: '/media/bot-images/0123456789abcdef0123456789abcdef.webp?v=1',
   }),
   occurrence(11, 'Community <b>Call</b>', '2026-10-22T18:30:00Z', {
-    // Three channels, two places (server/src/bots/events.js): both named, each with its link.
+    // Three channels, two places (server/src/bots/events.js): each once, with its link.
     places: [
       {
-        platforms: ['discord', 'telegram'],
         locationLabel: 'Voice',
         locationUrl: 'https://example.org/call',
       },
-      { platforms: ['youtube'], locationLabel: 'Stream', locationUrl: 'https://example.org/live' },
+      { locationLabel: 'Stream', locationUrl: 'https://example.org/live' },
     ],
     description: '<img src=x onerror=alert(1)>',
   }),
   occurrence(12, 'Weekend Stream', '2026-10-24T15:00:00Z', {
     status: 'canceled',
-    places: [{ platforms: ['discord'], locationLabel: 'Not a web link', locationUrl: null }],
+    places: [{ locationLabel: 'Not a web link', locationUrl: null }],
   }),
 ];
 
@@ -115,7 +114,8 @@ it('the week at local times with the zone and UTC beside them, across the DST ch
   const monday = await screen.findByRole('region', { name: 'Monday 19 October' });
   expect(monday).toHaveTextContent('20:00 CEST');
   expect(monday).toHaveTextContent('(18:00 UTC)');
-  expect(monday).toHaveTextContent('discord: Quiz channel');
+  expect(monday).toHaveTextContent('Quiz channel');
+  expect(monday).not.toHaveTextContent(/discord/i);
   fireEvent.click(screen.getByRole('button', { name: 'Next week →' }));
   const after = await screen.findByRole('region', { name: 'Monday 26 October' });
   expect(after).toHaveTextContent('19:00 CET');
@@ -140,12 +140,13 @@ it('bot text stays text; only a passed-on web link becomes a link, opened safely
   expect(link).toHaveAttribute('rel', 'noopener noreferrer');
 });
 
-it('an event announced on several channels is listed once, every place with its platforms', async () => {
+it('an event announced on several channels is listed once, each place once, no platform', async () => {
   showWeek({ thisWeek: { connected: true, occurrences: WEEK } });
   const thursday = await screen.findByRole('region', { name: 'Thursday 22 October' });
   expect(within(thursday).getAllByRole('listitem')).toHaveLength(1);
-  expect(thursday).toHaveTextContent('discord, telegram: Voice');
-  expect(thursday).toHaveTextContent('youtube: Stream');
+  expect(within(thursday).getByText('Voice', { exact: true })).toBeInTheDocument();
+  expect(within(thursday).getByText('Stream', { exact: true })).toBeInTheDocument();
+  expect(thursday).not.toHaveTextContent(/discord|telegram|youtube/i);
   expect(within(thursday).getByRole('link', { name: 'Open Stream' })).toHaveAttribute(
     'href',
     'https://example.org/live'
