@@ -39,6 +39,8 @@ export function fakeDiscord() {
     sent: [],
     // When set, the next refresh waits for this promise first (parallel refresh tests).
     refreshGate: null,
+    // When set (seconds), the next token call answers 429 with this retry_after.
+    rateLimitNext: null,
     addUser(id, username, roles = []) {
       users.set(id, { id, username, roles });
     },
@@ -79,6 +81,11 @@ export function fakeDiscord() {
       if (path === '/oauth2/token' || path === '/oauth2/token/revoke') {
         const expected = `Basic ${Buffer.from(`${DISCORD_TEST.clientId}:${DISCORD_TEST.clientSecret}`).toString('base64')}`;
         if (headers.Authorization !== expected) return json(401, { error: 'invalid_client' });
+        if (fake.rateLimitNext) {
+          const retryAfter = fake.rateLimitNext;
+          fake.rateLimitNext = null;
+          return json(429, { message: 'You are being rate limited.', retry_after: retryAfter });
+        }
         const form = new URLSearchParams(init.body);
         if (path === '/oauth2/token/revoke') {
           fake.calls.revoke += 1;

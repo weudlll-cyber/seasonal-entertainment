@@ -117,7 +117,24 @@ export async function refreshLink(db, discord, userId, { onChange = () => {} } =
 
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// The daily job: every minute, up to PER_TICK due links, GAP_MS apart. Returns stop().
+// One round of the daily job: up to PER_TICK due links, one after another, gapMs apart.
+// isStopped(): the job was stopped meanwhile. Returns how many were read.
+export async function refreshDue(
+  db,
+  discord,
+  { onChange, gapMs = GAP_MS, isStopped = () => false } = {}
+) {
+  let read = 0;
+  for (const userId of dueLinks(db, Date.now(), PER_TICK)) {
+    if (isStopped()) break;
+    await refreshLink(db, discord, userId, { onChange });
+    read += 1;
+    if (gapMs) await pause(gapMs);
+  }
+  return read;
+}
+
+// The daily job: a round every minute (never two at once). Returns stop().
 export function startDailyRefresh(db, discord, { onChange, log = console.warn } = {}) {
   let running = false;
   let stopped = false;
@@ -125,11 +142,7 @@ export function startDailyRefresh(db, discord, { onChange, log = console.warn } 
     if (running) return;
     running = true;
     try {
-      for (const userId of dueLinks(db, Date.now(), PER_TICK)) {
-        if (stopped) break;
-        await refreshLink(db, discord, userId, { onChange });
-        await pause(GAP_MS);
-      }
+      await refreshDue(db, discord, { onChange, isStopped: () => stopped });
     } catch (err) {
       log(`[discord] daily role read failed: ${err.message}`);
     } finally {

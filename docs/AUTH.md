@@ -215,6 +215,53 @@ character: in the probe, invisible leading spaces in the portal broke it.
   PKCE challenge, rotating refresh tokens, 10004); `server/test/accountsRebuild.test.js`;
   `client/src/discord/discordPages.test.jsx`.
 
+### Discord: steps and the daily read
+
+Members carry **steps** from the Seasonal Tokens Discord server (decided 2026-11-02). There are
+three ladders, and each shows only the member's highest step:
+
+- **Holder**: Holder < Bronze < Silver < Golden < Platinum < Diamond < Seasonal < Ultimate <
+  Ultimate-Dragon Whale.
+- **Farmer**: Farmer Holder < Farmer Bronze < … < Farmer Seasonal < Ultimate-Farmer Whale. The
+  seed's middle steps follow the Holder names; admins correct them.
+- **Investor**: Level 1 < … < Level 4.
+
+Admins give each step the Discord role id that grants it, set the order and upload an icon
+(Admin → Discord steps). The names are seeded once without role ids
+(`server/src/discord/steps.js`; `sqlite_sequence` remembers the seed, so an emptied list stays
+empty). **Steps never grant rights on the site**; only the owner gives roles.
+
+- **Reading the roles**: `GET /users/@me/guilds/902220302199689266/member`, with the member's
+  consent (scope `guilds.members.read`; no bot on that server). Only `roles` is kept: a JSON list
+  of role ids in `discord_links.role_ids`. Steps are computed when they are shown, from those ids
+  and the mapping now, so a mapping change shows at once without asking Discord again.
+- **When**: at every Discord login and link, with the tokens just given, and **once a day** for
+  every linked account (`server/src/discord/refresh.js`). The job looks every minute for links
+  whose `next_refresh_at` has passed, reads up to 10, 3 seconds apart, and sets the next read a
+  day later plus up to an hour at random, so reads spread over the day. Discord allows a member
+  record a burst of 5 reads, then one a minute, per user (the probe); a day's reads for 10,000
+  members are about 0.23 a second.
+- **The refresh token** is kept so the daily read works without the member. It is sealed like
+  2FA secrets (`server/src/discord/tokenBox.js`: secretbox under `SECRET_ENCRYPTION_KEY`, `enc1:`)
+  and never logged or shown. Discord **rotates** it: each refresh returns a new one and the old
+  one dies at once. So:
+  - **one refresh per account at a time**: a claim (`refreshing_since`, released after 2 minutes
+    if the server died) makes a second one wait its turn;
+  - **the new token is saved with the roles in one statement**, right after the read. A crash
+    between Discord's answer and that save loses it; the member then logs in with Discord again.
+- **Discord's answers**:
+  - `invalid_grant` (the member removed the app, or the token went unused too long): the link is
+    marked **needs login**, the token deleted and the steps hidden. The account page says so;
+    the next Discord login stores a new token and the steps return;
+  - 404 with code **10004**: not on the server. No steps until a later read finds them there.
+    The code decides, never the text, which Discord localizes ("Unbekannter Server");
+  - 429 or Discord down: the old token still works; the read is retried after `retry_after` (or
+    an hour).
+- **Access follows** at once: when a read changes a member's steps, their open chat
+  connections re-check their rooms (docs/CHAT.md, "Rooms for Discord steps").
+- Tests: `server/test/discordRoles.test.js` (sealed token, strict rotation, two refreshes at
+  once, invalid_grant, 10004, rate limit, the due links only, a mapping change without a read).
+
 ### Discord: accounts without a password
 
 An account made with Discord has no password, so "enter your password again" cannot apply to
