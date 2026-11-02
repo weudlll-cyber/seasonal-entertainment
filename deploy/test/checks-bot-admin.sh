@@ -24,7 +24,9 @@ TOKEN_CONF=/etc/seasonal/bot-admin-token.conf
 SITE_CONF=/etc/nginx/sites-available/zz-seasonal-site.conf
 install -d -m 700 "$BOT_DIR"
 
-bot_token() { sed -n 's/^STANNOUNCEBOT_WEB_ADMIN_TOKEN=//p' /etc/test-bot.env; }
+# The test bot's token as systemd would give it to the bot: run.sh writes it double-quoted
+# (with no " $ \ ` inside) in a CRLF file.
+bot_token() { sed -n 's/^STANNOUNCEBOT_WEB_ADMIN_TOKEN="\(.*\)"\r$/\1/p' /etc/test-bot.env; }
 
 # json FIELD: one field of the JSON object on stdin, empty when missing (python3: ufw's).
 json() { python3 -I -c 'import json, sys; v = json.load(sys.stdin).get(sys.argv[1]); print("" if v is None else v)' "$1"; }

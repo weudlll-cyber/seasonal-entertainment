@@ -12,7 +12,8 @@
 #              A second job builds the production image (deploy/site/Dockerfile; never pushed)
 #              and checks the compose files and Caddyfiles, so the deployment files cannot rot;
 #              it also decrypts an encrypted backup with the real age tool, runs the PC-side
-#              tests (deploy/pc/: PowerShell for Windows, POSIX sh for Linux and macOS) and
+#              tests (deploy/pc/: PowerShell for Windows, POSIX sh for Linux and macOS), the
+#              installer's token test (deploy/test/bot-admin-token.test.sh) and
 #              shellcheck over the installer, its tests and the PC-side shell scripts
 #              (deploy/install.sh, deploy/install/, deploy/test/, deploy/pc/).
 # ============================================================
@@ -111,6 +112,9 @@ jobs:
       - name: The PC side of the backups (Linux and macOS, POSIX sh)
         run: sh deploy/pc/get-seasonal-backups.test.sh
 
+      - name: The installer reads the event bot's token as systemd does, and nginx can carry it
+        run: bash deploy/test/bot-admin-token.test.sh
+
       - name: Compose files are valid
         run: |
           cp .env.example deploy/site/site.env
@@ -151,5 +155,6 @@ jobs:
           docker run --rm -v "$PWD:/mnt" -w /mnt koalaman/shellcheck:v0.10.0 -x
           deploy/install.sh deploy/install/lib/*.sh deploy/install/certbot-hook.sh
           deploy/site/calls-cert.sh deploy/test/run.sh deploy/test/checks.sh
-          deploy/test/checks-bot-admin.sh deploy/test/prepare-nginx.sh deploy/test/prepare-ufw.sh
+          deploy/test/checks-bot-admin.sh deploy/test/bot-admin-token.test.sh
+          deploy/test/prepare-nginx.sh deploy/test/prepare-ufw.sh
           deploy/pc/get-seasonal-backups.sh deploy/pc/get-seasonal-backups.test.sh

@@ -45,12 +45,30 @@ bot_admin_token_from_file() {
   [[ -n "$BOT_ADMIN_TOKEN" ]] || die "$BOT_ADMIN_TOKEN_FILE has no value for $BOT_ADMIN_TOKEN_KEY"
 }
 
-# The token goes into nginx's configuration between double quotes: only characters that can
-# neither end the string nor start a variable ($) or an escape (\) there.
+# The token goes into nginx's configuration between double quotes, where any printable ASCII
+# character is taken as it is (; { } # ' and spaces included) except " (ends the string), $ (a
+# variable) and \ (an escape). Control characters cannot be in a header; other bytes (non-ASCII)
+# or spaces at either end would reach the bot changed (decoded as Latin-1, trimmed), so its
+# comparison would fail. Any of those: the bot's token has to be replaced.
 bot_admin_token_check() {
-  # The length apart: some regex libraries stop at 255 repetitions.
-  [[ "$BOT_ADMIN_TOKEN" =~ ^[A-Za-z0-9._~+/=-]+$ && ${#BOT_ADMIN_TOKEN} -le 1024 ]] ||
-    die "the bot's admin token holds characters other than letters, digits and . _ ~ + / = - (or is longer than 1024): it is not written into nginx's configuration; nothing was changed"
+  local LC_ALL=C why="" i code
+  if ((${#BOT_ADMIN_TOKEN} > 1024)); then
+    why="is longer than 1024 characters"
+  elif [[ "$BOT_ADMIN_TOKEN" == *[\$\"\\]* ]]; then
+    why='holds $, " or \, which nginx cannot pass on as they are'
+  elif [[ "$BOT_ADMIN_TOKEN" == " "* || "$BOT_ADMIN_TOKEN" == *" " ]]; then
+    why="starts or ends with a space"
+  fi
+  # Byte by byte (LC_ALL=C): character classes differ between platforms' regex libraries.
+  for ((i = 0; i < ${#BOT_ADMIN_TOKEN} && ${#why} == 0; i++)); do
+    printf -v code '%d' "'${BOT_ADMIN_TOKEN:i:1}"
+    ((code >= 32 && code <= 126)) || why="holds control characters or characters outside ASCII"
+  done
+  [[ -z "$why" ]] && return 0
+  die "the bot's admin token $why: it is not written into nginx's configuration; nothing was changed.
+  Give the bot a new token made of letters and digits, for example the output of
+  'openssl rand -hex 32', as ${BOT_ADMIN_TOKEN_KEY:-its admin token} in ${BOT_ADMIN_TOKEN_FILE:-its env file}, restart the bot,
+  then run this installer again (docs/DEPLOYMENT.md, \"The event bot's admin page\")"
 }
 
 # The question, on a terminal: the address ("yes" for the usual one, empty for none), then
