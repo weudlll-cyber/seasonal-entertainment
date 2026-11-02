@@ -231,6 +231,24 @@ Admins give each step the Discord role id that grants it, set the order and uplo
 (`server/src/discord/steps.js`; `sqlite_sequence` remembers the seed, so an emptied list stays
 empty). **Steps never grant rights on the site**; only the owner gives roles.
 
+- **Admin → Discord steps** (`/admin/discord`, `client/src/admin/AdminDiscordPage.jsx`; the API
+  is `/api/admin/discord`, admins with 2FA, `server/src/discord/adminRoutes.js`; there only while
+  Discord is set up). Each ladder is listed with its highest step first:
+  - add a step (at the top of its ladder), rename it, set its Discord role id (17-20 digits,
+    unique; empty for none), and move it up or down;
+  - remove it, unless a room is open from it; the row names those rooms;
+  - upload an icon: PNG, WebP or SVG, at most 256 KB. Every icon is drawn once into a 64 × 64
+    WebP and only that is kept (`server/src/media/icons.js`, through the chat handle's
+    `images.storeIcon`), served from `/media/step-icons/`. An SVG with a DOCTYPE or entities,
+    scripts, foreign objects, event attributes, or links or `url()` to anything but its own
+    parts is refused. Until an icon is uploaded, a neutral placeholder shows (the ladder's
+    shape and the step's initials);
+  - see the role ids on linked members that no step has yet, with how many members carry each
+    (ids and counts only), to fill the ids in. In Discord: Developer Mode, then right-click the
+    role and choose "Copy Role ID".
+  - Every change writes one audit entry (`discord.step_create`, `discord.step_edit`,
+    `discord.ladder_reorder`, `discord.step_delete`, `discord.step_icon`).
+  - Tests: `server/test/discordAdmin.test.js`, `client/src/admin/adminDiscord.test.jsx`.
 - **Reading the roles**: `GET /users/@me/guilds/902220302199689266/member`, with the member's
   consent (scope `guilds.members.read`; no bot on that server). Only `roles` is kept: a JSON list
   of role ids in `discord_links.role_ids`. Steps are computed when they are shown, from those ids

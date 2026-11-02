@@ -464,7 +464,8 @@ server/
   src/discord/             Discord login and steps (docs/AUTH.md, "Discord"): config, the API
                            calls, schema and link store, the sealed refresh token, the role
                            read and daily job (refresh.js), steps and their seed, the routes
-                           under /api/auth/discord, the handle app.js builds (index.js)
+                           under /api/auth/discord, the admins' steps (adminRoutes.js,
+                           stepStore.js), the handle app.js builds (index.js)
   src/keys/                members' keys: public keys, sealed private keys, recovery seal
   src/audit/               audit log: schema and the one recordAudit helper
   src/admin/               /api/admin routes (users, audit); areas add their own editors
@@ -477,7 +478,8 @@ server/
                            rate limit, retention, seed, the chat's part of deleting an
                            account (accountData.js)
   src/media/               chat media library: schema, store, image validator, files on disk,
-                           picker and admin routes, first-start seed
+                           picker and admin routes, first-start seed; small admin icons
+                           (icons.js: the Discord steps')
   src/previews/            chat link previews: safe fetching (SSRF rules), meta parsing, cache,
                            the preview service, moderators' removal route; fetchImage.js, also
                            used for the event bot's images

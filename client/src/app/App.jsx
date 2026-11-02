@@ -38,6 +38,7 @@ import { lazyPage } from './staleChunks.js';
 const AdminAuditPage = lazyPage(() => import('../admin/AdminAuditPage.jsx'));
 const AdminChatMediaPage = lazyPage(() => import('../admin/AdminChatMediaPage.jsx'));
 const AdminChatPage = lazyPage(() => import('../admin/AdminChatPage.jsx'));
+const AdminDiscordPage = lazyPage(() => import('../admin/AdminDiscordPage.jsx'));
 const AdminEmbeddingPage = lazyPage(() => import('../admin/AdminEmbeddingPage.jsx'));
 const AdminGamesPage = lazyPage(() => import('../admin/AdminGamesPage.jsx'));
 const AdminInfoListPage = lazyPage(() => import('../admin/AdminInfoListPage.jsx'));
@@ -145,6 +146,7 @@ export default function App() {
                 <Route path="settings" element={<AdminSettingsPage />} />
                 <Route path="embedding" element={<AdminEmbeddingPage />} />
                 <Route path="chat-media" element={<AdminChatMediaPage />} />
+                <Route path="discord" element={<AdminDiscordPage />} />
                 <Route path="audit" element={<AdminAuditPage />} />
               </Route>
               {ChatPanelsTestPage && (

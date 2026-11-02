@@ -62,7 +62,7 @@ export function seedSteps(db) {
 
 // iconFile: the icon's file in the media folder (step-icons/...), or null; its public address
 // comes from the chat's media handle (urlOf below), which serves the folder.
-const STEP_COLUMNS = `id, ladder, name, position, role_id AS roleId, icon_file AS iconFile`;
+export const STEP_COLUMNS = `id, ladder, name, position, role_id AS roleId, icon_file AS iconFile`;
 
 // Every step, by ladder and order.
 export const listSteps = (db) =>

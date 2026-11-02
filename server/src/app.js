@@ -39,6 +39,7 @@ import { callRoutes } from './calls/routes.js';
 import { callSpotlightRoutes } from './calls/spotlightRoutes.js';
 import { callStageRoutes } from './calls/stageRoutes.js';
 import { createCallService } from './calls/service.js';
+import { adminDiscordRoutes } from './discord/adminRoutes.js';
 import { createDiscord } from './discord/index.js';
 import { startStaleCalls } from './calls/staleCalls.js';
 import { mountChat } from './chat/mount.js';
@@ -128,7 +129,11 @@ export function createApp({
     fetchImpl: discordFetch,
     chatSessions: chat.sessions,
   });
-  if (discord) api.use('/auth/discord', discord.routes());
+  if (discord) {
+    api.use('/auth/discord', discord.routes());
+    // The admins' steps: names, order, role ids, icons (stored through the chat's media).
+    api.use('/admin/discord', adminDiscordRoutes(db, chat.images));
+  }
   app.locals.discord = { start: (log) => discord?.start(log) ?? null };
 
   api.get('/health', allow('public'), (_req, res) => {

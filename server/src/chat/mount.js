@@ -11,7 +11,9 @@
 
 import express from 'express';
 import { adminMediaRoutes } from '../media/adminRoutes.js';
-import { MEDIA_URL_PREFIX, mediaUrl } from '../media/files.js';
+import { MEDIA_URL_PREFIX, deleteMediaFile, mediaUrl } from '../media/files.js';
+import { storeIcon } from '../media/icons.js';
+import { ImageRejected } from '../media/imageCheck.js';
 import { mediaRoutes } from '../media/routes.js';
 import { seedChatMedia } from '../media/seed.js';
 import { fetchImage } from '../previews/fetchImage.js';
@@ -114,10 +116,25 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
     // For areas that show outside images from this site (the event bot's, bots/images.js):
     // the link previews' guarded image fetch (previews/fetchImage.js), with the site's pixel
     // limit (a setting) added, and the public media address of a stored file.
+    // storeIcon: an admin's icon upload (the Discord steps, discord/adminRoutes.js) drawn into
+    // a 64 x 64 WebP in step-icons/: { ok, file } or { ok: false, message }; remove: a stored
+    // icon's file goes.
     images: {
       fetch: (url, limits, options, network) =>
         fetchImage(url, { ...limits, maxPixels: imageMaxPixels(db) }, options, network),
       url: mediaUrl,
+      async storeIcon(buffer) {
+        try {
+          return {
+            ok: true,
+            file: await storeIcon(config, buffer, 'step-icons', imageMaxPixels(db)),
+          };
+        } catch (err) {
+          if (!(err instanceof ImageRejected)) throw err;
+          return { ok: false, message: err.message };
+        }
+      },
+      remove: (file) => deleteMediaFile(config, file),
     },
     // For account code: open chat sockets follow logouts and account changes.
     sessions: {

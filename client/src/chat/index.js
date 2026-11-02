@@ -33,4 +33,4 @@ export { usePersonalEvents } from './usePersonalEvents.js';
 export { useRoomGlimpse } from './useRoomGlimpse.js';
 export { onReconnect } from './connection.js';
 // Discord steps (variant C): the badge after a name, and the full names (the account page).
-export { default as StepBadge, StepList } from './StepBadge.jsx';
+export { default as StepBadge, StepIcon, StepList } from './StepBadge.jsx';

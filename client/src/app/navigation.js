@@ -58,13 +58,15 @@ export const LEGAL_NAV = [
   { to: DISCLAIMER_PATH, label: 'Not financial advice' },
 ];
 
-// Sections of the admin area (/admin); each later area adds its editor here.
+// Sections of the admin area (/admin); each later area adds its editor here. feature: shown
+// only while the server has that optional feature (the session's features).
 export const ADMIN_NAV = [
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/info', label: 'Info pages' },
   { to: '/admin/games', label: 'Games' },
   { to: '/admin/chat', label: 'Chat' },
   { to: '/admin/chat-media', label: 'Chat media' },
+  { to: '/admin/discord', label: 'Discord steps', feature: 'discord' },
   { to: '/admin/settings', label: 'Settings' },
   { to: '/admin/embedding', label: 'Embedding' },
   { to: '/admin/audit', label: 'Audit log' },
