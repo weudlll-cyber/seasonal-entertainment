@@ -11,7 +11,7 @@
 // ============================================================
 
 import { useState } from 'react';
-import Icon from '../app/icons.jsx';
+import ChatButton from './ChatButton.jsx';
 import ChatNotice from './ChatNotice.jsx';
 import { EMOJI_GROUPS } from './emojis.js';
 import { useMediaLibrary } from './mediaLibrary.js';
@@ -82,16 +82,14 @@ export default function ChatPicker({ member, onEmoji, onMedia }) {
 
   return (
     <div className="chat-picker">
-      <button
-        type="button"
-        className="chat-button chat-button--secondary"
+      <ChatButton
+        icon="smile"
+        text={member ? 'Emoji, stickers, GIFs' : 'Emoji'}
+        secondary
         aria-expanded={open}
         aria-controls="chat-picker-panel"
         onClick={() => setOpen((o) => !o)}
-      >
-        <Icon name="smile" size={20} />
-        <span className="chat-button__text">{member ? 'Emoji, stickers, GIFs' : 'Emoji'}</span>
-      </button>
+      />
       {open && (
         <div id="chat-picker-panel" className="chat-picker__panel">
           <div role="tablist" aria-label="Picker" className="chat-picker__tabs">

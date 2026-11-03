@@ -375,6 +375,15 @@ checks the alignment, the one-line rows and the overlap at 1440 x 900 and 1280 x
 - Small toggles (`ToggleButton`: stars, bells): a 44px hit area drawn as a compact 32px icon
   button — the hover background is clipped to the inner box and the focus ring (the accent
   outline of every control) is pulled in to the same rounded rectangle; never a circle.
+- **A button showing only an icon has a tooltip** (`title`, decided 2026-11-03) saying, short and
+  in English, what a click does in its current state; its accessible name and `aria-pressed` stay
+  as they are. Shared where possible: `ToggleButton` (`hints`: "Add General to favourites" /
+  "Remove General from favourites", "Turn off notifications for General" / "Turn on
+  notifications for General"), `IconButton` (`client/src/app/IconButton.jsx`: one label for name
+  and tooltip; the drawer's close, the menu's open, close and rail, the theme), `MenuButton`'s
+  "…" (its `buttonLabel`), the composer's buttons only in the compact chat where their texts are
+  hidden (`client/src/chat/ChatButton.jsx`); the call controls keep their own `data-tooltip`. A
+  button with visible text gets none.
 
 **Call page** (`/calls/:id`, design "Community Call – Bühne", docs/CALLS.md), stage first: the
 header across (title, LIVE badge, start time, how many speak and listen); on the left the stage

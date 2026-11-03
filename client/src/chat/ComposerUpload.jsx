@@ -9,7 +9,7 @@
 
 import { useRef, useState } from 'react';
 import { upload } from '../api/http.js';
-import Icon from '../app/icons.jsx';
+import ChatButton from './ChatButton.jsx';
 import ChatNotice from './ChatNotice.jsx';
 
 const ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,application/pdf';
@@ -50,15 +50,13 @@ export default function ComposerUpload({ onUploaded, send = roomUpload, accept =
         aria-label="File to attach"
         onChange={choose}
       />
-      <button
-        type="button"
-        className="chat-button chat-button--secondary"
+      <ChatButton
+        icon="paperclip"
+        text={busy ? 'Uploading…' : 'Attach file'}
+        secondary
         disabled={busy}
         onClick={() => input.current.click()}
-      >
-        <Icon name="paperclip" size={20} />
-        <span className="chat-button__text">{busy ? 'Uploading…' : 'Attach file'}</span>
-      </button>
+      />
       <ChatNotice error={error} />
     </div>
   );

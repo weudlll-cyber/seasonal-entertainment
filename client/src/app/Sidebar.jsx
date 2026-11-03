@@ -20,6 +20,7 @@ import { useSession } from '../session/SessionContext.jsx';
 import ThemeToggle from '../theme/ThemeToggle.jsx';
 import AccountCard from './AccountCard.jsx';
 import { useUnread } from '../chat/index.js';
+import IconButton from './IconButton.jsx';
 import Icon from './icons.jsx';
 import LiveBadge from '../calls/LiveBadge.jsx';
 import { useCallsSummary } from '../calls/useCallsSummary.js';
@@ -101,16 +102,13 @@ export default function Sidebar({ rail = false }) {
     >
       <div className="sidebar__bar">
         {rail && (
-          <button
-            type="button"
-            className="icon-button sidebar__rail-toggle"
+          <IconButton
+            label={railState.pinned ? 'Collapse menu' : 'Expand menu'}
+            icon="menu"
+            className="sidebar__rail-toggle"
             aria-expanded={railState.pinned}
-            aria-label={railState.pinned ? 'Collapse menu' : 'Expand menu'}
-            title={railState.pinned ? 'Collapse menu' : 'Expand menu'}
             onClick={railState.toggle}
-          >
-            <Icon name="menu" />
-          </button>
+          />
         )}
         <Link to="/" className="sidebar__brand" aria-label="Seasonal Entertainment, home">
           <img src={EMBLEM} alt="" width="50" height="40" />
@@ -121,30 +119,25 @@ export default function Sidebar({ rail = false }) {
         </Link>
         <div className="sidebar__bar-actions">
           <ThemeToggle />
-          <button
+          <IconButton
             ref={menuButton}
-            type="button"
-            className="icon-button"
+            label="Open menu"
+            icon="menu"
             aria-expanded={menuOpen}
             aria-controls="site-navigation"
-            aria-label="Open menu"
             onClick={() => setMenuPage(pathname)}
-          >
-            <Icon name="menu" />
-          </button>
+          />
         </div>
       </div>
       {menuOpen && <div className="sidebar__backdrop" onClick={closeMenu} aria-hidden="true" />}
       <div id="site-navigation" className="sidebar__panel">
-        <button
+        <IconButton
           ref={closeButton}
-          type="button"
-          className="icon-button sidebar__close"
-          aria-label="Close menu"
+          label="Close menu"
+          icon="close"
+          className="sidebar__close"
           onClick={closeMenu}
-        >
-          <Icon name="close" />
-        </button>
+        />
         <nav aria-label="Main" className="sidebar__nav">
           <ul>
             {/* "Start here" only while its site setting is on (the page stays reachable). */}

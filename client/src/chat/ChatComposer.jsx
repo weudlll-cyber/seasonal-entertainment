@@ -9,14 +9,15 @@
 //              becomes the attachment) and Send, which sends both as one message. In a room, a
 //              member typing "@" gets mention suggestions (MentionSuggestions). The buttons carry
 //              an icon and their text; the compact variant (the drawer, a call's chat) shows one
-//              row — field and icon buttons, the texts kept as their names (ChatComposer.css).
+//              row — field and icon buttons, the texts kept as their names and tooltips
+//              (ChatComposer.css, ChatButton.jsx).
 //              A host may follow the draft (onDraft) and show something above the field
 //              (above: a direct message's link preview card, DirectConversation.jsx).
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
 import { MESSAGE_MAX } from '@seasonal-entertainment/shared/chatRules.js';
-import Icon from '../app/icons.jsx';
+import ChatButton from './ChatButton.jsx';
 import ChatPicker from './ChatPicker.jsx';
 import ComposerAttachment from './ComposerAttachment.jsx';
 import ComposerUpload from './ComposerUpload.jsx';
@@ -115,10 +116,7 @@ export default function ChatComposer({
             accept={accept}
           />
         )}
-        <button className="chat-button" type="submit" disabled={!draft.trim() && !attachment}>
-          <Icon name="send" size={20} />
-          <span className="chat-button__text">Send</span>
-        </button>
+        <ChatButton icon="send" text="Send" type="submit" disabled={!draft.trim() && !attachment} />
       </div>
     </form>
   );

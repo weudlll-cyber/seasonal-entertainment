@@ -19,6 +19,7 @@ export default function RoomStar({ room }) {
       kind="star"
       on={favourites.rooms.includes(room.slug)}
       label={`Favourite: ${room.name}`}
+      hints={[`Remove ${room.name} from favourites`, `Add ${room.name} to favourites`]}
       icons={[<Icon key="on" name="star" filled />, <Icon key="off" name="star" />]}
       onToggle={(on) => favourites.setRoom(room.slug, on).catch(() => {})}
     />

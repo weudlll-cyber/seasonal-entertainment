@@ -62,6 +62,7 @@ export default function StepRow({ step, first, last, run, move }) {
           type="button"
           disabled={first}
           aria-label={`Move ${step.name} down the ladder`}
+          title={`Move ${step.name} down the ladder`}
           onClick={() => move(step, -1)}
         >
           ↓
@@ -71,6 +72,7 @@ export default function StepRow({ step, first, last, run, move }) {
           type="button"
           disabled={last}
           aria-label={`Move ${step.name} up the ladder`}
+          title={`Move ${step.name} up the ladder`}
           onClick={() => move(step, 1)}
         >
           ↑

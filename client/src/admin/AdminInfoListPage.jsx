@@ -71,6 +71,7 @@ export default function AdminInfoListPage() {
                     type="button"
                     disabled={index === 0}
                     aria-label={`Move ${page.title} up`}
+                    title={`Move ${page.title} up`}
                     onClick={() => move(index, -1)}
                   >
                     ↑
@@ -80,6 +81,7 @@ export default function AdminInfoListPage() {
                     type="button"
                     disabled={index === pages.length - 1}
                     aria-label={`Move ${page.title} down`}
+                    title={`Move ${page.title} down`}
                     onClick={() => move(index, 1)}
                   >
                     ↓

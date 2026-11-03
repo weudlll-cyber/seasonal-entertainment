@@ -10,6 +10,7 @@
 // ============================================================
 
 import { useSession } from '../session/SessionContext.jsx';
+import { ChatVariant } from './ChatButton.jsx';
 import ChatComposer from './ChatComposer.jsx';
 import ChatNotice from './ChatNotice.jsx';
 import ConnectionLimitNotice from './ConnectionLimitNotice.jsx';
@@ -22,7 +23,8 @@ import './ChatPicker.css';
 import './ChatFavourites.css';
 
 // room: slug of the room shown; when it changes the panel follows (a host's room picker).
-// variant: 'full' (a page of its own) or 'compact' (a box beside other content).
+// variant: 'full' (a page of its own) or 'compact' (a box beside other content); also given to
+// its buttons (ChatVariant, ChatButton.jsx).
 // showRoomTabs: let the reader switch between their rooms (favourites first, RoomTabs);
 // unlisted: the room is not in the room lists (a call's chat), so it is asked for by name.
 // files: the composer's "Attach file" for members (ChatComposer); false where uploads are refused
@@ -47,38 +49,40 @@ export default function ChatPanel({
       className={`se-chat se-chat--${variant}${showRoomTabs ? ' se-chat--rooms' : ''}`}
       aria-label={`Chat: ${roomName}`}
     >
-      {showRoomTabs ? (
-        <RoomTabs rooms={info?.rooms ?? []} current={room} onPick={chat.setRoom} />
-      ) : (
-        <p className="chat-panel__title">{roomName}</p>
-      )}
-      <div className="chat-conversation">
-        <MessageList
-          room={room}
-          roomName={roomName}
-          messages={chat.messages}
-          moderator={info?.me.moderator}
-          onAction={chat.act}
-          onSeen={chat.markSeen}
-        />
-        <ConnectionLimitNotice />
-        <ChatNotice error={chat.error} notice={chat.notice} />
-        {current?.canWrite ? (
-          !user && guestPrompt ? (
-            guestPrompt
-          ) : (
-            <ChatComposer
-              user={user}
-              guestName={info.me.guestName}
-              onSend={chat.send}
-              room={room}
-              files={files && settings['chat.uploads']}
-            />
-          )
+      <ChatVariant.Provider value={variant}>
+        {showRoomTabs ? (
+          <RoomTabs rooms={info?.rooms ?? []} current={room} onPick={chat.setRoom} />
         ) : (
-          current && <p className="chat-note">You can read this room, but not write in it.</p>
+          <p className="chat-panel__title">{roomName}</p>
         )}
-      </div>
+        <div className="chat-conversation">
+          <MessageList
+            room={room}
+            roomName={roomName}
+            messages={chat.messages}
+            moderator={info?.me.moderator}
+            onAction={chat.act}
+            onSeen={chat.markSeen}
+          />
+          <ConnectionLimitNotice />
+          <ChatNotice error={chat.error} notice={chat.notice} />
+          {current?.canWrite ? (
+            !user && guestPrompt ? (
+              guestPrompt
+            ) : (
+              <ChatComposer
+                user={user}
+                guestName={info.me.guestName}
+                onSend={chat.send}
+                room={room}
+                files={files && settings['chat.uploads']}
+              />
+            )
+          ) : (
+            current && <p className="chat-note">You can read this room, but not write in it.</p>
+          )}
+        </div>
+      </ChatVariant.Provider>
     </section>
   );
 }

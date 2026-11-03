@@ -7,7 +7,8 @@
 //              focus in, Escape and the close button close it and focus goes back; the room
 //              picker switches the panel's room and works by keyboard; the browser remembers
 //              open state and room (and copes with blocked storage or a room the reader can
-//              no longer read).
+//              no longer read). The button's tooltip says open or close; the compact
+//              composer's buttons have their texts as tooltips.
 // ============================================================
 
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
@@ -93,10 +94,14 @@ describe('where the chat button is', () => {
 describe('the drawer', () => {
   it('opens with focus inside; Escape closes it and focus goes back to the button', async () => {
     renderAt('/games');
+    expect(launcher()).toHaveAttribute('title', 'Open chat');
     fireEvent.click(launcher());
     expect(drawer()).toHaveFocus();
     expect(launcher()).toHaveAttribute('aria-expanded', 'true');
+    expect(launcher()).toHaveAttribute('title', 'Close chat');
     expect(await within(drawer()).findByText('hello from general')).toBeInTheDocument();
+    // The compact composer hides its buttons' texts: they are their tooltips there.
+    expect(within(drawer()).getByRole('button', { name: 'Send' })).toHaveAttribute('title', 'Send');
     fireEvent.keyDown(drawer(), { key: 'Escape' });
     expect(screen.queryByRole('dialog', { name: 'Chat' })).toBeNull();
     expect(launcher()).toHaveFocus();

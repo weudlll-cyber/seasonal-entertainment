@@ -6,7 +6,8 @@
 //              the server; the room's count then stays, dimmed, but leaves the blue total (tab
 //              and sidebar); unmuting brings it back; a fresh page shows the room still muted
 //              (the server keeps it, per account). The bell shows the bell icon when sounding
-//              and the bell-off icon when muted.
+//              and the bell-off icon when muted; its tooltip says what a click does (turn the
+//              room's notifications off or on).
 // ============================================================
 
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
@@ -71,6 +72,8 @@ it('a muted room keeps its count, dimmed, but leaves the total; unmuting restore
   const bell = within(rooms()).getByRole('button', { name: 'Mute: Help' });
   expect(bell).toHaveAttribute('aria-pressed', 'false');
   expect(iconOf(bell)).toBe('bell');
+  // The tooltip says what a click does now; the name stays the same.
+  expect(bell).toHaveAttribute('title', 'Turn off notifications for Help');
 
   fireEvent.click(bell);
   await vi.waitFor(() => expect(server.help.muted).toBe(true));
@@ -84,6 +87,10 @@ it('a muted room keeps its count, dimmed, but leaves the total; unmuting restore
     'true'
   );
   expect(iconOf(within(rooms()).getByRole('button', { name: 'Mute: Help' }))).toBe('bellOff');
+  expect(within(rooms()).getByRole('button', { name: 'Mute: Help' })).toHaveAttribute(
+    'title',
+    'Turn on notifications for Help'
+  );
   expect(screen.getByRole('link', { name: 'Chat: 1 unread room message' })).toBeInTheDocument();
 
   fireEvent.click(within(rooms()).getByRole('button', { name: 'Mute: Help' }));

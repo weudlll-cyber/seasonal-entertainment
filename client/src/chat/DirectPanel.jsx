@@ -12,6 +12,7 @@
 // ============================================================
 
 import { useSession } from '../session/SessionContext.jsx';
+import { ChatVariant } from './ChatButton.jsx';
 import ChatNotice from './ChatNotice.jsx';
 import ConnectionLimitNotice from './ConnectionLimitNotice.jsx';
 import DirectConversation from './DirectConversation.jsx';
@@ -69,15 +70,17 @@ export default function DirectPanel({ keyId, privateKey, variant = 'full' }) {
   const partner = useDirectPartner();
   return (
     <section className={`se-chat se-chat--${variant}`} aria-label="Private messages">
-      <ConnectionLimitNotice />
-      {partner ? (
-        <DirectConversation partner={partner} me={user} keyId={keyId} privateKey={privateKey} />
-      ) : (
-        <>
-          <MemberSearch />
-          <ConversationList />
-        </>
-      )}
+      <ChatVariant.Provider value={variant}>
+        <ConnectionLimitNotice />
+        {partner ? (
+          <DirectConversation partner={partner} me={user} keyId={keyId} privateKey={privateKey} />
+        ) : (
+          <>
+            <MemberSearch />
+            <ConversationList />
+          </>
+        )}
+      </ChatVariant.Provider>
     </section>
   );
 }

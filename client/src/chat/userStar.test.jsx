@@ -6,7 +6,7 @@
 //              partner stores the favourite and moves them first; a fresh page shows it still
 //              starred; the name menu in a room then offers "Remove from favourites" (one
 //              shared state); a "Find a member" result shows the same star (the filled stroke
-//              icon, as for rooms).
+//              icon, as for rooms); its tooltip says what a click does.
 // ============================================================
 
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
@@ -115,11 +115,16 @@ it('starring a partner moves them first and stays; the name menu agrees', async 
   expect(order()).toEqual(['bob', 'ann']);
   const star = screen.getByRole('button', { name: 'Favourite: ann' });
   expect(star).toHaveAttribute('aria-pressed', 'false');
+  expect(star).toHaveAttribute('title', 'Add ann to favourites');
   fireEvent.click(star);
   await vi.waitFor(() => expect(order()).toEqual(['ann', 'bob']));
   expect(screen.getByRole('button', { name: 'Favourite: ann' })).toHaveAttribute(
     'aria-pressed',
     'true'
+  );
+  expect(screen.getByRole('button', { name: 'Favourite: ann' })).toHaveAttribute(
+    'title',
+    'Remove ann from favourites'
   );
 
   // The same favourites in a room's name menu.
