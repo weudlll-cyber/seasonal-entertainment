@@ -21,12 +21,11 @@ entry waits for.
 - **Discord login on the live site** — set the production redirect at Discord (typed, not
   pasted; check it in the portal's URL generator: no `+` before `https`), then
   `sudo ./deploy/install.sh --update --discord`. The steps (names, order, role ids, icons) come
-  with the update: the PC's are exported into the project's seed (`npm run steps:export`, then
-  commit), and the live site inserts them on its first start with Discord steps; steps added on
-  the PC later need the export again before the update (docs/AUTH.md, "Discord: steps"). The
-  Farmer ladder's middle step names were seeded after the Holder ladder's (Farmer Silver …
-  Farmer Diamond): to compare with the server's roles. Worth adding at Discord: the links to the
-  terms and the privacy page.
+  with the update: the PC's 20 steps with role ids and icons are in the project's seed (exported
+  2026-11-03), and the live site inserts them on its first start with Discord steps; steps
+  changed on the PC later need the export again (`npm run steps:export`, then commit) before the
+  update (docs/AUTH.md, "Discord: steps"). Worth adding at Discord: the links to the terms and
+  the privacy page.
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
   restore one nightly backup there once, as docs/DEPLOYMENT.md describes, and check the site.
 

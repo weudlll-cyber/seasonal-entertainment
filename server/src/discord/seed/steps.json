@@ -5,148 +5,141 @@
       "ladder": "holder",
       "name": "Holder",
       "position": 1,
-      "roleId": null,
-      "icon": null
+      "roleId": "1141699577196589107",
+      "icon": "holder-1.webp"
     },
     {
       "ladder": "holder",
       "name": "Bronze",
       "position": 2,
-      "roleId": null,
-      "icon": null
+      "roleId": "1110866378027712522",
+      "icon": "holder-2.webp"
     },
     {
       "ladder": "holder",
       "name": "Silver",
       "position": 3,
-      "roleId": null,
-      "icon": null
+      "roleId": "1110866376207372288",
+      "icon": "holder-3.webp"
     },
     {
       "ladder": "holder",
       "name": "Golden",
       "position": 4,
-      "roleId": null,
-      "icon": null
+      "roleId": "1110866374198317128",
+      "icon": "holder-4.webp"
     },
     {
       "ladder": "holder",
       "name": "Platinum",
       "position": 5,
-      "roleId": null,
-      "icon": null
+      "roleId": "1434331224985571389",
+      "icon": "holder-5.webp"
     },
     {
       "ladder": "holder",
       "name": "Diamond",
       "position": 6,
-      "roleId": null,
-      "icon": null
+      "roleId": "1110866372881289296",
+      "icon": "holder-6.webp"
     },
     {
       "ladder": "holder",
       "name": "Seasonal",
       "position": 7,
-      "roleId": null,
-      "icon": null
-    },
-    {
-      "ladder": "holder",
-      "name": "Ultimate",
-      "position": 8,
-      "roleId": null,
-      "icon": null
+      "roleId": "1110866370834481212",
+      "icon": "holder-7.webp"
     },
     {
       "ladder": "holder",
       "name": "Ultimate-Dragon Whale",
-      "position": 9,
-      "roleId": null,
-      "icon": null
+      "position": 8,
+      "roleId": "1530712031215226932",
+      "icon": "holder-8.webp"
     },
     {
       "ladder": "farmer",
       "name": "Farmer Holder",
       "position": 1,
-      "roleId": null,
-      "icon": null
+      "roleId": "1201188456701886515",
+      "icon": "farmer-1.webp"
     },
     {
       "ladder": "farmer",
       "name": "Farmer Bronze",
       "position": 2,
-      "roleId": null,
-      "icon": null
+      "roleId": "1201188394135466096",
+      "icon": "farmer-2.webp"
     },
     {
       "ladder": "farmer",
       "name": "Farmer Silver",
       "position": 3,
-      "roleId": null,
-      "icon": null
+      "roleId": "1201188327018205194",
+      "icon": "farmer-3.webp"
     },
     {
       "ladder": "farmer",
       "name": "Farmer Golden",
       "position": 4,
-      "roleId": null,
-      "icon": null
+      "roleId": "1201189471698288700",
+      "icon": "farmer-4.webp"
     },
     {
       "ladder": "farmer",
       "name": "Farmer Platinum",
       "position": 5,
-      "roleId": null,
-      "icon": null
+      "roleId": "1444962769144123523",
+      "icon": "farmer-5.webp"
     },
     {
       "ladder": "farmer",
       "name": "Farmer Diamond",
       "position": 6,
-      "roleId": null,
-      "icon": null
+      "roleId": "1201188139109187584",
+      "icon": "farmer-6.webp"
     },
     {
       "ladder": "farmer",
       "name": "Farmer Seasonal",
       "position": 7,
-      "roleId": null,
-      "icon": null
+      "roleId": "1201188270541897838",
+      "icon": "farmer-7.webp"
     },
     {
       "ladder": "farmer",
       "name": "Ultimate-Farmer Whale",
       "position": 8,
-      "roleId": null,
-      "icon": null
+      "roleId": "1342094164485214312",
+      "icon": "farmer-8.webp"
     },
     {
       "ladder": "investor",
-      "name": "Level 1",
+      "name": "Level 1 Investor",
       "position": 1,
-      "roleId": null,
-      "icon": null
+      "roleId": "1366469667320758323",
+      "icon": "investor-1.webp"
     },
     {
       "ladder": "investor",
-      "name": "Level 2",
+      "name": "Level 2 Investor",
       "position": 2,
-      "roleId": null,
-      "icon": null
+      "roleId": "1366469788511244290",
+      "icon": "investor-2.webp"
     },
     {
       "ladder": "investor",
-      "name": "Level 3",
+      "name": "Level 3 Investor",
       "position": 3,
-      "roleId": null,
-      "icon": null
+      "roleId": "1366469870996422788",
+      "icon": "investor-3.webp"
     },
     {
       "ladder": "investor",
-      "name": "Level 4",
+      "name": "Level 4 Investor",
       "position": 4,
-      "roleId": null,
-      "icon": null
+      "roleId": "1433875476706885712",
+      "icon": "investor-4.webp"
     }
   ]
 }

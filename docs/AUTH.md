@@ -223,11 +223,13 @@ character: in the probe, invisible leading spaces in the portal broke it.
 Members carry **steps** from the Seasonal Tokens Discord server (decided 2026-11-02). There are
 three ladders, and each shows only the member's highest step:
 
-- **Holder**: Holder < Bronze < Silver < Golden < Platinum < Diamond < Seasonal < Ultimate <
+- **Holder**: Holder < Bronze < Silver < Golden < Platinum < Diamond < Seasonal <
   Ultimate-Dragon Whale.
-- **Farmer**: Farmer Holder < Farmer Bronze < … < Farmer Seasonal < Ultimate-Farmer Whale. The
-  seed's middle steps follow the Holder names; admins correct them.
-- **Investor**: Level 1 < … < Level 4.
+- **Farmer**: Farmer Holder < Farmer Bronze < … < Farmer Seasonal < Ultimate-Farmer Whale.
+- **Investor**: Level 1 Investor < … < Level 4 Investor.
+
+The shipped seed holds these 20 steps with their role ids and icons, exported from the PC test
+site on 2026-11-03.
 
 Admins give each step the Discord role id that grants it, set the order and upload an icon
 (Admin → Discord steps). **Steps never grant rights on the site**; only the owner gives roles.
