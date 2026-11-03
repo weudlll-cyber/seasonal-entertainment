@@ -89,6 +89,27 @@ describe('before the first private message', () => {
     expect(screen.queryByRole('button', { name: 'Save a recovery code' })).toBeNull();
   });
 
+  it('on the chat page, the confirmation comes back to the Direct tab', async () => {
+    mockApi({ ...weudlll({ discordProofUntil: null }), ...keys().answers });
+    const { unmount } = renderAt('/chat');
+    // Rooms by default; the Direct tab goes into the address and so into the way back.
+    expect(await screen.findByRole('tab', { name: /Rooms/ })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
+    fireEvent.click(screen.getByRole('tab', { name: /Direct/ }));
+    const confirm = await screen.findByRole('link', { name: 'Confirm with Discord' });
+    const next = new URL(confirm.getAttribute('href'), 'http://x').searchParams.get('next');
+    expect(next).toBe('/chat?tab=direct');
+    unmount();
+    // Back from Discord: the same address opens the Direct tab again.
+    renderAt(next);
+    expect(await screen.findByRole('tab', { name: /Direct/ })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
+  });
+
   it('"Save a recovery code": the key sealed by the code alone, the code shown once', async () => {
     const server = keys();
     mockApi({ ...weudlll(), ...server.answers });

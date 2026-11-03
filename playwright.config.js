@@ -10,6 +10,8 @@
 //              one of its own in the system temp folder. Calls use the run's own LiveKit server
 //              in development mode (scripts/calls-dev.mjs, pinned and checksum-checked binary);
 //              the event bot is the run's own fake database (scripts/build-bot-fixtures.mjs).
+//              A second server on 3811 has Discord switched on, its calls to Discord answered by
+//              the server tests' pretend Discord (client/e2e/fakeDiscordPreload.mjs).
 //              On CI a failing test keeps its trace and screenshot for the workflow to upload.
 // ============================================================
 
@@ -22,8 +24,11 @@ import {
   CALLS_URL,
   DEV_PROXY_PORT,
   DEV_PROXY_URL,
+  DISCORD_SERVER_PORT,
+  DISCORD_SERVER_URL,
   SERVER_PORT as port,
 } from './client/e2e/ports.js';
+import { DISCORD_TEST } from './server/test/helpers/fakeDiscord.js';
 
 // Without a build the server answers the API only, and every page check would fail obscurely.
 if (!existsSync('client/dist/index.html')) {
@@ -33,6 +38,41 @@ if (!existsSync('client/dist/index.html')) {
 // This file is loaded by the runner and again by every worker; the env var makes them all
 // agree on one directory per run.
 process.env.SE_E2E_DIR ??= mkdtempSync(path.join(tmpdir(), 'se-e2e-'));
+
+// The real server's environment, set explicitly so a local .env (dev database, bootstrap token,
+// bot databases, Discord) can never leak in.
+const serverEnv = {
+  HOST: '127.0.0.1',
+  PORT: String(port),
+  DATABASE_PATH: path.join(process.env.SE_E2E_DIR, 'e2e.db'),
+  // The starter stickers and GIFs are copied here on start (first-start seed).
+  MEDIA_DIR: path.join(process.env.SE_E2E_DIR, 'media'),
+  SESSION_SECRET: 'e2e-session-secret',
+  // 2FA secrets at rest (docs/AUTH.md): a fixed test key, so no development-key warning.
+  SECRET_ENCRYPTION_KEY: 'ZTJlLW9ubHktc2VjcmV0LWVuY3J5cHRpb24ta2V5ISE=',
+  // A token only test runs know: the admin spec creates its admin through the real
+  // bootstrap route. Not a secret: it only ever unlocks this throw-away database.
+  BOOTSTRAP_TOKEN: 'e2e-bootstrap-token',
+  // Every test browser comes from 127.0.0.1 and many share the run's admin account, in
+  // parallel workers: the chat connection limits (docs/CHAT.md) would count them as one.
+  CHAT_MAX_CONNECTIONS_PER_MEMBER: '100',
+  CHAT_MAX_GUEST_CONNECTIONS_PER_IP: '1000',
+  // The same for reads (GET under /api, 1200 a minute per address): a fast run of the
+  // whole suite makes about 1300 in a minute, and the last tests were refused (the call
+  // tests' hang on CI, 2026-10-23; docs/AUTH.md).
+  API_READS_PER_MINUTE: '100000',
+  BCRYPT_COST: '4',
+  COOKIE_SECURE: 'false',
+  PUBLIC_ORIGIN: '',
+  // LiveKit's development pair: accepted outside production only (docs/CALLS.md).
+  CALLS_URL,
+  CALLS_API_KEY: 'devkey',
+  CALLS_API_SECRET: 'secret',
+  // The event bot, read-only (docs/BOTS.md): the fixture built just before. The price
+  // bot stays off, so the home page keeps its season marks (seasonMarks.spec.js).
+  BOT_FIXTURE_DIR: path.join(process.env.SE_E2E_DIR, 'bots'),
+  EVENT_BOT_DB: path.join(process.env.SE_E2E_DIR, 'bots', 'stannouncebot.db'),
+};
 
 export default defineConfig({
   testDir: 'client/e2e',
@@ -70,39 +110,28 @@ export default defineConfig({
       command: 'node scripts/build-bot-fixtures.mjs && node server/src/index.js',
       url: `http://127.0.0.1:${port}/api/health`,
       // Set explicitly so a local .env (dev database, bootstrap token) can never leak in.
-      env: {
-        HOST: '127.0.0.1',
-        PORT: String(port),
-        DATABASE_PATH: path.join(process.env.SE_E2E_DIR, 'e2e.db'),
-        // The starter stickers and GIFs are copied here on start (first-start seed).
-        MEDIA_DIR: path.join(process.env.SE_E2E_DIR, 'media'),
-        SESSION_SECRET: 'e2e-session-secret',
-        // 2FA secrets at rest (docs/AUTH.md): a fixed test key, so no development-key warning.
-        SECRET_ENCRYPTION_KEY: 'ZTJlLW9ubHktc2VjcmV0LWVuY3J5cHRpb24ta2V5ISE=',
-        // A token only test runs know: the admin spec creates its admin through the real
-        // bootstrap route. Not a secret: it only ever unlocks this throw-away database.
-        BOOTSTRAP_TOKEN: 'e2e-bootstrap-token',
-        // Every test browser comes from 127.0.0.1 and many share the run's admin account, in
-        // parallel workers: the chat connection limits (docs/CHAT.md) would count them as one.
-        CHAT_MAX_CONNECTIONS_PER_MEMBER: '100',
-        CHAT_MAX_GUEST_CONNECTIONS_PER_IP: '1000',
-        // The same for reads (GET under /api, 1200 a minute per address): a fast run of the
-        // whole suite makes about 1300 in a minute, and the last tests were refused (the call
-        // tests' hang on CI, 2026-10-23; docs/AUTH.md).
-        API_READS_PER_MINUTE: '100000',
-        BCRYPT_COST: '4',
-        COOKIE_SECURE: 'false',
-        PUBLIC_ORIGIN: '',
-        // LiveKit's development pair: accepted outside production only (docs/CALLS.md).
-        CALLS_URL,
-        CALLS_API_KEY: 'devkey',
-        CALLS_API_SECRET: 'secret',
-        // The event bot, read-only (docs/BOTS.md): the fixture built just before. The price
-        // bot stays off, so the home page keeps its season marks (seasonMarks.spec.js).
-        BOT_FIXTURE_DIR: path.join(process.env.SE_E2E_DIR, 'bots'),
-        EVENT_BOT_DB: path.join(process.env.SE_E2E_DIR, 'bots', 'stannouncebot.db'),
-      },
+      env: serverEnv,
       // Always a fresh server, so a stale process can never answer for this build.
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+    {
+      // The same server with Discord switched on, its calls to Discord answered by the pretend
+      // one (client/e2e/fakeDiscordPreload.mjs): the Discord round trip (discordConfirm.spec.js).
+      // A database and media folder of its own; the test client id and secret are the pretend
+      // Discord's, nothing real.
+      command: 'node --import ./client/e2e/fakeDiscordPreload.mjs server/src/index.js',
+      url: `${DISCORD_SERVER_URL}/api/health`,
+      env: {
+        ...serverEnv,
+        PORT: String(DISCORD_SERVER_PORT),
+        DATABASE_PATH: path.join(process.env.SE_E2E_DIR, 'discord.db'),
+        MEDIA_DIR: path.join(process.env.SE_E2E_DIR, 'discord-media'),
+        DISCORD_CLIENT_ID: DISCORD_TEST.clientId,
+        DISCORD_CLIENT_SECRET: DISCORD_TEST.clientSecret,
+        DISCORD_GUILD_ID: DISCORD_TEST.guildId,
+        DISCORD_REDIRECT_URI: `${DISCORD_SERVER_URL}/api/auth/discord/callback`,
+      },
       reuseExistingServer: false,
       timeout: 120_000,
     },

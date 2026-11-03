@@ -44,14 +44,15 @@ roles and the bootstrap are described in [AUTH.md](AUTH.md).
 
 The race game uses 5173 and 4173; this project stays clear of them.
 
-| Port | What                                                                                         |
-| ---- | -------------------------------------------------------------------------------------------- |
-| 3800 | Server (`npm start`, and the API behind `npm run dev`)                                       |
-| 5380 | Vite dev server (`npm run dev`), forwards `/api` and `/ws` to 3800                           |
-| 3810 | Server started by the Playwright browser tests                                               |
-| 5390 | Vite dev server in front of 3810 during the browser tests (`SE_E2E_DEV_PROXY_PORT` moves it) |
-| 7880 | LiveKit call server in development (`npm run dev:calls`)                                     |
-| 7890 | LiveKit call server of the browser tests (ICE on 7891 TCP, 7892 UDP)                         |
+| Port | What                                                                                          |
+| ---- | --------------------------------------------------------------------------------------------- |
+| 3800 | Server (`npm start`, and the API behind `npm run dev`)                                        |
+| 5380 | Vite dev server (`npm run dev`), forwards `/api` and `/ws` to 3800                            |
+| 3810 | Server started by the Playwright browser tests                                                |
+| 5390 | Vite dev server in front of 3810 during the browser tests (`SE_E2E_DEV_PROXY_PORT` moves it)  |
+| 3811 | Browser tests' server with Discord on, against the pretend Discord (its authorize page: 3812) |
+| 7880 | LiveKit call server in development (`npm run dev:calls`)                                      |
+| 7890 | LiveKit call server of the browser tests (ICE on 7891 TCP, 7892 UDP)                          |
 
 ## Runtime configuration
 
@@ -422,7 +423,8 @@ client/                    React + Vite client
   src/admin/               admin area (/admin): layout, users, audit log, info editor; one section each
   src/components/Markdown.jsx  the one safe Markdown renderer
   e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels,
-                           opticalCentres.js defines each season motif's optical centre
+                           opticalCentres.js defines each season motif's optical centre,
+                           fakeDiscordPreload.mjs puts the pretend Discord into the 3811 server
   src/main.jsx             entry point
   src/pages/               one folder entry per page (component, CSS, test side by side);
                            ManageEventsPage: the event bot's admin page in a frame (docs/BOTS.md)

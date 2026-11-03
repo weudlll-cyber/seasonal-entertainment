@@ -216,7 +216,9 @@ character: in the probe, invisible leading spaces in the portal broke it.
 - Tests: `server/test/discordLogin.test.js`, against the pretend Discord
   (`server/test/helpers/fakeDiscord.js`, which behaves as the probe found: codes bound to their
   PKCE challenge, rotating refresh tokens, 10004); `server/test/accountsRebuild.test.js`;
-  `client/src/discord/discordPages.test.jsx`.
+  `client/src/discord/discordPages.test.jsx`. In the browser tests the same pretend Discord
+  answers a second server (port 3811, `client/e2e/fakeDiscordPreload.mjs`): the round trip of
+  "Confirm with Discord" in `client/e2e/discordConfirm.spec.js`.
 
 ### Discord: steps and the daily read
 

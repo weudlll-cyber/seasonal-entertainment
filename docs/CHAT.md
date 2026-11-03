@@ -338,7 +338,9 @@ End-to-end encrypted messages between **members only** (decided 2026-10-17); gue
 open nor send them. Any member can write to any member.
 
 - **Where**: "Send private message" in the name menu of another member's message; the chat
-  drawer's **Direct** tab and the **Direct** tab of the full `/chat` page (members only). The
+  drawer's **Direct** tab and the **Direct** tab of the full `/chat` page (members only; its
+  address is `/chat?tab=direct`, so a reload or the way back from "Confirm with Discord" opens it
+  again; `client/e2e/discordConfirm.spec.js`). The
   conversation list shows favourite members first (with an online mark), then the most recent
   conversations, each with its **unread count** (orange; see "Unread counters"). Without an
   unlocked key on the device, the Direct tab shows "Unlock private messages" (see "Keys and the
