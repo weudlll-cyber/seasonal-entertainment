@@ -25,9 +25,7 @@ afterEach(async () => {
     watcher.kill();
     await exited;
   }
-  // The entry, working in the folder, ends at its next check; until then Windows keeps the
-  // folder locked.
-  rmSync(dir, { recursive: true, force: true, maxRetries: 100, retryDelay: 100 });
+  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 // The entry prints a line per start and ends once the watcher is gone, so no process outlives
@@ -55,7 +53,9 @@ it('restarts on a written file, not on a read (last-access time)', async () => {
   const mtime = new Date(Math.floor(Date.now() / 1000) * 1000);
   utimesSync(lib, mtime, mtime);
   writeFileSync(path.join(dir, 'entry.mjs'), ENTRY);
-  watcher = spawn(process.execPath, [script, 'entry.mjs', '.'], { cwd: dir });
+  // Absolute paths and a working directory outside the folder: a process working in it would
+  // keep it locked on Windows after the test.
+  watcher = spawn(process.execPath, [script, path.join(dir, 'entry.mjs'), dir], { cwd: tmpdir() });
   let output = '';
   watcher.stdout.on('data', (chunk) => (output += chunk));
   const starts = () => output.split('started').length - 1;
