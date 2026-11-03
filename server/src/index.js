@@ -9,8 +9,9 @@
 //              event bot's image files, bots/fixtureNetwork.js), starts the chat (its own
 //              first-start content and retention job), the stale-call and reminder jobs, the
 //              reference prices job (with a CoinGecko key), the weekly recap and the daily
-//              Discord role read (while Discord is set up), seeds the Discord steps' names once,
-//              starts listening and attaches the chat WebSocket.
+//              Discord role read (while Discord is set up), seeds the Discord steps once (the
+//              project's discord/seed/, icons through the chat's icon pipeline), starts
+//              listening and attaches the chat WebSocket.
 // ============================================================
 
 import { existsSync } from 'node:fs';
@@ -37,8 +38,6 @@ if (seeded) console.log(`Added ${seeded} info pages, Imprint and Privacy as draf
 const refreshed = refreshSeedPages(db);
 if (refreshed) console.log(`Updated ${refreshed} unedited info pages to the current seed text`);
 if (seedGames(db)) console.log('Added the games hub entry (first start)');
-const steps = seedSteps(db);
-if (steps) console.log(`Added ${steps} Discord step names, without role ids (first start)`);
 // Development only, with the fake event bot (its images/ folder beside the database): its
 // images come from those files. Otherwise (production, or a copy of the real bot) the
 // real internet.
@@ -48,6 +47,9 @@ const botImageNetwork =
     ? fixtureImageNetwork(fixtureImages)
     : undefined;
 const app = createApp({ buildInfo, config, db, botImageNetwork });
+// After the app: the steps' icons go through the chat's icon pipeline (images.storeIcon).
+const steps = await seedSteps(db, { storeIcon: app.locals.chat.images.storeIcon });
+if (steps) console.log(`Added ${steps} Discord steps from the project's seed (first start)`);
 await app.locals.chat.start();
 app.locals.calls.start();
 app.locals.reference.start();

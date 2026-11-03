@@ -12,9 +12,9 @@
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { seedSteps } from '../src/discord/steps.js';
 import { post } from './helpers/chat.js';
 import { connect, cookieOf, listeningChat, stopServer } from './helpers/chatSocket.js';
+import { seedTestSteps } from './helpers/steps.js';
 import { makeStaff, registerUser } from './helpers/testApp.js';
 
 let t;
@@ -49,7 +49,7 @@ function link(userId, roleIds, status = 'member') {
 async function setup() {
   ({ t, server } = await listeningChat());
   const url = `ws://127.0.0.1:${server.address().port}/ws/chat`;
-  seedSteps(t.db);
+  await seedTestSteps(t.db);
   map('Golden', GOLDEN);
   map('Silver', SILVER);
   map('Farmer Silver', FARMER_SILVER);

@@ -441,8 +441,9 @@ client/                    React + Vite client
                            an unlocked one, the choice of an account without a password
                            (PasswordlessKeys) (docs/CHAT.md, AUTH.md)
   src/discord/             the Discord login in the browser: start links and reasons, the
-                           button, the confirm gate of accounts without a password, the
-                           account page's Discord section, the first password (docs/AUTH.md)
+                           button, the sign-up page's hint, the confirm gate of accounts
+                           without a password, the account page's Discord section, the first
+                           password (docs/AUTH.md)
   src/notify/              browser notifications while the site is open: permission, the
                            switches, mentions, direct messages, the weekly recap (docs/CHAT.md)
   src/games/               the games hub's card images
@@ -465,9 +466,10 @@ server/
   src/twofa/               two-factor area: TOTP, schema, store, routes, staff gate
   src/discord/             Discord login and steps (docs/AUTH.md, "Discord"): config, the API
                            calls, schema and link store, the sealed refresh token, the role
-                           read and daily job (refresh.js), steps and their seed, the routes
-                           under /api/auth/discord, the admins' steps (adminRoutes.js,
-                           stepStore.js), the handle app.js builds (index.js)
+                           read and daily job (refresh.js), steps and their seed (+ seed/:
+                           steps.json and icons/, shipped with the project), the routes under
+                           /api/auth/discord, the admins' steps (adminRoutes.js, stepStore.js,
+                           an icon from a link: iconLink.js), the handle app.js builds (index.js)
   src/keys/                members' keys: public keys, sealed private keys, recovery seal
   src/audit/               audit log: schema and the one recordAudit helper
   src/admin/               /api/admin routes (users, audit); areas add their own editors
@@ -527,6 +529,8 @@ shared/                    rules used by server and client (accountRules.js, loc
 scripts/
   dev.mjs                  npm run dev
   dev-watch.mjs            the API's restart-on-change in npm run dev (written files only)
+  export-steps.mjs         npm run steps:export: a database's Discord steps and icons into the
+                           seed the project ships (server/src/discord/seed/; docs/AUTH.md)
   e2e.mjs                  npm run test:e2e (temporary database per run)
   create-dev-admin.mjs     npm run dev:admin (local admin via the bootstrap flow; rewrites
                            DEV-ADMIN.txt's 2FA part from the stored secret, never changing it)

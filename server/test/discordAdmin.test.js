@@ -3,10 +3,11 @@
 // Path:        server/test/discordAdmin.test.js
 // Project:     Seasonal Entertainment
 // Description: Admin's Discord steps (docs/AUTH.md, "Discord: steps"; SE-DISCORD-1 piece 3):
-//              admins only; the seeded ladders; add, rename, set a role id (a snowflake, unique),
-//              reorder (every step of the ladder once), remove (not a step a room names); icons
-//              (PNG and clean SVG drawn into a 64 x 64 WebP and served from /media/step-icons/;
-//              an SVG that could reach out or run anything refused); the role ids seen on members
+//              admins only; the ladders (seeded with the test steps, helpers/steps.js); add,
+//              rename, set a role id (a snowflake, unique), reorder (every step of the ladder
+//              once), remove (not a step a room names); icons (PNG and clean SVG drawn into a
+//              64 x 64 WebP and served from /media/step-icons/; an SVG that could reach out or
+//              run anything refused); the role ids seen on members
 //              that no step has (ids and counts only); one audit entry per change; the routes
 //              absent while Discord is not set up. "Icon from link" against a pretend internet
 //              (helpers/previewNet.js, no real network): Discord's two image hosts only, no
@@ -18,9 +19,9 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
 import { afterEach, describe, expect, it } from 'vitest';
-import { seedSteps } from '../src/discord/steps.js';
 import { DISCORD_TEST, fakeDiscord } from './helpers/fakeDiscord.js';
 import { PUBLIC_IP, previewInternet, redirect } from './helpers/previewNet.js';
+import { seedTestSteps } from './helpers/steps.js';
 import { makeStaff, makeTestApp, registerUser } from './helpers/testApp.js';
 
 let t;
@@ -36,7 +37,7 @@ const ROLE_B = '1110866376207372288';
 
 async function setup(previewNetwork) {
   t = makeTestApp({ discord: DISCORD_TEST }, { discordFetch: fakeDiscord().fetch, previewNetwork });
-  seedSteps(t.db);
+  await seedTestSteps(t.db);
   const { agent } = await makeStaff(t, 'boss', 'admin');
   return agent;
 }
@@ -67,7 +68,7 @@ describe('the admins’ steps', () => {
     expect((await agent.get('/api/admin/discord')).status).toBe(404);
   });
 
-  it('start with the three seeded ladders, names only', async () => {
+  it('list the three ladders, each lowest first', async () => {
     const admin = await setup();
     const { body } = await admin.get('/api/admin/discord');
     expect(body.ladders).toEqual(['holder', 'farmer', 'investor']);
@@ -77,8 +78,6 @@ describe('the admins’ steps', () => {
     expect(names('farmer').at(-1)).toBe('Ultimate-Farmer Whale');
     expect(names('investor')).toEqual(['Level 1', 'Level 2', 'Level 3', 'Level 4']);
     expect(body.steps.every((s) => s.roleId === null && s.icon === null)).toBe(true);
-    // Seeding again adds nothing, also after the list was emptied.
-    expect(seedSteps(t.db)).toBe(0);
   });
 
   it('take a role id that is a snowflake and not used by another step', async () => {

@@ -16,6 +16,7 @@ import { discordApi } from '../src/discord/api.js';
 import { refreshDue, refreshLink } from '../src/discord/refresh.js';
 import { stepsOfUser } from '../src/discord/steps.js';
 import { DISCORD_TEST, fakeDiscord } from './helpers/fakeDiscord.js';
+import { seedTestSteps } from './helpers/steps.js';
 import { makeTestApp } from './helpers/testApp.js';
 
 let t;
@@ -49,7 +50,7 @@ async function setup(roles = [GOLDEN]) {
 const link = () => t.db.prepare('SELECT * FROM discord_links').get();
 const mapStep = (name, roleId) =>
   t.db.prepare('UPDATE discord_steps SET role_id = ? WHERE name = ?').run(roleId, name);
-const seed = async () => (await import('../src/discord/steps.js')).seedSteps(t.db);
+const seed = () => seedTestSteps(t.db);
 const due = () => t.db.prepare("UPDATE discord_links SET next_refresh_at = '2000-01-01'").run();
 
 describe('at login', () => {

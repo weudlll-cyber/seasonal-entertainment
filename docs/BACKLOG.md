@@ -20,16 +20,27 @@ entry waits for.
 
 - **Discord login on the live site** — set the production redirect at Discord (typed, not
   pasted; check it in the portal's URL generator: no `+` before `https`), then
-  `sudo ./deploy/install.sh --update --discord`, and fill the steps' role ids (Admin → Discord
-  steps). The Farmer ladder's middle step names were seeded after the Holder ladder's (Farmer
-  Silver … Farmer Diamond): to compare with the server's roles. Worth adding at Discord: the
-  links to the terms and the privacy page.
+  `sudo ./deploy/install.sh --update --discord`. The steps (names, order, role ids, icons) come
+  with the update: the PC's are exported into the project's seed (`npm run steps:export`, then
+  commit), and the live site inserts them on its first start with Discord steps; steps added on
+  the PC later need the export again before the update (docs/AUTH.md, "Discord: steps"). The
+  Farmer ladder's middle step names were seeded after the Holder ladder's (Farmer Silver …
+  Farmer Diamond): to compare with the server's roles. Worth adding at Discord: the links to the
+  terms and the privacy page.
+- **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
+  restore one nightly backup there once, as docs/DEPLOYMENT.md describes, and check the site.
 
 - **A recorded call on the VPS** — call recording is tested with a real egress on the PC; one
   real recorded call on the server is still to try (docs/CALLS.md, "Recording"). Also untested
   there: call media over UDP from outside (signalling through nginx answered 101 on 2026-11-01).
   LiveKit logged "could not validate external IP" at start (docs/DEPLOYMENT.md,
   "Troubleshooting").
+
+### Planned for later
+
+- **Settings export/import between the PC test site and the live site** — later (decided
+  2026-11-03): carrying settings over by hand for now; the Discord steps alone already travel
+  with the project's seed (`npm run steps:export`).
 
 ### Proposals not decided
 

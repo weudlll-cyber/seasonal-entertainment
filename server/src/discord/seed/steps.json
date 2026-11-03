@@ -1,0 +1,152 @@
+{
+  "description": "The Discord steps the site starts with (server/src/discord/steps.js, seedSteps): inserted once, into a database that never had a step, so admins' edits are never undone. Written from a database by scripts/export-steps.mjs (npm run steps:export); icons are the files in icons/ beside this one. Steps only: ladder, name, position (lowest first), Discord role id (or null) and icon file (or null). No accounts, tokens, client or server ids, nothing secret.",
+  "steps": [
+    {
+      "ladder": "holder",
+      "name": "Holder",
+      "position": 1,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "holder",
+      "name": "Bronze",
+      "position": 2,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "holder",
+      "name": "Silver",
+      "position": 3,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "holder",
+      "name": "Golden",
+      "position": 4,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "holder",
+      "name": "Platinum",
+      "position": 5,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "holder",
+      "name": "Diamond",
+      "position": 6,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "holder",
+      "name": "Seasonal",
+      "position": 7,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "holder",
+      "name": "Ultimate",
+      "position": 8,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "holder",
+      "name": "Ultimate-Dragon Whale",
+      "position": 9,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "farmer",
+      "name": "Farmer Holder",
+      "position": 1,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "farmer",
+      "name": "Farmer Bronze",
+      "position": 2,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "farmer",
+      "name": "Farmer Silver",
+      "position": 3,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "farmer",
+      "name": "Farmer Golden",
+      "position": 4,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "farmer",
+      "name": "Farmer Platinum",
+      "position": 5,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "farmer",
+      "name": "Farmer Diamond",
+      "position": 6,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "farmer",
+      "name": "Farmer Seasonal",
+      "position": 7,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "farmer",
+      "name": "Ultimate-Farmer Whale",
+      "position": 8,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "investor",
+      "name": "Level 1",
+      "position": 1,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "investor",
+      "name": "Level 2",
+      "position": 2,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "investor",
+      "name": "Level 3",
+      "position": 3,
+      "roleId": null,
+      "icon": null
+    },
+    {
+      "ladder": "investor",
+      "name": "Level 4",
+      "position": 4,
+      "roleId": null,
+      "icon": null
+    }
+  ]
+}

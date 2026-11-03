@@ -29,7 +29,8 @@
     "test:shared": "npm test --workspace shared",
     "dev:admin": "node scripts/create-dev-admin.mjs",
     "dev:bot-fixtures": "node scripts/build-bot-fixtures.mjs",
-    "dev:calls": "node scripts/calls-dev.mjs"
+    "dev:calls": "node scripts/calls-dev.mjs",
+    "steps:export": "node scripts/export-steps.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

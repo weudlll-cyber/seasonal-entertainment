@@ -230,9 +230,19 @@ three ladders, and each shows only the member's highest step:
 - **Investor**: Level 1 < … < Level 4.
 
 Admins give each step the Discord role id that grants it, set the order and upload an icon
-(Admin → Discord steps). The names are seeded once without role ids
-(`server/src/discord/steps.js`; `sqlite_sequence` remembers the seed, so an emptied list stays
-empty). **Steps never grant rights on the site**; only the owner gives roles.
+(Admin → Discord steps). **Steps never grant rights on the site**; only the owner gives roles.
+
+**Steps shipped with the project**: `server/src/discord/seed/steps.json` (ladder, name,
+position, role id, icon file) with the icons in `seed/icons/`. A database that never had a step
+gets them once at the server's start (`seedSteps` in `server/src/discord/steps.js`, called from
+`server/src/index.js` after the app is built, the icons through the chat handle's
+`images.storeIcon` like an upload); `sqlite_sequence` remembers it, so admins' edits are never
+undone and an emptied list stays empty. `npm run steps:export` (`scripts/export-steps.mjs`)
+writes the current database's steps and icons into that seed, reading the database read-only
+(by default the one the server uses; `--db`, `--media`, `--out` choose others); commit the
+result, and a new site starts with those steps. Steps only: no accounts, links, tokens or ids of
+the application or server. Tests: `server/test/discordSeed.test.js`; other tests use fixed test
+steps (`server/test/helpers/steps.js`), not the shipped ones.
 
 - **Admin → Discord steps** (`/admin/discord`, `client/src/admin/AdminDiscordPage.jsx`; the API
   is `/api/admin/discord`, admins with 2FA, `server/src/discord/adminRoutes.js`; there only while

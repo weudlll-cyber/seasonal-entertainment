@@ -9,55 +9,55 @@
 //              computed when asked from the role ids last read and the mapping now, so a mapping
 //              change takes effect at once. Accounts whose link needs a Discord login, or who are
 //              not on the server, have none. Steps never grant rights on the site. Also the seed
-//              (the step names, no role ids) and what a step-gated room asks (passesStepRule).
+//              (the steps shipped with the project, seed/steps.json, inserted once) and what a
+//              step-gated room asks (passesStepRule).
 // ============================================================
+
+import { readFileSync } from 'node:fs';
 
 export const LADDERS = ['holder', 'farmer', 'investor'];
 export const LADDER_NAMES = { holder: 'Holder', farmer: 'Farmer', investor: 'Investor' };
 
-// The step names (decided 2026-11-02), lowest first. The Farmer ladder's middle steps follow
-// the Holder ladder's names; admins rename, add and remove as the server has them.
-const SEED = {
-  holder: [
-    'Holder',
-    'Bronze',
-    'Silver',
-    'Golden',
-    'Platinum',
-    'Diamond',
-    'Seasonal',
-    'Ultimate',
-    'Ultimate-Dragon Whale',
-  ],
-  farmer: [
-    'Farmer Holder',
-    'Farmer Bronze',
-    'Farmer Silver',
-    'Farmer Golden',
-    'Farmer Platinum',
-    'Farmer Diamond',
-    'Farmer Seasonal',
-    'Ultimate-Farmer Whale',
-  ],
-  investor: ['Level 1', 'Level 2', 'Level 3', 'Level 4'],
-};
+// The steps the site starts with: seed/steps.json (ladder, name, position, role id, icon file
+// in seed/icons/), written from a database by scripts/export-steps.mjs. Steps only: no accounts,
+// tokens or ids of the application or server.
+export const STEP_SEED_FILE = new URL('./seed/steps.json', import.meta.url);
 
-// Once: the step names without role ids. sqlite_sequence remembers any step ever added, so a
-// list the admins emptied is not filled again. Returns how many were added.
-export function seedSteps(db) {
-  const seeded = db.prepare("SELECT 1 FROM sqlite_sequence WHERE name = 'discord_steps'").get();
-  if (seeded) return 0;
-  const insert = db.prepare('INSERT INTO discord_steps (ladder, name, position) VALUES (?, ?, ?)');
-  let added = 0;
-  db.transaction(() => {
-    for (const ladder of LADDERS) {
-      SEED[ladder].forEach((name, index) => {
-        insert.run(ladder, name, index + 1);
-        added += 1;
-      });
-    }
+// [{ ladder, name, position, roleId, icon }] with icon the file's bytes (or null).
+export function readStepSeed(file = STEP_SEED_FILE) {
+  const { steps } = JSON.parse(readFileSync(file, 'utf8'));
+  return steps.map(({ icon, ...step }) => ({
+    ...step,
+    icon: icon ? readFileSync(new URL(`icons/${icon}`, file)) : null,
+  }));
+}
+
+// Once, into a database that never had a step (sqlite_sequence remembers any step ever added, so
+// admins' edits are never undone and a list they emptied is not filled again). Icons go through
+// storeIcon (the chat handle's images.storeIcon: the upload pipeline); one it refuses is left
+// out, the step kept. Returns how many steps were added.
+export async function seedSteps(db, { seed = readStepSeed(), storeIcon } = {}) {
+  const seeded = () =>
+    db.prepare("SELECT 1 FROM sqlite_sequence WHERE name = 'discord_steps'").get();
+  if (seeded()) return 0;
+  const iconFiles = [];
+  for (const step of seed) {
+    const stored = step.icon && storeIcon ? await storeIcon(step.icon) : null;
+    if (stored && !stored.ok)
+      console.warn(`[steps] seed icon of ${step.name} refused: ${stored.message}`);
+    iconFiles.push(stored?.ok ? stored.file : null);
+  }
+  const insert = db.prepare(
+    'INSERT INTO discord_steps (ladder, name, position, role_id, icon_file) VALUES (?, ?, ?, ?, ?)'
+  );
+  return db.transaction(() => {
+    // Checked again inside the write: the icons took a moment.
+    if (seeded()) return 0;
+    seed.forEach((step, index) =>
+      insert.run(step.ladder, step.name, step.position, step.roleId ?? null, iconFiles[index])
+    );
+    return seed.length;
   })();
-  return added;
 }
 
 // iconFile: the icon's file in the media folder (step-icons/...), or null; its public address

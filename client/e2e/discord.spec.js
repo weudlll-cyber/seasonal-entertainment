@@ -4,8 +4,10 @@
 // Project:     Seasonal Entertainment
 // Description: Discord steps in a real browser (docs/CHAT.md, "Discord steps" and "Rooms for
 //              Discord steps"; SE-DISCORD-1 piece 4). The run has no Discord: the link a Discord
-//              login would store (role ids) and a room open from Golden on are written straight
-//              into the run's database, as members.js does with accounts. Then: the badge after
+//              login would store (role ids), a step of its own (Gilded, Holder ladder; the run
+//              does not depend on the steps the project ships) and a room open from it are
+//              written straight into the run's database, as members.js does with accounts.
+//              Then: the badge after
 //              the name of a member with a step, its tooltip on hover and on a tap, the full
 //              name in the name menu; the room listed, readable and writable for that member and
 //              not for one without the step.
@@ -22,20 +24,23 @@ test.describe.configure({ mode: 'serial' });
 let whale;
 let other;
 
-const GOLDEN_ROLE = '1110000000000000004';
+const GILDED_ROLE = '1110000000000000004';
 
-// The steps' names are seeded at the server's start; Golden gets a role id, stepwhale a link
-// carrying it, and a room "Whales" opens from Golden on. Safe to run twice (--repeat-each).
+// A step Gilded with its role id (the run's own, beside the shipped seed), stepwhale a link
+// carrying it, and a room "Whales" opens from Gilded on. Safe to run twice (--repeat-each).
 test.beforeAll(() => {
   const db = new Database(E2E_DATABASE);
   try {
-    db.prepare("UPDATE discord_steps SET role_id = ? WHERE name = 'Golden'").run(GOLDEN_ROLE);
+    db.prepare(
+      `INSERT OR IGNORE INTO discord_steps (ladder, name, position, role_id)
+       VALUES ('holder', 'Gilded', 99, ?)`
+    ).run(GILDED_ROLE);
     const whale = db.prepare("SELECT id FROM users WHERE username = 'stepwhale'").get().id;
     db.prepare(
       `INSERT OR IGNORE INTO discord_links (user_id, discord_id, discord_name, status, role_ids,
          linked_at, next_refresh_at)
        VALUES (?, '500000000000000001', 'stepwhale', 'member', ?, 'now', '2999-01-01')`
-    ).run(whale, JSON.stringify([GOLDEN_ROLE]));
+    ).run(whale, JSON.stringify([GILDED_ROLE]));
     db.prepare(
       `INSERT OR IGNORE INTO chat_rooms (slug, name, read_access, write_access, position)
        VALUES ('whales', 'Whales', 'members', 'members', 99)`
@@ -43,8 +48,8 @@ test.beforeAll(() => {
     db.prepare(
       `INSERT OR IGNORE INTO room_step_rules (room_id, step_id)
        SELECT r.id, s.id FROM chat_rooms r, discord_steps s
-       WHERE r.slug = 'whales' AND s.name = 'Golden'`
-    ).run();
+       WHERE r.slug = 'whales' AND s.role_id = ?`
+    ).run(GILDED_ROLE);
   } finally {
     db.close();
   }
@@ -68,15 +73,15 @@ test('a member with a step: the badge, its tooltip, the name menu', async () => 
 
   await other.goto('/chat');
   const message = other.getByRole('listitem').filter({ hasText: text });
-  const badge = message.getByRole('button', { name: 'Discord steps: Golden' });
+  const badge = message.getByRole('button', { name: 'Discord steps: Gilded' });
   await expect(badge).toBeVisible();
-  // The placeholder until an icon is uploaded: Golden's initial in the round Holder shape.
+  // The placeholder until an icon is uploaded: Gilded's initial in the round Holder shape.
   await expect(badge.locator('.step-icon--placeholder.step-icon--holder')).toHaveText('G');
   const tip = badge.getByRole('tooltip');
   await expect(tip).toBeHidden();
   await badge.hover();
   await expect(tip).toBeVisible();
-  await expect(tip).toHaveText('Golden');
+  await expect(tip).toHaveText('Gilded');
   // A tap (touch screens have no hover) opens it as well.
   await other.mouse.move(0, 0);
   await badge.click();
@@ -85,7 +90,7 @@ test('a member with a step: the badge, its tooltip, the name menu', async () => 
 
   await message.getByRole('button', { name: 'stepwhale', exact: true }).click();
   const menu = other.getByRole('menu', { name: 'stepwhale' });
-  await expect(menu).toContainText('Golden · Holder');
+  await expect(menu).toContainText('Gilded · Holder');
   await expect(menu.getByRole('menuitem', { name: 'Send private message' })).toBeFocused();
   await other.keyboard.press('Escape');
 });
