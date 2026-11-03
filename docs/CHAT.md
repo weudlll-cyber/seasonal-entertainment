@@ -224,6 +224,7 @@ An account made with Discord has no password to seal its private key with (docs/
 - **A password set later** seals the key that is open on that device in the same request. A
   device without it open leaves the stored seal as it was; the recovery code opens it there and
   seals it for the password then (the usual "broken" path).
+- Tests: `server/test/discordKeys.test.js`, `client/src/keys/passwordlessKeys.test.jsx`.
 
 ## Unread counters
 
