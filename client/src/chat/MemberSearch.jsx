@@ -7,11 +7,13 @@
 //              starts it), Escape closes the list (a second Escape clears the field). Members
 //              who have not set up private messages are shown greyed and cannot be chosen.
 //              Each result has the favourite star (UserStar) beside it, in a column next to
-//              the listbox (a star inside an option could not be operated).
+//              the listbox (a star inside an option could not be operated). A member's Discord
+//              steps show beside the name (StepMarks: the badge's look, nothing to operate).
 // ============================================================
 
 import { useId, useState } from 'react';
 import { showDirect } from './directView.js';
+import { StepMarks } from './StepBadge.jsx';
 import UserStar from './UserStar.jsx';
 import { QUERY_MIN, useMemberSearch } from './useMemberSearch.js';
 
@@ -89,6 +91,7 @@ export default function MemberSearch() {
                 onClick={() => choose(m)}
               >
                 <span className="chat-direct-list__name">{m.username}</span>
+                <StepMarks steps={m.steps} />
                 {m.online && <span className="chat-online">online</span>}
                 {!m.canReceive && <span className="chat-note">{NO_KEY_NOTE}</span>}
               </li>

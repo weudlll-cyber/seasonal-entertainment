@@ -147,6 +147,32 @@ from the four season colours (`client/src/chat/ChatMessage.css`).
   former organiser's old messages lose the badge; nothing a client sends can set it.
 - **Room messages only**: direct messages carry no role.
 
+## Discord steps
+
+A member's Discord steps show next to their name (decided 2026-11-02: **variant C** of the
+design probe, `reports/discord-design/variant-c-*.png`). Steps and how they are read:
+docs/AUTH.md, "Discord: steps and the daily read".
+
+- **The badge** (`client/src/chat/StepBadge.jsx`): the member's up to three steps (the highest
+  Holder, Farmer and Investor step), as icons in **one outlined badge** after the name and after
+  the Admin / Organiser badge, set apart from it. One tooltip names every step ("Golden · Farmer
+  Silver · Level 2"). It opens on hover and keyboard focus, and on a **tap**: the badge is a
+  button, so touch screens can open it too.
+- **Icons**: the one an admin uploaded, or a **neutral placeholder** until then: the ladder's
+  shape (Holder round, Farmer square, Investor a diamond) with the step's initials ("UD" for
+  Ultimate-Dragon Whale, "4" for Level 4). They use neutral surfaces and borders, never a token
+  colour (docs/DESIGN.md).
+- **Full names**: the name menu shows them above its items (`NameMenu.jsx`, MenuButton's
+  `header`), and so does the account page (`StepList`, `client/src/discord/DiscordSection.jsx`).
+  The member search shows the badge's look without its button (`StepMarks`: an option may hold
+  nothing to operate).
+- **From the server only**: every room message carries `authorSteps` (`[{ ladder, name, icon }]`,
+  `server/src/chat/authorSteps.js`), computed from the author's account as it is now, like the
+  staff badge's role. Each member search result carries `steps`. Nothing a client sends can set
+  them. A guest's message, the site's own and an author without steps carry none.
+- Tests: `server/test/discordRooms.test.js`, `client/src/chat/stepBadge.test.jsx`,
+  `client/e2e/discord.spec.js`.
+
 ## Rooms for Discord steps
 
 Some rooms are open only from a chosen Discord step on (decided 2026-11-02; steps:
@@ -159,8 +185,8 @@ levels.
   reordering the steps moves the rule along. A room without a rule is open as before. A step a
   room names cannot be removed (the database refuses it, `ON DELETE RESTRICT`): removing it must
   never open the room.
-- **Reading and writing alike** follow the rule (`canRead`, `canWrite` in
-  `server/src/chat/viewer.js`; one rule set for HTTP and the WebSocket). **Staff always pass.**
+- **Reading and writing alike** follow the rule (`canRead` in `server/src/chat/viewer.js`; one
+  rule set for HTTP and the WebSocket; writing always comes after reading). **Staff always pass.**
   Guests have no steps; neither does an account whose Discord link needs a login again, or that
   is not on the Seasonal Tokens server.
 - **Everywhere the chat decides access**: the room lists, history, sending, uploads, the files
@@ -170,7 +196,12 @@ levels.
 - **When steps drop** (the daily read, a login, linking or unlinking), the member's open sockets
   leave every room now closed to them at once (`recheckRooms` in `server/src/chat/hub.js`, through
   `chat.sessions.stepsChanged`), each told `not_allowed` for that room, and their pages hear
-  `access` to reload their room lists.
+  `access` to reload their room lists (`useChatRooms.js`).
+- **Set** in Admin → Chat, per room: one choice per ladder, "Holder ≥ Golden" or not needed
+  (`client/src/admin/RoomStepRule.jsx`; `stepIds` on `/api/admin/chat/rooms`, at most one per
+  ladder, existing steps only). A room for steps cannot be written by guests.
+- Tests: `server/test/discordRooms.test.js`, `client/src/admin/adminDiscord.test.jsx`,
+  `client/e2e/discord.spec.js`.
 
 ## Accounts without a password
 

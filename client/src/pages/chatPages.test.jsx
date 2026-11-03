@@ -165,7 +165,9 @@ describe('admin chat page', () => {
       'GET /admin/chat/rooms': {
         body: {
           ok: true,
-          rooms: [{ id: 1, ...general, writeAccess: 'everyone', guestWritable: true }],
+          rooms: [
+            { id: 1, ...general, writeAccess: 'everyone', guestWritable: true, stepRule: [] },
+          ],
         },
       },
       'GET /chat/reports': { body: { ok: true, messages: [] } },

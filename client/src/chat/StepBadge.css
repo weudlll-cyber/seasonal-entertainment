@@ -26,6 +26,10 @@
   cursor: pointer;
 }
 
+.step-badge--static {
+  cursor: default;
+}
+
 .step-badge__item {
   display: inline-flex;
   gap: 3px;

@@ -168,3 +168,9 @@
   opacity: 0;
   cursor: pointer;
 }
+
+/* The room editor's Discord step rule (RoomStepRule.jsx): one choice per ladder, stacked. */
+.room-step-rule {
+  display: grid;
+  gap: 0.25rem;
+}

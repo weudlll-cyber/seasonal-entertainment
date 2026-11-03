@@ -22,6 +22,7 @@ import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { queryId } from '../http/validate.js';
 import { addMessage, findMessage, listMessages } from './messages.js';
+import { withAuthorSteps } from './authorSteps.js';
 import { storeMentions, withMentions } from './mentions.js';
 import { readMessageInput } from './messageInput.js';
 import { roomLoader } from './roomLoader.js';
@@ -91,7 +92,7 @@ export function chatRoutes(db, config, hub, previews, allowMessage) {
     const moderator = isModerator(chatViewer(req));
     const afterId = queryId(req.query.after);
     const messages = listMessages(db, req.room, { moderator, afterId });
-    res.json({ ok: true, messages: withMentions(db, messages) });
+    res.json({ ok: true, messages: withAuthorSteps(db, withMentions(db, messages)) });
   });
 
   router.post(
@@ -120,7 +121,7 @@ export function chatRoutes(db, config, hub, previews, allowMessage) {
       const mentioned = storeMentions(db, config, req.room, message, input.body ?? '');
       // Internal ids stay on the server; readers get only what the room shows.
       const { roomId, authorUserId, authorGuest, ...rest } = message;
-      const [visible] = withMentions(db, [rest]);
+      const [visible] = withAuthorSteps(db, withMentions(db, [rest]));
       hub.broadcast(req.room.id, { type: 'message', message: visible });
       // Each mentioned member's own pages, for a browser notification (docs/CHAT.md,
       // "Notifications"): who, where, and the start of what they wrote.

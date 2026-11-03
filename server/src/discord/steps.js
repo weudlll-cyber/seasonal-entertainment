@@ -111,9 +111,15 @@ export function stepsOfUsers(db, userIds) {
 
 export const stepsOfUser = (db, userId) => stepsOfUsers(db, [userId]).get(userId) ?? [];
 
-// What the browser shows of a step: { ladder, name, icon } (icon: a /media URL or null).
-export const shownSteps = (steps) =>
-  steps.map(({ ladder, name, icon }) => ({ ladder, name, icon }));
+// What the browser shows of a step: { ladder, name, icon } (icon: the icon's public address,
+// urlOf(iconFile), or null for the neutral placeholder). urlOf: the media address of a stored
+// file (the chat handle's images.url; inside the chat area, media/files.js mediaUrl).
+export const shownSteps = (steps, urlOf) =>
+  steps.map(({ ladder, name, iconFile }) => ({
+    ladder,
+    name,
+    icon: iconFile ? urlOf(iconFile) : null,
+  }));
 
 // A step-gated room (room.stepRule: [{ ladder, position }] of the steps that open it) lets in
 // whoever has, in any one of those ladders, that step or a higher one. Rooms without a rule

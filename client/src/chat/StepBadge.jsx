@@ -9,7 +9,8 @@
 //              button, so a tap (touch screens) or Enter shows the tooltip too. StepList, the
 //              full step names with their icons (name menu, account page). StepIcon, the icon an
 //              admin uploaded, or a neutral placeholder (the ladder's shape and the step's
-//              initials, never a token colour) until there is one. Steps come from the server
+//              initials, never a token colour) until there is one. StepMarks, the badge's look
+//              inside another control (the member search). Steps come from the server
 //              (computed there, never from what a browser sent).
 // ============================================================
 
@@ -70,6 +71,28 @@ export default function StepBadge({ steps }) {
         {names}
       </span>
     </button>
+  );
+}
+
+// The badge's look without its button (inside another control: a member search option, which
+// may hold nothing interactive); its names are its label and title.
+export function StepMarks({ steps }) {
+  if (!steps?.length) return null;
+  const names = stepNames(steps);
+  return (
+    <span
+      className="step-badge step-badge--static"
+      role="img"
+      aria-label={`Discord steps: ${names}`}
+      title={names}
+    >
+      {steps.map((step, index) => (
+        <span key={step.ladder} className="step-badge__item">
+          {index > 0 && <span className="step-badge__sep" aria-hidden="true" />}
+          <StepIcon step={step} />
+        </span>
+      ))}
+    </span>
   );
 }
 

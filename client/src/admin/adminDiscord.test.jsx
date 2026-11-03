@@ -6,7 +6,8 @@
 //              login is set up; each ladder highest step first; saving a step's name and role id
 //              (an empty id sent as none); moving a step up its ladder (the order sent lowest
 //              first); uploading an icon (raw body); a step a room names cannot be removed; the
-//              role ids without a step, with their counts.
+//              role ids without a step, with their counts; the room editor choosing the steps
+//              that open a room (one per ladder, their ids sent).
 // ============================================================
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -111,5 +112,41 @@ describe('Admin → Discord steps', () => {
     const silver = screen.getByRole('textbox', { name: 'Name of Silver' }).closest('li');
     expect(within(silver).getByRole('button', { name: 'Remove' })).toBeDisabled();
     expect(within(silver).getByText(/Rooms open from this step on: VIP/)).toBeInTheDocument();
+  });
+});
+
+describe('the room editor with Discord steps', () => {
+  it('chooses the steps that open a room, one per ladder, and sends their ids', async () => {
+    const room = {
+      id: 5,
+      slug: 'whales',
+      name: 'Whales',
+      readAccess: 'members',
+      writeAccess: 'members',
+      guestWritable: false,
+      stepRule: [{ id: 3, ladder: 'holder', position: 3 }],
+    };
+    const calls = mockApi({
+      ...withFeatures(ADMIN, { discord: true }),
+      'GET /admin/discord': { body: DATA },
+      'GET /admin/chat/rooms': { body: { ok: true, rooms: [room] } },
+      'GET /chat/reports': { body: { ok: true, messages: [] } },
+      'GET /chat/sanctions': { body: { ok: true, sanctions: [] } },
+      'PUT /admin/chat/rooms/5': { body: { ok: true } },
+    });
+    render(
+      <MemoryRouter initialEntries={['/admin/chat']}>
+        <App />
+      </MemoryRouter>
+    );
+    const holder = await screen.findByRole('combobox', { name: 'Holder step that opens Whales' });
+    expect(holder).toHaveValue('3');
+    fireEvent.change(holder, { target: { value: '2' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Investor step that opens Whales' }), {
+      target: { value: '10' },
+    });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Save' })[0]);
+    await expect.poll(() => calls.find((c) => c.key === 'PUT /admin/chat/rooms/5')).toBeTruthy();
+    expect(calls.find((c) => c.key === 'PUT /admin/chat/rooms/5').body.stepIds).toEqual([2, 10]);
   });
 });

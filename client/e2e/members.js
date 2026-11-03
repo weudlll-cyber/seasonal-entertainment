@@ -41,6 +41,8 @@ const MEMBERS = [
   'hashworker',
   'embedfan',
   'embedpal',
+  'stepwhale',
+  'stepnone',
 ];
 
 async function insertMember(db, username) {

@@ -8,7 +8,7 @@
 //              member for reading, writing and moderation alike; a member who has to (the
 //              "Require 2FA for every member" setting) counts as a guest. Guests write only in
 //              rooms marked guest-writable. A room for Discord steps (docs/CHAT.md, "Rooms for
-//              Discord steps") is read and written only by accounts with one of its steps (the
+//              Discord steps") is read, and so written, only by accounts with one of its steps (the
 //              viewer's steps, computed now: discord/steps.js), and by staff.
 // ============================================================
 
@@ -78,11 +78,9 @@ const stepsLetIn = (room, viewer) =>
 export const canRead = (room, viewer) =>
   passes(room.readAccess, viewer) && stepsLetIn(room, viewer);
 // Guests write only in rooms explicitly marked guest-writable, whatever the write level says.
-// A closed room (a call that has ended) is read-only for everyone. A room for steps: the same
-// steps as for reading.
+// A closed room (a call that has ended) is read-only for everyone. A room for steps needs no
+// check here: writing always comes after reading (roomLoader.js, the room lists), which the
+// steps already decide.
 export const canWrite = (room, viewer) =>
-  !room.closed &&
-  passes(room.writeAccess, viewer) &&
-  (Boolean(viewer.user) || room.guestWritable) &&
-  stepsLetIn(room, viewer);
+  !room.closed && passes(room.writeAccess, viewer) && (Boolean(viewer.user) || room.guestWritable);
 export const isModerator = (viewer) => viewer.staff;

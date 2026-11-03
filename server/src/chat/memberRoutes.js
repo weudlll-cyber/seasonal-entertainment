@@ -7,7 +7,8 @@
 //              From 2 characters; at most 10 results (memberSearch.js). With a room, only
 //              members who may read that room (the searcher must be able to read it too).
 //              Each result is exactly { id, username, canReceive (has a key for private
-//              messages), online } — never an email or anything else.
+//              messages), online, steps (their Discord steps, authorSteps.js) } — never an email
+//              or anything else.
 // ============================================================
 
 import express from 'express';
@@ -17,6 +18,7 @@ import { makeLimiter } from '../http/rateLimit.js';
 import { currentKeyId } from '../keys/store.js';
 import { findMembers } from './memberSearch.js';
 import { findRoomBySlug } from './store.js';
+import { stepsOf } from './authorSteps.js';
 import { accountViewer, canRead, chatViewer } from './viewer.js';
 
 const QUERY_MIN = 2;
@@ -45,15 +47,20 @@ export function memberRoutes(db, config, hub) {
       }
     }
     const online = hub.onlineUserIds();
-    const members = findMembers(db, req.user.id, q, room ? CANDIDATES : RESULTS)
+    const found = findMembers(db, req.user.id, q, room ? CANDIDATES : RESULTS)
       .filter((user) => !room || canRead(room, accountViewer(db, config, user)))
-      .slice(0, RESULTS)
-      .map((user) => ({
-        id: user.id,
-        username: user.username,
-        canReceive: currentKeyId(db, user.id) !== null,
-        online: online.has(user.id),
-      }));
+      .slice(0, RESULTS);
+    const steps = stepsOf(
+      db,
+      found.map((user) => user.id)
+    );
+    const members = found.map((user) => ({
+      id: user.id,
+      username: user.username,
+      canReceive: currentKeyId(db, user.id) !== null,
+      online: online.has(user.id),
+      steps: steps.get(user.id) ?? [],
+    }));
     res.json({ ok: true, members });
   });
 

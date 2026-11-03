@@ -28,6 +28,7 @@ import { deleteChatData, deleteChatFiles } from './accountData.js';
 import { directReportRoutes } from './directReportRoutes.js';
 import { directRoutes } from './directRoutes.js';
 import { favouriteRoutes } from './favouriteRoutes.js';
+import { withAuthorSteps } from './authorSteps.js';
 import { withMentions } from './mentions.js';
 import { addSystemMessage } from './messages.js';
 import { memberRoutes } from './memberRoutes.js';
@@ -169,7 +170,7 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
         if (!room) return null;
         // Internal ids stay on the server, as in routes.js.
         const { roomId, authorUserId, authorGuest, ...rest } = addSystemMessage(db, room, body);
-        const [message] = withMentions(db, [rest]);
+        const [message] = withAuthorSteps(db, withMentions(db, [rest]));
         hub.broadcast(room.id, { type: 'message', message });
         hub.notifyReaders(room, { type: 'activity', room: room.slug });
         return { ...message, room: room.slug };
