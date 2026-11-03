@@ -2,8 +2,9 @@
 // File:        dev.mjs
 // Path:        scripts/dev.mjs
 // Project:     Seasonal Entertainment
-// Description: `npm run dev`: starts the API server (port 3800, restarts on change) and the
-//              Vite dev server (port 5380, proxies /api) together; stopping it stops both.
+// Description: `npm run dev`: starts the API server (port 3800, restarts on a written file,
+//              scripts/dev-watch.mjs) and the Vite dev server (port 5380, proxies /api)
+//              together; stopping it stops both.
 //              PRICE_BOT_DB, EVENT_BOT_DB and PRICE_BOT_MINING_RATES not set (neither here nor in
 //              .env): they point at the fake bot data of `npm run dev:bot-fixtures` when it
 //              exists (docs/BOTS.md).

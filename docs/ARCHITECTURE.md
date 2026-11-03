@@ -121,7 +121,9 @@ The client only ever calls relative URLs (`/api/...`), so the same build works o
 ## How it runs
 
 - **Development** (`npm run dev`): Vite on 5380 serves the client with hot reload and forwards
-  `/api` and `/ws` to the server on 3800, which restarts on file changes. The proxy passes the
+  `/api` and `/ws` to the server on 3800, which restarts when a file in `server/src` or
+  `shared/` is written (`scripts/dev-watch.mjs`; not on a mere read, which `node --watch` took
+  for a change on Windows; after `npm install`, restart by hand). The proxy passes the
   browser's `Host` header on unchanged (`changeOrigin: false`), so the CSRF and WebSocket origin
   checks compare against `http://localhost:5380`, the origin the browser really sends; no
   development exception exists in those checks. `client/e2e/devProxy.spec.js` guards this path.
@@ -524,6 +526,7 @@ shared/                    rules used by server and client (accountRules.js, loc
                            cryptoFormat.js
 scripts/
   dev.mjs                  npm run dev
+  dev-watch.mjs            the API's restart-on-change in npm run dev (written files only)
   e2e.mjs                  npm run test:e2e (temporary database per run)
   create-dev-admin.mjs     npm run dev:admin (local admin via the bootstrap flow; rewrites
                            DEV-ADMIN.txt's 2FA part from the stored secret, never changing it)
