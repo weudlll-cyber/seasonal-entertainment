@@ -157,7 +157,8 @@ docs/AUTH.md, "Discord: steps and the daily read".
   Holder, Farmer and Investor step), as icons in **one outlined badge** after the name and after
   the Admin / Organiser badge, set apart from it. One tooltip names every step ("Golden · Farmer
   Silver · Level 2"). It opens on hover and keyboard focus, and on a **tap**: the badge is a
-  button, so touch screens can open it too.
+  button, so touch screens can open it too, and a full 44 px touch target around its small frame
+  (negative margins keep the line's height).
 - **Icons**: the one an admin uploaded, or a **neutral placeholder** until then: the ladder's
   shape (Holder round, Farmer square, Investor a diamond) with the step's initials ("UD" for
   Ultimate-Dragon Whale, "4" for Level 4). They use neutral surfaces and borders, never a token

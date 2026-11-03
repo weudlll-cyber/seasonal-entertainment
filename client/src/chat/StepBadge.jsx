@@ -6,7 +6,8 @@
 //              docs/CHAT.md, "Discord steps"): StepBadge, the up to three step icons (Holder,
 //              Farmer, Investor; the highest step of each) in one outlined badge after the name,
 //              set apart from the Admin / Organiser badge, with one tooltip naming the steps; a
-//              button, so a tap (touch screens) or Enter shows the tooltip too. StepList, the
+//              button, so a tap (touch screens) or Enter shows the tooltip too, and a full 44 px
+//              touch target around the small frame. StepList, the
 //              full step names with their icons (name menu, account page). StepIcon, the icon an
 //              admin uploaded, or a neutral placeholder (the ladder's shape and the step's
 //              initials, never a token colour) until there is one. StepMarks, the badge's look
@@ -48,6 +49,15 @@ export function StepIcon({ step }) {
 // The tooltip's text: every step's full name.
 const stepNames = (steps) => steps.map((s) => s.name).join(' · ');
 
+// The outlined frame with the icons, thin lines between them (the badge's look).
+const frameItems = (steps) =>
+  steps.map((step, index) => (
+    <span key={step.ladder} className="step-badge__item">
+      {index > 0 && <span className="step-badge__sep" aria-hidden="true" />}
+      <StepIcon step={step} />
+    </span>
+  ));
+
 export default function StepBadge({ steps }) {
   const [open, setOpen] = useState(false);
   if (!steps?.length) return null;
@@ -61,12 +71,7 @@ export default function StepBadge({ steps }) {
       onClick={() => setOpen((v) => !v)}
       onBlur={() => setOpen(false)}
     >
-      {steps.map((step, index) => (
-        <span key={step.ladder} className="step-badge__item">
-          {index > 0 && <span className="step-badge__sep" aria-hidden="true" />}
-          <StepIcon step={step} />
-        </span>
-      ))}
+      <span className="step-badge__frame">{frameItems(steps)}</span>
       <span className="step-badge__tip" role="tooltip">
         {names}
       </span>
@@ -81,17 +86,12 @@ export function StepMarks({ steps }) {
   const names = stepNames(steps);
   return (
     <span
-      className="step-badge step-badge--static"
+      className="step-badge__frame"
       role="img"
       aria-label={`Discord steps: ${names}`}
       title={names}
     >
-      {steps.map((step, index) => (
-        <span key={step.ladder} className="step-badge__item">
-          {index > 0 && <span className="step-badge__sep" aria-hidden="true" />}
-          <StepIcon step={step} />
-        </span>
-      ))}
+      {frameItems(steps)}
     </span>
   );
 }

@@ -51,6 +51,10 @@ entry waits for.
   the helper (`client/e2e/members.js`) did not find the key pair a first login had made, and
   waited for the first-login dialog: seen with `discord.spec.js` (2026-11-03), which therefore
   logs each member in once per worker. Single runs are not affected; the cause is not known yet.
+- **The phone touch-target test meets another spec's call** — `speed.spec.js` ("on a phone every
+  control is a 44px target", `/`) failed once (2026-11-03) on the link of the call "Fit" that
+  `callFit.spec.js` had open at that moment (the home page's live call); the browser tests passed
+  158 of 158 when run again. Two specs sharing the run's database, not a fault of either page.
 - **One link-preview test is slow under load** — `chatPreviews.test.js` ("a member link gets an
   Open Graph card") hit its 9-second wait once in a full verify on 2026-11-02 and passed 3 of 3
   alone.
