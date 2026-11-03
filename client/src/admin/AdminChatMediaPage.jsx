@@ -5,7 +5,8 @@
 // Description: Admin "Chat media" page: the site's own sticker and GIF library (no outside
 //              GIF service, decided 2026-10-17). Create packs, then rename, (de)activate,
 //              reorder them and manage their items (MediaPackSection). Limits are shown here;
-//              the server enforces them.
+//              the server enforces them. Each pack's last upload's refused files are kept here,
+//              since a pack's section is built anew after every change.
 // ============================================================
 
 import { useEffect, useState } from 'react';
@@ -17,6 +18,7 @@ export default function AdminChatMediaPage() {
   const [packs, setPacks] = useState([]);
   const [error, setError] = useState(null);
   const [version, setVersion] = useState(0);
+  const [refusedUploads, setRefusedUploads] = useState({}); // pack id -> [{ file, reason }]
 
   useEffect(() => {
     api('/admin/chat/media')
@@ -32,6 +34,11 @@ export default function AdminChatMediaPage() {
     } catch (err) {
       setError(err.message);
     }
+  }
+
+  function uploaded(packId, refused) {
+    setRefusedUploads((all) => ({ ...all, [packId]: refused }));
+    setVersion((v) => v + 1);
   }
 
   function move(index, step) {
@@ -79,6 +86,8 @@ export default function AdminChatMediaPage() {
           isLast={index === packs.length - 1}
           onMove={(step) => move(index, step)}
           onRun={run}
+          refused={refusedUploads[pack.id]}
+          onUploaded={(refused) => uploaded(pack.id, refused)}
         />
       ))}
     </>

@@ -280,6 +280,12 @@ password change and turning 2FA on or off close the account's other sockets at o
   `data/media`, gitignored) under generated names (`<32 hex>.<ext>`) and served from this origin
   at `/media/...` with their type, `nosniff` and a one-year immutable cache; a missing file is a
   404, never the client page. Every library change is audited.
+- **Uploading to a pack** (Admin → Chat media, `client/src/admin/MediaUploadForm.jsx`): one or
+  many files at once, each sent on its own, one after another, through the same per-file route
+  (`POST /api/admin/chat/media/packs/:id/items`) and checks, with the progress ("3 of 12"). Each
+  item is named after its file without the extension (renamed afterwards in its row); the alt
+  text (default: the name) and credit typed there go with every file. A refused file does not
+  stop the others; the refused ones are listed with the server's reason.
 - **Starter pack**: on first start (empty library) `server/src/media/seed.js` turns
   `server/seeds/chat-media/` (made from the owner's own files; sources and credits in its README)
   into four packs: Stickers "Seasons", "Coins" (the silver coins credited to Foxeane),
