@@ -18,6 +18,13 @@ entry waits for.
 
 ### To try on the live server
 
+- **Discord login on the live site** — set the production redirect at Discord (typed, not
+  pasted; check it in the portal's URL generator: no `+` before `https`), then
+  `sudo ./deploy/install.sh --update --discord`, and fill the steps' role ids (Admin → Discord
+  steps). The Farmer ladder's middle step names were seeded after the Holder ladder's (Farmer
+  Silver … Farmer Diamond): to compare with the server's roles. Worth adding at Discord: the
+  links to the terms and the privacy page.
+
 - **A recorded call on the VPS** — call recording is tested with a real egress on the PC; one
   real recorded call on the server is still to try (docs/CALLS.md, "Recording"). Also untested
   there: call media over UDP from outside (signalling through nginx answered 101 on 2026-11-01).
@@ -26,21 +33,48 @@ entry waits for.
 
 ### Proposals not decided
 
-- **Login with Discord or Telegram** — accounts use a username and password (2FA for organisers
-  and admins); logging in with a Discord or Telegram account is not built.
-- **Telegram-login recovery codes** — direction decided 2026-10-17: recovery codes apply to
-  Telegram logins too, which have no password to derive a wrapping key from (docs/AUTH.md).
-- **Group roles** — site roles tied to Discord or Telegram groups are not built.
+- **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
+  login is not planned, decided 2026-11-02).
 - **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
   own repository and is not connected.
 
 ### Known limits
+
+- **A restore cannot revoke Discord tokens** — an account deleted after a backup is deleted again
+  by the restore (its Discord link with it), but its refresh token is not revoked at Discord
+  then: the restore has no connection to Discord. It ends unused, or when the member removes the
+  app in Discord.
+- **A lost refresh token** — Discord rotates refresh tokens; if the server stops between
+  Discord's answer and the save (one statement), the new token is lost and the member must log
+  in with Discord again (docs/AUTH.md, "Discord: steps and the daily read").
+- **The browser tests' `memberPage` and `--repeat-each`** — on a second repeat in the same run,
+  the helper (`client/e2e/members.js`) did not find the key pair a first login had made, and
+  waited for the first-login dialog: seen with `discord.spec.js` (2026-11-03), which therefore
+  logs each member in once per worker. Single runs are not affected; the cause is not known yet.
+- **One link-preview test is slow under load** — `chatPreviews.test.js` ("a member link gets an
+  Open Graph card") hit its 9-second wait once in a full verify on 2026-11-02 and passed 3 of 3
+  alone.
 
 - **A deleted account's messages on pages already open** — deleting an account deletes its room
   messages at once (docs/AUTH.md, "Deleting an account"), but chat pages that are already open
   keep showing them until they reload: no event tells open pages to remove them.
 
 ## PART TWO — closed
+
+- **Login with Discord, steps and rooms for steps** — closed by `feat/se-discord` (SE-DISCORD-1,
+  decided 2026-11-02): Discord is the primary login (OAuth2 with state and PKCE, scopes
+  `identify` and `guilds.members.read` only), username and password stay for people without
+  Discord; existing accounts link and unlink. Steps from the Seasonal Tokens server in three
+  ladders, mapped by admins (role ids, order, icons), read at every login and once a day with
+  strict refresh-token rotation; shown as one badge next to names (variant C); rooms open from a
+  chosen step on; steps never grant rights. Accounts without a password protect their
+  private-message key with a recovery code or a password. Installer questions, privacy page and
+  docs (docs/AUTH.md, docs/CHAT.md, docs/DEPLOYMENT.md).
+- **Group roles from Discord** — closed by `feat/se-discord`: Discord roles show as steps and open
+  rooms (above); they grant no site rights (decided 2026-11-02).
+- **Telegram login and its recovery codes** — closed by decision (2026-11-02): no Telegram login.
+  The direction of 2026-10-17 (recovery codes for logins without a password) is built for Discord
+  accounts instead.
 
 - **Bot events listed twice** — closed by `fix/se-event-dedupe` (decided 2026-11-02): the event
   bot keeps one occurrence per announcement channel; the site lists an event at one start once,

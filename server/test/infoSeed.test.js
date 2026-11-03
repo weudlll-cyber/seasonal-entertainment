@@ -7,6 +7,7 @@
 //              (invisible to the public), and the content rules: every source-based page ends with
 //              a Sources list, no contract address is retyped, no raw HTML or local file links,
 //              Risks says "not financial advice", legal pages carry placeholders, the privacy draft
+//              describes the Discord login (what it stores and for how long), the privacy draft
 //              says when calls are recorded (only after an organiser starts it, always announced)
 //              and what the call server processes, and its recording section is a proposal for the
 //              owner (consent as legal basis, no automatic deletion, the rights and where to
@@ -112,6 +113,19 @@ it('the privacy draft says when calls are recorded and what the call server proc
   expect(body).toContain('**Call recordings**');
   expect(body).toContain('I understand this call is being recorded');
   expect(body).toMatch(/IP addresses of everyone connected/);
+});
+
+it('the privacy draft says what the Discord login stores, why, for how long, and what not', () => {
+  const { body } = readSeedPage('privacy');
+  const start = body.indexOf('- **Discord login**');
+  const section = body.slice(start, body.indexOf('\n- **', start + 1));
+  expect(section).toMatch(/Discord user\s+id and Discord username/);
+  expect(section).toMatch(/ids of your roles on the Seasonal Tokens Discord server/);
+  expect(section).toMatch(/"refresh token"[\s\S]*encrypted/);
+  expect(section).toMatch(/does not read or store\s+your email address/);
+  expect(section).toMatch(/unlink Discord[\s\S]*delete\s+your account/);
+  // And the deletion list names the link.
+  expect(body).toMatch(/your Discord link \(your Discord id and name/);
 });
 
 it('the privacy draft proposes the recording terms, leaving only the contact to fill', () => {

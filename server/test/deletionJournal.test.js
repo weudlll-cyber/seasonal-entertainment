@@ -89,7 +89,8 @@ describe('the journal', () => {
 });
 
 describe('a restore', () => {
-  // ada (admin), mia with an uploaded file, bert; then a backup taken at backupAt.
+  // ada (admin), mia with an uploaded file and a Discord link, bert; then a backup taken at
+  // backupAt.
   async function siteWithBackup(backupAt) {
     t = makeTestApp();
     const { user: ada } = await makeStaff(t, 'ada', 'admin');
@@ -99,6 +100,13 @@ describe('a restore', () => {
       .prepare(
         `INSERT INTO chat_uploads (user_id, kind, name, mime, bytes, file, created_at)
          VALUES (?, 'image', 'mia.webp', 'image/webp', 11, 'uploads/mia.webp', 'now')`
+      )
+      .run(mia.id);
+    t.db
+      .prepare(
+        `INSERT INTO discord_links (user_id, discord_id, discord_name, refresh_token, role_ids,
+           linked_at, next_refresh_at)
+         VALUES (?, '600000000000000001', 'mia', 'enc1:sealed', '["1"]', 'now', 'later')`
       )
       .run(mia.id);
     mkdirSync(path.join(t.config.mediaDir, 'uploads'), { recursive: true });
@@ -129,6 +137,8 @@ describe('a restore', () => {
     expect(usernames()).toEqual(['ada']);
     expect(db.prepare('SELECT COUNT(*) AS n FROM chat_uploads').get().n).toBe(0);
     expect(existsSync(path.join(mediaDir, 'uploads', 'mia.webp'))).toBe(false);
+    // Her Discord link (and its sealed token) goes with her account.
+    expect(db.prepare('SELECT COUNT(*) AS n FROM discord_links').get().n).toBe(0);
     expect(report.deleted.map((entry) => entry.username)).toEqual(['mia', 'bert']);
     expect(report.kept).toEqual([]);
   });

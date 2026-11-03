@@ -14,10 +14,25 @@ This list describes what the website's software actually stores.
 - **Your account** (if you register): username, email address, a one-way hash of a key your
   browser derives from your password (your password itself never reaches this site's server),
   the random value ("salt") your browser needs for that derivation, your role, whether you may start games, whether the
-  account is locked, and when it was created. Kept until the account is deleted (see "Deleting
+  account is locked, and when it was created. An account made with Discord has no email address
+  here, and no password until you set one. Kept until the account is deleted (see "Deleting
   your account" below). The
   confirmation that you are at least 14 is required to register but is not stored, and no date
   of birth is asked for.
+- **Discord login** (if you log in with Discord or link your account to it): your Discord user
+  id and Discord username, and the ids of your roles on the Seasonal Tokens Discord server, read
+  with your consent when you log in and once a day. From them the site shows your steps (Holder,
+  Farmer, Investor) next to your name, to everyone who sees your messages, and opens rooms for
+  those steps to you. To read them again each day without asking you, the site keeps the
+  "refresh token" Discord gives it, encrypted. It also stores when your roles were last read,
+  when they are read next, and whether Discord still accepts the link. It does not read or store
+  your email address at Discord, your other Discord servers, your nickname or your avatar.
+  - While you sign up with Discord, the confirmation from Discord is held in your session for at
+    most 15 minutes, until you choose your username.
+  - Kept until you unlink Discord on your account page (you need a password for that) or delete
+    your account. Both delete it at once and also cancel the site's access at Discord. You can
+    also remove the site's access in Discord itself; the site then stops reading your roles and
+    hides your steps.
 - **Your login session**: a cookie holding a random session number, and on the server the
   matching session record (which account it belongs to). It ends when you log out, when your
   password changes, when the account is deleted, or after 7 days without use.
@@ -126,12 +141,15 @@ This list describes what the website's software actually stores.
 ## Deleting your account
 
 You can delete your account yourself on your account page ("Delete my account"), with your
-password and, if two-factor authentication is on, a code from your app. An admin can also
+password and, if two-factor authentication is on, a code from your app; an account without a
+password confirms with a fresh Discord login instead. An admin can also
 delete an account. The last remaining admin account cannot be deleted. The deletion happens at
 once and cannot be undone. It deletes:
 
 - your account itself (username, email address, password hash and salt, settings) and every
   login session of it; open chat connections of the account are closed;
+- your Discord link (your Discord id and name, your role ids and the refresh token), and the
+  site's access at Discord is cancelled;
 - your two-factor secret and recovery codes;
 - your keys for private messages;
 - every chat message you wrote in any room (call chats included), with the files you sent

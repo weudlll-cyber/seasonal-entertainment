@@ -164,7 +164,8 @@ Discord; they have no steps. Telegram login is not planned any more. Code: `serv
 it.
 
 **Set up** with `DISCORD_CLIENT_ID`, `DISCORD_GUILD_ID` (the Seasonal Tokens server, 902220302199689266) and the client secret, given as `DISCORD_CLIENT_SECRET` or in the file named
-by `DISCORD_CLIENT_SECRET_FILE` (`server/src/discord/config.js`). All three or none. With none,
+by `DISCORD_CLIENT_SECRET_FILE` (`server/src/discord/config.js`; the installer asks for them,
+docs/DEPLOYMENT.md, "Discord login"). All three or none. With none,
 the feature is off: no Discord button, and every `/api/auth/discord` path answers 404. The
 session answer says which (`features.discord`). The redirect is `DISCORD_REDIRECT_URI`, or
 `PUBLIC_ORIGIN` + `/api/auth/discord/callback`. It must be registered at Discord character for
@@ -548,7 +549,8 @@ chat retention).
 - **What goes, at once, in one transaction** (`deleteAccount`, `server/src/accounts/deletion.js`):
   - by the schemas' `ON DELETE CASCADE` on `users`: the 2FA secret and recovery codes, the keys
     (public and sealed private), favourite rooms and members (both ways), read marks and muted
-    rooms, mentions of the account, chat sanctions, every direct message sent or received (so the
+    rooms, mentions of the account, chat sanctions, the Discord link with its sealed refresh token
+    and role ids, every direct message sent or received (so the
     partner's copy of the conversation too), direct files of both partners, direct reports made
     by or about the account with their copies and shared files, embed tokens, call participation
     and call reminders;
@@ -563,6 +565,9 @@ chat retention).
     shared report files (`chat.accounts.deleteFiles`).
 - **Open sockets** of the account close (`chatSessions.accountChanged`, all of them, embedded
   chats included).
+- **The Discord token** is revoked at Discord after the commit (best effort; the token is read
+  before the link goes, `revokerFor` in `server/src/discord/index.js`), on both routes. A restore
+  that deletes an account again cannot do this (docs/BACKLOG.md, "Known limits").
 - **What stays**: the audit log (entries keep their `actor_name`; `actor_id` becomes empty), call
   recordings and their chapter marks (they name the organiser who started them as text, and hold
   the sound and pictures of whoever spoke or showed a camera or screen), calls the account

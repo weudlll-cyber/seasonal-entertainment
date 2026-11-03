@@ -33,6 +33,12 @@ EVENT_BOT_DB=
 BOT_ADMIN_URL=
 BOT_ADMIN_TOKEN_FILE=
 BOT_ADMIN_TOKEN_KEY=STANNOUNCEBOT_WEB_ADMIN_TOKEN
+# The Discord login (docs/DEPLOYMENT.md, "Discord login"): the application's client id (empty:
+# no Discord login), the Seasonal Tokens server's id, and a file holding the client secret (the
+# secret itself never goes into this file)
+DISCORD_CLIENT_ID=
+DISCORD_GUILD_ID=902220302199689266
+DISCORD_CLIENT_SECRET_FILE=
 # The age public key the nightly backups are encrypted to (age1…); empty: set up later
 BACKUP_RECIPIENT=
 # Only for a staging or test certificate authority instead of Let's Encrypt: its ACME directory

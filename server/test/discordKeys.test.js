@@ -17,7 +17,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DISCORD_PROOF_MS } from '../src/accounts/identityProof.js';
 import { keysFor, proof } from './helpers/accountKeys.js';
 import { DISCORD_TEST, fakeDiscord } from './helpers/fakeDiscord.js';
-import { makeTestApp, registerUser } from './helpers/testApp.js';
+import { makeStaff, makeTestApp, registerUser } from './helpers/testApp.js';
 
 let t;
 afterEach(() => {
@@ -164,6 +164,15 @@ describe('deleting an account without a password', () => {
     const revokes = discord.calls.revoke;
     expect((await agent.delete('/api/auth/account').send({})).status).toBe(200);
     expect(t.db.prepare('SELECT COUNT(*) AS n FROM users WHERE id = ?').get(userId).n).toBe(0);
+    expect(t.db.prepare('SELECT COUNT(*) AS n FROM discord_links').get().n).toBe(0);
+    await vi.waitFor(() => expect(discord.calls.revoke).toBe(revokes + 1));
+  });
+
+  it('by an admin revokes the Discord token too', async () => {
+    const { discord, userId } = await setup();
+    const { agent: admin } = await makeStaff(t, 'boss', 'admin');
+    const revokes = discord.calls.revoke;
+    expect((await admin.delete(`/api/admin/users/${userId}`)).status).toBe(200);
     expect(t.db.prepare('SELECT COUNT(*) AS n FROM discord_links').get().n).toBe(0);
     await vi.waitFor(() => expect(discord.calls.revoke).toBe(revokes + 1));
   });

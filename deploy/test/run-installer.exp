@@ -56,6 +56,8 @@ expect {
   }
   # Asked on a terminal until answered once: none.
   "CoinGecko Demo API key" { set coingecko_asked 1; send -- "\r"; exp_continue }
+  # Asked on a terminal until answered once: no Discord login.
+  "Discord login: the application's client id" { send -- "\r"; exp_continue }
   # nginx mode, until answered once: none (the scenario configures the bot by answers file).
   "The event bot's admin page to embed" { set bot_admin_asked 1; send -- "\r"; exp_continue }
   "at least 10 characters long" { set told_short 1; exp_continue }

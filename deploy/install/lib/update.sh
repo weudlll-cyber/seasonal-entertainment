@@ -8,9 +8,9 @@
 #              the checkout forward to origin's default branch (fast-forward only: never a
 #              reset, a stash or a discarded change), and hands over to that commit's own
 #              installer, which re-runs as a plain re-run does (reexec_installer, also used by
-#              --commit, with --coingecko and --bot-admin passed on) except that it takes no
-#              second backup (SEASONAL_UPDATE_BACKUP names the one taken here). Anything else it
-#              refuses with the reason, before changing anything.
+#              --commit, with --coingecko, --discord and --bot-admin passed on) except that it
+#              takes no second backup (SEASONAL_UPDATE_BACKUP names the one taken here).
+#              Anything else it refuses with the reason, before changing anything.
 # ============================================================
 
 # reexec_installer: runs the installer of the commit now checked out, in place of this one
@@ -22,6 +22,7 @@ reexec_installer() {
   [[ "$UNATTENDED" == no ]] || args+=(--yes)
   [[ "$ASK_COINGECKO" == no ]] || args+=(--coingecko)
   [[ "$ASK_BOT_ADMIN" == no ]] || args+=(--bot-admin)
+  [[ "$ASK_DISCORD" == no ]] || args+=(--discord)
   SEASONAL_REEXEC=1 exec "$INSTALL_DIR/deploy/install.sh" "${args[@]}"
 }
 
