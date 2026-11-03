@@ -7,8 +7,8 @@
 //              plain Unicode text in the message. Each has an English name for screen readers.
 // ============================================================
 
-// [group name, [[emoji, name], ...]]. Chosen 2026-10-17 instead of a picker library: about
-// 150 emojis cover chat use, cost a few KB, and need no data download.
+// [group name, [[emoji, name], ...]]. Chosen 2026-10-17 instead of a picker library: 144
+// emojis cover chat use, cost a few KB, and need no data download.
 export const EMOJI_GROUPS = [
   [
     'Smileys',
@@ -182,6 +182,17 @@ export const EMOJI_GROUPS = [
       ['📅', 'calendar'],
       ['📣', 'megaphone'],
       ['💬', 'speech balloon'],
+      // Keycap digits 0 to 9 (added 2026-11-03): digit, VS16, combining enclosing keycap.
+      ['0️⃣', 'keycap zero'],
+      ['1️⃣', 'keycap one'],
+      ['2️⃣', 'keycap two'],
+      ['3️⃣', 'keycap three'],
+      ['4️⃣', 'keycap four'],
+      ['5️⃣', 'keycap five'],
+      ['6️⃣', 'keycap six'],
+      ['7️⃣', 'keycap seven'],
+      ['8️⃣', 'keycap eight'],
+      ['9️⃣', 'keycap nine'],
     ],
   ],
 ];

@@ -253,8 +253,9 @@ password change and turning 2FA on or off close the account's other sockets at o
   member's message with a plain `http://` link is refused (`400 https_only`, enforced
   2026-10-17 to match the stated rule; until then such links were accepted).
 - **Emojis** (everyone, guests too) are plain Unicode text in the message. The picker next to the
-  message field (`client/src/chat/ChatPicker.jsx`) uses a compact built-in list of about 150
-  emojis with English names (`client/src/chat/emojis.js`), chosen 2026-10-17 over a picker
+  message field (`client/src/chat/ChatPicker.jsx`) uses a compact built-in list of 144 emojis
+  with English names (`client/src/chat/emojis.js`; the keycap digits 0 to 9 in "Symbols" added
+  2026-11-03), chosen 2026-10-17 over a picker
   library: no dependency, no emoji data download, nothing from a CDN, so the strict CSP stays.
   Bundle cost: +4.7 kB JavaScript (+1.9 kB gzip) and +0.8 kB CSS (+0.15 kB gzip).
 - **Stickers and GIFs** (decided 2026-10-17) come only from the site's **own library**, managed
