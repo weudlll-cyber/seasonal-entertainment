@@ -5,7 +5,8 @@
 // Description: The Discord login in the browser (docs/AUTH.md, "Discord"; SE-DISCORD-1 piece 1):
 //              "Log in with Discord" only while the server has it set up, the reasons it comes
 //              back with, the 2FA step after a Discord login of an account that has 2FA, the
-//              sign-up page (name offered, age required), and the account page's Discord section
+//              password sign-up page's Discord hint (only while set up), the Discord sign-up
+//              page (name offered, age required), and the account page's Discord section
 //              (link; unlink with the password, or the hint to set one first).
 // ============================================================
 
@@ -58,6 +59,22 @@ describe('the login page', () => {
     mockApi(withFeatures(GUEST, DISCORD));
     renderAt('/login?discord=2fa');
     expect(await screen.findByText('This account uses two-factor authentication.')).toBeTruthy();
+  });
+});
+
+describe('the password sign-up page', () => {
+  it('shows the Discord hint only while the server has Discord set up', async () => {
+    mockApi(GUEST);
+    const { unmount } = renderAt('/register');
+    await screen.findByRole('button', { name: 'Create account' });
+    expect(screen.queryByText(/Have a Discord account\?/)).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Sign up with Discord' })).toBeNull();
+    unmount();
+    mockApi(withFeatures(GUEST, DISCORD));
+    renderAt('/register?next=%2Fchat');
+    expect(await screen.findByText(/your Seasonal Tokens roles then show/)).toBeTruthy();
+    const link = screen.getByRole('link', { name: 'Sign up with Discord' });
+    expect(link).toHaveAttribute('href', '/api/auth/discord/start?intent=login&next=%2Fchat');
   });
 });
 

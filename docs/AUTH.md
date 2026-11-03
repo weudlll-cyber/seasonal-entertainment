@@ -159,7 +159,9 @@ rate limit, the lockout, locked accounts, the session epoch.
 ## Discord (SE-DISCORD-1, decided 2026-11-02)
 
 Discord is the primary login. Username and password registration stays for people without
-Discord; they have no steps. Telegram login is not planned any more. Code: `server/src/discord/`,
+Discord; they have no steps. While Discord is set up, the password sign-up page opens with a hint
+to sign up with Discord instead, since only then do the roles show
+(`client/src/discord/DiscordSignupHint.jsx`). Telegram login is not planned any more. Code: `server/src/discord/`,
 `client/src/discord/`. The probe of 2026-11-02 found how Discord behaves; what follows relies on
 it.
 

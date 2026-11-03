@@ -11,8 +11,9 @@
 //              embedded chat's login popup), like the login page (session/nextPage.js). The card
 //              shows the logo (FormLogo.jsx), except in the chat's login popup. While the
 //              "Registration open" setting is off, the page says registration is closed. While
-//              Discord login is set up, "Sign up with Discord" comes first (no email or password
-//              needed there; DiscordSignupPage.jsx finishes it).
+//              Discord login is set up, a hint with "Sign up with Discord" comes first (only
+//              that way do the Seasonal Tokens roles show; DiscordSignupHint.jsx; no email or
+//              password needed there, DiscordSignupPage.jsx finishes it).
 // ============================================================
 
 import { useState } from 'react';
@@ -33,7 +34,7 @@ import { keysForNewPassword } from '../session/credentials.js';
 import { inEmbedLoginFlow, safeNext, withNext } from '../session/nextPage.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { BusyButton } from '../components/BusyButton.jsx';
-import DiscordButton from '../discord/DiscordButton.jsx';
+import DiscordSignupHint from '../discord/DiscordSignupHint.jsx';
 
 export default function RegisterPage() {
   const { setUser, settings, features } = useSession();
@@ -100,9 +101,7 @@ export default function RegisterPage() {
         {!inEmbedLoginFlow(params) && <FormLogo />}
         {features.discord && !inEmbedLoginFlow(params) && (
           <>
-            <DiscordButton intent="login" next={params.get('next') ?? undefined}>
-              Sign up with Discord
-            </DiscordButton>
+            <DiscordSignupHint next={params.get('next') ?? undefined} />
             <p className="discord-or">or with email and a password (no Discord steps)</p>
           </>
         )}
