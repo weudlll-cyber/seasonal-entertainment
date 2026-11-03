@@ -17,6 +17,7 @@ import { ImageRejected } from '../media/imageCheck.js';
 import { mediaRoutes } from '../media/routes.js';
 import { seedChatMedia } from '../media/seed.js';
 import { fetchImage } from '../previews/fetchImage.js';
+import { FetchRefused, safeFetch } from '../previews/safeFetch.js';
 import { imageMaxPixels } from '../settings/derived.js';
 import { getSetting } from '../settings/store.js';
 import { directFileRoutes } from '../directFiles/routes.js';
@@ -119,11 +120,20 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
     // limit (a setting) added, and the public media address of a stored file.
     // storeIcon: an admin's icon upload (the Discord steps, discord/adminRoutes.js) drawn into
     // a 64 x 64 WebP in step-icons/: { ok, file } or { ok: false, message }; remove: a stored
-    // icon's file goes.
+    // icon's file goes. download: the same guarded fetch, raw, for code that checks the bytes
+    // itself (the steps' icon from a link, discord/iconLink.js): { ok, status, body } or
+    // { ok: false, reason } (safeFetch's reason; anything else on the way is "unreachable").
     images: {
       fetch: (url, limits, options, network) =>
         fetchImage(url, { ...limits, maxPixels: imageMaxPixels(db) }, options, network),
       url: mediaUrl,
+      async download(url, options, network) {
+        try {
+          return { ok: true, ...(await safeFetch(url, options, network)) };
+        } catch (err) {
+          return { ok: false, reason: err instanceof FetchRefused ? err.message : 'unreachable' };
+        }
+      },
       async storeIcon(buffer) {
         try {
           return {

@@ -7,7 +7,9 @@
 //              snowflake, unique), its icon and the rooms whose rule names it; add, rename and
 //              remove steps (not one a room names), reorder a ladder, upload or clear an icon
 //              (the raw file as the body: PNG, WebP or SVG, drawn into a 64 x 64 WebP by the
-//              chat handle's images.storeIcon, media/icons.js); and the role ids seen on linked
+//              chat handle's images.storeIcon, media/icons.js), or take it from a link to
+//              Discord's image servers, fetched once (iconLink.js) and then stored exactly like
+//              an upload; and the role ids seen on linked
 //              members that no step has yet (ids and counts only), to help fill them in. Every
 //              change writes one audit entry. Steps never grant rights on the site.
 // ============================================================
@@ -18,6 +20,7 @@ import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { loadById } from '../http/loadById.js';
 import { required, validBody } from '../http/validate.js';
+import { IconLinkError, fetchIconLink } from './iconLink.js';
 import { LADDERS, listSteps } from './steps.js';
 import {
   RoleIdTakenError,
@@ -42,8 +45,9 @@ const roleIdField = (v) =>
     : 'The role id must be a Discord id (17-20 digits), or empty.';
 const STEP_FIELDS = { name: required('Name', 40), roleId: roleIdField };
 
-// images: the chat handle's images (chat/mount.js): storeIcon, remove, url.
-export function adminDiscordRoutes(db, images) {
+// images: the chat handle's images (chat/mount.js): storeIcon, download, remove, url. network: how
+// "Icon from link" reaches the internet (safeFetch's; tests pass a pretend one).
+export function adminDiscordRoutes(db, images, network) {
   const router = express.Router();
   const audit = (req, action, targetId, before, after) =>
     recordAudit(db, req.user, { action, targetType: 'discord_step', targetId, before, after });
@@ -138,14 +142,33 @@ export function adminDiscordRoutes(db, images) {
     res.json({ ok: true });
   });
 
-  // The file is the request body.
-  router.post('/steps/:id/icon', allow('admin'), loadStep, rawFile, async (req, res) => {
-    const stored = await images.storeIcon(req.body);
+  // An uploaded or fetched file through the one icon pipeline; the old icon file goes.
+  async function keepIcon(req, res, buffer) {
+    const stored = await images.storeIcon(buffer);
     if (!stored.ok) return sendError(res, 400, 'invalid_file', stored.message);
     const old = setIcon(db, req.step.id, stored.file);
     if (old) images.remove(old);
     audit(req, 'discord.step_icon', req.step.id, { icon: Boolean(old) }, { icon: true });
     res.json({ ok: true, step: shown(findStep(db, req.step.id)) });
+  }
+
+  // The file is the request body.
+  router.post('/steps/:id/icon', allow('admin'), loadStep, rawFile, (req, res) =>
+    keepIcon(req, res, req.body)
+  );
+
+  // { url }: a link to cdn.discordapp.com or media.discordapp.net, fetched once.
+  router.post('/steps/:id/icon-link', allow('admin'), loadStep, async (req, res) => {
+    const input = validBody(req, res, { url: required('Link', 2000) });
+    if (!input) return;
+    let buffer;
+    try {
+      buffer = await fetchIconLink(input.url, images.download, network);
+    } catch (err) {
+      if (!(err instanceof IconLinkError)) throw err;
+      return sendError(res, 400, 'icon_link', err.message);
+    }
+    return keepIcon(req, res, buffer);
   });
 
   router.delete('/steps/:id/icon', allow('admin'), loadStep, (req, res) => {

@@ -246,6 +246,15 @@ empty). **Steps never grant rights on the site**; only the owner gives roles.
     scripts, foreign objects, event attributes, or links or `url()` to anything but its own
     parts is refused. Until an icon is uploaded, a neutral placeholder shows (the ladder's
     shape and the step's initials);
+  - or take the icon from a link ("Icon from link", `POST /api/admin/discord/steps/:id/icon-link`
+    with `{ url }`, `server/src/discord/iconLink.js`, `client/src/admin/StepIconLink.jsx`):
+    https to exactly `cdn.discordapp.com` or `media.discordapp.net`, no redirect at all, an image
+    type, 10 seconds, at most 2 MB read (the transfer is cut beyond). The server fetches it once
+    through `safeFetch` (public addresses only, `server/src/previews/safeFetch.js`) and stores it
+    through the same `images.storeIcon` as an upload (same checks, same 64 × 64 WebP), so nothing
+    depends on Discord afterwards (the fetch reaches the chat area's guard through the chat
+    handle's `images.download`, docs/CHAT.md). Refusals name the reason: wrong host, not an image,
+    too large, redirected, unreachable;
   - see the role ids on linked members that no step has yet, with how many members carry each
     (ids and counts only), to fill the ids in. In Discord: Developer Mode, then right-click the
     role and choose "Copy Role ID".

@@ -8,7 +8,10 @@
 //              (PNG and clean SVG drawn into a 64 x 64 WebP and served from /media/step-icons/;
 //              an SVG that could reach out or run anything refused); the role ids seen on members
 //              that no step has (ids and counts only); one audit entry per change; the routes
-//              absent while Discord is not set up.
+//              absent while Discord is not set up. "Icon from link" against a pretend internet
+//              (helpers/previewNet.js, no real network): Discord's two image hosts only, no
+//              redirect, an image type, at most 2 MB; fetched once and stored like an upload
+//              (the same pipeline refuses the same SVG); a clear message for each refusal.
 // ============================================================
 
 import { existsSync } from 'node:fs';
@@ -17,16 +20,22 @@ import sharp from 'sharp';
 import { afterEach, describe, expect, it } from 'vitest';
 import { seedSteps } from '../src/discord/steps.js';
 import { DISCORD_TEST, fakeDiscord } from './helpers/fakeDiscord.js';
+import { PUBLIC_IP, previewInternet, redirect } from './helpers/previewNet.js';
 import { makeStaff, makeTestApp, registerUser } from './helpers/testApp.js';
 
 let t;
-afterEach(() => t?.close());
+let net;
+afterEach(async () => {
+  t?.close();
+  await net?.close();
+  net = undefined;
+});
 
 const ROLE_A = '1110866352857690112';
 const ROLE_B = '1110866376207372288';
 
-async function setup() {
-  t = makeTestApp({ discord: DISCORD_TEST }, { discordFetch: fakeDiscord().fetch });
+async function setup(previewNetwork) {
+  t = makeTestApp({ discord: DISCORD_TEST }, { discordFetch: fakeDiscord().fetch, previewNetwork });
   seedSteps(t.db);
   const { agent } = await makeStaff(t, 'boss', 'admin');
   return agent;
@@ -208,5 +217,122 @@ describe('step icons', () => {
     await upload(admin, golden.id, await png());
     expect((await admin.delete(`/api/admin/discord/steps/${golden.id}/icon`)).status).toBe(200);
     expect((await stepNamed(admin, 'Golden')).icon).toBeNull();
+  });
+});
+
+describe('icon from link', () => {
+  const CDN = 'cdn.discordapp.com';
+  const MEDIA = 'media.discordapp.net';
+  const image = (type, body) => (_req, res) => {
+    res.setHeader('Content-Type', type);
+    res.end(body);
+  };
+
+  // The pretend internet: Discord's two hosts and one outside host, all on a public address.
+  async function withInternet(routes) {
+    net = await previewInternet(routes, {
+      [CDN]: [PUBLIC_IP],
+      'evil.example': [PUBLIC_IP],
+    });
+    const admin = await setup(net.network);
+    const golden = await stepNamed(admin, 'Golden');
+    const fromLink = (url) =>
+      admin.post(`/api/admin/discord/steps/${golden.id}/icon-link`).send({ url });
+    return { admin, golden, fromLink };
+  }
+
+  it('fetches the image once and stores it like an upload', async () => {
+    const pic = await png();
+    const { fromLink } = await withInternet({
+      [`${CDN}/role-icons/1/a.png?size=64`]: image('image/png', pic),
+    });
+    const res = await fromLink(`https://${CDN}/role-icons/1/a.png?size=64`);
+    expect(res.status).toBe(200);
+    expect(res.body.step.icon).toMatch(/^\/media\/step-icons\/[0-9a-f]{32}\.webp$/);
+    const served = await t.client().get(res.body.step.icon).buffer(true);
+    expect(await sharp(served.body).metadata()).toMatchObject({ format: 'webp', width: 64 });
+    // Served from this site: Discord was asked exactly once.
+    expect(net.requests).toHaveLength(1);
+    expect(net.requests[0].headers['user-agent']).toMatch(/^SeasonalEntertainmentIcons\//);
+    expect(audits('discord.step_icon')).toBe(1);
+  });
+
+  it('takes only https links to the two Discord hosts, without asking anyone else', async () => {
+    const { fromLink } = await withInternet({});
+    for (const url of [
+      'https://evil.example/a.png',
+      `https://${CDN}.evil.example/a.png`,
+      `https://evil.example/${CDN}/a.png`,
+      `http://${CDN}/a.png`,
+      `https://${CDN}:8443/a.png`,
+      'not a link',
+    ]) {
+      const res = await fromLink(url);
+      expect(res.status, url).toBe(400);
+      expect(res.body.message, url).toBe(
+        'Only https links to cdn.discordapp.com or media.discordapp.net are accepted.'
+      );
+    }
+    expect(net.lookups).toEqual([]);
+    expect(audits('discord.step_icon')).toBe(0);
+  });
+
+  it('says why: not an image, too large, unreachable, a redirect', async () => {
+    const { admin, fromLink } = await withInternet({
+      [`${CDN}/page.png`]: image('text/html', '<html></html>'),
+      // No length announced: the transfer itself is cut after 2 MB.
+      [`${CDN}/big.png`]: (_req, res) => {
+        res.setHeader('Content-Type', 'image/png');
+        const chunk = Buffer.alloc(256 * 1024);
+        for (let i = 0; i < 9; i++) res.write(chunk);
+        res.end();
+      },
+      [`${CDN}/moved.png`]: redirect('https://evil.example/a.png'),
+      // An error answer that still claims an image type (a 404 page is text: "not an image").
+      [`${CDN}/gone.png`]: (_req, res) => {
+        res.statusCode = 404;
+        image('image/png', '')(_req, res);
+      },
+    });
+    const said = async (url) => (await fromLink(url)).body.message;
+    expect(await said(`https://${CDN}/page.png`)).toBe('The link does not lead to an image.');
+    expect(await said(`https://${CDN}/big.png`)).toBe('The image is larger than 2 MB.');
+    // media.discordapp.net has no address in this pretend internet.
+    expect(await said(`https://${MEDIA}/a.png`)).toMatch(/unreachable or did not answer in time/);
+    expect(await said(`https://${CDN}/gone.png`)).toBe(
+      'The image could not be fetched: Discord answered 404.'
+    );
+    expect(await said(`https://${CDN}/moved.png`)).toBe(
+      'The link redirects elsewhere. Use the image’s direct link.'
+    );
+    expect(net.hits('evil.example/a.png')).toBe(0);
+    expect((await stepNamed(admin, 'Golden')).icon).toBeNull();
+  });
+
+  it('goes through the upload pipeline: the same unsafe SVG is refused', async () => {
+    const { fromLink } = await withInternet({
+      [`${CDN}/a.svg`]: image(
+        'image/svg+xml',
+        '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'
+      ),
+    });
+    const res = await fromLink(`https://${CDN}/a.svg`);
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: 'invalid_file',
+      message: 'An SVG icon may not contain scripts.',
+    });
+  });
+
+  it('is for admins only', async () => {
+    await withInternet({});
+    const golden = (await t.db.prepare("SELECT id FROM discord_steps WHERE name = 'Golden'").get())
+      .id;
+    const { agent: member } = await registerUser(t, 'anna');
+    const res = await member
+      .post(`/api/admin/discord/steps/${golden}/icon-link`)
+      .send({ url: `https://${CDN}/a.png` });
+    expect(res.status).toBe(403);
+    expect(net.requests).toHaveLength(0);
   });
 });

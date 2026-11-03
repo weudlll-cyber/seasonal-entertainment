@@ -5,7 +5,8 @@
 // Description: Admin → Discord steps (SE-DISCORD-1 piece 3): the section only while Discord
 //              login is set up; each ladder highest step first; saving a step's name and role id
 //              (an empty id sent as none); moving a step up its ladder (the order sent lowest
-//              first); uploading an icon (raw body); a step a room names cannot be removed; the
+//              first); uploading an icon (raw body); an icon from a link (sent as { url }, the
+//              server's refusal shown); a step a room names cannot be removed; the
 //              role ids without a step, with their counts; the room editor choosing the steps
 //              that open a room (one per ladder, their ids sent).
 // ============================================================
@@ -46,6 +47,19 @@ function adminPage(features = { discord: true }) {
     'PUT /admin/discord/steps/1': { body: { ok: true } },
     'POST /admin/discord/ladders/holder/order': { body: { ok: true } },
     'POST /admin/discord/steps/2/icon?': { body: { ok: true } },
+    // The server's answer to a link: refused unless it is on Discord's image host.
+    'POST /admin/discord/steps/2/icon-link': ({ url }) =>
+      url.startsWith('https://cdn.discordapp.com/')
+        ? { body: { ok: true } }
+        : {
+            status: 400,
+            body: {
+              ok: false,
+              error: 'icon_link',
+              message:
+                'Only https links to cdn.discordapp.com or media.discordapp.net are accepted.',
+            },
+          },
   });
   render(
     <MemoryRouter initialEntries={['/admin/discord']}>
@@ -112,6 +126,29 @@ describe('Admin → Discord steps', () => {
     const silver = screen.getByRole('textbox', { name: 'Name of Silver' }).closest('li');
     expect(within(silver).getByRole('button', { name: 'Remove' })).toBeDisabled();
     expect(within(silver).getByText(/Rooms open from this step on: VIP/)).toBeInTheDocument();
+  });
+});
+
+describe('icon from link', () => {
+  it('sends the link and shows the server’s refusal', async () => {
+    const calls = adminPage();
+    const link = await screen.findByRole('textbox', { name: 'Icon link of Bronze' });
+    fireEvent.change(link, {
+      target: { value: '  https://cdn.discordapp.com/role-icons/1/a.png ' },
+    });
+    fireEvent.submit(link.closest('form'));
+    const key = 'POST /admin/discord/steps/2/icon-link';
+    await expect.poll(() => calls.filter((c) => c.key === key).length).toBe(1);
+    expect(calls.find((c) => c.key === key).body).toEqual({
+      url: 'https://cdn.discordapp.com/role-icons/1/a.png',
+    });
+    expect(screen.queryByRole('alert')).toBeNull();
+
+    fireEvent.change(link, { target: { value: 'https://evil.example/a.png' } });
+    fireEvent.submit(link.closest('form'));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Only https links to cdn.discordapp.com or media.discordapp.net are accepted.'
+    );
   });
 });
 

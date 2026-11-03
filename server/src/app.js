@@ -67,7 +67,8 @@ import { bindSettingsConfig } from './settings/store.js';
 import { twoFactorGate } from './twofa/gate.js';
 import { twoFactorRoutes } from './twofa/routes.js';
 
-// previewNetwork: how link previews reach the internet (tests replace it); botImageNetwork:
+// previewNetwork: how link previews and the Discord steps' "Icon from link" reach the internet
+// (tests replace it); botImageNetwork:
 // how the event bot's images are fetched (tests, and development's fixture,
 // bots/fixtureNetwork.js); callService: the call service (calls/service.js; tests hand in a
 // stand-in), built from config by default; discordFetch: how the server reaches Discord's API
@@ -132,7 +133,7 @@ export function createApp({
   if (discord) {
     api.use('/auth/discord', discord.routes());
     // The admins' steps: names, order, role ids, icons (stored through the chat's media).
-    api.use('/admin/discord', adminDiscordRoutes(db, chat.images));
+    api.use('/admin/discord', adminDiscordRoutes(db, chat.images, previewNetwork));
   }
   app.locals.discord = { start: (log) => discord?.start(log) ?? null };
 

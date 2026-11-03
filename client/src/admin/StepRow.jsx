@@ -5,12 +5,14 @@
 // Description: One Discord step on Admin → Discord steps (AdminDiscordPage.jsx): its icon (or the
 //              neutral placeholder), name and Discord role id (saved together), move up / down
 //              in its ladder, upload or clear the icon (PNG, WebP or SVG; the server draws it into
-//              a 64 x 64 WebP), and remove it (the server refuses a step a room is open from, and
+//              a 64 x 64 WebP) or take it from a link to Discord's image servers
+//              (StepIconLink.jsx), and remove it (the server refuses a step a room is open from, and
 //              the row names those rooms).
 // ============================================================
 
 import { api, upload } from '../api/http.js';
 import { StepIcon } from '../chat/index.js';
+import StepIconLink from './StepIconLink.jsx';
 
 // run(call): the page's runner (errors shown, list reloaded); move(step): -1 up, 1 down.
 export default function StepRow({ step, first, last, run, move }) {
@@ -102,6 +104,7 @@ export default function StepRow({ step, first, last, run, move }) {
           Remove
         </button>
       </div>
+      <StepIconLink step={step} run={run} />
       {step.rooms.length > 0 && (
         <p className="form-field__hint">Rooms open from this step on: {step.rooms.join(', ')}</p>
       )}

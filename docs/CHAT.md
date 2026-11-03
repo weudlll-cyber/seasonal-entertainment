@@ -657,6 +657,11 @@ const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork, em
 // chat.people.sanction(who)                      their mute or ban, if any
 // chat.images.fetch / url                        the guarded image fetch and a media file's
 //                                                public address (the event bot's images)
+// chat.images.storeIcon(buffer) / remove(file)    an admin's icon into a 64 x 64 WebP, and its
+//                                                removal (the Discord steps)
+// chat.images.download(url, options, network)    the guarded fetch, raw: { ok, status, body }
+//                                                or { ok: false, reason } (the steps' icon
+//                                                from a link, discord/iconLink.js)
 // chat.attach(httpServer)                        the WebSocket, once the server listens
 // await chat.start()                             first-start rooms and media, retention job
 ```
