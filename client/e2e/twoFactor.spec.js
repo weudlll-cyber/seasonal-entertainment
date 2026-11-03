@@ -18,7 +18,8 @@ test('turn on 2FA and log in with a code', async ({ page }) => {
   await page.goto('/register');
   await page.getByLabel('Username').fill(name);
   await page.getByLabel('Email').fill(`${name}@example.org`);
-  await page.getByLabel('Password').fill('correct-horse-1');
+  await page.getByLabel('Password', { exact: true }).fill('correct-horse-1');
+  await page.getByLabel('Repeat password').fill('correct-horse-1');
   await page.getByLabel(/at least 14 years old/).check();
   await page.getByRole('button', { name: 'Create account' }).click();
   // The new key pair's recovery-code offer (keys.spec.js covers it).

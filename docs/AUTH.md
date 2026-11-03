@@ -23,6 +23,11 @@ from the race game's `docs/AUTH.md` are marked _(race game)_.
   most 72 bytes (from when bcrypt read the password itself; kept unchanged). Email: a plain shape
   check; no confirmation mail is sent. The password rules are checked **in the browser only** (next
   section).
+- **A new password is typed twice** (decided 2026-11-03): registration, the first password of an
+  account made with Discord (account page and the Private messages panel), the password change and
+  the admin's reset have a "Repeat password" field (`client/src/components/RepeatPasswordField.jsx`).
+  A mismatch sends nothing and says "The passwords do not match." at that field; the repeat never
+  goes to the server. Fields that only confirm the current password stay single.
 - **The password never reaches the server** (next section). The server stores bcrypt of the auth
   key the browser derives from it, cost 12 by default (`BCRYPT_COST`) _(race game)_.
 

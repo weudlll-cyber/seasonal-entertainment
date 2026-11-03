@@ -44,6 +44,12 @@
   font-size: 0.875rem;
 }
 
+/* A problem with one field, shown at it (RepeatPasswordField.jsx). */
+.form-field__error {
+  color: var(--color-danger);
+  font-size: 0.875rem;
+}
+
 /* .search-input: a search field outside a form card (the call's "Find a listener") looks
    like every other field of the site. */
 .form input[type='text'],

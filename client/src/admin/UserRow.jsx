@@ -4,20 +4,23 @@
 // Project:     Seasonal Entertainment
 // Description: One row of the admin users list. Every control calls its own admin route;
 //              a refusal (e.g. "the last admin cannot be removed") is shown in the row. A
-//              password reset checks the shared password rules here and sends only a new salt
-//              and auth key derived from the password (session/credentials.js). Deleting the
+//              password reset checks the shared password rules and the repeated password
+//              (RepeatPasswordField.jsx) here and sends only a new salt and auth key derived from
+//              the password (session/credentials.js). Deleting the
 //              account asks for a confirmation first (docs/AUTH.md, "Deleting an account").
 // ============================================================
 
 import { useState } from 'react';
 import { ROLES, validatePassword } from '@seasonal-entertainment/shared/accountRules.js';
 import { api } from '../api/http.js';
+import { RepeatPasswordField, useRepeatPassword } from '../components/RepeatPasswordField.jsx';
 import { keysForNewPassword } from '../session/credentials.js';
 
 export default function UserRow({ user, onChanged }) {
   const [message, setMessage] = useState(null);
   const [resetting, setResetting] = useState(false);
   const label = (what) => `${what} for ${user.username}`;
+  const repeat = useRepeatPassword('newPassword');
 
   async function change(route, body, done = 'Saved.') {
     try {
@@ -48,9 +51,12 @@ export default function UserRow({ user, onChanged }) {
 
   async function resetPassword(event) {
     event.preventDefault();
-    const newPassword = new FormData(event.currentTarget).get('newPassword');
+    const form = new FormData(event.currentTarget);
+    const newPassword = form.get('newPassword');
     const problem = validatePassword(newPassword);
     if (problem) return setMessage(problem);
+    setMessage(null);
+    if (!repeat.matches(form)) return;
     const { salt, authKey } = await keysForNewPassword(newPassword);
     if (await change('password', { salt, authKey }, 'Password reset; their sessions ended.')) {
       setResetting(false);
@@ -115,6 +121,7 @@ export default function UserRow({ user, onChanged }) {
               autoComplete="new-password"
               required
             />
+            <RepeatPasswordField {...repeat.fieldProps} ariaLabel={label('Repeat password')} />
             <button className="button" type="submit">
               Set
             </button>

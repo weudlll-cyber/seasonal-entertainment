@@ -14,6 +14,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { deriveAccountKeys } from '@seasonal-entertainment/shared/crypto.js';
 import App from '../app/App.jsx';
 import { formatWhen } from '../app/dates.js';
+import { PASSWORDS_DIFFER } from '../components/RepeatPasswordField.jsx';
 import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
 
 const admin = { id: 1, username: 'ada', role: 'admin', twoFactorEnabled: true };
@@ -95,6 +96,15 @@ describe('users page', () => {
     expect(calls.some((c) => c.key === 'POST /admin/users/2/password')).toBe(false);
 
     fireEvent.change(field, { target: { value: 'brand-new-pass-1' } });
+    // A typo in the repeat: nothing is sent, the message shows at the field.
+    const again = screen.getByLabelText('Repeat password for bert');
+    fireEvent.change(again, { target: { value: 'brand-new-pass-2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Set' }));
+    expect(await screen.findByText(PASSWORDS_DIFFER)).toBeInTheDocument();
+    expect(again).toHaveAttribute('aria-invalid', 'true');
+    expect(calls.some((c) => c.key === 'POST /admin/users/2/password')).toBe(false);
+
+    fireEvent.change(again, { target: { value: 'brand-new-pass-1' } });
     fireEvent.click(screen.getByRole('button', { name: 'Set' }));
     expect(await screen.findByText(/Password reset/)).toBeInTheDocument();
     const { body } = calls.find((c) => c.key === 'POST /admin/users/2/password');

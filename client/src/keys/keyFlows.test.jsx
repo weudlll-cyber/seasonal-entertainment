@@ -54,6 +54,7 @@ async function register() {
   type('Username', 'anna');
   type('Email', 'anna@example.org');
   type('Password', PASSWORD);
+  type('Repeat password', PASSWORD);
   fireEvent.click(screen.getByLabelText(/at least 14 years old/));
   fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
   const offer = await screen.findByRole('dialog', { name: 'Protect your private messages' });
@@ -121,6 +122,7 @@ describe('a signed-in member with an unlocked key', () => {
     });
     type('Current password', PASSWORD);
     type('New password', 'battery-staple-2');
+    type('Repeat password', 'battery-staple-2');
     fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
     expect(await screen.findByText(/Password changed/)).toBeInTheDocument();
     const { body } = calls.find((c) => c.key === 'POST /auth/password');

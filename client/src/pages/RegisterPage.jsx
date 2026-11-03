@@ -2,7 +2,8 @@
 // File:        RegisterPage.jsx
 // Path:        client/src/pages/RegisterPage.jsx
 // Project:     Seasonal Entertainment
-// Description: Registration: username, email, password and the required age confirmation.
+// Description: Registration: username, email, password (typed twice, RepeatPasswordField.jsx)
+//              and the required age confirmation.
 //              Checks the shared rules before sending; the server checks them again, except the
 //              password rules: the password never leaves the browser, only a salt and the auth
 //              key derived from it are sent (session/credentials.js). The new member's key pair
@@ -29,6 +30,7 @@ import {
 } from '@seasonal-entertainment/shared/accountRules.js';
 import { api } from '../api/http.js';
 import { FormField, FormMessage } from '../components/FormField.jsx';
+import { RepeatPasswordField, useRepeatPassword } from '../components/RepeatPasswordField.jsx';
 import { useKeys } from '../keys/KeyContext.jsx';
 import { keysForNewPassword } from '../session/credentials.js';
 import { inEmbedLoginFlow, safeNext, withNext } from '../session/nextPage.js';
@@ -43,6 +45,7 @@ export default function RegisterPage() {
   const [params] = useSearchParams();
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const repeat = useRepeatPassword('password');
 
   async function onSubmit(event) {
     event.preventDefault();
@@ -59,6 +62,8 @@ export default function RegisterPage() {
       validatePassword(password) ??
       (input.ageConfirmed ? null : `Please confirm that you are at least ${MINIMUM_AGE}.`);
     if (problem) return setError(problem);
+    setError(null);
+    if (!repeat.matches(form)) return;
     setBusy(true);
     setError(null);
     try {
@@ -120,6 +125,7 @@ export default function RegisterPage() {
           autoComplete="new-password"
           hint={`At least ${PASSWORD_MIN} characters.`}
         />
+        <RepeatPasswordField {...repeat.fieldProps} />
         <label className="form-check">
           <input type="checkbox" name="ageConfirmed" />
           <span>I am at least {MINIMUM_AGE} years old.</span>

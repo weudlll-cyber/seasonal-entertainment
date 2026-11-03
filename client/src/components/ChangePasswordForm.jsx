@@ -2,7 +2,8 @@
 // File:        ChangePasswordForm.jsx
 // Path:        client/src/components/ChangePasswordForm.jsx
 // Project:     Seasonal Entertainment
-// Description: Own password change (current + new). Neither password leaves the browser: the
+// Description: Own password change (current + new, the new one typed twice:
+//              RepeatPasswordField.jsx). Neither password leaves the browser: the
 //              current one is proven by its auth key, the new one sent as a new salt and auth
 //              key (session/credentials.js). The private key for private messages goes along,
 //              sealed again for the new password (keys/), so the messages stay readable. The
@@ -16,6 +17,7 @@ import { resealForNewPassword } from '../keys/keyActions.js';
 import { keysForNewPassword, keysForPassword } from '../session/credentials.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { FormField, FormMessage } from './FormField.jsx';
+import { RepeatPasswordField, useRepeatPassword } from './RepeatPasswordField.jsx';
 import { BusyButton } from './BusyButton.jsx';
 
 export default function ChangePasswordForm() {
@@ -23,6 +25,7 @@ export default function ChangePasswordForm() {
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
   const [busy, setBusy] = useState(false);
+  const repeat = useRepeatPassword('newPassword');
 
   async function onSubmit(event) {
     event.preventDefault();
@@ -32,8 +35,9 @@ export default function ChangePasswordForm() {
     setNotice(null);
     const problem = validatePassword(newPassword);
     if (problem) return setError(problem);
-    setBusy(true);
     setError(null);
+    if (!repeat.matches(form)) return;
+    setBusy(true);
     try {
       const current = await keysForPassword(user.username, form.get('currentPassword'));
       const next = await keysForNewPassword(newPassword);
@@ -67,6 +71,7 @@ export default function ChangePasswordForm() {
         autoComplete="new-password"
         hint={`At least ${PASSWORD_MIN} characters.`}
       />
+      <RepeatPasswordField {...repeat.fieldProps} />
       <FormMessage error={error} notice={notice} />
       <BusyButton busy={busy}>Change password</BusyButton>
     </form>

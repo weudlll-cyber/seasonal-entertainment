@@ -23,6 +23,7 @@ import {
   sealBytes,
 } from '@seasonal-entertainment/shared/crypto.js';
 import App from '../app/App.jsx';
+import { PASSWORDS_DIFFER } from '../components/RepeatPasswordField.jsx';
 import { deviceEntry, resetDevice } from '../test/memoryDeviceKey.js';
 import { mockApi, signedIn, withFeatures } from '../test/mockApi.js';
 
@@ -152,6 +153,9 @@ describe('before the first private message', () => {
     fireEvent.change(within(form).getByLabelText('New password'), {
       target: { value: 'a-new-password-1' },
     });
+    fireEvent.change(within(form).getByLabelText('Repeat password'), {
+      target: { value: 'a-new-password-1' },
+    });
     fireEvent.click(within(form).getByRole('button', { name: 'Set a password' }));
     await vi.waitFor(() => expect(server.state.sent).toHaveLength(1), { timeout: 20_000 });
     expect(Object.keys(first).sort()).toEqual(['authKey', 'salt']);
@@ -160,6 +164,61 @@ describe('before the first private message', () => {
     expect(server.state.sent[0].authKey).toBe(authKey);
     const opened = await openSealed(server.state.sent[0].sealedPrivateKey, wrapKey);
     expect(opened).toEqual(deviceEntry().privateKey);
+  });
+});
+
+describe('the first password, typed twice', () => {
+  // The two "Set a password" forms: the account page's own and the one in Private messages.
+  async function firstPasswordForm(where) {
+    const section = await privateMessages();
+    const name = { name: 'Set a password' };
+    if (where === 'private messages') {
+      return (await within(section).findByRole('button', name)).closest('form');
+    }
+    const buttons = await screen.findAllByRole('button', name);
+    return buttons.find((button) => !section.contains(button)).closest('form');
+  }
+  const fill = (form, password, repeated) => {
+    fireEvent.change(within(form).getByLabelText('New password'), {
+      target: { value: password },
+    });
+    fireEvent.change(within(form).getByLabelText('Repeat password'), {
+      target: { value: repeated },
+    });
+    fireEvent.click(within(form).getByRole('button', { name: 'Set a password' }));
+  };
+
+  it.each(['account page', 'private messages'])(
+    '%s: a typo in the repeat sends nothing and says so at the field',
+    async (where) => {
+      const calls = mockApi({ ...weudlll(), ...keys().answers });
+      renderAt('/account');
+      const form = await firstPasswordForm(where);
+      fill(form, 'a-new-password-1', 'a-new-password-2');
+      expect(await within(form).findByText(PASSWORDS_DIFFER)).toBeInTheDocument();
+      expect(within(form).getByLabelText('Repeat password')).toHaveAttribute(
+        'aria-invalid',
+        'true'
+      );
+      expect(calls.filter((c) => !c.key.startsWith('GET '))).toEqual([]);
+    }
+  );
+
+  it('account page: the same password twice sets it', async () => {
+    const server = keys();
+    let first;
+    mockApi({
+      ...weudlll(),
+      ...server.answers,
+      'POST /auth/password/first': (sent) => {
+        first = sent;
+        return { body: { ok: true } };
+      },
+    });
+    renderAt('/account');
+    fill(await firstPasswordForm('account page'), 'a-new-password-1', 'a-new-password-1');
+    await vi.waitFor(() => expect(first).toBeDefined(), { timeout: 20_000 });
+    expect(Object.keys(first).sort()).toEqual(['authKey', 'salt']);
   });
 });
 

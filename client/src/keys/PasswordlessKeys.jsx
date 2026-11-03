@@ -6,7 +6,8 @@
 //              docs/CHAT.md, "Accounts without a password"; decided 2026-11-02). Shown where a
 //              password account would see the unlock panel (UnlockPanel.jsx hands over):
 //              - no key yet (before the first private message): the plain choice "Save a
-//                recovery code" or "Set a password". One is enough; the other can be added on
+//                recovery code" or "Set a password" (typed twice, RepeatPasswordField.jsx).
+//                One is enough; the other can be added on
 //                the account page later. Both need a fresh Discord login (DiscordConfirmGate).
 //                The new code is shown once by the recovery dialog (RecoveryOffer.jsx);
 //              - a key that this device does not have open: the recovery code, or "Confirm on
@@ -17,6 +18,7 @@ import { PASSWORD_MIN, validatePassword } from '@seasonal-entertainment/shared/a
 import { useState } from 'react';
 import { BusyButton } from '../components/BusyButton.jsx';
 import { FormField, FormMessage } from '../components/FormField.jsx';
+import { RepeatPasswordField, useRepeatPassword } from '../components/RepeatPasswordField.jsx';
 import DiscordConfirmGate from '../discord/DiscordConfirmGate.jsx';
 import { useSession } from '../session/SessionContext.jsx';
 import DeviceUnlock from './DeviceUnlock.jsx';
@@ -44,13 +46,17 @@ function ProtectionChoice() {
   const { refresh } = useSession();
   const keys = useKeys();
   const { error, setError, busy, attempt } = useAttempt();
+  const repeat = useRepeatPassword('password');
 
   const withCode = () => attempt(() => keys.setUpWithRecoveryCode());
   const withPassword = (event) => {
     event.preventDefault();
-    const password = new FormData(event.currentTarget).get('password');
+    const form = new FormData(event.currentTarget);
+    const password = form.get('password');
     const problem = validatePassword(password);
     if (problem) return setError(problem);
+    setError(null);
+    if (!repeat.matches(form)) return;
     return attempt(async () => {
       await keys.setUpWithPassword(password);
       await refresh(); // the account has a password now
@@ -85,6 +91,7 @@ function ProtectionChoice() {
           autoComplete="new-password"
           hint={`At least ${PASSWORD_MIN} characters.`}
         />
+        <RepeatPasswordField {...repeat.fieldProps} />
         <BusyButton busy={busy}>Set a password</BusyButton>
       </form>
     </DiscordConfirmGate>
