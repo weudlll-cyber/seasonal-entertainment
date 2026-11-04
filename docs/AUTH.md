@@ -92,8 +92,13 @@ registration, password change, unlock or recovery runs, its button reads **Check
   private key, besides the password and the recovery code, **Confirm on another device**.
   - **The new device** makes a one-time key pair and sends its public key
     (`POST /api/keys/handover`). It shows a 6-digit code computed from that public key
-    (`handoverCode` in `shared/crypto.js`: BLAKE2b, so a key swapped on the way shows another
-    code).
+    (`handoverCode` in `shared/crypto.js`, BLAKE2b). A key swapped on the way by chance, or by
+    someone without time to search, shows another code. It is no defence against whoever runs the
+    server, though: 6 digits are about 20 bits, so they could make one-time key pairs until one
+    shows the same code (about a million tries) and swap that one in, and the safety numbers
+    would not show it (they check partners' keys, not this hand-over). Against the server's
+    operator, this way is only as safe as the server; the password or the recovery code on the
+    new device does not depend on it.
   - **The request** is valid 5 minutes, one at a time per account (`409 request_pending` for a
     second device; at most 10 an hour per account, `rateLimits.keyHandover`). It is kept in the
     server's memory only (`server/src/keys/handover.js`), not in the database. The server relays
