@@ -120,6 +120,22 @@ describe('the poller', () => {
     ]);
   });
 
+  it('a game whose host does not resolve fails alone; the others are still read', async () => {
+    const { rounds, gameId, logged } = await setup(json({ version: 1, rounds: [ROUND] }));
+    const { lastInsertRowid } = t.db
+      .prepare(
+        `INSERT INTO games (name, image, status, path, visibility, status_url, position)
+         VALUES ('Lost', 'spring', 'available', '/games/lost', 'everyone', ?, -1)`
+      )
+      .run('https://nowhere.test/open-rounds');
+    await rounds.pollAll();
+    expect(rounds.roundsFor(Number(lastInsertRowid))).toEqual([]);
+    expect(rounds.roundsFor(gameId)).toHaveLength(1);
+    expect(logged).toEqual([
+      `[games] the sign-up status of game ${lastInsertRowid} failed: unreachable`,
+    ]);
+  });
+
   it('a higher version is ignored as a whole: no rounds, no failure', async () => {
     const { rounds, gameId, logged } = await setup(json({ version: 2, rounds: [ROUND] }));
     await rounds.pollAll();

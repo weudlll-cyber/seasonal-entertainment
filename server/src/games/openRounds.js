@@ -44,8 +44,10 @@ export function createOpenRounds(db, { network = realNetwork, log = console.warn
         failing,
       });
     } catch (err) {
-      if (!(err instanceof FetchRefused || err instanceof StatusInvalid)) throw err;
-      failing = err.message;
+      // Whatever went wrong (refused, not the contract, a name that does not resolve) is this
+      // game's failure alone: the other games are still read.
+      failing =
+        err instanceof FetchRefused || err instanceof StatusInvalid ? err.message : 'unreachable';
       state.set(id, { ...known, failing });
     }
     // Once per change of state (failing or answering), not when only the reason changes.

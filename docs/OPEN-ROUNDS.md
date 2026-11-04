@@ -57,8 +57,10 @@ shows what the game lists. The bingo repository holds the same contract (decided
 - **Shown**: `GET /api/games` (public) gives each card `openRounds`, sorted by `startsAt` (none
   last), then title. The home page reads the same answer.
 - **Tests**: `server/test/openRounds.test.js` (a pretend internet: valid, invalid fields, too
-  large, too slow, not the contract, a redirect, a foreign joinUrl, stale after 3 minutes, the
-  log, the API and the admin field).
+  large, too slow, not the contract, a redirect, a foreign joinUrl, a host that does not
+  resolve failing for its own game alone, stale after 3 minutes, the log, the API and the admin
+  field) and `client/e2e/openRounds.spec.js` (a real browser: the fake host below, the box
+  leading with the open sign-up and moving on after 8 seconds, the games page's badge).
 
 ## Trying it locally
 
