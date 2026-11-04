@@ -688,8 +688,10 @@ const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork, em
 // chat.sessions.stepRulesChanged()               an admin changed the steps: every socket
 //                                                re-checks its rooms
 // chat.accounts.deleteData(userId)               an account's deletion, in its transaction: the
-//                                                chat rows the schemas keep; returns the files
-// chat.accounts.deleteFiles(files)               those files on disk, after the commit
+//                                                chat rows the schemas keep; returns
+//                                                { files, messages }
+// chat.accounts.afterCommit(removed)             after the commit: those files on disk, and
+//                                                open pages told which messages went
 // chat.notify.member(userId, event)              an event to every open page of a member
 //                                                (call reminders); returns how many got it
 // chat.system.post(slugs, body)                  the site's own message (weekly recap) in

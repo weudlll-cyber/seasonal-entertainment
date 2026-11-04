@@ -7,9 +7,10 @@
 //              only when they tick "share", their browser decrypts the selected messages and
 //              sends copies, which the server accepts only for messages that member sent or
 //              received in that conversation. Without sharing, moderators get the reason and
-//              the fact alone. Moderators (organisers, admins) list open reports, view shared
-//              copies (audited on every view) and mark reports reviewed (audited); copies are
-//              deleted 90 days after the review (retention.js).
+//              the fact alone. At most OPEN_REPORTS_MAX of a member's reports wait at once
+//              (429 too_many_open_reports). Moderators (organisers, admins) list open reports,
+//              view shared copies (audited on every view) and mark reports reviewed (audited);
+//              copies are deleted 90 days after the review (retention.js).
 // ============================================================
 
 import express from 'express';

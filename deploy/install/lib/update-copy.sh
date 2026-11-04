@@ -50,8 +50,11 @@ update_copy() {
   local incoming="$UPDATE_COPY_DIR/.incoming" name old
   install -d -m 700 -o root -g root "$UPDATE_COPY_DIR"
   rm -rf "$incoming"
-  if ! run_step "a copy of the database and the media before the update"     compose_site exec -T -e BACKUP_DIR="$UPDATE_COPY_STAGING" -e BACKUP_ENCRYPTION=off     site node scripts/backup.mjs ||
-    ! run_step "fetching the copy from the site container"       compose_site cp "site:$UPDATE_COPY_STAGING" "$incoming"; then
+  if ! run_step "a copy of the database and the media before the update" \
+    compose_site exec -T -e BACKUP_DIR="$UPDATE_COPY_STAGING" -e BACKUP_ENCRYPTION=off \
+    site node scripts/backup.mjs ||
+    ! run_step "fetching the copy from the site container" \
+      compose_site cp "site:$UPDATE_COPY_STAGING" "$incoming"; then
     rm -rf "$incoming"
     drop_update_staging
     die "the copy before the update failed (is the site running? docker compose ps in $SITE_DIR_REL); nothing was changed"

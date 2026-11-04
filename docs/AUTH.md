@@ -205,9 +205,11 @@ character: in the probe, invisible leading spaces in the portal broke it.
   - **link**: the signed-in account is linked, only after "prove it is you" (since 2026-11-04):
     the account page's "Link Discord" asks for the password and sends its auth key to
     `POST /api/auth/discord/link` (`provesIdentity`, `server/src/accounts/identityProof.js`;
-    failed tries count on the password change's limiter), which marks the session for one link
-    within 10 minutes. `/start?intent=link` without that mark, and a callback after it ran out
-    or was used, answer `?discord=proof_required` (the callback's fresh grant is revoked). So a
+    failed tries count on the limiter it shares with unlinking: the password change's numbers,
+    5 per 15 minutes per account, its own counter), which marks the session for one link
+    within 10 minutes. `/start?intent=link` without that mark answers `?discord=proof_required`
+    at once (not counted as a failure: Discord was not asked), and so does a callback after the
+    mark ran out or was used (counted, and the fresh grant is revoked). So a
     taken-over session alone cannot link the attacker's Discord user, which would let them log
     in with Discord even after a password change. A Discord user linked to another account is
     refused (`?discord=taken`, and the database's UNIQUE on `discord_id` as well), and so is a
@@ -511,19 +513,20 @@ cross-site form posts and fetches. The chat WebSocket upgrade uses the same rule
 
 All answer `429 too_many_attempts`. Numbers are in `server/src/config.js` (`rateLimits`).
 
-| Route                      | Window | Limit | Keyed on | Counts          |
-| -------------------------- | ------ | ----- | -------- | --------------- |
-| `POST /api/auth/login`     | 15 min | 10    | IP       | failed attempts |
-| `POST /api/auth/login`     | 15 min | 10    | username | failed attempts |
-| `POST /api/auth/prelogin`  | 15 min | 60    | IP       | every request   |
-| `POST /api/auth/register`  | 1 h    | 5     | IP       | every attempt   |
-| `POST /api/auth/password`  | 15 min | 5     | account  | failed attempts |
-| `DELETE /api/auth/account` | 15 min | 5     | account  | failed attempts |
-| `POST /api/auth/bootstrap` | 1 h    | 10    | IP       | every attempt   |
-| `POST /api/2fa/login`      | 15 min | 5     | IP       | failed codes    |
-| `POST /api/2fa/login`      | 15 min | 5     | account  | failed codes    |
-| every `GET` under `/api`   | 1 min  | 1200  | IP       | every request   |
-| `POST /api/keys/handover`  | 1 h    | 10    | account  | every request   |
+| Route                                                        | Window | Limit | Keyed on | Counts          |
+| ------------------------------------------------------------ | ------ | ----- | -------- | --------------- |
+| `POST /api/auth/login`                                       | 15 min | 10    | IP       | failed attempts |
+| `POST /api/auth/login`                                       | 15 min | 10    | username | failed attempts |
+| `POST /api/auth/prelogin`                                    | 15 min | 60    | IP       | every request   |
+| `POST /api/auth/register`                                    | 1 h    | 5     | IP       | every attempt   |
+| `POST /api/auth/password`                                    | 15 min | 5     | account  | failed attempts |
+| `DELETE /api/auth/account`                                   | 15 min | 5     | account  | failed attempts |
+| `POST /api/auth/discord/link` and `DELETE /api/auth/discord` | 15 min | 5     | account  | failed attempts |
+| `POST /api/auth/bootstrap`                                   | 1 h    | 10    | IP       | every attempt   |
+| `POST /api/2fa/login`                                        | 15 min | 5     | IP       | failed codes    |
+| `POST /api/2fa/login`                                        | 15 min | 5     | account  | failed codes    |
+| every `GET` under `/api`                                     | 1 min  | 1200  | IP       | every request   |
+| `POST /api/keys/handover`                                    | 1 h    | 10    | account  | every request   |
 
 `POST /api/auth/prelogin` also shares the two login limiters above (the same counters): a blocked
 name or address gets neither salts nor logins. The limit on every read (since 2026-10-21) covers

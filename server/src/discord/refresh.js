@@ -150,8 +150,14 @@ export function startDailyRefresh(db, discord, { onChange, log = console.warn } 
   async function tick() {
     if (running) return;
     running = true;
+    // Two jobs, each on its own: a sweep that fails (a damaged session row, say) must not stop
+    // the role reads, nor they the sweep.
     try {
       await sweepSignups(db, discord);
+    } catch (err) {
+      log(`[discord] sweeping held sign-ups failed: ${err.message}`);
+    }
+    try {
       await refreshDue(db, discord, { onChange, isStopped: () => stopped });
     } catch (err) {
       log(`[discord] daily role read failed: ${err.message}`);

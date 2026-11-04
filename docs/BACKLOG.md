@@ -95,6 +95,15 @@ entry waits for.
   list race was found either. More than 5 runs a server cannot be tried: each run registers an
   account, 5 an hour per address.
 
+- **A held Discord sign-up timing out while it is being completed** (SE-AUDIT-2, theoretical) — the
+  minute sweep (`sweepSignups`, `server/src/discord/droppedGrants.js`) revokes a held sign-up
+  older than 15 minutes; a `POST /api/auth/discord/register` that read it a moment before could
+  then store a grant just revoked, and the new account would start out needing a Discord login.
+  Needs a request in flight at exactly the 15-minute mark; not reproduced.
+- **A deleted account's messages and the unread counts** (SE-AUDIT-2) — open pages drop the
+  messages at once (one `deleted` event per room, every id in one frame), but unread counts
+  already shown keep counting them until the page reads its counts again.
+
 ## PART TWO — closed
 
 - **Security check of 2026-11-04** — closed by `chore/se-audit-2` (SE-AUDIT-2; an independent
@@ -188,7 +197,7 @@ entry waits for.
 - **"Icon from link" read up to 2 MB** — closed by `fix/se-discord-review` (Discord review of
   2026-11-04): the transfer is now cut at the icon limit of 256 KB (`images.iconLimit`,
   `server/src/media/icons.js`), with the same answer as an oversized upload
-  (`server/src/discord/iconLink.js`; docs/AUTH.md, "Discord: steps").
+  (`server/src/discord/iconLink.js`; docs/AUTH.md, "Discord: steps and the daily read").
 - **Farmer step icons** — closed by decision (2026-11-04): the shipped seed's eight Farmer icons
   are byte for byte the eight Holder icons (`server/src/discord/seed/icons/`), and are meant to
   be. No change.

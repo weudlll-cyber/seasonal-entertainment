@@ -64,8 +64,8 @@ export function mayFetchDirectFile(file, userId) {
   return file.messageId !== null && (file.uploaderId === userId || file.partnerId === userId);
 }
 
-// The attached file of a direct message, if it has one.
-// The message's file: { id, bytes } (bytes: the stored, encrypted size).
+// The attached file of a direct message, if it has one: { id, bytes } (bytes: the stored,
+// encrypted size).
 export function fileOfMessage(db, messageId) {
   return db.prepare('SELECT id, bytes FROM direct_files WHERE message_id = ?').get(messageId);
 }

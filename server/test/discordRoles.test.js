@@ -13,9 +13,9 @@
 //              picking due links only, and a mapping change showing at once without a refresh.
 // ============================================================
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { discordApi } from '../src/discord/api.js';
-import { refreshDue, refreshLink } from '../src/discord/refresh.js';
+import { refreshDue, refreshLink, startDailyRefresh } from '../src/discord/refresh.js';
 import { openToken } from '../src/discord/tokenBox.js';
 import { stepsOfUser } from '../src/discord/steps.js';
 import { deleteLink } from '../src/discord/store.js';
@@ -175,6 +175,25 @@ describe('the daily read', () => {
     const wait = Date.parse(after.next_refresh_at) - Date.now();
     expect(wait).toBeGreaterThan(25_000);
     expect(wait).toBeLessThan(35_000);
+  });
+
+  it('a sweep that fails does not stop the role reads', async () => {
+    const { userId, handle } = await setup();
+    due();
+    // A damaged session row: the held sign-ups' sweep fails on it.
+    t.db.prepare("INSERT INTO sessions (sid, sess, expire) VALUES ('broken', 'not json', 0)").run();
+    const logged = [];
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    try {
+      const stop = startDailyRefresh(t.db, handle, { log: (line) => logged.push(line) });
+      await vi.advanceTimersByTimeAsync(60_000);
+      stop();
+    } finally {
+      vi.useRealTimers();
+    }
+    await vi.waitFor(() => expect(link().next_refresh_at > '2000-01-01').toBe(true));
+    expect(link().user_id).toBe(userId);
+    expect(logged.some((line) => line.includes('sweeping held sign-ups failed'))).toBe(true);
   });
 
   it('reads only the links that are due', async () => {
