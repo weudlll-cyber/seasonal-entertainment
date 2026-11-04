@@ -15,6 +15,9 @@ entry waits for.
   it (the installer's bot-file answers, docs/DEPLOYMENT.md, "What it asks").
 - **Imprint and Privacy** — drafts; need the owner's details and a legal review. Privacy's "Call
   recordings" holds a proposal to review; only its contact address is left to fill.
+- **Farmer step icons** — the shipped seed's eight Farmer icons are byte for byte the eight
+  Holder icons (`server/src/discord/seed/icons/`, exported 2026-11-03 from the PC's steps). Meant
+  so, or to be uploaded anew and exported again (found 2026-11-04).
 
 ### To try on the live server
 
@@ -47,6 +50,22 @@ entry waits for.
   login is not planned, decided 2026-11-02).
 - **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
   own repository and is not connected.
+- **Discord review of 2026-11-04 (listed, not built: they change behaviour)**:
+  - **A local copy of the database on every `--update`** — today the update takes a backup only
+    when backups are set up (`deploy/install/lib/update.sh`); without them it only warns.
+  - **Revoke Discord grants that are dropped** — the callback for someone already logged in, and
+    a sign-up never finished, leave their fresh grant alive at Discord (sealed nowhere, so
+    unusable; it stays listed under the member's authorised apps).
+  - **Re-check open chat connections after admin step changes** — a room rule, a step's role id
+    or the ladder order changed in Admin re-checks access at the next push only; the member's
+    room list updates at their next reload (a member's own read re-checks at once).
+  - **"Icon from link" downloads up to 2 MB** for an icon whose limit is 256 KB
+    (`server/src/discord/iconLink.js`, `server/src/media/icons.js`): the larger download is
+    refused after it arrived.
+  - **A mention in a call's chat links to `/chat?room=<call room>`** — it opens there while
+    readable; the call page would be the better place.
+  - **The embedded chat says `ready` twice without `?room=`** — once before the room is chosen,
+    once after.
 
 ### Known limits
 
