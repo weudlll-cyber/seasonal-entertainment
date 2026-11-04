@@ -84,7 +84,10 @@ Built 2026-10-23, behind switches: the "Other sites" settings "Guests can read o
   key derived from the session secret. The frame keeps it in its own storage (which the browser
   keeps per site) and sends it with the next requests; a token for another site, a damaged one
   or one whose name was released meanwhile counts as no token (a new name). It gives no rights
-  of its own: the site's rules and the chat's guest rules decide every request.
+  of its own: the site's rules and the chat's guest rules decide every request. It does not
+  expire, and whoever holds it writes under that guest name there, so the site's Caddy leaves it
+  out of its logs both ways (`deploy/site/Caddyfile`, 2026-11-04;
+  `server/test/proxyLogs.test.js`).
 - **The same rules as on the site**: guest-name rules, the guest message limit and the per-address
   limits, mutes and bans, reporting. A cookie's guest from this site never counts in the frame.
 - **Off**: writing off shows **Log in to write**; reading off shows "Guests cannot read the chat

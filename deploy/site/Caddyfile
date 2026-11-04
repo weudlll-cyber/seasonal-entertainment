@@ -16,12 +16,13 @@
 	email {$ACME_EMAIL}
 	acme_ca {$ACME_CA:https://acme-v02.api.letsencrypt.org/directory}
 	# Caddy's own log, which also carries the request (with its headers) of a failed proxy
-	# request: the embed token is left out there too (as in the site's access log below).
+	# request: the embed tokens are left out there too (as in the site's access log below).
 	log default {
 		output stderr
 		format filter {
 			wrap json
 			request>headers>X-Embed-Token delete
+			request>headers>X-Embed-Guest delete
 			request>headers>Sec-Websocket-Protocol delete
 		}
 	}
@@ -34,13 +35,16 @@
 	reverse_proxy site:3800
 	log {
 		output stdout
-		# The access log writes request headers (Caddy itself hides only Cookie and
-		# Authorization): the embed token travels in X-Embed-Token, and for the chat socket in
-		# the WebSocket protocol header, so both are left out (docs/EMBED.md).
+		# The access log writes request and answer headers (Caddy itself hides only Cookie,
+		# Authorization and Set-Cookie): the embed token travels in X-Embed-Token, and for the
+		# chat socket in the WebSocket protocol header; a guest's token on another site in
+		# X-Embed-Guest, both ways (it does not expire). All are left out (docs/EMBED.md).
 		format filter {
 			wrap console
 			request>headers>X-Embed-Token delete
+			request>headers>X-Embed-Guest delete
 			request>headers>Sec-Websocket-Protocol delete
+			resp_headers>X-Embed-Guest delete
 		}
 	}
 }
