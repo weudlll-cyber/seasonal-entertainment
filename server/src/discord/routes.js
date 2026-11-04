@@ -31,6 +31,7 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import express from 'express';
 import { MINIMUM_AGE, validateUsername } from '@seasonal-entertainment/shared/accountRules.js';
+import { localPathOr } from '@seasonal-entertainment/shared/localPath.js';
 import { authKeyField } from '../accounts/credentials.js';
 import { provesIdentity } from '../accounts/identityProof.js';
 import { DuplicateAccountError, createUser, findUserById } from '../accounts/userStore.js';
@@ -54,9 +55,8 @@ const FLOW_MS = 10 * 60_000; // from /start to the callback
 const LINK_PROOF_MS = FLOW_MS; // from POST /link to the callback that links
 const INTENTS = new Set(['login', 'link', 'confirm']);
 
-// Only local paths (as the browser's safeNext): never "//host" or a full URL.
-const safeNext = (value, fallback) =>
-  typeof value === 'string' && /^\/(?![/\\])[^\\]*$/.test(value) ? value : fallback;
+// Only local paths (the browser's safeNext uses the same rule): never "//host" or a full URL.
+const safeNext = localPathOr;
 
 const sameText = (a, b) =>
   typeof a === 'string' &&

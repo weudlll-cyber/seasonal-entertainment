@@ -186,7 +186,9 @@ character: in the probe, invisible leading spaces in the portal broke it.
   PKCE verifier in the session and sends the browser to Discord's consent page (with
   `prompt=none`: someone who already agreed to these scopes goes straight back). It asks for the
   scopes `identify` and `guilds.members.read` only: no `guilds` (it would list all of a member's
-  servers) and no `email`. There is no bot on the server.
+  servers) and no `email`. There is no bot on the server. `next` must be a path on this site
+  (`shared/localPath.js`, the same rule as the login pages' `?next=` since 2026-11-04: one
+  leading `/`, no backslash, so neither `//host` nor `/\host` leaves the site).
 - `GET /api/auth/discord/callback` checks the state in constant time, once (the flow is deleted
   from the session before anything else), within 10 minutes and for the same account that
   started it. It trades the code with the verifier and reads `/users/@me`, keeping the id and the

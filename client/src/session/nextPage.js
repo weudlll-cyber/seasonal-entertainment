@@ -10,10 +10,11 @@
 //              runs inside the chat's login popup.
 // ============================================================
 
-// Only local paths: "//evil.example" or "https://..." would be an open redirect.
-export function safeNext(value) {
-  return value && value.startsWith('/') && !value.startsWith('//') ? value : '/account';
-}
+import { localPathOr } from '@seasonal-entertainment/shared/localPath.js';
+
+// Only local paths (shared/localPath.js, the server's rule too): "//evil.example",
+// "/\evil.example" or "https://..." would be an open redirect.
+export const safeNext = (value) => localPathOr(value, '/account');
 
 // A link to `page` (/login, /register) carrying `next` along when there is one.
 export const withNext = (page, next) => (next ? `${page}?next=${encodeURIComponent(next)}` : page);

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "license": "AGPL-3.0-or-later",
-  "description": "Rules and helpers both server and client must apply identically (accounts, roles, local week and times, games hub, chat, cryptography, the not-financial-advice notice, the season clock, calls in the event lists, how a price change reads, recording times and chapters, the hidden listener's name in calls, a call's chat room and the page it is shown on, the site settings the browser needs, the Discord steps' ladders).",
+  "description": "Rules and helpers both server and client must apply identically (accounts, roles, local week and times, games hub, chat, cryptography, the not-financial-advice notice, the season clock, calls in the event lists, how a price change reads, recording times and chapters, the hidden listener's name in calls, a call's chat room and the page it is shown on, the site settings the browser needs, the Discord steps' ladders, where a login may send a visitor next).",
   "type": "module",
   "exports": {
     "./accountRules.js": "./accountRules.js",
@@ -20,7 +20,8 @@
     "./callPeople.js": "./callPeople.js",
     "./callRoom.js": "./callRoom.js",
     "./discordLadders.js": "./discordLadders.js",
-    "./siteSettings.js": "./siteSettings.js"
+    "./siteSettings.js": "./siteSettings.js",
+    "./localPath.js": "./localPath.js"
   },
   "scripts": {
     "test": "vitest run"
