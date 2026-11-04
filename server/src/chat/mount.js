@@ -46,7 +46,8 @@ import {
   findRoom,
   findRoomBySlug,
 } from './store.js';
-import { chatViewer } from './viewer.js';
+import { findUserById } from '../accounts/userStore.js';
+import { accountViewer, canRead, chatViewer } from './viewer.js';
 import { makeSenderLimit } from './senderLimit.js';
 import { attachChatSocket } from './socket.js';
 import { unreadRoutes } from './unreadRoutes.js';
@@ -170,6 +171,13 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
       findBySlug: (slug) => findRoomBySlug(db, slug),
       createUnlisted: (room) => createUnlistedRoom(db, room),
       close: (id) => closeRoom(db, id),
+      // Whether that account may read the room now (its level and any rule for Discord steps):
+      // a notification about a room goes only to its readers (the weekly recap, recap/).
+      readableBy(slug, userId) {
+        const room = findRoomBySlug(db, slug);
+        const user = findUserById(db, userId);
+        return Boolean(room && user && canRead(room, accountViewer(db, config, user)));
+      },
     },
     // For the site's own messages (the weekly recap, recap/): posted in the first room of
     // `slugs` that exists, then pushed and counted for unread exactly as a member's post.

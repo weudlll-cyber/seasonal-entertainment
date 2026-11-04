@@ -9,7 +9,7 @@
 //              recordings of the week); a token without price data has no line, and without the
 //              price bot there is no price part; the last line is the not-financial-advice notice;
 //              "Weekly recap" notifications are off by default and reach only members who turned
-//              them on; admins can post one now (audited), nobody else. Its settings: off posts
+//              them on and may read the room (a rule for Discord steps may close it); admins can post one now (audited), nobody else. Its settings: off posts
 //              nothing; another weekday and hour move it; moving them never posts twice in one
 //              week; the room is a choice of the rooms everyone reads.
 // ============================================================
@@ -30,6 +30,7 @@ import { postRecap, weeklyRecapRound } from '../src/recap/job.js';
 import { fakeCallService } from './helpers/calls.js';
 import { setSetting } from '../src/settings/store.js';
 import { auditActions, chatApp } from './helpers/chat.js';
+import { seedTestSteps } from './helpers/steps.js';
 import { makeStaff, registerUser } from './helpers/testApp.js';
 
 const DAY = 24 * 60 * 60_000;
@@ -267,6 +268,26 @@ describe('notifications and admins', () => {
     const message = postRecap({ ...deps(), chat: listening }, MONDAY_NINE);
     expect(sent).toEqual([[leo.user.id, 'recap']]);
     expect(message.room).toBe('announcements');
+  });
+
+  it('a member the room is closed to by a Discord step gets no recap event', async () => {
+    appWith();
+    const leo = await registerUser(t, 'leo');
+    await leo.agent.put('/api/auth/notifications').send({ notifyRecap: true });
+    await seedTestSteps(t.db);
+    t.db
+      .prepare(
+        `INSERT INTO room_step_rules (room_id, step_id)
+         SELECT r.id, s.id FROM chat_rooms r, discord_steps s
+         WHERE r.slug = 'announcements' AND s.name = 'Golden'`
+      )
+      .run();
+    const sent = [];
+    const chat = t.app.locals.chat;
+    const listening = { ...chat, notify: { member: (userId) => sent.push(userId) } };
+    const message = postRecap({ ...deps(), chat: listening }, MONDAY_NINE);
+    expect(message.room).toBe('announcements');
+    expect(sent).toEqual([]);
   });
 
   it('admins post one now (audited); members cannot', async () => {

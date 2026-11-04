@@ -53,7 +53,9 @@ export function postRecap(
   );
   const message = chat.system.post([getSetting(db, 'recap.room'), ...RECAP_ROOMS], body);
   if (message) {
+    // Only to members who may read the room: a rule for Discord steps may close it to some.
     for (const userId of recapNotifyIds(db)) {
+      if (!chat.rooms.readableBy(message.room, userId)) continue;
       chat.notify.member(userId, { type: 'recap', id: message.id, room: message.room });
     }
   }

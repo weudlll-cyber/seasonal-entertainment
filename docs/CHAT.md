@@ -650,8 +650,9 @@ never posts twice in one week.
   first start counts the week begun as done: its first recap comes the next Monday.
 - **Post recap now**: admins can post one at once from the admin chat page, to try it out
   (`POST /api/admin/recap`, audited `recap.post`). It does not count as the week's.
-- **Notification**: members with "Weekly recap" on (off by default) get a personal `recap`
-  event, shown as the browser notification "Weekly recap is out" (see "Notifications").
+- **Notification**: members with "Weekly recap" on (off by default) who may read the recap's
+  room (a rule for Discord steps may close it to some) get a personal `recap` event, shown as
+  the browser notification "Weekly recap is out" (see "Notifications").
 - Tests: `server/test/recap.test.js`, `client/src/chat/systemMessage.test.jsx`,
   `client/src/notify/notifications.test.jsx`, `client/src/admin/adminRecap.test.jsx`.
 
