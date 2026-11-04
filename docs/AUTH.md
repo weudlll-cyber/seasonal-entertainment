@@ -248,7 +248,8 @@ three ladders, and each shows only the member's highest step:
 - **Investor**: Level 1 Investor < … < Level 4 Investor.
 
 The shipped seed holds these 20 steps with their role ids and icons, exported from the PC test
-site on 2026-11-03.
+site on 2026-11-03. The four Investor icons are Twemoji graphics (CC-BY 4.0); their credit is on
+the live site's Imprint, written there by the owner, not in the code (decided 2026-11-04).
 
 Admins give each step the Discord role id that grants it, set the order and upload an icon
 (Admin → Discord steps). **Steps never grant rights on the site**; only the owner gives roles.

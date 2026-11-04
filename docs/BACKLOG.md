@@ -13,19 +13,9 @@ entry waits for.
   the site is live (only exact `https://` origins).
 - **Site and bots on the same VPS** — reading the bots' files through read-only mounts assumes
   it (the installer's bot-file answers, docs/DEPLOYMENT.md, "What it asks").
-- **Imprint and Privacy** — drafts; need the owner's details and a legal review. Privacy's "Call
-  recordings" holds a proposal to review; only its contact address is left to fill.
 
 ### To try on the live server
 
-- **Discord login on the live site** — set the production redirect at Discord (typed, not
-  pasted; check it in the portal's URL generator: no `+` before `https`), then
-  `sudo ./deploy/install.sh --update --discord`. The steps (names, order, role ids, icons) come
-  with the update: the PC's 20 steps with role ids and icons are in the project's seed (exported
-  2026-11-03), and the live site inserts them on its first start with Discord steps; steps
-  changed on the PC later need the export again (`npm run steps:export`, then commit) before the
-  update (docs/AUTH.md, "Discord: steps"). Worth adding at Discord: the links to the terms and
-  the privacy page.
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
   restore one nightly backup there once, as docs/DEPLOYMENT.md describes, and check the site.
 
@@ -61,10 +51,6 @@ entry waits for.
   the helper (`client/e2e/members.js`) did not find the key pair a first login had made, and
   waited for the first-login dialog: seen with `discord.spec.js` (2026-11-03), which therefore
   logs each member in once per worker. Single runs are not affected; the cause is not known yet.
-- **The phone touch-target test meets another spec's call** — `speed.spec.js` ("on a phone every
-  control is a 44px target", `/`) failed once (2026-11-03) on the link of the call "Fit" that
-  `callFit.spec.js` had open at that moment (the home page's live call); the browser tests passed
-  158 of 158 when run again. Two specs sharing the run's database, not a fault of either page.
 - **One link-preview test is slow under load** — `chatPreviews.test.js` ("a member link gets an
   Open Graph card") hit its 9-second wait once in a full verify on 2026-11-02 and passed 3 of 3
   alone.
@@ -74,6 +60,20 @@ entry waits for.
   keep showing them until they reload: no event tells open pages to remove them.
 
 ## PART TWO — closed
+
+- **Discord login on the live site** — done on the live server 2026-11-04: installer `--update`
+  to `4c40c79` with Discord; Discord login and the steps checked by the owner. The links to the
+  terms and the privacy page in Discord's app settings are left to the owner.
+- **The phone touch-target test meets another spec's call** — closed by `fix/se-discord-review`
+  (PR #39, `2c3bd3e`, `ae8188c`): the failure of 2026-11-03 was the "Next call" title link of
+  `callFit.spec.js`'s call "Fit", under 44 px. That link is now a 44 px target whatever the
+  title (entry "A short call title on the home page", below), and `speed.spec.js` checks it with
+  a fixed answer named "Fit", so another spec's call no longer decides the check.
+- **Imprint and Privacy** — closed by decision (2026-11-04): the owner filled in both on the live
+  site (Admin → Info pages); a legal review is not wanted for now. A fresh database still seeds
+  them as drafts with `[TO BE FILLED BY OWNER]` placeholders (`server/src/info/seed.js`).
+- **Twemoji credit for the four Investor icons** — closed by decision (2026-11-04): the owner adds
+  the credit to the live Imprint; no code (docs/AUTH.md, "Discord: steps and the daily read").
 
 - **Games card band hides the logo** — closed by `fix/se-games-band` (found 2026-11-03): the
   Seasonal Race card's logo lost its winter-blue quarter on the winter band. The logo now sits on

@@ -168,9 +168,10 @@ The public page and the editor preview use the same component.
 website, both whitepapers and the owner's info sheet and farming guide, and each ends with its
 Sources list (2026-10-17); the ten content pages were checked against the official sources and
 published (decided 2026-10-22). No contract address is retyped anywhere (the pages link to the
-official site); `server/test/infoSeed.test.js` guards these rules. Imprint and Privacy stay
-drafts with `[TO BE FILLED BY OWNER]` placeholders until the owner's details and a legal review
-are in.
+official site); `server/test/infoSeed.test.js` guards these rules. Imprint and Privacy are
+seeded as drafts with `[TO BE FILLED BY OWNER]` placeholders, for an admin to fill in and publish
+(Admin → Info pages); the live site's were filled in by the owner, and a legal review is not
+wanted for now (decided 2026-11-04).
 
 **Seed texts that changed later** (2026-11-01): the seed never runs again once pages exist, so a
 changed seed text would not reach a running site. On every start `refreshSeedPages`
