@@ -13,7 +13,8 @@
 //              without a scrollbar; so does the full staff menu with "Manage events" set up, for
 //              an admin and for an organiser (Site banner), light and dark, at those sizes, at
 //              1915 x 913, 1920 x 1080, 1680 x 900, 2560 x 1080 and at 1277 x 609 (a 1915 x 913
-//              window at 150 % zoom; 2026-11-02). At
+//              window at 150 % zoom; 2026-11-02). Wherever Featured game and Up next sit side
+//              by side, "All games" and "All events" look alike and share one line. At
 //              390 x 844 (phone): no window scroll, a top bar, and the navigation drawer opens
 //              and closes (close button,
 //              Escape, following a link), with focus going in and back. The chat button shows
@@ -307,6 +308,47 @@ for (const [width, height] of FULL_BOX) {
         expect({ scrolls, underLauncher }).toEqual({ scrolls: false, underLauncher: [] });
     });
   }
+}
+
+// "All games" (Featured game) and "All events" (Up next) side by side (from 1000 px wide;
+// 2026-11-04): one link style (class, size, weight, underline) and their text on one line,
+// top edges within 1 px, whatever the boxes hold.
+const LINKS_SIDE_BY_SIDE = [
+  [1100, 800],
+  [1277, 609],
+  [1280, 720],
+  [1366, 768],
+  [1920, 937],
+];
+for (const [width, height] of LINKS_SIDE_BY_SIDE) {
+  test(`${width} x ${height}: "All games" and "All events" alike, on one line`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height });
+    await fullestHome(page, true);
+    await page.goto('/');
+    await expect(page.getByRole('link', { name: 'All games' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'All events' })).toBeVisible();
+    const [games, events] = await page.evaluate(() =>
+      ['All games', 'All events'].map((name) => {
+        const link = [...document.querySelectorAll('a')].find((a) => a.textContent === name);
+        // The text's own box, not the link's 44px target.
+        const text = document.createRange();
+        text.selectNodeContents(link);
+        const style = getComputedStyle(link);
+        return {
+          className: link.className,
+          font: [style.fontSize, style.fontWeight, style.textDecorationLine],
+          top: text.getBoundingClientRect().top,
+          boxTop: link.closest('section').getBoundingClientRect().top,
+        };
+      })
+    );
+    expect(games.boxTop).toBe(events.boxTop);
+    expect(games.className).toBe(events.className);
+    expect(games.font).toEqual(events.font);
+    expect(Math.abs(games.top - events.top)).toBeLessThanOrEqual(1);
+  });
 }
 
 // Shorter and narrower windows seen on 2026-11-01 (a 1500 x 940 window at 125 % display

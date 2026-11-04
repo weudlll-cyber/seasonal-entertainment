@@ -5,7 +5,7 @@
 // Description: The boxes of the home page in the SE style (docs/DESIGN.md, "Home"), all from
 //              real data: the featured games in rotation (open sign-ups first, 8 s each, with
 //              previous/next, dots and a pause; games/featuredRotation.js; "All games" always
-//              in its head, as "All events" in Up next), "Up next" (the
+//              at its top right, as "All events" in Up next: one class, one line), "Up next" (the
 //              event bot's occurrences and the site's calls, merged by LandingPage.jsx; a call
 //              with the calls quarter, linking to its page; only the entries that fit whole,
 //              useWholeItems.js), the four season price tiles (price bot, docs/BOTS.md) and the
@@ -86,11 +86,11 @@ export function FeaturedGameCard({ games, timeZone }) {
   return (
     <section className="card home__card home__game" aria-label="Featured game" {...boxProps}>
       <Wash src={QUARTERS.games} />
+      <p className="home__eyebrow">Featured game</p>
       {/* Always there, whichever game is shown: the way to all games, as "All events" in Up next. */}
-      <div className="home__card-head home__card-head--eyebrow">
-        <p className="home__eyebrow">Featured game</p>
-        <Link to="/games">All games</Link>
-      </div>
+      <Link className="home__card-more" to="/games">
+        All games
+      </Link>
       {/* Not announced on every turn: a screen reader reads it when it gets there. */}
       {game && (
         <div className="home__game-slide" aria-live="off">
@@ -162,10 +162,10 @@ export function UpNextCard({ next, timeZone }) {
   return (
     <section className="card home__card home__upnext" aria-label="Up next">
       <Wash src={QUARTERS.events} />
-      <div className="home__card-head">
-        <h2>Up next</h2>
-        <Link to="/events">All events</Link>
-      </div>
+      <h2>Up next</h2>
+      <Link className="home__card-more" to="/events">
+        All events
+      </Link>
       {next?.connected === false && (
         <p className="home__text">The event calendar is not connected.</p>
       )}
