@@ -2,8 +2,10 @@
 // File:        index.js
 // Path:        client/src/chat/index.js
 // Project:     Seasonal Entertainment
-// Description: The chat module's public entry: the ChatPanel component; for a host's own room
-//              picker the useChatRooms hook (the rooms the reader may read), the member's
+// Description: The chat module's public entry: the ChatPanel component, and RoomPanel (the
+//              panel of a room asked for, else the reader's first room; NoRooms); for a host's
+//              own room picker the useChatRooms hook (the rooms the reader may read) and
+//              roomToShow (which of them opens), the member's
 //              favourites (useFavourites, groupRooms), the room star and bell; the direct-message
 //              view (DirectPanel) and onDirectRequest (a name menu asked for a conversation); the
 //              unread counters (useUnread, UnreadCount); for a host's own panels a small keyboard
@@ -18,6 +20,8 @@
 // ============================================================
 
 export { default as ChatPanel } from './ChatPanel.jsx';
+export { NoRooms, default as RoomPanel } from './RoomPanel.jsx';
+export { roomToShow } from './useRoomToShow.js';
 export { default as DirectPanel } from './DirectPanel.jsx';
 // requestDirect: open a member's conversation from outside (a notification's click).
 export { onDirectRequest, requestDirect } from './directView.js';

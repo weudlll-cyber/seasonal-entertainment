@@ -72,6 +72,7 @@ const roomList = () => screen.getByRole('navigation', { name: 'Rooms' });
 
 it("shows each room's count and the totals; the shown room is marked read", async () => {
   chatPage(signedIn({ id: 1, username: 'mia', role: 'member' }));
+  await screen.findByRole('navigation', { name: 'Rooms' }); // there once the rooms are in (RoomPanel)
   expect(
     await within(roomList()).findByRole('img', { name: '4 unread in Help' })
   ).toHaveTextContent('4');
@@ -88,6 +89,7 @@ it("shows each room's count and the totals; the shown room is marked read", asyn
 
 it('recounts on the server events (a message elsewhere, a read in another tab)', async () => {
   chatPage(signedIn({ id: 1, username: 'mia', role: 'member' }));
+  await screen.findByRole('navigation', { name: 'Rooms' }); // there once the rooms are in (RoomPanel)
   await within(roomList()).findByRole('img', { name: '4 unread in Help' });
   counts.help = 5;
   act(() => FakeSocket.all.at(-1).push({ type: 'activity', room: 'help' }));

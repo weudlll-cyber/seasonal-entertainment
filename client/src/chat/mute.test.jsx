@@ -67,6 +67,7 @@ const iconOf = (button) => button.querySelector('svg').dataset.icon;
 
 it('a muted room keeps its count, dimmed, but leaves the total; unmuting restores it', async () => {
   page();
+  await screen.findByRole('navigation', { name: 'Rooms' }); // there once the rooms are in (RoomPanel)
   await within(rooms()).findByRole('img', { name: '4 unread in Help' });
   expect(roomsTab(5)).toBeInTheDocument();
   const bell = within(rooms()).getByRole('button', { name: 'Mute: Help' });
@@ -106,6 +107,7 @@ it('a muted room keeps its count, dimmed, but leaves the total; unmuting restore
 it('a fresh page shows the room still muted', async () => {
   server.help.muted = true;
   page();
+  await screen.findByRole('navigation', { name: 'Rooms' }); // there once the rooms are in (RoomPanel)
   const bell = await within(rooms()).findByRole('button', { name: 'Mute: Help' });
   await vi.waitFor(() => expect(bell).toHaveAttribute('aria-pressed', 'true'));
   expect(roomsTab(1)).toBeInTheDocument();

@@ -26,7 +26,10 @@ import './ChatFavourites.css';
 // variant: 'full' (a page of its own) or 'compact' (a box beside other content); also given to
 // its buttons (ChatVariant, ChatButton.jsx).
 // showRoomTabs: let the reader switch between their rooms (favourites first, RoomTabs);
-// unlisted: the room is not in the room lists (a call's chat), so it is asked for by name.
+// unlisted: the room may be one not in the room lists (a call's chat, or a link to one), so it
+// is asked for by name.
+// roomNote: a host's line for its own room (RoomPanel: "This room isn't available."), shown
+// until the reader picks another room.
 // files: the composer's "Attach file" for members (ChatComposer); false where uploads are refused
 // (it also goes while the "File uploads in rooms" setting is off).
 // guestPrompt: shown to a guest instead of the composer where a guest cannot write (the chat
@@ -38,6 +41,7 @@ export default function ChatPanel({
   unlisted = false,
   files = true,
   guestPrompt = null,
+  roomNote = null,
 }) {
   const { user, settings } = useSession();
   const chat = useChatRoom(roomInput, user, unlisted);
@@ -65,7 +69,10 @@ export default function ChatPanel({
             onSeen={chat.markSeen}
           />
           <ConnectionLimitNotice />
-          <ChatNotice error={chat.error} notice={chat.notice} />
+          <ChatNotice
+            error={chat.error}
+            notice={chat.notice ?? (room === roomInput ? roomNote : null)}
+          />
           {current?.canWrite ? (
             !user && guestPrompt ? (
               guestPrompt

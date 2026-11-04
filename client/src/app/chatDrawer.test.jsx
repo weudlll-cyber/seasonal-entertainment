@@ -7,7 +7,7 @@
 //              focus in, Escape and the close button close it and focus goes back; the room
 //              picker switches the panel's room and works by keyboard; the browser remembers
 //              open state and room (and copes with blocked storage or a room the reader can
-//              no longer read). The button's tooltip says open or close; the compact
+//              no longer read; with no room at all it says so). The button's tooltip says open or close; the compact
 //              composer's buttons have their texts as tooltips.
 // ============================================================
 
@@ -17,7 +17,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeSocket } from '../test/fakeSocket.js';
 import { GUEST, mockApi } from '../test/mockApi.js';
 import App from './App.jsx';
-import { roomToShow } from './chatDrawerState.js';
+import { roomToShow } from '../chat/index.js';
 
 const ROOMS = [
   { slug: 'general', name: 'General', canWrite: true },
@@ -175,6 +175,19 @@ describe('remembered per browser', () => {
     fireEvent.click(launcher());
     expect(drawer()).toBeInTheDocument();
     vi.restoreAllMocks();
+  });
+
+  it('a reader without any room gets "No rooms available."', async () => {
+    mockApi({
+      ...GUEST,
+      'GET /chat/rooms': {
+        body: { ok: true, rooms: [], me: { guestName: null, moderator: false } },
+      },
+      'GET /games': { body: { ok: true, games: [] } },
+    });
+    renderAt('/games');
+    fireEvent.click(launcher());
+    expect(await within(drawer()).findByText('No rooms available.')).toBeInTheDocument();
   });
 
   it('a remembered room the reader may no longer read falls back to the first', () => {

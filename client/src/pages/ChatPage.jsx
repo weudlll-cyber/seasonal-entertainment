@@ -7,9 +7,10 @@
 //              Direct section (private messages, end to end encrypted) as a second tab; "Send
 //              private message" in a name menu switches to it. A link may open a room
 //              (?room=<slug>) or a conversation (?direct=<member id>&name=<username>), as a
-//              notification's click does (notify/). The tab is in the address too (?tab=direct;
-//              Rooms without it), so a reload, or the way back from "Confirm with Discord"
-//              (DiscordConfirmGate's next), opens the same tab. Members get the chat menu
+//              notification's click does (notify/). Without a room, or with one the member may
+//              not read, the first room of their own list opens (RoomPanel). The tab is in the
+//              address too (?tab=direct; Rooms without it), so a reload, or the way back from
+//              "Confirm with Discord" (DiscordConfirmGate's next), opens the same tab. Members get the chat menu
 //              (NotificationsMenu). Everything chat lives in the chat module (client/src/chat,
 //              docs/CHAT.md). SE style: the Chat header with the circle-of-people quarter.
 // ============================================================
@@ -19,7 +20,7 @@ import { useSearchParams } from 'react-router';
 import ChatTabs from '../app/ChatTabs.jsx';
 import DirectTab from '../app/DirectTab.jsx';
 import PageHeader from '../brand/PageHeader.jsx';
-import { ChatPanel, onDirectRequest, requestDirect, useUnread } from '../chat/index.js';
+import { RoomPanel, onDirectRequest, requestDirect, useUnread } from '../chat/index.js';
 import NotificationsMenu from '../notify/NotificationsMenu.jsx';
 import { useSession } from '../session/SessionContext.jsx';
 
@@ -44,7 +45,7 @@ export default function ChatPage() {
   );
   // Again with each new setTab: it starts from the address as it is now.
   useEffect(() => onDirectRequest(() => setTab('direct')), [setTab]);
-  const room = params.get('room') || 'general';
+  const room = params.get('room');
   const direct = Number(params.get('direct'));
   const directName = params.get('name');
   // After the listener above: the request switches this page to its Direct tab.
@@ -79,7 +80,8 @@ export default function ChatPage() {
         {...(user && { role: 'tabpanel', 'aria-labelledby': `chat-page-tab-${shown}` })}
       >
         {shown === 'rooms' ? (
-          <ChatPanel room={room} variant="full" showRoomTabs />
+          // A mention's link may name a call's chat (unlisted): it opens while readable.
+          <RoomPanel room={room} unlisted={Boolean(room)} variant="full" showRoomTabs />
         ) : (
           <DirectTab variant="full" />
         )}

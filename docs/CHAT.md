@@ -21,11 +21,34 @@ import { ChatPanel } from '../chat/index.js';
 | `room`                   | string (room slug)      | required         | the room shown; the panel follows when it changes                        |
 | `variant`                | `'full'` \| `'compact'` | `'full'`         | a page of its own, or a box beside other content                         |
 | `showRoomTabs`           | boolean                 | `false`          | let the reader switch between the rooms they may read                    |
-| `unlisted`               | boolean                 | `false`          | `room` is an unlisted room (a call's chat): asked for by name            |
+| `unlisted`               | boolean                 | `false`          | `room` may be an unlisted room (a call's chat): asked for by name        |
+| `roomNote`               | string                  | `null`           | a host's line about its room, shown until the reader picks another       |
 | `files`                  | boolean                 | `true`           | offer members "Attach file"; `false` where uploads are refused           |
 | `guestPrompt`            | React node              | `null`           | shown to a guest instead of the composer (e.g. a login offer)            |
 | `--chat-list-max-height` | CSS custom property     | `60vh` / `18rem` | cap of the message list; `none` lets it fill a container of fixed height |
 | account                  | from `SessionProvider`  | —                | who is signed in (`client/src/session`); a guest if no                   |
+
+### Which room opens
+
+A host never assumes a room (decided 2026-11-04): **`<RoomPanel room>`** (`chat/RoomPanel.jsx`,
+same inputs as `ChatPanel` plus `onRoom(slug)`) opens the room asked for while the reader may read
+it, else the **first room of the reader's own list** (`GET /api/chat/rooms`, the order shown; so
+"General" whenever they may see it). A room asked for that is not in that list gets the neutral
+"This room isn't available." (`roomNote`), the same for a room closed to the reader (a Discord
+step, members only) and for one that does not exist, so nothing tells the two apart. A reader with
+no room gets "No rooms available." (`<NoRooms>`) instead of an error. The rule lives in
+`useRoomToShow.js` (`roomToShow(asked, rooms)`), used by:
+
+| Place                                       | Before                                         | Now                                                         |
+| ------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------- |
+| Chat page `/chat` (`pages/ChatPage.jsx`)    | no `?room=`: "general"; any `?room=` as given  | `RoomPanel`; a named room may be a call's chat (`unlisted`) |
+| Embedded chat (`embed/EmbedChatPage.jsx`)   | same as the chat page                          | `RoomPanel`; `ready` and `unread` name the room shown       |
+| Chat drawer and its compact chat            | remembered room, else the first (`roomToShow`) | unchanged rule; "No rooms available." instead of nothing    |
+| Notification clicks (`notify/`)             | `/chat?room=<slug>`                            | unchanged link; the chat page applies the rule              |
+| Links to `/chat` (drawer, home, start, nav) | the chat page's default "general"              | unchanged links; the reader's first room                    |
+
+A call's chat (`calls/CallChat.jsx`) names its own unlisted room and has no fallback: it is that
+call's room or nothing.
 
 `index.js` also exports **`useChatRooms()`**: the rooms the current reader may read and who they
 are in the chat (`{ info: { rooms, me }, error, reload }`), for a host's own room picker (the

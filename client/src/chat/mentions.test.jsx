@@ -150,7 +150,8 @@ it('guests get no suggestions', async () => {
 
 it('an unread mention marks the room and the blue dot with "@", also when muted', async () => {
   chat(signedIn(MIA), { muted: true });
-  const rooms = screen.getByRole('navigation', { name: 'Rooms' });
+  // There once the rooms are in (RoomPanel).
+  const rooms = await screen.findByRole('navigation', { name: 'Rooms' });
   const count = await within(rooms).findByRole('img', {
     name: '2 unread in General, with a mention of you',
   });

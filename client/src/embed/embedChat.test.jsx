@@ -3,14 +3,16 @@
 // Path:        client/src/embed/embedChat.test.jsx
 // Project:     Seasonal Entertainment
 // Description: The embedded chat (/embed/chat): only the compact panel, without the site
-//              shell, with the site's login state; guests follow the room's rules; ?theme= is
+//              shell, with the site's login state; guests follow the room's rules (a room they
+//              may not read gives way to their first, as does a missing ?room=; none: "No
+//              rooms available."); ?theme= is
 //              shown without being stored; the postMessage API talks only to its own parent on
 //              this origin (ready, unread while hidden; visible and theme from the host), and
 //              ignores messages from any other origin or window; after an update of the site
 //              it offers the new version as the site does (UpdateNotice.jsx).
 // ============================================================
 
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import App from '../app/App.jsx';
@@ -86,28 +88,40 @@ it('shows only the panel, with the member signed in, and says ready', async () =
   );
 });
 
-it('lets a guest read and write where guests may, and nothing where they may not', async () => {
-  mockApi({
+it('lets a guest read and write where guests may; a room they may not read gives way', async () => {
+  const calls = mockApi({
     ...GUEST,
     'GET /chat/rooms': rooms([GENERAL]),
     'GET /chat/rooms/general/messages': MESSAGES,
-    'GET /chat/rooms/seasonal-race/messages': {
-      status: 404,
-      body: { ok: false, error: 'not_found', message: 'No such room.' },
-    },
   });
   const { unmount } = renderEmbed('room=general');
   expect(await screen.findByRole('button', { name: 'Emoji' })).toBeInTheDocument(); // a guest's
   expect(screen.getByText(/You are a guest/)).toBeInTheDocument(); // on this site, guests write
   expect(screen.queryByRole('button', { name: 'Log in to write' })).toBeNull();
   unmount();
+  host.postMessage.mockClear(); // the first frame's ready named general too
 
+  // Members only: not in a guest's list, so the guest's first room opens, with the neutral note
+  // (the same as for a room that does not exist), and the host hears which room shows.
   renderEmbed('room=seasonal-race');
-  expect(await screen.findByText('No such room.')).toBeInTheDocument();
-  expect(screen.queryByLabelText('Message')).toBeNull();
+  const panel = await screen.findByRole('region', { name: 'Chat: General' });
+  expect(within(panel).getByRole('status')).toHaveTextContent("This room isn't available.");
+  expect(calls.some((c) => c.key.startsWith('GET /chat/rooms/seasonal-race/'))).toBe(false);
   await waitFor(() =>
-    expect(sentToHost()).toContainEqual(expect.objectContaining({ type: 'ready', signedIn: false }))
+    expect(sentToHost()).toContainEqual(
+      expect.objectContaining({ type: 'ready', room: 'general', signedIn: false })
+    )
   );
+});
+
+it('says "No rooms available." to a reader without any room', async () => {
+  mockApi({
+    ...GUEST,
+    'GET /chat/rooms': rooms([]),
+  });
+  renderEmbed('');
+  expect(await screen.findByText('No rooms available.')).toBeInTheDocument();
+  expect(screen.queryByRole('alert')).toBeNull();
 });
 
 it('shows ?theme= without storing it, and takes a theme from its host only', async () => {
