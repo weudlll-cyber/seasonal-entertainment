@@ -1,0 +1,44 @@
+/* ============================================================
+   File:        openRounds.css
+   Path:        client/src/games/openRounds.css
+   Project:     Seasonal Entertainment
+   Description: A game's open sign-up (OpenRoundHint.jsx) on the home page's Featured game box
+                and the games page's cards: the site's tokens only, light and dark alike.
+   ============================================================ */
+
+.open-round {
+  display: grid;
+  gap: 0.25rem;
+  justify-items: start;
+}
+
+.open-round p {
+  margin: 0;
+}
+
+.open-round__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+/* Spring green: "open" reads at a glance next to the autumn "Coming soon" badge. */
+.open-round__badge {
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-spring);
+  color: var(--color-on-season);
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-strong);
+}
+
+.open-round__more,
+.open-round__facts {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.open-round__title {
+  font-weight: var(--font-weight-strong);
+}

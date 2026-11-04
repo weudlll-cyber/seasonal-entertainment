@@ -61,20 +61,31 @@ function merged(next, calls, to) {
   return { ...next, next: entries.slice(0, UP_NEXT_COUNT) };
 }
 
+const GAMES_REFRESH_MS = 60_000;
+
 export default function LandingPage({ timeZone = deviceZone() }) {
   const { user, settings } = useSession();
-  const [game, setGame] = useState(undefined); // undefined: loading; null: no games
+  const [games, setGames] = useState(undefined); // undefined: loading; [] when none or failed
   const [range] = useState(upNextRange); // fixed while the page is open
   const [next, setNext] = useState(null); // upNext()'s answer; null while loading
   const [prices, setPrices] = useState(null); // null while loading or when it failed
   const calls = useCalls(); // as the Calls page; null while loading or failed
   const userId = user?.id;
 
-  // Visible games depend on who is signed in (members-only cards).
+  // Visible games depend on who is signed in (members-only cards). Asked again every minute:
+  // open sign-ups come and go (the server reads them as often, docs/OPEN-ROUNDS.md).
   useEffect(() => {
-    api('/games')
-      .then((data) => setGame(data.games[0] ?? null))
-      .catch(() => setGame(null));
+    let current = true;
+    const load = () =>
+      api('/games')
+        .then((data) => current && setGames(data.games))
+        .catch(() => current && setGames((now) => now ?? []));
+    load();
+    const timer = setInterval(load, GAMES_REFRESH_MS);
+    return () => {
+      current = false;
+      clearInterval(timer);
+    };
   }, [userId]);
 
   useEffect(() => {
@@ -123,7 +134,7 @@ export default function LandingPage({ timeZone = deviceZone() }) {
         {settings['home.seasonClock'] && <SeasonClock timeZone={timeZone} />}
       </div>
       <div className="home__grid">
-        <FeaturedGameCard game={game} />
+        <FeaturedGameCard games={games} timeZone={timeZone} />
         <UpNextCard next={merged(next, calls, range.to)} timeZone={timeZone} />
         <PriceTiles prices={prices} />
         <CommunityCard />

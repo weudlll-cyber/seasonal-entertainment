@@ -3,8 +3,9 @@
 // Path:        client/src/pages/gamesPages.test.jsx
 // Project:     Seasonal Entertainment
 // Description: Guards the games screens: cards show their status and only available games
-//              get a Play link, each card gets its band colour; the admin form sends the chosen
-//              fields.
+//              get a Play link, each card gets its band colour; a card with an open sign-up shows
+//              it (the soonest start, Join), others nothing; the admin form sends the chosen
+//              fields, the sign-up status URL among them.
 // ============================================================
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -80,6 +81,57 @@ describe('games page', () => {
   });
 });
 
+describe('open sign-ups on the games page', () => {
+  it('a card with open rounds: "Sign-up open", the soonest start and Join; others nothing', async () => {
+    const round = (id, title, startsAt) => ({
+      id,
+      title,
+      kind: 'Seasonal Bingo Royale',
+      startsAt,
+      signupClosesAt: null,
+      players: 4,
+      maxPlayers: 50,
+      joinUrl: `https://bingo.example/rounds/${id}`,
+    });
+    const game = (id, name, openRounds) => ({
+      id,
+      name,
+      description: name,
+      image: 'spring',
+      status: 'available',
+      path: `/games/${name.toLowerCase()}`,
+      visibility: 'everyone',
+      openRounds,
+    });
+    mockApi({
+      ...GUEST,
+      'GET /games': {
+        body: {
+          ok: true,
+          games: [
+            game(1, 'Bingo', [
+              round('r1', 'Friday Royale', '2026-11-06T19:00:00Z'),
+              round('r2', 'Later', '2026-11-07T19:00:00Z'),
+            ]),
+            game(2, 'Quiz', []),
+          ],
+        },
+      },
+    });
+    renderAt('/games');
+    await screen.findByRole('heading', { name: 'Bingo' });
+    const bingo = within(card('Bingo'));
+    expect(bingo.getByText('Sign-up open')).toBeInTheDocument();
+    expect(bingo.getByText('+1 more')).toBeInTheDocument();
+    expect(bingo.getByText(/^Starts /)).toHaveTextContent(/6 November/);
+    expect(bingo.getByRole('link', { name: 'Join Friday Royale' })).toHaveAttribute(
+      'href',
+      'https://bingo.example/rounds/r1'
+    );
+    expect(within(card('Quiz')).queryByText('Sign-up open')).toBeNull();
+  });
+});
+
 describe('admin games', () => {
   it('adds a game with the chosen fields', async () => {
     const calls = mockApi({
@@ -93,6 +145,9 @@ describe('admin games', () => {
     fireEvent.change(screen.getByLabelText('Path'), { target: { value: '/games/quiz' } });
     fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'available' } });
     fireEvent.change(screen.getByLabelText('Who sees it'), { target: { value: 'members' } });
+    fireEvent.change(screen.getByLabelText('Sign-up status URL (optional)'), {
+      target: { value: 'https://quiz.example/open-rounds' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Save game' }));
     await screen.findByRole('button', { name: 'Add game' });
     expect(calls.find((c) => c.key === 'POST /admin/games').body).toEqual({
@@ -102,6 +157,7 @@ describe('admin games', () => {
       status: 'available',
       path: '/games/quiz',
       visibility: 'members',
+      statusUrl: 'https://quiz.example/open-rounds',
     });
   });
 });

@@ -3,7 +3,8 @@
 // Path:        client/src/pages/homeCards.jsx
 // Project:     Seasonal Entertainment
 // Description: The boxes of the home page in the SE style (docs/DESIGN.md, "Home"), all from
-//              real data: the featured game (the first game of the games list), "Up next" (the
+//              real data: the featured games in rotation (open sign-ups first, 8 s each, with
+//              previous/next, dots and a pause; games/featuredRotation.js), "Up next" (the
 //              event bot's occurrences and the site's calls, merged by LandingPage.jsx; a call
 //              with the calls quarter, linking to its page; only the entries that fit whole,
 //              useWholeItems.js), the four season price tiles (price bot, docs/BOTS.md) and the
@@ -18,6 +19,8 @@ import { GAME_STATUS_LABELS } from '@seasonal-entertainment/shared/gameRules.js'
 import { formatWhen } from '../app/dates.js';
 import { EMBLEM, QUARTERS, SEASON_ICONS } from '../brand/brand.js';
 import NotAdvice from '../components/NotAdvice.jsx';
+import { featuredOrder, useRotation } from '../games/featuredRotation.js';
+import OpenRoundHint from '../games/OpenRoundHint.jsx';
 import { formatChange, formatUsd, TOKENS } from '../prices/priceFormat.js';
 import './priceTiles.css';
 import { useWholeItems } from './useWholeItems.js';
@@ -28,33 +31,96 @@ export const Wash = ({ src }) => (
   <img className="home__wash" src={src} alt="" aria-hidden="true" loading="lazy" />
 );
 
-export function FeaturedGameCard({ game }) {
+// One game in the box: its name, description, open sign-up (games/OpenRoundHint.jsx) and Play.
+function FeaturedGame({ game, timeZone }) {
   return (
-    <section className="card home__card home__game" aria-label="Featured game">
+    <>
+      {/* A badge only when the data says so. */}
+      {game.status === 'coming_soon' && (
+        <span className="home__badge">{GAME_STATUS_LABELS.coming_soon}</span>
+      )}
+      <h2 className="home__game-name">{game.name}</h2>
+      <p className="home__text">{game.description}</p>
+      <OpenRoundHint rounds={game.openRounds} timeZone={timeZone} />
+      <p className="home__actions">
+        {game.status === 'available' ? (
+          <Link className="button" to={game.path}>
+            Play {game.name}
+          </Link>
+        ) : (
+          <Link className="button" to="/games">
+            All games
+          </Link>
+        )}
+      </p>
+    </>
+  );
+}
+
+// games: GET /api/games's list (undefined while loading; [] for none). In rotation
+// (games/featuredRotation.js): games with an open sign-up first, 8 s each.
+export function FeaturedGameCard({ games, timeZone }) {
+  const ordered = games ? featuredOrder(games) : [];
+  const { index, go, paused, togglePause, reducedMotion, boxProps } = useRotation(ordered.length);
+  const game = ordered[index];
+  const many = ordered.length > 1;
+  return (
+    <section className="card home__card home__game" aria-label="Featured game" {...boxProps}>
       <Wash src={QUARTERS.games} />
       <p className="home__eyebrow">Featured game</p>
+      {/* Not announced on every turn: a screen reader reads it when it gets there. */}
       {game && (
-        <>
-          {/* A badge only when the data says so. */}
-          {game.status === 'coming_soon' && (
-            <span className="home__badge">{GAME_STATUS_LABELS.coming_soon}</span>
-          )}
-          <h2 className="home__game-name">{game.name}</h2>
-          <p className="home__text">{game.description}</p>
-          <p className="home__actions">
-            {game.status === 'available' ? (
-              <Link className="button" to={game.path}>
-                Play {game.name}
-              </Link>
-            ) : (
-              <Link className="button" to="/games">
-                All games
-              </Link>
-            )}
-          </p>
-        </>
+        <div className="home__game-slide" aria-live="off">
+          <FeaturedGame key={game.id} game={game} timeZone={timeZone} />
+        </div>
       )}
-      {game === null && <p className="home__text">No games yet.</p>}
+      {many && (
+        <div className="home__game-controls" role="group" aria-label="Featured games">
+          <button
+            type="button"
+            className="home__game-step"
+            aria-label="Previous game"
+            title="Previous game"
+            onClick={() => go(index - 1)}
+          >
+            ‹
+          </button>
+          {ordered.map((g, i) => (
+            <button
+              key={g.id}
+              type="button"
+              className="home__game-dot"
+              aria-label={`Show ${g.name}`}
+              title={g.name}
+              aria-current={i === index ? 'true' : undefined}
+              onClick={() => go(i)}
+            />
+          ))}
+          <button
+            type="button"
+            className="home__game-step"
+            aria-label="Next game"
+            title="Next game"
+            onClick={() => go(index + 1)}
+          >
+            ›
+          </button>
+          {/* With reduced motion nothing moves by itself: nothing to pause. */}
+          {!reducedMotion && (
+            <button
+              type="button"
+              className="home__game-step"
+              aria-label={paused ? 'Resume rotation' : 'Pause rotation'}
+              title={paused ? 'Resume rotation' : 'Pause rotation'}
+              aria-pressed={paused}
+              onClick={togglePause}
+            >
+              {paused ? '▶' : '❚❚'}
+            </button>
+          )}
+        </div>
+      )}
+      {games?.length === 0 && <p className="home__text">No games yet.</p>}
     </section>
   );
 }

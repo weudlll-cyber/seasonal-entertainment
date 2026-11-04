@@ -293,8 +293,17 @@ for an organiser, light and dark, without a scrollbar, also at 1915 x 913, 1920 
    halving: <token>, <date>" by the day only (`formatDate`, never a time), and the small line
    "Calculated from the token contracts' halving schedule." On a phone the banner wraps and the
    clock takes a line of its own.
-2. **Featured game** (the first game of the games data; a "Coming soon" badge only when its
-   status says so) and **Up next** side by side. Up next (2026-10-21): the next two of the
+2. **Featured game** (a "Coming soon" badge only when its status says so) and **Up next** side
+   by side. The Featured game box rotates (decided 2026-11-04; docs/OPEN-ROUNDS.md): the games
+   with an open sign-up first, by their soonest round, then the others in the games page's order,
+   each 8 seconds, also when none has an open sign-up; one game does not rotate and shows no
+   controls. A game with an open sign-up shows "Sign-up open", the soonest round's title, its
+   start in the site's date format, players / max players, "Join" (the round's page on the game's
+   site) and "+N more". Below it: previous and next, one dot per game and a pause button, each a
+   44px target with a tooltip. It holds while hovered, while it has the focus, after a tap until
+   a tap outside, and while paused; with reduced motion it never moves by itself (no pause
+   button then). The changing slide is not announced (`aria-live="off"`). The page asks for the
+   games every minute (`client/src/games/featuredRotation.js`, `OpenRoundHint.jsx`). Up next (2026-10-21): the next two of the
    event bot's occurrences and the site's live and planned calls together, by start time
    (docs/CALLS.md, "In the event lists"). A bot event shows a dot in the season colours in turn,
    or its own image; a call shows the calls quarter, its title linking to its page, and its

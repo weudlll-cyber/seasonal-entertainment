@@ -222,6 +222,53 @@
   justify-content: safe center;
 }
 
+/* The game shown now (the box rotates: homeCards.jsx); its parts keep the box's spacing. */
+.home__game-slide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* Previous, the dots, next and pause: each a 44px target, drawn small. */
+.home__game-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-inline: calc(-1 * var(--space-1));
+}
+
+.home__game-step,
+.home__game-dot {
+  display: inline-grid;
+  place-items: center;
+  min-width: var(--hit-target);
+  min-height: var(--hit-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.home__game-step:hover,
+.home__game-dot:hover {
+  color: var(--color-text);
+}
+
+.home__game-dot::before {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+  content: '';
+}
+
+.home__game-dot[aria-current='true']::before {
+  background: var(--color-text);
+}
+
 .home__game-name {
   font-size: clamp(1.75rem, 1rem + 1.8vw, 2.875rem);
   letter-spacing: -0.02em;

@@ -6,7 +6,8 @@
 //              Available games link to their page; others show their status only. Reloads
 //              when the signed-in user changes, so member-only games appear after login. SE style:
 //              the Games header with the controller quarter, cards with a coloured image band
-//              (bandColour).
+//              (bandColour). A game with an open sign-up shows "Sign-up open" with its soonest
+//              start and Join (games/OpenRoundHint.jsx), for everyone; the others nothing.
 // ============================================================
 
 import { useEffect, useState } from 'react';
@@ -15,6 +16,7 @@ import { GAME_STATUS_LABELS } from '@seasonal-entertainment/shared/gameRules.js'
 import { api } from '../api/http.js';
 import { FormMessage } from '../components/FormField.jsx';
 import PageHeader from '../brand/PageHeader.jsx';
+import OpenRoundHint from '../games/OpenRoundHint.jsx';
 import { bandColour } from '../games/gameBand.js';
 import { GAME_IMAGE_FILES } from '../games/gameImages.js';
 import { useSession } from '../session/SessionContext.jsx';
@@ -59,6 +61,8 @@ export default function GamesPage() {
               </p>
               <h2>{game.name}</h2>
               <p>{game.description}</p>
+              {/* An open sign-up: the badge, the soonest start and Join (docs/OPEN-ROUNDS.md). */}
+              <OpenRoundHint rounds={game.openRounds} compact />
               {game.status === 'available' && (
                 <Link className="button" to={game.path}>
                   Play {game.name}
