@@ -229,12 +229,39 @@
   gap: var(--space-1);
 }
 
+/* Compact, so the home page fits its window with the tallest box (docs/DESIGN.md): the name and
+   the description in one line each (both whole in their tooltip). */
+.home__game-name,
+.home__game-description {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+/* Join and Play side by side, then the controls in the same row while they fit (pushed to its
+   end), else on the line below. */
+.home__game-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.home__game-row .button {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
 /* Previous, the dots, next and pause: each a 44px target, drawn small. */
 .home__game-controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  margin-inline: calc(-1 * var(--space-1));
+  margin-inline-start: auto;
 }
 
 .home__game-step,

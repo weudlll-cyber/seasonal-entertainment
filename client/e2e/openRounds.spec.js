@@ -6,8 +6,10 @@
 //              URL is the fake host status.games.test (answered by the run's server from a file
 //              beside its database, server/src/games/statusFixture.js) leads the home page's
 //              Featured game box for a guest with "Sign-up open" and Join, the box moves on to the
-//              next game after 8 seconds, and the games page's card shows the badge. The game and
-//              the file are removed afterwards, so no other spec sees them.
+//              next game after 8 seconds, and the games page's card shows the badge; after a mouse
+//              click on "Next game" and the pointer gone it moves on again, while keyboard focus
+//              inside holds it (the page's clock driven). The game and the file are removed
+//              afterwards, so no other spec sees them.
 // ============================================================
 
 import { rmSync, writeFileSync } from 'node:fs';
@@ -81,6 +83,24 @@ test('the Featured game box leads with an open sign-up and rotates; the games pa
       .filter({ has: page.getByRole('heading', { name: NAME }) });
     await expect(card.getByText('Sign-up open')).toBeVisible();
     await expect(card.getByRole('link', { name: 'Join E2E Royale' })).toBeVisible();
+
+    // A mouse click on "Next game" leaves the focus on it; once the pointer is gone the box
+    // moves on again. The page's clock is driven, so the 8 seconds take no time.
+    await page.clock.install();
+    await page.goto('/');
+    const shown = box.getByRole('heading', { level: 2 });
+    await expect(shown).toHaveText(NAME);
+    await box.getByRole('button', { name: 'Next game' }).click();
+    await page.mouse.move(0, 0);
+    const clicked = await shown.textContent();
+    expect(clicked).not.toBe(NAME);
+    await page.clock.runFor(8_500);
+    await expect(shown).not.toHaveText(clicked);
+    // Tab on from the clicked button: keyboard focus inside holds it.
+    await page.keyboard.press('Tab');
+    const held = await shown.textContent();
+    await page.clock.runFor(3 * 8_500);
+    await expect(shown).toHaveText(held);
   } finally {
     await admin.delete(`/api/admin/games/${id}`);
     rmSync(FIXTURE, { force: true });

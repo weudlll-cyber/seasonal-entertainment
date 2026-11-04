@@ -136,7 +136,51 @@ const PRICES = [
   ['autumn', 0.002117, -0.0083],
   ['winter', 1234.5678, -0.1257],
 ].map(([token, price, change24h]) => ({ token, price, change24h, at: 0, spark: [] }));
+// The tallest Featured game box (docs/OPEN-ROUNDS.md): two games, so it rotates with its
+// controls; the first with the longest name the admin form takes (80 characters), a description
+// of the longest (300; clamped on the box), and two open rounds, the soonest with the longest
+// title (80) and a player limit ("+1 more").
+const longest = (text, length) => text.repeat(Math.ceil(length / text.length)).slice(0, length);
+const ROUND = (id, title) => ({
+  id,
+  title,
+  kind: 'Seasonal Bingo Royale',
+  startsAt: '2099-12-31T19:00:00Z',
+  signupClosesAt: null,
+  players: 128,
+  maxPlayers: 500,
+  joinUrl: `https://bingo.example/rounds/${id}`,
+});
+const FULL_GAMES = [
+  {
+    id: 901,
+    name: longest('Seasonal Bingo Royale grand tournament ', 80).trim(),
+    description: longest('Four seasons, one board: play for the community prize. ', 300),
+    image: 'winter',
+    status: 'available',
+    path: '/games/bingo',
+    visibility: 'everyone',
+    openRounds: [
+      ROUND('r1', longest('Friday night Royale for the whole community ', 80).trim()),
+      ROUND('r2', 'Saturday Royale'),
+    ],
+  },
+  {
+    id: 902,
+    name: 'Seasonal Race',
+    description: 'A race game for the Seasonal Tokens community.',
+    image: 'seasonal-tokens',
+    status: 'coming_soon',
+    path: '/games/race',
+    visibility: 'everyone',
+    openRounds: [],
+  },
+];
+
 async function fullestHome(page, withCall) {
+  await page.route('**/api/games', (route) =>
+    route.fulfill({ json: { ok: true, games: FULL_GAMES } })
+  );
   await page.route('**/api/prices', (route) =>
     route.fulfill({ json: { ok: true, connected: true, prices: PRICES } })
   );
@@ -234,6 +278,35 @@ for (const [width, height] of DESKTOP) {
       expect(await homeState(page)).toEqual(HOME_OK);
     });
   });
+}
+
+// The owner's windows with the tallest Featured game box (2026-11-04): a 1917 x 936 browser
+// window leaves about 1920 x 937, and at 150 % zoom 1277 x 609 (below 720 high the column may
+// scroll; nothing may be cut). Light and dark.
+const FULL_BOX = [
+  [1920, 937],
+  [1277, 609],
+];
+for (const [width, height] of FULL_BOX) {
+  for (const colorScheme of ['light', 'dark']) {
+    test(`${width} x ${height} (${colorScheme}): Home with the tallest Featured game box`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height });
+      await page.emulateMedia({ colorScheme });
+      await fullestHome(page, true);
+      await page.goto('/');
+      await expect(
+        page.getByRole('link', { name: `Join ${FULL_GAMES[0].openRounds[0].title}` })
+      ).toBeVisible();
+      await expect(page.getByText('See you at the community call!')).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      const { cut, scrolls, underLauncher } = await homeState(page);
+      expect(cut).toEqual([]);
+      if (height >= 720)
+        expect({ scrolls, underLauncher }).toEqual({ scrolls: false, underLauncher: [] });
+    });
+  }
 }
 
 // Shorter and narrower windows seen on 2026-11-01 (a 1500 x 940 window at 125 % display

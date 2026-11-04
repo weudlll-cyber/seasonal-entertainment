@@ -4,10 +4,12 @@
 // Project:     Seasonal Entertainment
 // Description: Guards the games screens: cards show their status and only available games
 //              get a Play link, each card gets its band colour; a card with an open sign-up shows
-//              it (the soonest start, Join), others nothing; the admin form sends the chosen
+//              it (the soonest start, Join), others nothing; in development the fake game's Join
+//              and Play lead to the local placeholder page; the admin form sends the chosen
 //              fields, the sign-up status URL among them.
 // ============================================================
 
+import { DEV_TEST_GAME } from '@seasonal-entertainment/shared/gameRules.js';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
@@ -122,13 +124,58 @@ describe('open sign-ups on the games page', () => {
     await screen.findByRole('heading', { name: 'Bingo' });
     const bingo = within(card('Bingo'));
     expect(bingo.getByText('Sign-up open')).toBeInTheDocument();
-    expect(bingo.getByText('+1 more')).toBeInTheDocument();
+    expect(bingo.getByText(/\+1 more$/)).toBeInTheDocument();
     expect(bingo.getByText(/^Starts /)).toHaveTextContent(/6 November/);
     expect(bingo.getByRole('link', { name: 'Join Friday Royale' })).toHaveAttribute(
       'href',
       'https://bingo.example/rounds/r1'
     );
     expect(within(card('Quiz')).queryByText('Sign-up open')).toBeNull();
+  });
+});
+
+describe('the fake game in development (npm run dev:game-status)', () => {
+  it('its Join and its Play lead to the local placeholder page, which the dev build routes', async () => {
+    mockApi({
+      ...GUEST,
+      'GET /games': {
+        body: {
+          ok: true,
+          games: [
+            {
+              id: 9,
+              name: 'Open rounds test',
+              description: 'Test',
+              image: 'summer',
+              status: 'available',
+              path: DEV_TEST_GAME.path,
+              visibility: 'everyone',
+              openRounds: [
+                {
+                  id: 'friday',
+                  title: 'Friday Royale',
+                  kind: 'Seasonal Bingo Royale',
+                  startsAt: '2026-11-06T19:00:00Z',
+                  signupClosesAt: null,
+                  players: 4,
+                  maxPlayers: 50,
+                  joinUrl: `https://${DEV_TEST_GAME.statusHost}/rounds/friday`,
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
+    renderAt('/games');
+    await screen.findByRole('heading', { name: 'Open rounds test' });
+    const test = within(card('Open rounds test'));
+    expect(test.getByRole('link', { name: 'Join Friday Royale' })).toHaveAttribute(
+      'href',
+      DEV_TEST_GAME.path
+    );
+    fireEvent.click(test.getByRole('link', { name: 'Play Open rounds test' }));
+    expect(await screen.findByText('Test game — the sign-up would open here.')).toBeInTheDocument();
   });
 });
 

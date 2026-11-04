@@ -16,7 +16,7 @@ import { GAME_STATUS_LABELS } from '@seasonal-entertainment/shared/gameRules.js'
 import { api } from '../api/http.js';
 import { FormMessage } from '../components/FormField.jsx';
 import PageHeader from '../brand/PageHeader.jsx';
-import OpenRoundHint from '../games/OpenRoundHint.jsx';
+import { JoinLink, OpenRoundLine } from '../games/OpenRoundHint.jsx';
 import { bandColour } from '../games/gameBand.js';
 import { GAME_IMAGE_FILES } from '../games/gameImages.js';
 import { useSession } from '../session/SessionContext.jsx';
@@ -62,7 +62,8 @@ export default function GamesPage() {
               <h2>{game.name}</h2>
               <p>{game.description}</p>
               {/* An open sign-up: the badge, the soonest start and Join (docs/OPEN-ROUNDS.md). */}
-              <OpenRoundHint rounds={game.openRounds} compact />
+              <OpenRoundLine rounds={game.openRounds} full={false} />
+              <JoinLink rounds={game.openRounds} />
               {game.status === 'available' && (
                 <Link className="button" to={game.path}>
                   Play {game.name}

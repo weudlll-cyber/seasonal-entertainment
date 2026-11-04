@@ -20,7 +20,7 @@ import { formatWhen } from '../app/dates.js';
 import { EMBLEM, QUARTERS, SEASON_ICONS } from '../brand/brand.js';
 import NotAdvice from '../components/NotAdvice.jsx';
 import { featuredOrder, useRotation } from '../games/featuredRotation.js';
-import OpenRoundHint from '../games/OpenRoundHint.jsx';
+import { JoinLink, OpenRoundLine } from '../games/OpenRoundHint.jsx';
 import { formatChange, formatUsd, TOKENS } from '../prices/priceFormat.js';
 import './priceTiles.css';
 import { useWholeItems } from './useWholeItems.js';
@@ -31,7 +31,9 @@ export const Wash = ({ src }) => (
   <img className="home__wash" src={src} alt="" aria-hidden="true" loading="lazy" />
 );
 
-// One game in the box: its name, description, open sign-up (games/OpenRoundHint.jsx) and Play.
+// One game in the box, compact (the home page fits its window, docs/DESIGN.md): its name (two
+// lines at most), its description (one line), and its open sign-up in one line
+// (games/OpenRoundHint.jsx). Its buttons are in the box's row below (FeaturedActions).
 function FeaturedGame({ game, timeZone }) {
   return (
     <>
@@ -39,20 +41,40 @@ function FeaturedGame({ game, timeZone }) {
       {game.status === 'coming_soon' && (
         <span className="home__badge">{GAME_STATUS_LABELS.coming_soon}</span>
       )}
-      <h2 className="home__game-name">{game.name}</h2>
-      <p className="home__text">{game.description}</p>
-      <OpenRoundHint rounds={game.openRounds} timeZone={timeZone} />
-      <p className="home__actions">
-        {game.status === 'available' ? (
-          <Link className="button" to={game.path}>
-            Play {game.name}
-          </Link>
-        ) : (
-          <Link className="button" to="/games">
-            All games
-          </Link>
-        )}
+      <h2 className="home__game-name" title={game.name}>
+        {game.name}
+      </h2>
+      <p className="home__text home__game-description" title={game.description}>
+        {game.description}
       </p>
+      <OpenRoundLine rounds={game.openRounds} timeZone={timeZone} />
+    </>
+  );
+}
+
+// "Join" (the primary button, with an open sign-up) and "Play" beside it (then the secondary
+// one), or "All games" for a game not available.
+function FeaturedActions({ game }) {
+  const open = game.openRounds?.length > 0;
+  return (
+    <>
+      <JoinLink rounds={game.openRounds} />
+      {game.status === 'available' ? (
+        // "Play" alone: the name is right above it, and a long one would take the row; the full
+        // name stays the link's name and tooltip.
+        <Link
+          className={open ? 'button button--secondary' : 'button'}
+          to={game.path}
+          aria-label={`Play ${game.name}`}
+          title={`Play ${game.name}`}
+        >
+          Play
+        </Link>
+      ) : (
+        <Link className="button" to="/games">
+          All games
+        </Link>
+      )}
     </>
   );
 }
@@ -74,52 +96,56 @@ export function FeaturedGameCard({ games, timeZone }) {
           <FeaturedGame key={game.id} game={game} timeZone={timeZone} />
         </div>
       )}
-      {many && (
-        <div className="home__game-controls" role="group" aria-label="Featured games">
-          <button
-            type="button"
-            className="home__game-step"
-            aria-label="Previous game"
-            title="Previous game"
-            onClick={() => go(index - 1)}
-          >
-            ‹
-          </button>
-          {ordered.map((g, i) => (
-            <button
-              key={g.id}
-              type="button"
-              className="home__game-dot"
-              aria-label={`Show ${g.name}`}
-              title={g.name}
-              aria-current={i === index ? 'true' : undefined}
-              onClick={() => go(i)}
-            />
-          ))}
-          <button
-            type="button"
-            className="home__game-step"
-            aria-label="Next game"
-            title="Next game"
-            onClick={() => go(index + 1)}
-          >
-            ›
-          </button>
-          {/* With reduced motion nothing moves by itself: nothing to pause. */}
-          {!reducedMotion && (
+      {/* The buttons and the controls in one row while they fit; the controls wrap below. */}
+      <div className="home__game-row">
+        {game && <FeaturedActions game={game} />}
+        {many && (
+          <div className="home__game-controls" role="group" aria-label="Featured games">
             <button
               type="button"
               className="home__game-step"
-              aria-label={paused ? 'Resume rotation' : 'Pause rotation'}
-              title={paused ? 'Resume rotation' : 'Pause rotation'}
-              aria-pressed={paused}
-              onClick={togglePause}
+              aria-label="Previous game"
+              title="Previous game"
+              onClick={() => go(index - 1)}
             >
-              {paused ? '▶' : '❚❚'}
+              ‹
             </button>
-          )}
-        </div>
-      )}
+            {ordered.map((g, i) => (
+              <button
+                key={g.id}
+                type="button"
+                className="home__game-dot"
+                aria-label={`Show ${g.name}`}
+                title={g.name}
+                aria-current={i === index ? 'true' : undefined}
+                onClick={() => go(i)}
+              />
+            ))}
+            <button
+              type="button"
+              className="home__game-step"
+              aria-label="Next game"
+              title="Next game"
+              onClick={() => go(index + 1)}
+            >
+              ›
+            </button>
+            {/* With reduced motion nothing moves by itself: nothing to pause. */}
+            {!reducedMotion && (
+              <button
+                type="button"
+                className="home__game-step"
+                aria-label={paused ? 'Resume rotation' : 'Pause rotation'}
+                title={paused ? 'Resume rotation' : 'Pause rotation'}
+                aria-pressed={paused}
+                onClick={togglePause}
+              >
+                {paused ? '▶' : '❚❚'}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
       {games?.length === 0 && <p className="home__text">No games yet.</p>}
     </section>
   );

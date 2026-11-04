@@ -16,8 +16,9 @@ import { readFile } from 'node:fs/promises';
 import http from 'node:http';
 import net from 'node:net';
 import path from 'node:path';
+import { DEV_TEST_GAME } from '@seasonal-entertainment/shared/gameRules.js';
 
-export const FIXTURE_STATUS_HOST = 'status.games.test';
+export const FIXTURE_STATUS_HOST = DEV_TEST_GAME.statusHost;
 export const FIXTURE_FILE = 'game-status-fixture.json';
 // A public address for the guard to accept; nothing is ever sent there (see connect).
 const PLACEHOLDER_ADDRESS = '93.184.216.34';

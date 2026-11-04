@@ -6,8 +6,8 @@
 //              games/featuredRotation.js; docs/OPEN-ROUNDS.md, decided 2026-11-04), with fake
 //              timers: games with an open sign-up first, by their soonest round, then the rest in
 //              the page's order; 8 s each, also without any open sign-up; it holds while hovered,
-//              while it has the focus, after a tap until a tap outside, and while paused with its
-//              button; with reduced motion it never moves by itself (previous/next still do, no
+//              while it has keyboard focus (a mouse click on a control does not hold it once the
+//              pointer left), after a tap until a tap outside, and while paused with its button; with reduced motion it never moves by itself (previous/next still do, no
 //              pause button); one game: no rotation, no controls. A game's open sign-up shows its
 //              soonest round (title, start, players, Join, "+N more"); the slide is not announced.
 // ============================================================
@@ -99,7 +99,7 @@ it('the soonest round: title, start, players, Join and "+N more"; not announced'
   expect(slide.getByText('Sign-up open')).toBeInTheDocument();
   expect(slide.getByText('Friday Royale')).toBeInTheDocument();
   expect(slide.getByText(/^Starts .*6 November.* · 12 \/ 50 players$/)).toBeInTheDocument();
-  expect(slide.getByText('+1 more')).toBeInTheDocument();
+  expect(slide.getByText(/\+1 more$/)).toBeInTheDocument();
   expect(slide.getByRole('link', { name: 'Join Friday Royale' })).toHaveAttribute(
     'href',
     'https://bingo.example/rounds/b1'
@@ -107,7 +107,7 @@ it('the soonest round: title, start, players, Join and "+N more"; not announced'
   expect(box().querySelector('.home__game-slide')).toHaveAttribute('aria-live', 'off');
 });
 
-it('holds while hovered, while focused, and after a tap until a tap outside', () => {
+it('holds while hovered, while keyboard-focused, and after a tap until a tap outside', () => {
   show();
   fireEvent.pointerEnter(box(), { pointerType: 'mouse' });
   wait(3 * ROTATE_MS);
@@ -130,6 +130,27 @@ it('holds while hovered, while focused, and after a tap until a tap outside', ()
   fireEvent.pointerDown(document.body, { pointerType: 'touch' });
   wait(ROTATE_MS);
   expect(shown()).toBe('Bingo');
+});
+
+it('a mouse click on next does not hold it once the pointer left; a key inside holds it again', () => {
+  show();
+  const next = screen.getByRole('button', { name: 'Next game' });
+  // A real click: pointer in, pressed, the focus lands on the button, released, pointer out.
+  fireEvent.pointerEnter(box(), { pointerType: 'mouse' });
+  fireEvent.pointerDown(next, { pointerType: 'mouse' });
+  act(() => next.focus());
+  fireEvent.click(next);
+  fireEvent.pointerLeave(box(), { pointerType: 'mouse' });
+  expect(shown()).toBe('Quiz');
+  expect(document.activeElement).toBe(next);
+  wait(ROTATE_MS);
+  expect(shown()).toBe('Race');
+
+  // Tab on from the clicked button: keyboard focus, which holds.
+  fireEvent.keyDown(next, { key: 'Tab' });
+  act(() => screen.getByRole('button', { name: 'Pause rotation' }).focus());
+  wait(3 * ROTATE_MS);
+  expect(shown()).toBe('Race');
 });
 
 it('the pause button holds it until pressed again; previous, next and the dots move it', () => {

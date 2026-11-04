@@ -14,6 +14,7 @@
 
 import { existsSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { DEV_TEST_GAME } from '@seasonal-entertainment/shared/gameRules.js';
 import { ENV_FILE, readConfig } from '../server/src/config.js';
 import { openDatabase } from '../server/src/db/database.js';
 import { FIXTURE_FILE, FIXTURE_STATUS_HOST } from '../server/src/games/statusFixture.js';
@@ -22,7 +23,7 @@ const GAME = {
   name: 'Open rounds test',
   description: 'A test game with a fake sign-up status (scripts/dev-game-status.mjs).',
   image: 'spring',
-  path: '/games/open-rounds-test',
+  path: DEV_TEST_GAME.path,
   statusUrl: `https://${FIXTURE_STATUS_HOST}/open-rounds`,
 };
 const HOUR = 60 * 60_000;

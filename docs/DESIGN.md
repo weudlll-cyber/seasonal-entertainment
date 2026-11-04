@@ -298,11 +298,19 @@ for an organiser, light and dark, without a scrollbar, also at 1915 x 913, 1920 
    with an open sign-up first, by their soonest round, then the others in the games page's order,
    each 8 seconds, also when none has an open sign-up; one game does not rotate and shows no
    controls. A game with an open sign-up shows "Sign-up open", the soonest round's title, its
-   start in the site's date format, players / max players, "Join" (the round's page on the game's
-   site) and "+N more". Below it: previous and next, one dot per game and a pause button, each a
-   44px target with a tooltip. It holds while hovered, while it has the focus, after a tap until
-   a tap outside, and while paused; with reduced motion it never moves by itself (no pause
-   button then). The changing slide is not announced (`aria-live="off"`). The page asks for the
+   start in the site's date format, players / max players and "+N more" in one line. The box is
+   compact so the page still fits its window with the longest name and round title (2026-11-04,
+   checked at 1280 x 720, 1366 x 768, 1920 x 937 and 1277 x 609): the name, the description and
+   the round line one line each, cut with "…" and whole in their tooltip. One row below holds
+   "Join" (the primary button, the round's page on the game's site) and "Play" beside it (then
+   the secondary one; its tooltip and accessible name "Play <game>"), and the controls at the
+   row's end while they fit, else on the line below: previous and next, one dot per game and a
+   pause button, each a 44px target with a tooltip. It holds while the mouse is over it, while it
+   has keyboard focus, after a tap until a tap outside, and while paused. The focus a mouse click
+   or tap leaves on a control does not hold it (2026-11-04: it stopped the box for good after a
+   click on next); a key pressed inside makes it keyboard focus again. With reduced motion
+   (Windows: Settings → Accessibility → Visual effects → "Animation effects" off) it never moves
+   by itself (no pause button then). The changing slide is not announced (`aria-live="off"`). The page asks for the
    games every minute (`client/src/games/featuredRotation.js`, `OpenRoundHint.jsx`). Up next (2026-10-21): the next two of the
    event bot's occurrences and the site's live and planned calls together, by start time
    (docs/CALLS.md, "In the event lists"). A bot event shows a dot in the season colours in turn,

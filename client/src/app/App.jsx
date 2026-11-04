@@ -7,9 +7,11 @@
 //              iframe) and its login popup (/embed-login; docs/EMBED.md); unknown paths show
 //              the 404 page. Heavier pages are loaded on first use (lazyPage: reloads once when
 //              the file is gone after an update). The router itself is supplied by main.jsx (or
-//              a test).
+//              a test). Development builds also route the test pages (devPages/), the fake game
+//              of npm run dev:game-status among them.
 // ============================================================
 
+import { DEV_TEST_GAME } from '@seasonal-entertainment/shared/gameRules.js';
 import { Navigate, Route, Routes } from 'react-router';
 import { KeyProvider } from '../keys/KeyContext.jsx';
 import AccountPage from '../pages/AccountPage.jsx';
@@ -64,6 +66,9 @@ const ChatPanelsTestPage = import.meta.env.DEV
   : null;
 const EmbedDemoPage = import.meta.env.DEV
   ? lazyPage(() => import('../devPages/EmbedDemoPage.jsx'))
+  : null;
+const TestGamePage = import.meta.env.DEV
+  ? lazyPage(() => import('../devPages/TestGamePage.jsx'))
   : null;
 
 export default function App() {
@@ -165,6 +170,16 @@ export default function App() {
                   element={
                     <LazyBoundary>
                       <EmbedDemoPage />
+                    </LazyBoundary>
+                  }
+                />
+              )}
+              {TestGamePage && (
+                <Route
+                  path={DEV_TEST_GAME.path.slice(1)}
+                  element={
+                    <LazyBoundary>
+                      <TestGamePage />
                     </LazyBoundary>
                   }
                 />

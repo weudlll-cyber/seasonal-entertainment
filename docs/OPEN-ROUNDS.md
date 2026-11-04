@@ -60,7 +60,9 @@ shows what the game lists. The bingo repository holds the same contract (decided
   large, too slow, not the contract, a redirect, a foreign joinUrl, a host that does not
   resolve failing for its own game alone, stale after 3 minutes, the log, the API and the admin
   field) and `client/e2e/openRounds.spec.js` (a real browser: the fake host below, the box
-  leading with the open sign-up and moving on after 8 seconds, the games page's badge).
+  leading with the open sign-up and moving on after 8 seconds, again after a mouse click on
+  "Next game" once the pointer left, held by keyboard focus, the games page's badge);
+  `client/e2e/layout.spec.js` fits the home page with the tallest box.
 
 ## Trying it locally
 
@@ -71,4 +73,8 @@ database, read anew on each request, and every other host goes to the real inter
 same guard. `npm run dev:game-status -- on` adds a test game "Open rounds test" with the
 status URL `https://status.games.test/open-rounds` and writes a fixture with two open rounds;
 `off` removes both (it never touches other games). The site reads it within a minute (at once
-after a restart). Its "Join" links point at `status.games.test`, which no browser can open.
+after a restart). Its rounds' `joinUrl`s point at `status.games.test`, which no browser can
+open, so in development builds the test game's "Join" and "Play" both lead to a local placeholder
+page at `/games/open-rounds-test` ("Test game — the sign-up would open here.";
+`client/src/devPages/TestGamePage.jsx`, the path and host in `DEV_TEST_GAME` of
+`shared/gameRules.js`). Production builds have neither the page nor the rewrite.

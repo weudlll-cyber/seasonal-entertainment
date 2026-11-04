@@ -6,9 +6,10 @@
 //              2026-11-04): featuredOrder() puts the games with an open sign-up first, ordered by
 //              their soonest round, then the rest in the games page's order; useRotation() moves
 //              on every ROTATE_MS while there is more than one game, also when no game has an open
-//              sign-up. It holds while the box is hovered or holds the focus, after a tap inside it
-//              until the next tap outside, while the viewer paused it, and always when the browser
-//              asks for reduced motion (then only the previous/next buttons move it).
+//              sign-up. It holds while the mouse is over the box, while it holds keyboard focus (not
+//              the focus a click or tap leaves on a control), after a tap inside it until the next
+//              tap outside, while the viewer paused it, and always when the browser asks for
+//              reduced motion (then only the previous/next buttons move it).
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -33,7 +34,7 @@ const reducedMotion = () =>
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // count: how many games rotate. Returns the shown index, prev/next/go, the viewer's pause, and
-// the props for the box (hover, focus and tap hold it).
+// the props for the box (hover, keyboard focus and tap hold it).
 export function useRotation(count) {
   const [index, setIndex] = useState(0);
   const [hovered, setHovered] = useState(false);
@@ -66,14 +67,28 @@ export function useRotation(count) {
     return () => document.removeEventListener('pointerdown', outside);
   }, [tapped]);
 
+  // Only keyboard focus holds it: a click leaves the focus on the clicked button, and that focus
+  // held the box for good once the pointer had left (the box stopped after any click on next).
+  const pressed = useRef(false);
   const boxProps = {
     ref: box,
     onPointerEnter: (e) => e.pointerType === 'mouse' && setHovered(true),
     onPointerLeave: (e) => e.pointerType === 'mouse' && setHovered(false),
-    onPointerDown: (e) => e.pointerType !== 'mouse' && setTapped(true),
-    onFocus: () => setFocused(true),
+    onPointerDown: (e) => {
+      pressed.current = true;
+      setFocused(false);
+      if (e.pointerType !== 'mouse') setTapped(true);
+    },
+    // A key inside (Tab to the next control, Enter on one) is keyboard use again.
+    onKeyDown: () => {
+      pressed.current = false;
+      setFocused(true);
+    },
+    onFocus: () => !pressed.current && setFocused(true),
     onBlur: (e) => {
-      if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false);
+      if (e.currentTarget.contains(e.relatedTarget)) return;
+      pressed.current = false;
+      setFocused(false);
     },
   };
   return {
