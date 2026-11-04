@@ -55,8 +55,10 @@ const say = (agent, body) => agent.post('/api/chat/rooms/general/messages').send
 const messages = async (agent) =>
   (await agent.get('/api/chat/rooms/general/messages')).body.messages;
 const previewOf = async (agent, id) => (await messages(agent)).find((m) => m.id === id).preview;
+// Longer than the preview's own deadline (5 s for page and image, config.js linkPreviews): a wait
+// of 3 s ran out under a full verify's load (2026-11-02) before the card was stored.
 const waitForPreview = (agent, id) =>
-  vi.waitFor(async () => expect(await previewOf(agent, id)).not.toBeNull(), { timeout: 3000 });
+  vi.waitFor(async () => expect(await previewOf(agent, id)).not.toBeNull(), { timeout: 10_000 });
 
 describe('previews', () => {
   it('a member link gets an Open Graph card; the image is re-served from this site', async () => {

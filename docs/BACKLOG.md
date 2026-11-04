@@ -47,13 +47,13 @@ entry waits for.
 - **A lost refresh token** — Discord rotates refresh tokens; if the server stops between
   Discord's answer and the save (one statement), the new token is lost and the member must log
   in with Discord again (docs/AUTH.md, "Discord: steps and the daily read").
-- **The browser tests' `memberPage` and `--repeat-each`** — on a second repeat in the same run,
-  the helper (`client/e2e/members.js`) did not find the key pair a first login had made, and
-  waited for the first-login dialog: seen with `discord.spec.js` (2026-11-03), which therefore
-  logs each member in once per worker. Single runs are not affected; the cause is not known yet.
-- **One link-preview test is slow under load** — `chatPreviews.test.js` ("a member link gets an
-  Open Graph card") hit its 9-second wait once in a full verify on 2026-11-02 and passed 3 of 3
-  alone.
+- **`devProxy.spec.js` failed once in a full verify** (2026-11-03): the guest's message never
+  showed in General through the Vite dev proxy (20 s), and the spec passed alone. Not reproduced
+  by SE-AUDIT-2 (2026-11-04): 5 runs alone, 5 next to the full server suite, and one with Vite's
+  dependency cache cleared (a dependency reload of the open page was the suspect; none was
+  logged). A guest's message enters the list from the POST answer (`useChatRoom.js`), so no
+  list race was found either. More than 5 runs a server cannot be tried: each run registers an
+  account, 5 an hour per address.
 
 - **A deleted account's messages on pages already open** — deleting an account deletes its room
   messages at once (docs/AUTH.md, "Deleting an account"), but chat pages that are already open
@@ -61,6 +61,25 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **`directReport.spec.js`: Send stayed disabled** — closed by `chore/se-audit-2` (CI on
+  `4c40c79`, attempt 1): "Send private message" switches to the Direct tab by a router
+  transition, and until it is drawn General's field still answered to "Message"; the text went
+  there and the private composer came up empty. The spec now types into the "Private messages"
+  section's own field, which comes once the partner's key is known. A test cause only.
+- **The browser tests' `memberPage` and `--repeat-each`** — closed by `chore/se-audit-2`: the
+  helper (`client/e2e/members.js`) asked the database before logging in whether the member had a
+  key pair; `--repeat-each` runs a file's repeats in parallel workers, so several browsers saw
+  none, and all but the one that made it waited for the first-login offer (reproduced: 6 of 10
+  repeats of `directReport.spec.js`). It now reads its own browser's `POST /api/keys` answer,
+  known before the login page leaves `/login`; 0 of 10 waited. Specs that share one member
+  still need `--workers 1` with `--repeat-each` (each spec has its own members by design).
+- **Two waits shorter than the work they wait for** — closed by `chore/se-audit-2`, neither
+  reproduced in 20 repeats alone and 20 under load: `chatPreviews.test.js` ("a member link gets
+  an Open Graph card", 2026-11-02) waited 3 s for a card whose own deadline is 5 s, now 10 s;
+  `deviceHandover.test.jsx` ("Reject sends nothing of the key", 2026-11-03) asked for the
+  dialog within waitFor's default second, now 8 s like the file's other waits.
+- **`speed.spec.js` after PR #39** — no failure in 8 repeats of its 17 tests (3 alone, 5 next to
+  the full server suite; `chore/se-audit-2`); its "Fit" entry is closed below.
 - **Discord login on the live site** — done on the live server 2026-11-04: installer `--update`
   to `4c40c79` with Discord; Discord login and the steps checked by the owner. The links to the
   terms and the privacy page in Discord's app settings are left to the owner.

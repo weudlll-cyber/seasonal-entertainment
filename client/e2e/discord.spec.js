@@ -17,9 +17,7 @@ import Database from 'better-sqlite3';
 import { expect, test } from '@playwright/test';
 import { E2E_DATABASE, memberPage } from './members.js';
 
-// Each member logs in once per worker (pages shared by the tests below): memberPage tells a
-// first login from a later one by the stored key pair, and a repeated run of this file must not
-// log in twice.
+// Each member logs in once per worker (pages shared by the tests below), not once per test.
 test.describe.configure({ mode: 'serial' });
 let whale;
 let other;

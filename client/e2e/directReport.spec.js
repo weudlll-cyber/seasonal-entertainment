@@ -5,7 +5,9 @@
 // Description: Reporting a direct message in a real browser (docs/CHAT.md, "Reporting a direct
 //              message"): without "Share the selected messages with the moderators" the
 //              reporter's browser sends no message text at all; with it, the selected message
-//              goes along (so the first check is not vacuous).
+//              goes along (so the first check is not vacuous). Two reports a run: more than five
+//              runs a minute (--repeat-each) meet the reports' limit per address, 10 a minute
+//              (server/src/config.js, chatReport), and "Report sent." no longer comes.
 // ============================================================
 
 import { expect, test } from '@playwright/test';
@@ -29,11 +31,15 @@ test('a report shares message text only with consent', async ({ browser }) => {
     .getByRole('button', { name: 'rpreporter', exact: true })
     .click();
   await writer.page.getByRole('menuitem', { name: 'Send private message' }).click();
-  await writer.page.getByLabel('Message', { exact: true }).fill(rude);
-  await writer.page.getByRole('button', { name: 'Send' }).click();
+  // The private conversation's own field: the switch to the Direct tab is a router transition,
+  // and until it is drawn General's field still answers to "Message" (text typed there was lost
+  // and Send stayed disabled, CI on 4c40c79). Its composer comes once the partner's key is known.
+  const direct = writer.page.getByRole('region', { name: 'Private messages' });
+  await direct.getByLabel('Message', { exact: true }).fill(rude);
+  await direct.getByRole('button', { name: 'Send' }).click();
   // Scoped to the conversation: the field may still hold the text until the send completes.
   await expect(
-    writer.page.getByRole('list', { name: 'Private messages with rpreporter' }).getByText(rude)
+    direct.getByRole('list', { name: 'Private messages with rpreporter' }).getByText(rude)
   ).toBeVisible();
 
   await reporter.page.getByRole('tab', { name: 'Direct' }).click();
