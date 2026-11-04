@@ -152,11 +152,11 @@ Every message is a plain object with a `source` and a `type`. Both sides check t
 
 ### From the chat (`source: 'seasonal-chat'`)
 
-| `type`   | Fields             | When                                                                                                             |
-| -------- | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `ready`  | `room`, `signedIn` | Once the account is known (and again if it or the room shown changes); `room`: the room shown.                   |
-| `unread` | `room`, `count`    | Messages that arrived while the host said the chat is out of sight (`visible: false`); 0 again when it is shown. |
-| `resize` | `height` (px)      | The content's height changed, for a host that sizes the frame.                                                   |
+| `type`   | Fields             | When                                                                                                                                                                              |
+| -------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ready`  | `room`, `signedIn` | Once, when the account is known and the room is chosen (again only if either changes); `room`: the room actually shown, `null` with no room (none readable, or "Log in to read"). |
+| `unread` | `room`, `count`    | Messages that arrived while the host said the chat is out of sight (`visible: false`); 0 again when it is shown.                                                                  |
+| `resize` | `height` (px)      | The content's height changed, for a host that sizes the frame.                                                                                                                    |
 
 ### To the chat (`source: 'seasonal-chat-host'`)
 

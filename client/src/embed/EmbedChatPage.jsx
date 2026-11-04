@@ -15,8 +15,9 @@
 //              members "Attach file" only where the site allows uploads, and members-only images
 //              (through short-lived links) only where it allows images. Until the site is verified
 //              the room waits. Talks to the framing page only once its origin is verified
-//              (embedProtocol.js): ready, unread (messages while the host says the chat is out of
-//              sight), resize; it takes visible and theme. After an update of the site it says "A
+//              (embedProtocol.js): ready (once the account is known and the room chosen, naming
+//              the room shown), unread (messages while the host says the chat is out of sight),
+//              resize; it takes visible and theme. After an update of the site it says "A
 //              new version of the chat is available" with Reload, by the site's own rule
 //              (UpdateNotice.jsx).
 // ============================================================
@@ -56,8 +57,9 @@ function reportedParent() {
 export default function EmbedChatPage() {
   const [params] = useSearchParams();
   const asked = params.get('room');
-  const [shownRoom, setShownRoom] = useState(null); // RoomPanel's choice, once made
-  // What the host hears about (ready, unread): the room shown, else the one asked for.
+  // RoomPanel's choice: undefined until made; null when the reader has no room.
+  const [shownRoom, setShownRoom] = useState(undefined);
+  // What unread counts: the room shown, else the one asked for.
   const room = shownRoom ?? asked;
   const [reported] = useState(reportedParent);
   const [host, setHost] = useState(null); // the verified origin; null: talk to nobody
@@ -71,6 +73,8 @@ export default function EmbedChatPage() {
   const root = useRef(null);
   const unread = useNewMessageCount(room, !visible);
   const foreign = isForeignEmbed();
+  // A guest on another site who may not read gets "Log in to read": no room is chosen there.
+  const readsRooms = !foreign || Boolean(user) || guestsMayRead();
 
   useEffect(() => {
     verifyHost(reported).then(setHost, () => setHost(null));
@@ -94,10 +98,12 @@ export default function EmbedChatPage() {
     [host]
   );
 
-  // Once the account is known (undefined while it loads).
+  // Once the account is known (undefined while it loads) and the room chosen, so the host hears
+  // the room actually shown, once (again only if the account or that room changes).
   useEffect(() => {
-    if (user !== undefined) toHost(host, 'ready', { room, signedIn: Boolean(user) });
-  }, [host, room, user]);
+    if (user === undefined || (readsRooms && shownRoom === undefined)) return;
+    toHost(host, 'ready', { room: readsRooms ? shownRoom : null, signedIn: Boolean(user) });
+  }, [host, readsRooms, shownRoom, user]);
 
   useEffect(() => toHost(host, 'unread', { room, count: unread }), [host, room, unread]);
 
@@ -130,7 +136,7 @@ export default function EmbedChatPage() {
           // On another site the room waits for the verified site and its rules: members
           // upload only where the site allows it; a guest reads and writes only as the
           // site's rules allow, else is offered the login.
-          foreign && !host ? null : foreign && !user && !guestsMayRead() ? (
+          foreign && !host ? null : !readsRooms ? (
             <LogInToRead login={login} ready />
           ) : (
             <RoomPanel

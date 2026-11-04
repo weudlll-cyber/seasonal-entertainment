@@ -50,8 +50,6 @@ entry waits for.
 - **Discord review of 2026-11-04 (listed, not built: they change behaviour)**:
   - **A mention in a call's chat links to `/chat?room=<call room>`** — it opens there while
     readable; the call page would be the better place.
-  - **The embedded chat says `ready` twice without `?room=`** — once before the room is chosen,
-    once after.
   - **A short call title on the home page's "Next call" box is a link under 44 px** — a call named
     "Fit" (`client/e2e/callFit.spec.js`) made `speed.spec.js` fail once in a full run when it was
     the next call (`client/src/pages/NextCallCard.jsx`); alone the spec passes.
@@ -83,6 +81,9 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **The embedded chat said `ready` twice** — closed by `fix/se-discord-review` (Discord review of
+  2026-11-04): `ready` now goes once, after the room is chosen, naming the room shown (`null`
+  without one) (`client/src/embed/EmbedChatPage.jsx`; docs/EMBED.md, "From the chat").
 - **A local copy on every `--update` without backups** — closed by `fix/se-discord-review`
   (Discord review of 2026-11-04): without backups set up, `--update` first copies the database
   and the media with the backup code into `/var/backups/seasonal-update-copies/`, root only, the

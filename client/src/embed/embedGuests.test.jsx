@@ -6,7 +6,7 @@
 //              (/api/embed/check): writing off offers "Log in to write" instead of the composer;
 //              writing on gives the guest composer, whose requests name the site and keep the
 //              guest token the server hands back for the next ones; reading off shows "Log in to
-//              read" instead of the room.
+//              read" instead of the room, and the host still hears ready, without a room.
 // ============================================================
 
 import { fireEvent, screen, waitFor } from '@testing-library/react';
@@ -14,6 +14,7 @@ import { afterEach, beforeEach, expect, it } from 'vitest';
 import {
   SITE,
   answers,
+  sentToHost,
   setUpForeignHost,
   showEmbed,
   tearDownForeignHost,
@@ -84,4 +85,7 @@ it('reading off: "Log in to read" instead of the room', async () => {
   expect(await screen.findByText(/Guests cannot read the chat on this site/)).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Log in to read' })).toBeInTheDocument();
   expect(screen.queryByRole('region', { name: /^Chat:/ })).toBeNull();
+  const readies = () => sentToHost().filter(([m]) => m.type === 'ready');
+  await waitFor(() => expect(readies()).toHaveLength(1));
+  expect(readies()[0][0]).toMatchObject({ room: null, signedIn: false });
 });

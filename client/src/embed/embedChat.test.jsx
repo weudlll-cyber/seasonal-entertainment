@@ -60,6 +60,7 @@ function renderEmbed(query = 'room=general') {
 
 const sentToHost = () =>
   host.postMessage.mock.calls.map(([message, origin]) => ({ ...message, origin }));
+const readies = () => sentToHost().filter((m) => m.type === 'ready');
 const fromWindow = (source, origin, data) =>
   act(() => window.dispatchEvent(new MessageEvent('message', { data, origin, source })));
 
@@ -86,6 +87,8 @@ it('shows only the panel, with the member signed in, and says ready', async () =
       origin: window.location.origin, // never '*': a page on another origin gets nothing
     })
   );
+  // Once, after the room is chosen: never a first one before it.
+  expect(readies()).toHaveLength(1);
 });
 
 it('lets a guest read and write where guests may; a room they may not read gives way', async () => {
@@ -112,6 +115,8 @@ it('lets a guest read and write where guests may; a room they may not read gives
       expect.objectContaining({ type: 'ready', room: 'general', signedIn: false })
     )
   );
+  // Only the room shown: never the one asked for.
+  expect(readies()).toHaveLength(1);
 });
 
 it('says "No rooms available." to a reader without any room', async () => {
@@ -122,6 +127,8 @@ it('says "No rooms available." to a reader without any room', async () => {
   renderEmbed('');
   expect(await screen.findByText('No rooms available.')).toBeInTheDocument();
   expect(screen.queryByRole('alert')).toBeNull();
+  // Ready all the same, with no room.
+  await waitFor(() => expect(readies()).toEqual([expect.objectContaining({ room: null })]));
 });
 
 it('shows ?theme= without storing it, and takes a theme from its host only', async () => {
