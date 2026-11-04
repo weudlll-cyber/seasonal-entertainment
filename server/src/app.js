@@ -13,7 +13,9 @@
 //              (recap/job.js). The embedded chat on approved foreign sites (embed/) adds its CSP,
 //              its token check and its routes; prices and bot events (bots/) are read-only public
 //              reads; /api/bot-admin/authorize lets staff through to the event bot's admin page
-//              (bots/adminAuthorizeRoutes.js, only with BOT_ADMIN_EMBEDDED=1). Discord login and
+//              (bots/adminAuthorizeRoutes.js, only with BOT_ADMIN_EMBEDDED=1);
+//              /api/games/bingo/authorize and its account-changes feed serve Seasonal Bingo
+//              Royale (bingo/routes.js, only with GAMES_BINGO_EMBEDDED=1). Discord login and
 //              roles (discord/) only while set up; app.locals.discord.start() runs the daily
 //              role read.
 // ============================================================
@@ -51,6 +53,7 @@ import { adminUserRoutes } from './admin/userRoutes.js';
 import { accountRoutes } from './accounts/routes.js';
 import { adminGameRoutes } from './games/adminRoutes.js';
 import { gameRoutes } from './games/routes.js';
+import { bingoRoutes } from './bingo/routes.js';
 import { allow } from './http/access.js';
 import { adminInfoRoutes } from './info/adminRoutes.js';
 import { infoRoutes } from './info/routes.js';
@@ -155,6 +158,8 @@ export function createApp({
   // The host's nginx asks this before every request to the event bot's admin page (/bot-admin/).
   api.use('/bot-admin', botAdminRoutes(db, config));
   api.use('/reference-prices', referenceRoutes(db, config));
+  // Seasonal Bingo Royale's sign-in and account feed (bingo/), before the games list.
+  api.use('/games/bingo', bingoRoutes(db, config, chat.images.url));
   api.use('/games', gameRoutes(db));
   api.use('/admin/games', adminGameRoutes(db));
   api.use('/admin/settings', adminSettingRoutes(db));
