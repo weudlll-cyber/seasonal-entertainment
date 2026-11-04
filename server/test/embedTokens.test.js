@@ -98,6 +98,7 @@ describe('what a token may do', () => {
   it.each([
     ['the own key', 'get', '/api/keys/me'],
     ['a new key pair', 'post', '/api/keys'],
+    ['a new-device request (key handover)', 'post', '/api/keys/handover'],
     ['a password change', 'post', '/api/auth/password'],
     ['a logout of the site', 'post', '/api/auth/logout'],
     ['2FA setup', 'post', '/api/2fa/setup'],

@@ -59,8 +59,8 @@ export function keyHandoverRoutes(db, config, notifyMember, { now = () => Date.n
   router.post('/handover', allow('member'), perUser, (req, res) => {
     const input = validBody(req, res, { publicKey: publicKeyField });
     if (!input) return;
-    // A device of a cookie session only (the embedded chat has its own login popup).
-    if (!req.sessionID) return sendError(res, 403, 'not_allowed', 'Not from here.');
+    // The embedded chat's token never reaches this route (embed/auth.js lets it reach no
+    // /keys path): a device here is a cookie session.
     if (!currentKey(db, req.user.id)) {
       return sendError(res, 409, 'no_key', 'There is no key to hand over yet.');
     }
