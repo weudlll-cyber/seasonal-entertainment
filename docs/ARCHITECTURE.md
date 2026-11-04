@@ -382,8 +382,10 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
 ## Security headers
 
 `server/src/http/securityHeaders.js` (helmet) sends a strict Content-Security-Policy on every
-response: scripts, styles, fonts and connections only from this origin, images from this origin
-or `data:` URLs, no plugins, no framing (`frame-ancestors 'none'`; only the embedded chat
+response: scripts, styles, fonts and connections only from this origin, images from this origin,
+`data:` URLs or `blob:` URLs (a direct message's picture, decrypted in the browser and shown from
+memory; since 2026-11-04, before which such pictures stayed empty, `client/e2e/directPicture.spec.js`),
+no plugins, no framing (`frame-ancestors 'none'`; only the embedded chat
 under `/embed/` may be framed, by this origin alone: docs/EMBED.md), no inline script or
 style, no JavaScript `eval`. `script-src` also has `'wasm-unsafe-eval'` (added and confirmed by the
 owner 2026-10-18): it allows

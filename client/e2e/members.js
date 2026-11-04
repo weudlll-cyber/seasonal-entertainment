@@ -44,6 +44,8 @@ const MEMBERS = [
   'embedpal',
   'stepwhale',
   'stepnone',
+  'picsender',
+  'picrecip',
 ];
 
 async function insertMember(db, username) {

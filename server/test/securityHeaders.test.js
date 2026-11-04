@@ -34,6 +34,15 @@ describe('security headers', () => {
     // Scripts from this origin and WebAssembly (libsodium), nothing else: no JavaScript eval.
     const scriptSrc = csp.split(';').find((d) => d.trim().startsWith('script-src'));
     expect(scriptSrc.trim().split(/\s+/)).toEqual(['script-src', "'self'", "'wasm-unsafe-eval'"]);
+    // Pictures in direct messages are decrypted in the browser and shown from blob: addresses;
+    // nothing else may use blob: (directPicture.spec.js shows one in a real browser).
+    const directive = (name) =>
+      csp
+        .split(';')
+        .map((d) => d.trim().split(/\s+/))
+        .find(([n]) => n === name);
+    expect(directive('img-src')).toEqual(['img-src', "'self'", 'data:', 'blob:']);
+    expect(csp.match(/blob:/g)).toHaveLength(1);
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).not.toContain('unsafe-inline');
