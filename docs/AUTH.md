@@ -643,7 +643,10 @@ chat retention).
 - **Open sockets** of the account close (`chatSessions.accountChanged`, all of them, embedded
   chats included).
 - **The Discord token** is revoked at Discord after the commit (best effort; the token is read
-  before the link goes, `revokerFor` in `server/src/discord/index.js`), on both routes. A restore
+  before the link goes, `revokerFor` in `server/src/discord/index.js`), on both routes. When
+  that one try fails, the log gets the line `[discord] revoke at deletion failed`, nothing else
+  (no token, no account; since 2026-11-04), and the grant stays at Discord until it goes unused.
+  A restore
   that deletes an account again does not revoke, and needs not: that account's grant ended at
   its deletion, older tokens in the backup with it (docs/BACKLOG.md, "Known limits").
 - **What stays**: the audit log (entries keep their `actor_name`; `actor_id` becomes empty), call

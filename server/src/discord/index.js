@@ -17,6 +17,9 @@ import { shownSteps, stepsOfUser } from './steps.js';
 import { findLink, sealedTokenOf } from './store.js';
 import { openToken } from './tokenBox.js';
 
+// The log line when the revocation at an account's deletion fails.
+export const REVOKE_FAILED = '[discord] revoke at deletion failed';
+
 export function createDiscord(db, config, { fetchImpl, chatSessions }) {
   if (!config.discord) return null;
   const handle = {
@@ -35,14 +38,18 @@ export function createDiscord(db, config, { fetchImpl, chatSessions }) {
         : null,
     // Before an account is deleted (accounts/deletion.js): reads its sealed token now, while the
     // link still exists, and returns what revokes it at Discord once the deletion committed
-    // (best effort, in the background; nothing to do without a token).
+    // (best effort, in the background; nothing to do without a token). A failure is one log
+    // line, without the token or anything of the account, and is not tried again: the grant
+    // then stays at Discord until it goes unused (docs/AUTH.md, "Deleting an account").
     revokerFor(userId) {
       const sealed = sealedTokenOf(db, userId);
       if (!sealed) return () => {};
+      const failed = () => console.warn(REVOKE_FAILED);
       return () =>
         openToken(sealed, handle.key)
-          .then((token) => token && handle.api.revoke(token, 'refresh_token'))
-          .catch(() => {});
+          .then((token) => (token ? handle.api.revoke(token, 'refresh_token') : false))
+          .then((revoked) => revoked || failed())
+          .catch(failed);
     },
   };
 }

@@ -63,8 +63,6 @@ entry waits for.
   bound) and the 5-minute `?link=` file signatures.
 - **The backup folder is 755 and owned by uid 1000** (the container's user): its encrypted backups
   are listable and readable by that host account. Encrypted with the owner's age key.
-- **A deletion's Discord revocation fails silently**: one best-effort call, no log line, no retry
-  (`revokerFor`, `server/src/discord/index.js`); see "A restore does not revoke Discord tokens".
 - **`npm audit`: 6 moderate findings, development only** (eslint and its dependencies); the fix
   needs `--force` with breaking upgrades.
 - **The seed texts of Imprint and Privacy** still open with "Draft — needs legal review before
@@ -106,6 +104,10 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **A deletion's Discord revocation fails silently** — closed by `chore/se-audit-2` (SE-AUDIT-2
+  follow-up): a failed revocation at an account's deletion now writes one log line,
+  `[discord] revoke at deletion failed`, without the token or anything of the account; no retry
+  (`revokerFor`, `server/src/discord/index.js`; `server/test/discordKeys.test.js`).
 - **Security check of 2026-11-04** — closed by `chore/se-audit-2` (SE-AUDIT-2; an independent
   review of this branch, and one of master `bb8bd16` outside the session, confirmed in the code):
   - compressed request bodies refused (`415`), body-parser 2.4.0 (GHSA-27r3-jxmh-p828;
