@@ -39,6 +39,7 @@ import {
   removeUploadFiles,
 } from './store.js';
 import { fileView } from './view.js';
+import { rawBody } from '../http/bodies.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -50,8 +51,7 @@ export function uploadRoutes(db, config, hub, embedOrigins) {
   });
   // Built per request: the size limit is a setting, and a file over it is refused (413) before
   // it is held in memory.
-  const rawFile = (req, res, next) =>
-    express.raw({ type: () => true, limit: uploadLimits(db).maxBytes })(req, res, next);
+  const rawFile = (req, res, next) => rawBody(uploadLimits(db).maxBytes)(req, res, next);
   // Before the body is read: a switched-off feature never takes a file in.
   const uploadsOn = (_req, res, next) =>
     getSetting(db, 'chat.uploads')

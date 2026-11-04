@@ -66,6 +66,7 @@ import { bannerSettingRoutes } from './settings/bannerRoutes.js';
 import { bindSettingsConfig } from './settings/store.js';
 import { twoFactorGate } from './twofa/gate.js';
 import { twoFactorRoutes } from './twofa/routes.js';
+import { jsonBody } from './http/bodies.js';
 
 // previewNetwork: how link previews and the Discord steps' "Icon from link" reach the internet
 // (tests replace it); botImageNetwork:
@@ -97,8 +98,8 @@ export function createApp({
   const api = express.Router();
   // Direct messages may carry a link preview's small image inside the ciphertext (docs/CHAT.md):
   // their own, larger limit, parsed before the general one (which then skips the body).
-  api.use('/chat/direct', express.json({ limit: '160kb' }));
-  api.use(express.json({ limit: '100kb' }));
+  api.use('/chat/direct', jsonBody('160kb'));
+  api.use(jsonBody('100kb'));
   // Every read under /api per IP; writes have their own, stricter limits per route.
   const readsPerIp = makeLimiter(config.rateLimits.apiRead);
   api.use((req, res, next) => (req.method === 'GET' ? readsPerIp(req, res, next) : next()));

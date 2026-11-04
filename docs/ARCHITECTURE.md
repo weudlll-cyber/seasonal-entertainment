@@ -395,6 +395,12 @@ With calls configured, `connect-src` also holds the call service's origin (`CALL
 same host over https) and nothing else; `Permissions-Policy` allows camera, microphone and
 screen capture for this origin only (docs/CALLS.md, "Security headers").
 
+**Request bodies** (`server/src/http/bodies.js`, 2026-11-04): every route reads its body with
+`jsonBody` or `rawBody`, which never inflate a compressed body: `Content-Encoding` gzip, deflate
+or br is answered `415 unsupported_encoding` before anything is read further. No client of the
+site compresses what it sends; this closes body-parser's decompression path (its DoS by trailing
+bytes, GHSA-27r3-jxmh-p828, fixed in body-parser 2.4.0, which the lockfile now has).
+
 ## Folder layout
 
 ```
@@ -467,7 +473,7 @@ server/
   src/index.js             entry point: config, app, listen
   src/app.js               Express app (routes); no listen, so tests drive it directly
   src/http/                cross-cutting HTTP: security headers, access (allow), CSRF,
-                           sessions, rate limits, validation, error shape
+                           sessions, rate limits, validation, error shape, body parsers
   src/db/database.js       opens the database, applies every area's schema and migrations
   src/db/addColumns.js     adds columns to older databases (each area's migrate function)
   src/accounts/            accounts area: schema, user store, passwords, routes (login:

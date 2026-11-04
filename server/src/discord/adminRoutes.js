@@ -36,6 +36,7 @@ import {
   unmappedRoleIds,
   updateStep,
 } from './stepStore.js';
+import { rawBody } from '../http/bodies.js';
 
 const SNOWFLAKE = /^\d{17,20}$/;
 const ladderField = (v) =>
@@ -55,7 +56,7 @@ export function adminDiscordRoutes(db, images, network, sessions) {
   const audit = (req, action, targetId, before, after) =>
     recordAudit(db, req.user, { action, targetType: 'discord_step', targetId, before, after });
   const loadStep = loadById((id) => findStep(db, id), 'step', 'step');
-  const rawFile = express.raw({ type: () => true, limit: '300kb' });
+  const rawFile = rawBody('300kb');
   const shown = ({ iconFile, ...step }) => ({
     ...step,
     icon: iconFile ? images.url(iconFile) : null,

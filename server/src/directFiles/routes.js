@@ -39,6 +39,7 @@ import {
   isSharedCopy,
   mayFetchDirectFile,
 } from './store.js';
+import { rawBody } from '../http/bodies.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 // secretstream: a 24-byte header and 17 bytes per 64 KB chunk.
@@ -62,8 +63,7 @@ export function directFileRoutes(db, config) {
     keyGenerator: (req) => `user:${req.user.id}`,
   });
   // Built per request: the size limit is a setting (limitOf reads it at the request).
-  const raw = (limitOf) => (req, res, next) =>
-    express.raw({ type: () => true, limit: limitOf() })(req, res, next);
+  const raw = (limitOf) => (req, res, next) => rawBody(limitOf())(req, res, next);
   const maxBytes = () => uploadLimits(db).maxBytes;
   const filesOn = (_req, res, next) =>
     getSetting(db, 'chat.directFiles')
