@@ -3,7 +3,8 @@
 // Path:        client/src/pages/CallsPage.jsx
 // Project:     Seasonal Entertainment
 // Description: /calls: live calls on top, then upcoming and recent ones (docs/CALLS.md).
-//              Organisers and admins create, start and end calls here. Without a call service
+//              Organisers and admins create, start and end calls here; admins delete an ended
+//              one completely (calls/deleteCall.js). Without a call service
 //              admins see "not configured"; the sidebar hides Calls from everyone else then.
 //              SE style: the Calls header with the play-button quarter; an empty list shows a
 //              friendly card instead (never a bare "None."). Planned calls offer "Add to
@@ -17,6 +18,7 @@ import { Link } from 'react-router';
 import { api } from '../api/http.js';
 import CallCard from '../calls/CallCard.jsx';
 import CallForm from '../calls/CallForm.jsx';
+import { confirmAndDeleteCall } from '../calls/deleteCall.js';
 import PageHeader from '../brand/PageHeader.jsx';
 import { callsChanged } from '../calls/useCallsSummary.js';
 import { FormMessage } from '../components/FormField.jsx';
@@ -47,6 +49,7 @@ export default function CallsPage() {
   const [events, setEvents] = useState([]); // the bot's upcoming occurrences, for organisers
   const userId = user?.id;
   const canManage = Boolean(data?.canManage);
+  const canDelete = Boolean(data?.canDelete);
 
   useEffect(() => {
     api('/calls')
@@ -72,6 +75,15 @@ export default function CallsPage() {
     try {
       await api(`/calls/${call.id}/${action}`, { method: 'POST' });
       changed();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function remove(call) {
+    setError(null);
+    try {
+      if (await confirmAndDeleteCall(call)) changed();
     } catch (err) {
       setError(err.message);
     }
@@ -130,6 +142,7 @@ export default function CallsPage() {
                     reminded={data.reminders?.includes(call.id)}
                     onAction={canManage ? act : null}
                     onLink={canManage ? link : null}
+                    onDelete={canDelete ? remove : null}
                     events={events}
                   />
                 ))}

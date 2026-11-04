@@ -9,8 +9,9 @@
 //              call's room has been missing on the call service (staleCalls.js), and the event bot
 //              occurrence it is linked to (eventLink.js: its id and start). Recordings
 //              (recordings.js): one row per recording of a call, its file in the recordings folder,
-//              while running and after, and its length once read from the file; deleted only by an
-//              organiser. Its chapter marks (chapters.js: a time and a title, set by organisers and
+//              while running and after, and its length once read from the file; deleted by an
+//              organiser, or with its whole call by an admin (deleteCall.js: every table here goes
+//              with the call row, by cascade). Its chapter marks (chapters.js: a time and a title, set by organisers and
 //              admins; a new table, so CREATE TABLE IF NOT EXISTS adds it to an older database,
 //              SE-NIGHT-6), gone with the recording. Participants: one per call and person
 //              (participants.js). Reminders: a member's "Remind me on this site" with when each

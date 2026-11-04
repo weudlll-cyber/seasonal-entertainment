@@ -6,8 +6,9 @@
 //              a summary for the sidebar's LIVE badge, and management for organisers and
 //              admins — create (with its unlisted chat room), start (opens the room on the call
 //              service), end (endCall.js: closes that room, which disconnects everyone, and
-//              makes the chat read-only). Every management action is audited and rate-limited
-//              per account. The listing names a member's reminded calls (reminders.js); a call
+//              makes the chat read-only); for admins alone, delete an ended call completely
+//              (deleteCall.js: the call, its chat and recordings). Every management action is
+//              audited and rate-limited per account. The listing names a member's reminded calls (reminders.js); a call
 //              going live starts a reminder round at once (remindNow). A new call may be linked
 //              to an upcoming event bot occurrence (botOccurrenceId; eventLink.js), and one
 //              call's answer names that occurrence while it still exists (event). Calls say
@@ -24,6 +25,7 @@ import { makeLimiter } from '../http/rateLimit.js';
 import { required, validBody } from '../http/validate.js';
 import { getSetting } from '../settings/store.js';
 import { reminderCallIds } from './reminders.js';
+import { deleteCall } from './deleteCall.js';
 import { endCall } from './endCall.js';
 import { callSteps } from './middleware.js';
 import { linkedOccurrence, occurrenceIdField, pickedOccurrence } from './eventLink.js';
@@ -63,6 +65,15 @@ export const shown = (call, chat) => {
 export const canManage = (req) =>
   Boolean(req.user) && roleAtLeast(req.user.role, 'organiser') && !req.staffRefusal;
 
+// Admins with 2FA in order: they alone may delete a call (decided 2026-11-04).
+export const canDelete = (req) => req.user?.role === 'admin' && !req.staffRefusal;
+
+// Why a call that has not ended cannot be deleted, by its status.
+const NOT_ENDED = {
+  live: 'End the call first: a live call cannot be deleted.',
+  scheduled: 'Cancel the call first: only an ended call can be deleted.',
+};
+
 // service: the call service (service.js) or null when not configured; chat: mountChat's handle;
 // remindNow(): one reminder round (reminders.js), so "is live now" arrives without waiting.
 export function callRoutes(db, config, service, chat, remindNow) {
@@ -101,6 +112,7 @@ export function callRoutes(db, config, service, chat, remindNow) {
       ok: true,
       configured: Boolean(service),
       canManage: canManage(req),
+      canDelete: canDelete(req),
       calls,
       reminders,
     });
@@ -116,6 +128,7 @@ export function callRoutes(db, config, service, chat, remindNow) {
       ok: true,
       call: { ...shown(req.call, chat), event, recording },
       canManage: canManage(req),
+      canDelete: canDelete(req),
       recordingEnabled:
         Boolean(config.calls?.recording) && (recording || getSetting(db, 'calls.recording')),
     });
@@ -166,6 +179,23 @@ export function callRoutes(db, config, service, chat, remindNow) {
       return sendError(res, 409, 'wrong_status', 'This call has ended already.');
     }
     res.json({ ok: true, call: shown(findCall(db, req.call.id), chat) });
+  });
+
+  router.delete('/:id', allow('admin'), configured, loadCall, perUser, (req, res) => {
+    if (req.call.status !== 'ended') {
+      return sendError(res, 409, 'not_ended', NOT_ENDED[req.call.status]);
+    }
+    // An ended call's recording has stopped (endCall.js); one still running is never cut off.
+    if (activeRecording(db, req.call.id)) {
+      return sendError(res, 409, 'recording_running', 'A recording of this call is still running.');
+    }
+    deleteCall(
+      db,
+      { chat, recordingsDir: config.calls?.recording?.dir ?? null },
+      req.call,
+      req.user
+    );
+    res.json({ ok: true });
   });
 
   return router;

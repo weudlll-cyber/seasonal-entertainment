@@ -73,6 +73,11 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Deleting a call** — closed by `feat/se-calls-delete` (decided 2026-11-04: a technical test
+  call leaves nothing visible): admins delete an ended call completely, with its chat, recordings
+  and every row and file of it, audited (`DELETE /api/calls/:id`, `server/src/calls/deleteCall.js`,
+  `server/src/chat/roomDeletion.js`; "Delete" on the calls list and the call's page; docs/CALLS.md,
+  "Deleting a call").
 - **Four points of the security check of 2026-11-04** — closed by decision 2026-11-04:
   - **"Confirm with Discord" needs no click at Discord** (`prompt=none`): a click at Discord each
     time would only annoy; an attacker needs the open session and the victim's click anyway.

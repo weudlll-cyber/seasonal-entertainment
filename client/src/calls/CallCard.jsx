@@ -7,7 +7,8 @@
 //              (dates in the site's one format, app/dates.js); for a planned call "Add to calendar"
 //              and the member's reminder (CallActions.jsx); for organisers and admins the Start /
 //              End button its status allows and, on a planned call, its event bot occurrence
-//              (EventSelect.jsx). A call whose recording runs says "Being recorded".
+//              (EventSelect.jsx); for admins, on an ended call, "Delete <title>"
+//              (calls/deleteCall.js). A call whose recording runs says "Being recorded".
 // ============================================================
 
 import { Link } from 'react-router';
@@ -24,8 +25,8 @@ function timeLine(call) {
 
 // reminded: this member has a reminder for it; onAction(call, 'start' | 'end') and
 // onLink(call, occurrenceId | null): only passed to organisers and admins, with events (the
-// bot's upcoming occurrences).
-export default function CallCard({ call, reminded, onAction, onLink, events }) {
+// bot's upcoming occurrences); onDelete(call): only passed to admins.
+export default function CallCard({ call, reminded, onAction, onLink, onDelete, events }) {
   return (
     <li className={`call-card call-card--${call.status}`}>
       <h3 className="call-card__title">
@@ -51,6 +52,13 @@ export default function CallCard({ call, reminded, onAction, onLink, events }) {
           onChange={(id) => onLink(call, id)}
           occurrences={events}
         />
+      )}
+      {onDelete && call.status === 'ended' && (
+        <div className="call-card__actions">
+          <button className="button button--secondary" type="button" onClick={() => onDelete(call)}>
+            Delete {call.title}
+          </button>
+        </div>
       )}
       {onAction && call.status !== 'ended' && (
         <div className="call-card__actions">

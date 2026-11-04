@@ -698,6 +698,9 @@ const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork, em
 //                                                the first room of `slugs` that exists
 // chat.rooms.createUnlisted(room)               a room of another area (a call's chat), unlisted
 // chat.rooms.close(id)                           that room becomes read-only for everyone
+// chat.rooms.remove(id)                          that room deleted with everything in it, in the
+//                                                caller's transaction (a call's deletion)
+// chat.rooms.afterRemove(removed)                after the commit: its files, and pages on it told
 // chat.rooms.find(id) / findBySlug(slug)          read a room
 // chat.people.identify(req, res)                 who asks to join a call: an account, or a
 //                                                guest with their chat identity

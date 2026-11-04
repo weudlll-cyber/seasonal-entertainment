@@ -11,9 +11,10 @@ import { CHAT_SOCKET_PATH } from '../../src/chat/socket.js';
 import { chatApp } from './chat.js';
 import { ORIGIN } from './testApp.js';
 
-// Returns the test app, its server (close it after the test) and the socket URL.
-export async function listeningChat(overrides) {
-  const t = chatApp(overrides);
+// Returns the test app, its server (close it after the test) and the socket URL. options: the
+// app's (makeTestApp), e.g. a stand-in call service.
+export async function listeningChat(overrides, options) {
+  const t = chatApp(overrides, options);
   const server = t.app.listen(0, '127.0.0.1');
   await new Promise((resolve) => server.once('listening', resolve));
   t.app.locals.chat.attach(server);
