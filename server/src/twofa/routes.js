@@ -4,7 +4,9 @@
 // Project:     Seasonal Entertainment
 // Description: /api/2fa: set up (current password, proven by the browser's auth key; secret
 //              + QR), enable with a first code (returns recovery codes once), disable (auth key
-//              + second factor), and the second login step for accounts with 2FA. Turning 2FA
+//              + second factor), and the second login step for accounts with 2FA (failed codes
+//              limited per address and per account, so guesses spread over many addresses
+//              still meet a limit). Turning 2FA
 //              on or off ends every other session of the account (session epoch) and closes its
 //              other chat sockets. beginSecondFactor() is called by the password login. The
 //              secret is stored encrypted (secretBox.js) under SECRET_ENCRYPTION_KEY.
@@ -55,6 +57,13 @@ export function twoFactorRoutes(db, config, chatSessions) {
   const perUser = makeLimiter(limit, {
     failedOnly: true,
     keyGenerator: (req) => `user:${req.user.id}`,
+  });
+  // The login step's failed codes per account: a right password never counts against the
+  // login limits, so without this every new pending login from another address would bring
+  // fresh guesses (security check 2026-11-04). No pending login: one shared key, refused anyway.
+  const perPendingAccount = makeLimiter(limit, {
+    failedOnly: true,
+    keyGenerator: (req) => `login:${req.session.pendingLogin?.userId ?? 'none'}`,
   });
   // The current password, as the auth key the browser derived from it (never the password).
   const passwordMatches = (req, authKey) => provesPassword(db, config, req.user.id, authKey);
@@ -116,6 +125,7 @@ export function twoFactorRoutes(db, config, chatSessions) {
     '/login',
     allow('public'),
     makeLimiter(limit, { failedOnly: true }),
+    perPendingAccount,
     async (req, res) => {
       const pending = req.session.pendingLogin;
       const user = pending && findUserById(db, pending.userId);

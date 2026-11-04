@@ -431,7 +431,9 @@ member with an **embed token** instead (`server/src/embed/`; SE-NIGHT-2 follow-u
 - **`REQUIRE_STAFF_2FA`** (default `true`) may be set to `false` for local development only;
   the server refuses to start with `false` in production.
 - Failed codes are rate-limited (`rateLimits.twoFactor`: 5 per 15 minutes, per account for
-  enable/disable, per IP for the login step).
+  enable/disable; for the login step both per IP and per account of the pending login, since
+  2026-11-04: a right password never counts against the login limits, so guesses spread over
+  many addresses would otherwise each get fresh tries).
 - **TOTP secrets are encrypted at rest** (SE-NIGHT-2 part 8, `server/src/twofa/secretBox.js`):
   - Authenticated encryption with the project's libsodium helper (`shared/crypto.js`
     `sealBytes`/`openSealed`: secretbox, a fresh nonce each time).
@@ -504,6 +506,8 @@ All answer `429 too_many_attempts`. Numbers are in `server/src/config.js` (`rate
 | `POST /api/auth/password`  | 15 min | 5     | account  | failed attempts |
 | `DELETE /api/auth/account` | 15 min | 5     | account  | failed attempts |
 | `POST /api/auth/bootstrap` | 1 h    | 10    | IP       | every attempt   |
+| `POST /api/2fa/login`      | 15 min | 5     | IP       | failed codes    |
+| `POST /api/2fa/login`      | 15 min | 5     | account  | failed codes    |
 | every `GET` under `/api`   | 1 min  | 1200  | IP       | every request   |
 | `POST /api/keys/handover`  | 1 h    | 10    | account  | every request   |
 
