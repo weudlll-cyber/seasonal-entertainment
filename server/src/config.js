@@ -45,6 +45,13 @@ function readOnOff(value, name) {
   throw new Error(`${name} must be "1" or "0", got "${value}"`);
 }
 
+// The games' sync token: at least 32 characters, or none.
+function readSyncToken(value) {
+  if (value === undefined || value === '') return null;
+  if (value.length < 32) throw new Error('GAMES_SYNC_TOKEN must have at least 32 characters');
+  return value;
+}
+
 // Production refuses to start without a secret; development gets a random one per start
 // (sessions then end on every restart) and a warning, as in the race game.
 function readSessionSecret(env, isProduction) {
@@ -173,6 +180,15 @@ export function readConfig(env = process.env) {
     // page"): the host's nginx asks GET /api/bot-admin/authorize before every request to it.
     // Off: that route answers 404 and the sidebar has no "Manage events".
     botAdminEmbedded: readOnOff(env.BOT_ADMIN_EMBEDDED, 'BOT_ADMIN_EMBEDDED'),
+    // Seasonal Bingo Royale at /games/bingo (docs/AUTH.md, "Seasonal Bingo Royale"): the host's
+    // nginx asks GET /api/games/bingo/authorize who the visitor is; the game reads deleted
+    // accounts over the local port with syncToken (the installer's root-only
+    // /etc/seasonal/games-sync-token, passed in site.env; null: the feed refuses everyone).
+    // Off: both routes answer 404.
+    bingo: {
+      embedded: readOnOff(env.GAMES_BINGO_EMBEDDED, 'GAMES_BINGO_EMBEDDED'),
+      syncToken: readSyncToken(env.GAMES_SYNC_TOKEN),
+    },
     // ETH, POL and BTC prices from CoinGecko's free Demo API (reference/, docs/BOTS.md); null:
     // they show as not connected. Calls are spaced by gapMs (about 78 a day in all).
     coingecko: env.COINGECKO_API_KEY
@@ -192,6 +208,7 @@ export function readConfig(env = process.env) {
       bootstrap: { windowMs: 60 * 60_000, max: 10 }, // attempts per IP
       twoFactor: { windowMs: 15 * 60_000, max: 5 }, // failed codes per user / per IP at login
       chatReport: { windowMs: 60_000, max: 10 }, // chat reports per IP
+      bingoFeed: { windowMs: 60_000, max: 60 }, // deleted-accounts feed reads per address
       memberSearch: { windowMs: 60_000, max: 60 }, // member searches per account
       // Guests per IP, so clearing cookies does not reset them. In memory, no IP is stored.
       chatGuestPost: { windowMs: 60_000, max: 20 }, // guest messages per IP

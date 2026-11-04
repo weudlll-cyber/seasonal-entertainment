@@ -8,6 +8,7 @@
 //              in the race game).
 // ============================================================
 
+import { noteAccountChange } from './accountChanges.js';
 import { escapeLike } from '../db/like.js';
 
 export class LastAdminError extends Error {
@@ -52,10 +53,13 @@ export function guardLastAdmin(db, user, { role, locked, deleted = false }) {
   if (activeNow && !activeAfter && countActiveAdmins(db) <= 1) throw new LastAdminError();
 }
 
+// Each change that really changes something is noted for the games in the same transaction
+// (accountChanges.js): "rights" for the role and "can start games", "locked" / "unlocked".
 export function setRole(db, user, role) {
   db.transaction(() => {
     guardLastAdmin(db, user, { role });
     db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, user.id);
+    if (role !== user.role) noteAccountChange(db, user.id, 'rights');
   })();
 }
 
@@ -63,9 +67,15 @@ export function setLocked(db, user, locked) {
   db.transaction(() => {
     guardLastAdmin(db, user, { locked });
     db.prepare('UPDATE users SET locked = ? WHERE id = ?').run(locked ? 1 : 0, user.id);
+    if (Boolean(locked) !== Boolean(user.locked)) {
+      noteAccountChange(db, user.id, locked ? 'locked' : 'unlocked');
+    }
   })();
 }
 
 export function setCanStartGames(db, user, value) {
-  db.prepare('UPDATE users SET can_start_games = ? WHERE id = ?').run(value ? 1 : 0, user.id);
+  db.transaction(() => {
+    db.prepare('UPDATE users SET can_start_games = ? WHERE id = ?').run(value ? 1 : 0, user.id);
+    if (Boolean(value) !== Boolean(user.canStartGames)) noteAccountChange(db, user.id, 'rights');
+  })();
 }

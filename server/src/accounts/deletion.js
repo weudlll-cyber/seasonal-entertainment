@@ -10,12 +10,14 @@
 //              reports and their copies, embed tokens, call participation and reminders). The
 //              chat's own rest (room messages and uploads, room reports, the partners' read
 //              marks) and the files come from the chat handle (chat/accountData.js); the
-//              sessions are deleted here. The audit log and call recordings stay. After the
+//              sessions are deleted here; the id and the time are noted for the games
+//              (accountChanges.js). The audit log and call recordings stay. After the
 //              commit the deletion is noted in the deletion journal (deletionJournal.js), so a
 //              restore of an older backup deletes the account again. An account linked to
 //              Discord has its token revoked at Discord after the commit (best effort).
 // ============================================================
 
+import { noteAccountChange } from './accountChanges.js';
 import { noteDeletion } from './deletionJournal.js';
 import { guardLastAdmin } from './userAdmin.js';
 
@@ -42,6 +44,8 @@ export function deleteAccount(
          OR json_extract(sess, '$.pendingLogin.userId') = ?`
     ).run(user.id, user.id);
     db.prepare('DELETE FROM users WHERE id = ?').run(user.id);
+    // For the games: this id is a "Deleted player" from now on (accountChanges.js).
+    noteAccountChange(db, user.id, 'deleted');
     alsoInTransaction();
     return removed;
   })();

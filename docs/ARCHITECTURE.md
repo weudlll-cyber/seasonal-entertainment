@@ -495,6 +495,8 @@ server/
   src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md,
                            seed/earlier-seeds.json)
   src/games/               games hub: schema, store, public and admin routes, seed
+  src/bingo/               Seasonal Bingo Royale's sign-in (authorize) and account-changes feed
+                           (docs/AUTH.md, "Seasonal Bingo Royale")
   src/chat/                chat area, mounted by mount.js (the only entry for the rest of the
                            server): schema, store, messages and what may be sent, viewer rules,
                            routes, moderation, WebSocket endpoint (socket.js) and hub, sender

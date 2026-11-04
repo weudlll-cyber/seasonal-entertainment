@@ -73,6 +73,14 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Signing in to Seasonal Bingo Royale through the site** — closed by `feat/se-bingo-login`
+  (SE-BINGO-LOGIN; decided 2026-11-02 to 2026-11-04): `GET /api/games/bingo/authorize` for the
+  game's sign-in through nginx's `auth_request` (member headers with id, name, role, may host and
+  Discord steps; `X-Acting-Guest` for everyone else), account ids never issued twice, an
+  account-changes feed for the game (deleted, locked, unlocked, rights) over the local port with
+  the installer's sync token, and the installer's `--bingo`, routes include, port file and token
+  (`server/src/bingo/routes.js`, `deploy/install/lib/bingo.sh`; docs/AUTH.md and
+  docs/DEPLOYMENT.md, "Seasonal Bingo Royale").
 - **Four points of the security check of 2026-11-04** — closed by decision 2026-11-04:
   - **"Confirm with Discord" needs no click at Discord** (`prompt=none`): a click at Discord each
     time would only annoy; an attacker needs the open session and the victim's click anyway.
