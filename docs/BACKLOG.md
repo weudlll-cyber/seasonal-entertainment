@@ -55,12 +55,13 @@ entry waits for.
   list race was found either. More than 5 runs a server cannot be tried: each run registers an
   account, 5 an hour per address.
 
-- **A deleted account's messages on pages already open** — deleting an account deletes its room
-  messages at once (docs/AUTH.md, "Deleting an account"), but chat pages that are already open
-  keep showing them until they reload: no event tells open pages to remove them.
-
 ## PART TWO — closed
 
+- **A deleted account's messages on pages already open** — closed by `chore/se-audit-2`: after
+  the deletion commits, every open page of a room hears `{ type: 'deleted', ids }` through the
+  hub's usual push and drops those messages, for moderators too; the Community box asks again
+  (`server/src/chat/accountData.js`, `client/src/chat/useChatRoom.js`; docs/AUTH.md, "Deleting
+  an account").
 - **`directReport.spec.js`: Send stayed disabled** — closed by `chore/se-audit-2` (CI on
   `4c40c79`, attempt 1): "Send private message" switches to the Direct tab by a router
   transition, and until it is drawn General's field still answered to "Message"; the text went

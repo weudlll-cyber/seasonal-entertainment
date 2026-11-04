@@ -5,10 +5,11 @@
 // Description: A glimpse of the public room "general" for the home page's Community box
 //              (docs/CHAT.md, "Community box"): how many members are shown online and the newest
 //              3 messages, from GET /api/chat/glimpse, then kept live on the module's one
-//              connection — a new message is added, a hidden one makes it ask again, a new
-//              online count replaces the old (and a GET answer arriving after it does not). The
-//              server answers no messages while the room is for members only, and then new ones
-//              are not added either. Part of the module's public API (index.js).
+//              connection — a new message is added, a hidden one or a deleted account's
+//              ("deleted") makes it ask again, a new online count replaces the old (and a GET
+//              answer arriving after it does not). The server answers no messages while the
+//              room is for members only, and then new ones are not added either. Part of the
+//              module's public API (index.js).
 // ============================================================
 
 import { useEffect, useState } from 'react';
@@ -51,7 +52,7 @@ export function useRoomGlimpse() {
         liveCount = true;
         setGlimpse((now) => ({ ...now, online: event.count }));
       }
-      if (event.type === 'hidden') load();
+      if (event.type === 'hidden' || event.type === 'deleted') load();
       if (event.type === 'message') {
         setGlimpse((now) =>
           // Only while the room is public (room is null otherwise), never twice.

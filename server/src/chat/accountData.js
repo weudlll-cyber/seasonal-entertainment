@@ -7,7 +7,9 @@
 //              the rows the chat schemas keep when an account goes (ON DELETE SET NULL) or name
 //              only as text — room messages and uploads, room reports, the partners' read marks
 //              of the account's conversations — and the media files of everything the account's
-//              deletion removes, room uploads, direct files and shared report files alike.
+//              deletion removes, room uploads, direct files and shared report files alike. Pages
+//              already open hear which of the account's room messages went ("deleted",
+//              messagesDeleted()), so they drop them without a reload.
 // ============================================================
 
 import { deleteMediaFile } from '../media/files.js';
@@ -35,9 +37,13 @@ function filesOf(db, userId) {
 }
 
 // Runs inside the caller's transaction, before the account row goes (its cascade removes the
-// direct rows these files belong to). Returns the files to delete once that commits.
+// direct rows these files belong to). Returns what to do once that commits: { files, messages }
+// (the files to delete; the room messages removed, as { roomId, id }).
 export function deleteChatData(db, userId) {
   const files = filesOf(db, userId);
+  const messages = db
+    .prepare('SELECT room_id AS roomId, id FROM chat_messages WHERE author_user_id = ?')
+    .all(userId);
   // chat_uploads and chat_messages keep their rows with SET NULL; here they go. Reports of
   // the deleted messages and mentions in them follow by cascade.
   db.prepare('DELETE FROM chat_uploads WHERE user_id = ?').run(userId);
@@ -47,7 +53,16 @@ export function deleteChatData(db, userId) {
   // The partners' read marks of their conversations with this account (target_id is the
   // partner's id, not a foreign key).
   db.prepare("DELETE FROM chat_reads WHERE scope = 'direct' AND target_id = ?").run(userId);
-  return files;
+  return { files, messages };
+}
+
+// One "deleted" event per room through the hub's usual push (hub.broadcast: only to sockets
+// that may read the room), naming the room messages that went (deleteChatData's messages).
+export function messagesDeleted(hub, messages) {
+  const byRoom = Map.groupBy(messages, (m) => m.roomId);
+  for (const [roomId, rows] of byRoom) {
+    hub.broadcast(roomId, { type: 'deleted', ids: rows.map((m) => m.id) });
+  }
 }
 
 export function deleteChatFiles(config, files) {

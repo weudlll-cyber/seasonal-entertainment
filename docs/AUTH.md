@@ -610,8 +610,11 @@ chat retention).
     cascade), its room uploads, its room reports (`reporter` is `user:<id>`) and the partners'
     read marks of its conversations (`chat_reads.target_id`); by `deletion.js` its sessions (JSON
     in the `sessions` table);
-  - after the commit, the files on disk of those room uploads (with thumbnails), direct files and
-    shared report files (`chat.accounts.deleteFiles`).
+  - after the commit (`chat.accounts.afterCommit`), the files on disk of those room uploads (with
+    thumbnails), direct files and shared report files; and chat pages already open hear which room
+    messages went: one `{ type: 'deleted', ids }` per room through the hub's usual push (only to
+    sockets that may read the room), and they drop them at once, for moderators too (since
+    2026-11-04; `useChatRoom.js`; the home page's Community box asks again).
 - **Open sockets** of the account close (`chatSessions.accountChanged`, all of them, embedded
   chats included).
 - **The Discord token** is revoked at Discord after the commit (best effort; the token is read

@@ -25,7 +25,7 @@ import { directPreviewRoutes } from '../previews/directPreview.js';
 import { previewModerationRoutes } from '../previews/routes.js';
 import { createPreviewService } from '../previews/service.js';
 import { uploadRoutes } from '../uploads/routes.js';
-import { deleteChatData, deleteChatFiles } from './accountData.js';
+import { deleteChatData, deleteChatFiles, messagesDeleted } from './accountData.js';
 import { directReportRoutes } from './directReportRoutes.js';
 import { directRoutes } from './directRoutes.js';
 import { favouriteRoutes } from './favouriteRoutes.js';
@@ -64,11 +64,15 @@ const PUBLIC_MEDIA =
 // it); embedOrigins: the sites approved for the embedded chat (embed/origins.js), for sockets
 // that connect with an embed token. Call before the API's catch-all 404.
 // The chat's part of deleting an account, also without a running chat (a restore deleting
-// again, accounts/deletionJournal.js): its rows inside the caller's transaction (returns the
-// files), then those files on disk after the commit.
-export const chatAccounts = (db, config) => ({
+// again, accounts/deletionJournal.js; no hub then): its rows inside the caller's transaction
+// (returns what it removed), then after the commit the files on disk and, with a hub, the open
+// pages told which room messages went.
+export const chatAccounts = (db, config, hub = null) => ({
   deleteData: (userId) => deleteChatData(db, userId),
-  deleteFiles: (files) => deleteChatFiles(config, files),
+  afterCommit: ({ files, messages }) => {
+    deleteChatFiles(config, files);
+    if (hub) messagesDeleted(hub, messages);
+  },
 });
 
 export function mountChat({ app, api, db, config, sessionParser, previewNetwork, embedOrigins }) {
@@ -167,7 +171,7 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
       stepRulesChanged: () => hub.recheckAllRooms(),
     },
     // For deleting an account (accounts/deletion.js): chatAccounts above.
-    accounts: chatAccounts(db, config),
+    accounts: chatAccounts(db, config, hub),
     // For areas with a chat room of their own (a call's chat, calls/): an unlisted room,
     // shown only where a panel names it, closed (read-only for everyone) when it is over.
     rooms: {

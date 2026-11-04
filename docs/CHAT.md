@@ -553,7 +553,8 @@ its newest 3 messages (name, short text, time), then "Open the chat".
   GET was answered, and the push for it went out before that socket had subscribed (seen on the
   live site, 2026-11-01).
 - **Client**: the module's **`useRoomGlimpse()`** (`index.js`): the glimpse, kept live on the one
-  connection — a new message added (only while `room` is set), a hidden one makes it ask again,
+  connection — a new message added (only while `room` is set), a hidden one or a deleted
+  account's (`deleted`, docs/AUTH.md "Deleting an account") makes it ask again,
   a new count replaces the old. Once the connection has told a count, a later GET answer does not
   replace it (that answer was counted earlier). The box (`client/src/pages/CommunityCard.jsx`) shows text only:
   an attachment as `[image]` (stickers, pictures), `[GIF]` or `[file]`.
