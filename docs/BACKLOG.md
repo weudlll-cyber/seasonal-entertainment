@@ -38,20 +38,6 @@ entry waits for.
 - **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
   own repository and is not connected.
 
-### Security check of 2026-11-04 (SE-AUDIT-2): listed, not built
-
-- **"Confirm with Discord" needs no click at Discord** (`prompt=none`): someone holding a stolen
-  session cookie could start the confirmation and get the victim to open the link once. Discord's
-  consent page would still be one click for that victim; kept.
-- **Registration says whether a name or email is taken** (`username_taken`, `email_taken`; 5 an
-  hour per address), which the pre-login's fake salts otherwise hide. A plain answer would cost
-  the person registering a clear message; kept for now.
-- **`X-Embed-Origin` is the browser's claim**: a client outside a browser can name an approved
-  site and get that site's guest rules; the room's guest rules and the per-address limits still
-  apply.
-- **`npm audit`: 6 moderate findings, development only** (eslint and its dependencies); the fix
-  needs `--force` with breaking upgrades.
-
 ### Known limits
 
 - **A restore does not revoke Discord tokens** — analysed by SE-AUDIT-2 (2026-11-04), kept: a
@@ -87,6 +73,14 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Four points of the security check of 2026-11-04** — closed by decision 2026-11-04:
+  - **"Confirm with Discord" needs no click at Discord** (`prompt=none`): a click at Discord each
+    time would only annoy; an attacker needs the open session and the victim's click anyway.
+  - **Registration says whether a name or email is taken**: names are public in the chat anyway.
+  - **`X-Embed-Origin` is the browser's claim**: it cannot be otherwise; the room's guest rules
+    and the per-address limits still apply.
+  - **`npm audit`: 6 moderate findings in development tools only** (eslint and its
+    dependencies): never on the server, and the fix forces breaking upgrades.
 - **Server hardening of the SE-AUDIT-2 follow-up** — closed by `chore/se-audit-2` (2026-11-04;
   `deploy/test/server-hardening.test.sh`, docs/DEPLOYMENT.md):
   - **the event bot's admin page** answers with the site's `nosniff`, `Referrer-Policy`,
