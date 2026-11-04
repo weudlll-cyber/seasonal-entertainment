@@ -9,7 +9,9 @@
 # ============================================================
 
 # Signalling (WebSocket and HTTP API). The reverse proxy terminates TLS for
-# wss://<calls domain> and forwards here; the firewall keeps 7880 closed to the outside.
+# wss://<calls domain> and forwards here. It listens on 127.0.0.1 only (--bind in
+# docker-compose.yml; every address in Caddy mode on the site's VPS), and the firewall keeps 7880
+# closed to the outside as well.
 port: 7880
 
 rtc:

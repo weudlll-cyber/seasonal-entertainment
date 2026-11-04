@@ -33,6 +33,10 @@ const REASONS = {
   taken: ['error', 'This Discord account is already linked to another account here.'],
   other_user: ['error', 'Your account is linked to a different Discord account.'],
   not_linked: ['error', 'Your account is not linked to Discord.'],
+  proof_required: [
+    'error',
+    'Please enter your password before linking Discord (it may have taken too long).',
+  ],
   linked: [
     'ok',
     'Your Discord account is linked. Your steps are read from the Seasonal Tokens server.',

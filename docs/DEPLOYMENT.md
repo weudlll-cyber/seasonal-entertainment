@@ -22,7 +22,10 @@ own names in their place.
   the installer runs, because the certificates are fetched during the run.
 - Open ports: **80/tcp and 443/tcp** (certificates and the site; also 443/udp for HTTP/3 in
   Caddy mode). With calls also **7881/tcp, 3478/udp, 5349/tcp and 50000–50499/udp**. Port 7880
-  (LiveKit's signalling) stays closed: it is reached only through the proxy.
+  (LiveKit's signalling) stays closed: it is reached only through the proxy. In nginx mode LiveKit
+  listens there on 127.0.0.1 only (since 2026-11-04, `LIVEKIT_BIND` in `deploy/calls/.env`); in
+  Caddy mode on every address, because the site's Caddy container reaches it over the Docker
+  bridge, so there the firewall alone keeps it closed.
 - Ports 80 and 443 either free, or held by nginx (see "The two modes").
 - Outgoing internet: Docker's and Ubuntu's package repositories, Docker Hub, the npm registry
   (the image is built on the server) and Let's Encrypt.
@@ -36,7 +39,11 @@ git clone https://github.com/weudlll-cyber/seasonal-entertainment.git /opt/seaso
 ```
 
 It needs git, which Ubuntu servers usually have; if not, `sudo apt-get install -y git` first.
-Writing to `/opt` needs root: run it as root, or as `sudo git clone …` for the first half. The
+Writing to `/opt` needs root: run it as root, or as `sudo git clone …` for the first half.
+**The checkout must be root's** (since 2026-11-04): root runs its files, so the installer stops
+at once, before anything changes, when the checkout or any folder above it is not owned by root
+or is writable by its group or by others, and names that folder. A checkout cloned as another
+user: `sudo chown -R root:root <checkout> && sudo chmod -R go-w <checkout>`, then run again. The
 repository is public, so the clone needs no GitHub login on the server. Any folder works; the
 installer remembers where it ran. After the questions, a run on a fresh server took about 6
 minutes (first deployment), most of it installing Docker and building the image. It writes one
@@ -337,6 +344,14 @@ only while the page is set up (`deploy/install/lib/bot-admin.sh`):
   that trusts a proxy still sees the request coming from 127.0.0.1, the only address it takes
   the token from. `Cookie` is dropped too: the bot logs in by the token on every request, and
   the visitor's cookies (the site's session among them) stay with the site.
+- The bot's answers leave with the site's own rules (since 2026-11-04), whatever the bot sent of
+  them: `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`,
+  `X-Frame-Options: SAMEORIGIN` and `Content-Security-Policy: frame-ancestors 'self'`, each
+  `always` (error answers too). The page runs on the site's origin, so only the site's own pages
+  may frame it, as `/manage-events` does. No script or style policy: that could break the bot's
+  page. The site's server block has no `add_header` of its own; one added there must be added to
+  this location too, since nginx drops a server's `add_header` in a location that has its own
+  (`deploy/test/server-hardening.test.sh` checks it).
 
 Every change runs through the usual `nginx -t`, load-order check, reload and comparison of the
 answer for unknown names; a re-run keeps both locations. nginx logs no request headers with its
@@ -393,7 +408,9 @@ sudo /opt/seasonal-entertainment/deploy/install.sh --update
    of the database and the media folder instead (decided 2026-11-04,
    `deploy/install/lib/update-copy.sh`): the same backup code inside the running site, not
    encrypted, into `/var/backups/seasonal-update-copies/<time>/`, owned by root and readable
-   only by root, the newest three kept. It prints where the copy is. A failed copy stops the
+   only by root, the newest three kept. The site writes it inside its container (`/tmp`), and the
+   installer fetches it as root with `docker compose cp` (since 2026-11-04): it never lies in a
+   host folder of the container's user, uid 1000, which on a server may be a login account. It prints where the copy is. A failed copy stops the
    update before anything changed. To go back to it: `restore.mjs` takes the folder as it
    takes an unpacked backup (copy it under `/var/backups/seasonal/` first, "Restoring").
 3. Fetches and fast-forwards the checkout to origin's default branch (`master`), also from a
@@ -437,6 +454,10 @@ of something (decided 2026-11-01):
   whose file is gone after the update: the page reloads once by itself and opens it. Fails it
   again within a minute of that reload, the page says "This part of the page could not be
   loaded." with a Reload button instead of staying blank (`client/src/app/staleChunks.js`).
+- A request made while the site is restarting (no connection, or nginx's 502/503/504 page): the
+  page says "The server did not answer. Please try again in a moment." instead of a bare
+  "Request failed." (`NO_ANSWER`, `client/src/api/http.js`, since 2026-11-04); every message
+  the site itself sends is shown as it is.
 
 The build commit comes from the same place as the server's: the image is built with
 `--build-arg COMMIT_SHA` (the installer passes it), outside Docker from `git`
@@ -482,6 +503,16 @@ sudo ./deploy/install.sh --rollback /var/backups/seasonal-install/<time>
   runs on a newer database (changes are additive); if an update ever changed data in a way the
   old code cannot read, restore the backup taken before it ("Restoring").
 
+### Logs without secrets
+
+Two kinds of request carry a secret in their query: Discord's one-time `code` and `state` on
+`/api/auth/discord/callback`, and a file link's signature (`?link=`, valid 5 minutes) under
+`/api/chat/files/`. Both are logged without the query (since 2026-11-04): in nginx mode their
+two locations write `access.log` in the format `seasonal_no_query` (the distributions'
+`combined`, with the path in place of the whole request line); in Caddy mode a `request>uri`
+filter cuts the query from those two paths in both logs (`deploy/site/Caddyfile`). Every other
+request is logged as before. The embed and guest tokens never reach the logs either (docs/EMBED.md).
+
 ## Backups
 
 Every night at 03:30 `seasonal-backup.timer` runs `scripts/backup.mjs` inside the site container
@@ -495,6 +526,11 @@ Every night at 03:30 `seasonal-backup.timer` runs `scripts/backup.mjs` inside th
   your PC, so neither the server nor anyone who takes the files from it can read them.
 - A backup counts only once complete (`….partial` until then). Backups older than **14 days** are
   deleted, but only after a new one is complete.
+- The folder `/var/backups/seasonal` is **750** (since 2026-11-04; every run sets it, so an older
+  755 one is fixed): owned by uid 1000, the site container's user that writes the backups; its
+  group is the read-only backup user's below (`seasonal-backup`) when that user exists, otherwise
+  root's. Nobody else may even list it. A backup user made after the installer ran: run the
+  installer again (or `sudo chgrp seasonal-backup /var/backups/seasonal`).
 - The backups hold the whole database (2FA secrets encrypted with `SECRET_ENCRYPTION_KEY`, which
   is **not** in them; direct messages only as ciphertext).
 
@@ -825,7 +861,10 @@ event bot's admin page", "The token"); `bash deploy/test/discord.test.sh` checks
 settings are taken (from a secret file or the terminal, asked once, removed with `--discord`,
 the secret never shown; "Discord login"); `bash deploy/test/update-copy.test.sh` checks the copy
 `--update` makes without backups (where it lands, root only, the newest three kept, a failed
-copy stopping the update, no copy with backups set up; "Updating").
+copy stopping the update, no copy with backups set up; "Updating"). `sudo bash
+deploy/test/server-hardening.test.sh` checks the hardening of 2026-11-04 (the bot page's
+headers, the logs without secret queries, LiveKit on 127.0.0.1, the refusal of a checkout
+others could change, the backup folder 750; as root also the folder's rules for real).
 
 ## Reference: the manual steps
 

@@ -3,8 +3,9 @@
 // Path:        client/src/pages/chatPages.test.jsx
 // Project:     Seasonal Entertainment
 // Description: Guards the chat screens with a fake WebSocket: guests write with a guest note,
-//              only members' links become links, pushed messages appear and hidden ones go,
-//              moderator actions only for moderators, and the admin page lifts a sanction.
+//              only members' links become links, pushed messages appear and hidden ones go, a
+//              deleted account's messages go for moderators too, moderator actions only for
+//              moderators, and the admin page lifts a sanction.
 // ============================================================
 
 import { fireEvent, screen, within } from '@testing-library/react';
@@ -118,6 +119,29 @@ describe('chat page', () => {
     fireEvent.click(within(menu).getByRole('menuitem', { name: 'Report' }));
     expect(await screen.findByText('Reported. Thank you.')).toBeInTheDocument();
     expect(calls.some((c) => c.key === 'POST /chat/messages/1/report')).toBe(true);
+  });
+
+  it("a deleted account's messages go at once, for moderators too", async () => {
+    mockApi({
+      ...signedIn({ id: 2, username: 'mia', role: 'moderator' }),
+      ...rooms({ guestName: null, moderator: true }),
+      'GET /chat/rooms/general/messages': {
+        body: {
+          ok: true,
+          messages: [msg(1, 'bert', 'first'), msg(2, 'carla', 'kept'), msg(3, 'bert', 'second')],
+        },
+      },
+    });
+    await renderAt('/chat');
+    await screen.findByText('second');
+    await vi.waitFor(() =>
+      expect(FakeSocket.all.at(-1).sent).toEqual([{ type: 'subscribe', room: 'general' }])
+    );
+    // What the server sends after the deletion (server/src/chat/accountData.js).
+    FakeSocket.all.at(-1).push({ type: 'deleted', ids: [1, 3], room: 'general' });
+    await vi.waitFor(() => expect(screen.queryByText('first')).toBeNull());
+    expect(screen.queryByText('second')).toBeNull();
+    expect(screen.getByText('kept')).toBeInTheDocument();
   });
 
   it('moderators get Hide, Mute and Ban', async () => {

@@ -105,6 +105,25 @@ describe('login with 2FA', () => {
     expect(res.body.error).toBe('login_expired');
   });
 
+  it('failed codes count per account, from any address', async () => {
+    t = makeTestApp({
+      trustProxy: 1,
+      rateLimits: { twoFactor: { windowMs: 60_000, max: 3 } },
+    });
+    const { agent } = await registerUser(t, 'anna', PASSWORD);
+    const { secret } = await enableTwoFactor(agent);
+    // Every guess from an address of its own, after a fresh password step there.
+    const from = async (ip, code) => {
+      const visitor = t.client().set('X-Forwarded-For', ip);
+      await logIn(visitor, 'anna', PASSWORD);
+      return (await visitor.post('/api/2fa/login').send({ code })).status;
+    };
+    for (const ip of ['203.0.113.1', '203.0.113.2', '203.0.113.3']) {
+      expect(await from(ip, '000000')).toBe(401);
+    }
+    expect(await from('203.0.113.4', codeNow(secret))).toBe(429);
+  });
+
   it('a wrong code does not log in', async () => {
     t = makeTestApp();
     const { agent } = await registerUser(t, 'anna', PASSWORD);

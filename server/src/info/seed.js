@@ -7,7 +7,7 @@
 //              Markdown body) in SEED_ORDER. The ten content pages are published (checked
 //              against the official sources, decided 2026-10-22), and so is the Disclaimer
 //              (linked as "Not financial advice" from every page, 2026-10-23); Imprint and Privacy
-//              (SEED_DRAFTS) stay drafts until the owner's details and a legal review are in.
+//              (SEED_DRAFTS) are drafts with placeholders, for an admin to fill in and publish.
 //              Never runs again once pages exist, so later edits, renames and reorders are
 //              never undone. One exception, refreshSeedPages(): a stored page whose body is still
 //              exactly an earlier seed text (seed/earlier-seeds.json) was never edited, and gets

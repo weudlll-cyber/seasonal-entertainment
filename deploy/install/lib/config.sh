@@ -164,6 +164,14 @@ write_calls_env() {
   kv_set "$file" CALLS_DOMAIN "$CALLS_DOMAIN"
   kv_set "$file" CALLS_CERT_DIR "$CALLS_CERT_DIR"
   kv_set "$file" ACME_EMAIL "$ACME_EMAIL"
+  kv_set "$file" LIVEKIT_BIND "$(livekit_bind)"
+}
+
+# Where LiveKit's signalling port 7880 listens (deploy/calls/docker-compose.yml). nginx reaches
+# it on 127.0.0.1; the site's Caddy container in Caddy mode only over the Docker bridge, so there
+# it stays on every address, closed to the outside by the firewall alone.
+livekit_bind() {
+  if [[ "${MODE:-}" == caddy ]]; then echo 0.0.0.0; else echo 127.0.0.1; fi
 }
 
 # The site's media/recordings folder as the host sees it (the egress writes there).

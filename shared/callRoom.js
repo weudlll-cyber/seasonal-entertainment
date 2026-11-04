@@ -2,7 +2,7 @@
 // File:        callRoom.js
 // Path:        shared/callRoom.js
 // Project:     Seasonal Entertainment
-// Description: A call's chat room (docs/CALLS.md, "The call's chat"): the unlisted room the server
+// Description: A call's chat room (docs/CALLS.md, "Call chat"): the unlisted room the server
 //              creates with each call is named call-<call id> (server/src/calls/routes.js), and
 //              is shown on that call's page, /calls/<call id>. Links into such a room (a mention's
 //              notification, client/src/notify/useSystemNotifications.js) lead to that page.

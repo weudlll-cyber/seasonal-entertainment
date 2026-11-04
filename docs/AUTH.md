@@ -92,8 +92,13 @@ registration, password change, unlock or recovery runs, its button reads **Check
   private key, besides the password and the recovery code, **Confirm on another device**.
   - **The new device** makes a one-time key pair and sends its public key
     (`POST /api/keys/handover`). It shows a 6-digit code computed from that public key
-    (`handoverCode` in `shared/crypto.js`: BLAKE2b, so a key swapped on the way shows another
-    code).
+    (`handoverCode` in `shared/crypto.js`, BLAKE2b). A key swapped on the way by chance, or by
+    someone without time to search, shows another code. It is no defence against whoever runs the
+    server, though: 6 digits are about 20 bits, so they could make one-time key pairs until one
+    shows the same code (about a million tries) and swap that one in, and the safety numbers
+    would not show it (they check partners' keys, not this hand-over). Against the server's
+    operator, this way is only as safe as the server; the password or the recovery code on the
+    new device does not depend on it.
   - **The request** is valid 5 minutes, one at a time per account (`409 request_pending` for a
     second device; at most 10 an hour per account, `rateLimits.keyHandover`). It is kept in the
     server's memory only (`server/src/keys/handover.js`), not in the database. The server relays
@@ -166,7 +171,9 @@ rate limit, the lockout, locked accounts, the session epoch.
 Discord is the primary login. Username and password registration stays for people without
 Discord; they have no steps. While Discord is set up, the password sign-up page opens with a hint
 to sign up with Discord instead, since only then do the roles show
-(`client/src/discord/DiscordSignupHint.jsx`). Telegram login is not planned any more. Code: `server/src/discord/`,
+(`client/src/discord/DiscordSignupHint.jsx`), then the line "or with email and a password (no
+Discord steps)" between divider lines that stay at every width (at phone width the text wraps
+between them; `client/src/discord/Discord.css`). Telegram login is not planned any more. Code: `server/src/discord/`,
 `client/src/discord/`. The probe of 2026-11-02 found how Discord behaves; what follows relies on
 it.
 
@@ -184,7 +191,9 @@ character: in the probe, invisible leading spaces in the portal broke it.
   PKCE verifier in the session and sends the browser to Discord's consent page (with
   `prompt=none`: someone who already agreed to these scopes goes straight back). It asks for the
   scopes `identify` and `guilds.members.read` only: no `guilds` (it would list all of a member's
-  servers) and no `email`. There is no bot on the server.
+  servers) and no `email`. There is no bot on the server. `next` must be a path on this site
+  (`shared/localPath.js`, the same rule as the login pages' `?next=` since 2026-11-04: one
+  leading `/`, no backslash, so neither `//host` nor `/\host` leaves the site).
 - `GET /api/auth/discord/callback` checks the state in constant time, once (the flow is deleted
   from the session before anything else), within 10 minutes and for the same account that
   started it. It trades the code with the verifier and reads `/users/@me`, keeping the id and the
@@ -193,14 +202,23 @@ character: in the probe, invisible leading spaces in the portal broke it.
     account is refused, and an account with 2FA gets the second step (the page then shows
     the code form at once, `/login?discord=2fa`). Without a linked account, it starts a
     **sign-up**.
-  - **link**: the signed-in account is linked. A Discord user linked to another account is
+  - **link**: the signed-in account is linked, only after "prove it is you" (since 2026-11-04):
+    the account page's "Link Discord" asks for the password and sends its auth key to
+    `POST /api/auth/discord/link` (`provesIdentity`, `server/src/accounts/identityProof.js`;
+    failed tries count on the limiter it shares with unlinking: the password change's numbers,
+    5 per 15 minutes per account, its own counter), which marks the session for one link
+    within 10 minutes. `/start?intent=link` without that mark answers `?discord=proof_required`
+    at once (not counted as a failure: Discord was not asked), and so does a callback after the
+    mark ran out or was used (counted, and the fresh grant is revoked). So a
+    taken-over session alone cannot link the attacker's Discord user, which would let them log
+    in with Discord even after a password change. A Discord user linked to another account is
     refused (`?discord=taken`, and the database's UNIQUE on `discord_id` as well), and so is a
     second Discord user for an account that has one (`other_user`).
   - **confirm**: proves that it is the account's own Discord user (next section).
 - Every login and link also reads the member's roles, with the tokens just given (next
   section, "Discord: steps").
 - Failures go back to the page with `?discord=<reason>` (`expired`, `denied`, `failed`,
-  `locked`, `closed`, `taken`, `other_user`, `not_linked`, `too_many`;
+  `locked`, `closed`, `taken`, `other_user`, `not_linked`, `proof_required`, `too_many`;
   `client/src/discord/discordLinks.js` says them in words). They count on the login's per-IP
   limit for failed attempts. A refused consent does not count.
 - **Sign-up** (`/register/discord`, `client/src/pages/DiscordSignupPage.jsx`): the server holds
@@ -248,7 +266,8 @@ three ladders, and each shows only the member's highest step:
 - **Investor**: Level 1 Investor < … < Level 4 Investor.
 
 The shipped seed holds these 20 steps with their role ids and icons, exported from the PC test
-site on 2026-11-03.
+site on 2026-11-03. The four Investor icons are Twemoji graphics (CC-BY 4.0); their credit is on
+the live site's Imprint, written there by the owner, not in the code (decided 2026-11-04).
 
 Admins give each step the Discord role id that grants it, set the order and upload an icon
 (Admin → Discord steps). **Steps never grant rights on the site**; only the owner gives roles.
@@ -310,8 +329,12 @@ steps (`server/test/helpers/steps.js`), not the shipped ones.
   one dies at once. So:
   - **one refresh per account at a time**: a claim (`refreshing_since`, released after 2 minutes
     if the server died) makes a second one wait its turn;
-  - **the new token is saved with the roles in one statement**, right after the read. A crash
-    between Discord's answer and that save loses it; the member then logs in with Discord again.
+  - **the new token is saved the moment Discord gives it** (`keepRefreshToken`, one statement,
+    since 2026-11-04), before the member record is read with it; the roles follow in a second
+    statement. Only a stop between Discord's answer and that first statement (no network call in
+    between, only sealing the token) loses it; the member then logs in with Discord again. No
+    ordering closes that last gap: the token exists only in Discord's answer, and the old one is
+    dead once Discord has given it.
   - **only into the claimed link**: an unlink or account deletion while Discord answers wins.
     No link comes back, and the new token is revoked at Discord at once.
 - **Discord's answers**:
@@ -335,8 +358,8 @@ any Discord login on this session) stamps `discordProofAt` in the session, valid
 (`server/src/accounts/identityProof.js`). The session answer carries `discordProofUntil`, so the
 page can ask for it in time (`client/src/discord/DiscordConfirmGate.jsx`, "Confirm with
 Discord", which comes back to the same page). This proof stands in for the password where the
-password is asked: creating or changing the keys (`/api/keys`), setting a first password, and
-deleting the account. A taken-over session alone can do none of these.
+password is asked: creating or changing the keys (`/api/keys`), setting a first password,
+deleting the account, and linking Discord. A taken-over session alone can do none of these.
 
 - **A first password** (`POST /api/auth/password/first`, the account page's "Set a password"):
   only for an account without one, after the proof. It is sent as a salt and auth key like any
@@ -424,7 +447,9 @@ member with an **embed token** instead (`server/src/embed/`; SE-NIGHT-2 follow-u
 - **`REQUIRE_STAFF_2FA`** (default `true`) may be set to `false` for local development only;
   the server refuses to start with `false` in production.
 - Failed codes are rate-limited (`rateLimits.twoFactor`: 5 per 15 minutes, per account for
-  enable/disable, per IP for the login step).
+  enable/disable; for the login step both per IP and per account of the pending login, since
+  2026-11-04: a right password never counts against the login limits, so guesses spread over
+  many addresses would otherwise each get fresh tries).
 - **TOTP secrets are encrypted at rest** (SE-NIGHT-2 part 8, `server/src/twofa/secretBox.js`):
   - Authenticated encryption with the project's libsodium helper (`shared/crypto.js`
     `sealBytes`/`openSealed`: secretbox, a fresh nonce each time).
@@ -488,17 +513,20 @@ cross-site form posts and fetches. The chat WebSocket upgrade uses the same rule
 
 All answer `429 too_many_attempts`. Numbers are in `server/src/config.js` (`rateLimits`).
 
-| Route                      | Window | Limit | Keyed on | Counts          |
-| -------------------------- | ------ | ----- | -------- | --------------- |
-| `POST /api/auth/login`     | 15 min | 10    | IP       | failed attempts |
-| `POST /api/auth/login`     | 15 min | 10    | username | failed attempts |
-| `POST /api/auth/prelogin`  | 15 min | 60    | IP       | every request   |
-| `POST /api/auth/register`  | 1 h    | 5     | IP       | every attempt   |
-| `POST /api/auth/password`  | 15 min | 5     | account  | failed attempts |
-| `DELETE /api/auth/account` | 15 min | 5     | account  | failed attempts |
-| `POST /api/auth/bootstrap` | 1 h    | 10    | IP       | every attempt   |
-| every `GET` under `/api`   | 1 min  | 1200  | IP       | every request   |
-| `POST /api/keys/handover`  | 1 h    | 10    | account  | every request   |
+| Route                                                        | Window | Limit | Keyed on | Counts          |
+| ------------------------------------------------------------ | ------ | ----- | -------- | --------------- |
+| `POST /api/auth/login`                                       | 15 min | 10    | IP       | failed attempts |
+| `POST /api/auth/login`                                       | 15 min | 10    | username | failed attempts |
+| `POST /api/auth/prelogin`                                    | 15 min | 60    | IP       | every request   |
+| `POST /api/auth/register`                                    | 1 h    | 5     | IP       | every attempt   |
+| `POST /api/auth/password`                                    | 15 min | 5     | account  | failed attempts |
+| `DELETE /api/auth/account`                                   | 15 min | 5     | account  | failed attempts |
+| `POST /api/auth/discord/link` and `DELETE /api/auth/discord` | 15 min | 5     | account  | failed attempts |
+| `POST /api/auth/bootstrap`                                   | 1 h    | 10    | IP       | every attempt   |
+| `POST /api/2fa/login`                                        | 15 min | 5     | IP       | failed codes    |
+| `POST /api/2fa/login`                                        | 15 min | 5     | account  | failed codes    |
+| every `GET` under `/api`                                     | 1 min  | 1200  | IP       | every request   |
+| `POST /api/keys/handover`                                    | 1 h    | 10    | account  | every request   |
 
 `POST /api/auth/prelogin` also shares the two login limiters above (the same counters): a blocked
 name or address gets neither salts nor logins. The limit on every read (since 2026-10-21) covers
@@ -607,13 +635,20 @@ chat retention).
     cascade), its room uploads, its room reports (`reporter` is `user:<id>`) and the partners'
     read marks of its conversations (`chat_reads.target_id`); by `deletion.js` its sessions (JSON
     in the `sessions` table);
-  - after the commit, the files on disk of those room uploads (with thumbnails), direct files and
-    shared report files (`chat.accounts.deleteFiles`).
+  - after the commit (`chat.accounts.afterCommit`), the files on disk of those room uploads (with
+    thumbnails), direct files and shared report files; and chat pages already open hear which room
+    messages went: one `{ type: 'deleted', ids }` per room through the hub's usual push (only to
+    sockets that may read the room), and they drop them at once, for moderators too (since
+    2026-11-04; `useChatRoom.js`; the home page's Community box asks again).
 - **Open sockets** of the account close (`chatSessions.accountChanged`, all of them, embedded
   chats included).
 - **The Discord token** is revoked at Discord after the commit (best effort; the token is read
-  before the link goes, `revokerFor` in `server/src/discord/index.js`), on both routes. A restore
-  that deletes an account again cannot do this (docs/BACKLOG.md, "Known limits").
+  before the link goes, `revokerFor` in `server/src/discord/index.js`), on both routes. When
+  that one try fails, the log gets the line `[discord] revoke at deletion failed`, nothing else
+  (no token, no account; since 2026-11-04), and the grant stays at Discord until it goes unused.
+  A restore
+  that deletes an account again does not revoke, and needs not: that account's grant ended at
+  its deletion, older tokens in the backup with it (docs/BACKLOG.md, "Known limits").
 - **What stays**: the audit log (entries keep their `actor_name`; `actor_id` becomes empty), call
   recordings and their chapter marks (they name the organiser who started them as text, and hold
   the sound and pictures of whoever spoke or showed a camera or screen), calls the account

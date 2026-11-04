@@ -10,7 +10,8 @@
 #              written only into the root-only nginx include /etc/seasonal/bot-admin-token.conf;
 #              the nginx locations that ask the site (GET /api/bot-admin/authorize) about every
 #              request before forwarding it to the bot with the token and the acting user's
-#              name; the matching include after --rollback, its removal by --uninstall, and
+#              name, its answers carrying the site's nosniff, referrer and framing headers; the
+#              matching include after --rollback, its removal by --uninstall, and
 #              the line in --status.
 # ============================================================
 
@@ -215,7 +216,29 @@ nginx_bot_admin_locations() {
   echo "        # set) and the token from the root-only include; never what the visitor sent."
   echo "        proxy_set_header X-Acting-User \$seasonal_acting_user;"
   echo "        include $BOT_ADMIN_TOKEN_CONF;"
+  bot_admin_headers
   echo "    }"
+}
+
+# The bot's page runs on the site's origin: it gets the site's framing and type rules, whatever
+# the bot sends of these (hidden first, so no header comes twice). No script or style policy:
+# that could break the bot's page. The site's server block has no add_header of its own: nginx
+# would drop those in this location (it has its own), so one added there must be added here too
+# (deploy/test/proxy-config.test.sh checks it).
+BOT_ADMIN_HEADERS=(
+  "X-Content-Type-Options nosniff"
+  "Referrer-Policy same-origin"
+  "X-Frame-Options SAMEORIGIN"
+  "Content-Security-Policy \"frame-ancestors 'self'\""
+)
+bot_admin_headers() {
+  local header
+  for header in "${BOT_ADMIN_HEADERS[@]}"; do
+    echo "        proxy_hide_header ${header%% *};"
+  done
+  for header in "${BOT_ADMIN_HEADERS[@]}"; do
+    echo "        add_header $header always;"
+  done
 }
 
 # --rollback, after the snapshot's nginx files are back: the include and site.env's

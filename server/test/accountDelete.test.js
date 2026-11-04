@@ -8,7 +8,8 @@
 //              active admin can delete itself neither on the account page nor be deleted by the
 //              data layer; an admin deletes another account from the user list (audited: who,
 //              which account name, when) but not their own there; members cannot use the admin
-//              route; the account's open chat sockets close. What the deletion removes:
+//              route; the account's open chat sockets close, and open pages of the rooms hear
+//              which of its messages went ("deleted"). What the deletion removes:
 //              accountDeleteData.test.js.
 // ============================================================
 
@@ -123,6 +124,23 @@ describe('deleting your own account', () => {
     await socket.opened;
     expect((await deleteOwn(agent)).status).toBe(200);
     expect(await socket.closed).toBe(4001);
+  });
+
+  it("tells open pages which of the account's room messages went", async () => {
+    let url;
+    ({ t, server, url } = await listeningChat());
+    const { agent } = await registerUser(t, 'anna');
+    const { agent: other } = await registerUser(t, 'otto');
+    const say = async (who, body) =>
+      (await who.post('/api/chat/rooms/general/messages').send({ body })).body.message.id;
+    const mine = [await say(agent, 'first'), await say(agent, 'second')];
+    await say(other, 'stays');
+    const guest = connect(url);
+    await guest.opened;
+    expect((await guest.subscribe('general')).type).toBe('subscribed');
+    expect((await deleteOwn(agent)).status).toBe(200);
+    expect(await guest.next('deleted')).toEqual({ type: 'deleted', ids: mine, room: 'general' });
+    guest.ws.close();
   });
 
   it('is not open to the embedded chat on other sites', async () => {

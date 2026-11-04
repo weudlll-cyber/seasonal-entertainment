@@ -9,7 +9,8 @@
 #              an explanation shown only when really asked; secrets echoed as one * per
 #              character), KEY=VALUE files read without executing them and edited key by key
 #              (from someone else's file, such as the event bot's, only the one key asked for),
-#              and the installer's own state in /etc/seasonal/.
+#              the installer's own state in /etc/seasonal/, and the refusal to run from a
+#              checkout anyone but root could change (refuse_unsafe_checkout).
 # ============================================================
 
 # Where the installer keeps what it must remember between runs (root only).
@@ -31,9 +32,34 @@ die() {
   exit 1
 }
 
-# git in the checkout (which may belong to another user than root): --commit, --update, the
-# commit the image is built with.
-git_here() { git -c safe.directory="$INSTALL_DIR" -C "$INSTALL_DIR" "$@"; }
+# git in the checkout (root's: refuse_unsafe_checkout): --commit, --update, the commit the image
+# is built with.
+git_here() { git -C "$INSTALL_DIR" "$@"; }
+
+# The first folder of $1 and its parents up to / that anyone but root could change: not owned by
+# root, or writable by its group or by others (mode & 022). Prints "<folder> (owner uid U, mode
+# M)" and succeeds; fails when there is none.
+unsafe_folder() {
+  local dir="$1" owner mode
+  while :; do
+    read -r owner mode < <(stat -c '%u %a' "$dir")
+    if [[ "$owner" != 0 ]] || (((8#$mode & 8#022) != 0)); then
+      printf '%s (owner uid %s, mode %s)\n' "$dir" "$owner" "$mode"
+      return 0
+    fi
+    [[ "$dir" != / ]] || return 1
+    dir="$(dirname "$dir")"
+  done
+}
+
+# Root runs this checkout's files: whoever else could write them, or a folder above them, could
+# make root run anything. Stops before anything is changed (install.sh calls it first).
+refuse_unsafe_checkout() {
+  local real unsafe
+  real="$(cd -P "$1" && pwd)"
+  unsafe="$(unsafe_folder "$real")" || return 0
+  die "the checkout $real is run as root, but $unsafe could be changed by someone else; make it and every folder above it root's and not group- or other-writable (for the checkout: sudo chown -R root:root $real && sudo chmod -R go-w $real), then run again; nothing was changed"
+}
 
 # A terminal to ask on, also when stdin is a pipe; none in unattended runs.
 have_tty() { [[ -r /dev/tty && -w /dev/tty ]] && { : </dev/tty; } 2>/dev/null; }

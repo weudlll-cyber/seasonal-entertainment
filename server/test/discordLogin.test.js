@@ -5,8 +5,9 @@
 // Description: Discord login and linking (docs/AUTH.md, "Discord"; SE-DISCORD-1 piece 1), against
 //              the pretend Discord (helpers/fakeDiscord.js): state and PKCE, a wrong or replayed
 //              state, denied consent, the sign-up (no email, no password, the name offered and
-//              made to fit), logging in a linked account, a Discord user linked to a second
-//              account refused, unlinking only with a password, the staff 2FA step after a
+//              made to fit), logging in a linked account, linking only after the password was
+//              proven (once per proof, checked at the start and at the callback), a Discord user
+//              linked to a second account refused, unlinking only with a password, the staff 2FA step after a
 //              Discord login, failed callbacks counting on the login limit, the feature off, and
 //              the client secret and tokens never reaching the browser.
 // ============================================================
@@ -15,7 +16,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { codeForStep, stepAt } from '../src/twofa/totp.js';
 import { fitUsername } from '../src/discord/username.js';
 import { setSetting } from '../src/settings/store.js';
-import { proof } from './helpers/accountKeys.js';
+import { proof, proveForLink } from './helpers/accountKeys.js';
 import { DISCORD_TEST, fakeDiscord } from './helpers/fakeDiscord.js';
 import { STAFF_TOTP_SECRET, makeStaff, makeTestApp, registerUser } from './helpers/testApp.js';
 
@@ -48,6 +49,7 @@ function recorder(agent) {
 
 // /start, Discord's approval, and the callback: returns the callback's answer.
 async function discordFlow(agent, discord, discordId, query = 'intent=login') {
+  if (query.includes('intent=link')) await proveForLink(agent);
   const start = await agent.get(`/api/auth/discord/start?${query}`);
   expect(start.status).toBe(302);
   return agent.get(discord.approve(start.headers.location, discordId));
@@ -201,6 +203,39 @@ describe('linking and unlinking', () => {
     const taken = await discordFlow(bob, discord, DISCORD_ID, 'intent=link');
     expect(taken.headers.location).toBe('/account?discord=taken');
     expect(t.db.prepare('SELECT COUNT(*) AS n FROM discord_links').get().n).toBe(1);
+  });
+
+  it('links only after "prove it is you": a session alone cannot link', async () => {
+    const discord = setup();
+    const { agent } = await registerUser(t, 'anna');
+    const links = () => t.db.prepare('SELECT COUNT(*) AS n FROM discord_links').get().n;
+    // No proof: refused before Discord is even asked.
+    const start = await agent.get('/api/auth/discord/start?intent=link');
+    expect(start.headers.location).toBe('/account?discord=proof_required');
+    // A wrong password gives none.
+    expect((await agent.post('/api/auth/discord/link').send(await proof('wrong-9'))).status).toBe(
+      401
+    );
+    expect((await agent.get('/api/auth/discord/start?intent=link')).headers.location).toBe(
+      '/account?discord=proof_required'
+    );
+    // Proven, the flow starts; a proof that ran out by the callback links nothing, and the
+    // grant is revoked.
+    await proveForLink(agent);
+    const first = await agent.get('/api/auth/discord/start?intent=link');
+    t.db.prepare("UPDATE sessions SET sess = json_set(sess, '$.discordLinkProofAt', 0)").run();
+    const late = await agent.get(discord.approve(first.headers.location, DISCORD_ID));
+    expect(late.headers.location).toBe('/account?discord=proof_required');
+    expect(links()).toBe(0);
+    expect(discord.liveRefreshTokens()).toEqual([]);
+    // And with a fresh proof it links, once.
+    expect((await discordFlow(agent, discord, DISCORD_ID, 'intent=link')).headers.location).toBe(
+      '/account?discord=linked'
+    );
+    expect(links()).toBe(1);
+    expect((await agent.get('/api/auth/discord/start?intent=link')).headers.location).toBe(
+      '/account?discord=proof_required'
+    );
   });
 
   it('refuses linking a second Discord user to an account that has one', async () => {

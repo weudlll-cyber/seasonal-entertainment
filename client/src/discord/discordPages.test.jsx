@@ -7,12 +7,12 @@
 //              back with, the 2FA step after a Discord login of an account that has 2FA, the
 //              password sign-up page's Discord hint (only while set up), the Discord sign-up
 //              page (name offered, age required), and the account page's Discord section
-//              (link; unlink with the password, or the hint to set one first).
+//              (link and unlink, each with the password, or the hint to set one first).
 // ============================================================
 
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import App from '../app/App.jsx';
 import { GUEST, NO_KEY, PRELOGIN, mockApi, signedIn, withFeatures } from '../test/mockApi.js';
 import { needsDiscordConfirm } from './discordLinks.js';
@@ -109,14 +109,29 @@ describe('the Discord sign-up page', () => {
 });
 
 describe('the account page', () => {
-  it('offers linking Discord to an account without a link', async () => {
-    mockApi({
-      ...withFeatures(signedIn({ username: 'anna', role: 'member' }), DISCORD),
-      ...NO_KEY,
-    });
-    renderAt('/account');
-    const link = await screen.findByRole('link', { name: 'Link Discord' });
-    expect(link).toHaveAttribute('href', '/api/auth/discord/start?intent=link&next=%2Faccount');
+  it('links Discord after the password is proven, then goes to Discord', async () => {
+    const assign = vi.fn();
+    vi.stubGlobal('location', { ...window.location, assign });
+    try {
+      const calls = mockApi({
+        ...withFeatures(signedIn({ username: 'anna', role: 'member' }), DISCORD),
+        ...NO_KEY,
+        ...PRELOGIN,
+        'POST /auth/discord/link': { body: { ok: true } },
+      });
+      renderAt('/account');
+      fireEvent.change(await screen.findByLabelText('Password to link Discord'), {
+        target: { value: 'correct-horse-1' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Link Discord' }));
+      // The password's keys take a moment (Argon2), more while other tests run.
+      await expect.poll(() => assign.mock.calls.length, { timeout: 20_000 }).toBe(1);
+      expect(assign).toHaveBeenCalledWith('/api/auth/discord/start?intent=link&next=%2Faccount');
+      const body = calls.find((c) => c.key === 'POST /auth/discord/link').body;
+      expect(Object.keys(body)).toEqual(['authKey']);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('shows the linked name and the full step names, and unlinks with the password', async () => {

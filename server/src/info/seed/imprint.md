@@ -1,6 +1,6 @@
 # Imprint
 
-**Draft — needs legal review before publishing.**
+**Fill in before going live.**
 
 ## Responsible for this website
 

@@ -7,8 +7,10 @@
 //              members get it (anyone else 404, guests 401, a pending one only its uploader);
 //              the recipient decrypts it; a file can be sent once, by its uploader, to that
 //              partner; the room upload size applies; a reported message's file, shared by
-//              the reporter's browser, reaches moderators only (audited); a deleted message, or
-//              account, takes its file off the disk.
+//              the reporter's browser, reaches moderators only (audited), once per reporter and
+//              message across reports and never larger than the stored file, with at most
+//              OPEN_REPORTS_MAX reports waiting per reporter; a deleted message, or account,
+//              takes its file off the disk.
 // ============================================================
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -16,6 +18,7 @@ import path from 'node:path';
 import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
 import { decryptFile, encryptFile } from '@seasonal-entertainment/shared/crypto.js';
+import { OPEN_REPORTS_MAX } from '../src/chat/directReportRoutes.js';
 import { runChatRetention } from '../src/chat/retention.js';
 import { auditActions } from './helpers/chat.js';
 import { readDirect, sendDirect } from './helpers/direct.js';
@@ -155,6 +158,35 @@ describe('files in direct messages', () => {
     expect(download.headers['content-disposition']).toContain('attachment');
     expect(String(download.body)).toBe(CANARY);
     expect(auditActions(t)).toContain('chat.direct_report_file_view');
+  });
+
+  it('report copies are no way around the upload quota', async () => {
+    const m = await members();
+    const { data, messageId } = await sentFile(m);
+    const report = async () =>
+      m.ben.agent.post(`/api/chat/direct/${m.anna.user.id}/report`).send({
+        messageId,
+        reason: 'unwanted file',
+        shared: [{ id: messageId, text: '' }],
+      });
+    const share = async (reportId, bytes) =>
+      m.ben.agent
+        .post(`/api/chat/direct/${m.anna.user.id}/reports/${reportId}/files/${messageId}?name=a`)
+        .set('Content-Type', 'application/octet-stream')
+        .send(Buffer.alloc(bytes, 7));
+    const first = (await report()).body.reportId;
+    // Never larger than the file that was sent (its stored, encrypted size).
+    expect((await share(first, data.length + 1)).status).toBe(413);
+    expect((await share(first, data.length)).status).toBe(201);
+    // Once per reporter and message: a new report brings no second copy.
+    const second = (await report()).body.reportId;
+    expect((await share(second, 10)).status).toBe(409);
+    // And only so many reports may wait for the moderators at once.
+    for (let open = 2; open < OPEN_REPORTS_MAX; open += 1) {
+      expect((await report()).status).toBe(201);
+    }
+    const refused = await report();
+    expect([refused.status, refused.body.error]).toEqual([429, 'too_many_open_reports']);
   });
 
   it('a deleted message takes its file off the disk; so does a deleted account', async () => {

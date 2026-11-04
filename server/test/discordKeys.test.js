@@ -15,7 +15,8 @@
 import { randomBytes } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DISCORD_PROOF_MS } from '../src/accounts/identityProof.js';
-import { keysFor, proof } from './helpers/accountKeys.js';
+import { REVOKE_FAILED } from '../src/discord/index.js';
+import { keysFor, proof, proveForLink } from './helpers/accountKeys.js';
 import { DISCORD_TEST, fakeDiscord } from './helpers/fakeDiscord.js';
 import { makeStaff, makeTestApp, registerUser } from './helpers/testApp.js';
 
@@ -71,6 +72,7 @@ describe('the proof of an account without a password', () => {
     const { discord } = await setup();
     discord.addUser('200000000000000002', 'anna', []);
     const { agent } = await registerUser(t, 'anna', 'correct-horse-1');
+    await proveForLink(agent);
     const start = await agent.get('/api/auth/discord/start?intent=link');
     await agent.get(discord.approve(start.headers.location, '200000000000000002'));
     // Freshly confirmed with Discord, but no password: refused.
@@ -166,6 +168,20 @@ describe('deleting an account without a password', () => {
     expect(t.db.prepare('SELECT COUNT(*) AS n FROM users WHERE id = ?').get(userId).n).toBe(0);
     expect(t.db.prepare('SELECT COUNT(*) AS n FROM discord_links').get().n).toBe(0);
     await vi.waitFor(() => expect(discord.calls.revoke).toBe(revokes + 1));
+  });
+
+  it('a revocation that fails is one log line, without the token or the account', async () => {
+    const { discord, userId } = await setup();
+    const { agent: admin } = await makeStaff(t, 'boss', 'admin');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    discord.rateLimitNext = 60; // Discord answers the revocation with 429
+    expect((await admin.delete(`/api/admin/users/${userId}`)).status).toBe(200);
+    await vi.waitFor(() => expect(warn).toHaveBeenCalledWith(REVOKE_FAILED));
+    expect(warn).toHaveBeenCalledTimes(1);
+    const logged = JSON.stringify(warn.mock.calls);
+    for (const secret of [...discord.revoked, 'weudlll', DISCORD_ID, String(userId)]) {
+      expect(logged).not.toContain(secret);
+    }
   });
 
   it('by an admin revokes the Discord token too', async () => {

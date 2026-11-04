@@ -33,9 +33,9 @@ export function deleteAccount(
 ) {
   // The link row goes with the account (cascade): its token is read before.
   const revokeDiscord = discord?.revokerFor(user.id) ?? (() => {});
-  const files = db.transaction(() => {
+  const removed = db.transaction(() => {
     guardLastAdmin(db, user, { deleted: true });
-    const found = chatAccounts.deleteData(user.id);
+    const removed = chatAccounts.deleteData(user.id);
     // Sessions are JSON in the session store's table; also a login half-way through 2FA.
     db.prepare(
       `DELETE FROM sessions WHERE json_extract(sess, '$.userId') = ?
@@ -43,11 +43,11 @@ export function deleteAccount(
     ).run(user.id, user.id);
     db.prepare('DELETE FROM users WHERE id = ?').run(user.id);
     alsoInTransaction();
-    return found;
+    return removed;
   })();
-  // Only after the commit: a deletion that failed leaves every file in place, and is never
-  // journaled (a restore would delete an account that still exists).
-  chatAccounts.deleteFiles(files);
+  // Only after the commit: a deletion that failed leaves every file in place, tells open pages
+  // nothing, and is never journaled (a restore would delete an account that still exists).
+  chatAccounts.afterCommit(removed);
   revokeDiscord();
   if (!journal) return;
   try {

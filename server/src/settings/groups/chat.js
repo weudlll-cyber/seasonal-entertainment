@@ -47,7 +47,7 @@ export const CHAT_SETTINGS = {
   'chat.imageMaxMegapixels': {
     type: 'integer',
     label: 'Largest image',
-    help: 'Width x height, read before decoding: uploads, link previews, event bot images.',
+    help: 'Width x height (an animation: all frames together), read before decoding: uploads, link previews, event bot images.',
     unit: 'megapixels',
     default: (config) => config.imageMaxPixels / 1_000_000,
     min: 12,

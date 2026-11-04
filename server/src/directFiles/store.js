@@ -64,9 +64,22 @@ export function mayFetchDirectFile(file, userId) {
   return file.messageId !== null && (file.uploaderId === userId || file.partnerId === userId);
 }
 
-// The attached file of a direct message, if it has one.
+// The attached file of a direct message, if it has one: { id, bytes } (bytes: the stored,
+// encrypted size).
 export function fileOfMessage(db, messageId) {
-  return db.prepare('SELECT id FROM direct_files WHERE message_id = ?').get(messageId);
+  return db.prepare('SELECT id, bytes FROM direct_files WHERE message_id = ?').get(messageId);
+}
+
+// Has this reporter shared a copy of this message's file already, with any report?
+export function reporterSharedFile(db, reporterId, messageId) {
+  return Boolean(
+    db
+      .prepare(
+        `SELECT 1 FROM direct_report_files f JOIN direct_reports r ON r.id = f.report_id
+         WHERE r.reporter_id = ? AND f.message_id = ?`
+      )
+      .get(reporterId, messageId)
+  );
 }
 
 // Is messageId one of the copies this reporter shared with this report about this partner?

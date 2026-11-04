@@ -68,13 +68,16 @@ export function downloadBytes(bytes, name) {
 }
 
 // For a report (ReportDirectDialog): the reporter's browser decrypts each shared message's
-// file and hands the plain copy to the moderators. shared: [{ id, file }].
+// file and hands the plain copy to the moderators. shared: [{ id, file }]. A file this member
+// shared with an earlier report is not taken again (already_shared): the moderators have it.
 export async function shareReportFiles(partnerId, reportId, shared) {
   for (const { id, file } of shared) {
     const bytes = await openDirectFile(file);
     if (!bytes) continue;
     await upload(`/chat/direct/${partnerId}/reports/${reportId}/files/${id}`, new Blob([bytes]), {
       name: file.name,
+    }).catch((err) => {
+      if (err.code !== 'already_shared') throw err;
     });
   }
 }

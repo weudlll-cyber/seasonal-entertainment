@@ -20,13 +20,15 @@
 import helmet from 'helmet';
 
 // The built client uses only same-origin files: scripts and styles from /assets, images
-// from /assets or data: URLs (the 2FA QR code), and API/WebSocket calls to this origin.
+// from /assets, data: URLs (the 2FA QR code) or blob: URLs (a direct message's picture, which
+// the browser decrypts and shows from memory: client/src/chat/DirectFile.jsx), and API/WebSocket
+// calls to this origin. blob: only for images: a blob made by this page's own code.
 const CSP_BASE = {
   defaultSrc: ["'self'"],
   // 'wasm-unsafe-eval' allows compiling WebAssembly only; JavaScript eval stays forbidden.
   scriptSrc: ["'self'", "'wasm-unsafe-eval'"],
   styleSrc: ["'self'"],
-  imgSrc: ["'self'", 'data:'],
+  imgSrc: ["'self'", 'data:', 'blob:'],
   fontSrc: ["'self'"],
   connectSrc: ["'self'"],
   objectSrc: ["'none'"],

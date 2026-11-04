@@ -6,11 +6,13 @@
 # Description: Tests of what --update keeps before it moves the code (deploy/install/lib/
 #              update-copy.sh; docs/DEPLOYMENT.md, "Updating"): without backups set up, a copy
 #              made by the backup code in the site container lands in the fixed folder, root
-#              only, named in the output, the staging folder gone, the newest three kept and
-#              nothing else in the folder touched; a failed copy stops the update and leaves
-#              nothing; with backups set up only the encrypted backup is taken, no copy. The site
-#              container is pretended (compose_site writes what scripts/backup.mjs would), and
-#              chown and the owners of install are recorded, so no root is needed. Plain
+#              only, named in the output, staged inside the container (never in a host folder
+#              owned by its uid 1000) and gone from there, the newest three kept and nothing
+#              else in the folder touched; a failed copy stops the update and leaves nothing;
+#              with backups set up only the encrypted backup is taken, no copy. The site
+#              container is pretended (its files under a folder of the test; compose_site's exec
+#              writes what scripts/backup.mjs would, cp copies out, rm removes), and chown and
+#              the owners of install are recorded, so no root is needed. Plain
 #              checks, no framework. Run: bash deploy/test/update-copy.test.sh; CI runs it.
 #              Exit code 1 on any failure.
 # ============================================================
@@ -48,19 +50,31 @@ install() {
   done
   command install "${args[@]}"
 }
-# The site container's backup: the next UTC time, written where BACKUP_DIR points (/backups is
-# the host's BACKUP_HOST_DIR). COPY_FAILS=1 pretends the site is down.
+# The site container: its files under $container. exec ... backup.mjs writes the next UTC time
+# where BACKUP_DIR points; exec ... rm -rf removes; cp site:SRC DEST copies out as docker does
+# (DEST made with SRC's contents). COPY_FAILS=1 pretends the site is down.
 # The count is kept in a file: some runs are in a subshell, $(...).
+container="$work/container"
 echo 0 >"$work/made"
 compose_site() {
   local dir made
   [[ -z "${COPY_FAILS:-}" ]] || return 1
-  dir="$(printf '%s\n' "$@" | sed -n 's|^BACKUP_DIR=/backups/||p')"
-  [[ " $* " == *" BACKUP_ENCRYPTION=off "* ]] || return 1
-  made=$(($(cat "$work/made") + 1))
-  echo "$made" >"$work/made"
-  mkdir -p "$BACKUP_HOST_DIR/$dir/2026-11-04T10-00-0${made}Z/media"
-  echo db >"$BACKUP_HOST_DIR/$dir/2026-11-04T10-00-0${made}Z/seasonal.db"
+  case "$1" in
+    cp) cp -r "$container${2#site:}" "$3" ;;
+    exec)
+      if [[ " $* " == *" rm -rf "* ]]; then
+        rm -rf "$container${*: -1}"
+        return
+      fi
+      dir="$(printf '%s\n' "$@" | sed -n 's|^BACKUP_DIR=||p')"
+      [[ " $* " == *" BACKUP_ENCRYPTION=off "* && -n "$dir" ]] || return 1
+      made=$(($(cat "$work/made") + 1))
+      echo "$made" >"$work/made"
+      mkdir -p "$container$dir/2026-11-04T10-00-0${made}Z/media"
+      echo db >"$container$dir/2026-11-04T10-00-0${made}Z/seasonal.db"
+      ;;
+    *) return 1 ;;
+  esac
 }
 # The names in a folder, on one line.
 names() {
@@ -77,7 +91,8 @@ unset BACKUP_RECIPIENT
 out="$(update_safety_copy 2>&1)"
 copy="$UPDATE_COPY_DIR/2026-11-04T10-00-01Z"
 if [[ -f "$copy/seasonal.db" && -d "$copy/media" ]]; then ok 'the copy is in the fixed folder'; else bad "no copy: $out"; fi
-if [[ ! -e "$BACKUP_HOST_DIR/.update-copy" && -z "$(ls -A "$BACKUP_HOST_DIR")" ]]; then ok 'the staging folder is gone'; else bad "left in the backups: $(ls -A "$BACKUP_HOST_DIR")"; fi
+if [[ ! -e "$container$UPDATE_COPY_STAGING" && ! -e "$UPDATE_COPY_DIR/.incoming" ]]; then ok 'the staging folder is gone'; else bad 'a staging folder was left'; fi
+if [[ -z "$(ls -A "$BACKUP_HOST_DIR")" ]] && ! grep -q -- '-o 1000' "$work/owners"; then ok 'staged in the container, no host folder for its uid'; else bad "on the host: $(ls -A "$BACKUP_HOST_DIR") $(cat "$work/owners")"; fi
 if grep -q "chown -R root:root $copy" "$work/owners" && grep -q "install -o root $UPDATE_COPY_DIR" "$work/owners"; then ok 'owned by root'; else bad "owners: $(cat "$work/owners")"; fi
 if [[ "$(stat -c %a "$UPDATE_COPY_DIR")" == 700 && "$(stat -c %a "$copy")" == 700 ]]; then ok 'only root may read it'; else bad "modes: $(stat -c '%a %n' "$UPDATE_COPY_DIR" "$copy")"; fi
 if [[ "$out" == *"before the update is in $copy (not encrypted, root only"* ]]; then ok 'says where'; else bad "message: $out"; fi
@@ -94,7 +109,7 @@ before="$(names "$UPDATE_COPY_DIR")"
 out="$(COPY_FAILS=1 update_safety_copy 2>&1)"
 status=$?
 if [[ "$status" -ne 0 && "$out" == *"STOPPED: the copy before the update failed"*"nothing was changed"* ]]; then ok 'a failed copy stops the update'; else bad "failed copy: $status $out"; fi
-if [[ ! -e "$BACKUP_HOST_DIR/.update-copy" && "$(names "$UPDATE_COPY_DIR")" == "$before" ]]; then ok 'a failed copy leaves nothing'; else bad 'a failed copy left something'; fi
+if [[ ! -e "$container$UPDATE_COPY_STAGING" && "$(names "$UPDATE_COPY_DIR")" == "$before" ]]; then ok 'a failed copy leaves nothing'; else bad 'a failed copy left something'; fi
 
 # With backups set up: the encrypted backup, named for the new installer, and no copy.
 rm -rf "$UPDATE_COPY_DIR"

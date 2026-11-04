@@ -4,7 +4,10 @@
 // Project:     Seasonal Entertainment
 // Description: The one way the client calls the API: JSON in, JSON out, same-origin cookies
 //              (upload(): a file as the raw body). Failures throw ApiError carrying the
-//              server's stable code, its message and the rest of its answer (details). The chat
+//              server's stable code, its message and the rest of its answer (details); with no
+//              answer from the site itself (no connection, or a proxy's 502/503/504 or any page
+//              that is not JSON) the message is NO_ANSWER, code 'no_answer', status 0 when
+//              nothing came back at all. The chat
 //              embedded on an approved foreign site also sends its embed token
 //              (embed/embedAuth.js), and drops it when the server refuses it; for a guest there
 //              it names the site and sends the guest's token, and keeps a new one it is given.
@@ -18,26 +21,41 @@ import {
 } from '../embed/embedAuth.js';
 
 export class ApiError extends Error {
-  constructor(status, code, message, details = {}) {
-    super(message);
+  // cause: what failed underneath (fetch's own error), for the console and the tests.
+  constructor(status, code, message, details = {}, cause = undefined) {
+    super(message, { cause });
     this.status = status;
     this.code = code;
     this.details = details;
   }
 }
 
+export const NO_ANSWER = 'The server did not answer. Please try again in a moment.';
+// What a proxy in front of the site answers when the site is down or slow (seen 2026-11-03 as a
+// 502 from the dev proxy).
+const PROXY_FAILURES = new Set([502, 503, 504]);
+
 async function call(path, init) {
   const headers = { ...init.headers, ...embedHeaders() };
-  const res = await fetch(`/api${path}`, { credentials: 'same-origin', ...init, headers });
+  let res;
+  try {
+    res = await fetch(`/api${path}`, { credentials: 'same-origin', ...init, headers });
+  } catch (err) {
+    throw new ApiError(0, 'no_answer', NO_ANSWER, {}, err);
+  }
   // A guest's first message from a frame on another site names them: kept for the next ones.
   const guestToken = res.headers?.get('X-Embed-Guest');
   if (guestToken) keepEmbedGuestToken(guestToken);
-  const data = await res.json().catch(() => ({}));
+  const data = await res.json().catch(() => null);
   if (!res.ok) {
-    if (data.error === 'embed_token_invalid') dropEmbedToken();
-    throw new ApiError(res.status, data.error ?? 'error', data.message ?? 'Request failed.', data);
+    if (data?.error === 'embed_token_invalid') dropEmbedToken();
+    // The server's own message always wins; without one, a reply the site did not write.
+    if (data?.message) throw new ApiError(res.status, data.error ?? 'error', data.message, data);
+    if (!data || PROXY_FAILURES.has(res.status))
+      throw new ApiError(res.status, 'no_answer', NO_ANSWER, data ?? {});
+    throw new ApiError(res.status, data.error ?? 'error', 'Request failed.', data);
   }
-  return data;
+  return data ?? {};
 }
 
 // The chat socket's subprotocols (chat/connection.js): the embed token offered as

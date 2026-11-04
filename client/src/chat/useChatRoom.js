@@ -34,6 +34,9 @@ function applyEvent(list, event, moderator) {
       return list.some((m) => m.id === event.message.id) ? list : [...list, event.message];
     case 'hidden':
       return moderator ? list : list.filter((m) => m.id !== event.id);
+    // A deleted account's messages (server: chat/accountData.js): gone for moderators too.
+    case 'deleted':
+      return list.filter((m) => !event.ids.includes(m.id));
     case 'preview':
       return update({ preview: event.preview });
     case 'previewRemoved':

@@ -147,11 +147,16 @@ describe('the unlocked device', () => {
 
   // Under load the page may still be switching to its unlocked state when the first request
   // arrives: the same request again until it asks (a repeated request is the same request).
+  // As long as the other waits here (8 s): waitFor's default second ran out under a full
+  // verify's load (2026-11-03, "Unable to find role=dialog").
   const askUntilShown = (deviceKeys) =>
-    vi.waitFor(async () => {
-      await ask(deviceKeys);
-      expect(screen.getByRole('dialog', { name: 'A new device wants access' })).toBeVisible();
-    });
+    vi.waitFor(
+      async () => {
+        await ask(deviceKeys);
+        expect(screen.getByRole('dialog', { name: 'A new device wants access' })).toBeVisible();
+      },
+      { timeout: 8000, interval: 100 }
+    );
 
   it('asks with the same code; Confirm sends the key sealed to the new device only', async () => {
     const { calls, privateKey } = await unlockedPage();

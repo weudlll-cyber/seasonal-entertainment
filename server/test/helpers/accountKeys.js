@@ -7,7 +7,8 @@
 //              A real browser picks a random salt per account; tests use one fixed salt (and
 //              another for password resets), so a whole run needs one Argon2id derivation
 //              per password, not one per account: each costs about 64 MiB and noticeable time.
-//              Also a member's key pair as the browser makes it (keys/, docs/CHAT.md).
+//              Also a member's key pair as the browser makes it (keys/, docs/CHAT.md), and the
+//              proof before linking Discord (proveForLink).
 // ============================================================
 
 import { deriveAccountKeys, newKeyPair, sealBytes } from '@seasonal-entertainment/shared/crypto.js';
@@ -51,6 +52,13 @@ export async function proof(password) {
 
 // A new password as an admin's browser sends it for a reset: a new salt (not the one the
 // account was registered with) and the auth key derived with it.
+// What the account page does before "Link Discord" (POST /api/auth/discord/link): proves the
+// password, so the session may start one link (docs/AUTH.md, "Discord").
+export async function proveForLink(agent, password = 'correct-horse-1') {
+  const res = await agent.post('/api/auth/discord/link').send(await proof(password));
+  if (res.status !== 200) throw new Error(`link proof failed: ${res.status} ${res.text}`);
+}
+
 export async function newPasswordBody(password) {
   const { salt, authKey } = await keysFor(password, RESET_SALT);
   return { salt, authKey };

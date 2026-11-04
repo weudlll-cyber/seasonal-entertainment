@@ -19,6 +19,15 @@ export function errorHandler(err, _req, res, _next) {
   if (err.type === 'entity.too.large') {
     return sendError(res, 413, 'too_large', 'The request body is too large.');
   }
+  // A compressed body (http/bodies.js inflates none).
+  if (err.type === 'encoding.unsupported') {
+    return sendError(
+      res,
+      415,
+      'unsupported_encoding',
+      'Compressed request bodies are not accepted.'
+    );
+  }
   console.error('[server] unhandled error:', err);
   return sendError(res, 500, 'server_error', 'Something went wrong on the server.');
 }

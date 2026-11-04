@@ -335,7 +335,7 @@ were introduced (`client/src/keys/`, server `server/src/keys/`, `/api/keys`).
   open, the browser asks it first, so a typo is never mistaken for a lost key.
 - **Recovery code — optional** (decided 2026-10-17). Right after a key pair is made, a dialog
   offers it: **Create recovery code** — 30 characters in 6 groups of 5 from an alphabet without
-  look-alikes (150 bits), shown once with **Copy** and the required checkbox "I have saved my
+  look-alikes (about 148.6 bits), shown once with **Copy** and the required checkbox "I have saved my
   recovery code"; the private key is additionally sealed with `crypto_pwhash(code, its own
 salt)` and that seal stored (`PUT /api/keys/recovery`) — the code itself never leaves the
   browser. Or **Skip**, with the warning "Without a recovery code, your private messages are lost
@@ -553,7 +553,8 @@ its newest 3 messages (name, short text, time), then "Open the chat".
   GET was answered, and the push for it went out before that socket had subscribed (seen on the
   live site, 2026-11-01).
 - **Client**: the module's **`useRoomGlimpse()`** (`index.js`): the glimpse, kept live on the one
-  connection — a new message added (only while `room` is set), a hidden one makes it ask again,
+  connection — a new message added (only while `room` is set), a hidden one or a deleted
+  account's (`deleted`, docs/AUTH.md "Deleting an account") makes it ask again,
   a new count replaces the old. Once the connection has told a count, a later GET answer does not
   replace it (that answer was counted earlier). The box (`client/src/pages/CommunityCard.jsx`) shows text only:
   an attachment as `[image]` (stickers, pictures), `[GIF]` or `[file]`.
@@ -604,6 +605,9 @@ Moderators and admins may see direct messages **only when the affected member re
   reporter's browser send the selected messages — as it decrypted them — as copies with the
   report. Without the tick, moderators get only the reason and the fact that a private
   conversation was reported (`direct_reports`).
+- **At most 20 reports waiting** per member (`OPEN_REPORTS_MAX`,
+  `server/src/chat/directReportRoutes.js`, since 2026-11-04): a 21st before the moderators have
+  reviewed one is refused (`429 too_many_open_reports`).
 - **The server checks the ids**: the reported message and every shared one must be a message the
   reporter sent or received in that conversation; anything else refuses the whole report
   (`400 not_in_conversation`), nothing stored. The author and time of each copy come from the
@@ -611,7 +615,11 @@ Moderators and admins may see direct messages **only when the affected member re
 - **Files of shared messages** (2026-10-22): when a shared message carries a file, the
   reporter's browser decrypts it, as it did the text, and uploads that copy
   (`POST /api/chat/direct/:id/reports/:reportId/files/:messageId?name=`). This works only for
-  the reporter's own report, a shared message that has a file, and once per message.
+  the reporter's own report and a shared message that has a file; once per reporter and message,
+  whatever the report (`409 already_shared`; the browser then goes on, the moderators have the
+  earlier copy), and never larger than the stored file (`413`). The copy is outside the upload
+  quota, as the file was counted when it was sent; these two rules (since 2026-11-04) keep it from
+  being a way around that quota.
   - **Stored** in `MEDIA_DIR/direct-reports/` (`direct_report_files`).
   - **For moderators**: offered only as "Download <name>", never shown
     (`GET /api/chat/direct-reports/:id/files/:messageId`, organisers and admins). Every
@@ -680,8 +688,10 @@ const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork, em
 // chat.sessions.stepRulesChanged()               an admin changed the steps: every socket
 //                                                re-checks its rooms
 // chat.accounts.deleteData(userId)               an account's deletion, in its transaction: the
-//                                                chat rows the schemas keep; returns the files
-// chat.accounts.deleteFiles(files)               those files on disk, after the commit
+//                                                chat rows the schemas keep; returns
+//                                                { files, messages }
+// chat.accounts.afterCommit(removed)             after the commit: those files on disk, and
+//                                                open pages told which messages went
 // chat.notify.member(userId, event)              an event to every open page of a member
 //                                                (call reminders); returns how many got it
 // chat.system.post(slugs, body)                  the site's own message (weekly recap) in

@@ -6,14 +6,16 @@
 //              content pages and the Disclaimer published and the two legal pages as drafts
 //              (invisible to the public), and the content rules: every source-based page ends with
 //              a Sources list, no contract address is retyped, no raw HTML or local file links,
-//              Risks says "not financial advice", legal pages carry placeholders, the privacy draft
+//              Risks says "not financial advice", legal pages say "Fill in before going live" and
+//              carry placeholders, the privacy draft
 //              describes the Discord login (what it stores and for how long), the privacy draft
 //              says when calls are recorded (only after an organiser starts it, always announced)
 //              and what the call server processes, and its recording section is a proposal for the
 //              owner (consent as legal basis, no automatic deletion, the rights and where to
 //              complain) with only the contact left to fill; it describes account deletion
 //              (what goes, what stays, how long backups keep it). A stored page still holding an
-//              earlier seed text gets the current one on start; an edited one is left alone.
+//              earlier seed text gets the current one on start (Imprint and Privacy from before
+//              "Fill in before going live" too); an edited one is left alone.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -81,8 +83,9 @@ describe.each(SEED_ORDER)('seed page %s', (slug) => {
   });
 
   if (LEGAL.includes(slug)) {
-    it('is marked for legal review and has owner placeholders', () => {
-      expect(page.body).toContain('needs legal review');
+    it('is marked to fill in before going live and has owner placeholders', () => {
+      expect(page.body).toContain('**Fill in before going live.**');
+      expect(page.body).not.toContain('legal review');
       expect(page.body).toContain('[TO BE FILLED BY OWNER');
     });
   } else {
@@ -187,11 +190,39 @@ describe('refreshing unedited seed pages', () => {
     expect(refreshSeedPages(t.db)).toBe(0);
   });
 
+  // The texts before 2026-11-04, as a site seeded then still holds them where nobody edited them.
+  const beforeFillIn = (slug) =>
+    readSeedPage(slug).body.replace(
+      '**Fill in before going live.**',
+      '**Draft — needs legal review before publishing.**'
+    );
+
+  it.each(['imprint', 'privacy'])(
+    'gives a never-edited %s the "Fill in before going live" text; an edited one stays',
+    (slug) => {
+      t = makeTestApp();
+      seedInfoPages(t.db);
+      const row = () => t.db.prepare('SELECT body FROM info_pages WHERE slug = ?').get(slug);
+      const setBody = (body) =>
+        t.db.prepare('UPDATE info_pages SET body = ? WHERE slug = ?').run(body, slug);
+      setBody(beforeFillIn(slug));
+      expect(refreshSeedPages(t.db)).toBe(1);
+      expect(row().body).toBe(readSeedPage(slug).body);
+      // Filled in by the owner (as on the live site): never replaced.
+      const filled = beforeFillIn(slug).replace('[TO BE FILLED BY OWNER', '[Jane Doe');
+      setBody(filled);
+      expect(refreshSeedPages(t.db)).toBe(0);
+      expect(row().body).toBe(filled);
+    }
+  );
+
   it('lists only seed pages, as SHA-256 hashes', () => {
     for (const [slug, hashes] of Object.entries(earlierSeeds())) {
       expect(SEED_ORDER).toContain(slug);
       for (const hash of hashes) expect(hash).toMatch(/^[0-9a-f]{64}$/);
     }
-    expect(earlierSeeds().privacy).not.toContain(sha256(readSeedPage('privacy').body));
+    for (const slug of ['imprint', 'privacy']) {
+      expect(earlierSeeds()[slug]).not.toContain(sha256(readSeedPage(slug).body));
+    }
   });
 });

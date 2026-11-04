@@ -5,16 +5,18 @@
 // Description: Discord roles and their refresh (docs/AUTH.md, "Discord: steps"; SE-DISCORD-1
 //              piece 2), against the pretend Discord: the roles read at login with the refresh
 //              token sealed; the daily read rotating the token strictly (the new one stored with
-//              the roles, the old one dead), never two refreshes at once, an unlink during a
+//              the roles, the old one dead; the new one stored before the member read, so a stop
+//              during that read loses nothing), never two refreshes at once, an unlink during a
 //              read winning (no link brought back, the new token revoked), invalid_grant marking
 //              the link "needs login" with its steps hidden until the next Discord login, 404
 //              10004 meaning "not on the server", a rate limit postponing the read, the job
 //              picking due links only, and a mapping change showing at once without a refresh.
 // ============================================================
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { discordApi } from '../src/discord/api.js';
-import { refreshDue, refreshLink } from '../src/discord/refresh.js';
+import { refreshDue, refreshLink, startDailyRefresh } from '../src/discord/refresh.js';
+import { openToken } from '../src/discord/tokenBox.js';
 import { stepsOfUser } from '../src/discord/steps.js';
 import { deleteLink } from '../src/discord/store.js';
 import { DISCORD_TEST, fakeDiscord } from './helpers/fakeDiscord.js';
@@ -83,6 +85,24 @@ describe('the daily read', () => {
     expect(changed).toEqual([userId]);
     // And the stored one works: a second read succeeds.
     expect(await refreshLink(t.db, handle, userId)).toBe('done');
+  });
+
+  it('stores the new token before reading the member: a stop during that read loses nothing', async () => {
+    const { discord, userId, handle } = await setup();
+    let heldDuringRead;
+    const stopping = {
+      ...handle,
+      api: {
+        ...handle.api,
+        // The server stops while the member read is on its way: what the database holds then.
+        memberRoles: async () => {
+          heldDuringRead = link().refresh_token;
+          throw new Error('stopped');
+        },
+      },
+    };
+    await refreshLink(t.db, stopping, userId);
+    expect(await openToken(heldDuringRead, handle.key)).toBe(discord.liveRefreshTokens()[0]);
   });
 
   it('never runs two refreshes of one account at once', async () => {
@@ -155,6 +175,25 @@ describe('the daily read', () => {
     const wait = Date.parse(after.next_refresh_at) - Date.now();
     expect(wait).toBeGreaterThan(25_000);
     expect(wait).toBeLessThan(35_000);
+  });
+
+  it('a sweep that fails does not stop the role reads', async () => {
+    const { userId, handle } = await setup();
+    due();
+    // A damaged session row: the held sign-ups' sweep fails on it.
+    t.db.prepare("INSERT INTO sessions (sid, sess, expire) VALUES ('broken', 'not json', 0)").run();
+    const logged = [];
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    try {
+      const stop = startDailyRefresh(t.db, handle, { log: (line) => logged.push(line) });
+      await vi.advanceTimersByTimeAsync(60_000);
+      stop();
+    } finally {
+      vi.useRealTimers();
+    }
+    await vi.waitFor(() => expect(link().next_refresh_at > '2000-01-01').toBe(true));
+    expect(link().user_id).toBe(userId);
+    expect(logged.some((line) => line.includes('sweeping held sign-ups failed'))).toBe(true);
   });
 
   it('reads only the links that are due', async () => {

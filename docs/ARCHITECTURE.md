@@ -168,9 +168,11 @@ The public page and the editor preview use the same component.
 website, both whitepapers and the owner's info sheet and farming guide, and each ends with its
 Sources list (2026-10-17); the ten content pages were checked against the official sources and
 published (decided 2026-10-22). No contract address is retyped anywhere (the pages link to the
-official site); `server/test/infoSeed.test.js` guards these rules. Imprint and Privacy stay
-drafts with `[TO BE FILLED BY OWNER]` placeholders until the owner's details and a legal review
-are in.
+official site); `server/test/infoSeed.test.js` guards these rules. Imprint and Privacy are
+seeded as drafts headed "Fill in before going live", with `[TO BE FILLED BY OWNER]` placeholders,
+for an admin to fill in and publish
+(Admin → Info pages); the live site's were filled in by the owner, and a legal review is not
+wanted for now (decided 2026-11-04).
 
 **Seed texts that changed later** (2026-11-01): the seed never runs again once pages exist, so a
 changed seed text would not reach a running site. On every start `refreshSeedPages`
@@ -309,7 +311,7 @@ password change and turning 2FA on or off close the account's other sockets at o
   request forgery: https and port 443 only, no credentials in the URL; the server resolves the
   name itself and **every** answer must be a public address — private, loopback, link-local
   (cloud metadata), carrier-grade NAT, multicast, reserved and documentation ranges, IPv6
-  unique-local, link-local, IPv4-mapped, NAT64, 6to4 and Teredo are refused (address literals
+  unique-local, link-local, IPv4-mapped and IPv4-compatible, NAT64, 6to4 and Teredo are refused (address literals
   too); it then connects to exactly that address (no second lookup) with the TLS certificate
   checked against the host name; at most 3 redirects, each checked the same way; one 5 s
   deadline for page and image together (DNS included); HTML capped at 1 MB and only `text/html`
@@ -381,8 +383,10 @@ no-store`). PDFs are only a download: `Content-Disposition: attachment`, `nosnif
 ## Security headers
 
 `server/src/http/securityHeaders.js` (helmet) sends a strict Content-Security-Policy on every
-response: scripts, styles, fonts and connections only from this origin, images from this origin
-or `data:` URLs, no plugins, no framing (`frame-ancestors 'none'`; only the embedded chat
+response: scripts, styles, fonts and connections only from this origin, images from this origin,
+`data:` URLs or `blob:` URLs (a direct message's picture, decrypted in the browser and shown from
+memory; since 2026-11-04, before which such pictures stayed empty, `client/e2e/directPicture.spec.js`),
+no plugins, no framing (`frame-ancestors 'none'`; only the embedded chat
 under `/embed/` may be framed, by this origin alone: docs/EMBED.md), no inline script or
 style, no JavaScript `eval`. `script-src` also has `'wasm-unsafe-eval'` (added and confirmed by the
 owner 2026-10-18): it allows
@@ -393,6 +397,12 @@ test fails on any console error, which is where a CSP violation shows up.
 With calls configured, `connect-src` also holds the call service's origin (`CALLS_URL` and the
 same host over https) and nothing else; `Permissions-Policy` allows camera, microphone and
 screen capture for this origin only (docs/CALLS.md, "Security headers").
+
+**Request bodies** (`server/src/http/bodies.js`, 2026-11-04): every route reads its body with
+`jsonBody` or `rawBody`, which never inflate a compressed body: `Content-Encoding` gzip, deflate
+or br is answered `415 unsupported_encoding` before anything is read further. No client of the
+site compresses what it sends; this closes body-parser's decompression path (its DoS by trailing
+bytes, GHSA-27r3-jxmh-p828, fixed in body-parser 2.4.0, which the lockfile now has).
 
 ## Folder layout
 
@@ -407,7 +417,7 @@ client/                    React + Vite client
                            list, never-throwing browser storage; after an update the
                            "new version" notice (UpdateNotice) and the one reload for a page
                            part whose file is gone (staleChunks, LazyBoundary)
-  src/api/http.js          the one fetch wrapper (JSON, ApiError)
+  src/api/http.js          the one fetch wrapper (JSON, ApiError, NO_ANSWER)
   src/session/             session context (who is signed in), RequireUser guard, credentials
                            (password -> auth key and wrapping key, docs/AUTH.md) and the
                            password-hashing Web Worker that derives them off the main thread
@@ -466,7 +476,7 @@ server/
   src/index.js             entry point: config, app, listen
   src/app.js               Express app (routes); no listen, so tests drive it directly
   src/http/                cross-cutting HTTP: security headers, access (allow), CSRF,
-                           sessions, rate limits, validation, error shape
+                           sessions, rate limits, validation, error shape, body parsers
   src/db/database.js       opens the database, applies every area's schema and migrations
   src/db/addColumns.js     adds columns to older databases (each area's migrate function)
   src/accounts/            accounts area: schema, user store, passwords, routes (login:
@@ -534,7 +544,8 @@ server/
 shared/                    rules used by server and client (accountRules.js, localWeek.js,
                            gameRules.js, chatRules.js, disclaimer.js, seasonClock.js,
                            callEntries.js, priceChange.js, chapterRules.js, callPeople.js,
-                           discordLadders.js), crypto.js and cryptoFormat.js
+                           discordLadders.js, callRoom.js, siteSettings.js, localPath.js),
+                           crypto.js and cryptoFormat.js
 scripts/
   dev.mjs                  npm run dev
   dev-watch.mjs            the API's restart-on-change in npm run dev (written files only)

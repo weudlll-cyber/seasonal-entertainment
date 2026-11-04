@@ -36,8 +36,10 @@ import '../calls/callPage.css';
 
 export const RETRY_MS = 5000;
 
-// A refusal that passes (429, a server error, no answer at all), unlike "no such call".
-const passing = (err) => !(err instanceof ApiError) || err.status === 429 || err.status >= 500;
+// A refusal that passes (429, a server error, no answer at all: api/http.js's 'no_answer'),
+// unlike "no such call".
+const passing = (err) =>
+  !(err instanceof ApiError) || err.code === 'no_answer' || err.status === 429 || err.status >= 500;
 
 const STATUS_TEXT = {
   idle: null,

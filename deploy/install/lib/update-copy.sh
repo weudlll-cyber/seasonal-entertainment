@@ -8,13 +8,18 @@
 #              nothing else; without them, a plain local copy of the database and the media
 #              folder, made by the backup code inside the running site (scripts/backup.mjs with
 #              BACKUP_ENCRYPTION=off: SQLite's online backup, checked, server/src/backup/
-#              backup.js) into a staging folder under the backup mount, then moved into
-#              UPDATE_COPY_DIR, root-only, the newest UPDATE_COPY_KEEP kept. The copy is not
-#              encrypted, which is why it stays on the server and only root may read it.
+#              backup.js) into a staging folder inside the container (UPDATE_COPY_STAGING, its
+#              own /tmp), fetched with docker compose cp (as root) into UPDATE_COPY_DIR,
+#              root-only, the newest UPDATE_COPY_KEEP kept. The copy is not encrypted, which is
+#              why it stays on the server and only root may read it: it never passes through a
+#              host folder owned by the container's uid 1000, which on the host may be a login
+#              account (security check 2026-11-04).
 # ============================================================
 
 UPDATE_COPY_DIR=/var/backups/seasonal-update-copies
 UPDATE_COPY_KEEP=3
+# Inside the site container, never a host folder (see above).
+UPDATE_COPY_STAGING=/tmp/seasonal-update-copy
 # A copy's folder name: its UTC time (backup.js), so name order is time order.
 UPDATE_COPY_NAME='^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}Z$'
 
@@ -42,22 +47,27 @@ update_safety_copy() {
 
 # The plain copy, without backups set up. Stops the update when it fails: nothing was changed.
 update_copy() {
-  # Inside the site container this is /backups/.update-copy (docker-compose.yml); the dot keeps
-  # it out of the backup listings while it exists.
-  local staging="$BACKUP_HOST_DIR/.update-copy" name old
-  rm -rf "$staging"
-  install -d -m 700 -o 1000 -g 1000 "$staging" # the image's "node" user is uid 1000
+  local incoming="$UPDATE_COPY_DIR/.incoming" name old
+  install -d -m 700 -o root -g root "$UPDATE_COPY_DIR"
+  rm -rf "$incoming"
   if ! run_step "a copy of the database and the media before the update" \
-    compose_site exec -T -e BACKUP_DIR=/backups/.update-copy -e BACKUP_ENCRYPTION=off \
-    site node scripts/backup.mjs; then
-    rm -rf "$staging"
+    compose_site exec -T -e BACKUP_DIR="$UPDATE_COPY_STAGING" -e BACKUP_ENCRYPTION=off \
+    site node scripts/backup.mjs ||
+    ! run_step "fetching the copy from the site container" \
+      compose_site cp "site:$UPDATE_COPY_STAGING" "$incoming"; then
+    rm -rf "$incoming"
+    drop_update_staging
     die "the copy before the update failed (is the site running? docker compose ps in $SITE_DIR_REL); nothing was changed"
   fi
-  name="$(copies_in "$staging" | tail -n 1)"
-  [[ -n "$name" ]] || die "the copy before the update is missing in $staging; nothing was changed"
-  install -d -m 700 -o root -g root "$UPDATE_COPY_DIR"
-  mv "$staging/$name" "$UPDATE_COPY_DIR/$name"
-  rm -rf "$staging"
+  drop_update_staging
+  name="$(copies_in "$incoming" | tail -n 1)"
+  # A real folder only: a link the container put there is never followed by chown or chmod.
+  if [[ -z "$name" || -L "$incoming/$name" ]]; then
+    rm -rf "$incoming"
+    die "the copy before the update is missing; nothing was changed"
+  fi
+  mv "$incoming/$name" "$UPDATE_COPY_DIR/$name"
+  rm -rf "$incoming"
   chown -R root:root "$UPDATE_COPY_DIR/$name"
   chmod -R go-rwx "$UPDATE_COPY_DIR/$name"
   # Only copies (named by their time) count and go: anything else in the folder stays.
@@ -65,4 +75,10 @@ update_copy() {
     rm -rf "${UPDATE_COPY_DIR:?}/$old"
   done < <(copies_in "$UPDATE_COPY_DIR" | head -n "-$UPDATE_COPY_KEEP")
   say "backups are not set up: a copy of the database and the media before the update is in $UPDATE_COPY_DIR/$name (not encrypted, root only; the newest $UPDATE_COPY_KEEP are kept; set up backups with sudo $INSTALL_DIR/deploy/install.sh --backups)"
+}
+
+# The container's staging copy goes once fetched (or failed); best effort, the container's /tmp
+# goes with the container anyway.
+drop_update_staging() {
+  compose_site exec -T site rm -rf "$UPDATE_COPY_STAGING" >/dev/null 2>&1 || true
 }

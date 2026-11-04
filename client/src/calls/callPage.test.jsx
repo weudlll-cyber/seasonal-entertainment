@@ -8,8 +8,8 @@
 //              and Edge how to share with sound, and "Share again with sound", which asks the
 //              browser once more) and is reported to the server; the call ending for everyone shows
 //              so. Guests get no hand; calls not live offer no Join. A load refused for the
-//              moment (429) is asked again, so the Join button still comes; "no such call" is
-//              not asked again.
+//              moment (429) or not answered at all is asked again, so the Join button still
+//              comes; "no such call" is not asked again.
 // ============================================================
 
 import { act, fireEvent, screen } from '@testing-library/react';
@@ -19,6 +19,7 @@ import { GUEST, mockApi, signedIn } from '../test/mockApi.js';
 import { rooms } from '../test/fakeLiveKit.js';
 import { renderApp } from '../test/renderApp.jsx';
 import { RETRY_MS } from '../pages/CallPage.jsx';
+import { NO_ANSWER } from '../api/http.js';
 import { NO_SHARE_AUDIO, NO_SOUND_SHARED } from './stageModel.js';
 
 // The stand-in Room (test/fakeLiveKit.js): records what the page asks, lets a test send events.
@@ -53,7 +54,8 @@ const answers = (status, kind = 'member') => ({
       rooms: [{ slug: 'call-7', name: 'Call: Town hall', canWrite: true }],
       me: {},
     },
-  },
+  }, // The call's chat (as callLayout.test.jsx): no message yet.
+  'GET /chat/rooms/call-7/messages': { body: { ok: true, messages: [] } },
 });
 
 it('connects only after "Join call", with the server token, and starts the sound', async () => {
@@ -158,40 +160,43 @@ it('a call linked to a bot event names the event; one without names none', async
   expect(screen.queryByText(/Event:/)).toBeNull();
 });
 
-it('a load refused for the moment is asked again, and Join comes', async () => {
-  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true });
-  try {
-    let refusals = 1;
-    const live = answers('live');
-    const calls = mockApi({
-      ...signedIn({ username: 'mia', role: 'member' }),
-      ...live,
-      // The server's read limit for one address (server/src/app.js), once.
-      'GET /calls/7': () =>
-        refusals-- > 0
-          ? {
-              status: 429,
-              body: {
-                ok: false,
-                error: 'too_many_attempts',
-                message: 'Too many attempts. Please try again later.',
-              },
-            }
-          : live['GET /calls/7'],
-    });
-    await renderApp('/calls/7');
-    expect(
-      await screen.findByText('Too many attempts. Please try again later.')
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Join call' })).toBeNull();
-    await act(() => vi.advanceTimersByTimeAsync(RETRY_MS));
-    expect(await screen.findByRole('button', { name: 'Join call' })).toBeInTheDocument();
-    expect(screen.queryByText('Too many attempts. Please try again later.')).toBeNull();
-    expect(calls.filter((c) => c.key === 'GET /calls/7')).toHaveLength(2);
-  } finally {
-    vi.useRealTimers();
-  }
-});
+const TOO_MANY = 'Too many attempts. Please try again later.';
+const REFUSALS = {
+  // The server's read limit for one address (server/src/app.js).
+  'refused for the moment': () => ({
+    status: 429,
+    body: { ok: false, error: 'too_many_attempts', message: TOO_MANY },
+  }),
+  // No connection: fetch itself fails.
+  'not answered at all': () => {
+    throw new TypeError('Failed to fetch');
+  },
+};
+const SHOWN = { 'refused for the moment': TOO_MANY, 'not answered at all': NO_ANSWER };
+
+for (const [refusal, refuse] of Object.entries(REFUSALS)) {
+  it(`a load ${refusal} is asked again, and Join comes`, async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true });
+    try {
+      let refusals = 1;
+      const live = answers('live');
+      const calls = mockApi({
+        ...signedIn({ username: 'mia', role: 'member' }),
+        ...live,
+        'GET /calls/7': () => (refusals-- > 0 ? refuse() : live['GET /calls/7']),
+      });
+      await renderApp('/calls/7');
+      expect(await screen.findByText(SHOWN[refusal])).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Join call' })).toBeNull();
+      await act(() => vi.advanceTimersByTimeAsync(RETRY_MS));
+      expect(await screen.findByRole('button', { name: 'Join call' })).toBeInTheDocument();
+      expect(screen.queryByText(SHOWN[refusal])).toBeNull();
+      expect(calls.filter((c) => c.key === 'GET /calls/7')).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+}
 
 it('"no such call" is not asked again', async () => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'], shouldAdvanceTime: true });

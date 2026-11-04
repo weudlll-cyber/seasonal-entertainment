@@ -3,7 +3,9 @@
 // Path:        client/src/discord/DiscordSection.jsx
 // Project:     Seasonal Entertainment
 // Description: The account page's "Discord" section (docs/AUTH.md, "Discord"), while Discord
-//              login is set up: not linked: "Link Discord"; linked: the Discord name, the steps
+//              login is set up: not linked: "Link Discord" with the password (the server asks for
+//              it before a link: a taken-over session alone cannot link another Discord user),
+//              then off to Discord; linked: the Discord name, the steps
 //              read from the Seasonal Tokens server with their full names (or why there are
 //              none: not on the server, or the link needs a Discord login again), when they
 //              were last read, and "Unlink Discord" (with the password; an account without one
@@ -20,6 +22,7 @@ import { keysForPassword } from '../session/credentials.js';
 import { useSession } from '../session/SessionContext.jsx';
 import DiscordButton from './DiscordButton.jsx';
 import DiscordReason from './DiscordReason.jsx';
+import { goToDiscord } from './discordLinks.js';
 import { StepList } from '../chat/index.js';
 import './Discord.css';
 
@@ -30,8 +33,10 @@ const STATUS_TEXT = {
     'Discord no longer accepts the link (it ends when unused for long, or when you remove the app in Discord). Log in with Discord again to show your steps.',
 };
 
-function Unlink() {
-  const { user, refresh } = useSession();
+// A Discord change proven with the password: run(authKey) once its keys are derived (never the
+// password itself).
+function PasswordAction({ label, button, secondary = false, run }) {
+  const { user } = useSession();
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -42,33 +47,47 @@ function Unlink() {
     setError(null);
     try {
       const { authKey } = await keysForPassword(user.username, password);
-      await api('/auth/discord', { method: 'DELETE', body: { authKey } });
-      await refresh();
+      await run(authKey);
     } catch (err) {
       setError(err.message);
       setBusy(false);
     }
   }
 
-  if (!user.hasPassword) {
-    return (
-      <p>To unlink Discord, set a password first (below): without Discord, it is how you log in.</p>
-    );
-  }
   return (
     <form className="form" onSubmit={onSubmit}>
       <FormField
-        label="Password to unlink Discord"
+        label={label}
         name="password"
         type="password"
         autoComplete="current-password"
         required
       />
       <FormMessage error={error} />
-      <BusyButton busy={busy} className="button button--secondary">
-        Unlink Discord
+      <BusyButton busy={busy} className={`button${secondary ? ' button--secondary' : ''}`}>
+        {button}
       </BusyButton>
     </form>
+  );
+}
+
+function Unlink() {
+  const { user, refresh } = useSession();
+  if (!user.hasPassword) {
+    return (
+      <p>To unlink Discord, set a password first (below): without Discord, it is how you log in.</p>
+    );
+  }
+  return (
+    <PasswordAction
+      label="Password to unlink Discord"
+      button="Unlink Discord"
+      secondary
+      run={async (authKey) => {
+        await api('/auth/discord', { method: 'DELETE', body: { authKey } });
+        await refresh();
+      }}
+    />
   );
 }
 
@@ -87,9 +106,15 @@ export default function DiscordSection() {
             your name, and to log in with Discord. Only your Discord id and your roles on that
             server are read.
           </p>
-          <DiscordButton intent="link" next="/account">
-            Link Discord
-          </DiscordButton>
+          {/* An account without a password is made with Discord and always linked. */}
+          <PasswordAction
+            label="Password to link Discord"
+            button="Link Discord"
+            run={async (authKey) => {
+              await api('/auth/discord/link', { method: 'POST', body: { authKey } });
+              goToDiscord('link', '/account');
+            }}
+          />
         </>
       ) : (
         <>

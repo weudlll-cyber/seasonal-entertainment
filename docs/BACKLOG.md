@@ -13,19 +13,9 @@ entry waits for.
   the site is live (only exact `https://` origins).
 - **Site and bots on the same VPS** — reading the bots' files through read-only mounts assumes
   it (the installer's bot-file answers, docs/DEPLOYMENT.md, "What it asks").
-- **Imprint and Privacy** — drafts; need the owner's details and a legal review. Privacy's "Call
-  recordings" holds a proposal to review; only its contact address is left to fill.
 
 ### To try on the live server
 
-- **Discord login on the live site** — set the production redirect at Discord (typed, not
-  pasted; check it in the portal's URL generator: no `+` before `https`), then
-  `sudo ./deploy/install.sh --update --discord`. The steps (names, order, role ids, icons) come
-  with the update: the PC's 20 steps with role ids and icons are in the project's seed (exported
-  2026-11-03), and the live site inserts them on its first start with Discord steps; steps
-  changed on the PC later need the export again (`npm run steps:export`, then commit) before the
-  update (docs/AUTH.md, "Discord: steps"). Worth adding at Discord: the links to the terms and
-  the privacy page.
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
   restore one nightly backup there once, as docs/DEPLOYMENT.md describes, and check the site.
 
@@ -50,30 +40,126 @@ entry waits for.
 
 ### Known limits
 
-- **A restore cannot revoke Discord tokens** — an account deleted after a backup is deleted again
-  by the restore (its Discord link with it), but its refresh token is not revoked at Discord
-  then: the restore has no connection to Discord. It ends unused, or when the member removes the
-  app in Discord.
-- **A lost refresh token** — Discord rotates refresh tokens; if the server stops between
-  Discord's answer and the save (one statement), the new token is lost and the member must log
-  in with Discord again (docs/AUTH.md, "Discord: steps and the daily read").
-- **The browser tests' `memberPage` and `--repeat-each`** — on a second repeat in the same run,
-  the helper (`client/e2e/members.js`) did not find the key pair a first login had made, and
-  waited for the first-login dialog: seen with `discord.spec.js` (2026-11-03), which therefore
-  logs each member in once per worker. Single runs are not affected; the cause is not known yet.
-- **The phone touch-target test meets another spec's call** — `speed.spec.js` ("on a phone every
-  control is a 44px target", `/`) failed once (2026-11-03) on the link of the call "Fit" that
-  `callFit.spec.js` had open at that moment (the home page's live call); the browser tests passed
-  158 of 158 when run again. Two specs sharing the run's database, not a fault of either page.
-- **One link-preview test is slow under load** — `chatPreviews.test.js` ("a member link gets an
-  Open Graph card") hit its 9-second wait once in a full verify on 2026-11-02 and passed 3 of 3
-  alone.
+- **A restore does not revoke Discord tokens** — analysed by SE-AUDIT-2 (2026-11-04), kept: a
+  restore deletes an account deleted after the backup again, its Discord link with it, and
+  revokes nothing. The token in the backup is dead already: the deletion revoked that grant, and
+  revoking ends the whole grant, older tokens included (docs/AUTH.md, "Discord: grants not
+  kept"). Only a deletion whose one best-effort revocation failed (Discord unreachable) leaves a
+  grant alive, restore or not. Revoking at the next start instead would mostly send a token
+  Discord rotated out since the backup, and would end the grant of an account that has linked
+  the same Discord user since; so the restore stays as it is.
+- **A lost refresh token** — narrowed by SE-AUDIT-2 (2026-11-04): the new token used to be saved
+  only after the member read, a second call to Discord; it is now saved the moment Discord gives
+  it (`keepRefreshToken`, `server/src/discord/refresh.js`). Only a stop between Discord's answer
+  and that one statement still loses it (the member then logs in with Discord again): the token
+  exists only in that answer, and the old one is dead by then, so no ordering closes the gap
+  (docs/AUTH.md, "Discord: steps and the daily read").
+- **`devProxy.spec.js` failed once in a full verify** (2026-11-03): the guest's message never
+  showed in General through the Vite dev proxy (20 s), and the spec passed alone. Not reproduced
+  by SE-AUDIT-2 (2026-11-04): 5 runs alone, 5 next to the full server suite, and one with Vite's
+  dependency cache cleared (a dependency reload of the open page was the suspect; none was
+  logged). A guest's message enters the list from the POST answer (`useChatRoom.js`), so no
+  list race was found either. More than 5 runs a server cannot be tried: each run registers an
+  account, 5 an hour per address.
 
-- **A deleted account's messages on pages already open** — deleting an account deletes its room
-  messages at once (docs/AUTH.md, "Deleting an account"), but chat pages that are already open
-  keep showing them until they reload: no event tells open pages to remove them.
+- **A held Discord sign-up timing out while it is being completed** (SE-AUDIT-2, theoretical) — the
+  minute sweep (`sweepSignups`, `server/src/discord/droppedGrants.js`) revokes a held sign-up
+  older than 15 minutes; a `POST /api/auth/discord/register` that read it a moment before could
+  then store a grant just revoked, and the new account would start out needing a Discord login.
+  Needs a request in flight at exactly the 15-minute mark; not reproduced.
+- **A deleted account's messages and the unread counts** (SE-AUDIT-2) — open pages drop the
+  messages at once (one `deleted` event per room, every id in one frame), but unread counts
+  already shown keep counting them until the page reads its counts again.
 
 ## PART TWO — closed
+
+- **Four points of the security check of 2026-11-04** — closed by decision 2026-11-04:
+  - **"Confirm with Discord" needs no click at Discord** (`prompt=none`): a click at Discord each
+    time would only annoy; an attacker needs the open session and the victim's click anyway.
+  - **Registration says whether a name or email is taken**: names are public in the chat anyway.
+  - **`X-Embed-Origin` is the browser's claim**: it cannot be otherwise; the room's guest rules
+    and the per-address limits still apply.
+  - **`npm audit`: 6 moderate findings in development tools only** (eslint and its
+    dependencies): never on the server, and the fix forces breaking upgrades.
+- **Server hardening of the SE-AUDIT-2 follow-up** — closed by `chore/se-audit-2` (2026-11-04;
+  `deploy/test/server-hardening.test.sh`, docs/DEPLOYMENT.md):
+  - **the event bot's admin page** answers with the site's `nosniff`, `Referrer-Policy`,
+    `X-Frame-Options SAMEORIGIN` and `frame-ancestors 'self'`, each `always`, the bot's own copies
+    hidden; no script or style policy (`deploy/install/lib/bot-admin.sh`);
+  - **the installer** stops, before any change, when its checkout or a folder above it is not
+    root's or is group- or other-writable (`refuse_unsafe_checkout`, `common.sh`);
+  - **LiveKit's 7880** listens on 127.0.0.1 in nginx mode (`--bind`, `LIVEKIT_BIND`); in Caddy
+    mode on every address still, since the site's Caddy container reaches it over the Docker
+    bridge; the ICE/TCP, TURN and UDP ports unchanged;
+  - **logs**: the Discord callback and file links (`?link=`) without their query, nginx and Caddy;
+    every other request as before;
+  - **the backup folder** is 750, uid 1000 (its writer), group the PC's read-only backup user
+    when there is one (not 700: that user reads it for the PC copies); a re-run fixes an old one.
+- **The seed texts of Imprint and Privacy said "needs legal review"** — closed by
+  `chore/se-audit-2` (SE-AUDIT-2 follow-up): they now open with "Fill in before going live". The
+  texts before are recorded in `server/src/info/seed/earlier-seeds.json`, so on its next start a
+  site gives only never-edited Imprint and Privacy pages the new text; pages an owner filled in
+  stay as they are (`refreshSeedPages`; `server/test/infoSeed.test.js`, both cases).
+- **A deletion's Discord revocation fails silently** — closed by `chore/se-audit-2` (SE-AUDIT-2
+  follow-up): a failed revocation at an account's deletion now writes one log line,
+  `[discord] revoke at deletion failed`, without the token or anything of the account; no retry
+  (`revokerFor`, `server/src/discord/index.js`; `server/test/discordKeys.test.js`).
+- **Security check of 2026-11-04** — closed by `chore/se-audit-2` (SE-AUDIT-2; an independent
+  review of this branch, and one of master `bb8bd16` outside the session, confirmed in the code):
+  - compressed request bodies refused (`415`), body-parser 2.4.0 (GHSA-27r3-jxmh-p828;
+    `server/src/http/bodies.js`);
+  - linking Discord only after "prove it is you", checked at the start and at the callback
+    (`POST /api/auth/discord/link`);
+  - failed 2FA login codes limited per account too, not only per address;
+  - a report's file copy once per reporter and message, never larger than the stored file, at
+    most 20 open direct reports per member;
+  - the embedded chat's guest token left out of Caddy's logs;
+  - one `?next=` rule for server and browser (`shared/localPath.js`, no `/\host`);
+  - an animation's frames counted together against the pixel limit;
+  - the unencrypted update copy staged inside the container, never in a host folder of uid 1000;
+  - link previews refuse IPv4-compatible IPv6 (`::/96`);
+  - pictures in direct messages shown again (CSP `img-src blob:`; they stayed empty under the
+    real server's headers);
+  - a check that could never fail removed (`keys/handover.js`), and docs corrected: the
+    recovery code's 148.6 bits, what the new-device code does not prove.
+
+- **A deleted account's messages on pages already open** — closed by `chore/se-audit-2`: after
+  the deletion commits, every open page of a room hears `{ type: 'deleted', ids }` through the
+  hub's usual push and drops those messages, for moderators too; the Community box asks again
+  (`server/src/chat/accountData.js`, `client/src/chat/useChatRoom.js`; docs/AUTH.md, "Deleting
+  an account").
+- **`directReport.spec.js`: Send stayed disabled** — closed by `chore/se-audit-2` (CI on
+  `4c40c79`, attempt 1): "Send private message" switches to the Direct tab by a router
+  transition, and until it is drawn General's field still answered to "Message"; the text went
+  there and the private composer came up empty. The spec now types into the "Private messages"
+  section's own field, which comes once the partner's key is known. A test cause only.
+- **The browser tests' `memberPage` and `--repeat-each`** — closed by `chore/se-audit-2`: the
+  helper (`client/e2e/members.js`) asked the database before logging in whether the member had a
+  key pair; `--repeat-each` runs a file's repeats in parallel workers, so several browsers saw
+  none, and all but the one that made it waited for the first-login offer (reproduced: 6 of 10
+  repeats of `directReport.spec.js`). It now reads its own browser's `POST /api/keys` answer,
+  known before the login page leaves `/login`; 0 of 10 waited. Specs that share one member
+  still need `--workers 1` with `--repeat-each` (each spec has its own members by design).
+- **Two waits shorter than the work they wait for** — closed by `chore/se-audit-2`, neither
+  reproduced in 20 repeats alone and 20 under load: `chatPreviews.test.js` ("a member link gets
+  an Open Graph card", 2026-11-02) waited 3 s for a card whose own deadline is 5 s, now 10 s;
+  `deviceHandover.test.jsx` ("Reject sends nothing of the key", 2026-11-03) asked for the
+  dialog within waitFor's default second, now 8 s like the file's other waits.
+- **`speed.spec.js` after PR #39** — no failure in 8 repeats of its 17 tests (3 alone, 5 next to
+  the full server suite; `chore/se-audit-2`); its "Fit" entry is closed below.
+- **Discord login on the live site** — done on the live server 2026-11-04: installer `--update`
+  to `4c40c79` with Discord; Discord login and the steps checked by the owner. The links to the
+  terms and the privacy page in Discord's app settings are left to the owner.
+- **The phone touch-target test meets another spec's call** — closed by `fix/se-discord-review`
+  (PR #39, `2c3bd3e`, `ae8188c`): the failure of 2026-11-03 was the "Next call" title link of
+  `callFit.spec.js`'s call "Fit", under 44 px. That link is now a 44 px target whatever the
+  title (entry "A short call title on the home page", below), and `speed.spec.js` checks it with
+  a fixed answer named "Fit", so another spec's call no longer decides the check.
+- **Imprint and Privacy** — closed by decision (2026-11-04): the owner filled in both on the live
+  site (Admin → Info pages); a legal review is not wanted for now. A fresh database still seeds
+  them as drafts with `[TO BE FILLED BY OWNER]` placeholders (`server/src/info/seed.js`).
+- **Twemoji credit for the four Investor icons** — closed by decision (2026-11-04): the owner adds
+  the credit to the live Imprint; no code (docs/AUTH.md, "Discord: steps and the daily read").
 
 - **Games card band hides the logo** — closed by `fix/se-games-band` (found 2026-11-03): the
   Seasonal Race card's logo lost its winter-blue quarter on the winter band. The logo now sits on
@@ -109,7 +195,7 @@ entry waits for.
 - **"Icon from link" read up to 2 MB** — closed by `fix/se-discord-review` (Discord review of
   2026-11-04): the transfer is now cut at the icon limit of 256 KB (`images.iconLimit`,
   `server/src/media/icons.js`), with the same answer as an oversized upload
-  (`server/src/discord/iconLink.js`; docs/AUTH.md, "Discord: steps").
+  (`server/src/discord/iconLink.js`; docs/AUTH.md, "Discord: steps and the daily read").
 - **Farmer step icons** — closed by decision (2026-11-04): the shipped seed's eight Farmer icons
   are byte for byte the eight Holder icons (`server/src/discord/seed/icons/`), and are meant to
   be. No change.

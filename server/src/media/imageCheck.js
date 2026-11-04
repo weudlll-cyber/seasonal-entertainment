@@ -5,7 +5,8 @@
 // Description: The one file-type check and image validator, for library uploads (stickers, GIFs),
 //              link-preview images and chat file uploads alike: the real type comes from the file's
 //              first bytes (never its name; PDF by its %PDF- signature), sharp must read its
-//              header, the dimensions (each side, the pixel count) are checked from it before any
+//              header, the dimensions (each side, the pixel count; an animation's frames
+//              together, as storing it decodes them all) are checked from it before any
 //              decoding, then its first frame must decode fully (a truncated or damaged file
 //              fails); size and animation are checked against the caller's rules too.
 // ============================================================
@@ -68,15 +69,24 @@ export async function checkImage(buffer, rules) {
   }
   const width = meta.width;
   const height = meta.pageHeight ?? meta.height; // one frame of an animation
-  const animated = (meta.pages ?? 1) > 1;
+  const frames = meta.pages ?? 1;
+  const animated = frames > 1;
   // From the header, before any decoding: a small file can claim huge dimensions, and decoding
   // it first would cost the memory the limit is there to spare.
   if (rules.maxSide && (width > rules.maxSide || height > rules.maxSide)) {
     throw new ImageRejected(`The image may be at most ${rules.maxSide} px on each side.`);
   }
+  const megapixels = rules.maxPixels / 1_000_000;
   if (rules.maxPixels && width * height > rules.maxPixels) {
     throw new ImageRejected(
-      `The image may have at most ${rules.maxPixels / 1_000_000} megapixels (width x height).`
+      `The image may have at most ${megapixels} megapixels (width x height).`
+    );
+  }
+  // Storing an animation decodes every frame (uploads/process.js): a small file of many large
+  // frames must not cost more than one image of the limit.
+  if (rules.maxPixels && width * height * frames > rules.maxPixels) {
+    throw new ImageRejected(
+      `An animation may have at most ${megapixels} megapixels in all its frames together.`
     );
   }
   try {

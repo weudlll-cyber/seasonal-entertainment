@@ -28,6 +28,7 @@ import {
   updateItem,
   updatePack,
 } from './store.js';
+import { rawBody } from '../http/bodies.js';
 
 const isBoolean = (label) => (v) =>
   typeof v === 'boolean' ? null : `${label} must be true or false.`;
@@ -49,7 +50,7 @@ export function adminMediaRoutes(db, config) {
   const loadPack = loadById((id) => findPack(db, id), 'pack', 'pack');
   const loadItem = loadById((id) => findItem(db, id), 'item', 'item');
   // The largest allowed file of any kind; each kind's own limit is checked after parsing.
-  const rawFile = express.raw({ type: () => true, limit: config.media.gif.maxBytes });
+  const rawFile = rawBody(config.media.gif.maxBytes);
 
   router.get('/', allow('admin'), (_req, res) => res.json({ ok: true, packs: listLibrary(db) }));
 
