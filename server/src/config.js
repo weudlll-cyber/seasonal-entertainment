@@ -181,8 +181,9 @@ export function readConfig(env = process.env) {
     // Off: that route answers 404 and the sidebar has no "Manage events".
     botAdminEmbedded: readOnOff(env.BOT_ADMIN_EMBEDDED, 'BOT_ADMIN_EMBEDDED'),
     // Seasonal Bingo Royale at /games/bingo (docs/AUTH.md, "Seasonal Bingo Royale"): the host's
-    // nginx asks GET /api/games/bingo/authorize who the visitor is; the game reads deleted
-    // accounts over the local port with syncToken (the installer's root-only
+    // nginx asks GET /api/games/bingo/authorize who the visitor is; the game reads the
+    // account-changes feed (deleted, locked, unlocked, rights; accounts/accountChanges.js) over
+    // the local port with syncToken (the installer's root-only
     // /etc/seasonal/games-sync-token, passed in site.env; null: the feed refuses everyone).
     // Off: both routes answer 404.
     bingo: {
@@ -208,7 +209,7 @@ export function readConfig(env = process.env) {
       bootstrap: { windowMs: 60 * 60_000, max: 10 }, // attempts per IP
       twoFactor: { windowMs: 15 * 60_000, max: 5 }, // failed codes per user / per IP at login
       chatReport: { windowMs: 60_000, max: 10 }, // chat reports per IP
-      bingoFeed: { windowMs: 60_000, max: 60 }, // deleted-accounts feed reads per address
+      bingoFeed: { windowMs: 60_000, max: 60 }, // account-changes feed reads per address
       memberSearch: { windowMs: 60_000, max: 60 }, // member searches per account
       // Guests per IP, so clearing cookies does not reset them. In memory, no IP is stored.
       chatGuestPost: { windowMs: 60_000, max: 20 }, // guest messages per IP
