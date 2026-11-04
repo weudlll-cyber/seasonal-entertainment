@@ -65,9 +65,6 @@ entry waits for.
   are listable and readable by that host account. Encrypted with the owner's age key.
 - **`npm audit`: 6 moderate findings, development only** (eslint and its dependencies); the fix
   needs `--force` with breaking upgrades.
-- **The seed texts of Imprint and Privacy** still open with "Draft — needs legal review before
-  publishing" on a fresh database; changing a seed text needs its old text recorded
-  (`seed/earlier-seeds.json`), and the live site's pages are its own.
 
 ### Known limits
 
@@ -104,6 +101,11 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **The seed texts of Imprint and Privacy said "needs legal review"** — closed by
+  `chore/se-audit-2` (SE-AUDIT-2 follow-up): they now open with "Fill in before going live". The
+  texts before are recorded in `server/src/info/seed/earlier-seeds.json`, so on its next start a
+  site gives only never-edited Imprint and Privacy pages the new text; pages an owner filled in
+  stay as they are (`refreshSeedPages`; `server/test/infoSeed.test.js`, both cases).
 - **A deletion's Discord revocation fails silently** — closed by `chore/se-audit-2` (SE-AUDIT-2
   follow-up): a failed revocation at an account's deletion now writes one log line,
   `[discord] revoke at deletion failed`, without the token or anything of the account; no retry

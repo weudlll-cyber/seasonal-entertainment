@@ -169,7 +169,8 @@ website, both whitepapers and the owner's info sheet and farming guide, and each
 Sources list (2026-10-17); the ten content pages were checked against the official sources and
 published (decided 2026-10-22). No contract address is retyped anywhere (the pages link to the
 official site); `server/test/infoSeed.test.js` guards these rules. Imprint and Privacy are
-seeded as drafts with `[TO BE FILLED BY OWNER]` placeholders, for an admin to fill in and publish
+seeded as drafts headed "Fill in before going live", with `[TO BE FILLED BY OWNER]` placeholders,
+for an admin to fill in and publish
 (Admin → Info pages); the live site's were filled in by the owner, and a legal review is not
 wanted for now (decided 2026-11-04).
 

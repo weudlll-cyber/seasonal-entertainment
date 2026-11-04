@@ -1,6 +1,6 @@
 # Privacy
 
-**Draft — needs legal review before publishing.**
+**Fill in before going live.**
 
 ## Who is responsible
 
