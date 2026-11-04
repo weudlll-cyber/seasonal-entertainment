@@ -15,7 +15,8 @@
 //              reads; /api/bot-admin/authorize lets staff through to the event bot's admin page
 //              (bots/adminAuthorizeRoutes.js, only with BOT_ADMIN_EMBEDDED=1). Discord login and
 //              roles (discord/) only while set up; app.locals.discord.start() runs the daily
-//              role read.
+//              role read; app.locals.games.start() reads the games' open sign-ups every minute
+//              (games/openRounds.js).
 // ============================================================
 
 import { existsSync } from 'node:fs';
@@ -50,6 +51,7 @@ import { embedRoutes } from './embed/routes.js';
 import { adminUserRoutes } from './admin/userRoutes.js';
 import { accountRoutes } from './accounts/routes.js';
 import { adminGameRoutes } from './games/adminRoutes.js';
+import { createOpenRounds } from './games/openRounds.js';
 import { gameRoutes } from './games/routes.js';
 import { allow } from './http/access.js';
 import { adminInfoRoutes } from './info/adminRoutes.js';
@@ -71,7 +73,8 @@ import { jsonBody } from './http/bodies.js';
 // previewNetwork: how link previews and the Discord steps' "Icon from link" reach the internet
 // (tests replace it); botImageNetwork:
 // how the event bot's images are fetched (tests, and development's fixture,
-// bots/fixtureNetwork.js); callService: the call service (calls/service.js; tests hand in a
+// bots/fixtureNetwork.js); gameStatusNetwork: how the games' sign-up status URLs are read (tests,
+// and development's fake status, games/statusFixture.js); callService: the call service (calls/service.js; tests hand in a
 // stand-in), built from config by default; discordFetch: how the server reaches Discord's API
 // (tests hand in a pretend Discord; discord/).
 export function createApp({
@@ -80,6 +83,7 @@ export function createApp({
   db,
   previewNetwork,
   botImageNetwork,
+  gameStatusNetwork,
   callService = createCallService(config.calls),
   discordFetch = globalThis.fetch,
 }) {
@@ -155,8 +159,11 @@ export function createApp({
   // The host's nginx asks this before every request to the event bot's admin page (/bot-admin/).
   api.use('/bot-admin', botAdminRoutes(db, config));
   api.use('/reference-prices', referenceRoutes(db, config));
-  api.use('/games', gameRoutes(db));
-  api.use('/admin/games', adminGameRoutes(db));
+  // The games' open sign-ups (docs/OPEN-ROUNDS.md), shown with each game's card.
+  const openRounds = createOpenRounds(db, { network: gameStatusNetwork });
+  api.use('/games', gameRoutes(db, openRounds));
+  api.use('/admin/games', adminGameRoutes(db, openRounds));
+  app.locals.games = { start: () => (config.backgroundJobs ? openRounds.start() : null) };
   api.use('/admin/settings', adminSettingRoutes(db));
   // Organisers change the site banner, and only it (docs/SETTINGS.md, "Who").
   api.use('/banner', bannerSettingRoutes(db));

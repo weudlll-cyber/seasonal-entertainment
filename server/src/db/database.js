@@ -17,7 +17,7 @@ import { CHAT_SCHEMA, migrateChat } from '../chat/schema.js';
 import { DISCORD_SCHEMA } from '../discord/schema.js';
 import { DIRECT_FILES_SCHEMA } from '../directFiles/schema.js';
 import { EMBED_SCHEMA } from '../embed/schema.js';
-import { GAMES_SCHEMA } from '../games/schema.js';
+import { GAMES_SCHEMA, migrateGames } from '../games/schema.js';
 import { INFO_SCHEMA } from '../info/schema.js';
 import { KEYS_SCHEMA } from '../keys/schema.js';
 import { MEDIA_SCHEMA } from '../media/schema.js';
@@ -62,5 +62,6 @@ export function openDatabase(databasePath) {
   migrateAccounts(db);
   migrateChat(db);
   migrateCalls(db);
+  migrateGames(db);
   return db;
 }
