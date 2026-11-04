@@ -60,6 +60,7 @@ async function setup(handler) {
     .run(STATUS);
   const logged = [];
   const rounds = createOpenRounds(t.db, {
+    download: t.app.locals.chat.images.download,
     network: internet.network,
     log: (line) => logged.push(line),
   });

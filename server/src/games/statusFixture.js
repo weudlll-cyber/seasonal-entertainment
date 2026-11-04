@@ -16,15 +16,15 @@ import { readFile } from 'node:fs/promises';
 import http from 'node:http';
 import net from 'node:net';
 import path from 'node:path';
-import { realNetwork } from '../previews/safeFetch.js';
 
 export const FIXTURE_STATUS_HOST = 'status.games.test';
 export const FIXTURE_FILE = 'game-status-fixture.json';
 // A public address for the guard to accept; nothing is ever sent there (see connect).
 const PLACEHOLDER_ADDRESS = '93.184.216.34';
 
-// dir: the folder holding FIXTURE_FILE (the database's).
-export function gameStatusFixtureNetwork(dir) {
+// dir: the folder holding FIXTURE_FILE (the database's); internet: the network every other
+// host goes to (chat/mount.js's internetNetwork, the guarded fetch's real one).
+export function gameStatusFixtureNetwork(dir, internet) {
   const server = http.createServer(async (_req, res) => {
     try {
       const body = await readFile(path.join(dir, FIXTURE_FILE));
@@ -39,7 +39,7 @@ export function gameStatusFixtureNetwork(dir) {
   server.unref(); // never keeps the dev server alive on its own
   return {
     resolve: async (host) => {
-      if (host !== FIXTURE_STATUS_HOST) return realNetwork.resolve(host);
+      if (host !== FIXTURE_STATUS_HOST) return internet.resolve(host);
       await ready;
       return [PLACEHOLDER_ADDRESS];
     },
@@ -47,6 +47,6 @@ export function gameStatusFixtureNetwork(dir) {
     connect: (target) =>
       target.address === PLACEHOLDER_ADDRESS && target.servername === FIXTURE_STATUS_HOST
         ? net.connect(server.address().port, '127.0.0.1')
-        : realNetwork.connect(target),
+        : internet.connect(target),
   };
 }

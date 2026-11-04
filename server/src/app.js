@@ -165,7 +165,10 @@ export function createApp({
   // Seasonal Bingo Royale's sign-in and account feed (bingo/), before the games list.
   api.use('/games/bingo', bingoRoutes(db, config, chat.images.url));
   // The games' open sign-ups (docs/OPEN-ROUNDS.md), shown with each game's card.
-  const openRounds = createOpenRounds(db, { network: gameStatusNetwork });
+  const openRounds = createOpenRounds(db, {
+    download: chat.images.download,
+    network: gameStatusNetwork,
+  });
   api.use('/games', gameRoutes(db, openRounds));
   api.use('/admin/games', adminGameRoutes(db, openRounds));
   app.locals.games = { start: () => (config.backgroundJobs ? openRounds.start() : null) };

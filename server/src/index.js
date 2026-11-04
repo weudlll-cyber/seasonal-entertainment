@@ -19,6 +19,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { createApp } from './app.js';
 import { fixtureImageNetwork } from './bots/fixtureNetwork.js';
+import { internetNetwork } from './chat/mount.js';
 import { gameStatusFixtureNetwork } from './games/statusFixture.js';
 import { readBuildInfo } from './buildInfo.js';
 import { ENV_FILE, readConfig } from './config.js';
@@ -52,7 +53,7 @@ const botImageNetwork =
 // every other status URL, and all of production, the real internet.
 const gameStatusNetwork = config.isProduction
   ? undefined
-  : gameStatusFixtureNetwork(path.dirname(config.databasePath));
+  : gameStatusFixtureNetwork(path.dirname(config.databasePath), internetNetwork);
 const app = createApp({ buildInfo, config, db, botImageNetwork, gameStatusNetwork });
 // After the app: the steps' icons go through the chat's icon pipeline (images.storeIcon).
 const steps = await seedSteps(db, { storeIcon: app.locals.chat.images.storeIcon });

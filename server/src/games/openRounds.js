@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: Games' open sign-ups (docs/OPEN-ROUNDS.md; decided 2026-11-04): every minute,
 //              and at once after an admin saves a game, each game with a sign-up status URL is
-//              read through the link previews' guarded fetch (previews/safeFetch.js: https on
+//              read through the link previews' guarded fetch (the chat handle's images.download,
+//              previews/safeFetch.js: https on
 //              443, public addresses only, no redirects at all here, 5 s, at most 64 KB) and
 //              checked against the contract (openRoundsContract.js). The last good answer of a
 //              game counts for 3 minutes; after that, or with none, the game has no open rounds.
@@ -12,7 +13,6 @@
 //              only, never the body. roundsFor() is what the games listing shows (routes.js).
 // ============================================================
 
-import { FetchRefused, realNetwork, safeFetch } from '../previews/safeFetch.js';
 import { gamesWithStatusUrl } from './store.js';
 import { StatusInvalid, parseOpenRounds } from './openRoundsContract.js';
 
@@ -27,29 +27,32 @@ const FETCH = {
   userAgent: 'SeasonalEntertainmentGames/1.0 (open sign-ups for the Seasonal Entertainment site)',
 };
 
-// network: safeFetch's (tests and development hand in their own); log: one line per change.
-export function createOpenRounds(db, { network = realNetwork, log = console.warn } = {}) {
+// download: the chat handle's guarded fetch (chat.images.download: previews/safeFetch.js, the
+// one way the server reaches the internet; { ok, status, body } or { ok: false, reason });
+// network: its network (undefined: the real internet; tests and development hand in their own);
+// log: one line per change.
+export function createOpenRounds(db, { download, network, log = console.warn }) {
   // game id -> { rounds, at: when they were read, failing: the reason, or null }
   const state = new Map();
 
   async function readGame({ id, statusUrl }, now = Date.now()) {
     const known = state.get(id) ?? { rounds: [], at: 0, failing: null };
+    // Whatever goes wrong (refused, not the contract, a name that does not resolve) is this
+    // game's failure alone: the other games are still read.
     let failing = null;
-    try {
-      const res = await safeFetch(statusUrl, FETCH, network);
-      if (res.status !== 200) throw new FetchRefused(`status ${res.status}`);
-      state.set(id, {
-        rounds: parseOpenRounds(res.body.toString('utf8'), statusUrl, now),
-        at: now,
-        failing,
-      });
-    } catch (err) {
-      // Whatever went wrong (refused, not the contract, a name that does not resolve) is this
-      // game's failure alone: the other games are still read.
-      failing =
-        err instanceof FetchRefused || err instanceof StatusInvalid ? err.message : 'unreachable';
-      state.set(id, { ...known, failing });
+    const res = await download(statusUrl, FETCH, network);
+    if (!res.ok) failing = res.reason;
+    else if (res.status !== 200) failing = `status ${res.status}`;
+    else {
+      try {
+        const rounds = parseOpenRounds(res.body.toString('utf8'), statusUrl, now);
+        state.set(id, { rounds, at: now, failing });
+      } catch (err) {
+        if (!(err instanceof StatusInvalid)) throw err;
+        failing = err.message;
+      }
     }
+    if (failing) state.set(id, { ...known, failing });
     // Once per change of state (failing or answering), not when only the reason changes.
     if (Boolean(failing) !== Boolean(known.failing)) {
       log(
