@@ -2,7 +2,7 @@
 // File:        DiscordButton.jsx
 // Path:        client/src/discord/DiscordButton.jsx
 // Project:     Seasonal Entertainment
-// Description: "Log in with Discord" / "Link Discord" / "Confirm with Discord": a plain link to
+// Description: "Log in with Discord" / "Confirm with Discord": a plain link to
 //              the server's start address (discordLinks.js), styled as the site's button. A
 //              link, not a script: the whole page goes to Discord and comes back.
 // ============================================================

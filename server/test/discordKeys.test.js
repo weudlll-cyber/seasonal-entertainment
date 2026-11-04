@@ -15,7 +15,7 @@
 import { randomBytes } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DISCORD_PROOF_MS } from '../src/accounts/identityProof.js';
-import { keysFor, proof } from './helpers/accountKeys.js';
+import { keysFor, proof, proveForLink } from './helpers/accountKeys.js';
 import { DISCORD_TEST, fakeDiscord } from './helpers/fakeDiscord.js';
 import { makeStaff, makeTestApp, registerUser } from './helpers/testApp.js';
 
@@ -71,6 +71,7 @@ describe('the proof of an account without a password', () => {
     const { discord } = await setup();
     discord.addUser('200000000000000002', 'anna', []);
     const { agent } = await registerUser(t, 'anna', 'correct-horse-1');
+    await proveForLink(agent);
     const start = await agent.get('/api/auth/discord/start?intent=link');
     await agent.get(discord.approve(start.headers.location, '200000000000000002'));
     // Freshly confirmed with Discord, but no password: refused.

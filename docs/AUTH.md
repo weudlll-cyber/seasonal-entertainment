@@ -195,14 +195,21 @@ character: in the probe, invisible leading spaces in the portal broke it.
     account is refused, and an account with 2FA gets the second step (the page then shows
     the code form at once, `/login?discord=2fa`). Without a linked account, it starts a
     **sign-up**.
-  - **link**: the signed-in account is linked. A Discord user linked to another account is
+  - **link**: the signed-in account is linked, only after "prove it is you" (since 2026-11-04):
+    the account page's "Link Discord" asks for the password and sends its auth key to
+    `POST /api/auth/discord/link` (`provesIdentity`, `server/src/accounts/identityProof.js`;
+    failed tries count on the password change's limiter), which marks the session for one link
+    within 10 minutes. `/start?intent=link` without that mark, and a callback after it ran out
+    or was used, answer `?discord=proof_required` (the callback's fresh grant is revoked). So a
+    taken-over session alone cannot link the attacker's Discord user, which would let them log
+    in with Discord even after a password change. A Discord user linked to another account is
     refused (`?discord=taken`, and the database's UNIQUE on `discord_id` as well), and so is a
     second Discord user for an account that has one (`other_user`).
   - **confirm**: proves that it is the account's own Discord user (next section).
 - Every login and link also reads the member's roles, with the tokens just given (next
   section, "Discord: steps").
 - Failures go back to the page with `?discord=<reason>` (`expired`, `denied`, `failed`,
-  `locked`, `closed`, `taken`, `other_user`, `not_linked`, `too_many`;
+  `locked`, `closed`, `taken`, `other_user`, `not_linked`, `proof_required`, `too_many`;
   `client/src/discord/discordLinks.js` says them in words). They count on the login's per-IP
   limit for failed attempts. A refused consent does not count.
 - **Sign-up** (`/register/discord`, `client/src/pages/DiscordSignupPage.jsx`): the server holds
@@ -342,8 +349,8 @@ any Discord login on this session) stamps `discordProofAt` in the session, valid
 (`server/src/accounts/identityProof.js`). The session answer carries `discordProofUntil`, so the
 page can ask for it in time (`client/src/discord/DiscordConfirmGate.jsx`, "Confirm with
 Discord", which comes back to the same page). This proof stands in for the password where the
-password is asked: creating or changing the keys (`/api/keys`), setting a first password, and
-deleting the account. A taken-over session alone can do none of these.
+password is asked: creating or changing the keys (`/api/keys`), setting a first password,
+deleting the account, and linking Discord. A taken-over session alone can do none of these.
 
 - **A first password** (`POST /api/auth/password/first`, the account page's "Set a password"):
   only for an account without one, after the proof. It is sent as a salt and auth key like any

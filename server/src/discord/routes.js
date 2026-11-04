@@ -3,14 +3,18 @@
 // Path:        server/src/discord/routes.js
 // Project:     Seasonal Entertainment
 // Description: /api/auth/discord (docs/AUTH.md, "Discord"), mounted only when Discord is set up:
+//              - POST /link: "prove it is you" before linking (the password's auth key, or for an
+//                account without one a fresh Discord proof; accounts/identityProof.js): marks the
+//                session for one link within LINK_PROOF_MS. A taken-over session alone cannot
+//                link another Discord user, which would outlive a password change;
 //              - GET /start?intent=login|link|confirm&next=: a fresh state and PKCE verifier in
 //                the session, then off to Discord's consent page (scopes identify and
-//                guilds.members.read only);
+//                guilds.members.read only); a link only with that mark;
 //              - GET /callback: the state must match (once, within 10 minutes); the code is
 //                traded for tokens; then, by intent: log in the linked account (the same rules
 //                as a password login: locked, the staff 2FA step), or hold a sign-up for
 //                /register/discord; link to the signed-in account (a Discord user linked
-//                elsewhere is refused); or confirm it is the account's own Discord user (the
+//                elsewhere is refused; the mark checked again and used up); or confirm it is the account's own Discord user (the
 //                proof accounts without a password give, accounts/identityProof.js). Every
 //                login and link reads the roles with the tokens just given (refresh.js).
 //                Failures go back to the page with ?discord=<reason> and count on the login's
@@ -47,6 +51,7 @@ import { openToken, sealToken } from './tokenBox.js';
 import { suggestUsername } from './username.js';
 
 const FLOW_MS = 10 * 60_000; // from /start to the callback
+const LINK_PROOF_MS = FLOW_MS; // from POST /link to the callback that links
 const INTENTS = new Set(['login', 'link', 'confirm']);
 
 // Only local paths (as the browser's safeNext): never "//host" or a full URL.
@@ -58,6 +63,10 @@ const sameText = (a, b) =>
   typeof b === 'string' &&
   a.length === b.length &&
   timingSafeEqual(Buffer.from(a), Buffer.from(b));
+
+const freshLinkProof = (session) =>
+  typeof session?.discordLinkProofAt === 'number' &&
+  Date.now() - session.discordLinkProofAt < LINK_PROOF_MS;
 
 const saved = (req) =>
   new Promise((resolve, reject) => req.session.save((e) => (e ? reject(e) : resolve())));
@@ -83,12 +92,27 @@ export function discordRoutes(db, appConfig, discord) {
   const redirectUri = (req) =>
     discord.config.redirectUri ?? `${selfOrigin(req, appConfig)}${CALLBACK_PATH}`;
 
+  // Before a link: the same proof as the other sensitive changes.
+  router.post('/link', allow('member'), perUser, async (req, res) => {
+    const input = req.user.hasPassword
+      ? validBody(req, res, { authKey: authKeyField('Password') })
+      : {};
+    if (!input) return;
+    if (!(await provesIdentity(db, appConfig, req, res, input.authKey))) return;
+    req.session.discordLinkProofAt = Date.now();
+    await saved(req);
+    res.json({ ok: true });
+  });
+
   router.get('/start', allow('public'), startsPerIp, async (req, res) => {
     const intent = INTENTS.has(req.query.intent) ? req.query.intent : 'login';
     const next = safeNext(req.query.next, '/account');
     // Linking and confirming are for the signed-in account only.
     if (intent !== 'login' && !req.user) {
       return res.redirect(`/login?next=${encodeURIComponent(next)}`);
+    }
+    if (intent === 'link' && !freshLinkProof(req.session)) {
+      return back(res, '/account', 'proof_required', { counted: false });
     }
     const state = randomBytes(16).toString('base64url');
     const verifier = randomBytes(48).toString('base64url');
@@ -175,6 +199,16 @@ export function discordRoutes(db, appConfig, discord) {
 
   async function linkOrConfirm(req, res, flow, discordUser, tokens) {
     const user = req.user;
+    if (flow.intent === 'link') {
+      // Checked again: the proof may have run out, or been used, since /start.
+      const proven = freshLinkProof(req.session);
+      delete req.session.discordLinkProofAt; // one link per proof
+      if (!proven) {
+        await saved(req);
+        await dropGrant(db, discord, discordUser.id, tokens.refreshToken);
+        return back(res, '/account', 'proof_required');
+      }
+    }
     const own = findLink(db, user.id);
     const elsewhere = findLinkByDiscordId(db, discordUser.id);
     if (elsewhere && elsewhere.userId !== user.id) return back(res, '/account', 'taken');

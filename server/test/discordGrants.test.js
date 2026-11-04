@@ -13,6 +13,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { discordApi } from '../src/discord/api.js';
 import { sweepSignups } from '../src/discord/droppedGrants.js';
 import { setSetting } from '../src/settings/store.js';
+import { proveForLink } from './helpers/accountKeys.js';
 import { DISCORD_TEST, fakeDiscord } from './helpers/fakeDiscord.js';
 import { makeTestApp, registerUser } from './helpers/testApp.js';
 
@@ -31,6 +32,7 @@ function setup() {
 }
 
 async function discordFlow(agent, discord, discordId, query = 'intent=login') {
+  if (query.includes('intent=link')) await proveForLink(agent);
   const start = await agent.get(`/api/auth/discord/start?${query}`);
   return agent.get(discord.approve(start.headers.location, discordId));
 }
