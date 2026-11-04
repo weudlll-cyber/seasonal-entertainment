@@ -73,6 +73,12 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Games' open sign-ups on the website** — closed by `feat/se-open-rounds` (SE-OPEN-ROUNDS,
+  decided 2026-11-04): a game's optional sign-up status URL (Admin → Games) is read every minute
+  through the guarded fetch and checked against the shared contract (docs/OPEN-ROUNDS.md); the
+  home page's Featured game box rotates with open sign-ups first (8 s, holds on hover, focus and
+  tap, a pause button, reduced motion respected), and the games page's cards show "Sign-up open"
+  with Join, for everyone (`server/src/games/openRounds.js`, `client/src/games/`).
 - **Signing in to Seasonal Bingo Royale through the site** — closed by `feat/se-bingo-login`
   (SE-BINGO-LOGIN; decided 2026-11-02 to 2026-11-04): `GET /api/games/bingo/authorize` for the
   game's sign-in through nginx's `auth_request` (member headers with id, name, role, may host and
