@@ -437,6 +437,10 @@ of something (decided 2026-11-01):
   whose file is gone after the update: the page reloads once by itself and opens it. Fails it
   again within a minute of that reload, the page says "This part of the page could not be
   loaded." with a Reload button instead of staying blank (`client/src/app/staleChunks.js`).
+- A request made while the site is restarting (no connection, or nginx's 502/503/504 page): the
+  page says "The server did not answer. Please try again in a moment." instead of a bare
+  "Request failed." (`NO_ANSWER`, `client/src/api/http.js`, since 2026-11-04); every message
+  the site itself sends is shown as it is.
 
 The build commit comes from the same place as the server's: the image is built with
 `--build-arg COMMIT_SHA` (the installer passes it), outside Docker from `git`

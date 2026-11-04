@@ -408,7 +408,7 @@ client/                    React + Vite client
                            list, never-throwing browser storage; after an update the
                            "new version" notice (UpdateNotice) and the one reload for a page
                            part whose file is gone (staleChunks, LazyBoundary)
-  src/api/http.js          the one fetch wrapper (JSON, ApiError)
+  src/api/http.js          the one fetch wrapper (JSON, ApiError, NO_ANSWER)
   src/session/             session context (who is signed in), RequireUser guard, credentials
                            (password -> auth key and wrapping key, docs/AUTH.md) and the
                            password-hashing Web Worker that derives them off the main thread
