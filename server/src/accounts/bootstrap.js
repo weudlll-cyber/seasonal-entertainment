@@ -11,23 +11,17 @@
 //              password itself.
 // ============================================================
 
-import { createHash, timingSafeEqual } from 'node:crypto';
 import express from 'express';
 import { validateEmail, validateUsername } from '@seasonal-entertainment/shared/accountRules.js';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { startSession } from '../http/session.js';
+import { tokenMatches } from '../http/tokenMatches.js';
 import { validBody } from '../http/validate.js';
 import { authKeyField, saltField } from './credentials.js';
 import { hashPassword } from './passwords.js';
 import { countAdmins, createUser, publicUser } from './userStore.js';
-
-// Constant-time comparison; hashing first makes both sides the same length.
-function tokenMatches(given, expected) {
-  const digest = (s) => createHash('sha256').update(String(s)).digest();
-  return timingSafeEqual(digest(given), digest(expected));
-}
 
 export function bootstrapRoutes(db, config, log = console.warn) {
   const router = express.Router();

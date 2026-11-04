@@ -13,7 +13,8 @@
 #              encrypted backups. Re-running keeps secrets, data and answers. --update (a backup, or
 #              a local copy without backups, then the newest commit of origin's default branch), --commit <ref>, --coingecko
 #              (ask the CoinGecko key again), --discord (ask about the Discord login again),
-#              --bot-admin (ask about the event bot's admin page again; nginx mode), --status,
+#              --bot-admin (ask about the event bot's admin page again; nginx mode), --bingo (ask
+#              whether Seasonal Bingo Royale is embedded again), --status,
 #              --uninstall [--purge-data], --rollback <snapshot>,
 #              --admin, --backups. The parts live in deploy/install/lib/.
 # ============================================================
@@ -50,6 +51,8 @@ source "$LIB/update-copy.sh"
 source "$LIB/bot-admin.sh"
 # shellcheck source=install/lib/discord.sh
 source "$LIB/discord.sh"
+# shellcheck source=install/lib/bingo.sh
+source "$LIB/bingo.sh"
 
 # Any command failing where no step expected it still stops with a message and the rollback.
 trap 'die "unexpected failure (line $LINENO: $BASH_COMMAND)"' ERR
@@ -57,7 +60,7 @@ trap 'die "unexpected failure (line $LINENO: $BASH_COMMAND)"' ERR
 ANSWER_KEYS="SITE_DOMAIN WWW_REDIRECT CALLS_DOMAIN RECORDING ACME_EMAIL ADMIN_NAME ADMIN_EMAIL
 COINGECKO_API_KEY PRICE_BOT_DB PRICE_BOT_MINING_RATES EVENT_BOT_DB BACKUP_RECIPIENT ACME_SERVER
 ACME_CA_BUNDLE BOT_ADMIN_URL BOT_ADMIN_TOKEN_FILE BOT_ADMIN_TOKEN_KEY DISCORD_CLIENT_ID
-DISCORD_GUILD_ID DISCORD_CLIENT_SECRET_FILE"
+DISCORD_GUILD_ID DISCORD_CLIENT_SECRET_FILE BINGO"
 
 usage() {
   cat <<'EOF'
@@ -75,6 +78,7 @@ Usage: sudo ./deploy/install.sh [options]
                          Enter now removes them
   --bot-admin            nginx mode: ask again about the event bot's admin page inside the
                          site (its address and token); Enter now removes it
+  --bingo                ask again whether Seasonal Bingo Royale is embedded at /games/bingo
   --commit REF           check out REF (a commit, tag or branch) first, then install it
   --admin                create the first admin (password asked on the terminal)
   --backups              set up or change the encrypted backups (asks for the age public key)
@@ -99,6 +103,7 @@ UPDATE=no
 ASK_COINGECKO=no
 ASK_BOT_ADMIN=no
 ASK_DISCORD=no
+ASK_BINGO=no
 ROLLBACK_DIR=""
 while (($#)); do
   case "$1" in
@@ -109,6 +114,7 @@ while (($#)); do
     --coingecko) ASK_COINGECKO=yes ;;
     --bot-admin) ASK_BOT_ADMIN=yes ;;
     --discord) ASK_DISCORD=yes ;;
+    --bingo) ASK_BINGO=yes ;;
     --admin) ACTION='admin' ;;
     --backups) ACTION=backups ;;
     --status) ACTION=status ;;
@@ -125,9 +131,11 @@ done
 [[ "$PURGE" == no || "$ACTION" == uninstall ]] || die "--purge-data goes with --uninstall"
 [[ "$UPDATE" == no || -z "$COMMIT_REF" ]] ||
   die "--update and --commit do not go together: --update takes the newest code, --commit REF a chosen one"
-[[ "$UPDATE" == no || "$ACTION" == install ]] || die "--update goes alone (with --answers, --yes, --coingecko, --discord or --bot-admin at most)"
+[[ "$UPDATE" == no || "$ACTION" == install ]] || die "--update goes alone (with --answers, --yes, --coingecko, --discord, --bot-admin or --bingo at most)"
 [[ "$ASK_DISCORD" == no || "$ACTION" == install ]] || die "--discord goes with an install, a re-run or --update"
 [[ "$ASK_DISCORD" == no || "$UNATTENDED" == no ]] || die "--discord asks on the terminal: not with --yes"
+[[ "$ASK_BINGO" == no || "$ACTION" == install ]] || die "--bingo goes with an install, a re-run or --update"
+[[ "$ASK_BINGO" == no || "$UNATTENDED" == no ]] || die "--bingo asks on the terminal: not with --yes"
 [[ "$ASK_COINGECKO" == no || "$ACTION" == install ]] || die "--coingecko goes with an install, a re-run or --update"
 [[ "$ASK_COINGECKO" == no || "$UNATTENDED" == no ]] || die "--coingecko asks on the terminal: not with --yes"
 [[ "$ASK_BOT_ADMIN" == no || "$ACTION" == install ]] || die "--bot-admin goes with an install, a re-run or --update"
@@ -187,6 +195,7 @@ gather_answers() {
   ask_optional BACKUP_RECIPIENT "The age public key for encrypted backups (age1…; can be added later with --backups)"
   ask_coingecko
   ask_discord
+  ask_bingo
   : "${ACME_SERVER:=}" "${ACME_CA_BUNDLE:=}" "${ADMIN_DONE:=no}"
 }
 
