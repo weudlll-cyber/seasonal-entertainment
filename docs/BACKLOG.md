@@ -50,9 +50,6 @@ entry waits for.
 - **Discord review of 2026-11-04 (listed, not built: they change behaviour)**:
   - **A local copy of the database on every `--update`** — today the update takes a backup only
     when backups are set up (`deploy/install/lib/update.sh`); without them it only warns.
-  - **Revoke Discord grants that are dropped** — the callback for someone already logged in, and
-    a sign-up never finished, leave their fresh grant alive at Discord (sealed nowhere, so
-    unusable; it stays listed under the member's authorised apps).
   - **Re-check open chat connections after admin step changes** — a room rule, a step's role id
     or the ladder order changed in Admin re-checks access at the next push only; the member's
     room list updates at their next reload (a member's own read re-checks at once).
@@ -91,6 +88,11 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Discord grants that are dropped** — closed by `fix/se-discord-review` (Discord review of
+  2026-11-04): grants not kept are revoked at Discord (already logged in, registration closed, a
+  link refused, a held sign-up replaced or timed out, also when the browser never comes back),
+  never while an account here holds that Discord user (`server/src/discord/droppedGrants.js`;
+  docs/AUTH.md, "Discord: grants not kept").
 - **"Icon from link" read up to 2 MB** — closed by `fix/se-discord-review` (Discord review of
   2026-11-04): the transfer is now cut at the icon limit of 256 KB (`images.iconLimit`,
   `server/src/media/icons.js`), with the same answer as an oversized upload
