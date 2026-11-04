@@ -40,13 +40,20 @@ entry waits for.
 
 ### Known limits
 
-- **A restore cannot revoke Discord tokens** — an account deleted after a backup is deleted again
-  by the restore (its Discord link with it), but its refresh token is not revoked at Discord
-  then: the restore has no connection to Discord. It ends unused, or when the member removes the
-  app in Discord.
-- **A lost refresh token** — Discord rotates refresh tokens; if the server stops between
-  Discord's answer and the save (one statement), the new token is lost and the member must log
-  in with Discord again (docs/AUTH.md, "Discord: steps and the daily read").
+- **A restore does not revoke Discord tokens** — analysed by SE-AUDIT-2 (2026-11-04), kept: a
+  restore deletes an account deleted after the backup again, its Discord link with it, and
+  revokes nothing. The token in the backup is dead already: the deletion revoked that grant, and
+  revoking ends the whole grant, older tokens included (docs/AUTH.md, "Discord: grants not
+  kept"). Only a deletion whose one best-effort revocation failed (Discord unreachable) leaves a
+  grant alive, restore or not. Revoking at the next start instead would mostly send a token
+  Discord rotated out since the backup, and would end the grant of an account that has linked
+  the same Discord user since; so the restore stays as it is.
+- **A lost refresh token** — narrowed by SE-AUDIT-2 (2026-11-04): the new token used to be saved
+  only after the member read, a second call to Discord; it is now saved the moment Discord gives
+  it (`keepRefreshToken`, `server/src/discord/refresh.js`). Only a stop between Discord's answer
+  and that one statement still loses it (the member then logs in with Discord again): the token
+  exists only in that answer, and the old one is dead by then, so no ordering closes the gap
+  (docs/AUTH.md, "Discord: steps and the daily read").
 - **`devProxy.spec.js` failed once in a full verify** (2026-11-03): the guest's message never
   showed in General through the Vite dev proxy (20 s), and the spec passed alone. Not reproduced
   by SE-AUDIT-2 (2026-11-04): 5 runs alone, 5 next to the full server suite, and one with Vite's

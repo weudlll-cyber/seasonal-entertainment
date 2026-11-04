@@ -5,7 +5,8 @@
 // Description: Discord roles and their refresh (docs/AUTH.md, "Discord: steps"; SE-DISCORD-1
 //              piece 2), against the pretend Discord: the roles read at login with the refresh
 //              token sealed; the daily read rotating the token strictly (the new one stored with
-//              the roles, the old one dead), never two refreshes at once, an unlink during a
+//              the roles, the old one dead; the new one stored before the member read, so a stop
+//              during that read loses nothing), never two refreshes at once, an unlink during a
 //              read winning (no link brought back, the new token revoked), invalid_grant marking
 //              the link "needs login" with its steps hidden until the next Discord login, 404
 //              10004 meaning "not on the server", a rate limit postponing the read, the job
@@ -15,6 +16,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { discordApi } from '../src/discord/api.js';
 import { refreshDue, refreshLink } from '../src/discord/refresh.js';
+import { openToken } from '../src/discord/tokenBox.js';
 import { stepsOfUser } from '../src/discord/steps.js';
 import { deleteLink } from '../src/discord/store.js';
 import { DISCORD_TEST, fakeDiscord } from './helpers/fakeDiscord.js';
@@ -83,6 +85,24 @@ describe('the daily read', () => {
     expect(changed).toEqual([userId]);
     // And the stored one works: a second read succeeds.
     expect(await refreshLink(t.db, handle, userId)).toBe('done');
+  });
+
+  it('stores the new token before reading the member: a stop during that read loses nothing', async () => {
+    const { discord, userId, handle } = await setup();
+    let heldDuringRead;
+    const stopping = {
+      ...handle,
+      api: {
+        ...handle.api,
+        // The server stops while the member read is on its way: what the database holds then.
+        memberRoles: async () => {
+          heldDuringRead = link().refresh_token;
+          throw new Error('stopped');
+        },
+      },
+    };
+    await refreshLink(t.db, stopping, userId);
+    expect(await openToken(heldDuringRead, handle.key)).toBe(discord.liveRefreshTokens()[0]);
   });
 
   it('never runs two refreshes of one account at once', async () => {

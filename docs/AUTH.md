@@ -313,8 +313,12 @@ steps (`server/test/helpers/steps.js`), not the shipped ones.
   one dies at once. So:
   - **one refresh per account at a time**: a claim (`refreshing_since`, released after 2 minutes
     if the server died) makes a second one wait its turn;
-  - **the new token is saved with the roles in one statement**, right after the read. A crash
-    between Discord's answer and that save loses it; the member then logs in with Discord again.
+  - **the new token is saved the moment Discord gives it** (`keepRefreshToken`, one statement,
+    since 2026-11-04), before the member record is read with it; the roles follow in a second
+    statement. Only a stop between Discord's answer and that first statement (no network call in
+    between, only sealing the token) loses it; the member then logs in with Discord again. No
+    ordering closes that last gap: the token exists only in Discord's answer, and the old one is
+    dead once Discord has given it.
   - **only into the claimed link**: an unlink or account deletion while Discord answers wins.
     No link comes back, and the new token is revoked at Discord at once.
 - **Discord's answers**:
@@ -619,7 +623,8 @@ chat retention).
   chats included).
 - **The Discord token** is revoked at Discord after the commit (best effort; the token is read
   before the link goes, `revokerFor` in `server/src/discord/index.js`), on both routes. A restore
-  that deletes an account again cannot do this (docs/BACKLOG.md, "Known limits").
+  that deletes an account again does not revoke, and needs not: that account's grant ended at
+  its deletion, older tokens in the backup with it (docs/BACKLOG.md, "Known limits").
 - **What stays**: the audit log (entries keep their `actor_name`; `actor_id` becomes empty), call
   recordings and their chapter marks (they name the organiser who started them as text, and hold
   the sound and pictures of whoever spoke or showed a camera or screen), calls the account

@@ -93,6 +93,19 @@ export function saveRefreshed(db, userId, read, now = Date.now()) {
   return changes > 0;
 }
 
+// The new refresh token, stored the moment Discord gives it (the old one is dead by then), into
+// the claimed link only and keeping the claim: the member read that follows is a network call,
+// and a stop during it must not lose the token. Returns whether it was stored.
+export function keepRefreshToken(db, userId, sealedToken) {
+  const { changes } = db
+    .prepare(
+      `UPDATE discord_links SET refresh_token = ?
+       WHERE user_id = ? AND refreshing_since IS NOT NULL`
+    )
+    .run(sealedToken, userId);
+  return changes > 0;
+}
+
 // Claims the link for one refresh: its sealed token, or null when there is none or another
 // refresh holds it (never two at once: the second would use a token the first just made dead).
 export function claimRefresh(db, userId, now = Date.now()) {
