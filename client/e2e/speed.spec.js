@@ -10,11 +10,14 @@
 //                call another spec made cannot change it), a failure naming what moved;
 //              - on a phone every control is a 44px target (links inside running text aside),
 //                also the home page's "Next call" title when it is as short as "Fit" (the call
-//                callFit.spec.js makes, which made the home check fail once in a full run).
+//                callFit.spec.js makes, which made the home check fail once in a full run);
+//              - the sign-up page's "or with email and a password" line keeps both divider lines
+//                at 360 px and on a desktop (they shrank to nothing at phone width, 2026-11-04).
 // ============================================================
 
 import { expect, test } from '@playwright/test';
 import { ADMIN_STATE } from './adminState.js';
+import { DISCORD_SERVER_URL } from './ports.js';
 
 const PHONE = { width: 390, height: 844 };
 
@@ -231,3 +234,18 @@ test.describe('on a phone every control is a 44px target', () => {
     }
   });
 });
+
+for (const width of [360, 1280]) {
+  test(`/register at ${width}px: the "or" line keeps both divider lines`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    // The "or" line comes with "Sign up with Discord": the run's server with Discord on.
+    await page.goto(`${DISCORD_SERVER_URL}/register`);
+    const or = page.getByText('or with email and a password', { exact: false });
+    await expect(or).toBeVisible();
+    // The lines are the line's ::before and ::after (client/src/discord/Discord.css).
+    const lines = await or.evaluate((el) =>
+      ['::before', '::after'].map((part) => parseFloat(getComputedStyle(el, part).width))
+    );
+    for (const line of lines) expect(line).toBeGreaterThanOrEqual(16);
+  });
+}
