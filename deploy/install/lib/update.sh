@@ -4,7 +4,8 @@
 # Path:        deploy/install/lib/update.sh
 # Project:     Seasonal Entertainment
 # Description: --update (docs/DEPLOYMENT.md, "Updating"): checks that the checkout can move,
-#              takes a fresh backup when backups are set up (backup_now, services.sh), moves
+#              takes a fresh backup when backups are set up, or else a local copy
+#              (update_safety_copy, update-copy.sh), moves
 #              the checkout forward to origin's default branch (fast-forward only: never a
 #              reset, a stash or a discarded change), and hands over to that commit's own
 #              installer, which re-runs as a plain re-run does (reexec_installer, also used by
@@ -56,23 +57,14 @@ update_preflight() {
   fi
 }
 
-# --update: preflight, backup, fast-forward, then the new commit's installer.
+# --update: preflight, backup or copy, fast-forward, then the new commit's installer.
 update_installed() {
   local old new
   load_state
   [[ -f "$STATE_FILE" ]] || die "install first: --update moves an installed site to the newest code"
   update_preflight
   old="$(commit_sha)"
-  if [[ -n "${BACKUP_RECIPIENT:-}" ]]; then
-    say "a fresh backup before the update"
-    backup_now "the backup before the update"
-    say "backup before the update: $BACKUP_HOST_DIR/$NEWEST_BACKUP"
-    # One backup per --update: the new installer's install_backups names this one instead of
-    # taking a second right after the restart.
-    export SEASONAL_UPDATE_BACKUP="$BACKUP_HOST_DIR/$NEWEST_BACKUP"
-  else
-    warn "backups are not set up: updating without a backup first (sudo $INSTALL_DIR/deploy/install.sh --backups)"
-  fi
+  update_safety_copy
   if [[ "$(git_here symbolic-ref -q --short HEAD || true)" != "$UPDATE_BRANCH" ]]; then
     if git_here rev-parse -q --verify "refs/heads/$UPDATE_BRANCH" >/dev/null; then
       git_here checkout -q "$UPDATE_BRANCH" || die "could not switch to $UPDATE_BRANCH"

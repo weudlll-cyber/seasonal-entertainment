@@ -48,8 +48,6 @@ entry waits for.
 - **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
   own repository and is not connected.
 - **Discord review of 2026-11-04 (listed, not built: they change behaviour)**:
-  - **A local copy of the database on every `--update`** — today the update takes a backup only
-    when backups are set up (`deploy/install/lib/update.sh`); without them it only warns.
   - **A mention in a call's chat links to `/chat?room=<call room>`** — it opens there while
     readable; the call page would be the better place.
   - **The embedded chat says `ready` twice without `?room=`** — once before the room is chosen,
@@ -85,6 +83,12 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **A local copy on every `--update` without backups** — closed by `fix/se-discord-review`
+  (Discord review of 2026-11-04): without backups set up, `--update` first copies the database
+  and the media with the backup code into `/var/backups/seasonal-update-copies/`, root only, the
+  newest three kept, and says where; with backups nothing changes
+  (`deploy/install/lib/update-copy.sh`, `deploy/test/update-copy.test.sh`; docs/DEPLOYMENT.md,
+  "Updating").
 - **Open chat connections after admin step changes** — closed by `fix/se-discord-review`
   (Discord review of 2026-11-04): a room saved, or a step added, edited, reordered or removed,
   re-checks every open socket's rooms at once (`recheckAllRooms` in `server/src/chat/hub.js`):
