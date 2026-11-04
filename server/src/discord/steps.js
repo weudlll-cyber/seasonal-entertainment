@@ -14,9 +14,9 @@
 // ============================================================
 
 import { readFileSync } from 'node:fs';
+import { LADDERS } from '@seasonal-entertainment/shared/discordLadders.js';
 
-export const LADDERS = ['holder', 'farmer', 'investor'];
-export const LADDER_NAMES = { holder: 'Holder', farmer: 'Farmer', investor: 'Investor' };
+export { LADDERS };
 
 // The steps the site starts with: seed/steps.json (ladder, name, position, role id, icon file
 // in seed/icons/), written from a database by scripts/export-steps.mjs. Steps only: no accounts,

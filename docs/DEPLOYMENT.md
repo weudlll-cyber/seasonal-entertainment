@@ -263,7 +263,8 @@ goes with `--update` (`--update --discord`), not with `--yes`. The site then rea
 Discord is `PUBLIC_ORIGIN` + `/api/auth/discord/callback` (docs/ARCHITECTURE.md, "Runtime
 configuration").
 
-After the first start, fill in the steps' role ids (Admin → Discord steps).
+The steps ship with their role ids and icons (`server/src/discord/seed/`, inserted on the first
+start into a database that never had steps); Admin → Discord steps changes them.
 
 ### The event bot's admin page
 

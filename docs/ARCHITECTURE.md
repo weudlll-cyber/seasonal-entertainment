@@ -533,8 +533,8 @@ server/
   test/                    Vitest tests
 shared/                    rules used by server and client (accountRules.js, localWeek.js,
                            gameRules.js, chatRules.js, disclaimer.js, seasonClock.js,
-                           callEntries.js, priceChange.js, chapterRules.js, callPeople.js), crypto.js and
-                           cryptoFormat.js
+                           callEntries.js, priceChange.js, chapterRules.js, callPeople.js,
+                           discordLadders.js), crypto.js and cryptoFormat.js
 scripts/
   dev.mjs                  npm run dev
   dev-watch.mjs            the API's restart-on-change in npm run dev (written files only)

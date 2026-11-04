@@ -8,12 +8,11 @@
 //              chosen it is open as its read and write levels say. Staff always get in.
 // ============================================================
 
-const LADDER_NAMES = { holder: 'Holder', farmer: 'Farmer', investor: 'Investor' };
+import { LADDERS, LADDER_NAMES } from '@seasonal-entertainment/shared/discordLadders.js';
 
 // steps: every step (Admin → Discord steps, lowest first); value: the chosen step ids;
 // onChange(ids); label: the room's name, for the fields' names.
 export default function RoomStepRule({ steps, value, onChange, label }) {
-  const ladders = Object.keys(LADDER_NAMES);
   const chosen = (ladder) =>
     steps.find((s) => s.ladder === ladder && value.includes(s.id))?.id ?? '';
   function pick(ladder, id) {
@@ -22,7 +21,7 @@ export default function RoomStepRule({ steps, value, onChange, label }) {
   }
   return (
     <div className="room-step-rule">
-      {ladders.map((ladder) => (
+      {LADDERS.map((ladder) => (
         <select
           key={ladder}
           aria-label={`${LADDER_NAMES[ladder]} step that opens ${label}`}

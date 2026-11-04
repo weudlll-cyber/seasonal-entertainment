@@ -15,10 +15,9 @@
 //              (computed there, never from what a browser sent).
 // ============================================================
 
+import { LADDER_NAMES } from '@seasonal-entertainment/shared/discordLadders.js';
 import { useState } from 'react';
 import './StepBadge.css';
-
-const LADDER_NAMES = { holder: 'Holder', farmer: 'Farmer', investor: 'Investor' };
 
 // "Ultimate-Dragon Whale" -> "UD", "Level 4" -> "4", "Silver" -> "S".
 export function stepInitials(name) {

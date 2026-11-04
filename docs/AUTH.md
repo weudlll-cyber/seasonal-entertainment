@@ -181,7 +181,8 @@ character: in the probe, invisible leading spaces in the portal broke it.
 **The flow** (`server/src/discord/routes.js`):
 
 - `GET /api/auth/discord/start?intent=login|link|confirm&next=/path` keeps a fresh `state` and
-  PKCE verifier in the session and sends the browser to Discord's consent page. It asks for the
+  PKCE verifier in the session and sends the browser to Discord's consent page (with
+  `prompt=none`: someone who already agreed to these scopes goes straight back). It asks for the
   scopes `identify` and `guilds.members.read` only: no `guilds` (it would list all of a member's
   servers) and no `email`. There is no bot on the server.
 - `GET /api/auth/discord/callback` checks the state in constant time, once (the flow is deleted

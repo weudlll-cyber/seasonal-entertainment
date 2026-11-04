@@ -10,12 +10,11 @@
 //              right-click the role and "Copy Role ID"). Steps never grant rights on the site.
 // ============================================================
 
+import { LADDER_NAMES } from '@seasonal-entertainment/shared/discordLadders.js';
 import { useEffect, useState } from 'react';
 import { api } from '../api/http.js';
 import { FormMessage } from '../components/FormField.jsx';
 import StepRow from './StepRow.jsx';
-
-const LADDER_NAMES = { holder: 'Holder', farmer: 'Farmer', investor: 'Investor' };
 
 export default function AdminDiscordPage() {
   const [data, setData] = useState(null);
