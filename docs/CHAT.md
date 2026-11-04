@@ -689,6 +689,8 @@ const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork, em
 // chat.images.download(url, options, network)    the guarded fetch, raw: { ok, status, body }
 //                                                or { ok: false, reason } (the steps' icon
 //                                                from a link, discord/iconLink.js)
+// chat.images.iconLimit                          { bytes, message }: the icon limit (256 KB)
+//                                                and the upload's answer beyond it
 // chat.attach(httpServer)                        the WebSocket, once the server listens
 // await chat.start()                             first-start rooms and media, retention job
 ```

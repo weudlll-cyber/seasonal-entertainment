@@ -11,10 +11,12 @@
 //              that no step has (ids and counts only); one audit entry per change; the routes
 //              absent while Discord is not set up. "Icon from link" against a pretend internet
 //              (helpers/previewNet.js, no real network): Discord's two image hosts only, no
-//              redirect, an image type, at most 2 MB; fetched once and stored like an upload
+//              redirect, an image type, the transfer cut at the icon limit (256 KB, the upload's
+//              message); fetched once and stored like an upload
 //              (the same pipeline refuses the same SVG); a clear message for each refusal.
 // ============================================================
 
+import { once } from 'node:events';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
@@ -277,13 +279,18 @@ describe('icon from link', () => {
   });
 
   it('says why: not an image, too large, unreachable, a redirect', async () => {
+    let sent = 0;
     const { admin, fromLink } = await withInternet({
       [`${CDN}/page.png`]: image('text/html', '<html></html>'),
-      // No length announced: the transfer itself is cut after 2 MB.
-      [`${CDN}/big.png`]: (_req, res) => {
+      // No length announced, up to 4 MB offered: the transfer itself is cut at the icon limit
+      // (256 KB). Counted as the reader takes it, so a cut only after 2 MB shows.
+      [`${CDN}/big.png`]: async (_req, res) => {
         res.setHeader('Content-Type', 'image/png');
-        const chunk = Buffer.alloc(256 * 1024);
-        for (let i = 0; i < 9; i++) res.write(chunk);
+        const chunk = Buffer.alloc(64 * 1024);
+        while (sent < 4 * 1024 * 1024 && !res.destroyed) {
+          sent += chunk.length;
+          if (!res.write(chunk)) await Promise.race([once(res, 'drain'), once(res, 'close')]);
+        }
         res.end();
       },
       [`${CDN}/moved.png`]: redirect('https://evil.example/a.png'),
@@ -295,7 +302,10 @@ describe('icon from link', () => {
     });
     const said = async (url) => (await fromLink(url)).body.message;
     expect(await said(`https://${CDN}/page.png`)).toBe('The link does not lead to an image.');
-    expect(await said(`https://${CDN}/big.png`)).toBe('The image is larger than 2 MB.');
+    // The same words as an oversized upload.
+    expect(await said(`https://${CDN}/big.png`)).toBe('The file is larger than 256 KB.');
+    // Socket buffers let some more through than was read, far less than the old 2 MB.
+    expect(sent).toBeLessThan(1024 * 1024);
     // media.discordapp.net has no address in this pretend internet.
     expect(await said(`https://${MEDIA}/a.png`)).toMatch(/unreachable or did not answer in time/);
     expect(await said(`https://${CDN}/gone.png`)).toBe(

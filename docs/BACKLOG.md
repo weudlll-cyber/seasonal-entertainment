@@ -56,9 +56,6 @@ entry waits for.
   - **Re-check open chat connections after admin step changes** — a room rule, a step's role id
     or the ladder order changed in Admin re-checks access at the next push only; the member's
     room list updates at their next reload (a member's own read re-checks at once).
-  - **"Icon from link" downloads up to 2 MB** for an icon whose limit is 256 KB
-    (`server/src/discord/iconLink.js`, `server/src/media/icons.js`): the larger download is
-    refused after it arrived.
   - **A mention in a call's chat links to `/chat?room=<call room>`** — it opens there while
     readable; the call page would be the better place.
   - **The embedded chat says `ready` twice without `?room=`** — once before the room is chosen,
@@ -94,6 +91,10 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **"Icon from link" read up to 2 MB** — closed by `fix/se-discord-review` (Discord review of
+  2026-11-04): the transfer is now cut at the icon limit of 256 KB (`images.iconLimit`,
+  `server/src/media/icons.js`), with the same answer as an oversized upload
+  (`server/src/discord/iconLink.js`; docs/AUTH.md, "Discord: steps").
 - **Farmer step icons** — closed by decision (2026-11-04): the shipped seed's eight Farmer icons
   are byte for byte the eight Holder icons (`server/src/discord/seed/icons/`), and are meant to
   be. No change.

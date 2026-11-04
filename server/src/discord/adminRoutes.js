@@ -163,7 +163,7 @@ export function adminDiscordRoutes(db, images, network) {
     if (!input) return;
     let buffer;
     try {
-      buffer = await fetchIconLink(input.url, images.download, network);
+      buffer = await fetchIconLink(input.url, images, network);
     } catch (err) {
       if (!(err instanceof IconLinkError)) throw err;
       return sendError(res, 400, 'icon_link', err.message);

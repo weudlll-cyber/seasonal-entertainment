@@ -270,7 +270,9 @@ steps (`server/test/helpers/steps.js`), not the shipped ones.
   - or take the icon from a link ("Icon from link", `POST /api/admin/discord/steps/:id/icon-link`
     with `{ url }`, `server/src/discord/iconLink.js`, `client/src/admin/StepIconLink.jsx`):
     https to exactly `cdn.discordapp.com` or `media.discordapp.net`, no redirect at all, an image
-    type, 10 seconds, at most 2 MB read (the transfer is cut beyond). The server fetches it once
+    type, 10 seconds, at most the icon limit of 256 KB read (the transfer is cut beyond, with the
+    same answer as an oversized upload: `images.iconLimit`, `server/src/media/icons.js`). The
+    server fetches it once
     through `safeFetch` (public addresses only, `server/src/previews/safeFetch.js`) and stores it
     through the same `images.storeIcon` as an upload (same checks, same 64 × 64 WebP), so nothing
     depends on Discord afterwards (the fetch reaches the chat area's guard through the chat
