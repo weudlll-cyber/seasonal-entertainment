@@ -30,6 +30,7 @@ import { previewModerationRoutes } from '../previews/routes.js';
 import { createPreviewService } from '../previews/service.js';
 import { uploadRoutes } from '../uploads/routes.js';
 import { deleteChatData, deleteChatFiles, messagesDeleted } from './accountData.js';
+import { afterRoomDeleted, deleteRoomData } from './roomDeletion.js';
 import { directReportRoutes } from './directReportRoutes.js';
 import { directRoutes } from './directRoutes.js';
 import { favouriteRoutes } from './favouriteRoutes.js';
@@ -183,6 +184,10 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
       findBySlug: (slug) => findRoomBySlug(db, slug),
       createUnlisted: (room) => createUnlistedRoom(db, room),
       close: (id) => closeRoom(db, id),
+      // A whole room, deleted with its area's thing (a call: calls/deleteCall.js): remove() in
+      // the caller's transaction, afterRemove() with its answer once that committed.
+      remove: (id) => deleteRoomData(db, id),
+      afterRemove: (removed) => afterRoomDeleted(config, hub, removed),
       // Whether that account may read the room now (its level and any rule for Discord steps):
       // a notification about a room goes only to its readers (the weekly recap, recap/).
       readableBy(slug, userId) {

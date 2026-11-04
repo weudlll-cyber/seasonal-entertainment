@@ -14,17 +14,20 @@
 //              the call shows a red "Recording" (and, to someone not in it, "Being recorded"),
 //              a start during the call shows a banner, and joining or sending asks first
 //              (RecordingConsent); the recordings are listed with a player (CallRecordings).
+//              Admins delete an ended call here ("Delete call", calls/deleteCall.js), and land on
+//              the calls list.
 //              Loading the call is asked again while it is refused for the moment (too many
 //              reads from one address, a restart, the network): without the answer there is no
 //              Join button, and one lost answer must not leave the page without it.
 // ============================================================
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { api, ApiError } from '../api/http.js';
 import CallChat, { useChatCollapsed } from '../calls/CallChat.jsx';
 import CallRecordings from '../calls/CallRecordings.jsx';
 import CallStage from '../calls/CallStage.jsx';
+import { confirmAndDeleteCall } from '../calls/deleteCall.js';
 import LiveBadge from '../calls/LiveBadge.jsx';
 import RecordingConsent from '../calls/RecordingConsent.jsx';
 import { useCallRoom } from '../calls/useCallRoom.js';
@@ -50,6 +53,7 @@ const STATUS_TEXT = {
 
 export default function CallPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   // GET /api/calls/:id: { call, canManage, recordingEnabled }.
   const [answer, setAnswer] = useState(null);
   const [version, setVersion] = useState(0); // after a recording starts or stops
@@ -99,6 +103,17 @@ export default function CallPage() {
       setError(err.message);
     }
   }
+  // Admins only, an ended call only (the server's canDelete): afterwards the calls list.
+  async function removeCall() {
+    setError(null);
+    try {
+      if (!(await confirmAndDeleteCall(info))) return;
+      callsChanged();
+      navigate('/calls', { replace: true });
+    } catch (err) {
+      setError(err.message);
+    }
+  }
   const speakers = live.people.filter((p) => p.speaker).length;
   return (
     <section
@@ -125,6 +140,11 @@ export default function CallPage() {
         {canRecord && (
           <button type="button" className="button button--secondary" onClick={toggleRecording}>
             {recording ? 'Stop recording' : 'Start recording'}
+          </button>
+        )}
+        {answer.canDelete && info.status === 'ended' && (
+          <button type="button" className="button button--secondary" onClick={removeCall}>
+            Delete call
           </button>
         )}
         <button

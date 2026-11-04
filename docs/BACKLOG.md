@@ -77,8 +77,13 @@ entry waits for.
   decided 2026-11-04): a game's optional sign-up status URL (Admin → Games) is read every minute
   through the guarded fetch and checked against the shared contract (docs/OPEN-ROUNDS.md); the
   home page's Featured game box rotates with open sign-ups first (8 s, holds on hover, keyboard
-  focus and tap, a pause button, reduced motion respected), and the games page's cards show "Sign-up open"
-  with Join, for everyone (`server/src/games/openRounds.js`, `client/src/games/`).
+  focus and tap, a pause button, reduced motion respected), and the games page's cards show
+  "Sign-up open" with Join, for everyone (`server/src/games/openRounds.js`, `client/src/games/`).
+- **Deleting a call** — closed by `feat/se-calls-delete` (decided 2026-11-04: a technical test
+  call leaves nothing visible): admins delete an ended call completely, with its chat, recordings
+  and every row and file of it, audited (`DELETE /api/calls/:id`, `server/src/calls/deleteCall.js`,
+  `server/src/chat/roomDeletion.js`; "Delete" on the calls list and the call's page; docs/CALLS.md,
+  "Deleting a call").
 - **Signing in to Seasonal Bingo Royale through the site** — closed by `feat/se-bingo-login`
   (SE-BINGO-LOGIN; decided 2026-11-02 to 2026-11-04): `GET /api/games/bingo/authorize` for the
   game's sign-in through nginx's `auth_request` (member headers with id, name, role, may host and
