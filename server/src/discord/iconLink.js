@@ -7,13 +7,13 @@
 //              fetches it once. Only https links to exactly cdn.discordapp.com or
 //              media.discordapp.net; through the chat handle's images.download (safeFetch,
 //              previews/safeFetch.js: public addresses only, one deadline, a body cap), here with
-//              no redirect at all, 10 seconds and at most 2 MB read, and only an image type. The bytes then go through the icon
-//              pipeline every upload takes (media/icons.js, via the chat handle's
-//              images.storeIcon), so afterwards nothing depends on Discord.
+//              no redirect at all, 10 seconds, only an image type, and the transfer cut at the
+//              icon limit (images.iconLimit, media/icons.js: an upload's limit and message). The
+//              bytes then go through the icon pipeline every upload takes (media/icons.js, via
+//              the chat handle's images.storeIcon), so afterwards nothing depends on Discord.
 // ============================================================
 
 export const ICON_LINK_HOSTS = ['cdn.discordapp.com', 'media.discordapp.net'];
-export const ICON_LINK_MAX_BYTES = 2 * 1024 * 1024;
 export const ICON_LINK_TIMEOUT_MS = 10_000;
 const USER_AGENT = 'SeasonalEntertainmentIcons/1.0 (step icons for Seasonal Entertainment)';
 
@@ -36,11 +36,9 @@ function checkLink(input) {
   return url;
 }
 
-// safeFetch's reasons, in words for the admin.
-function explain(reason) {
-  if (reason === 'too large') {
-    return `The image is larger than ${ICON_LINK_MAX_BYTES / 1024 / 1024} MB.`;
-  }
+// safeFetch's reasons, in words for the admin; too large: what an oversized upload is told.
+function explain(reason, iconLimit) {
+  if (reason === 'too large') return iconLimit.message;
   if (reason.startsWith('content type')) return 'The link does not lead to an image.';
   // maxRedirects 0: any redirect, to this host or another, is refused.
   if (reason === 'too many redirects') {
@@ -49,22 +47,22 @@ function explain(reason) {
   return 'The image could not be fetched: the link is unreachable or did not answer in time.';
 }
 
-// Resolves the image's bytes; throws IconLinkError. download: the chat handle's images.download;
-// network: safeFetch's (tests pass a pretend internet; undefined means the real one).
-export async function fetchIconLink(input, download, network) {
+// Resolves the image's bytes; throws IconLinkError. images: the chat handle's (download and
+// iconLimit); network: safeFetch's (tests pass a pretend internet; undefined means the real one).
+export async function fetchIconLink(input, images, network) {
   const url = checkLink(input);
-  const res = await download(
+  const res = await images.download(
     url.href,
     {
       accept: ['image/'],
-      maxBytes: ICON_LINK_MAX_BYTES,
+      maxBytes: images.iconLimit.bytes,
       maxRedirects: 0,
       timeoutMs: ICON_LINK_TIMEOUT_MS,
       userAgent: USER_AGENT,
     },
     network
   );
-  if (!res.ok) throw new IconLinkError(explain(res.reason));
+  if (!res.ok) throw new IconLinkError(explain(res.reason, images.iconLimit));
   if (res.status !== 200) {
     throw new IconLinkError(`The image could not be fetched: Discord answered ${res.status}.`);
   }

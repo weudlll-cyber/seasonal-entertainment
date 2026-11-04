@@ -6,6 +6,8 @@
 //              which rooms they are subscribed to, and pushing new and hidden messages. Rights
 //              are never cached: every subscribe and every push checks the account as it is
 //              now. Account changes (logout, lock, role, password, 2FA) also close the sockets.
+//              A member's Discord steps changing, or an admin changing who reads which room,
+//              re-checks the subscriptions at once (recheckRooms, recheckAllRooms).
 //              A socket of the embedded chat on a foreign site (embed/) holds an embed token
 //              instead of a session: it is closed as soon as that token no longer works. The
 //              number of members shown online goes to the readers of "general" whenever it
@@ -117,10 +119,22 @@ export class ChatHub {
   // every room it may no longer read (a room for higher steps, docs/CHAT.md), each told
   // "not_allowed" for that room, and its pages hear "access" to reload their room lists.
   recheckRooms(userId) {
+    this.recheck((session) => session.data.userId === userId);
+  }
+
+  // An admin changed who may read rooms (a room saved, with its step rule; a step's role id, the
+  // ladder order, a step added or removed): the same re-check for every open socket, so rooms
+  // lost leave at once and rooms gained appear in the reloaded lists.
+  recheckAllRooms() {
+    this.recheck(() => true);
+  }
+
+  // The re-check for the sockets whose session `applies`.
+  recheck(applies) {
     for (const [roomId, sockets] of this.rooms) {
       const room = findRoom(this.db, roomId);
       for (const socket of sockets) {
-        if (this.sessions.get(socket)?.data.userId !== userId) continue;
+        if (!applies(this.sessions.get(socket))) continue;
         const viewer = this.viewerOf(socket);
         if (viewer && room && canRead(room, viewer)) continue;
         sockets.delete(socket);
@@ -129,7 +143,11 @@ export class ChatHub {
         }
       }
     }
-    this.sendToUser(userId, { type: 'access' });
+    const text = JSON.stringify({ type: 'access' });
+    for (const [socket, session] of this.sessions) {
+      if (!applies(session) || socket.readyState !== WebSocket.OPEN) continue;
+      if (this.viewerOf(socket)) socket.send(text);
+    }
   }
 
   // All sockets of an account, except those of the session `keepSessionId` (the session

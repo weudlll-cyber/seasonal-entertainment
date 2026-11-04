@@ -18,6 +18,8 @@ import { ImageRejected, checkImage } from './imageCheck.js';
 
 export const ICON_SIDE = 64;
 export const ICON_MAX_BYTES = 256 * 1024;
+// Also the answer when an icon from a link is cut at this size (discord/iconLink.js).
+export const ICON_TOO_LARGE = `The file is larger than ${ICON_MAX_BYTES / 1024} KB.`;
 const SOURCE_MAX_SIDE = 2048;
 
 // After an optional XML declaration and comments, the root element is <svg>.
@@ -46,7 +48,7 @@ function checkSvg(buffer) {
 export async function storeIcon(config, buffer, subfolder, maxPixels) {
   if (!Buffer.isBuffer(buffer) || buffer.length === 0) throw new ImageRejected('No file sent.');
   if (buffer.length > ICON_MAX_BYTES) {
-    throw new ImageRejected(`The file is larger than ${ICON_MAX_BYTES / 1024} KB.`);
+    throw new ImageRejected(ICON_TOO_LARGE);
   }
   if (isSvg(buffer)) checkSvg(buffer);
   else {

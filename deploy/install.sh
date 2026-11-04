@@ -10,8 +10,8 @@
 #              Caddy on an empty server or works beside an nginx already there, installs Docker
 #              if missing, makes every secret on the server, builds and starts the site (and the
 #              call service with recording, if chosen), creates the first admin and sets up the
-#              encrypted backups. Re-running keeps secrets, data and answers. --update (a backup,
-#              then the newest commit of origin's default branch), --commit <ref>, --coingecko
+#              encrypted backups. Re-running keeps secrets, data and answers. --update (a backup, or
+#              a local copy without backups, then the newest commit of origin's default branch), --commit <ref>, --coingecko
 #              (ask the CoinGecko key again), --discord (ask about the Discord login again),
 #              --bot-admin (ask about the event bot's admin page again; nginx mode), --status,
 #              --uninstall [--purge-data], --rollback <snapshot>,
@@ -42,6 +42,8 @@ source "$LIB/services.sh"
 source "$LIB/manage.sh"
 # shellcheck source=install/lib/update.sh
 source "$LIB/update.sh"
+# shellcheck source=install/lib/update-copy.sh
+source "$LIB/update-copy.sh"
 # shellcheck source=install/lib/bot-admin.sh
 source "$LIB/bot-admin.sh"
 # shellcheck source=install/lib/discord.sh

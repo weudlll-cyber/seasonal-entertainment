@@ -6,9 +6,11 @@
 //              - the home page does not load the chunks of pages loaded on first use (call
 //                page, prices, info pages, admin, embedded chat);
 //              - on a phone, home and prices hardly shift while their data arrives late (the
-//                boxes keep their room); home on three pinned dates (UTC), a failure naming
-//                what moved;
-//              - on a phone every control is a 44px target (links inside running text aside).
+//                boxes keep their room); home on three pinned dates (UTC), without calls (so a
+//                call another spec made cannot change it), a failure naming what moved;
+//              - on a phone every control is a 44px target (links inside running text aside),
+//                also the home page's "Next call" title when it is as short as "Fit" (the call
+//                callFit.spec.js makes, which made the home check fail once in a full run).
 // ============================================================
 
 import { expect, test } from '@playwright/test';
@@ -109,6 +111,14 @@ const occurrences = (now) =>
     image: null,
   }));
 
+const callsAnswer = (upcoming) => ({
+  ok: true,
+  configured: true,
+  calls: { live: [], upcoming, recent: [] },
+  reminders: [],
+});
+const noCalls = callsAnswer([]);
+
 test.describe('on a phone, late data hardly moves the page', () => {
   test.use({ viewport: PHONE, timezoneId: 'UTC' });
 
@@ -125,6 +135,9 @@ test.describe('on a phone, late data hardly moves the page', () => {
         occurrences: occurrences(now),
       });
       await slowData(page, ['prices']);
+      // No calls: a call another spec made (callFit.spec.js) would join "Up next" and push the
+      // second event out of it.
+      await page.route('**/api/calls', (route) => route.fulfill({ json: noCalls }));
       await page.goto('/');
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
       // networkidle: after the late answers have arrived and been drawn.
@@ -187,6 +200,19 @@ test.describe('on a phone every control is a 44px target', () => {
     test(`${path}`, async ({ page }) => {
       await page.goto(path);
       await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      expect(await smallTargets(page)).toEqual([]);
+    });
+  }
+
+  // The next call's title link, whatever its length: the answer is fixed here, so the check
+  // never depends on which call another spec planned.
+  for (const title of ['Fit', 'Seasonal Tokens community call: the four seasons explained']) {
+    test(`/ with the next call "${title}"`, async ({ page }) => {
+      const next = { id: 999, title, scheduledFor: '2099-01-01T19:00:00.000Z' };
+      await page.route('**/api/calls', (route) => route.fulfill({ json: callsAnswer([next]) }));
+      await page.goto('/');
+      await expect(page.getByRole('link', { name: title, exact: true })).toBeVisible();
       await page.waitForLoadState('networkidle');
       expect(await smallTargets(page)).toEqual([]);
     });

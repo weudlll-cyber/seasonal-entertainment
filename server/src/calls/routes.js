@@ -16,6 +16,7 @@
 
 import express from 'express';
 import { roleAtLeast } from '@seasonal-entertainment/shared/accountRules.js';
+import { callRoomSlug } from '@seasonal-entertainment/shared/callRoom.js';
 import { recordAudit } from '../audit/auditLog.js';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
@@ -132,7 +133,7 @@ export function callRoutes(db, config, service, chat, remindNow) {
     const id = db.transaction(() => {
       const callId = createCall(db, input, req.user.id);
       const room = chat.rooms.createUnlisted({
-        slug: `call-${callId}`,
+        slug: callRoomSlug(callId),
         name: `Call: ${input.title}`.slice(0, 40),
         readAccess: 'everyone',
         writeAccess: 'everyone',

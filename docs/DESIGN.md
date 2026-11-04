@@ -308,7 +308,8 @@ for an organiser, light and dark, without a scrollbar, also at 1915 x 913, 1920 
      the count and "Open the chat" when the newest message is over a day old.
    - **Next call** (one column; `NextCallCard.jsx`): a live call ("Live now", Listen), else the
      next planned one (title wrapped, never cut with an ellipsis before 2 lines, then clamped,
-     the full title the link's name and tooltip; its date in the site's one format; "Add to
+     the full title the link's name and tooltip, the link a `--hit-target` tap target however
+     short the title, without moving anything; its date in the site's one format; "Add to
      calendar", and "Remind me" for members, as icon buttons). **Only when a call is live or
      planned** (2026-10-21): with none, or while calls are not set up, the box is not shown and
      Fair price takes its column.

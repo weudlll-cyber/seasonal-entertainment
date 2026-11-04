@@ -217,6 +217,16 @@ character: in the probe, invisible leading spaces in the portal broke it.
   password, proven with it. An account without one would have no way to log in, so it is told
   to set a password first. The refresh token is revoked at Discord. Revoking it ends the whole
   grant, which is why older refresh tokens are never revoked one by one.
+- **Discord: grants not kept** (`server/src/discord/droppedGrants.js`, decided 2026-11-04): a
+  fresh grant the site does not keep is revoked at Discord, best effort, so it does not stay
+  listed under the member's authorised apps. That covers a login callback for someone already
+  logged in, a sign-up while registration is closed, a link refused (`other_user`,
+  `not_linked`), and a held sign-up that is replaced by another Discord user's or times out:
+  revoked when the browser comes back, or by the daily job's minute tick (`sweepSignups`) when
+  it never does. Because revoking ends the whole grant, nothing is revoked while an account here
+  holds that Discord user: a locked account's login, a link refused as `taken`, and a login
+  while someone else is signed in keep the linked account's grant working. A sign-up held again
+  for the same Discord user is not revoked either. Tests: `server/test/discordGrants.test.js`.
 - Only the Discord user id (unique), its name and the role ids are stored, never an email. The
   client secret and the tokens never reach a browser or a log. The secret goes only to Discord,
   in the token calls' `Authorization` header.
@@ -270,7 +280,9 @@ steps (`server/test/helpers/steps.js`), not the shipped ones.
   - or take the icon from a link ("Icon from link", `POST /api/admin/discord/steps/:id/icon-link`
     with `{ url }`, `server/src/discord/iconLink.js`, `client/src/admin/StepIconLink.jsx`):
     https to exactly `cdn.discordapp.com` or `media.discordapp.net`, no redirect at all, an image
-    type, 10 seconds, at most 2 MB read (the transfer is cut beyond). The server fetches it once
+    type, 10 seconds, at most the icon limit of 256 KB read (the transfer is cut beyond, with the
+    same answer as an oversized upload: `images.iconLimit`, `server/src/media/icons.js`). The
+    server fetches it once
     through `safeFetch` (public addresses only, `server/src/previews/safeFetch.js`) and stores it
     through the same `images.storeIcon` as an upload (same checks, same 64 × 64 WebP), so nothing
     depends on Discord afterwards (the fetch reaches the chat area's guard through the chat

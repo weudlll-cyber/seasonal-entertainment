@@ -12,7 +12,7 @@
 import express from 'express';
 import { adminMediaRoutes } from '../media/adminRoutes.js';
 import { MEDIA_URL_PREFIX, deleteMediaFile, mediaUrl } from '../media/files.js';
-import { storeIcon } from '../media/icons.js';
+import { ICON_MAX_BYTES, ICON_TOO_LARGE, storeIcon } from '../media/icons.js';
 import { ImageRejected } from '../media/imageCheck.js';
 import { mediaRoutes } from '../media/routes.js';
 import { seedChatMedia } from '../media/seed.js';
@@ -100,7 +100,7 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
   api.use('/chat', chatModerationRoutes(db, hub));
   api.use('/chat', mediaRoutes(db));
   api.use('/chat', uploadRoutes(db, config, hub, embedOrigins));
-  api.use('/admin/chat/rooms', adminChatRoomRoutes(db));
+  api.use('/admin/chat/rooms', adminChatRoomRoutes(db, hub));
   api.use('/admin/chat/media', adminMediaRoutes(db, config));
 
   // The sticker/GIF library, preview images and event images are public: generated names (an
@@ -121,9 +121,10 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
     // limit (a setting) added, and the public media address of a stored file.
     // storeIcon: an admin's icon upload (the Discord steps, discord/adminRoutes.js) drawn into
     // a 64 x 64 WebP in step-icons/: { ok, file } or { ok: false, message }; remove: a stored
-    // icon's file goes. download: the same guarded fetch, raw, for code that checks the bytes
-    // itself (the steps' icon from a link, discord/iconLink.js): { ok, status, body } or
-    // { ok: false, reason } (safeFetch's reason; anything else on the way is "unreachable").
+    // icon's file goes; iconLimit: its byte limit and the upload's answer beyond it. download:
+    // the same guarded fetch, raw, for code that checks the bytes itself (the steps' icon from a
+    // link, discord/iconLink.js): { ok, status, body } or { ok: false, reason } (safeFetch's
+    // reason; anything else on the way is "unreachable").
     images: {
       fetch: (url, limits, options, network) =>
         fetchImage(url, { ...limits, maxPixels: imageMaxPixels(db) }, options, network),
@@ -147,6 +148,7 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
         }
       },
       remove: (file) => deleteMediaFile(config, file),
+      iconLimit: { bytes: ICON_MAX_BYTES, message: ICON_TOO_LARGE },
     },
     // For account code: open chat sockets follow logouts and account changes.
     sessions: {
@@ -161,6 +163,8 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
       embedRevoked: (which) => hub.disconnectEmbeds(which),
       // A member's Discord steps changed (discord/): their sockets leave rooms now closed to them.
       stepsChanged: (userId) => hub.recheckRooms(userId),
+      // An admin changed the steps (discord/adminRoutes.js): every socket re-checks its rooms.
+      stepRulesChanged: () => hub.recheckAllRooms(),
     },
     // For deleting an account (accounts/deletion.js): chatAccounts above.
     accounts: chatAccounts(db, config),

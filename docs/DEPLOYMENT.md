@@ -388,8 +388,14 @@ sudo /opt/seasonal-entertainment/deploy/install.sh --update
    branch does not have (diverged), it is on another branch, or origin's default branch is
    unknown. It never resets, stashes or discards anything; fix such a checkout by hand.
 2. With backups set up, takes a fresh backup and prints where it is
-   (`/var/backups/seasonal/<time>.tar.age`). Without, it warns and goes on. This is the
-   update's only backup: the re-run in step 4 names it instead of taking a second one.
+   (`/var/backups/seasonal/<time>.tar.age`). This is the update's only backup: the re-run in
+   step 4 names it instead of taking a second one. Without backups set up, it makes a local copy
+   of the database and the media folder instead (decided 2026-11-04,
+   `deploy/install/lib/update-copy.sh`): the same backup code inside the running site, not
+   encrypted, into `/var/backups/seasonal-update-copies/<time>/`, owned by root and readable
+   only by root, the newest three kept. It prints where the copy is. A failed copy stops the
+   update before anything changed. To go back to it: `restore.mjs` takes the folder as it
+   takes an unpacked backup (copy it under `/var/backups/seasonal/` first, "Restoring").
 3. Fetches and fast-forwards the checkout to origin's default branch (`master`), also from a
    detached checkout left by `--commit`, and prints the old and the new commit.
 4. Runs **that** commit's installer as a plain re-run: no questions for remembered answers; it
@@ -813,11 +819,13 @@ The script takes the scenarios as arguments (`bash deploy/test/run.sh nginx`). I
 carries the label `seasonal.test` and is removed at the end (`KEEP=1` keeps it). Not testable
 there: UDP media from outside (the PC's Docker network is not the internet).
 
-Two quick ones run in CI (no root, no Docker): `bash deploy/test/bot-admin-token.test.sh` checks
+Three quick ones run in CI (no root, no Docker): `bash deploy/test/bot-admin-token.test.sh` checks
 how the event bot's token is read from its env file and which tokens nginx can carry ("The
 event bot's admin page", "The token"); `bash deploy/test/discord.test.sh` checks how the Discord
 settings are taken (from a secret file or the terminal, asked once, removed with `--discord`,
-the secret never shown; "Discord login").
+the secret never shown; "Discord login"); `bash deploy/test/update-copy.test.sh` checks the copy
+`--update` makes without backups (where it lands, root only, the newest three kept, a failed
+copy stopping the update, no copy with backups set up; "Updating").
 
 ## Reference: the manual steps
 
