@@ -38,6 +38,39 @@ entry waits for.
 - **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
   own repository and is not connected.
 
+### Security check of 2026-11-04 (SE-AUDIT-2): listed, not built
+
+- **The event bot's admin page on the site's origin** (medium if the bot's page has an XSS) —
+  nginx serves `/bot-admin/` from the site's own origin without the site's CSP, `nosniff` or
+  framing rule (`deploy/install/lib/bot-admin.sh`), and the site frames it same-origin. Script
+  injected into the bot's page would run as the site, with a staff member's cookie. Its own
+  subdomain, or a strict CSP there, would contain it; that changes the bot's deployment
+  (the bot's repository is not touched by this project).
+- **The installer runs the checkout's files as root** without checking who owns that folder: a
+  non-root owner of the checkout could change what root runs at the next `--update`.
+- **LiveKit's port 7880 listens on every interface**; only the firewall keeps it closed
+  (`deploy/calls/livekit.yaml`).
+- **"Confirm with Discord" needs no click at Discord** (`prompt=none`): someone holding a stolen
+  session cookie could start the confirmation and get the victim to open the link once. Discord's
+  consent page would still be one click for that victim; kept.
+- **Registration says whether a name or email is taken** (`username_taken`, `email_taken`; 5 an
+  hour per address), which the pre-login's fake salts otherwise hide. A plain answer would cost
+  the person registering a clear message; kept for now.
+- **`X-Embed-Origin` is the browser's claim**: a client outside a browser can name an approved
+  site and get that site's guest rules; the room's guest rules and the per-address limits still
+  apply.
+- **Proxy logs keep query strings**: Discord's one-time `code` and `state` on the callback (PKCE
+  bound) and the 5-minute `?link=` file signatures.
+- **The backup folder is 755 and owned by uid 1000** (the container's user): its encrypted backups
+  are listable and readable by that host account. Encrypted with the owner's age key.
+- **A deletion's Discord revocation fails silently**: one best-effort call, no log line, no retry
+  (`revokerFor`, `server/src/discord/index.js`); see "A restore does not revoke Discord tokens".
+- **`npm audit`: 6 moderate findings, development only** (eslint and its dependencies); the fix
+  needs `--force` with breaking upgrades.
+- **The seed texts of Imprint and Privacy** still open with "Draft — needs legal review before
+  publishing" on a fresh database; changing a seed text needs its old text recorded
+  (`seed/earlier-seeds.json`), and the live site's pages are its own.
+
 ### Known limits
 
 - **A restore does not revoke Discord tokens** — analysed by SE-AUDIT-2 (2026-11-04), kept: a
@@ -63,6 +96,25 @@ entry waits for.
   account, 5 an hour per address.
 
 ## PART TWO — closed
+
+- **Security check of 2026-11-04** — closed by `chore/se-audit-2` (SE-AUDIT-2; an independent
+  review of this branch, and one of master `bb8bd16` outside the session, confirmed in the code):
+  - compressed request bodies refused (`415`), body-parser 2.4.0 (GHSA-27r3-jxmh-p828;
+    `server/src/http/bodies.js`);
+  - linking Discord only after "prove it is you", checked at the start and at the callback
+    (`POST /api/auth/discord/link`);
+  - failed 2FA login codes limited per account too, not only per address;
+  - a report's file copy once per reporter and message, never larger than the stored file, at
+    most 20 open direct reports per member;
+  - the embedded chat's guest token left out of Caddy's logs;
+  - one `?next=` rule for server and browser (`shared/localPath.js`, no `/\host`);
+  - an animation's frames counted together against the pixel limit;
+  - the unencrypted update copy staged inside the container, never in a host folder of uid 1000;
+  - link previews refuse IPv4-compatible IPv6 (`::/96`);
+  - pictures in direct messages shown again (CSP `img-src blob:`; they stayed empty under the
+    real server's headers);
+  - a check that could never fail removed (`keys/handover.js`), and docs corrected: the
+    recovery code's 148.6 bits, what the new-device code does not prove.
 
 - **A deleted account's messages on pages already open** — closed by `chore/se-audit-2`: after
   the deletion commits, every open page of a room hears `{ type: 'deleted', ids }` through the
