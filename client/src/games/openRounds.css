@@ -42,3 +42,8 @@
 .open-round__title {
   font-weight: var(--font-weight-strong);
 }
+
+/* A link drawn as the site's button: no underline, as the other button links. */
+.open-round__join {
+  text-decoration: none;
+}
