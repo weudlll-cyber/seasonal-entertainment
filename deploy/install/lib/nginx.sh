@@ -13,8 +13,9 @@
 #              the names with), then, once certbot has the certificates (webroot: certbot never
 #              edits nginx), the TLS servers forwarding to the site on 127.0.0.1 and to the call
 #              service on 127.0.0.1:7880, WebSockets included; the Discord callback and file
-#              links logged without their query (secrets); with the event bot's admin page, its
-#              locations in the site's server (bot-admin.sh).
+#              links logged without their query (secrets); other projects' route files included
+#              from /etc/seasonal/routes/ and the games' account feed denied (bingo.sh); with the
+#              event bot's admin page, its locations in the site's server (bot-admin.sh).
 # ============================================================
 
 ACME_WEBROOT=/var/www/seasonal-acme
@@ -209,6 +210,7 @@ nginx_site_conf() {
   echo "    server_name $SITE_DOMAIN;"
   echo "    # Uploads: 25 MB at most (the \"Largest file\" setting's bound), plus encryption overhead."
   echo "    client_max_body_size 30m;"
+  nginx_routes_lines
   echo "    location / {"
   echo "        proxy_pass http://127.0.0.1:$SITE_LOCAL_PORT;"
   proxy_headers
@@ -301,6 +303,8 @@ setup_nginx() {
   nginx_migrate_names
   # The token include before a file of ours names it (nginx -t would fail without it).
   bot_admin_before_nginx
+  # The routes folder before the site's file includes it; the port file for the bingo game.
+  bingo_before_nginx
   install -d -m 755 "$ACME_WEBROOT"
   # Port 80 alone only before a certificate exists: on a re-run the TLS servers stay in place,
   # so the site never loses HTTPS and the answer for unknown names never changes in between.
