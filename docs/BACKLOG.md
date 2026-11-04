@@ -40,16 +40,6 @@ entry waits for.
 
 ### Security check of 2026-11-04 (SE-AUDIT-2): listed, not built
 
-- **The event bot's admin page on the site's origin** (medium if the bot's page has an XSS) —
-  nginx serves `/bot-admin/` from the site's own origin without the site's CSP, `nosniff` or
-  framing rule (`deploy/install/lib/bot-admin.sh`), and the site frames it same-origin. Script
-  injected into the bot's page would run as the site, with a staff member's cookie. Its own
-  subdomain, or a strict CSP there, would contain it; that changes the bot's deployment
-  (the bot's repository is not touched by this project).
-- **The installer runs the checkout's files as root** without checking who owns that folder: a
-  non-root owner of the checkout could change what root runs at the next `--update`.
-- **LiveKit's port 7880 listens on every interface**; only the firewall keeps it closed
-  (`deploy/calls/livekit.yaml`).
 - **"Confirm with Discord" needs no click at Discord** (`prompt=none`): someone holding a stolen
   session cookie could start the confirmation and get the victim to open the link once. Discord's
   consent page would still be one click for that victim; kept.
@@ -59,10 +49,6 @@ entry waits for.
 - **`X-Embed-Origin` is the browser's claim**: a client outside a browser can name an approved
   site and get that site's guest rules; the room's guest rules and the per-address limits still
   apply.
-- **Proxy logs keep query strings**: Discord's one-time `code` and `state` on the callback (PKCE
-  bound) and the 5-minute `?link=` file signatures.
-- **The backup folder is 755 and owned by uid 1000** (the container's user): its encrypted backups
-  are listable and readable by that host account. Encrypted with the owner's age key.
 - **`npm audit`: 6 moderate findings, development only** (eslint and its dependencies); the fix
   needs `--force` with breaking upgrades.
 
@@ -101,6 +87,20 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Server hardening of the SE-AUDIT-2 follow-up** — closed by `chore/se-audit-2` (2026-11-04;
+  `deploy/test/server-hardening.test.sh`, docs/DEPLOYMENT.md):
+  - **the event bot's admin page** answers with the site's `nosniff`, `Referrer-Policy`,
+    `X-Frame-Options SAMEORIGIN` and `frame-ancestors 'self'`, each `always`, the bot's own copies
+    hidden; no script or style policy (`deploy/install/lib/bot-admin.sh`);
+  - **the installer** stops, before any change, when its checkout or a folder above it is not
+    root's or is group- or other-writable (`refuse_unsafe_checkout`, `common.sh`);
+  - **LiveKit's 7880** listens on 127.0.0.1 in nginx mode (`--bind`, `LIVEKIT_BIND`); in Caddy
+    mode on every address still, since the site's Caddy container reaches it over the Docker
+    bridge; the ICE/TCP, TURN and UDP ports unchanged;
+  - **logs**: the Discord callback and file links (`?link=`) without their query, nginx and Caddy;
+    every other request as before;
+  - **the backup folder** is 750, uid 1000 (its writer), group the PC's read-only backup user
+    when there is one (not 700: that user reads it for the PC copies); a re-run fixes an old one.
 - **The seed texts of Imprint and Privacy said "needs legal review"** — closed by
   `chore/se-audit-2` (SE-AUDIT-2 follow-up): they now open with "Fill in before going live". The
   texts before are recorded in `server/src/info/seed/earlier-seeds.json`, so on its next start a

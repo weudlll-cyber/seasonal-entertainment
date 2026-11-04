@@ -435,14 +435,14 @@ raising or lowering.
 
 ### Ports and firewall
 
-| Port        | Protocol | Open to  | What                                                         |
-| ----------- | -------- | -------- | ------------------------------------------------------------ |
-| 443         | TCP      | everyone | the reverse proxy: `wss://<calls domain>` → `127.0.0.1:7880` |
-| 7880        | TCP      | nobody   | signalling and API; only the reverse proxy reaches it        |
-| 7881        | TCP      | everyone | media over TCP (ICE), for clients whose UDP is blocked       |
-| 50000–50499 | UDP      | everyone | media (500 ports: 250 participants × 2 peer connections)     |
-| 3478        | UDP      | everyone | TURN over UDP                                                |
-| 5349        | TCP      | everyone | TURN over TLS                                                |
+| Port        | Protocol | Open to  | What                                                                                  |
+| ----------- | -------- | -------- | ------------------------------------------------------------------------------------- |
+| 443         | TCP      | everyone | the reverse proxy: `wss://<calls domain>` → `127.0.0.1:7880`                          |
+| 7880        | TCP      | nobody   | signalling and API; only the reverse proxy reaches it (nginx mode: on 127.0.0.1 only) |
+| 7881        | TCP      | everyone | media over TCP (ICE), for clients whose UDP is blocked                                |
+| 50000–50499 | UDP      | everyone | media (500 ports: 250 participants × 2 peer connections)                              |
+| 3478        | UDP      | everyone | TURN over UDP                                                                         |
+| 5349        | TCP      | everyone | TURN over TLS                                                                         |
 
 Example with ufw: `ufw allow 7881/tcp`, `ufw allow 50000:50499/udp`, `ufw allow 3478/udp`,
 `ufw allow 5349/tcp` (443 is open for the site already). The range is narrow on purpose

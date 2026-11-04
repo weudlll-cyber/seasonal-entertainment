@@ -24,6 +24,8 @@ INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LIB="$INSTALL_DIR/deploy/install/lib"
 # shellcheck source=install/lib/common.sh
 source "$LIB/common.sh"
+# Before any other file of the checkout is read: root runs them.
+refuse_unsafe_checkout "$INSTALL_DIR"
 # shellcheck source=install/lib/detect.sh
 source "$LIB/detect.sh"
 # shellcheck source=install/lib/packages.sh

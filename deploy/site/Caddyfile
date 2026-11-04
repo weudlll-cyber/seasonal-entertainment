@@ -24,6 +24,7 @@
 			request>headers>X-Embed-Token delete
 			request>headers>X-Embed-Guest delete
 			request>headers>Sec-Websocket-Protocol delete
+			request>uri regexp "^(/api/auth/discord/callback|/api/chat/files/[^?]*)\?.*$" "${1}"
 		}
 	}
 }
@@ -45,6 +46,9 @@
 			request>headers>X-Embed-Guest delete
 			request>headers>Sec-Websocket-Protocol delete
 			resp_headers>X-Embed-Guest delete
+			# Discord's one-time code and state, and a file link's signature (?link=), are in the
+			# query: those two paths are logged without it; every other request as before.
+			request>uri regexp "^(/api/auth/discord/callback|/api/chat/files/[^?]*)\?.*$" "${1}"
 		}
 	}
 }

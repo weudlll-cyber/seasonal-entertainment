@@ -12,8 +12,9 @@
 #              certificate exists, first only port 80 (redirect, and the folder certbot proves
 #              the names with), then, once certbot has the certificates (webroot: certbot never
 #              edits nginx), the TLS servers forwarding to the site on 127.0.0.1 and to the call
-#              service on 127.0.0.1:7880, WebSockets included; with the event bot's admin
-#              page, its locations in the site's server (bot-admin.sh).
+#              service on 127.0.0.1:7880, WebSockets included; the Discord callback and file
+#              links logged without their query (secrets); with the event bot's admin page, its
+#              locations in the site's server (bot-admin.sh).
 # ============================================================
 
 ACME_WEBROOT=/var/www/seasonal-acme
@@ -202,6 +203,7 @@ nginx_site_conf() {
     echo "    return 301 https://$SITE_DOMAIN\$request_uri;"
     echo "}"
   fi
+  nginx_no_query_log_format
   echo "server {"
   tls_lines seasonal-site
   echo "    server_name $SITE_DOMAIN;"
@@ -211,6 +213,7 @@ nginx_site_conf() {
   echo "        proxy_pass http://127.0.0.1:$SITE_LOCAL_PORT;"
   proxy_headers
   echo "    }"
+  nginx_no_query_locations
   echo "    # The chat's live connection."
   echo "    location = /ws/chat {"
   echo "        proxy_pass http://127.0.0.1:$SITE_LOCAL_PORT;"
@@ -219,6 +222,26 @@ nginx_site_conf() {
   echo "    }"
   ! bot_admin_on || nginx_bot_admin_locations
   echo "}"
+}
+
+# Two kinds of request carry a secret in the query: Discord's one-time code and state on the
+# callback, and a file link's signature (?link=, valid 5 minutes). They are logged without the
+# query; every other request is logged as before. The format is the distributions' "combined"
+# with the path in place of the whole request line, written where they log by default.
+NO_QUERY_LOG=/var/log/nginx/access.log
+nginx_no_query_log_format() {
+  echo "log_format seasonal_no_query '\$remote_addr - \$remote_user [\$time_local] \"\$request_method \$uri \$server_protocol\" \$status \$body_bytes_sent \"\$http_referer\" \"\$http_user_agent\"';"
+}
+nginx_no_query_locations() {
+  local path
+  echo "    # Logged without the query (Discord's code and state, a file link's signature)."
+  for path in "= /api/auth/discord/callback" "/api/chat/files/"; do
+    echo "    location $path {"
+    echo "        proxy_pass http://127.0.0.1:$SITE_LOCAL_PORT;"
+    proxy_headers
+    echo "        access_log $NO_QUERY_LOG seasonal_no_query;"
+    echo "    }"
+  done
 }
 
 nginx_calls_conf() {

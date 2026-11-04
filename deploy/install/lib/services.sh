@@ -11,15 +11,27 @@
 #              password rules and asked again until it fits and is confirmed, then given to
 #              scripts/bootstrap-admin.mjs on stdin, after which BOOTSTRAP_TOKEN is removed; the
 #              nightly encrypted backup and one backup now on every run (none in the re-run of
-#              --update, which took its own before the new code). Long steps and waits run
-#              under run_step (common.sh).
+#              --update, which took its own before the new code), in a backup folder only its
+#              writer, root and the PC's read-only backup user may open (750). Long steps and
+#              waits run under run_step (common.sh).
 # ============================================================
 
 compose_site() { (cd "$INSTALL_DIR/$SITE_DIR_REL" && docker compose "$@"); }
 compose_calls() { (cd "$INSTALL_DIR/$CALLS_DIR_REL" && docker compose "$@"); }
 
+# The backup folder: written by the site image's "node" user (uid 1000), read by root and, when
+# it exists, by the read-only user that copies the backups to a PC (its group; docs/DEPLOYMENT.md,
+# "Backups to your PC"); nobody else may even list it. install -d also sets mode and owner of a
+# folder that exists already, so a re-run fixes one made 755 before 2026-11-04.
+BACKUP_READER=seasonal-backup
+prepare_backup_dir() {
+  local group=0
+  if id -u "$BACKUP_READER" >/dev/null 2>&1; then group="$(id -g "$BACKUP_READER")"; fi
+  install -d -m 750 -o 1000 -g "$group" "$BACKUP_HOST_DIR"
+}
+
 start_site() {
-  install -d -m 755 -o 1000 -g 1000 "$BACKUP_HOST_DIR" # the image's "node" user is uid 1000
+  prepare_backup_dir
   say "building the site image (commit $(commit_sha | cut -c1-12)); usually 3 to 10 minutes, longer on a small server"
   # Plain progress: if the build fails, the end of its output names the failing step.
   run_step "building the site image" compose_site --progress plain build site ||

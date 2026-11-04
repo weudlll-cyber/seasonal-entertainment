@@ -16,7 +16,10 @@ name: seasonal-calls
 services:
   livekit:
     image: livekit/livekit-server:v1.13.10@sha256:89ca9ce0791e18d6e03bf6e2c49ceb27e1c754eae8bd50c989386c1a5963791a
-    command: --config /etc/livekit.yaml
+    # The signalling port 7880 (HTTP and WebSocket) on LIVEKIT_BIND only: 127.0.0.1 unless the
+    # installer's .env says otherwise (Caddy mode on the site's VPS: its Caddy container comes in
+    # over the Docker bridge). The ICE/TCP, TURN and UDP media ports are not affected by it.
+    command: --config /etc/livekit.yaml --bind ${LIVEKIT_BIND:-127.0.0.1}
     restart: unless-stopped
     # Host networking: WebRTC needs the real UDP ports and the public address unchanged.
     network_mode: host
