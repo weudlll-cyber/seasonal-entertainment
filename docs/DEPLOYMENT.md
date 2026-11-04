@@ -393,7 +393,9 @@ sudo /opt/seasonal-entertainment/deploy/install.sh --update
    of the database and the media folder instead (decided 2026-11-04,
    `deploy/install/lib/update-copy.sh`): the same backup code inside the running site, not
    encrypted, into `/var/backups/seasonal-update-copies/<time>/`, owned by root and readable
-   only by root, the newest three kept. It prints where the copy is. A failed copy stops the
+   only by root, the newest three kept. The site writes it inside its container (`/tmp`), and the
+   installer fetches it as root with `docker compose cp` (since 2026-11-04): it never lies in a
+   host folder of the container's user, uid 1000, which on a server may be a login account. It prints where the copy is. A failed copy stops the
    update before anything changed. To go back to it: `restore.mjs` takes the folder as it
    takes an unpacked backup (copy it under `/var/backups/seasonal/` first, "Restoring").
 3. Fetches and fast-forwards the checkout to origin's default branch (`master`), also from a
