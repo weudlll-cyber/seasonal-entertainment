@@ -8,6 +8,8 @@
 //              an account made with Discord may have none (docs/AUTH.md, "Discord").
 // ============================================================
 
+import { nextAccountId, noteIssuedId } from './accountIds.js';
+
 const COLUMNS = `id, username, email, role, can_start_games AS canStartGames, locked,
   session_epoch AS sessionEpoch, show_online AS showOnline, dm_link_previews AS dmLinkPreviews,
   notify_mentions AS notifyMentions, notify_direct AS notifyDirect, notify_recap AS notifyRecap,
@@ -36,15 +38,18 @@ export class DuplicateAccountError extends Error {
 }
 
 // passwordHash: bcrypt of the auth key; kdfSalt: the salt the browser derived it with. An
-// account made with Discord comes with neither and no email (all null).
+// account made with Discord comes with neither and no email (all null). Its id is one never
+// issued before (accountIds.js).
 export function createUser(db, { username, email, passwordHash, kdfSalt, role = 'member' }) {
   try {
-    const { lastInsertRowid } = db
-      .prepare(
-        'INSERT INTO users (username, email, password_hash, kdf_salt, role) VALUES (?, ?, ?, ?, ?)'
-      )
-      .run(username, email, passwordHash, kdfSalt, role);
-    return findUserById(db, Number(lastInsertRowid));
+    return db.transaction(() => {
+      const id = nextAccountId(db);
+      db.prepare(
+        'INSERT INTO users (id, username, email, password_hash, kdf_salt, role) VALUES (?, ?, ?, ?, ?, ?)'
+      ).run(id, username, email, passwordHash, kdfSalt, role);
+      noteIssuedId(db, id);
+      return findUserById(db, id);
+    })();
   } catch (err) {
     // The UNIQUE constraints (case-insensitive) decide; the message names the column.
     if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {

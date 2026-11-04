@@ -2,9 +2,11 @@
 // File:        schema.js
 // Path:        server/src/accounts/schema.js
 // Project:     Seasonal Entertainment
-// Description: Tables of the accounts area: users. Sessions live in the "sessions" table,
-//              which the session store creates itself. migrateAccounts() brings older
-//              databases up, including the one-time rebuild that made email and the password
+// Description: Tables of the accounts area: users, the highest id ever issued and the deleted
+//              account changes for the games (ACCOUNT_IDS_SCHEMA, apart from the users table's own
+//              schema, which the one-time rebuild below re-runs). Sessions live in the
+//              "sessions" table, which the session store creates itself. migrateAccounts() brings
+//              older databases up, including the one-time rebuild that made email and the password
 //              optional for accounts that log in with Discord (SE-DISCORD-1, docs/AUTH.md).
 // ============================================================
 
@@ -46,6 +48,26 @@ CREATE TABLE IF NOT EXISTS users (
   notify_direct   INTEGER NOT NULL DEFAULT 0 CHECK (notify_direct IN (0, 1)),
   notify_recap    INTEGER NOT NULL DEFAULT 0 CHECK (notify_recap IN (0, 1)),
   created_at      TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+`;
+
+// account_ids:      the highest account id ever issued (accountIds.js), so an id is never
+//                   issued twice: SQLite would give a new account the id of the newest deleted
+//                   one (users.id has no AUTOINCREMENT), and a game keyed on it would hand the
+//                   new account the deleted one's stats (decided 2026-11-04). One row.
+// account_changes:  the account changes the games must learn of (accountChanges.js; GET
+//                   /api/games/bingo/account-changes): user id, kind, time only, kept 365 days.
+//                   AUTOINCREMENT: seq is the feed's cursor and must never go back.
+export const ACCOUNT_IDS_SCHEMA = `
+CREATE TABLE IF NOT EXISTS account_ids (
+  key  TEXT    PRIMARY KEY CHECK (key = 'issued'),
+  last INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS account_changes (
+  seq        INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER NOT NULL,
+  kind       TEXT    NOT NULL CHECK (kind IN ('deleted', 'locked', 'unlocked', 'rights')),
+  changed_at TEXT    NOT NULL
 );
 `;
 

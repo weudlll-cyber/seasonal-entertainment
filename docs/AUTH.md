@@ -527,6 +527,7 @@ All answer `429 too_many_attempts`. Numbers are in `server/src/config.js` (`rate
 | `POST /api/2fa/login`                                        | 15 min | 5     | account  | failed codes    |
 | every `GET` under `/api`                                     | 1 min  | 1200  | IP       | every request   |
 | `POST /api/keys/handover`                                    | 1 h    | 10    | account  | every request   |
+| `GET /api/games/bingo/account-changes`                       | 1 min  | 60    | IP       | every request   |
 
 `POST /api/auth/prelogin` also shares the two login limiters above (the same counters): a blocked
 name or address gets neither salts nor logins. The limit on every read (since 2026-10-21) covers
@@ -640,6 +641,9 @@ chat retention).
     messages went: one `{ type: 'deleted', ids }` per room through the hub's usual push (only to
     sockets that may read the room), and they drop them at once, for moderators too (since
     2026-11-04; `useChatRoom.js`; the home page's Community box asks again).
+- **For the games**: the account's id and the time are noted as a `deleted` change for
+  Seasonal Bingo Royale (`account_changes`, "Seasonal Bingo Royale" below), in the same
+  transaction; its id is never issued again ("Account ids").
 - **Open sockets** of the account close (`chatSessions.accountChanged`, all of them, embedded
   chats included).
 - **The Discord token** is revoked at Discord after the commit (best effort; the token is read
@@ -732,6 +736,93 @@ attach. **Every request for an uploaded file applies the chat's read rule** (`GE
 of the file's message; a hidden message's file goes to moderators only; a file not yet sent goes
 to its uploader only; otherwise the answer is the same 404 as for an unknown file. "Remove file"
 is an organiser/admin route (with 2FA). Details: ARCHITECTURE.md, "Chat".
+
+## Seasonal Bingo Royale (/games/bingo)
+
+The bingo game (its own repository, installable on its own with its own login) runs inside this
+site at `https://<site domain>/games/bingo`. There players sign in **only through this site's
+login**, delivered like the event bot's admin page: the host's nginx asks the site who the
+visitor is, and the game never sees a password or a session of this site (decided 2026-11-02).
+Code: `server/src/bingo/routes.js`. Both routes exist only while `GAMES_BINGO_EMBEDDED=1` (the
+installer's `--bingo`, docs/DEPLOYMENT.md); otherwise they answer 404. Every answer carries
+`Cache-Control: no-store`. Decisions:
+
+- a website admin is a bingo admin (2026-11-03);
+- who may host matches is "may start games" (`users.can_start_games`; admins always), and every
+  account in good standing counts as confirmed for the bingo leaderboard (2026-11-04);
+- guests may watch matches and see the leaderboard without signing in; playing needs an account
+  (2026-11-04);
+- a member's Discord steps show in the game as on this site (2026-11-04);
+- the site reports every account change that matters to the game; the game then ends that
+  player's game session, and a deleted account becomes "Deleted player" there, its points kept in
+  past rounds and gone from the leaderboard (2026-11-04);
+- a renamed account shows its new name in the game from its next sign-in; nothing more
+  (2026-11-04).
+
+**`GET /api/games/bingo/authorize`** is asked by the game's sign-in route
+(`/games/bingo/auth/website`) through nginx's `auth_request` (or Caddy's `forward_auth`), with the
+browser's own `Cookie`, `X-Original-Method` and `Origin`. The game keeps its own session
+afterwards.
+
+- **Same-origin rule**, as for the bot's page: a state-changing original method (POST, PUT,
+  PATCH, DELETE) must carry this site's own `Origin` (`originRefusal`, `server/src/http/csrf.js`),
+  else 403; GET, HEAD and OPTIONS pass; an unknown or missing `X-Original-Method` is refused
+  (403, fail closed). Any method other than GET on the route itself: 405. Never audited.
+- It never answers 401: always **204**, in one of two forms.
+- **A signed-in account in good standing**, by the site's own rules, gets exactly these headers:
+
+  | Header                         | Value                                                       |
+  | ------------------------------ | ----------------------------------------------------------- |
+  | `X-Acting-User-Id`             | the account's id, never issued twice ("Account ids" below)  |
+  | `X-Acting-User`                | the username (the display name)                             |
+  | `X-Acting-User-Roles`          | `member`, `organiser` or `admin`                            |
+  | `X-Acting-User-Email-Verified` | `true` (decision 2026-11-04; the name is the game's)        |
+  | `X-Acting-User-Can-Host`       | `true` with "may start games" or for an admin, else `false` |
+  | `X-Acting-User-Steps`          | base64url of compact JSON: the account's Discord steps      |
+
+  The steps are what this site shows next to the name: an array of at most three
+  `{"ladder":"holder|farmer|investor","name":"<step name>","icon":"<site-relative URL or null>"}`,
+  the highest step per ladder, `[]` without Discord or steps. For example
+  `[{"ladder":"holder","name":"Golden","icon":"/media/step-icons/0123456789abcdef0123456789abcdef.webp"}]`
+  is sent as
+  `W3sibGFkZGVyIjoiaG9sZGVyIiwibmFtZSI6IkdvbGRlbiIsImljb24iOiIvbWVkaWEvc3RlcC1pY29ucy8wMTIzNDU2Nzg5YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZi53ZWJwIn1d`.
+  The icons are public files (`/media/step-icons/<32 hex>.webp`, the chat's public media rule),
+  so a browser fetches them without a login.
+
+- **Anyone else** — signed out, a locked account (its session has ended), a member who must
+  still set up the 2FA the site requires, staff without their 2FA — gets exactly
+  `X-Acting-Guest: true` and none of the user headers. Guests watch; a guest who wants to play is
+  sent by the game to `/login?next=<its sign-in route, URL-encoded>`, and the login, the
+  registration and the Discord login all carry `next` through to that path
+  (`shared/localPath.js`; `client/src/pages/loginNext.test.jsx`).
+
+**Account ids** (decided 2026-11-04): `users.id` has no AUTOINCREMENT, so SQLite alone would give
+a new account the id of the newest deleted one, and the game would hand it that player's stats.
+The highest id ever issued is kept twice, in the table `account_ids` (it survives deletions and
+the users table's one-time rebuild) and in the file `<database file>.issued-account-ids` beside the
+database (the backups copy the database, never this file, so a restore of an older backup cannot
+lower it). A new account gets one more than the highest of both and of the users table
+(`server/src/accounts/accountIds.js`, used by `createUser`). No rebuild of the users table.
+
+**Account changes for the game**: `account_changes` notes, in the same transaction as the change,
+the account's id, the kind and the time, nothing else, for 365 days
+(`server/src/accounts/accountChanges.js`): `deleted` (an account's deletion, `deletion.js`),
+`locked` and `unlocked` (an admin's lock, `setLocked`), `rights` (a role change, `setRole`, or
+"may start games", `setCanStartGames`), each only when the value really changes.
+`GET /api/games/bingo/account-changes?since=<cursor>` answers
+`{"changes":[{"id":<user id>,"kind":"deleted|locked|unlocked|rights"}],"next":"<cursor>"}` in
+order, at most 500 an answer (ask again with `next`; `since` absent or `0` from the start;
+`next` stays the same while nothing is new), for example
+`{"changes":[{"id":42,"kind":"locked"},{"id":17,"kind":"deleted"}],"next":"118"}`.
+
+- Only with the header `X-Games-Sync-Token` equal to the token in the root-only file
+  `/etc/seasonal/games-sync-token` (mode 600, made once by the installer, passed to the site as
+  `GAMES_SYNC_TOKEN` in `site.env`, never printed or logged), compared in constant time
+  (`server/src/http/tokenMatches.js`); a wrong or missing token, or none set up: 401.
+- Rate-limited (`rateLimits.bingoFeed`, 60 a minute per address); 404 while switched off.
+- Reached by the game over the site's local port only (`http://127.0.0.1:<port>`, the port in
+  `/etc/seasonal/site-local-port`); the site's nginx server block denies the path.
+- Tests: `server/test/bingo.test.js`.
 
 ## Tests
 

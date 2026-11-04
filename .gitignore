@@ -23,4 +23,7 @@ data/
 # additions such as the bots' read-only mounts.
 deploy/site/site.env
 deploy/site/docker-compose.override.yml
+# Other projects' route files for own-Caddy mode: written on the server, never committed.
+deploy/site/routes/*
+!deploy/site/routes/.gitkeep
 .claude/settings.local.json

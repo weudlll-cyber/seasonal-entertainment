@@ -10,7 +10,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
-import { ACCOUNTS_SCHEMA, migrateAccounts } from '../accounts/schema.js';
+import { ACCOUNT_IDS_SCHEMA, ACCOUNTS_SCHEMA, migrateAccounts } from '../accounts/schema.js';
 import { AUDIT_SCHEMA } from '../audit/schema.js';
 import { CALLS_SCHEMA, migrateCalls } from '../calls/schema.js';
 import { CHAT_SCHEMA, migrateChat } from '../chat/schema.js';
@@ -30,6 +30,7 @@ import { TWO_FACTOR_SCHEMA } from '../twofa/schema.js';
 // Order matters only for foreign keys: an area's tables come after those it references.
 const SCHEMAS = [
   ACCOUNTS_SCHEMA,
+  ACCOUNT_IDS_SCHEMA,
   TWO_FACTOR_SCHEMA,
   KEYS_SCHEMA,
   AUDIT_SCHEMA,
