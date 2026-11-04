@@ -97,6 +97,10 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Games card band hides the logo** — closed by `fix/se-games-band` (found 2026-11-03): the
+  Seasonal Race card's logo lost its winter-blue quarter on the winter band. The logo now sits on
+  a neutral band, and a season image never on its own season's colour
+  (`client/src/games/gameBand.js`; docs/DESIGN.md, "Games").
 - **Login with Discord, steps and rooms for steps** — closed by `feat/se-discord` (SE-DISCORD-1,
   decided 2026-11-02): Discord is the primary login (OAuth2 with state and PKCE, scopes
   `identify` and `guilds.members.read` only), username and password stay for people without

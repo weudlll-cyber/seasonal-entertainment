@@ -328,7 +328,10 @@ lies large and faint (`--wash-page`) at the window's bottom right, behind the co
 the controller; Events: the balls; Chat: the people; Calls: the play button.
 
 - **Games**: larger cards with a 200px image band in the season colours in turn, the status as
-  a pill above the name.
+  a pill above the name. A season image never sits on its own season's colour (the band takes the
+  next season in the turn: winter, spring, summer, autumn); the Seasonal Tokens logo, which holds
+  all four, sits on the neutral surface (`--color-surface-2`) so every quarter stays visible
+  (`client/src/games/gameBand.js`, decided 2026-11-04).
 - **Events**: each day a card; each event has a bar in the season colours in turn beside its
   time.
 - **Calls**: an empty list shows a card in the page's style instead of "None." ("No call is

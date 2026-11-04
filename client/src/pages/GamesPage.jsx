@@ -5,7 +5,8 @@
 // Description: /games: the game cards the viewer may see (the server filters by role).
 //              Available games link to their page; others show their status only. Reloads
 //              when the signed-in user changes, so member-only games appear after login. SE style:
-//              the Games header with the controller quarter, cards with a coloured image band.
+//              the Games header with the controller quarter, cards with a coloured image band
+//              (bandColour).
 // ============================================================
 
 import { useEffect, useState } from 'react';
@@ -14,6 +15,7 @@ import { GAME_STATUS_LABELS } from '@seasonal-entertainment/shared/gameRules.js'
 import { api } from '../api/http.js';
 import { FormMessage } from '../components/FormField.jsx';
 import PageHeader from '../brand/PageHeader.jsx';
+import { bandColour } from '../games/gameBand.js';
 import { GAME_IMAGE_FILES } from '../games/gameImages.js';
 import { useSession } from '../session/SessionContext.jsx';
 import './GamesPage.css';
@@ -40,9 +42,9 @@ export default function GamesPage() {
       <FormMessage error={error} />
       {games?.length === 0 && <p>No games yet.</p>}
       <ul className="game-grid">
-        {games?.map((game) => (
+        {games?.map((game, position) => (
           <li key={game.id} className="game-card">
-            <div className="game-card__band">
+            <div className={`game-card__band game-card__band--${bandColour(position, game.image)}`}>
               <img
                 src={GAME_IMAGE_FILES[game.image]}
                 alt=""
