@@ -47,10 +47,6 @@ entry waits for.
   login is not planned, decided 2026-11-02).
 - **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
   own repository and is not connected.
-- **Discord review of 2026-11-04 (listed, not built: they change behaviour)**:
-  - **A short call title on the home page's "Next call" box is a link under 44 px** — a call named
-    "Fit" (`client/e2e/callFit.spec.js`) made `speed.spec.js` fail once in a full run when it was
-    the next call (`client/src/pages/NextCallCard.jsx`); alone the spec passes.
 
 ### Known limits
 
@@ -79,6 +75,11 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **A short call title on the home page was a link under 44 px** — closed by
+  `fix/se-discord-review` (Discord review of 2026-11-04): the "Next call" title link is a
+  `--hit-target` tap target whatever the title's length, the box's look unchanged
+  (`client/src/pages/NextCallCard.jsx`, `homeBottomRow.css`). `client/e2e/speed.spec.js` checks it
+  with a call named "Fit", and its late-data checks no longer see calls other specs made.
 - **A mention in a call's chat linked to the chat page** — closed by `fix/se-discord-review`
   (Discord review of 2026-11-04): its notification now opens the call's page, `/calls/<id>`;
   mentions in other rooms are unchanged (`shared/callRoom.js`,

@@ -169,19 +169,31 @@
 }
 
 .home__call-title {
-  /* Never squeezed by the box (it would cut the letters): the title wraps, at most 2 lines,
-     then it is clamped (the full title stays the link's name and tooltip). */
-  display: -webkit-box;
+  /* Never squeezed by the box (it would cut the letters). */
   flex: none;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
   font-size: 1.375rem;
   line-height: 1.15;
 }
 
-.home__call-title a {
+/* The title wraps, at most 2 lines, then it is clamped (the full title stays the link's name
+   and tooltip). */
+.home__call-text {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+/* A tap target of --hit-target (44 px) however short the title ("Fit"): the full width, and
+   padding above and below one line (1.15em high) that the negative margins take out of the
+   layout again, so the box looks as before. */
+.home__call-link {
+  --call-link-pad: calc((var(--hit-target) - 1.15em) / 2);
+
+  display: block;
+  margin-block: calc(-1 * var(--call-link-pad));
+  padding-block: var(--call-link-pad);
   color: inherit;
   text-decoration: none;
 }
