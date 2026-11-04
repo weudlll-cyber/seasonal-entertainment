@@ -216,6 +216,17 @@
   font-weight: var(--font-weight-strong);
 }
 
+/* Beside the small eyebrow (Featured game): the link keeps its 44px target, centred on the
+   eyebrow's line and reaching into the card's padding, but takes no height of its own, so the
+   head is no taller than the eyebrow and the home page still fits its window. */
+.home__card-head--eyebrow {
+  align-items: center;
+}
+
+.home__card-head--eyebrow a {
+  margin-block: calc(var(--hit-target) / -2);
+}
+
 /* Centred while it fits; "safe": content taller than the box starts at its top, never cut
    there. */
 .home__game {

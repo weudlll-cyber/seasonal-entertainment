@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: The boxes of the home page in the SE style (docs/DESIGN.md, "Home"), all from
 //              real data: the featured games in rotation (open sign-ups first, 8 s each, with
-//              previous/next, dots and a pause; games/featuredRotation.js), "Up next" (the
+//              previous/next, dots and a pause; games/featuredRotation.js; "All games" always
+//              in its head, as "All events" in Up next), "Up next" (the
 //              event bot's occurrences and the site's calls, merged by LandingPage.jsx; a call
 //              with the calls quarter, linking to its page; only the entries that fit whole,
 //              useWholeItems.js), the four season price tiles (price bot, docs/BOTS.md) and the
@@ -53,13 +54,13 @@ function FeaturedGame({ game, timeZone }) {
 }
 
 // "Join" (the primary button, with an open sign-up) and "Play" beside it (then the secondary
-// one), or "All games" for a game not available.
+// one); a game not available has neither ("All games" is in the box's head).
 function FeaturedActions({ game }) {
   const open = game.openRounds?.length > 0;
   return (
     <>
       <JoinLink rounds={game.openRounds} />
-      {game.status === 'available' ? (
+      {game.status === 'available' && (
         // "Play" alone: the name is right above it, and a long one would take the row; the full
         // name stays the link's name and tooltip.
         <Link
@@ -69,10 +70,6 @@ function FeaturedActions({ game }) {
           title={`Play ${game.name}`}
         >
           Play
-        </Link>
-      ) : (
-        <Link className="button" to="/games">
-          All games
         </Link>
       )}
     </>
@@ -89,7 +86,11 @@ export function FeaturedGameCard({ games, timeZone }) {
   return (
     <section className="card home__card home__game" aria-label="Featured game" {...boxProps}>
       <Wash src={QUARTERS.games} />
-      <p className="home__eyebrow">Featured game</p>
+      {/* Always there, whichever game is shown: the way to all games, as "All events" in Up next. */}
+      <div className="home__card-head home__card-head--eyebrow">
+        <p className="home__eyebrow">Featured game</p>
+        <Link to="/games">All games</Link>
+      </div>
       {/* Not announced on every turn: a screen reader reads it when it gets there. */}
       {game && (
         <div className="home__game-slide" aria-live="off">

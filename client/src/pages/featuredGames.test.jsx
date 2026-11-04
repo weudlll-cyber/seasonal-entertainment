@@ -9,7 +9,8 @@
 //              while it has keyboard focus (a mouse click on a control does not hold it once the
 //              pointer left), after a tap until a tap outside, and while paused with its button; with reduced motion it never moves by itself (previous/next still do, no
 //              pause button); one game: no rotation, no controls. A game's open sign-up shows its
-//              soonest round (title, start, players, Join, "+N more"); the slide is not announced.
+//              soonest round (title, start, players, Join, "+N more"); the slide is not announced;
+//              "All games" is in the box's head once, whichever game is shown.
 // ============================================================
 
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
@@ -187,6 +188,18 @@ it('with reduced motion: never by itself, no pause button; previous and next sti
   expect(screen.queryByRole('button', { name: /rotation/ })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Next game' }));
   expect(shown()).toBe('Quiz');
+});
+
+it('"All games" once in the head: for an available game, an unavailable one, while rotating', () => {
+  show([game(1, 'Race'), { ...game(2, 'Quiz'), status: 'coming_soon' }]);
+  const allGames = () => within(box()).getAllByRole('link', { name: 'All games' });
+  expect(shown()).toBe('Race');
+  expect(allGames()).toHaveLength(1);
+  expect(allGames()[0]).toHaveAttribute('href', '/games');
+  wait(ROTATE_MS);
+  expect(shown()).toBe('Quiz');
+  expect(allGames()).toHaveLength(1);
+  expect(within(box()).queryByRole('link', { name: /^Play/ })).toBeNull();
 });
 
 it('one game: no rotation and no controls', () => {
