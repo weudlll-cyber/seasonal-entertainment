@@ -3,7 +3,8 @@
    Path:        client/src/pages/GamesPage.css
    Project:     Seasonal Entertainment
    Description: Game cards in a responsive grid (one column on phones), SE style: an image
-                band in a season colour (in turn) above the text.
+                band above the text, in a season colour (in turn, never the image's own
+                season) or neutral behind the logo.
    ============================================================ */
 
 .game-grid {
@@ -28,19 +29,28 @@
   display: grid;
   place-items: center;
   height: 200px;
+}
+
+/* The band colour comes from bandColour (client/src/games/gameBand.js): the seasons in turn,
+   never the image's own season; the logo, which holds all four, on a neutral surface. */
+.game-card__band--winter {
   background: var(--color-winter);
 }
 
-.game-card:nth-child(4n + 2) .game-card__band {
+.game-card__band--spring {
   background: var(--color-spring);
 }
 
-.game-card:nth-child(4n + 3) .game-card__band {
+.game-card__band--summer {
   background: var(--color-summer);
 }
 
-.game-card:nth-child(4n + 4) .game-card__band {
+.game-card__band--autumn {
   background: var(--color-autumn);
+}
+
+.game-card__band--neutral {
+  background: var(--color-surface-2);
 }
 
 .game-card__band img {

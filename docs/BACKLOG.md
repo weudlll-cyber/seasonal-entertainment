@@ -75,6 +75,10 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Games card band hides the logo** — closed by `fix/se-games-band` (found 2026-11-03): the
+  Seasonal Race card's logo lost its winter-blue quarter on the winter band. The logo now sits on
+  a neutral band, and a season image never on its own season's colour
+  (`client/src/games/gameBand.js`; docs/DESIGN.md, "Games").
 - **A short call title on the home page was a link under 44 px** — closed by
   `fix/se-discord-review` (Discord review of 2026-11-04): the "Next call" title link is a
   `--hit-target` tap target whatever the title's length, the box's look unchanged

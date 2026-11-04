@@ -3,7 +3,8 @@
 // Path:        client/src/pages/gamesPages.test.jsx
 // Project:     Seasonal Entertainment
 // Description: Guards the games screens: cards show their status and only available games
-//              get a Play link; the admin form sends the chosen fields.
+//              get a Play link, each card gets its band colour; the admin form sends the chosen
+//              fields.
 // ============================================================
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -70,6 +71,12 @@ describe('games page', () => {
     );
     expect(within(card('Duel')).getByText('Maintenance')).toBeInTheDocument();
     expect(within(card('Duel')).queryByRole('link')).toBeNull();
+    // Band colours (gameBand.test.js has every position): the logo on neutral, the spring
+    // image moved off its own spring position, winter keeps the summer turn.
+    const band = (name) => card(name).querySelector('.game-card__band').className;
+    expect(band('Seasonal Race')).toContain('game-card__band--neutral');
+    expect(band('Quiz')).toContain('game-card__band--summer');
+    expect(band('Duel')).toContain('game-card__band--summer');
   });
 });
 
