@@ -48,7 +48,8 @@ export function createOpenRounds(db, { network = realNetwork, log = console.warn
       failing = err.message;
       state.set(id, { ...known, failing });
     }
-    if (failing !== known.failing) {
+    // Once per change of state (failing or answering), not when only the reason changes.
+    if (Boolean(failing) !== Boolean(known.failing)) {
       log(
         failing
           ? `[games] the sign-up status of game ${id} failed: ${failing}`
