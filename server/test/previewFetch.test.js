@@ -33,6 +33,7 @@ const DNS = {
   'cgnat.test': ['100.64.0.7'],
   'ula.test': ['fd00::1'],
   'mapped.test': ['::ffff:127.0.0.1'],
+  'compatible.test': ['::7f00:1'],
   'mixed.test': [PUBLIC_IP, '192.168.1.1'],
 };
 
@@ -94,9 +95,10 @@ describe('refused targets', () => {
     expect(internet.dialled).toEqual([]);
   });
 
-  it('DNS answering a private, loopback, link-local, CGNAT, unique-local or mapped address', async () => {
+  it('DNS answering a private, loopback, link-local, CGNAT, unique-local, mapped or IPv4-compatible address', async () => {
     const fetch = await start();
-    for (const host of ['private', 'loopback', 'metadata', 'cgnat', 'ula', 'mapped', 'mixed']) {
+    const hosts = ['private', 'loopback', 'metadata', 'cgnat', 'ula', 'mapped', 'compatible'];
+    for (const host of [...hosts, 'mixed']) {
       await refused(fetch, `https://${host}.test/`);
     }
     expect(internet.dialled).toEqual([]);

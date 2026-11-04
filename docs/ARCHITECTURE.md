@@ -310,7 +310,7 @@ password change and turning 2FA on or off close the account's other sockets at o
   request forgery: https and port 443 only, no credentials in the URL; the server resolves the
   name itself and **every** answer must be a public address — private, loopback, link-local
   (cloud metadata), carrier-grade NAT, multicast, reserved and documentation ranges, IPv6
-  unique-local, link-local, IPv4-mapped, NAT64, 6to4 and Teredo are refused (address literals
+  unique-local, link-local, IPv4-mapped and IPv4-compatible, NAT64, 6to4 and Teredo are refused (address literals
   too); it then connects to exactly that address (no second lookup) with the TLS certificate
   checked against the host name; at most 3 redirects, each checked the same way; one 5 s
   deadline for page and image together (DNS included); HTML capped at 1 MB and only `text/html`

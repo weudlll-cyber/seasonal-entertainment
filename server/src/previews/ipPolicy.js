@@ -5,7 +5,8 @@
 // Description: Which addresses the link-preview fetcher may connect to: public unicast only.
 //              Private, loopback, link-local (cloud metadata), carrier-grade NAT, multicast,
 //              reserved and documentation ranges are refused, and in IPv6 also unique-local,
-//              IPv4-mapped and the translation / tunnel prefixes that can wrap an IPv4 address.
+//              IPv4-mapped and IPv4-compatible, and the translation / tunnel prefixes that can
+//              wrap an IPv4 address.
 // ============================================================
 
 import net from 'node:net';
@@ -31,6 +32,7 @@ const IPV4_REFUSED = [
 const IPV6_REFUSED = [
   ['::', 128], // unspecified
   ['::1', 128], // loopback
+  ['::', 96], // IPv4-compatible (deprecated; ::7f00:1 names 127.0.0.1)
   ['::ffff:0:0', 96], // IPv4-mapped
   ['64:ff9b::', 96], // NAT64
   ['64:ff9b:1::', 48], // local NAT64
