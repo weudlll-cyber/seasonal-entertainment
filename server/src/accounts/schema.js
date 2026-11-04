@@ -67,8 +67,9 @@ export function migrateAccounts(db) {
 // Databases from before Discord logins have email and password_hash NOT NULL. SQLite cannot
 // drop a NOT NULL, so the table is rebuilt once from ACCOUNTS_SCHEMA (the documented 12-step
 // way: foreign keys off, copy, drop, rename, check) with every row and id kept; the other
-// tables' references name "users" and point at the new table afterwards. A database where
-// email is already optional is left alone.
+// tables' references name "users" and point at the new table afterwards. The check fails only
+// on references the rebuild broke: a stray row the database already had (in any table) must not
+// keep the server from starting. A database where email is already optional is left alone.
 function relaxEmailAndPassword(db) {
   const columns = db.prepare('PRAGMA table_info(users)').all();
   if (!columns.find((c) => c.name === 'email')?.notnull) return;
@@ -76,6 +77,9 @@ function relaxEmailAndPassword(db) {
     .map((c) => c.name)
     .filter((name) => name !== 'legacy')
     .join(', ');
+  const brokenRefs = () =>
+    new Set(db.pragma('foreign_key_check').map((r) => `${r.table}:${r.rowid}:${r.fkid}`));
+  const brokenBefore = brokenRefs();
   db.pragma('foreign_keys = OFF');
   try {
     db.transaction(() => {
@@ -85,7 +89,7 @@ function relaxEmailAndPassword(db) {
       db.exec(`INSERT INTO users_new (${kept}) SELECT ${kept} FROM users`);
       db.exec('DROP TABLE users');
       db.exec('ALTER TABLE users_new RENAME TO users');
-      const broken = db.pragma('foreign_key_check');
+      const broken = [...brokenRefs()].filter((ref) => !brokenBefore.has(ref));
       if (broken.length) throw new Error(`users rebuild broke ${broken.length} references`);
     })();
   } finally {

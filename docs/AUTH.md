@@ -208,7 +208,8 @@ character: in the probe, invisible leading spaces in the portal broke it.
   (`server/src/discord/username.js`). The member may change it, and must confirm their age as on
   every registration. `POST /api/auth/discord/register` creates the account (no email, no
   password: both columns are optional since 2026-11-02; older databases get the users table
-  rebuilt once, `relaxEmailAndPassword` in `server/src/accounts/schema.js`) and its link in one
+  rebuilt once, `relaxEmailAndPassword` in `server/src/accounts/schema.js`, every account and
+  reference kept; only references the rebuild itself broke stop it) and its link in one
   transaction, and logs it in. It shares the registration's rate limit, and is refused while
   registration is closed.
 - **Unlink** (`DELETE /api/auth/discord`, the account page): only for an account with a

@@ -6,7 +6,8 @@
 //              relaxEmailAndPassword): a database from before Discord logins (email and
 //              password_hash NOT NULL) opens with both optional, every account kept with its id,
 //              the other tables' references still working (a deletion still cascades), and a
-//              second start leaves it alone.
+//              second start leaves it alone; a stray row the database already had (an unrelated
+//              broken reference) does not stop it.
 // ============================================================
 
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -69,4 +70,25 @@ it('makes email and password optional, keeping accounts and references', () => {
   const again = openDatabase(file);
   expect(again.prepare('SELECT COUNT(*) AS n FROM users').get().n).toBe(2);
   again.close();
+});
+
+it('is not stopped by a broken reference the database already had', () => {
+  dir = mkdtempSync(path.join(tmpdir(), 'se-rebuild-'));
+  const file = path.join(dir, 'old.db');
+  const old = new Database(file);
+  old.exec(OLD);
+  // An orphan from some earlier bug, in a table that has nothing to do with accounts.
+  old.pragma('foreign_keys = OFF');
+  old.exec(`
+    CREATE TABLE shelves (id INTEGER PRIMARY KEY);
+    CREATE TABLE books (id INTEGER PRIMARY KEY, shelf_id INTEGER REFERENCES shelves(id));
+    INSERT INTO books (shelf_id) VALUES (99);
+  `);
+  old.close();
+
+  const db = openDatabase(file);
+  expect(notNull(db, 'email')).toBe(0);
+  expect(db.prepare('SELECT COUNT(*) AS n FROM users').get().n).toBe(1);
+  expect(db.prepare('SELECT COUNT(*) AS n FROM user_keys').get().n).toBe(1);
+  db.close();
 });
