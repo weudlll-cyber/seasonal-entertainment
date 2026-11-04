@@ -8,7 +8,8 @@
 //              refreshLink: the daily read without the member: claim the link (one refresh per
 //              account at a time), trade the refresh token for new ones (Discord rotates: the old
 //              one dies at once), read the member record, and store the new token with the roles
-//              in one statement, so a crash between Discord's answer and the save is the only way
+//              in one statement, into the claimed link only (an unlink or deletion meanwhile
+//              wins, and the new token is revoked), so a crash between Discord's answer and the save is the only way
 //              to lose it (the member then logs in with Discord again). invalid_grant: the link
 //              needs a Discord login (steps hidden); 404 code 10004: not on the server (no
 //              steps); rate limited or Discord down: the old token still works, try later. The
@@ -25,6 +26,7 @@ import {
   markNeedsLogin,
   releaseClaim,
   saveRead,
+  saveRefreshed,
 } from './store.js';
 import { openToken, sealToken } from './tokenBox.js';
 
@@ -72,7 +74,8 @@ export async function storeRead(db, discord, userId, discordUser, tokens) {
 }
 
 // The daily read for one account. Returns 'done', 'busy' (claimed elsewhere or no token),
-// 'needs_login' or 'later'.
+// 'needs_login', 'later' or 'gone' (the link was removed while Discord answered; the new token
+// is revoked).
 export async function refreshLink(db, discord, userId, { onChange = () => {} } = {}) {
   const sealed = claimRefresh(db, userId);
   if (!sealed) return 'busy';
@@ -103,12 +106,15 @@ export async function refreshLink(db, discord, userId, { onChange = () => {} } =
   } catch {
     member = { status: before.status, roleIds: before.roleIds }; // keep what was known
   }
-  saveRead(db, userId, {
-    discordId: before.discordId,
-    discordName: before.discordName,
+  const stored = saveRefreshed(db, userId, {
     sealedToken: await sealToken(tokens.refreshToken, discord.key),
     ...member,
   });
+  if (!stored) {
+    // Unlinked or deleted while Discord answered: the new grant must not outlive the link.
+    await discord.api.revoke(tokens.refreshToken, 'refresh_token');
+    return 'gone';
+  }
   if (member.status !== before.status || !sameRoles(member.roleIds, before.roleIds)) {
     onChange(userId);
   }

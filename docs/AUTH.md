@@ -298,6 +298,8 @@ steps (`server/test/helpers/steps.js`), not the shipped ones.
     if the server died) makes a second one wait its turn;
   - **the new token is saved with the roles in one statement**, right after the read. A crash
     between Discord's answer and that save loses it; the member then logs in with Discord again.
+  - **only into the claimed link**: an unlink or account deletion while Discord answers wins.
+    No link comes back, and the new token is revoked at Discord at once.
 - **Discord's answers**:
   - `invalid_grant` (the member removed the app, or the token went unused too long): the link is
     marked **needs login**, the token deleted and the steps hidden. The account page says so;
@@ -309,7 +311,7 @@ steps (`server/test/helpers/steps.js`), not the shipped ones.
 - **Access follows** at once: when a read changes a member's steps, their open chat
   connections re-check their rooms (docs/CHAT.md, "Rooms for Discord steps").
 - Tests: `server/test/discordRoles.test.js` (sealed token, strict rotation, two refreshes at
-  once, invalid_grant, 10004, rate limit, the due links only, a mapping change without a read).
+  once, an unlink during a read, invalid_grant, 10004, rate limit, the due links only, a mapping change without a read).
 
 ### Discord: accounts without a password
 

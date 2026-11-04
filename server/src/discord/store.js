@@ -37,7 +37,7 @@ export class DiscordTakenError extends Error {}
 
 // One read stored at once: the (new) sealed token, the roles and the state, and the next daily
 // read; also releases the claim. Creates the link when the account has none (at linking or
-// sign-up). A Discord user linked to another account is refused (DiscordTakenError).
+// sign-up; the daily read uses saveRefreshed instead). A Discord user linked to another account is refused (DiscordTakenError).
 // read: { discordId, discordName, sealedToken, status, roleIds }.
 export function saveRead(db, userId, read, now = Date.now()) {
   let changes;
@@ -69,6 +69,28 @@ export function saveRead(db, userId, read, now = Date.now()) {
   }
   // The account is linked to another Discord user: nothing was stored.
   if (changes === 0) throw new DiscordTakenError();
+}
+
+// The daily read's result, stored only into the link it claimed: an UPDATE, never an insert, so
+// a link removed meanwhile (unlink, account deletion) or made anew (a Discord login, which
+// clears the claim) is not brought back. Also releases the claim. Returns whether it was stored.
+// read: { sealedToken, status, roleIds }.
+export function saveRefreshed(db, userId, read, now = Date.now()) {
+  const { changes } = db
+    .prepare(
+      `UPDATE discord_links SET refresh_token = @sealedToken, status = @status,
+         role_ids = @roleIds, refreshed_at = @at, next_refresh_at = @next, refreshing_since = NULL
+       WHERE user_id = @userId AND refreshing_since IS NOT NULL`
+    )
+    .run({
+      userId,
+      sealedToken: read.sealedToken,
+      status: read.status,
+      roleIds: JSON.stringify(read.roleIds),
+      at: iso(now),
+      next: nextDailyRead(now),
+    });
+  return changes > 0;
 }
 
 // Claims the link for one refresh: its sealed token, or null when there is none or another
