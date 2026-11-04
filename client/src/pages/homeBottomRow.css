@@ -192,6 +192,8 @@
   --call-link-pad: calc((var(--hit-target) - 1.15em) / 2);
 
   display: block;
+  /* Sub-pixel rounding left 43.98 px. */
+  min-height: var(--hit-target);
   margin-block: calc(-1 * var(--call-link-pad));
   padding-block: var(--call-link-pad);
   color: inherit;
