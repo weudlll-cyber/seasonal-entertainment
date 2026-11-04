@@ -15,9 +15,6 @@ entry waits for.
   it (the installer's bot-file answers, docs/DEPLOYMENT.md, "What it asks").
 - **Imprint and Privacy** — drafts; need the owner's details and a legal review. Privacy's "Call
   recordings" holds a proposal to review; only its contact address is left to fill.
-- **Farmer step icons** — the shipped seed's eight Farmer icons are byte for byte the eight
-  Holder icons (`server/src/discord/seed/icons/`, exported 2026-11-03 from the PC's steps). Meant
-  so, or to be uploaded anew and exported again (found 2026-11-04).
 
 ### To try on the live server
 
@@ -97,6 +94,9 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Farmer step icons** — closed by decision (2026-11-04): the shipped seed's eight Farmer icons
+  are byte for byte the eight Holder icons (`server/src/discord/seed/icons/`), and are meant to
+  be. No change.
 - **Login with Discord, steps and rooms for steps** — closed by `feat/se-discord` (SE-DISCORD-1,
   decided 2026-11-02): Discord is the primary login (OAuth2 with state and PKCE, scopes
   `identify` and `guilds.members.read` only), username and password stay for people without
