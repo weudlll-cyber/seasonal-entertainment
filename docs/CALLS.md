@@ -65,7 +65,8 @@ Generate a production pair on the call server with
 - **Who may do what**: organisers and admins (with their 2FA set up) create, start and end calls
   (`POST /api/calls`, `/api/calls/:id/start`, `/api/calls/:id/end`; `allow('organiser')`, rate
   limit `callManage` per account, an audit entry `call.create` / `call.start` / `call.end`
-  each). Everyone may see the list and a call.
+  each). Admins alone delete an ended call ("Deleting a call" below). Everyone may see the list
+  and a call.
 - **Status**: `scheduled` → `live` → `ended`, or `scheduled` → `ended` (cancelled); never back.
   A change applies only from the expected status, so two organisers acting at once cannot both
   succeed. Starting opens the call's room on the call service with the participant cap; ending
@@ -88,6 +89,37 @@ Generate a production pair on the call server with
   lists or the unread counters) and becomes **read-only** when the call ends; its messages
   follow the normal retention (docs/CHAT.md, "Server"). Links into it lead to the call's page:
   a mention's notification opens `/calls/<id>` (docs/CHAT.md, "Notifications").
+- **Deleting a call** (decided 2026-11-04: a technical test call leaves nothing visible):
+  `DELETE /api/calls/:id`, **admins only** (with their 2FA set up; `allow('admin')`, organisers
+  get 403), rate limit `callManage` per account like the other call actions, and **only an ended
+  call**: a live one answers `409 not_ended` "End the call first: a live call cannot be
+  deleted.", a planned one "Cancel the call first: only an ended call can be deleted." (cancelling
+  ends it), and one whose recording still runs `409 recording_running`. One transaction
+  (`server/src/calls/deleteCall.js`) removes:
+  - the call row, and with it by cascade its participants (`call_participants`), reminders
+    (`call_reminders`), recordings (`call_recordings`) and their chapter marks
+    (`call_recording_chapters`); the link to an event bot occurrence is two columns of that row,
+    and the bot's own data is never touched;
+  - its chat room (`server/src/chat/roomDeletion.js`, through the chat handle's
+    `rooms.remove`): the uploads of its messages (`chat_uploads`, whose `message_id` would
+    otherwise only be set to NULL), its read markers (`chat_reads`, which name a room by id
+    only) and the room (`chat_rooms`), whose messages (`chat_messages`), their reports
+    (`chat_reports`) and mentions (`chat_mentions`), favourites (`chat_favourite_rooms`), mutes
+    (`chat_room_mutes`) and step rules (`room_step_rules`) follow by cascade;
+  - and writes the audit entry `call.delete` (who, when, the call's id, its title in `before`),
+    which stays like every audit entry.
+
+  After the commit the files go: the recordings' MP4s in the recordings folder and the chat
+  uploads with their thumbnails. A page still on the call's chat hears `not_allowed` for its
+  room (the hub's `roomGone`), as when a reader loses a room; the call's page and lists show
+  "No such call." / no longer list it on their next load. Not deleted: chat sanctions (they name
+  a person across the whole chat, not a room) and link previews (a shared cache, cleaned by the
+  chat retention once no message uses them). In the browser: "Delete <title>" on an ended call in
+  "Recent" and "Delete call" on its page, for admins only (`canDelete` in the calls answers),
+  after a confirmation naming the call and saying that its chat and recordings go too
+  (`client/src/calls/deleteCall.js`). Tests: `server/test/callDelete.test.js`,
+  `client/src/calls/callDelete.test.jsx`, `client/e2e/callDelete.spec.js`.
+
 - **Empty lists** (2026-10-21): an empty "Live now", "Upcoming" or "Recent" shows a card in the
   page's style ("No call is live right now", "No call is planned yet" with "Organisers announce
   the next community calls here.", "No calls yet"), never a bare "None.".

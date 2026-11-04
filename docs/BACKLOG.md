@@ -73,6 +73,11 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Deleting a call** — closed by `feat/se-calls-delete` (decided 2026-11-04: a technical test
+  call leaves nothing visible): admins delete an ended call completely, with its chat, recordings
+  and every row and file of it, audited (`DELETE /api/calls/:id`, `server/src/calls/deleteCall.js`,
+  `server/src/chat/roomDeletion.js`; "Delete" on the calls list and the call's page; docs/CALLS.md,
+  "Deleting a call").
 - **Signing in to Seasonal Bingo Royale through the site** — closed by `feat/se-bingo-login`
   (SE-BINGO-LOGIN; decided 2026-11-02 to 2026-11-04): `GET /api/games/bingo/authorize` for the
   game's sign-in through nginx's `auth_request` (member headers with id, name, role, may host and

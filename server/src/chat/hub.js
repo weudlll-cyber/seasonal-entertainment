@@ -129,6 +129,16 @@ export class ChatHub {
     this.recheck(() => true);
   }
 
+  // A room that was deleted (chat/roomDeletion.js): every socket on it hears "not_allowed" for its
+  // slug, as when a reader loses a room, and leaves it.
+  roomGone(roomId, slug) {
+    const text = JSON.stringify({ type: 'error', error: 'not_allowed', room: slug });
+    for (const socket of this.rooms.get(roomId) ?? []) {
+      if (socket.readyState === WebSocket.OPEN) socket.send(text);
+    }
+    this.rooms.delete(roomId);
+  }
+
   // The re-check for the sockets whose session `applies`.
   recheck(applies) {
     for (const [roomId, sockets] of this.rooms) {

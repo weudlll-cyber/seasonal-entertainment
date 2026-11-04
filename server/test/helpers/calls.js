@@ -79,8 +79,9 @@ export function callApp(overrides) {
 }
 
 // { t, service, dir }: an app whose calls record into a new temporary folder `dir` (the caller
-// deletes it); recording: false leaves recording off.
-export function recordingApp({ recording = true } = {}) {
+// deletes it); recording: false leaves recording off; overrides: more of the app's config (e.g.
+// bots, for a linked event).
+export function recordingApp({ recording = true, ...overrides } = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), 'se-recordings-'));
   const calls = {
     url: 'wss://calls.test',
@@ -88,7 +89,7 @@ export function recordingApp({ recording = true } = {}) {
     ...TEST_KEYS,
     recording: recording ? { dir, egressDir: dir } : null,
   };
-  return { ...callApp({ calls }), dir };
+  return { ...callApp({ calls, ...overrides }), dir };
 }
 
 // A minimal MP4 as an egress writes one: ftyp, the media data, then the movie box with its
