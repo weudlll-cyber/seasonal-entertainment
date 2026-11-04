@@ -66,6 +66,9 @@ entry waits for.
     readable; the call page would be the better place.
   - **The embedded chat says `ready` twice without `?room=`** — once before the room is chosen,
     once after.
+  - **A short call title on the home page's "Next call" box is a link under 44 px** — a call named
+    "Fit" (`client/e2e/callFit.spec.js`) made `speed.spec.js` fail once in a full run when it was
+    the next call (`client/src/pages/NextCallCard.jsx`); alone the spec passes.
 
 ### Known limits
 

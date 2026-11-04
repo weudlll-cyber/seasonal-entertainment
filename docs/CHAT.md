@@ -79,7 +79,8 @@ the stars and bells match the rest of the site) and the never-throwing browser s
 (`client/src/app/storage.js`, also a leaf file; since 2026-10-21, for the safety numbers' per-device
 marks) and the embed state (`client/src/embed/embedAuth.js`, which imports only that storage; since
 2026-10-23, so a file in the chat on another site loads through its short-lived link,
-`useFileLinks.js`); `client/src/chat/chatModule.test.js` fails on any other import, and on any page
+`useFileLinks.js`) and the Discord ladders' names (`@seasonal-entertainment/shared/discordLadders.js`,
+since 2026-11-04, for the step badge); `client/src/chat/chatModule.test.js` fails on any other import, and on any page
 importing a file of the module other than `index.js`.
 
 - **Styles** sit under one root class, `.se-chat` (`ChatPanel.css`, `ChatPanelVariants.css`,

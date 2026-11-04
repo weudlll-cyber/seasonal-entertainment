@@ -15,12 +15,14 @@ import { describe, expect, it } from 'vitest';
 const moduleDir = path.dirname(fileURLToPath(import.meta.url));
 const srcDir = path.dirname(moduleDir);
 
-// What the module may use from outside: React, the shared chat rules, the account context,
-// the site's API client, its stroke icons and its never-throwing browser storage (leaf files:
-// they import nothing). Nothing from pages, layout or other components.
+// What the module may use from outside: React, the shared chat rules and Discord ladders, the
+// account context, the site's API client, its stroke icons and its never-throwing browser
+// storage (leaf files: they import nothing). Nothing from pages, layout or other components.
 const ALLOWED_OUTSIDE = new Set([
   'react',
   '@seasonal-entertainment/shared/chatRules.js',
+  // The Discord ladders' names, shared with the admin pages and the server (StepBadge.jsx).
+  '@seasonal-entertainment/shared/discordLadders.js',
   // Direct messages are encrypted and decrypted in the browser (docs/CHAT.md).
   '@seasonal-entertainment/shared/crypto.js',
   '@seasonal-entertainment/shared/cryptoFormat.js',
