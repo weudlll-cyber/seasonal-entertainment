@@ -6,7 +6,8 @@
 //              quarter: from the same GET /api/calls answer as the Calls page — a live call
 //              first ("Live now" and "Listen", guests too), else the next planned one (its title
 //              wrapped, never cut — clamped only after 2 lines, the full title as the link's name
-//              and tooltip; local date and time; "Add to calendar" and the member's reminder:
+//              and tooltip; the link a 44 px tap target however short the title; local date and
+//              time; "Add to calendar" and the member's reminder:
 //              CallActions.jsx). With neither the box is not shown, and the fair-price box takes
 //              its column (homeBottomRow.css).
 // ============================================================
@@ -31,7 +32,9 @@ export default function NextCallCard({ calls, timeZone }) {
       <p className="home__eyebrow">{live ? 'Live now' : 'Next call'}</p>
       {live && (
         <>
-          <h2 className="home__call-title">{live.title}</h2>
+          <h2 className="home__call-title">
+            <span className="home__call-text">{live.title}</span>
+          </h2>
           <p className="home__actions">
             <Link
               className="button"
@@ -47,8 +50,13 @@ export default function NextCallCard({ calls, timeZone }) {
         <>
           <h2 className="home__call-title">
             {/* Wraps, clamped after 2 lines: the full title is the link's name and tooltip. */}
-            <Link to={`/calls/${next.id}`} aria-label={next.title} title={next.title}>
-              {next.title}
+            <Link
+              className="home__call-link"
+              to={`/calls/${next.id}`}
+              aria-label={next.title}
+              title={next.title}
+            >
+              <span className="home__call-text">{next.title}</span>
             </Link>
           </h2>
           <p className="home__text">

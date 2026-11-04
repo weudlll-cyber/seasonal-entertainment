@@ -222,11 +222,16 @@ levels.
   leave every room now closed to them at once (`recheckRooms` in `server/src/chat/hub.js`, through
   `chat.sessions.stepsChanged`), each told `not_allowed` for that room, and their pages hear
   `access` to reload their room lists (`useChatRooms.js`).
+- **When an admin changes who may read** (a room saved in Admin → Chat, with its rule; in Admin
+  → Discord steps a step added, edited (its role id), reordered or removed), every open socket
+  does the same re-check at once (`recheckAllRooms`, through `chat.sessions.stepRulesChanged`
+  and the room editor): rooms lost leave with `not_allowed`, and every page hears `access`, so
+  rooms gained appear in the reloaded list (decided 2026-11-04).
 - **Set** in Admin → Chat, per room: one choice per ladder, "Holder ≥ Golden" or not needed
   (`client/src/admin/RoomStepRule.jsx`; `stepIds` on `/api/admin/chat/rooms`, at most one per
   ladder, existing steps only). A room for steps cannot be written by guests.
-- Tests: `server/test/discordRooms.test.js`, `client/src/admin/adminDiscord.test.jsx`,
-  `client/e2e/discord.spec.js`.
+- Tests: `server/test/discordRooms.test.js`, `server/test/discordRoomsRecheck.test.js`,
+  `client/src/admin/adminDiscord.test.jsx`, `client/e2e/discord.spec.js`.
 
 ## Accounts without a password
 
@@ -570,8 +575,9 @@ Browser notifications while the site is open (decided 2026-10-22; `client/src/no
   visibility in browser storage, renewed while visible (`se.visibleTab.*`), so a closed tab's
   note fades within seconds. One notification per event across tabs: the first tab to claim the
   event shows it (`se.notified.*`, like the call notices), with the event as the notification's
-  tag. Clicking it focuses the site and opens the room (`/chat?room=<slug>`) or the conversation
-  (`/chat?direct=<id>&name=<name>`).
+  tag. Clicking it focuses the site and opens the room where it is shown (`/chat?room=<slug>`; a
+  call's chat on its call page, `/calls/<id>`, `roomPagePath` in `shared/callRoom.js`, decided
+  2026-11-04) or the conversation (`/chat?direct=<id>&name=<name>`).
 - **Permission**: asked only when the member presses **Turn on notifications**, on the account
   page ("Notifications") or in the chat menu ("…" on the chat page and in the chat drawer);
   never on page load. When both switches are still off, allowing it turns both on. If the
@@ -669,6 +675,10 @@ const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork, em
 // chat.sessions.accountChanged(userId, keepSid)  role, lock, password, 2FA: close the account's sockets
 // chat.sessions.presenceChanged()                 someone showed or hid their online status
 // chat.sessions.embedRevoked(which)              embed tokens ended: their sockets close
+// chat.sessions.stepsChanged(userId)             a member's steps changed: their sockets
+//                                                re-check their rooms
+// chat.sessions.stepRulesChanged()               an admin changed the steps: every socket
+//                                                re-checks its rooms
 // chat.accounts.deleteData(userId)               an account's deletion, in its transaction: the
 //                                                chat rows the schemas keep; returns the files
 // chat.accounts.deleteFiles(files)               those files on disk, after the commit
@@ -689,6 +699,8 @@ const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork, em
 // chat.images.download(url, options, network)    the guarded fetch, raw: { ok, status, body }
 //                                                or { ok: false, reason } (the steps' icon
 //                                                from a link, discord/iconLink.js)
+// chat.images.iconLimit                          { bytes, message }: the icon limit (256 KB)
+//                                                and the upload's answer beyond it
 // chat.attach(httpServer)                        the WebSocket, once the server listens
 // await chat.start()                             first-start rooms and media, retention job
 ```

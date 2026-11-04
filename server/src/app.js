@@ -133,7 +133,7 @@ export function createApp({
   if (discord) {
     api.use('/auth/discord', discord.routes());
     // The admins' steps: names, order, role ids, icons (stored through the chat's media).
-    api.use('/admin/discord', adminDiscordRoutes(db, chat.images, previewNetwork));
+    api.use('/admin/discord', adminDiscordRoutes(db, chat.images, previewNetwork, chat.sessions));
   }
   app.locals.discord = { start: (log) => discord?.start(log) ?? null };
 

@@ -82,11 +82,12 @@ Generate a production pair on the call server with
   nor skips the grace, and a room that comes back clears it. A call service that cannot be
   reached ends nothing (the check is skipped and logged). Off when `backgroundJobs` is off,
   like the chat retention.
-- **Call chat**: every call gets a chat room of the existing chat module (`call-<id>`, "Call:
-  <title>"), readable and writable by everyone; guests may write there when they may in General
+- **Call chat**: every call gets a chat room of the existing chat module (`call-<id>`,
+  `shared/callRoom.js`, "Call: <title>"), readable and writable by everyone; guests may write there when they may in General
   at the moment the call is created (decided 2026-10-18). It is **unlisted** (not in the room
   lists or the unread counters) and becomes **read-only** when the call ends; its messages
-  follow the normal retention (docs/CHAT.md, "Server").
+  follow the normal retention (docs/CHAT.md, "Server"). Links into it lead to the call's page:
+  a mention's notification opens `/calls/<id>` (docs/CHAT.md, "Notifications").
 - **Empty lists** (2026-10-21): an empty "Live now", "Upcoming" or "Recent" shows a card in the
   page's style ("No call is live right now", "No call is planned yet" with "Organisers announce
   the next community calls here.", "No calls yet"), never a bare "None.".

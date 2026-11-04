@@ -15,9 +15,6 @@ entry waits for.
   it (the installer's bot-file answers, docs/DEPLOYMENT.md, "What it asks").
 - **Imprint and Privacy** — drafts; need the owner's details and a legal review. Privacy's "Call
   recordings" holds a proposal to review; only its contact address is left to fill.
-- **Farmer step icons** — the shipped seed's eight Farmer icons are byte for byte the eight
-  Holder icons (`server/src/discord/seed/icons/`, exported 2026-11-03 from the PC's steps). Meant
-  so, or to be uploaded anew and exported again (found 2026-11-04).
 
 ### To try on the live server
 
@@ -50,25 +47,6 @@ entry waits for.
   login is not planned, decided 2026-11-02).
 - **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
   own repository and is not connected.
-- **Discord review of 2026-11-04 (listed, not built: they change behaviour)**:
-  - **A local copy of the database on every `--update`** — today the update takes a backup only
-    when backups are set up (`deploy/install/lib/update.sh`); without them it only warns.
-  - **Revoke Discord grants that are dropped** — the callback for someone already logged in, and
-    a sign-up never finished, leave their fresh grant alive at Discord (sealed nowhere, so
-    unusable; it stays listed under the member's authorised apps).
-  - **Re-check open chat connections after admin step changes** — a room rule, a step's role id
-    or the ladder order changed in Admin re-checks access at the next push only; the member's
-    room list updates at their next reload (a member's own read re-checks at once).
-  - **"Icon from link" downloads up to 2 MB** for an icon whose limit is 256 KB
-    (`server/src/discord/iconLink.js`, `server/src/media/icons.js`): the larger download is
-    refused after it arrived.
-  - **A mention in a call's chat links to `/chat?room=<call room>`** — it opens there while
-    readable; the call page would be the better place.
-  - **The embedded chat says `ready` twice without `?room=`** — once before the room is chosen,
-    once after.
-  - **A short call title on the home page's "Next call" box is a link under 44 px** — a call named
-    "Fit" (`client/e2e/callFit.spec.js`) made `speed.spec.js` fail once in a full run when it was
-    the next call (`client/src/pages/NextCallCard.jsx`); alone the spec passes.
 
 ### Known limits
 
@@ -97,6 +75,40 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **A short call title on the home page was a link under 44 px** — closed by
+  `fix/se-discord-review` (Discord review of 2026-11-04): the "Next call" title link is a
+  `--hit-target` tap target whatever the title's length, the box's look unchanged
+  (`client/src/pages/NextCallCard.jsx`, `homeBottomRow.css`). `client/e2e/speed.spec.js` checks it
+  with a call named "Fit", and its late-data checks no longer see calls other specs made.
+- **A mention in a call's chat linked to the chat page** — closed by `fix/se-discord-review`
+  (Discord review of 2026-11-04): its notification now opens the call's page, `/calls/<id>`;
+  mentions in other rooms are unchanged (`shared/callRoom.js`,
+  `client/src/notify/useSystemNotifications.js`; docs/CHAT.md, "Notifications").
+- **The embedded chat said `ready` twice** — closed by `fix/se-discord-review` (Discord review of
+  2026-11-04): `ready` now goes once, after the room is chosen, naming the room shown (`null`
+  without one) (`client/src/embed/EmbedChatPage.jsx`; docs/EMBED.md, "From the chat").
+- **A local copy on every `--update` without backups** — closed by `fix/se-discord-review`
+  (Discord review of 2026-11-04): without backups set up, `--update` first copies the database
+  and the media with the backup code into `/var/backups/seasonal-update-copies/`, root only, the
+  newest three kept, and says where; with backups nothing changes
+  (`deploy/install/lib/update-copy.sh`, `deploy/test/update-copy.test.sh`; docs/DEPLOYMENT.md,
+  "Updating").
+- **Open chat connections after admin step changes** — closed by `fix/se-discord-review`
+  (Discord review of 2026-11-04): a room saved, or a step added, edited, reordered or removed,
+  re-checks every open socket's rooms at once (`recheckAllRooms` in `server/src/chat/hub.js`):
+  rooms lost leave, rooms gained appear (docs/CHAT.md, "Rooms for Discord steps").
+- **Discord grants that are dropped** — closed by `fix/se-discord-review` (Discord review of
+  2026-11-04): grants not kept are revoked at Discord (already logged in, registration closed, a
+  link refused, a held sign-up replaced or timed out, also when the browser never comes back),
+  never while an account here holds that Discord user (`server/src/discord/droppedGrants.js`;
+  docs/AUTH.md, "Discord: grants not kept").
+- **"Icon from link" read up to 2 MB** — closed by `fix/se-discord-review` (Discord review of
+  2026-11-04): the transfer is now cut at the icon limit of 256 KB (`images.iconLimit`,
+  `server/src/media/icons.js`), with the same answer as an oversized upload
+  (`server/src/discord/iconLink.js`; docs/AUTH.md, "Discord: steps").
+- **Farmer step icons** — closed by decision (2026-11-04): the shipped seed's eight Farmer icons
+  are byte for byte the eight Holder icons (`server/src/discord/seed/icons/`), and are meant to
+  be. No change.
 - **Login with Discord, steps and rooms for steps** — closed by `feat/se-discord` (SE-DISCORD-1,
   decided 2026-11-02): Discord is the primary login (OAuth2 with state and PKCE, scopes
   `identify` and `guilds.members.read` only), username and password stay for people without

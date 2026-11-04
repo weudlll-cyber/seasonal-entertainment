@@ -16,9 +16,11 @@
 //              daily job reads due links one after another, a few seconds apart, well inside
 //              Discord's per-user limit (a burst of 5, then one a minute) and its global one.
 //              onChange(userId): the roles changed, so open chat connections re-check rooms.
+//              Each tick also revokes held sign-ups that timed out unseen (droppedGrants.js).
 // ============================================================
 
 import { DiscordError } from './api.js';
+import { sweepSignups } from './droppedGrants.js';
 import {
   claimRefresh,
   dueLinks,
@@ -148,6 +150,7 @@ export function startDailyRefresh(db, discord, { onChange, log = console.warn } 
     if (running) return;
     running = true;
     try {
+      await sweepSignups(db, discord);
       await refreshDue(db, discord, { onChange, isStopped: () => stopped });
     } catch (err) {
       log(`[discord] daily role read failed: ${err.message}`);

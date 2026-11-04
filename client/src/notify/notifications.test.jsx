@@ -7,8 +7,9 @@
 //              switches on), and a blocked browser is told how to allow them; a mention or a
 //              direct message notifies only when no tab of the site is visible, once across
 //              tabs, only for the switches turned on; a direct message's notification never
-//              carries its text; a click opens the room; "Weekly recap" is off by default and,
-//              turned on, says "Weekly recap is out". jsdom has no Notification: a stand-in.
+//              carries its text; a click opens the room (a call's chat: its call page); "Weekly
+//              recap" is off by default and, turned on, says "Weekly recap is out". jsdom has no
+//              Notification: a stand-in.
 // ============================================================
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -179,5 +180,13 @@ describe('notifications', () => {
     act(() => shown[0].onclick());
     expect(window.focus).toHaveBeenCalled();
     expect(await screen.findByRole('heading', { level: 1, name: 'Chat' })).toBeInTheDocument();
+  });
+
+  it("a mention in a call's chat opens that call's page, not the chat", async () => {
+    const calls = await page({ notifyMentions: true });
+    push({ ...MENTION, id: 44, room: 'call-12', roomName: 'Call: Fit' });
+    act(() => shown[0].onclick());
+    await waitFor(() => expect(calls.some((c) => c.key.startsWith('GET /calls/12'))).toBe(true));
+    expect(calls.some((c) => c.key.includes('/chat/rooms/call-12'))).toBe(false);
   });
 });

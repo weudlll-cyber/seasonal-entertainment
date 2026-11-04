@@ -11,7 +11,8 @@
 //              that no step has (ids and counts only); one audit entry per change; the routes
 //              absent while Discord is not set up. "Icon from link" against a pretend internet
 //              (helpers/previewNet.js, no real network): Discord's two image hosts only, no
-//              redirect, an image type, at most 2 MB; fetched once and stored like an upload
+//              redirect, an image type, the transfer cut at the icon limit (256 KB, the upload's
+//              message); fetched once and stored like an upload
 //              (the same pipeline refuses the same SVG); a clear message for each refusal.
 // ============================================================
 
@@ -19,6 +20,8 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
 import { afterEach, describe, expect, it } from 'vitest';
+import { fetchIconLink } from '../src/discord/iconLink.js';
+import { ICON_MAX_BYTES, ICON_TOO_LARGE } from '../src/media/icons.js';
 import { DISCORD_TEST, fakeDiscord } from './helpers/fakeDiscord.js';
 import { PUBLIC_IP, previewInternet, redirect } from './helpers/previewNet.js';
 import { seedTestSteps } from './helpers/steps.js';
@@ -279,7 +282,7 @@ describe('icon from link', () => {
   it('says why: not an image, too large, unreachable, a redirect', async () => {
     const { admin, fromLink } = await withInternet({
       [`${CDN}/page.png`]: image('text/html', '<html></html>'),
-      // No length announced: the transfer itself is cut after 2 MB.
+      // No length announced: the transfer itself is cut (at the icon limit, next test).
       [`${CDN}/big.png`]: (_req, res) => {
         res.setHeader('Content-Type', 'image/png');
         const chunk = Buffer.alloc(256 * 1024);
@@ -295,7 +298,8 @@ describe('icon from link', () => {
     });
     const said = async (url) => (await fromLink(url)).body.message;
     expect(await said(`https://${CDN}/page.png`)).toBe('The link does not lead to an image.');
-    expect(await said(`https://${CDN}/big.png`)).toBe('The image is larger than 2 MB.');
+    // The same words as an oversized upload.
+    expect(await said(`https://${CDN}/big.png`)).toBe('The file is larger than 256 KB.');
     // media.discordapp.net has no address in this pretend internet.
     expect(await said(`https://${MEDIA}/a.png`)).toMatch(/unreachable or did not answer in time/);
     expect(await said(`https://${CDN}/gone.png`)).toBe(
@@ -306,6 +310,21 @@ describe('icon from link', () => {
     );
     expect(net.hits('evil.example/a.png')).toBe(0);
     expect((await stepNamed(admin, 'Golden')).icon).toBeNull();
+  });
+
+  // What the guarded download is asked for: at most the icon limit, not more. (Counting bytes
+  // on the pretend server says nothing: socket buffers take megabytes on Linux.)
+  it('reads at most the icon limit', async () => {
+    const asked = [];
+    const images = {
+      iconLimit: { bytes: ICON_MAX_BYTES, message: ICON_TOO_LARGE },
+      download: async (url, options) => {
+        asked.push(options.maxBytes);
+        return { ok: false, reason: 'too large' };
+      },
+    };
+    await expect(fetchIconLink(`https://${CDN}/big.png`, images)).rejects.toThrow(ICON_TOO_LARGE);
+    expect(asked).toEqual([256 * 1024]);
   });
 
   it('goes through the upload pipeline: the same unsafe SVG is refused', async () => {

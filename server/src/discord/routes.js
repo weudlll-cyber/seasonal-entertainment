@@ -19,6 +19,8 @@
 //                (the chosen name and the age confirmation; no email, no password);
 //              - DELETE /: unlink (only with a password to log in with afterwards; proven with
 //                it), the token revoked at Discord.
+//              A fresh grant that is not kept (already logged in, registration closed, a link
+//              refused, a sign-up replaced or timed out) is revoked (droppedGrants.js).
 //              Tokens and the client secret never reach the browser or a log.
 // ============================================================
 
@@ -38,13 +40,13 @@ import { getSetting } from '../settings/store.js';
 import { beginSecondFactor } from '../twofa/routes.js';
 import { isTwoFactorEnabled } from '../twofa/store.js';
 import { CALLBACK_PATH } from './config.js';
+import { dropGrant, dropSignup, signupExpired } from './droppedGrants.js';
 import { storeRead } from './refresh.js';
 import { DiscordTakenError, deleteLink, findLink, findLinkByDiscordId, saveRead } from './store.js';
 import { openToken, sealToken } from './tokenBox.js';
 import { suggestUsername } from './username.js';
 
 const FLOW_MS = 10 * 60_000; // from /start to the callback
-const SIGNUP_MS = 15 * 60_000; // from the callback to choosing a name
 const INTENTS = new Set(['login', 'link', 'confirm']);
 
 // Only local paths (as the browser's safeNext): never "//host" or a full URL.
@@ -145,7 +147,14 @@ export function discordRoutes(db, appConfig, discord) {
   // No account has this Discord user: the sign-up waits in the session (the refresh token
   // sealed) until a name is chosen.
   async function holdSignup(req, res, flow, discordUser, tokens) {
-    if (!getSetting(db, 'accounts.registrationOpen')) return back(res, '/login', 'closed');
+    if (!getSetting(db, 'accounts.registrationOpen')) {
+      await dropGrant(db, discord, discordUser.id, tokens.refreshToken);
+      return back(res, '/login', 'closed');
+    }
+    // A sign-up held for another Discord user is given up. One for the same user is not
+    // revoked: that would end the grant just given too.
+    const earlier = req.session.discordSignup;
+    if (earlier && earlier.discordId !== discordUser.id) await dropSignup(db, discord, earlier);
     let member;
     try {
       member = { status: 'member', roleIds: await discord.api.memberRoles(tokens.accessToken) };
@@ -169,8 +178,13 @@ export function discordRoutes(db, appConfig, discord) {
     const own = findLink(db, user.id);
     const elsewhere = findLinkByDiscordId(db, discordUser.id);
     if (elsewhere && elsewhere.userId !== user.id) return back(res, '/account', 'taken');
-    if (own && own.discordId !== discordUser.id) return back(res, '/account', 'other_user');
-    if (flow.intent === 'confirm' && !own) return back(res, '/account', 'not_linked');
+    const refused =
+      (own && own.discordId !== discordUser.id && 'other_user') ||
+      (flow.intent === 'confirm' && !own && 'not_linked');
+    if (refused) {
+      await dropGrant(db, discord, discordUser.id, tokens.refreshToken);
+      return back(res, '/account', refused);
+    }
     try {
       await storeRead(db, discord, user.id, discordUser, tokens);
     } catch (err) {
@@ -209,20 +223,28 @@ export function discordRoutes(db, appConfig, discord) {
       return back(res, fallback, 'failed');
     }
     if (flow.intent === 'login') {
-      if (req.user) return res.redirect(flow.next);
+      if (req.user) {
+        await dropGrant(db, discord, discordUser.id, tokens.refreshToken);
+        return res.redirect(flow.next);
+      }
       return logIn(req, res, flow, discordUser, tokens);
     }
     return linkOrConfirm(req, res, flow, discordUser, tokens);
   });
 
-  // The waiting sign-up, or null when there is none (or it is too old).
-  const signupOf = (req) => {
+  // The waiting sign-up, or null when there is none. One that is too old leaves the session and
+  // its grant is revoked.
+  async function signupOf(req) {
     const signup = req.session?.discordSignup;
-    return signup && Date.now() - signup.at < SIGNUP_MS ? signup : null;
-  };
+    if (!signup || !signupExpired(signup)) return signup ?? null;
+    delete req.session.discordSignup;
+    await saved(req);
+    await dropSignup(db, discord, signup);
+    return null;
+  }
 
-  router.get('/signup', allow('public'), (req, res) => {
-    const signup = signupOf(req);
+  router.get('/signup', allow('public'), async (req, res) => {
+    const signup = await signupOf(req);
     if (!signup) return sendError(res, 404, 'not_found', 'No Discord sign-up is waiting.');
     res.json({
       ok: true,
@@ -235,7 +257,7 @@ export function discordRoutes(db, appConfig, discord) {
     if (!getSetting(db, 'accounts.registrationOpen')) {
       return sendError(res, 403, 'registration_closed', 'Registration is closed at the moment.');
     }
-    const signup = signupOf(req);
+    const signup = await signupOf(req);
     if (!signup) {
       return sendError(res, 409, 'signup_expired', 'Please start again with Discord.');
     }

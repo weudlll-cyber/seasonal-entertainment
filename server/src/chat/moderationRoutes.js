@@ -8,7 +8,7 @@
 //              stays), lift a sanction. Staff cannot be muted
 //              or banned. Every action writes one audit entry. Also the admin room editor, with
 //              the Discord steps that open a room (stepIds; docs/CHAT.md, "Rooms for Discord
-//              steps").
+//              steps"); a saved room re-checks the rooms of every open connection at once.
 // ============================================================
 
 import express from 'express';
@@ -161,7 +161,8 @@ function stepRuleProblem(db, stepIds) {
   return new Set(ladders).size === ladders.length ? null : 'At most one step per ladder.';
 }
 
-export function adminChatRoomRoutes(db) {
+// hub: a saved room (its access or step rule) re-checks every open socket's rooms at once.
+export function adminChatRoomRoutes(db, hub) {
   const router = express.Router();
   const audit = (req, action, id, before, after) =>
     recordAudit(db, req.user, { action, targetType: 'chat_room', targetId: id, before, after });
@@ -196,6 +197,7 @@ export function adminChatRoomRoutes(db) {
       const before = id === undefined ? null : findRoom(db, id);
       const room = saveRoom(db, input, id);
       audit(req, id === undefined ? 'chat.room_create' : 'chat.room_edit', room.id, before, input);
+      hub.recheckAllRooms();
       res.status(id === undefined ? 201 : 200).json({ ok: true, room });
     } catch (err) {
       if (err.code !== 'SQLITE_CONSTRAINT_UNIQUE') throw err;
