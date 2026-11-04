@@ -335,7 +335,7 @@ were introduced (`client/src/keys/`, server `server/src/keys/`, `/api/keys`).
   open, the browser asks it first, so a typo is never mistaken for a lost key.
 - **Recovery code — optional** (decided 2026-10-17). Right after a key pair is made, a dialog
   offers it: **Create recovery code** — 30 characters in 6 groups of 5 from an alphabet without
-  look-alikes (150 bits), shown once with **Copy** and the required checkbox "I have saved my
+  look-alikes (about 148.6 bits), shown once with **Copy** and the required checkbox "I have saved my
   recovery code"; the private key is additionally sealed with `crypto_pwhash(code, its own
 salt)` and that seal stored (`PUT /api/keys/recovery`) — the code itself never leaves the
   browser. Or **Skip**, with the warning "Without a recovery code, your private messages are lost

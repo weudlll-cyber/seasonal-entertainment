@@ -24,7 +24,7 @@ const KEY_BYTES = 32;
 const AUTH_CONTEXT = 'se-auth\0';
 const WRAP_CONTEXT = 'se-wrap\0';
 // Recovery code: 6 groups of 5 characters from an alphabet without look-alikes (0/O, 1/I/L):
-// 30 characters of 5 bits each, 150 bits of randomness.
+// 30 characters, each one of 31 chosen uniformly: about 148.6 bits of randomness.
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const CODE_GROUPS = 6;
 const CODE_GROUP_LENGTH = 5;
