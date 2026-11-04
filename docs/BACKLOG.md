@@ -48,8 +48,6 @@ entry waits for.
 - **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
   own repository and is not connected.
 - **Discord review of 2026-11-04 (listed, not built: they change behaviour)**:
-  - **A mention in a call's chat links to `/chat?room=<call room>`** — it opens there while
-    readable; the call page would be the better place.
   - **A short call title on the home page's "Next call" box is a link under 44 px** — a call named
     "Fit" (`client/e2e/callFit.spec.js`) made `speed.spec.js` fail once in a full run when it was
     the next call (`client/src/pages/NextCallCard.jsx`); alone the spec passes.
@@ -81,6 +79,10 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **A mention in a call's chat linked to the chat page** — closed by `fix/se-discord-review`
+  (Discord review of 2026-11-04): its notification now opens the call's page, `/calls/<id>`;
+  mentions in other rooms are unchanged (`shared/callRoom.js`,
+  `client/src/notify/useSystemNotifications.js`; docs/CHAT.md, "Notifications").
 - **The embedded chat said `ready` twice** — closed by `fix/se-discord-review` (Discord review of
   2026-11-04): `ready` now goes once, after the room is chosen, naming the room shown (`null`
   without one) (`client/src/embed/EmbedChatPage.jsx`; docs/EMBED.md, "From the chat").

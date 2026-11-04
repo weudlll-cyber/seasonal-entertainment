@@ -7,12 +7,14 @@
 //              characters>"), a new direct message ("New message from <name>" — never its text) and
 //              the weekly recap ("Weekly recap is out"). Only for the switches the member turned
 //              on, with the browser's permission, and only when no tab of the site is visible; one
-//              per event across tabs. A click focuses the site and opens the room (the recap's
-//              room) or the conversation.
+//              per event across tabs. A click focuses the site and opens the room where it is
+//              shown (a call's chat on its call page, shared/callRoom.js; the recap's room) or the
+//              conversation.
 // ============================================================
 
 import { useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
+import { roomPagePath } from '@seasonal-entertainment/shared/callRoom.js';
 import { usePersonalEvents } from '../chat/index.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { anyTabVisible, notifyOnce, permission, trackVisibility } from './systemNotify.js';
@@ -25,7 +27,7 @@ function notificationFor(event, user) {
     return {
       key: `mention-${event.id}`,
       body: `${event.author} mentioned you in ${event.roomName}: ${event.text.slice(0, MENTION_MAX)}`,
-      path: `/chat?room=${encodeURIComponent(event.room)}`,
+      path: roomPagePath(event.room),
     };
   }
   if (event.type === 'recap' && user.notifyRecap) {

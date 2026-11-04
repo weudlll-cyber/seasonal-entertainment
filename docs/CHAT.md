@@ -575,8 +575,9 @@ Browser notifications while the site is open (decided 2026-10-22; `client/src/no
   visibility in browser storage, renewed while visible (`se.visibleTab.*`), so a closed tab's
   note fades within seconds. One notification per event across tabs: the first tab to claim the
   event shows it (`se.notified.*`, like the call notices), with the event as the notification's
-  tag. Clicking it focuses the site and opens the room (`/chat?room=<slug>`) or the conversation
-  (`/chat?direct=<id>&name=<name>`).
+  tag. Clicking it focuses the site and opens the room where it is shown (`/chat?room=<slug>`; a
+  call's chat on its call page, `/calls/<id>`, `roomPagePath` in `shared/callRoom.js`, decided
+  2026-11-04) or the conversation (`/chat?direct=<id>&name=<name>`).
 - **Permission**: asked only when the member presses **Turn on notifications**, on the account
   page ("Notifications") or in the chat menu ("…" on the chat page and in the chat drawer);
   never on page load. When both switches are still off, allowing it turns both on. If the
