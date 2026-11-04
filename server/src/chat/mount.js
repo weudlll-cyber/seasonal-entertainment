@@ -100,7 +100,7 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
   api.use('/chat', chatModerationRoutes(db, hub));
   api.use('/chat', mediaRoutes(db));
   api.use('/chat', uploadRoutes(db, config, hub, embedOrigins));
-  api.use('/admin/chat/rooms', adminChatRoomRoutes(db));
+  api.use('/admin/chat/rooms', adminChatRoomRoutes(db, hub));
   api.use('/admin/chat/media', adminMediaRoutes(db, config));
 
   // The sticker/GIF library, preview images and event images are public: generated names (an
@@ -163,6 +163,8 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
       embedRevoked: (which) => hub.disconnectEmbeds(which),
       // A member's Discord steps changed (discord/): their sockets leave rooms now closed to them.
       stepsChanged: (userId) => hub.recheckRooms(userId),
+      // An admin changed the steps (discord/adminRoutes.js): every socket re-checks its rooms.
+      stepRulesChanged: () => hub.recheckAllRooms(),
     },
     // For deleting an account (accounts/deletion.js): chatAccounts above.
     accounts: chatAccounts(db, config),

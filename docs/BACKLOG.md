@@ -50,9 +50,6 @@ entry waits for.
 - **Discord review of 2026-11-04 (listed, not built: they change behaviour)**:
   - **A local copy of the database on every `--update`** — today the update takes a backup only
     when backups are set up (`deploy/install/lib/update.sh`); without them it only warns.
-  - **Re-check open chat connections after admin step changes** — a room rule, a step's role id
-    or the ladder order changed in Admin re-checks access at the next push only; the member's
-    room list updates at their next reload (a member's own read re-checks at once).
   - **A mention in a call's chat links to `/chat?room=<call room>`** — it opens there while
     readable; the call page would be the better place.
   - **The embedded chat says `ready` twice without `?room=`** — once before the room is chosen,
@@ -88,6 +85,10 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Open chat connections after admin step changes** — closed by `fix/se-discord-review`
+  (Discord review of 2026-11-04): a room saved, or a step added, edited, reordered or removed,
+  re-checks every open socket's rooms at once (`recheckAllRooms` in `server/src/chat/hub.js`):
+  rooms lost leave, rooms gained appear (docs/CHAT.md, "Rooms for Discord steps").
 - **Discord grants that are dropped** — closed by `fix/se-discord-review` (Discord review of
   2026-11-04): grants not kept are revoked at Discord (already logged in, registration closed, a
   link refused, a held sign-up replaced or timed out, also when the browser never comes back),

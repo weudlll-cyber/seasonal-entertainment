@@ -11,7 +11,9 @@
 //              Discord's image servers, fetched once (iconLink.js) and then stored exactly like
 //              an upload; and the role ids seen on linked
 //              members that no step has yet (ids and counts only), to help fill them in. Every
-//              change writes one audit entry. Steps never grant rights on the site.
+//              change writes one audit entry. Steps never grant rights on the site. A change that
+//              can move who reads which room (add, edit, reorder, remove) re-checks the rooms of
+//              every open chat connection at once (chat handle's sessions.stepRulesChanged).
 // ============================================================
 
 import express from 'express';
@@ -45,9 +47,10 @@ const roleIdField = (v) =>
     : 'The role id must be a Discord id (17-20 digits), or empty.';
 const STEP_FIELDS = { name: required('Name', 40), roleId: roleIdField };
 
-// images: the chat handle's images (chat/mount.js): storeIcon, download, remove, url. network: how
-// "Icon from link" reaches the internet (safeFetch's; tests pass a pretend one).
-export function adminDiscordRoutes(db, images, network) {
+// images: the chat handle's images (chat/mount.js): storeIcon, download, remove, url, iconLimit.
+// network: how "Icon from link" reaches the internet (safeFetch's; tests pass a pretend one).
+// sessions: the chat handle's sessions (stepRulesChanged).
+export function adminDiscordRoutes(db, images, network, sessions) {
   const router = express.Router();
   const audit = (req, action, targetId, before, after) =>
     recordAudit(db, req.user, { action, targetType: 'discord_step', targetId, before, after });
@@ -90,6 +93,7 @@ export function adminDiscordRoutes(db, images, network) {
     const step = saving(res, () => addStep(db, input));
     if (!step) return;
     audit(req, 'discord.step_create', step.id, null, input);
+    sessions.stepRulesChanged();
     res.status(201).json({ ok: true, step: shown(step) });
   });
 
@@ -99,6 +103,7 @@ export function adminDiscordRoutes(db, images, network) {
     const step = saving(res, () => updateStep(db, req.step.id, input));
     if (!step) return;
     audit(req, 'discord.step_edit', step.id, before(req.step), input);
+    sessions.stepRulesChanged();
     res.json({ ok: true, step: shown(step) });
   });
 
@@ -113,6 +118,7 @@ export function adminDiscordRoutes(db, images, network) {
     });
     if (!input) return;
     reorderLadder(db, input.ids);
+    sessions.stepRulesChanged();
     audit(
       req,
       'discord.ladder_reorder',
@@ -139,6 +145,7 @@ export function adminDiscordRoutes(db, images, network) {
     }
     if (req.step.iconFile) images.remove(req.step.iconFile);
     audit(req, 'discord.step_delete', req.step.id, before(req.step), null);
+    sessions.stepRulesChanged();
     res.json({ ok: true });
   });
 
