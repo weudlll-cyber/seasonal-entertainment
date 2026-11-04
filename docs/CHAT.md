@@ -605,6 +605,9 @@ Moderators and admins may see direct messages **only when the affected member re
   reporter's browser send the selected messages — as it decrypted them — as copies with the
   report. Without the tick, moderators get only the reason and the fact that a private
   conversation was reported (`direct_reports`).
+- **At most 20 reports waiting** per member (`OPEN_REPORTS_MAX`,
+  `server/src/chat/directReportRoutes.js`, since 2026-11-04): a 21st before the moderators have
+  reviewed one is refused (`429 too_many_open_reports`).
 - **The server checks the ids**: the reported message and every shared one must be a message the
   reporter sent or received in that conversation; anything else refuses the whole report
   (`400 not_in_conversation`), nothing stored. The author and time of each copy come from the
@@ -612,7 +615,11 @@ Moderators and admins may see direct messages **only when the affected member re
 - **Files of shared messages** (2026-10-22): when a shared message carries a file, the
   reporter's browser decrypts it, as it did the text, and uploads that copy
   (`POST /api/chat/direct/:id/reports/:reportId/files/:messageId?name=`). This works only for
-  the reporter's own report, a shared message that has a file, and once per message.
+  the reporter's own report and a shared message that has a file; once per reporter and message,
+  whatever the report (`409 already_shared`; the browser then goes on, the moderators have the
+  earlier copy), and never larger than the stored file (`413`). The copy is outside the upload
+  quota, as the file was counted when it was sent; these two rules (since 2026-11-04) keep it from
+  being a way around that quota.
   - **Stored** in `MEDIA_DIR/direct-reports/` (`direct_report_files`).
   - **For moderators**: offered only as "Download <name>", never shown
     (`GET /api/chat/direct-reports/:id/files/:messageId`, organisers and admins). Every

@@ -12,7 +12,8 @@
 //              /api/chat/direct/files/:fileId serves the ciphertext to the two members of the
 //              conversation only (a pending one to its uploader); everyone else gets 404. Reports:
 //              the reporter's browser decrypts a shared message's file and uploads that copy (POST
-//              .../:id/reports/:reportId/files/:messageId); moderators download it (GET
+//              .../:id/reports/:reportId/files/:messageId; once per reporter and message, no
+//              larger than the stored file); moderators download it (GET
 //              /api/chat/direct-reports/:id/files/:messageId, audited, a download only).
 // ============================================================
 
@@ -38,6 +39,7 @@ import {
   findReportFile,
   isSharedCopy,
   mayFetchDirectFile,
+  reporterSharedFile,
 } from './store.js';
 import { rawBody } from '../http/bodies.js';
 
@@ -120,9 +122,12 @@ export function directFileRoutes(db, config) {
     sendDownload(res, config, file.file, 'encrypted.bin');
   });
 
-  // The reporter's decrypted copy of a shared message's file (once per message).
+  // The reporter's decrypted copy of a shared message's file: once per reporter and message,
+  // whatever the report, and never larger than the stored file (decrypted is a little smaller).
   // Not counted against the daily upload quota (decided 2026-10-23): a copy of a file already
-  // counted when its sender uploaded it, once per message, so a full quota never blocks a report.
+  // counted when its sender uploaded it, so a full quota never blocks a report. The two limits
+  // keep it from being a way around that quota (security check 2026-11-04): before, every new
+  // report allowed another upload of any size.
   member.post(
     '/:id/reports/:reportId/files/:messageId',
     allow('member'),
@@ -139,11 +144,15 @@ export function directFileRoutes(db, config) {
         messageId,
       });
       const name = String(req.query.name ?? '').slice(0, NAME_MAX);
-      if (!shared || !fileOfMessage(db, messageId) || !name || !Buffer.isBuffer(req.body)) {
+      const original = shared && fileOfMessage(db, messageId);
+      if (!original || !name || !Buffer.isBuffer(req.body)) {
         return sendError(res, 404, 'not_found', 'No such shared message with a file.');
       }
-      if (findReportFile(db, reportId, messageId)) {
+      if (reporterSharedFile(db, req.user.id, messageId)) {
         return sendError(res, 409, 'already_shared', 'This file was shared already.');
+      }
+      if (req.body.length > original.bytes) {
+        return sendError(res, 413, 'too_large', 'This is larger than the file that was sent.');
       }
       const file = saveMediaFile(config, req.body, 'bin', REPORT_FOLDER);
       createReportFile(db, { reportId, messageId, name, file, bytes: req.body.length });

@@ -170,17 +170,15 @@ describe('receiving', () => {
     expect(blob.type).toBe('application/octet-stream');
   });
 
-  it("reporting a message shares its file, decrypted in the reporter's browser", async () => {
+  // Reports zoe's message with its file shared; fileAnswer: what the server says to the copy.
+  async function reportWithFile(fileAnswer) {
     const { message, files } = await received(PNG, 'holiday.png', 'image/png');
     const { calls, list } = await open({
       messages: [message],
       files,
       extra: {
         'POST /chat/direct/8/report': { status: 201, body: { ok: true, reportId: 3 } },
-        'POST /chat/direct/8/reports/3/files/20?name=holiday.png': {
-          status: 201,
-          body: { ok: true },
-        },
+        'POST /chat/direct/8/reports/3/files/20?name=holiday.png': fileAnswer,
       },
     });
     const item = (await within(list).findByText('here')).closest('li');
@@ -192,6 +190,11 @@ describe('receiving', () => {
       within(dialog).getByLabelText('Share the selected messages with the moderators')
     );
     fireEvent.click(within(dialog).getByRole('button', { name: 'Send report' }));
+    return calls;
+  }
+
+  it("reporting a message shares its file, decrypted in the reporter's browser", async () => {
+    const calls = await reportWithFile({ status: 201, body: { ok: true } });
     await vi.waitFor(() =>
       expect(calls.some((c) => c.key.startsWith('POST /chat/direct/8/reports/3/files/20'))).toBe(
         true
@@ -199,5 +202,14 @@ describe('receiving', () => {
     );
     const shared = calls.find((c) => c.key.startsWith('POST /chat/direct/8/reports/3/files/20'));
     expect(new Uint8Array(await shared.body.arrayBuffer())).toEqual(PNG);
+  });
+
+  it('a file shared with an earlier report is not needed again: the report is still sent', async () => {
+    await reportWithFile({
+      status: 409,
+      body: { ok: false, error: 'already_shared', message: 'This file was shared already.' },
+    });
+    expect(await screen.findByText('Report sent. Thank you.')).toBeInTheDocument();
+    expect(screen.queryByText('This file was shared already.')).toBeNull();
   });
 });

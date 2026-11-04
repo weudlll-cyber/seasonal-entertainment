@@ -27,6 +27,15 @@ export function conversationMessages(db, me, partner, ids) {
   return new Map(rows.map((r) => [r.id, r]));
 }
 
+// How many of this member's direct reports wait for a moderator (not reviewed yet).
+export function openDirectReports(db, reporterId) {
+  return db
+    .prepare(
+      'SELECT COUNT(*) AS n FROM direct_reports WHERE reporter_id = ? AND reviewed_at IS NULL'
+    )
+    .get(reporterId).n;
+}
+
 // copies: [{ id, text, mediaItemId?, authorName, sentAt }] (checked by the caller). Returns
 // the new report's id.
 export function createDirectReport(db, { reporterId, partnerId, messageId, reason, copies }) {

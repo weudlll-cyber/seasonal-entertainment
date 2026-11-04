@@ -27,10 +27,14 @@ import {
   findDirectReport,
   listDirectReports,
   markDirectReportReviewed,
+  openDirectReports,
   reportCopies,
 } from './directReportStore.js';
 
 const SHARED_MAX = 50;
+// Reports one member may have waiting for the moderators at once: plenty for real use, and each
+// report may bring file copies outside the upload quota (directFiles/routes.js).
+export const OPEN_REPORTS_MAX = 20;
 
 // Shared copies: absent (nothing shared) or a list of { id, text, mediaItemId? }.
 function sharedField(value) {
@@ -73,6 +77,14 @@ export function directReportRoutes(db, config) {
         shared: sharedField,
       });
       if (!input) return;
+      if (openDirectReports(db, req.user.id) >= OPEN_REPORTS_MAX) {
+        return sendError(
+          res,
+          429,
+          'too_many_open_reports',
+          `You have ${OPEN_REPORTS_MAX} reports waiting for the moderators. Please wait until they are reviewed.`
+        );
+      }
       const shared = input.shared ?? [];
       const ids = [input.messageId, ...shared.map((c) => c.id)];
       const known = conversationMessages(db, req.user.id, req.partner.id, ids);
