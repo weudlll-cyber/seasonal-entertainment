@@ -2,7 +2,8 @@
 // File:        RegisterPage.jsx
 // Path:        client/src/pages/RegisterPage.jsx
 // Project:     Seasonal Entertainment
-// Description: Registration: username, email, password and the required age confirmation.
+// Description: Registration: username, email, password (typed twice, RepeatPasswordField.jsx)
+//              and the required age confirmation.
 //              Checks the shared rules before sending; the server checks them again, except the
 //              password rules: the password never leaves the browser, only a salt and the auth
 //              key derived from it are sent (session/credentials.js). The new member's key pair
@@ -10,7 +11,10 @@
 //              Afterwards it returns to the page that sent the visitor (?next=, e.g. the
 //              embedded chat's login popup), like the login page (session/nextPage.js). The card
 //              shows the logo (FormLogo.jsx), except in the chat's login popup. While the
-//              "Registration open" setting is off, the page says registration is closed.
+//              "Registration open" setting is off, the page says registration is closed. While
+//              Discord login is set up, a hint with "Sign up with Discord" comes first (only
+//              that way do the Seasonal Tokens roles show; DiscordSignupHint.jsx; no email or
+//              password needed there, DiscordSignupPage.jsx finishes it).
 // ============================================================
 
 import { useState } from 'react';
@@ -26,19 +30,22 @@ import {
 } from '@seasonal-entertainment/shared/accountRules.js';
 import { api } from '../api/http.js';
 import { FormField, FormMessage } from '../components/FormField.jsx';
+import { RepeatPasswordField, useRepeatPassword } from '../components/RepeatPasswordField.jsx';
 import { useKeys } from '../keys/KeyContext.jsx';
 import { keysForNewPassword } from '../session/credentials.js';
 import { inEmbedLoginFlow, safeNext, withNext } from '../session/nextPage.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { BusyButton } from '../components/BusyButton.jsx';
+import DiscordSignupHint from '../discord/DiscordSignupHint.jsx';
 
 export default function RegisterPage() {
-  const { setUser, settings } = useSession();
+  const { setUser, settings, features } = useSession();
   const keys = useKeys();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const repeat = useRepeatPassword('password');
 
   async function onSubmit(event) {
     event.preventDefault();
@@ -55,6 +62,8 @@ export default function RegisterPage() {
       validatePassword(password) ??
       (input.ageConfirmed ? null : `Please confirm that you are at least ${MINIMUM_AGE}.`);
     if (problem) return setError(problem);
+    setError(null);
+    if (!repeat.matches(form)) return;
     setBusy(true);
     setError(null);
     try {
@@ -95,6 +104,12 @@ export default function RegisterPage() {
       <form className="form" onSubmit={onSubmit} noValidate>
         {/* Not in the chat's small login popup: there the fields come first. */}
         {!inEmbedLoginFlow(params) && <FormLogo />}
+        {features.discord && !inEmbedLoginFlow(params) && (
+          <>
+            <DiscordSignupHint next={params.get('next') ?? undefined} />
+            <p className="discord-or">or with email and a password (no Discord steps)</p>
+          </>
+        )}
         <FormField
           label="Username"
           name="username"
@@ -110,6 +125,7 @@ export default function RegisterPage() {
           autoComplete="new-password"
           hint={`At least ${PASSWORD_MIN} characters.`}
         />
+        <RepeatPasswordField {...repeat.fieldProps} />
         <label className="form-check">
           <input type="checkbox" name="ageConfirmed" />
           <span>I am at least {MINIMUM_AGE} years old.</span>

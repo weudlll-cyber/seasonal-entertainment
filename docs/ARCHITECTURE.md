@@ -44,14 +44,15 @@ roles and the bootstrap are described in [AUTH.md](AUTH.md).
 
 The race game uses 5173 and 4173; this project stays clear of them.
 
-| Port | What                                                                                         |
-| ---- | -------------------------------------------------------------------------------------------- |
-| 3800 | Server (`npm start`, and the API behind `npm run dev`)                                       |
-| 5380 | Vite dev server (`npm run dev`), forwards `/api` and `/ws` to 3800                           |
-| 3810 | Server started by the Playwright browser tests                                               |
-| 5390 | Vite dev server in front of 3810 during the browser tests (`SE_E2E_DEV_PROXY_PORT` moves it) |
-| 7880 | LiveKit call server in development (`npm run dev:calls`)                                     |
-| 7890 | LiveKit call server of the browser tests (ICE on 7891 TCP, 7892 UDP)                         |
+| Port | What                                                                                          |
+| ---- | --------------------------------------------------------------------------------------------- |
+| 3800 | Server (`npm start`, and the API behind `npm run dev`)                                        |
+| 5380 | Vite dev server (`npm run dev`), forwards `/api` and `/ws` to 3800                            |
+| 3810 | Server started by the Playwright browser tests                                                |
+| 5390 | Vite dev server in front of 3810 during the browser tests (`SE_E2E_DEV_PROXY_PORT` moves it)  |
+| 3811 | Browser tests' server with Discord on, against the pretend Discord (its authorize page: 3812) |
+| 7880 | LiveKit call server in development (`npm run dev:calls`)                                      |
+| 7890 | LiveKit call server of the browser tests (ICE on 7891 TCP, 7892 UDP)                          |
 
 ## Runtime configuration
 
@@ -98,6 +99,11 @@ commit, which the client build carries for the update notice):
 | `PRICE_BOT_MINING_RATES`            | (unset: no fair price, no mining times)       | the price bot's `mining_rates.json`, read-only (docs/BOTS.md)             |
 | `COINGECKO_API_KEY`                 | (unset: ETH, POL, BTC not connected)          | CoinGecko Demo key: the server fetches ETH/POL/BTC history (docs/BOTS.md) |
 | `BOT_ADMIN_EMBEDDED`                | (unset: off; `1` on)                          | embeds the event bot's admin page at `/bot-admin/` (docs/BOTS.md)         |
+| `DISCORD_CLIENT_ID`                 | (unset: Discord login off)                    | the Discord application's client id (docs/AUTH.md, "Discord")             |
+| `DISCORD_GUILD_ID`                  | (unset: Discord login off)                    | the Seasonal Tokens Discord server whose roles are read                   |
+| `DISCORD_CLIENT_SECRET`             | (unset: Discord login off)                    | the application's client secret (or the file below)                       |
+| `DISCORD_CLIENT_SECRET_FILE`        | (unset)                                       | a file holding the client secret (the installer's way)                    |
+| `DISCORD_REDIRECT_URI`              | `PUBLIC_ORIGIN/api/auth/discord/callback`     | the callback registered at Discord, exactly                               |
 
 Four of these are only the start of a site setting since 2026-10-23 (`CHAT_RETENTION_DAYS`,
 `CHAT_MAX_CONNECTIONS_PER_MEMBER`, `CHAT_MAX_GUEST_CONNECTIONS_PER_IP`, `LINK_PREVIEWS`): an
@@ -116,7 +122,9 @@ The client only ever calls relative URLs (`/api/...`), so the same build works o
 ## How it runs
 
 - **Development** (`npm run dev`): Vite on 5380 serves the client with hot reload and forwards
-  `/api` and `/ws` to the server on 3800, which restarts on file changes. The proxy passes the
+  `/api` and `/ws` to the server on 3800, which restarts when a file in `server/src` or
+  `shared/` is written (`scripts/dev-watch.mjs`; not on a mere read, which `node --watch` took
+  for a change on Windows; after `npm install`, restart by hand). The proxy passes the
   browser's `Host` header on unchanged (`changeOrigin: false`), so the CSRF and WebSocket origin
   checks compare against `http://localhost:5380`, the origin the browser really sends; no
   development exception exists in those checks. `client/e2e/devProxy.spec.js` guards this path.
@@ -137,8 +145,8 @@ would have to rebuild all of that; react-router is the maintained standard for R
   who sees the staff items (Admin for admins, Site banner for organisers, Manage events for both
   while the server has `features.botAdmin`), legal links, admin sections.
 - What the server is set up for reaches the client with the session answer
-  (`GET /api/auth/session`: `features`, e.g. `features.botAdmin`; `SessionContext.jsx`), never as
-  a build-time value.
+  (`GET /api/auth/session`: `features`, e.g. `features.botAdmin`, `features.discord`;
+  `SessionContext.jsx`), never as a build-time value.
 - `main.jsx` supplies `BrowserRouter`; tests supply `MemoryRouter`.
 
 ## Info pages and user-written content
@@ -245,8 +253,9 @@ password change and turning 2FA on or off close the account's other sockets at o
   member's message with a plain `http://` link is refused (`400 https_only`, enforced
   2026-10-17 to match the stated rule; until then such links were accepted).
 - **Emojis** (everyone, guests too) are plain Unicode text in the message. The picker next to the
-  message field (`client/src/chat/ChatPicker.jsx`) uses a compact built-in list of about 150
-  emojis with English names (`client/src/chat/emojis.js`), chosen 2026-10-17 over a picker
+  message field (`client/src/chat/ChatPicker.jsx`) uses a compact built-in list of 144 emojis
+  with English names (`client/src/chat/emojis.js`; the keycap digits 0 to 9 in "Symbols" added
+  2026-11-03), chosen 2026-10-17 over a picker
   library: no dependency, no emoji data download, nothing from a CDN, so the strict CSP stays.
   Bundle cost: +4.7 kB JavaScript (+1.9 kB gzip) and +0.8 kB CSS (+0.15 kB gzip).
 - **Stickers and GIFs** (decided 2026-10-17) come only from the site's **own library**, managed
@@ -272,6 +281,12 @@ password change and turning 2FA on or off close the account's other sockets at o
   `data/media`, gitignored) under generated names (`<32 hex>.<ext>`) and served from this origin
   at `/media/...` with their type, `nosniff` and a one-year immutable cache; a missing file is a
   404, never the client page. Every library change is audited.
+- **Uploading to a pack** (Admin → Chat media, `client/src/admin/MediaUploadForm.jsx`): one or
+  many files at once, each sent on its own, one after another, through the same per-file route
+  (`POST /api/admin/chat/media/packs/:id/items`) and checks, with the progress ("3 of 12"). Each
+  item is named after its file without the extension (renamed afterwards in its row); the alt
+  text (default: the name) and credit typed there go with every file. A refused file does not
+  stop the others; the refused ones are listed with the server's reason.
 - **Starter pack**: on first start (empty library) `server/src/media/seed.js` turns
   `server/seeds/chat-media/` (made from the owner's own files; sources and credits in its README)
   into four packs: Stickers "Seasons", "Coins" (the silver coins credited to Foxeane),
@@ -415,7 +430,8 @@ client/                    React + Vite client
   src/admin/               admin area (/admin): layout, users, audit log, info editor; one section each
   src/components/Markdown.jsx  the one safe Markdown renderer
   e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels,
-                           opticalCentres.js defines each season motif's optical centre
+                           opticalCentres.js defines each season motif's optical centre,
+                           fakeDiscordPreload.mjs puts the pretend Discord into the 3811 server
   src/main.jsx             entry point
   src/pages/               one folder entry per page (component, CSS, test side by side);
                            ManageEventsPage: the event bot's admin page in a frame (docs/BOTS.md)
@@ -431,7 +447,12 @@ client/                    React + Vite client
                            pages/RecordingsPage.jsx)
   src/keys/                a member's key pair in the browser: provider, device copy
                            (IndexedDB), unlock, recovery code, unlocking a new device from
-                           an unlocked one (docs/CHAT.md, AUTH.md)
+                           an unlocked one, the choice of an account without a password
+                           (PasswordlessKeys) (docs/CHAT.md, AUTH.md)
+  src/discord/             the Discord login in the browser: start links and reasons, the
+                           button, the sign-up page's hint, the confirm gate of accounts
+                           without a password, the account page's Discord section, the first
+                           password (docs/AUTH.md)
   src/notify/              browser notifications while the site is open: permission, the
                            switches, mentions, direct messages, the weekly recap (docs/CHAT.md)
   src/games/               the games hub's card images
@@ -452,6 +473,12 @@ server/
                            loginRoutes.js, pre-login and login), credentials, bootstrap,
                            account deletion (deletion.js; own deletion: deleteRoutes.js)
   src/twofa/               two-factor area: TOTP, schema, store, routes, staff gate
+  src/discord/             Discord login and steps (docs/AUTH.md, "Discord"): config, the API
+                           calls, schema and link store, the sealed refresh token, the role
+                           read and daily job (refresh.js), steps and their seed (+ seed/:
+                           steps.json and icons/, shipped with the project), the routes under
+                           /api/auth/discord, the admins' steps (adminRoutes.js, stepStore.js,
+                           an icon from a link: iconLink.js), the handle app.js builds (index.js)
   src/keys/                members' keys: public keys, sealed private keys, recovery seal
   src/audit/               audit log: schema and the one recordAudit helper
   src/admin/               /api/admin routes (users, audit); areas add their own editors
@@ -464,7 +491,8 @@ server/
                            rate limit, retention, seed, the chat's part of deleting an
                            account (accountData.js)
   src/media/               chat media library: schema, store, image validator, files on disk,
-                           picker and admin routes, first-start seed
+                           picker and admin routes, first-start seed; small admin icons
+                           (icons.js: the Discord steps')
   src/previews/            chat link previews: safe fetching (SSRF rules), meta parsing, cache,
                            the preview service, moderators' removal route; fetchImage.js, also
                            used for the event bot's images
@@ -505,10 +533,13 @@ server/
   test/                    Vitest tests
 shared/                    rules used by server and client (accountRules.js, localWeek.js,
                            gameRules.js, chatRules.js, disclaimer.js, seasonClock.js,
-                           callEntries.js, priceChange.js, chapterRules.js, callPeople.js), crypto.js and
-                           cryptoFormat.js
+                           callEntries.js, priceChange.js, chapterRules.js, callPeople.js,
+                           discordLadders.js), crypto.js and cryptoFormat.js
 scripts/
   dev.mjs                  npm run dev
+  dev-watch.mjs            the API's restart-on-change in npm run dev (written files only)
+  export-steps.mjs         npm run steps:export: a database's Discord steps and icons into the
+                           seed the project ships (server/src/discord/seed/; docs/AUTH.md)
   e2e.mjs                  npm run test:e2e (temporary database per run)
   create-dev-admin.mjs     npm run dev:admin (local admin via the bootstrap flow; rewrites
                            DEV-ADMIN.txt's 2FA part from the stored secret, never changing it)

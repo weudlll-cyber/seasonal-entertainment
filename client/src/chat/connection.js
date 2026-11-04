@@ -45,6 +45,7 @@ const PERSONAL = new Set([
   'keyRequest',
   'mention',
   'recap', // the weekly recap is out (server/src/recap/job.js)
+  'access', // the account's Discord steps changed: room lists reload (useChatRooms.js)
 ]);
 const personal = new Set(); // their handlers
 let socket = null;

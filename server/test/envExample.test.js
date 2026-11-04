@@ -13,7 +13,10 @@ const read = (relative) => readFileSync(new URL(relative, import.meta.url), 'utf
 
 it('.env.example lists every key the server reads, without values', () => {
   const sources =
-    read('../src/config.js') + read('../src/buildInfo.js') + read('../src/calls/config.js');
+    read('../src/config.js') +
+    read('../src/buildInfo.js') +
+    read('../src/calls/config.js') +
+    read('../src/discord/config.js');
   const keys = new Set([
     ...[...sources.matchAll(/env\.([A-Z][A-Z0-9_]+)/g)].map((m) => m[1]),
     ...[...sources.matchAll(/read(?:Int|Bool)\(env, '([A-Z][A-Z0-9_]+)'/g)].map((m) => m[1]),

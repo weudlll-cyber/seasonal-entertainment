@@ -28,6 +28,14 @@
   list-style: none;
 }
 
+/* The name menu's Discord steps above its items (MenuButton's header). */
+.chat-menu__header {
+  padding: 0.5rem 0.5rem 0.625rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 1px solid var(--color-border, #e3e6ea);
+  font-size: 0.8125rem;
+}
+
 .chat-menu__list button {
   width: 100%;
   min-height: 44px;

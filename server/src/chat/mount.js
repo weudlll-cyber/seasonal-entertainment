@@ -11,10 +11,13 @@
 
 import express from 'express';
 import { adminMediaRoutes } from '../media/adminRoutes.js';
-import { MEDIA_URL_PREFIX, mediaUrl } from '../media/files.js';
+import { MEDIA_URL_PREFIX, deleteMediaFile, mediaUrl } from '../media/files.js';
+import { storeIcon } from '../media/icons.js';
+import { ImageRejected } from '../media/imageCheck.js';
 import { mediaRoutes } from '../media/routes.js';
 import { seedChatMedia } from '../media/seed.js';
 import { fetchImage } from '../previews/fetchImage.js';
+import { FetchRefused, safeFetch } from '../previews/safeFetch.js';
 import { imageMaxPixels } from '../settings/derived.js';
 import { getSetting } from '../settings/store.js';
 import { directFileRoutes } from '../directFiles/routes.js';
@@ -26,6 +29,7 @@ import { deleteChatData, deleteChatFiles } from './accountData.js';
 import { directReportRoutes } from './directReportRoutes.js';
 import { directRoutes } from './directRoutes.js';
 import { favouriteRoutes } from './favouriteRoutes.js';
+import { withAuthorSteps } from './authorSteps.js';
 import { withMentions } from './mentions.js';
 import { addSystemMessage } from './messages.js';
 import { memberRoutes } from './memberRoutes.js';
@@ -42,14 +46,17 @@ import {
   findRoom,
   findRoomBySlug,
 } from './store.js';
-import { chatViewer } from './viewer.js';
+import { findUserById } from '../accounts/userStore.js';
+import { accountViewer, canRead, chatViewer } from './viewer.js';
 import { makeSenderLimit } from './senderLimit.js';
 import { attachChatSocket } from './socket.js';
 import { unreadRoutes } from './unreadRoutes.js';
 
 // Public media file names: <32 hex>.<ext> at the top (library) or in previews/.
-// Library files, link-preview images and the event bot's images (bots/images.js).
-const PUBLIC_MEDIA = /^\/(?:previews\/|bot-images\/)?[0-9a-f]{32}\.(?:webp|png|gif|jpg)$/;
+// Library files, link-preview images, the event bot's images (bots/images.js) and the Discord
+// steps' icons (step-icons/, discord/adminRoutes.js).
+const PUBLIC_MEDIA =
+  /^\/(?:previews\/|bot-images\/|step-icons\/)?[0-9a-f]{32}\.(?:webp|png|gif|jpg)$/;
 
 // app: the Express app (chat media files are served at /media); api: the /api router, after
 // sessions, current user and the 2FA gate; sessionParser: the session middleware, reused on
@@ -112,10 +119,34 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
     // For areas that show outside images from this site (the event bot's, bots/images.js):
     // the link previews' guarded image fetch (previews/fetchImage.js), with the site's pixel
     // limit (a setting) added, and the public media address of a stored file.
+    // storeIcon: an admin's icon upload (the Discord steps, discord/adminRoutes.js) drawn into
+    // a 64 x 64 WebP in step-icons/: { ok, file } or { ok: false, message }; remove: a stored
+    // icon's file goes. download: the same guarded fetch, raw, for code that checks the bytes
+    // itself (the steps' icon from a link, discord/iconLink.js): { ok, status, body } or
+    // { ok: false, reason } (safeFetch's reason; anything else on the way is "unreachable").
     images: {
       fetch: (url, limits, options, network) =>
         fetchImage(url, { ...limits, maxPixels: imageMaxPixels(db) }, options, network),
       url: mediaUrl,
+      async download(url, options, network) {
+        try {
+          return { ok: true, ...(await safeFetch(url, options, network)) };
+        } catch (err) {
+          return { ok: false, reason: err instanceof FetchRefused ? err.message : 'unreachable' };
+        }
+      },
+      async storeIcon(buffer) {
+        try {
+          return {
+            ok: true,
+            file: await storeIcon(config, buffer, 'step-icons', imageMaxPixels(db)),
+          };
+        } catch (err) {
+          if (!(err instanceof ImageRejected)) throw err;
+          return { ok: false, message: err.message };
+        }
+      },
+      remove: (file) => deleteMediaFile(config, file),
     },
     // For account code: open chat sockets follow logouts and account changes.
     sessions: {
@@ -128,6 +159,8 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
       },
       // Embed tokens ended (embed/): { tokenId } | { origin } | { userId } — their sockets close.
       embedRevoked: (which) => hub.disconnectEmbeds(which),
+      // A member's Discord steps changed (discord/): their sockets leave rooms now closed to them.
+      stepsChanged: (userId) => hub.recheckRooms(userId),
     },
     // For deleting an account (accounts/deletion.js): chatAccounts above.
     accounts: chatAccounts(db, config),
@@ -138,6 +171,13 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
       findBySlug: (slug) => findRoomBySlug(db, slug),
       createUnlisted: (room) => createUnlistedRoom(db, room),
       close: (id) => closeRoom(db, id),
+      // Whether that account may read the room now (its level and any rule for Discord steps):
+      // a notification about a room goes only to its readers (the weekly recap, recap/).
+      readableBy(slug, userId) {
+        const room = findRoomBySlug(db, slug);
+        const user = findUserById(db, userId);
+        return Boolean(room && user && canRead(room, accountViewer(db, config, user)));
+      },
     },
     // For the site's own messages (the weekly recap, recap/): posted in the first room of
     // `slugs` that exists, then pushed and counted for unread exactly as a member's post.
@@ -148,7 +188,7 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
         if (!room) return null;
         // Internal ids stay on the server, as in routes.js.
         const { roomId, authorUserId, authorGuest, ...rest } = addSystemMessage(db, room, body);
-        const [message] = withMentions(db, [rest]);
+        const [message] = withAuthorSteps(db, withMentions(db, [rest]));
         hub.broadcast(room.id, { type: 'message', message });
         hub.notifyReaders(room, { type: 'activity', room: room.slug });
         return { ...message, room: room.slug };

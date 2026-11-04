@@ -5,7 +5,9 @@
 // Description: Offered once, right after a member's key pair was made (registration, first
 //              login with keys, starting over): "Create recovery code" or "Skip". Skipping
 //              stores nothing and is not asked again automatically; the account page can make
-//              one later. A modal dialog: focus moves in, Escape counts as "Skip".
+//              one later. A modal dialog: focus moves in, Escape counts as "Skip". For an account
+//              without a password, whose key a recovery code alone protects, the code made just
+//              now is shown here at once (keys.newCode), with no way to skip it.
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
@@ -19,7 +21,7 @@ export const SKIP_WARNING =
 
 export default function RecoveryOffer() {
   const keys = useKeys();
-  const [code, setCode] = useState(null);
+  const [code, setCode] = useState(keys.newCode);
   const [error, setError] = useState(null);
   const dialog = useRef(null);
 

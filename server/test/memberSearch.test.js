@@ -6,7 +6,7 @@
 //              starting with the text first, then containing it, case-insensitively; at least 2
 //              characters; at most 10 results; never the searcher, locked or banned accounts;
 //              the room filter keeps only members who may read the room; exactly id, username,
-//              canReceive and online, never an email; guests refused; its own rate limit;
+//              canReceive, online and their Discord steps, never an email; guests refused; its own rate limit;
 //              wildcard characters match themselves.
 // ============================================================
 
@@ -84,15 +84,15 @@ describe('who is found', () => {
 });
 
 describe('what is returned', () => {
-  it('exactly id, username, canReceive and online', async () => {
+  it('exactly id, username, canReceive, online and steps', async () => {
     t = chatApp();
     const { agent } = await registerUser(t, 'searcher');
     const withKey = await memberWithKey(t, 'kim_key');
     const without = await registerUser(t, 'kim_nokey');
     const { members } = (await search(agent, 'kim')).body;
     expect(members).toEqual([
-      { id: withKey.user.id, username: 'kim_key', canReceive: true, online: false },
-      { id: without.user.id, username: 'kim_nokey', canReceive: false, online: false },
+      { id: withKey.user.id, username: 'kim_key', canReceive: true, online: false, steps: [] },
+      { id: without.user.id, username: 'kim_nokey', canReceive: false, online: false, steps: [] },
     ]);
     expect(JSON.stringify(members)).not.toContain('@example.org');
   });

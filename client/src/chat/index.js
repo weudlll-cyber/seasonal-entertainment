@@ -2,8 +2,10 @@
 // File:        index.js
 // Path:        client/src/chat/index.js
 // Project:     Seasonal Entertainment
-// Description: The chat module's public entry: the ChatPanel component; for a host's own room
-//              picker the useChatRooms hook (the rooms the reader may read), the member's
+// Description: The chat module's public entry: the ChatPanel component, and RoomPanel (the
+//              panel of a room asked for, else the reader's first room; NoRooms); for a host's
+//              own room picker the useChatRooms hook (the rooms the reader may read) and
+//              roomToShow (which of them opens), the member's
 //              favourites (useFavourites, groupRooms), the room star and bell; the direct-message
 //              view (DirectPanel) and onDirectRequest (a name menu asked for a conversation); the
 //              unread counters (useUnread, UnreadCount); for a host's own panels a small keyboard
@@ -11,12 +13,15 @@
 //              the member's own live events for other areas of the site (usePersonalEvents: call
 //              reminders, a new device asking for the key, notifications) and a room's newest
 //              messages with the online count (useRoomGlimpse: the home page's Community box);
-//              onReconnect (the live connection is back after a drop: app/UpdateNotice.jsx).
+//              onReconnect (the live connection is back after a drop: app/UpdateNotice.jsx); the
+//              Discord steps' badge and list (StepBadge, StepList: the account page).
 //              Pages import only from here; everything else in this folder is internal
 //              (docs/CHAT.md).
 // ============================================================
 
 export { default as ChatPanel } from './ChatPanel.jsx';
+export { NoRooms, default as RoomPanel } from './RoomPanel.jsx';
+export { roomToShow } from './useRoomToShow.js';
 export { default as DirectPanel } from './DirectPanel.jsx';
 // requestDirect: open a member's conversation from outside (a notification's click).
 export { onDirectRequest, requestDirect } from './directView.js';
@@ -31,3 +36,5 @@ export { useNewMessageCount } from './useNewMessageCount.js';
 export { usePersonalEvents } from './usePersonalEvents.js';
 export { useRoomGlimpse } from './useRoomGlimpse.js';
 export { onReconnect } from './connection.js';
+// Discord steps (variant C): the badge after a name, and the full names (the account page).
+export { default as StepBadge, StepIcon, StepList } from './StepBadge.jsx';

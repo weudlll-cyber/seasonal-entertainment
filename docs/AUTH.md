@@ -10,6 +10,8 @@ from the race game's `docs/AUTH.md` are marked _(race game)_.
   guests have no account and no stored role.
 - **"Can start games"** is a separate flag on the account, granted by admins; admins have it
   implicitly (`canStartGames` in the session answer is true for every admin).
+- **Two ways in** (decided 2026-11-02): Discord, the primary one (an account made with it has no
+  email and no password until it sets one; "Discord" below), and username and password.
 - **Registration is open to everyone** (decided 2026-10-16; admins can close it with the
   "Registration open" setting, docs/SETTINGS.md: the page and the route then say "Registration is
   closed at the moment.", while the first admin's bootstrap still works): username, email, password
@@ -21,6 +23,11 @@ from the race game's `docs/AUTH.md` are marked _(race game)_.
   most 72 bytes (from when bcrypt read the password itself; kept unchanged). Email: a plain shape
   check; no confirmation mail is sent. The password rules are checked **in the browser only** (next
   section).
+- **A new password is typed twice** (decided 2026-11-03): registration, the first password of an
+  account made with Discord (account page and the Private messages panel), the password change and
+  the admin's reset have a "Repeat password" field (`client/src/components/RepeatPasswordField.jsx`).
+  A mismatch sends nothing and says "The passwords do not match." at that field; the repeat never
+  goes to the server. Fields that only confirm the current password stay single.
 - **The password never reaches the server** (next section). The server stores bcrypt of the auth
   key the browser derives from it, cost 12 by default (`BCRYPT_COST`) _(race game)_.
 
@@ -108,10 +115,10 @@ registration, password change, unlock or recovery runs, its button reads **Check
     with a key.
   - Tests: `server/test/keyHandover.test.js`, `client/src/keys/deviceHandover.test.jsx`,
     `shared/crypto.test.js`.
-- **Telegram logins (decided direction, 2026-10-17; not built)**: recovery codes are to apply to
-  future Telegram logins too — an account that logs in through Telegram has no password to derive
-  a wrapping key from, so its private key needs the recovery code (or a start-over) to open on a
-  device. Open in docs/BACKLOG.md.
+- **Logins without a password** (direction decided 2026-10-17 for Telegram, built 2026-11-02 for
+  Discord; Telegram login is not planned any more): an account made with Discord has no password
+  to derive a wrapping key from. Before its first private message it chooses a recovery code or a
+  password to protect the key (docs/CHAT.md, "Accounts without a password").
 
 **Server-side checks lost** (they need the password): minimum length (10 characters) and maximum
 length (72 bytes) of a new password — on registration, own password change, admin reset and
@@ -153,6 +160,182 @@ rate limit, the lockout, locked accounts, the session epoch.
 - **Open chat sockets follow the account:** logout closes that session's chat WebSocket; a role,
   lock or password change closes the account's sockets (except the session making its own
   change); and every push re-checks the account (`server/src/chat/hub.js`).
+
+## Discord (SE-DISCORD-1, decided 2026-11-02)
+
+Discord is the primary login. Username and password registration stays for people without
+Discord; they have no steps. While Discord is set up, the password sign-up page opens with a hint
+to sign up with Discord instead, since only then do the roles show
+(`client/src/discord/DiscordSignupHint.jsx`). Telegram login is not planned any more. Code: `server/src/discord/`,
+`client/src/discord/`. The probe of 2026-11-02 found how Discord behaves; what follows relies on
+it.
+
+**Set up** with `DISCORD_CLIENT_ID`, `DISCORD_GUILD_ID` (the Seasonal Tokens server, 902220302199689266) and the client secret, given as `DISCORD_CLIENT_SECRET` or in the file named
+by `DISCORD_CLIENT_SECRET_FILE` (`server/src/discord/config.js`; the installer asks for them,
+docs/DEPLOYMENT.md, "Discord login"). All three or none. With none,
+the feature is off: no Discord button, and every `/api/auth/discord` path answers 404. The
+session answer says which (`features.discord`). The redirect is `DISCORD_REDIRECT_URI`, or
+`PUBLIC_ORIGIN` + `/api/auth/discord/callback`. It must be registered at Discord character for
+character: in the probe, invisible leading spaces in the portal broke it.
+
+**The flow** (`server/src/discord/routes.js`):
+
+- `GET /api/auth/discord/start?intent=login|link|confirm&next=/path` keeps a fresh `state` and
+  PKCE verifier in the session and sends the browser to Discord's consent page (with
+  `prompt=none`: someone who already agreed to these scopes goes straight back). It asks for the
+  scopes `identify` and `guilds.members.read` only: no `guilds` (it would list all of a member's
+  servers) and no `email`. There is no bot on the server.
+- `GET /api/auth/discord/callback` checks the state in constant time, once (the flow is deleted
+  from the session before anything else), within 10 minutes and for the same account that
+  started it. It trades the code with the verifier and reads `/users/@me`, keeping the id and the
+  name only. Then, by intent:
+  - **login**: the linked account is logged in under the password login's rules: a locked
+    account is refused, and an account with 2FA gets the second step (the page then shows
+    the code form at once, `/login?discord=2fa`). Without a linked account, it starts a
+    **sign-up**.
+  - **link**: the signed-in account is linked. A Discord user linked to another account is
+    refused (`?discord=taken`, and the database's UNIQUE on `discord_id` as well), and so is a
+    second Discord user for an account that has one (`other_user`).
+  - **confirm**: proves that it is the account's own Discord user (next section).
+- Every login and link also reads the member's roles, with the tokens just given (next
+  section, "Discord: steps").
+- Failures go back to the page with `?discord=<reason>` (`expired`, `denied`, `failed`,
+  `locked`, `closed`, `taken`, `other_user`, `not_linked`, `too_many`;
+  `client/src/discord/discordLinks.js` says them in words). They count on the login's per-IP
+  limit for failed attempts. A refused consent does not count.
+- **Sign-up** (`/register/discord`, `client/src/pages/DiscordSignupPage.jsx`): the server holds
+  the Discord user for 15 minutes, with the refresh token sealed. The page offers a username: the
+  Discord name made to fit the site's rules, with a number when it is taken
+  (`server/src/discord/username.js`). The member may change it, and must confirm their age as on
+  every registration. `POST /api/auth/discord/register` creates the account (no email, no
+  password: both columns are optional since 2026-11-02; older databases get the users table
+  rebuilt once, `relaxEmailAndPassword` in `server/src/accounts/schema.js`, every account and
+  reference kept; only references the rebuild itself broke stop it) and its link in one
+  transaction, and logs it in. It shares the registration's rate limit, and is refused while
+  registration is closed.
+- **Unlink** (`DELETE /api/auth/discord`, the account page): only for an account with a
+  password, proven with it. An account without one would have no way to log in, so it is told
+  to set a password first. The refresh token is revoked at Discord. Revoking it ends the whole
+  grant, which is why older refresh tokens are never revoked one by one.
+- Only the Discord user id (unique), its name and the role ids are stored, never an email. The
+  client secret and the tokens never reach a browser or a log. The secret goes only to Discord,
+  in the token calls' `Authorization` header.
+- Tests: `server/test/discordLogin.test.js`, against the pretend Discord
+  (`server/test/helpers/fakeDiscord.js`, which behaves as the probe found: codes bound to their
+  PKCE challenge, rotating refresh tokens, 10004); `server/test/accountsRebuild.test.js`;
+  `client/src/discord/discordPages.test.jsx`. In the browser tests the same pretend Discord
+  answers a second server (port 3811, `client/e2e/fakeDiscordPreload.mjs`): the round trip of
+  "Confirm with Discord" in `client/e2e/discordConfirm.spec.js`.
+
+### Discord: steps and the daily read
+
+Members carry **steps** from the Seasonal Tokens Discord server (decided 2026-11-02). There are
+three ladders, and each shows only the member's highest step:
+
+- **Holder**: Holder < Bronze < Silver < Golden < Platinum < Diamond < Seasonal <
+  Ultimate-Dragon Whale.
+- **Farmer**: Farmer Holder < Farmer Bronze < … < Farmer Seasonal < Ultimate-Farmer Whale.
+- **Investor**: Level 1 Investor < … < Level 4 Investor.
+
+The shipped seed holds these 20 steps with their role ids and icons, exported from the PC test
+site on 2026-11-03.
+
+Admins give each step the Discord role id that grants it, set the order and upload an icon
+(Admin → Discord steps). **Steps never grant rights on the site**; only the owner gives roles.
+
+**Steps shipped with the project**: `server/src/discord/seed/steps.json` (ladder, name,
+position, role id, icon file) with the icons in `seed/icons/`. A database that never had a step
+gets them once at the server's start (`seedSteps` in `server/src/discord/steps.js`, called from
+`server/src/index.js` after the app is built, the icons through the chat handle's
+`images.storeIcon` like an upload); `sqlite_sequence` remembers it, so admins' edits are never
+undone and an emptied list stays empty. `npm run steps:export` (`scripts/export-steps.mjs`)
+writes the current database's steps and icons into that seed, reading the database read-only
+(by default the one the server uses; `--db`, `--media`, `--out` choose others); commit the
+result, and a new site starts with those steps. Steps only: no accounts, links, tokens or ids of
+the application or server. Tests: `server/test/discordSeed.test.js`; other tests use fixed test
+steps (`server/test/helpers/steps.js`), not the shipped ones.
+
+- **Admin → Discord steps** (`/admin/discord`, `client/src/admin/AdminDiscordPage.jsx`; the API
+  is `/api/admin/discord`, admins with 2FA, `server/src/discord/adminRoutes.js`; there only while
+  Discord is set up). Each ladder is listed with its highest step first:
+  - add a step (at the top of its ladder), rename it, set its Discord role id (17-20 digits,
+    unique; empty for none), and move it up or down;
+  - remove it, unless a room is open from it; the row names those rooms;
+  - upload an icon: PNG, WebP or SVG, at most 256 KB. Every icon is drawn once into a 64 × 64
+    WebP and only that is kept (`server/src/media/icons.js`, through the chat handle's
+    `images.storeIcon`), served from `/media/step-icons/`. An SVG with a DOCTYPE or entities,
+    scripts, foreign objects, event attributes, or links or `url()` to anything but its own
+    parts is refused. Until an icon is uploaded, a neutral placeholder shows (the ladder's
+    shape and the step's initials);
+  - or take the icon from a link ("Icon from link", `POST /api/admin/discord/steps/:id/icon-link`
+    with `{ url }`, `server/src/discord/iconLink.js`, `client/src/admin/StepIconLink.jsx`):
+    https to exactly `cdn.discordapp.com` or `media.discordapp.net`, no redirect at all, an image
+    type, 10 seconds, at most 2 MB read (the transfer is cut beyond). The server fetches it once
+    through `safeFetch` (public addresses only, `server/src/previews/safeFetch.js`) and stores it
+    through the same `images.storeIcon` as an upload (same checks, same 64 × 64 WebP), so nothing
+    depends on Discord afterwards (the fetch reaches the chat area's guard through the chat
+    handle's `images.download`, docs/CHAT.md). Refusals name the reason: wrong host, not an image,
+    too large, redirected, unreachable;
+  - see the role ids on linked members that no step has yet, with how many members carry each
+    (ids and counts only), to fill the ids in. In Discord: Developer Mode, then right-click the
+    role and choose "Copy Role ID".
+  - Every change writes one audit entry (`discord.step_create`, `discord.step_edit`,
+    `discord.ladder_reorder`, `discord.step_delete`, `discord.step_icon`).
+  - Tests: `server/test/discordAdmin.test.js`, `client/src/admin/adminDiscord.test.jsx`.
+- **Reading the roles**: `GET /users/@me/guilds/902220302199689266/member`, with the member's
+  consent (scope `guilds.members.read`; no bot on that server). Only `roles` is kept: a JSON list
+  of role ids in `discord_links.role_ids`. Steps are computed when they are shown, from those ids
+  and the mapping now, so a mapping change shows at once without asking Discord again.
+- **When**: at every Discord login and link, with the tokens just given, and **once a day** for
+  every linked account (`server/src/discord/refresh.js`). The job looks every minute for links
+  whose `next_refresh_at` has passed, reads up to 10, 3 seconds apart, and sets the next read a
+  day later plus up to an hour at random, so reads spread over the day. Discord allows a member
+  record a burst of 5 reads, then one a minute, per user (the probe); a day's reads for 10,000
+  members are about 0.23 a second.
+- **The refresh token** is kept so the daily read works without the member. It is sealed like
+  2FA secrets (`server/src/discord/tokenBox.js`: secretbox under `SECRET_ENCRYPTION_KEY`, `enc1:`)
+  and never logged or shown. Discord **rotates** it: each refresh returns a new one and the old
+  one dies at once. So:
+  - **one refresh per account at a time**: a claim (`refreshing_since`, released after 2 minutes
+    if the server died) makes a second one wait its turn;
+  - **the new token is saved with the roles in one statement**, right after the read. A crash
+    between Discord's answer and that save loses it; the member then logs in with Discord again.
+  - **only into the claimed link**: an unlink or account deletion while Discord answers wins.
+    No link comes back, and the new token is revoked at Discord at once.
+- **Discord's answers**:
+  - `invalid_grant` (the member removed the app, or the token went unused too long): the link is
+    marked **needs login**, the token deleted and the steps hidden. The account page says so;
+    the next Discord login stores a new token and the steps return;
+  - 404 with code **10004**: not on the server. No steps until a later read finds them there.
+    The code decides, never the text, which Discord localizes ("Unbekannter Server");
+  - 429 or Discord down: the old token still works; the read is retried after `retry_after` (or
+    an hour).
+- **Access follows** at once: when a read changes a member's steps, their open chat
+  connections re-check their rooms (docs/CHAT.md, "Rooms for Discord steps").
+- Tests: `server/test/discordRoles.test.js` (sealed token, strict rotation, two refreshes at
+  once, an unlink during a read, invalid_grant, 10004, rate limit, the due links only, a mapping change without a read).
+
+### Discord: accounts without a password
+
+An account made with Discord has no password, so "enter your password again" cannot apply to
+it. It proves itself with a **fresh Discord login** instead: the callback (`intent=confirm`, or
+any Discord login on this session) stamps `discordProofAt` in the session, valid 10 minutes
+(`server/src/accounts/identityProof.js`). The session answer carries `discordProofUntil`, so the
+page can ask for it in time (`client/src/discord/DiscordConfirmGate.jsx`, "Confirm with
+Discord", which comes back to the same page). This proof stands in for the password where the
+password is asked: creating or changing the keys (`/api/keys`), setting a first password, and
+deleting the account. A taken-over session alone can do none of these.
+
+- **A first password** (`POST /api/auth/password/first`, the account page's "Set a password"):
+  only for an account without one, after the proof. It is sent as a salt and auth key like any
+  password. The private key, when this device has it open, is sealed for it in the same
+  transaction. Every other session ends, as after a password change. From then on the account
+  logs in either way, can unlink Discord and can turn on 2FA, which needs a password.
+- **The private-message key**: docs/CHAT.md, "Accounts without a password".
+- **Deleting** the account needs the proof instead of the password (an account without a
+  password has no 2FA either).
+- Staff roles are given by the owner only. Staff need 2FA, so an account made with Discord sets a
+  password before it can act as staff.
 
 ## Embed tokens (the chat on approved other sites)
 
@@ -400,7 +583,8 @@ chat retention).
 - **What goes, at once, in one transaction** (`deleteAccount`, `server/src/accounts/deletion.js`):
   - by the schemas' `ON DELETE CASCADE` on `users`: the 2FA secret and recovery codes, the keys
     (public and sealed private), favourite rooms and members (both ways), read marks and muted
-    rooms, mentions of the account, chat sanctions, every direct message sent or received (so the
+    rooms, mentions of the account, chat sanctions, the Discord link with its sealed refresh token
+    and role ids, every direct message sent or received (so the
     partner's copy of the conversation too), direct files of both partners, direct reports made
     by or about the account with their copies and shared files, embed tokens, call participation
     and call reminders;
@@ -415,6 +599,9 @@ chat retention).
     shared report files (`chat.accounts.deleteFiles`).
 - **Open sockets** of the account close (`chatSessions.accountChanged`, all of them, embedded
   chats included).
+- **The Discord token** is revoked at Discord after the commit (best effort; the token is read
+  before the link goes, `revokerFor` in `server/src/discord/index.js`), on both routes. A restore
+  that deletes an account again cannot do this (docs/BACKLOG.md, "Known limits").
 - **What stays**: the audit log (entries keep their `actor_name`; `actor_id` becomes empty), call
   recordings and their chapter marks (they name the organiser who started them as text, and hold
   the sound and pictures of whoever spoke or showed a camera or screen), calls the account

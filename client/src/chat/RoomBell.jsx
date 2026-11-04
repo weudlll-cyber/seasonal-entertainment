@@ -19,6 +19,7 @@ export default function RoomBell({ room }) {
       kind="bell"
       on={unread.muted(room.slug)}
       label={`Mute: ${room.name}`}
+      hints={[`Turn on notifications for ${room.name}`, `Turn off notifications for ${room.name}`]}
       icons={[<Icon key="on" name="bellOff" />, <Icon key="off" name="bell" />]}
       onToggle={(on) => unread.setMuted(room.slug, on).catch(() => {})}
     />

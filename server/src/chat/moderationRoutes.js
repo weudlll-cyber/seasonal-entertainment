@@ -6,7 +6,9 @@
 //              everyone else at once), mute its author for a time, ban its author, list
 //              reported messages and active sanctions, mark reports reviewed (the message
 //              stays), lift a sanction. Staff cannot be muted
-//              or banned. Every action writes one audit entry. Also the admin room editor.
+//              or banned. Every action writes one audit entry. Also the admin room editor, with
+//              the Discord steps that open a room (stepIds; docs/CHAT.md, "Rooms for Discord
+//              steps").
 // ============================================================
 
 import express from 'express';
@@ -14,6 +16,7 @@ import { roleAtLeast } from '@seasonal-entertainment/shared/accountRules.js';
 import { ROOM_ACCESS } from '@seasonal-entertainment/shared/chatRules.js';
 import { findUserById } from '../accounts/userStore.js';
 import { recordAudit } from '../audit/auditLog.js';
+import { findStep } from '../discord/stepStore.js';
 import { allow } from '../http/access.js';
 import { loadById } from '../http/loadById.js';
 import { sendError } from '../http/errors.js';
@@ -142,7 +145,21 @@ const ROOM_FIELDS = {
   // Optional; a room is not guest-writable unless this says so.
   guestWritable: (v) =>
     v === undefined || typeof v === 'boolean' ? null : 'Guests may write must be true or false.',
+  // Optional: the Discord steps that open the room (docs/CHAT.md, "Rooms for Discord steps"),
+  // ids of steps, at most one per ladder (checked in save); [] removes the rule, absent keeps it.
+  stepIds: (v) =>
+    v === undefined || (Array.isArray(v) && v.length <= 3 && v.every(Number.isInteger))
+      ? null
+      : 'Steps must be a list of at most three step ids.',
 };
+
+// The steps a rule names must exist, one per ladder at most: an error message, or null.
+function stepRuleProblem(db, stepIds) {
+  const steps = stepIds.map((id) => findStep(db, id));
+  if (steps.some((s) => !s)) return 'No such step.';
+  const ladders = steps.map((s) => s.ladder);
+  return new Set(ladders).size === ladders.length ? null : 'At most one step per ladder.';
+}
 
 export function adminChatRoomRoutes(db) {
   const router = express.Router();
@@ -152,6 +169,17 @@ export function adminChatRoomRoutes(db) {
     const input = validBody(req, res, ROOM_FIELDS);
     if (!input) return;
     input.guestWritable = input.guestWritable === true;
+    const ruleProblem = input.stepIds && stepRuleProblem(db, input.stepIds);
+    if (ruleProblem) return sendError(res, 400, 'invalid_input', ruleProblem);
+    // A room for steps is for accounts only: guests have no steps.
+    if (input.stepIds?.length && input.guestWritable) {
+      return sendError(
+        res,
+        400,
+        'invalid_input',
+        'Guests cannot write in a room for Discord steps.'
+      );
+    }
     // Guests can only write where everyone may read and write.
     if (
       input.guestWritable &&

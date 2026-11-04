@@ -50,7 +50,11 @@ export const GUEST = { 'GET /auth/session': { body: { ok: true, user: null } } }
 export function signedIn(user) {
   return {
     'GET /auth/session': {
-      body: { ok: true, user: { id: 1, email: `${user.username}@example.org`, ...user } },
+      // hasPassword: every account but one made with Discord has one (docs/AUTH.md).
+      body: {
+        ok: true,
+        user: { id: 1, email: `${user.username}@example.org`, hasPassword: true, ...user },
+      },
     },
   };
 }

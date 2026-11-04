@@ -13,13 +13,14 @@ The chat can be placed as an iframe of `/embed/chat` on:
 header, sidebar or footer (`client/src/embed/EmbedChatPage.jsx`): the room, and for members a
 **Rooms | Direct** tab pair as in the chat drawer.
 
-- **room**: a room's slug, e.g. `general` or `seasonal-race`. Default `general`.
+- **room**: a room's slug, e.g. `general` or `seasonal-race`. Without it, the reader's first room
+  (docs/CHAT.md, "Which room opens"; `general` whenever they may read it).
 - **theme**: `light` or `dark` shows that theme in the frame without storing it; `auto`
   (default, also for any other value) follows the site's own rule: the visitor's stored choice,
   else the system setting.
 - **Room rules apply unchanged**: a guest can read `general` but not `seasonal-race` (members
-  only); there the frame shows "No such room." and no message field, exactly as the API answers
-  a guest.
+  only); there the frame opens the guest's first room with "This room isn't available." (the same
+  as for a room that does not exist); a reader with no room at all gets "No rooms available." instead.
 - **After an update of the site** the frame shows "A new version of the chat is available." with
   a Reload button at its top, by the site's own rule (`client/src/app/UpdateNotice.jsx`;
   docs/DEPLOYMENT.md, "What visitors see"; since 2026-11-02). Reload reloads only the frame.
@@ -153,7 +154,7 @@ Every message is a plain object with a `source` and a `type`. Both sides check t
 
 | `type`   | Fields             | When                                                                                                             |
 | -------- | ------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `ready`  | `room`, `signedIn` | Once the account is known (and again if it changes).                                                             |
+| `ready`  | `room`, `signedIn` | Once the account is known (and again if it or the room shown changes); `room`: the room shown.                   |
 | `unread` | `room`, `count`    | Messages that arrived while the host said the chat is out of sight (`visible: false`); 0 again when it is shown. |
 | `resize` | `height` (px)      | The content's height changed, for a host that sizes the frame.                                                   |
 

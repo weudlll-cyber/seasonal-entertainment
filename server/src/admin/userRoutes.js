@@ -35,7 +35,13 @@ const isBoolean = (label) => (value) =>
 
 // chat: the chat handle (chat/mount.js): its sessions interface (open sockets follow account
 // changes) and its accounts interface (the chat's part of deleting an account).
-export function adminUserRoutes(db, config, { sessions: chatSessions, accounts: chatAccounts }) {
+// discord: the Discord handle or null (discord/index.js): a deleted account's token is revoked.
+export function adminUserRoutes(
+  db,
+  config,
+  { sessions: chatSessions, accounts: chatAccounts },
+  discord
+) {
   const router = express.Router();
 
   // Loaded after allow(): who may not use these routes cannot probe which ids exist.
@@ -136,8 +142,11 @@ export function adminUserRoutes(db, config, { sessions: chatSessions, accounts: 
     }
     const deleted = { username: req.target.username, role: req.target.role };
     const deletion = () =>
-      deleteAccount(db, { chatAccounts, journal: config.deletionJournal }, req.target, () =>
-        audit(req, 'user.delete', deleted)
+      deleteAccount(
+        db,
+        { chatAccounts, journal: config.deletionJournal, discord },
+        req.target,
+        () => audit(req, 'user.delete', deleted)
       );
     if (!guarded(res, deletion)) return;
     chatSessions.accountChanged(req.target.id);

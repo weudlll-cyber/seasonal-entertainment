@@ -49,19 +49,20 @@ run (see "Rollback").
 
 ### What it asks
 
-| Question                         | Answers-file key                                               | Notes                                                                                                  |
-| -------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| The site's domain                | `SITE_DOMAIN`                                                  | e.g. `example.org`                                                                                     |
-| Should www redirect to it?       | `WWW_REDIRECT`                                                 | `yes`/`no`; `www.example.org` then needs its own A record                                              |
-| The call service's domain        | `CALLS_DOMAIN`                                                 | e.g. `calls.example.org`; empty: no calls (explained below)                                            |
-| Record calls?                    | `RECORDING`                                                    | `yes`/`no`; only with calls (explained below; docs/CALLS.md, "Recording")                              |
-| Email for Let's Encrypt          | `ACME_EMAIL`                                                   | certificate notices                                                                                    |
-| The bots' files                  | `PRICE_BOT_DB`, `PRICE_BOT_MINING_RATES`, `EVENT_BOT_DB`       | paths on this server; empty: that data source stays off (docs/BOTS.md)                                 |
-| The age public key for backups   | `BACKUP_RECIPIENT`                                             | `age1…`; empty: add later with `--backups` (see "Backups")                                             |
-| CoinGecko Demo API key           | —                                                              | hidden, on a terminal, once; empty: no prices; later with `--coingecko`                                |
-| The event bot's admin page       | `BOT_ADMIN_URL`, `BOT_ADMIN_TOKEN_FILE`, `BOT_ADMIN_TOKEN_KEY` | nginx mode only; empty: none, not asked again; later with `--bot-admin` ("The event bot's admin page") |
-| The first admin's name and email | `ADMIN_NAME`, `ADMIN_EMAIL`                                    | asked at the end                                                                                       |
-| The first admin's password       | —                                                              | **always** typed on the terminal, shown as `*`; never from a file or flag                              |
+| Question                         | Answers-file key                                                      | Notes                                                                                                  |
+| -------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| The site's domain                | `SITE_DOMAIN`                                                         | e.g. `example.org`                                                                                     |
+| Should www redirect to it?       | `WWW_REDIRECT`                                                        | `yes`/`no`; `www.example.org` then needs its own A record                                              |
+| The call service's domain        | `CALLS_DOMAIN`                                                        | e.g. `calls.example.org`; empty: no calls (explained below)                                            |
+| Record calls?                    | `RECORDING`                                                           | `yes`/`no`; only with calls (explained below; docs/CALLS.md, "Recording")                              |
+| Email for Let's Encrypt          | `ACME_EMAIL`                                                          | certificate notices                                                                                    |
+| The bots' files                  | `PRICE_BOT_DB`, `PRICE_BOT_MINING_RATES`, `EVENT_BOT_DB`              | paths on this server; empty: that data source stays off (docs/BOTS.md)                                 |
+| The age public key for backups   | `BACKUP_RECIPIENT`                                                    | `age1…`; empty: add later with `--backups` (see "Backups")                                             |
+| CoinGecko Demo API key           | —                                                                     | hidden, on a terminal, once; empty: no prices; later with `--coingecko`                                |
+| Discord login                    | `DISCORD_CLIENT_ID`, `DISCORD_GUILD_ID`, `DISCORD_CLIENT_SECRET_FILE` | once; the secret from a file or typed hidden; empty: none; later with `--discord` ("Discord login")    |
+| The event bot's admin page       | `BOT_ADMIN_URL`, `BOT_ADMIN_TOKEN_FILE`, `BOT_ADMIN_TOKEN_KEY`        | nginx mode only; empty: none, not asked again; later with `--bot-admin` ("The event bot's admin page") |
+| The first admin's name and email | `ADMIN_NAME`, `ADMIN_EMAIL`                                           | asked at the end                                                                                       |
+| The first admin's password       | —                                                                     | **always** typed on the terminal, shown as `*`; never from a file or flag                              |
 
 Before the calls question, the installer explains on the terminal what calls are (voice and
 video rooms on the site: a stage with up to 10 speakers and up to 200 listeners), what they need
@@ -226,6 +227,44 @@ unknown names there (no other site on 443): drop the `listen 443` line. The inst
 catch-all: it counts as another site on 443, keeps out of its way, and its check of the answer for
 unknown names compares with no answer before and after (the installer tests' nginx scenario adds
 it before `--update`).
+
+### Discord login
+
+Members log in with Discord and show their steps from the Seasonal Tokens Discord server
+(docs/AUTH.md, "Discord"). It is optional: without it, the site has no Discord button and
+everything else works.
+
+**At Discord** (the Developer Portal, the application's OAuth2 page):
+
+- **Redirects**: exactly `https://<your domain>/api/auth/discord/callback`. Discord compares it
+  character for character. Type it, don't paste it: on 2026-11-02 the entries carried three
+  invisible leading spaces, and every login failed with "Invalid OAuth2 redirect_uri" until they
+  were typed again. To check, choose that redirect in the portal's URL generator: the URL it
+  builds must contain `redirect_uri=https%3A...` with no `+` before it.
+- **Public client**: off (the server keeps the secret).
+- No bot is needed, and none should be added to the Seasonal Tokens server: the site reads a
+  member's roles with their own consent (scope `guilds.members.read`).
+- Worth setting: the links to the terms and the privacy page (shown on Discord's consent page).
+
+**On the server**: the installer asks once, on a terminal, after the CoinGecko key:
+
+- the application's **client id** (Enter: no Discord login; remembered as `DISCORD=none` and not
+  asked again);
+- the **Seasonal Tokens server's id** (default `902220302199689266`);
+- the **client secret**: the path of a file holding it, or typed hidden (`*`). It is stored only
+  in `deploy/site/site.env` (mode 600) and never shown or logged. A file is the safer way (no
+  terminal history); delete that file afterwards.
+
+The answers file takes `DISCORD_CLIENT_ID`, `DISCORD_GUILD_ID` and `DISCORD_CLIENT_SECRET_FILE`
+(the secret itself never goes into it). To add, change or remove it later, run
+`sudo ./deploy/install.sh --discord`; Enter at the client id there removes the settings. It also
+goes with `--update` (`--update --discord`), not with `--yes`. The site then reads
+`DISCORD_CLIENT_ID`, `DISCORD_GUILD_ID` and `DISCORD_CLIENT_SECRET`; the redirect it sends to
+Discord is `PUBLIC_ORIGIN` + `/api/auth/discord/callback` (docs/ARCHITECTURE.md, "Runtime
+configuration").
+
+The steps ship with their role ids and icons (`server/src/discord/seed/`, inserted on the first
+start into a database that never had steps); Admin → Discord steps changes them.
 
 ### The event bot's admin page
 
@@ -745,7 +784,7 @@ The scenarios:
   an earlier installer left the first server: the second install must remove exactly those two
   and say so. Every run is on a terminal without `--yes`: the first install must ask the
   CoinGecko key (answered empty), the later runs must not (`run-installer.exp` fails if they
-  do). The "KEEP SAFE" note must show on the first install only, each run takes one backup ("the
+  do). The Discord login's client id is answered empty the same way. The "KEEP SAFE" note must show on the first install only, each run takes one backup ("the
   first one" only the first time). With backups set up, the checkout tracks a bare "origin"
   repository inside the server; after the re-run origin gets a newer commit. `--update` must
   first refuse while a tracked file is modified (same commit, site not restarted), then take
@@ -774,9 +813,11 @@ The script takes the scenarios as arguments (`bash deploy/test/run.sh nginx`). I
 carries the label `seasonal.test` and is removed at the end (`KEEP=1` keeps it). Not testable
 there: UDP media from outside (the PC's Docker network is not the internet).
 
-A quick one runs in CI: `bash deploy/test/bot-admin-token.test.sh` (no root, no Docker) checks
+Two quick ones run in CI (no root, no Docker): `bash deploy/test/bot-admin-token.test.sh` checks
 how the event bot's token is read from its env file and which tokens nginx can carry ("The
-event bot's admin page", "The token").
+event bot's admin page", "The token"); `bash deploy/test/discord.test.sh` checks how the Discord
+settings are taken (from a secret file or the terminal, asked once, removed with `--discord`,
+the secret never shown; "Discord login").
 
 ## Reference: the manual steps
 
@@ -990,6 +1031,7 @@ systemctl start seasonal-backup.service && ls /var/backups/seasonal
 CI (`.github/workflows/ci.yml`, job "deployment files") builds the image (no push) and starts it
 in production mode against `/api/health`. It validates both compose projects and all Caddyfiles
 (also with the installer's sites folder), runs the PC side's tests (PowerShell for Windows, POSIX
-sh for Linux and macOS) and the installer's token test (`deploy/test/bot-admin-token.test.sh`),
+sh for Linux and macOS) and the installer's token and Discord tests
+(`deploy/test/bot-admin-token.test.sh`, `deploy/test/discord.test.sh`),
 and runs shellcheck over the installer, its tests and the PC side's
 shell script, on every pull request.

@@ -98,6 +98,7 @@ export default function DirectConversation({ partner, me, keyId, privateKey }) {
           type="button"
           className="chat-link-button"
           aria-label="All private conversations"
+          title="Back to all private conversations"
           onClick={() => showDirect(null)}
         >
           ←

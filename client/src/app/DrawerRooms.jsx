@@ -4,22 +4,25 @@
 // Project:     Seasonal Entertainment
 // Description: The chat drawer's Rooms tab: the room picker (a member's favourite rooms first)
 //              with the star and bell for the current room and each room's unread count (dimmed
-//              when muted), and the compact
-//              chat panel of that room.
-//              This browser remembers the last room (chatDrawerState.js).
+//              when muted), and the compact chat panel of that room; "No rooms available."
+//              (NoRooms) when the reader has none. This browser remembers the last room
+//              (chatDrawerState.js); one the reader may no longer read gives way to their first
+//              (roomToShow, the rule of every chat host: docs/CHAT.md, "Which room opens").
 // ============================================================
 
 import { useState } from 'react';
 import {
   ChatPanel,
+  NoRooms,
   RoomBell,
   RoomStar,
   groupRooms,
+  roomToShow,
   useChatRooms,
   useFavourites,
   useUnread,
 } from '../chat/index.js';
-import { readDrawerState, rememberDrawerRoom, roomToShow } from './chatDrawerState.js';
+import { readDrawerState, rememberDrawerRoom } from './chatDrawerState.js';
 import RoomPicker, { seasonOf } from './RoomPicker.jsx';
 
 export default function DrawerRooms() {
@@ -37,7 +40,8 @@ export default function DrawerRooms() {
     rememberDrawerRoom(slug);
   }
 
-  if (!info || !room) return null;
+  if (!info) return null;
+  if (!room) return <NoRooms />;
   return (
     <>
       <div className="chat-drawer__rooms">

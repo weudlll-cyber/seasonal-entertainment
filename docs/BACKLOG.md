@@ -15,8 +15,22 @@ entry waits for.
   it (the installer's bot-file answers, docs/DEPLOYMENT.md, "What it asks").
 - **Imprint and Privacy** — drafts; need the owner's details and a legal review. Privacy's "Call
   recordings" holds a proposal to review; only its contact address is left to fill.
+- **Farmer step icons** — the shipped seed's eight Farmer icons are byte for byte the eight
+  Holder icons (`server/src/discord/seed/icons/`, exported 2026-11-03 from the PC's steps). Meant
+  so, or to be uploaded anew and exported again (found 2026-11-04).
 
 ### To try on the live server
+
+- **Discord login on the live site** — set the production redirect at Discord (typed, not
+  pasted; check it in the portal's URL generator: no `+` before `https`), then
+  `sudo ./deploy/install.sh --update --discord`. The steps (names, order, role ids, icons) come
+  with the update: the PC's 20 steps with role ids and icons are in the project's seed (exported
+  2026-11-03), and the live site inserts them on its first start with Discord steps; steps
+  changed on the PC later need the export again (`npm run steps:export`, then commit) before the
+  update (docs/AUTH.md, "Discord: steps"). Worth adding at Discord: the links to the terms and
+  the privacy page.
+- **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
+  restore one nightly backup there once, as docs/DEPLOYMENT.md describes, and check the site.
 
 - **A recorded call on the VPS** — call recording is tested with a real egress on the PC; one
   real recorded call on the server is still to try (docs/CALLS.md, "Recording"). Also untested
@@ -24,23 +38,79 @@ entry waits for.
   LiveKit logged "could not validate external IP" at start (docs/DEPLOYMENT.md,
   "Troubleshooting").
 
+### Planned for later
+
+- **Settings export/import between the PC test site and the live site** — later (decided
+  2026-11-03): carrying settings over by hand for now; the Discord steps alone already travel
+  with the project's seed (`npm run steps:export`).
+
 ### Proposals not decided
 
-- **Login with Discord or Telegram** — accounts use a username and password (2FA for organisers
-  and admins); logging in with a Discord or Telegram account is not built.
-- **Telegram-login recovery codes** — direction decided 2026-10-17: recovery codes apply to
-  Telegram logins too, which have no password to derive a wrapping key from (docs/AUTH.md).
-- **Group roles** — site roles tied to Discord or Telegram groups are not built.
+- **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
+  login is not planned, decided 2026-11-02).
 - **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
   own repository and is not connected.
+- **Discord review of 2026-11-04 (listed, not built: they change behaviour)**:
+  - **A local copy of the database on every `--update`** — today the update takes a backup only
+    when backups are set up (`deploy/install/lib/update.sh`); without them it only warns.
+  - **Revoke Discord grants that are dropped** — the callback for someone already logged in, and
+    a sign-up never finished, leave their fresh grant alive at Discord (sealed nowhere, so
+    unusable; it stays listed under the member's authorised apps).
+  - **Re-check open chat connections after admin step changes** — a room rule, a step's role id
+    or the ladder order changed in Admin re-checks access at the next push only; the member's
+    room list updates at their next reload (a member's own read re-checks at once).
+  - **"Icon from link" downloads up to 2 MB** for an icon whose limit is 256 KB
+    (`server/src/discord/iconLink.js`, `server/src/media/icons.js`): the larger download is
+    refused after it arrived.
+  - **A mention in a call's chat links to `/chat?room=<call room>`** — it opens there while
+    readable; the call page would be the better place.
+  - **The embedded chat says `ready` twice without `?room=`** — once before the room is chosen,
+    once after.
+  - **A short call title on the home page's "Next call" box is a link under 44 px** — a call named
+    "Fit" (`client/e2e/callFit.spec.js`) made `speed.spec.js` fail once in a full run when it was
+    the next call (`client/src/pages/NextCallCard.jsx`); alone the spec passes.
 
 ### Known limits
+
+- **A restore cannot revoke Discord tokens** — an account deleted after a backup is deleted again
+  by the restore (its Discord link with it), but its refresh token is not revoked at Discord
+  then: the restore has no connection to Discord. It ends unused, or when the member removes the
+  app in Discord.
+- **A lost refresh token** — Discord rotates refresh tokens; if the server stops between
+  Discord's answer and the save (one statement), the new token is lost and the member must log
+  in with Discord again (docs/AUTH.md, "Discord: steps and the daily read").
+- **The browser tests' `memberPage` and `--repeat-each`** — on a second repeat in the same run,
+  the helper (`client/e2e/members.js`) did not find the key pair a first login had made, and
+  waited for the first-login dialog: seen with `discord.spec.js` (2026-11-03), which therefore
+  logs each member in once per worker. Single runs are not affected; the cause is not known yet.
+- **The phone touch-target test meets another spec's call** — `speed.spec.js` ("on a phone every
+  control is a 44px target", `/`) failed once (2026-11-03) on the link of the call "Fit" that
+  `callFit.spec.js` had open at that moment (the home page's live call); the browser tests passed
+  158 of 158 when run again. Two specs sharing the run's database, not a fault of either page.
+- **One link-preview test is slow under load** — `chatPreviews.test.js` ("a member link gets an
+  Open Graph card") hit its 9-second wait once in a full verify on 2026-11-02 and passed 3 of 3
+  alone.
 
 - **A deleted account's messages on pages already open** — deleting an account deletes its room
   messages at once (docs/AUTH.md, "Deleting an account"), but chat pages that are already open
   keep showing them until they reload: no event tells open pages to remove them.
 
 ## PART TWO — closed
+
+- **Login with Discord, steps and rooms for steps** — closed by `feat/se-discord` (SE-DISCORD-1,
+  decided 2026-11-02): Discord is the primary login (OAuth2 with state and PKCE, scopes
+  `identify` and `guilds.members.read` only), username and password stay for people without
+  Discord; existing accounts link and unlink. Steps from the Seasonal Tokens server in three
+  ladders, mapped by admins (role ids, order, icons), read at every login and once a day with
+  strict refresh-token rotation; shown as one badge next to names (variant C); rooms open from a
+  chosen step on; steps never grant rights. Accounts without a password protect their
+  private-message key with a recovery code or a password. Installer questions, privacy page and
+  docs (docs/AUTH.md, docs/CHAT.md, docs/DEPLOYMENT.md).
+- **Group roles from Discord** — closed by `feat/se-discord`: Discord roles show as steps and open
+  rooms (above); they grant no site rights (decided 2026-11-02).
+- **Telegram login and its recovery codes** — closed by decision (2026-11-02): no Telegram login.
+  The direction of 2026-10-17 (recovery codes for logins without a password) is built for Discord
+  accounts instead.
 
 - **Bot events listed twice** — closed by `fix/se-event-dedupe` (decided 2026-11-02): the event
   bot keeps one occurrence per announcement channel; the site lists an event at one start once,

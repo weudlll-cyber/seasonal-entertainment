@@ -15,6 +15,7 @@ import { describe, expect, it } from 'vitest';
 import { base64Length } from '@seasonal-entertainment/shared/cryptoFormat.js';
 import { deriveAccountKeys } from '@seasonal-entertainment/shared/crypto.js';
 import App from '../app/App.jsx';
+import { PASSWORDS_DIFFER } from '../components/RepeatPasswordField.jsx';
 import { GUEST, NO_KEY, PRELOGIN, PRELOGIN_SALT, mockApi, signedIn } from '../test/mockApi.js';
 
 const anna = { id: 1, username: 'anna', email: 'anna@example.org', role: 'member' };
@@ -40,9 +41,24 @@ describe('Register page', () => {
     type('Username', 'anna');
     type('Email', 'anna@example.org');
     type('Password', 'correct-horse-1');
+    type('Repeat password', 'correct-horse-1');
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('at least 14');
     // Nothing was sent (the page shell's own reads, such as the Calls summary, do not count).
+    expect(calls.filter((c) => !c.key.startsWith('GET '))).toEqual([]);
+  });
+
+  it('refuses to send when the repeated password differs, and says so at the field', async () => {
+    const calls = mockApi(GUEST);
+    renderAt('/register');
+    type('Username', 'anna');
+    type('Email', 'anna@example.org');
+    type('Password', 'correct-horse-1');
+    type('Repeat password', 'correct-horse-2');
+    fireEvent.click(screen.getByLabelText(/at least 14 years old/));
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(PASSWORDS_DIFFER);
+    expect(screen.getByLabelText('Repeat password')).toHaveAttribute('aria-invalid', 'true');
     expect(calls.filter((c) => !c.key.startsWith('GET '))).toEqual([]);
   });
 
@@ -61,6 +77,7 @@ describe('Register page', () => {
     type('Username', 'anna');
     type('Email', 'anna@example.org');
     type('Password', 'correct-horse-1');
+    type('Repeat password', 'correct-horse-1');
     fireEvent.click(screen.getByLabelText(/at least 14 years old/));
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
     // The popup's own step again, naming the site that asked.
@@ -76,6 +93,7 @@ describe('Register page', () => {
     type('Username', 'anna');
     type('Email', 'anna@example.org');
     type('Password', 'correct-horse-1');
+    type('Repeat password', 'correct-horse-1');
     fireEvent.click(screen.getByLabelText(/at least 14 years old/));
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
     expect(await screen.findByRole('heading', { name: 'Account' })).toBeInTheDocument();
@@ -90,6 +108,7 @@ describe('Register page', () => {
     type('Username', 'anna');
     type('Email', 'anna@example.org');
     type('Password', 'correct-horse-1');
+    type('Repeat password', 'correct-horse-1');
     fireEvent.click(screen.getByLabelText(/at least 14 years old/));
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
     expect(await screen.findByRole('heading', { name: 'Account' })).toBeInTheDocument();
@@ -122,6 +141,7 @@ describe('Register page', () => {
     type('Username', 'anna');
     type('Email', 'anna@example.org');
     type('Password', 'correct-horse-1');
+    type('Repeat password', 'correct-horse-1');
     fireEvent.click(screen.getByLabelText(/at least 14 years old/));
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('already registered');
@@ -197,6 +217,12 @@ describe('Account page', () => {
     );
     type('Current password', 'correct-horse-1');
     type('New password', 'battery-staple-2');
+    // A typo in the repeat first: nothing is sent, the message shows at the field.
+    type('Repeat password', 'battery-staple-3');
+    fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(PASSWORDS_DIFFER);
+    expect(calls.some((c) => c.key === 'POST /auth/password')).toBe(false);
+    type('Repeat password', 'battery-staple-2');
     fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Password changed');
     const { body } = calls.find((c) => c.key === 'POST /auth/password');

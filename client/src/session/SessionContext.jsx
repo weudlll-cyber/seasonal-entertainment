@@ -5,7 +5,8 @@
 // Description: Who is signed in, the site settings the browser needs (they come with the
 //              session; useSiteSettings, with the shared defaults until then) and which optional
 //              features the server is set up for (features.botAdmin: the event bot's admin
-//              page, off until the server says otherwise). Loads
+//              page; features.discord: the Discord login; both off until the server says
+//              otherwise). Loads
 //              /api/auth/session on start; pages call setUser after login/registration,
 //              refresh() after changing the account (e.g. 2FA), and logout() to sign out.
 // ============================================================
@@ -16,7 +17,7 @@ import { api } from '../api/http.js';
 
 const SessionContext = createContext(null);
 // Optional server features: all off until the session answer names them.
-const NO_FEATURES = { botAdmin: false };
+const NO_FEATURES = { botAdmin: false, discord: false };
 
 export function SessionProvider({ children }) {
   // undefined = still loading, null = guest, object = signed-in user

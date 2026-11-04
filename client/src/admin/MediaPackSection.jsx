@@ -3,31 +3,28 @@
 // Path:        client/src/admin/MediaPackSection.jsx
 // Project:     Seasonal Entertainment
 // Description: One pack on the admin "Chat media" page: rename, (de)activate, move up/down,
-//              its items (MediaItemRow), and the upload form. The server checks the real file
-//              type and the limits; the file picker only pre-filters.
+//              its items (MediaItemRow), and the upload form of one or many files
+//              (MediaUploadForm). The server checks the real file type and the limits; the file
+//              picker only pre-filters.
 // ============================================================
 
 import { useState } from 'react';
-import { api, upload } from '../api/http.js';
+import { api } from '../api/http.js';
 import MediaItemRow from './MediaItemRow.jsx';
+import MediaUploadForm from './MediaUploadForm.jsx';
 
-const ACCEPT = { sticker: 'image/webp,image/png', gif: 'image/gif,image/webp' };
-
-export default function MediaPackSection({ pack, isFirst, isLast, onMove, onRun }) {
+// refused, onUploaded: the last upload's refused files, kept by the page (MediaUploadForm).
+export default function MediaPackSection({
+  pack,
+  isFirst,
+  isLast,
+  onMove,
+  onRun,
+  refused,
+  onUploaded,
+}) {
   const [draft, setDraft] = useState({ name: pack.name, active: pack.active });
   const kindLabel = pack.kind === 'sticker' ? 'Stickers' : 'GIFs';
-
-  function uploadItem(event) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const data = new FormData(form);
-    const fields = { name: data.get('name'), alt: data.get('alt') };
-    if (data.get('credit')) fields.credit = data.get('credit');
-    onRun(async () => {
-      await upload(`/admin/chat/media/packs/${pack.id}/items`, form.elements.file.files[0], fields);
-      form.reset();
-    });
-  }
 
   return (
     <section className="admin-media-pack" aria-label={`${kindLabel}: ${pack.name}`}>
@@ -87,35 +84,7 @@ export default function MediaPackSection({ pack, isFirst, isLast, onMove, onRun 
           </tbody>
         </table>
       </div>
-      <form className="admin-row-actions" onSubmit={uploadItem}>
-        <input
-          type="file"
-          name="file"
-          accept={ACCEPT[pack.kind]}
-          aria-label={`File for ${pack.name}`}
-          required
-        />
-        <input
-          name="name"
-          aria-label={`New item name in ${pack.name}`}
-          placeholder="Name"
-          required
-        />
-        <input
-          name="alt"
-          aria-label={`New item alt text in ${pack.name}`}
-          placeholder="Alt text"
-          required
-        />
-        <input
-          name="credit"
-          aria-label={`New item credit in ${pack.name}`}
-          placeholder="Credit (optional)"
-        />
-        <button className="button" type="submit">
-          Upload
-        </button>
-      </form>
+      <MediaUploadForm pack={pack} refused={refused} onUploaded={onUploaded} />
     </section>
   );
 }

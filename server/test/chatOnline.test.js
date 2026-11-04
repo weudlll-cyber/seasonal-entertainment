@@ -7,12 +7,13 @@
 //              counted; only the number goes out, never who; a new number is pushed to the
 //              readers of "general", the current one to each new reader, its own member
 //              included) and the newest 3 messages of "general", never a hidden one
-//              and nothing once that room is for members only.
+//              and nothing once that room is for members only or open only from a Discord step.
 // ============================================================
 
 import { afterEach, expect, it, vi } from 'vitest';
 import { connect, cookieOf, listeningChat, stopServer } from './helpers/chatSocket.js';
 import { post } from './helpers/chat.js';
+import { seedTestSteps } from './helpers/steps.js';
 import { registerUser } from './helpers/testApp.js';
 
 let t;
@@ -88,4 +89,20 @@ it('shows the newest 3 visible messages of general, and none once it is for memb
 
   t.db.prepare("UPDATE chat_rooms SET read_access = 'members' WHERE slug = 'general'").run();
   expect(await glimpse()).toMatchObject({ room: null, messages: [] });
+});
+
+it('shows nothing of general once a Discord step rule closes it', async () => {
+  ({ t, server } = await listeningChat());
+  const { agent: mia } = await registerUser(t, 'mia');
+  await post(mia, 'general', 'for the whales only');
+  await seedTestSteps(t.db);
+  t.db
+    .prepare(
+      `INSERT INTO room_step_rules (room_id, step_id)
+       SELECT r.id, s.id FROM chat_rooms r, discord_steps s
+       WHERE r.slug = 'general' AND s.name = 'Golden'`
+    )
+    .run();
+  const glimpse = (await t.client().get('/api/chat/glimpse')).body;
+  expect(glimpse).toMatchObject({ room: null, messages: [] });
 });

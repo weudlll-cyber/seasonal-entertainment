@@ -15,7 +15,11 @@
 //              /api/auth/privacy: the member's own "Show when I'm online" and "Link previews in
 //              direct messages"; PUT /api/auth/notifications: which browser notifications they want
 //              (a mention, a new direct message, the weekly recap). DELETE /api/auth/account: the
-//              member's own deletion (deleteRoutes.js).
+//              member's own deletion (deleteRoutes.js). POST /api/auth/password/first: an account
+//              made with Discord sets its first password (proven by a fresh Discord login,
+//              identityProof.js), with its private key sealed for it in the same transaction. The
+//              session answer carries the account's Discord link and steps (discord/) and
+//              whether Discord login is set up (features.discord).
 // ============================================================
 
 import express from 'express';
@@ -30,11 +34,13 @@ import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { cookieName, endSession, restampSession, startSession } from '../http/session.js';
 import { mustBeTrue, validBody } from '../http/validate.js';
+import { accountView as discordAccountView } from '../discord/index.js';
 import { getSetting, publicSettings } from '../settings/store.js';
 import { twoFactorStatus } from '../twofa/gate.js';
 import { resealKey } from '../keys/store.js';
 import { authKeyField, optional, saltField, sealedKeyField } from './credentials.js';
 import { accountDeleteRoutes } from './deleteRoutes.js';
+import { discordProofUntil, provesIdentity } from './identityProof.js';
 import { loginRoutes } from './loginRoutes.js';
 import { provesPassword } from './passwordProof.js';
 import { hashPassword } from './passwords.js';
@@ -47,12 +53,23 @@ import {
 } from './userStore.js';
 
 // chat: the chat handle (chat/mount.js): its sessions interface (open sockets follow logouts and
-// changes) and its accounts interface (the chat's part of deleting an account).
-export function accountRoutes(db, config, { sessions: chatSessions, accounts: chatAccounts }) {
+// changes) and its accounts interface (the chat's part of deleting an account). discord: the
+// Discord handle (discord/index.js), or null while Discord is not set up.
+export function accountRoutes(
+  db,
+  config,
+  { sessions: chatSessions, accounts: chatAccounts, images },
+  discord
+) {
   const router = express.Router();
   const limits = config.rateLimits;
-  // What the client sees about the signed-in account, including its 2FA state.
-  const view = (user) => ({ ...publicUser(user), ...twoFactorStatus(db, config, user) });
+  // What the client sees about the signed-in account: its 2FA state and its Discord link
+  // (null without one, or while Discord is not set up).
+  const view = (user) => ({
+    ...publicUser(user),
+    ...twoFactorStatus(db, config, user),
+    discord: discord ? discordAccountView(db, user.id, images.url) : null,
+  });
   router.use(loginRoutes(db, config, view));
   const registerLimiter = makeLimiter(limits.register);
   // Keyed on the account, not the IP (see rateLimit.js).
@@ -60,17 +77,23 @@ export function accountRoutes(db, config, { sessions: chatSessions, accounts: ch
     failedOnly: true,
     keyGenerator: (req) => `user:${req.user.id}`,
   });
-  router.use(accountDeleteRoutes(db, config, { chatSessions, chatAccounts }, passwordLimiter));
+  router.use(
+    accountDeleteRoutes(db, config, { chatSessions, chatAccounts, discord }, passwordLimiter)
+  );
 
   // The settings every visitor's browser needs (shared/siteSettings.js) travel with it, and
   // which optional parts this server is set up for: features.botAdmin, the event bot's admin
-  // page (BOT_ADMIN_EMBEDDED; the sidebar's "Manage events" for staff).
+  // page (BOT_ADMIN_EMBEDDED; the sidebar's "Manage events" for staff); features.discord, the
+  // Discord login. discordProofUntil: until when this session's Discord login counts as proof
+  // for an account without a password (identityProof.js), so the page can ask for it in time.
   router.get('/session', allow('public'), (req, res) => {
     res.json({
       ok: true,
-      user: req.user ? view(req.user) : null,
+      user: req.user
+        ? { ...view(req.user), discordProofUntil: discordProofUntil(req.session) }
+        : null,
       settings: publicSettings(db),
-      features: { botAdmin: config.botAdminEmbedded },
+      features: { botAdmin: config.botAdminEmbedded, discord: Boolean(discord) },
     });
   });
 
@@ -133,6 +156,31 @@ export function accountRoutes(db, config, { sessions: chatSessions, accounts: ch
       return setPasswordHash(db, req.user.id, newHash, input.newSalt);
     })();
     // Every other session of this account ends; this one is re-stamped and stays.
+    await restampSession(req, epoch);
+    chatSessions.accountChanged(req.user.id, req.sessionID);
+    res.json({ ok: true });
+  });
+
+  // The first password of an account made with Discord (it had none): proven by a fresh Discord
+  // login, as nothing else could prove it. From then on it logs in with either. The private
+  // key sealed for the new password (when the device has it open) is stored in the same
+  // transaction; every other session of the account ends, as after a password change.
+  router.post('/password/first', allow('member'), passwordLimiter, async (req, res) => {
+    if (req.user.hasPassword) {
+      return sendError(res, 409, 'has_password', 'This account already has a password.');
+    }
+    const input = validBody(req, res, {
+      salt: saltField,
+      authKey: authKeyField('Password'),
+      sealedPrivateKey: optional(sealedKeyField),
+    });
+    if (!input) return;
+    if (!(await provesIdentity(db, config, req, res))) return;
+    const hash = await hashPassword(input.authKey, config.bcryptCost);
+    const epoch = db.transaction(() => {
+      if (input.sealedPrivateKey) resealKey(db, req.user.id, input.sealedPrivateKey);
+      return setPasswordHash(db, req.user.id, hash, input.salt);
+    })();
     await restampSession(req, epoch);
     chatSessions.accountChanged(req.user.id, req.sessionID);
     res.json({ ok: true });

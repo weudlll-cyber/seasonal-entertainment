@@ -12,18 +12,27 @@
 //              marks) and the files come from the chat handle (chat/accountData.js); the
 //              sessions are deleted here. The audit log and call recordings stay. After the
 //              commit the deletion is noted in the deletion journal (deletionJournal.js), so a
-//              restore of an older backup deletes the account again.
+//              restore of an older backup deletes the account again. An account linked to
+//              Discord has its token revoked at Discord after the commit (best effort).
 // ============================================================
 
 import { noteDeletion } from './deletionJournal.js';
 import { guardLastAdmin } from './userAdmin.js';
 
 // chatAccounts: the chat handle's accounts interface (chat/mount.js); journal: the deletion
-// journal's file (config.deletionJournal; none when a restore deletes again). user: the account
+// journal's file (config.deletionJournal; none when a restore deletes again); discord: the
+// Discord handle (discord/index.js; none while not set up, and in a restore). user: the account
 // as loaded now. alsoInTransaction: more writes that must commit with the deletion or not at
 // all (the admin route's audit entry). Throws LastAdminError (userAdmin.js) for the last active
 // admin, before anything is deleted.
-export function deleteAccount(db, { chatAccounts, journal }, user, alsoInTransaction = () => {}) {
+export function deleteAccount(
+  db,
+  { chatAccounts, journal, discord },
+  user,
+  alsoInTransaction = () => {}
+) {
+  // The link row goes with the account (cascade): its token is read before.
+  const revokeDiscord = discord?.revokerFor(user.id) ?? (() => {});
   const files = db.transaction(() => {
     guardLastAdmin(db, user, { deleted: true });
     const found = chatAccounts.deleteData(user.id);
@@ -39,6 +48,7 @@ export function deleteAccount(db, { chatAccounts, journal }, user, alsoInTransac
   // Only after the commit: a deletion that failed leaves every file in place, and is never
   // journaled (a restore would delete an account that still exists).
   chatAccounts.deleteFiles(files);
+  revokeDiscord();
   if (!journal) return;
   try {
     noteDeletion(journal, user);

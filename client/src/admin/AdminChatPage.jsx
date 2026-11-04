@@ -3,7 +3,8 @@
 // Path:        client/src/admin/AdminChatPage.jsx
 // Project:     Seasonal Entertainment
 // Description: Admin chat page: rooms (add, edit who may read and write, and whether guests
-//              may write: only where explicitly ticked; off for new rooms), reported messages
+//              may write: only where explicitly ticked; off for new rooms; while Discord login
+//              is set up, the Discord steps that open a room, RoomStepRule), reported messages
 //              (hide them, or keep them: marked reviewed, their preview shows again), reported
 //              private conversations (AdminDirectReports), active mutes and bans (lift them),
 //              and the weekly recap's "Post recap now" (AdminRecap).
@@ -16,6 +17,8 @@ import { formatWhen } from '../app/dates.js';
 import { FormMessage } from '../components/FormField.jsx';
 import AdminDirectReports from './AdminDirectReports.jsx';
 import AdminRecap from './AdminRecap.jsx';
+import { useSession } from '../session/SessionContext.jsx';
+import RoomStepRule from './RoomStepRule.jsx';
 
 const NEW_ROOM = {
   slug: '',
@@ -23,6 +26,7 @@ const NEW_ROOM = {
   readAccess: 'members',
   writeAccess: 'members',
   guestWritable: false,
+  stepRule: [],
 };
 
 function AccessSelect({ label, value, onChange }) {
@@ -37,8 +41,9 @@ function AccessSelect({ label, value, onChange }) {
   );
 }
 
-function RoomRow({ room, onSave }) {
-  const [draft, setDraft] = useState(room);
+// steps: every Discord step, or null while Discord login is not set up (no rule column).
+function RoomRow({ room, steps, onSave }) {
+  const [draft, setDraft] = useState({ ...room, stepIds: room.stepRule.map((s) => s.id) });
   const set = (name) => (value) => setDraft({ ...draft, [name]: value });
   const label = room.id ? room.name : 'new room';
   return (
@@ -79,6 +84,16 @@ function RoomRow({ room, onSave }) {
           onChange={(e) => set('guestWritable')(e.target.checked)}
         />
       </td>
+      {steps && (
+        <td>
+          <RoomStepRule
+            steps={steps}
+            value={draft.stepIds}
+            onChange={set('stepIds')}
+            label={label}
+          />
+        </td>
+      )}
       <td>
         <button className="button" type="button" onClick={() => onSave(draft)}>
           {room.id ? 'Save' : 'Add room'}
@@ -89,7 +104,10 @@ function RoomRow({ room, onSave }) {
 }
 
 export default function AdminChatPage() {
+  const { features } = useSession();
   const [data, setData] = useState({ rooms: [], reports: [], sanctions: [] });
+  // The Discord steps for the rooms' rules; null while Discord login is not set up.
+  const [steps, setSteps] = useState(null);
   const [error, setError] = useState(null);
   const [version, setVersion] = useState(0);
 
@@ -101,6 +119,13 @@ export default function AdminChatPage() {
       .catch((err) => setError(err.message));
   }, [version]);
 
+  useEffect(() => {
+    if (!features.discord) return;
+    api('/admin/discord')
+      .then((answer) => setSteps(answer.steps))
+      .catch((err) => setError(err.message));
+  }, [features.discord]);
+
   async function run(call) {
     setError(null);
     try {
@@ -111,11 +136,19 @@ export default function AdminChatPage() {
     }
   }
 
-  const saveRoom = ({ id, slug, name, readAccess, writeAccess, guestWritable }) =>
+  // stepIds only while the steps are known: without them the room's rule stays as it is.
+  const saveRoom = ({ id, slug, name, readAccess, writeAccess, guestWritable, stepIds }) =>
     run(() =>
       api(id ? `/admin/chat/rooms/${id}` : '/admin/chat/rooms', {
         method: id ? 'PUT' : 'POST',
-        body: { slug, name, readAccess, writeAccess, guestWritable },
+        body: {
+          slug,
+          name,
+          readAccess,
+          writeAccess,
+          guestWritable,
+          ...(steps && { stepIds }),
+        },
       })
     );
 
@@ -133,14 +166,15 @@ export default function AdminChatPage() {
               <th>Who reads</th>
               <th>Who writes</th>
               <th>Guests write</th>
+              {steps && <th>Discord steps (any of)</th>}
               <th />
             </tr>
           </thead>
           <tbody>
             {data.rooms.map((room) => (
-              <RoomRow key={`${room.id}-${version}`} room={room} onSave={saveRoom} />
+              <RoomRow key={`${room.id}-${version}`} room={room} steps={steps} onSave={saveRoom} />
             ))}
-            <RoomRow key={`new-${version}`} room={NEW_ROOM} onSave={saveRoom} />
+            <RoomRow key={`new-${version}`} room={NEW_ROOM} steps={steps} onSave={saveRoom} />
           </tbody>
         </table>
       </div>

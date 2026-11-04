@@ -2,8 +2,9 @@
 // File:        store.js
 // Path:        server/src/chat/store.js
 // Project:     Seasonal Entertainment
-// Description: Data access for the chat: rooms, guest names (unique while held), reports and
-//              sanctions. Messages: messages.js.
+// Description: Data access for the chat: rooms (with the Discord steps that open a room, if
+//              any: stepRule, docs/CHAT.md "Rooms for Discord steps"), guest names (unique while
+//              held), reports and sanctions. Messages: messages.js.
 // ============================================================
 
 import { randomBytes } from 'node:crypto';
@@ -11,8 +12,13 @@ import { GUEST_PREFIX } from '@seasonal-entertainment/shared/chatRules.js';
 import { base32Encode } from '../twofa/totp.js';
 
 const now = () => new Date().toISOString();
+// stepRule: the steps that open the room ([{ id, ladder, position }]; empty: no rule), read
+// with the step order as it is now, so reordering the steps moves the rule along.
 const ROOM_COLUMNS = `id, slug, name, read_access AS readAccess, write_access AS writeAccess,
-  guest_writable AS guestWritable, position, listed, closed`;
+  guest_writable AS guestWritable, position, listed, closed,
+  (SELECT json_group_array(json_object('id', s.id, 'ladder', s.ladder, 'position', s.position))
+     FROM room_step_rules rr JOIN discord_steps s ON s.id = rr.step_id
+     WHERE rr.room_id = chat_rooms.id) AS stepRule`;
 
 const toRoom = (row) =>
   row && {
@@ -20,6 +26,7 @@ const toRoom = (row) =>
     guestWritable: row.guestWritable === 1,
     listed: row.listed === 1,
     closed: row.closed === 1,
+    stepRule: JSON.parse(row.stepRule),
   };
 
 // --- rooms ---------------------------------------------------------------------------
@@ -54,7 +61,21 @@ export function findRoom(db, id) {
   return toRoom(db.prepare(`SELECT ${ROOM_COLUMNS} FROM chat_rooms WHERE id = ?`).get(id));
 }
 
+// room.stepIds (optional): the steps that open the room, at most one per ladder (checked by the
+// route); given, it replaces the rule, [] removes it.
 export function saveRoom(db, room, id) {
+  return db.transaction(() => {
+    const saved = saveRoomRow(db, room, id);
+    if (room.stepIds) {
+      db.prepare('DELETE FROM room_step_rules WHERE room_id = ?').run(saved.id);
+      const insert = db.prepare('INSERT INTO room_step_rules (room_id, step_id) VALUES (?, ?)');
+      for (const stepId of room.stepIds) insert.run(saved.id, stepId);
+    }
+    return findRoom(db, saved.id);
+  })();
+}
+
+function saveRoomRow(db, room, id) {
   const values = [
     room.slug,
     room.name,

@@ -112,3 +112,65 @@
   display: grid;
   gap: 0.25rem;
 }
+
+/* Admin → Discord steps (AdminDiscordPage.jsx, StepRow.jsx): one row per step, the icon first,
+   name and role id with Save, then the row's buttons; the icon's file field hides in its
+   label, which looks like a button. */
+.step-ladder {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.step-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  align-items: center;
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.step-row .step-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.step-row__fields,
+.step-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.step-row__fields input {
+  min-height: var(--hit-target);
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.step-row__actions label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.step-row__actions input[type='file'] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* The room editor's Discord step rule (RoomStepRule.jsx): one choice per ladder, stacked. */
+.room-step-rule {
+  display: grid;
+  gap: 0.25rem;
+}

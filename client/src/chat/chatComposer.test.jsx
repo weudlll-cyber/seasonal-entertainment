@@ -3,7 +3,8 @@
 // Path:        client/src/chat/chatComposer.test.jsx
 // Project:     Seasonal Entertainment
 // Description: Guards the chat composer's emoji picker: open to everyone (guests too), an
-//              emoji goes into the text at the cursor, and the message is sent as plain text.
+//              emoji goes into the text at the cursor, and the message is sent as plain text;
+//              the keycap digits 0 to 9 are in Symbols.
 // ============================================================
 
 import { fireEvent, screen, within } from '@testing-library/react';
@@ -75,5 +76,23 @@ describe('emoji picker', () => {
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('region', { name: 'Seasons and nature' })).toBeInTheDocument();
+  });
+
+  it('has the keycap digits 0 to 9 in Symbols, in order, each with its name', async () => {
+    await guestChat();
+    fireEvent.click(await screen.findByRole('button', { name: 'Emoji' }));
+    const symbols = screen.getByRole('region', { name: 'Symbols' });
+    const digits = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+    const keycaps = within(symbols)
+      .getAllByRole('button')
+      .filter((button) => button.getAttribute('aria-label').startsWith('keycap '));
+    expect(keycaps.map((button) => button.getAttribute('aria-label'))).toEqual(
+      digits.map((digit) => `keycap ${digit}`)
+    );
+    expect(keycaps.map((button) => button.textContent)).toEqual(
+      [...'0123456789'].map((digit) => `${digit}️⃣`)
+    );
+    fireEvent.click(within(symbols).getByRole('button', { name: 'keycap seven' }));
+    expect(screen.getByLabelText('Message')).toHaveValue('7️⃣');
   });
 });

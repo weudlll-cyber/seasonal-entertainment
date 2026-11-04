@@ -5,7 +5,8 @@
 // Description: One chat message: author (with a Guest badge; an admin's or organiser's name in
 //              its role colour with an Admin / Organiser badge; a member's name opens the name
 //              menu, NameMenu; the site's own messages, the weekly recap, carry a Site badge and
-//              their site paths as links), local time, then its text (MessageParts: members'
+//              their site paths as links; the author's Discord steps after the name and staff
+//              badge, StepBadge, variant C), local time, then its text (MessageParts: members'
 //              https links become links, @mentions name chips) and its sticker / GIF from the
 //              site's library, a link preview card (PreviewCard), an uploaded file (MessageFile),
 //              and its "…" menu (MessageMenu: Report; for moderators Hide / Mute / Ban / Remove
@@ -18,6 +19,7 @@ import MessageMenu, { roomMessageActions } from './MessageMenu.jsx';
 import { MessageMedia, MessageText } from './MessageParts.jsx';
 import NameMenu from './NameMenu.jsx';
 import PreviewCard from './PreviewCard.jsx';
+import StepBadge from './StepBadge.jsx';
 import './ChatMessage.css';
 
 // The staff badge after an admin's or organiser's name; the role comes from the server
@@ -43,9 +45,10 @@ export default function ChatMessage({ message, moderator, onAction }) {
         {message.isSystem ? (
           <strong>{message.author}</strong>
         ) : (
-          <NameMenu name={message.author} authorId={message.authorId} />
+          <NameMenu name={message.author} authorId={message.authorId} steps={message.authorSteps} />
         )}
         {staff && <span className={`chat-badge chat-badge--${message.authorRole}`}>{staff}</span>}
+        <StepBadge steps={message.authorSteps} />
         {message.isGuest && <span className="chat-badge">Guest</span>}
         {message.isSystem && <span className="chat-badge">Site</span>}
         <time dateTime={message.createdAt}>{time(message.createdAt)}</time>

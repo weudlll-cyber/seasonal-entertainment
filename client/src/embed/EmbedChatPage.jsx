@@ -3,20 +3,22 @@
 // Path:        client/src/embed/EmbedChatPage.jsx
 // Project:     Seasonal Entertainment
 // Description: /embed/chat?room=<slug>&theme=<light|dark|auto>: the chat alone, compact, no site
-//              shell, for an iframe (docs/EMBED.md). Rooms for everyone; "Direct" for members. On
-//              this site's own pages (the games under the main domain) it uses the site's login
-//              cookie and device unlock exactly like the site. On an approved foreign site it has
-//              no cookie: "Log in" opens a popup on this site, which hands over an embed token and
-//              the unlocked key, both kept in memory only (useEmbedLogin.js); there a guest reads
-//              and writes as the site's rules allow (the "Other sites" settings or the site's own,
-//              given with the site's check; a guest name lasts through a guest token in the frame's
-//              storage), else gets "Log in to write" or "Log in to read", and members "Attach file"
-//              only where the site allows uploads, and members-only images (through short-lived
-//              links) only where it allows images. Until the site is verified the room waits. Talks
-//              to the framing page only once its origin is verified (embedProtocol.js): ready,
-//              unread (messages while the host says the chat is out of sight), resize; it takes
-//              visible and theme. After an update of the site it says "A new version of the chat
-//              is available" with Reload, by the site's own rule (UpdateNotice.jsx).
+//              shell, for an iframe (docs/EMBED.md). Without ?room=, or with a room the reader may
+//              not read, the reader's first room opens (RoomPanel). Rooms for everyone; "Direct"
+//              for members. On this site's own pages (the games under the main domain) it uses the
+//              site's login cookie and device unlock exactly like the site. On an approved foreign
+//              site it has no cookie: "Log in" opens a popup on this site, which hands over an
+//              embed token and the unlocked key, both kept in memory only (useEmbedLogin.js); there
+//              a guest reads and writes as the site's rules allow (the "Other sites" settings or
+//              the site's own, given with the site's check; a guest name lasts through a guest
+//              token in the frame's storage), else gets "Log in to write" or "Log in to read", and
+//              members "Attach file" only where the site allows uploads, and members-only images
+//              (through short-lived links) only where it allows images. Until the site is verified
+//              the room waits. Talks to the framing page only once its origin is verified
+//              (embedProtocol.js): ready, unread (messages while the host says the chat is out of
+//              sight), resize; it takes visible and theme. After an update of the site it says "A
+//              new version of the chat is available" with Reload, by the site's own rule
+//              (UpdateNotice.jsx).
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
@@ -24,7 +26,7 @@ import { useSearchParams } from 'react-router';
 import ChatTabs from '../app/ChatTabs.jsx';
 import DirectTab from '../app/DirectTab.jsx';
 import UpdateNotice from '../app/UpdateNotice.jsx';
-import { ChatPanel, onDirectRequest, useNewMessageCount, useUnread } from '../chat/index.js';
+import { RoomPanel, onDirectRequest, useNewMessageCount, useUnread } from '../chat/index.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import EmbedAccount, { LogInToRead, LogInToWrite } from './EmbedAccount.jsx';
@@ -53,7 +55,10 @@ function reportedParent() {
 
 export default function EmbedChatPage() {
   const [params] = useSearchParams();
-  const room = params.get('room') || 'general';
+  const asked = params.get('room');
+  const [shownRoom, setShownRoom] = useState(null); // RoomPanel's choice, once made
+  // What the host hears about (ready, unread): the room shown, else the one asked for.
+  const room = shownRoom ?? asked;
   const [reported] = useState(reportedParent);
   const [host, setHost] = useState(null); // the verified origin; null: talk to nobody
   const [theme, setTheme] = useState(() => themeOf(params.get('theme')));
@@ -128,8 +133,9 @@ export default function EmbedChatPage() {
           foreign && !host ? null : foreign && !user && !guestsMayRead() ? (
             <LogInToRead login={login} ready />
           ) : (
-            <ChatPanel
-              room={room}
+            <RoomPanel
+              room={asked}
+              onRoom={setShownRoom}
               variant="compact"
               files={!foreign || (Boolean(user) && embedUploads())}
               guestPrompt={

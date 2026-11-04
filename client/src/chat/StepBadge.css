@@ -1,0 +1,132 @@
+/* ============================================================
+   File:        StepBadge.css
+   Path:        client/src/chat/StepBadge.css
+   Project:     Seasonal Entertainment
+   Description: Discord steps (variant C, reports/discord-design/variant-c-*.png): the icons in
+                one outlined frame with thin separators, inside a button that is a full touch
+                target, its tooltip (hover, keyboard focus, or a tap, which sets --open), the neutral placeholder icons (the ladder's shape:
+                Holder round, Farmer square, Investor a diamond; neutral surface and border,
+                never a token colour) and the list of full names. Tokens with fallbacks, as the
+                chat module, which is also shown on other sites, uses them.
+   ============================================================ */
+
+/* The button: an invisible full touch target (44 x 44 px) around the small frame; the negative
+   margins keep the line as high as before. */
+.step-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--hit-target, 44px);
+  min-height: var(--hit-target, 44px);
+  margin: -14px 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.step-badge__frame {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  padding: 1px 5px;
+  border: 1px solid var(--color-border-strong, #a9b0ba);
+  border-radius: var(--radius-pill, 999px);
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.step-badge__item {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.step-badge__sep {
+  width: 1px;
+  height: 12px;
+  background: var(--color-border-strong, #a9b0ba);
+}
+
+.step-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.step-icon--placeholder {
+  box-sizing: border-box;
+  border: 1px solid var(--color-border-strong, #a9b0ba);
+  background: var(--color-surface-2, #f1f3f6);
+  color: var(--color-text, #14171c);
+  font-size: 0.5rem;
+  font-weight: 700;
+}
+
+.step-icon--placeholder.step-icon--holder {
+  border-radius: 50%;
+}
+
+.step-icon--placeholder.step-icon--farmer {
+  border-radius: 3px;
+}
+
+/* A diamond: the square turned, its letters turned back. */
+.step-icon--placeholder.step-icon--investor {
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  transform: rotate(45deg);
+}
+
+.step-icon--placeholder.step-icon--investor > span {
+  transform: rotate(-45deg);
+}
+
+.step-badge__tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 6;
+  display: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--color-solid, #14171c);
+  color: var(--color-on-solid, #ffffff);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.step-badge:hover .step-badge__tip,
+.step-badge:focus-visible .step-badge__tip,
+.step-badge--open .step-badge__tip {
+  display: block;
+}
+
+.step-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step-list li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.step-list small {
+  color: var(--color-text-muted, #4f5663);
+}

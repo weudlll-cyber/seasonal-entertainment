@@ -10,8 +10,11 @@
 //              re-sealing the key, setting or removing the recovery seal — needs the current
 //              password again (its auth key; failed tries limited per account), so a taken-over
 //              session alone can neither swap the keys others encrypt to nor take away a
-//              member's way back in. /check tells the browser whether a password is right at
-//              all.
+//              member's way back in. An account without a password (made with Discord) proves
+//              itself with a fresh Discord login instead (accounts/identityProof.js); its first
+//              key pair comes with its recovery seal in the same request, and then the recovery
+//              seal is also the stored sealed key (docs/CHAT.md, "Accounts without a
+//              password"). /check tells the browser whether a password is right at all.
 // ============================================================
 
 import express from 'express';
@@ -21,12 +24,19 @@ import {
   saltField,
   sealedKeyField,
 } from '../accounts/credentials.js';
-import { provesPassword } from '../accounts/passwordProof.js';
+import { provesIdentity } from '../accounts/identityProof.js';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { validBody } from '../http/validate.js';
 import { currentKey, resealKey, setRecovery, storeNewKey } from './store.js';
+
+// A recovery seal: the private key sealed with a key derived from the recovery code and salt.
+const recoveryField = (value) => {
+  if (value === undefined) return null;
+  if (typeof value !== 'object' || value === null) return 'Recovery must be { salt, sealed }.';
+  return saltField(value.salt) ?? sealedKeyField(value.sealed);
+};
 
 export function keyRoutes(db, config) {
   const router = express.Router();
@@ -36,15 +46,13 @@ export function keyRoutes(db, config) {
     keyGenerator: (req) => `user:${req.user.id}`,
   });
 
-  // Validates the body and the password proof; the cleaned input, or null after answering.
+  // Validates the body and the proof (the password's auth key; for an account without a
+  // password, a fresh Discord login); the cleaned input, or null after answering.
   async function provenInput(req, res, fields) {
-    const input = validBody(req, res, { authKey: authKeyField('Password'), ...fields });
+    const proof = req.user.hasPassword ? { authKey: authKeyField('Password') } : {};
+    const input = validBody(req, res, { ...proof, ...fields });
     if (!input) return null;
-    if (!(await provesPassword(db, config, req.user.id, input.authKey))) {
-      sendError(res, 401, 'invalid_credentials', 'The password is wrong.');
-      return null;
-    }
-    return input;
+    return (await provesIdentity(db, config, req, res, input.authKey)) ? input : null;
   }
 
   router.get('/me', allow('member'), (req, res) => {
@@ -58,17 +66,23 @@ export function keyRoutes(db, config) {
   });
 
   // The first key pair, made in the browser at registration or the first login after keys
-  // were introduced.
+  // were introduced; for an account without a password, before its first private message,
+  // with the recovery seal (recovery: { salt, sealed }) stored at once.
   router.post('/', allow('member'), perUser, async (req, res) => {
     const input = await provenInput(req, res, {
       publicKey: publicKeyField,
       sealedPrivateKey: sealedKeyField,
+      recovery: recoveryField,
     });
     if (!input) return;
     if (currentKey(db, req.user.id)) {
       return sendError(res, 409, 'key_exists', 'This account already has a key.');
     }
-    const keyId = storeNewKey(db, req.user.id, input.publicKey, input.sealedPrivateKey);
+    const keyId = db.transaction(() => {
+      const id = storeNewKey(db, req.user.id, input.publicKey, input.sealedPrivateKey);
+      if (input.recovery) setRecovery(db, req.user.id, input.recovery);
+      return id;
+    })();
     res.status(201).json({ ok: true, keyId });
   });
 

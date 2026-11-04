@@ -4,13 +4,14 @@
 // Project:     Seasonal Entertainment
 // Description: Data access for the users table. Rows come back as plain objects in
 //              camelCase; the stored hash (bcrypt of the browser's auth key) never leaves this
-//              module except for verification.
+//              module except for verification. hasPassword says whether there is one at all:
+//              an account made with Discord may have none (docs/AUTH.md, "Discord").
 // ============================================================
 
 const COLUMNS = `id, username, email, role, can_start_games AS canStartGames, locked,
   session_epoch AS sessionEpoch, show_online AS showOnline, dm_link_previews AS dmLinkPreviews,
   notify_mentions AS notifyMentions, notify_direct AS notifyDirect, notify_recap AS notifyRecap,
-  created_at AS createdAt`;
+  (password_hash IS NOT NULL) AS hasPassword, created_at AS createdAt`;
 
 function toUser(row) {
   if (!row) return null;
@@ -23,6 +24,7 @@ function toUser(row) {
     notifyMentions: row.notifyMentions === 1,
     notifyDirect: row.notifyDirect === 1,
     notifyRecap: row.notifyRecap === 1,
+    hasPassword: row.hasPassword === 1,
   };
 }
 
@@ -33,7 +35,8 @@ export class DuplicateAccountError extends Error {
   }
 }
 
-// passwordHash: bcrypt of the auth key; kdfSalt: the salt the browser derived it with.
+// passwordHash: bcrypt of the auth key; kdfSalt: the salt the browser derived it with. An
+// account made with Discord comes with neither and no email (all null).
 export function createUser(db, { username, email, passwordHash, kdfSalt, role = 'member' }) {
   try {
     const { lastInsertRowid } = db
@@ -153,5 +156,6 @@ export function publicUser(user) {
     notifyMentions: user.notifyMentions,
     notifyDirect: user.notifyDirect,
     notifyRecap: user.notifyRecap,
+    hasPassword: user.hasPassword,
   };
 }

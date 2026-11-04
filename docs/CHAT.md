@@ -21,11 +21,34 @@ import { ChatPanel } from '../chat/index.js';
 | `room`                   | string (room slug)      | required         | the room shown; the panel follows when it changes                        |
 | `variant`                | `'full'` \| `'compact'` | `'full'`         | a page of its own, or a box beside other content                         |
 | `showRoomTabs`           | boolean                 | `false`          | let the reader switch between the rooms they may read                    |
-| `unlisted`               | boolean                 | `false`          | `room` is an unlisted room (a call's chat): asked for by name            |
+| `unlisted`               | boolean                 | `false`          | `room` may be an unlisted room (a call's chat): asked for by name        |
+| `roomNote`               | string                  | `null`           | a host's line about its room, shown until the reader picks another       |
 | `files`                  | boolean                 | `true`           | offer members "Attach file"; `false` where uploads are refused           |
 | `guestPrompt`            | React node              | `null`           | shown to a guest instead of the composer (e.g. a login offer)            |
 | `--chat-list-max-height` | CSS custom property     | `60vh` / `18rem` | cap of the message list; `none` lets it fill a container of fixed height |
 | account                  | from `SessionProvider`  | —                | who is signed in (`client/src/session`); a guest if no                   |
+
+### Which room opens
+
+A host never assumes a room (decided 2026-11-04): **`<RoomPanel room>`** (`chat/RoomPanel.jsx`,
+same inputs as `ChatPanel` plus `onRoom(slug)`) opens the room asked for while the reader may read
+it, else the **first room of the reader's own list** (`GET /api/chat/rooms`, the order shown; so
+"General" whenever they may see it). A room asked for that is not in that list gets the neutral
+"This room isn't available." (`roomNote`), the same for a room closed to the reader (a Discord
+step, members only) and for one that does not exist, so nothing tells the two apart. A reader with
+no room gets "No rooms available." (`<NoRooms>`) instead of an error. The rule lives in
+`useRoomToShow.js` (`roomToShow(asked, rooms)`), used by:
+
+| Place                                       | Before                                         | Now                                                         |
+| ------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------- |
+| Chat page `/chat` (`pages/ChatPage.jsx`)    | no `?room=`: "general"; any `?room=` as given  | `RoomPanel`; a named room may be a call's chat (`unlisted`) |
+| Embedded chat (`embed/EmbedChatPage.jsx`)   | same as the chat page                          | `RoomPanel`; `ready` and `unread` name the room shown       |
+| Chat drawer and its compact chat            | remembered room, else the first (`roomToShow`) | unchanged rule; "No rooms available." instead of nothing    |
+| Notification clicks (`notify/`)             | `/chat?room=<slug>`                            | unchanged link; the chat page applies the rule              |
+| Links to `/chat` (drawer, home, start, nav) | the chat page's default "general"              | unchanged links; the reader's first room                    |
+
+A call's chat (`calls/CallChat.jsx`) names its own unlisted room and has no fallback: it is that
+call's room or nothing.
 
 `index.js` also exports **`useChatRooms()`**: the rooms the current reader may read and who they
 are in the chat (`{ info: { rooms, me }, error, reload }`), for a host's own room picker (the
@@ -56,7 +79,8 @@ the stars and bells match the rest of the site) and the never-throwing browser s
 (`client/src/app/storage.js`, also a leaf file; since 2026-10-21, for the safety numbers' per-device
 marks) and the embed state (`client/src/embed/embedAuth.js`, which imports only that storage; since
 2026-10-23, so a file in the chat on another site loads through its short-lived link,
-`useFileLinks.js`); `client/src/chat/chatModule.test.js` fails on any other import, and on any page
+`useFileLinks.js`) and the Discord ladders' names (`@seasonal-entertainment/shared/discordLadders.js`,
+since 2026-11-04, for the step badge); `client/src/chat/chatModule.test.js` fails on any other import, and on any page
 importing a file of the module other than `index.js`.
 
 - **Styles** sit under one root class, `.se-chat` (`ChatPanel.css`, `ChatPanelVariants.css`,
@@ -146,6 +170,86 @@ from the four season colours (`client/src/chat/ChatMessage.css`).
   `null`), joined from the author's account as it is **now** (`server/src/chat/messages.js`). A
   former organiser's old messages lose the badge; nothing a client sends can set it.
 - **Room messages only**: direct messages carry no role.
+
+## Discord steps
+
+A member's Discord steps show next to their name (decided 2026-11-02: **variant C** of the
+design probe, `reports/discord-design/variant-c-*.png`). Steps and how they are read:
+docs/AUTH.md, "Discord: steps and the daily read".
+
+- **The badge** (`client/src/chat/StepBadge.jsx`): the member's up to three steps (the highest
+  Holder, Farmer and Investor step), as icons in **one outlined badge** after the name and after
+  the Admin / Organiser badge, set apart from it. One tooltip names every step ("Golden · Farmer
+  Silver · Level 2"). It opens on hover and keyboard focus, and on a **tap**: the badge is a
+  button, so touch screens can open it too, and a full 44 px touch target around its small frame
+  (negative margins keep the line's height).
+- **Icons**: the one an admin uploaded, or a **neutral placeholder** until then: the ladder's
+  shape (Holder round, Farmer square, Investor a diamond) with the step's initials ("UD" for
+  Ultimate-Dragon Whale, "4" for Level 4). They use neutral surfaces and borders, never a token
+  colour (docs/DESIGN.md).
+- **Full names**: the name menu shows them above its items (`NameMenu.jsx`, MenuButton's
+  `header`), and so does the account page (`StepList`, `client/src/discord/DiscordSection.jsx`).
+  The member search shows the badge's look without its button (`StepMarks`: an option may hold
+  nothing to operate).
+- **From the server only**: every room message carries `authorSteps` (`[{ ladder, name, icon }]`,
+  `server/src/chat/authorSteps.js`), computed from the author's account as it is now, like the
+  staff badge's role. Each member search result carries `steps`. Nothing a client sends can set
+  them. A guest's message, the site's own and an author without steps carry none.
+- Tests: `server/test/discordRooms.test.js`, `client/src/chat/stepBadge.test.jsx`,
+  `client/e2e/discord.spec.js`.
+
+## Rooms for Discord steps
+
+Some rooms are open only from a chosen Discord step on (decided 2026-11-02; steps:
+docs/AUTH.md, "Discord: steps"). An admin sets this per room, on top of its read and write
+levels.
+
+- **The rule** (`room_step_rules`, `server/src/discord/schema.js`): at most one step per ladder;
+  the room lets in anyone who has, in **any one** of those ladders, that step or a higher one
+  ("Holder ≥ Golden, or Farmer ≥ Farmer Silver"). Higher means the order the admins set now:
+  reordering the steps moves the rule along. A room without a rule is open as before. A step a
+  room names cannot be removed (the database refuses it, `ON DELETE RESTRICT`): removing it must
+  never open the room.
+- **Reading and writing alike** follow the rule (`canRead` in `server/src/chat/viewer.js`; one
+  rule set for HTTP and the WebSocket; writing always comes after reading). **Staff always pass.**
+  Guests have no steps; neither does an account whose Discord link needs a login again, or that
+  is not on the Seasonal Tokens server.
+- **Everywhere the chat decides access**: the room lists, history, sending, uploads, the files
+  of its messages, mentions, the member search's room filter, unread counters, and the live
+  socket: subscribing, and every push, re-check the viewer as they are now. The viewer's steps
+  are computed when a room with a rule asks (`stepsOfUser`, `server/src/discord/steps.js`).
+- **When steps drop** (the daily read, a login, linking or unlinking), the member's open sockets
+  leave every room now closed to them at once (`recheckRooms` in `server/src/chat/hub.js`, through
+  `chat.sessions.stepsChanged`), each told `not_allowed` for that room, and their pages hear
+  `access` to reload their room lists (`useChatRooms.js`).
+- **Set** in Admin → Chat, per room: one choice per ladder, "Holder ≥ Golden" or not needed
+  (`client/src/admin/RoomStepRule.jsx`; `stepIds` on `/api/admin/chat/rooms`, at most one per
+  ladder, existing steps only). A room for steps cannot be written by guests.
+- Tests: `server/test/discordRooms.test.js`, `client/src/admin/adminDiscord.test.jsx`,
+  `client/e2e/discord.spec.js`.
+
+## Accounts without a password
+
+An account made with Discord has no password to seal its private key with (docs/AUTH.md,
+"Discord: accounts without a password"; direction decided 2026-10-17 for passwordless logins).
+
+- **Before the first private message** it has no key pair. Where a password account would see
+  "Unlock private messages", it gets a plain choice (`client/src/keys/PasswordlessKeys.jsx`):
+  - **Save a recovery code**: a key pair is made in the browser and sealed with a new recovery
+    code alone. `POST /api/keys` carries the recovery seal along (`recovery: { salt, sealed }`),
+    stored in the same transaction; the stored sealed key is that same recovery seal. The code
+    is shown once, in the recovery dialog (`RecoveryOffer.jsx`, with no way to skip it).
+  - **Set a password**: as on the account page (`POST /api/auth/password/first`). The key pair is
+    then made and sealed for it as at a registration, and the recovery code offered.
+  - One is enough; the other can be added later on the account page. Both need the fresh Discord
+    login the server asks for instead of a password.
+- **On another device** (or after a logout): the recovery code opens the key (nothing to re-seal
+  without a password), or **Confirm on another device** hands it over, or **Start over** makes a
+  new pair with a new recovery code.
+- **A password set later** seals the key that is open on that device in the same request. A
+  device without it open leaves the stored seal as it was; the recovery code opens it there and
+  seals it for the password then (the usual "broken" path).
+- Tests: `server/test/discordKeys.test.js`, `client/src/keys/passwordlessKeys.test.jsx`.
 
 ## Unread counters
 
@@ -258,7 +362,9 @@ End-to-end encrypted messages between **members only** (decided 2026-10-17); gue
 open nor send them. Any member can write to any member.
 
 - **Where**: "Send private message" in the name menu of another member's message; the chat
-  drawer's **Direct** tab and the **Direct** tab of the full `/chat` page (members only). The
+  drawer's **Direct** tab and the **Direct** tab of the full `/chat` page (members only; its
+  address is `/chat?tab=direct`, so a reload or the way back from "Confirm with Discord" opens it
+  again; `client/e2e/discordConfirm.spec.js`). The
   conversation list shows favourite members first (with an online mark), then the most recent
   conversations, each with its **unread count** (orange; see "Unread counters"). Without an
   unlocked key on the device, the Direct tab shows "Unlock private messages" (see "Keys and the
@@ -433,7 +539,7 @@ The home page shows a glimpse of the public room "general" (decided 2026-10-21):
 its newest 3 messages (name, short text, time), then "Open the chat".
 
 - **Server**: `GET /api/chat/glimpse` (public): `{ online, room, messages }`. Messages only while
-  "general" may be read by everyone (`room` is then `"general"`, else `null` and no messages),
+  "general" may be read by everyone, with no rule for Discord steps (`room` is then `"general"`, else `null` and no messages),
   never a hidden one, not even for moderators. Never another room, never direct messages. When
   the online count changes (a member connects or leaves, or shows or hides their status), the
   hub pushes `{ type: 'online', count }` to the readers of "general", and the current count to
@@ -545,8 +651,9 @@ never posts twice in one week.
   first start counts the week begun as done: its first recap comes the next Monday.
 - **Post recap now**: admins can post one at once from the admin chat page, to try it out
   (`POST /api/admin/recap`, audited `recap.post`). It does not count as the week's.
-- **Notification**: members with "Weekly recap" on (off by default) get a personal `recap`
-  event, shown as the browser notification "Weekly recap is out" (see "Notifications").
+- **Notification**: members with "Weekly recap" on (off by default) who may read the recap's
+  room (a rule for Discord steps may close it to some) get a personal `recap` event, shown as
+  the browser notification "Weekly recap is out" (see "Notifications").
 - Tests: `server/test/recap.test.js`, `client/src/chat/systemMessage.test.jsx`,
   `client/src/notify/notifications.test.jsx`, `client/src/admin/adminRecap.test.jsx`.
 
@@ -577,6 +684,11 @@ const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork, em
 // chat.people.sanction(who)                      their mute or ban, if any
 // chat.images.fetch / url                        the guarded image fetch and a media file's
 //                                                public address (the event bot's images)
+// chat.images.storeIcon(buffer) / remove(file)    an admin's icon into a 64 x 64 WebP, and its
+//                                                removal (the Discord steps)
+// chat.images.download(url, options, network)    the guarded fetch, raw: { ok, status, body }
+//                                                or { ok: false, reason } (the steps' icon
+//                                                from a link, discord/iconLink.js)
 // chat.attach(httpServer)                        the WebSocket, once the server listens
 // await chat.start()                             first-start rooms and media, retention job
 ```

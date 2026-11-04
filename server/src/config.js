@@ -5,7 +5,8 @@
 // Description: Reads the runtime configuration from environment variables at start time.
 //              Nothing is baked into a build, so one build runs on any host. Every key is
 //              listed in .env.example (test/envExample.test.js) and docs/ARCHITECTURE.md.
-//              The call service's keys are read by calls/config.js; what production refuses
+//              The call service's keys are read by calls/config.js, Discord's by
+//              discord/config.js; what production refuses
 //              to start with is checked by productionConfig.js. Values marked "default of a
 //              site setting" only start that setting off: at runtime the setting rules
 //              (settings/groups/, docs/SETTINGS.md).
@@ -15,6 +16,7 @@ import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readCallsConfig } from './calls/config.js';
+import { readDiscordConfig } from './discord/config.js';
 import { checkProduction } from './productionConfig.js';
 import { readSecretKey } from './secretKey.js';
 
@@ -113,6 +115,8 @@ export function readConfig(env = process.env) {
     requireStaff2fa: readStaff2fa(env, isProduction),
     // The call service (LiveKit, docs/CALLS.md); null when not configured (feature off).
     calls: readCallsConfig(env, isProduction),
+    // Discord login and roles (docs/AUTH.md, "Discord"); null when not configured (feature off).
+    discord: readDiscordConfig(env, env.PUBLIC_ORIGIN || null),
     chat: {
       // Messages older than this are deleted by the retention job. Default of a site setting.
       retentionDays: readInt(env, 'CHAT_RETENTION_DAYS', 90, 1, 3650),

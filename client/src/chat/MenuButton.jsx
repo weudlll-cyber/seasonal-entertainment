@@ -14,9 +14,10 @@ import { useEffect, useRef, useState } from 'react';
 import './ChatMenu.css';
 
 // items: [{ label, run, confirm?: { question, action } }]; label: the menu's name;
-// buttonLabel: the button's accessible name when its content is only a sign ("…");
-// className: the button's class; children: what the button shows.
-export default function MenuButton({ items, label, buttonLabel, className, children }) {
+// buttonLabel: the button's accessible name, and its tooltip, when its content is only a sign
+// ("…"); className: the button's class; children: what the button shows; header: shown above
+// the items, not focusable (a member's Discord steps in the name menu).
+export default function MenuButton({ items, label, buttonLabel, className, header, children }) {
   const [open, setOpen] = useState(false);
   const [asking, setAsking] = useState(null); // the item whose confirm question is shown
   const button = useRef(null);
@@ -61,6 +62,7 @@ export default function MenuButton({ items, label, buttonLabel, className, child
         type="button"
         className={className}
         aria-label={buttonLabel}
+        title={buttonLabel}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => (open ? close() : setOpen(true))}
@@ -81,6 +83,11 @@ export default function MenuButton({ items, label, buttonLabel, className, child
           aria-label={label}
           onKeyDown={onMenuKey}
         >
+          {header && (
+            <li role="none" className="chat-menu__header">
+              {header}
+            </li>
+          )}
           {items.map((item) => (
             <li key={item.label} role="none">
               <button type="button" role="menuitem" tabIndex={-1} onClick={() => choose(item)}>

@@ -5,13 +5,16 @@
 // Description: The rooms the current reader may read, and who they are in the chat (guest
 //              name, moderator). Part of the module's public API (index.js): a host's own room
 //              picker (the site's chat drawer) uses it too. Loads once the account is known and
-//              again when it changes; reload() after a change such as a new guest name.
+//              again when it changes, and when the account's Discord steps changed (the
+//              server's "access": a room for steps may have opened or closed); reload() after a
+//              change such as a new guest name.
 //              include: the slug of an unlisted room (a call's chat) to add when readable.
 // ============================================================
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/http.js';
 import { useSession } from '../session/SessionContext.jsx';
+import { usePersonalEvents } from './usePersonalEvents.js';
 
 // Returns { info: { rooms, me } | null, error, reload }.
 export function useChatRooms(include = null) {
@@ -30,5 +33,6 @@ export function useChatRooms(include = null) {
   }, [known, userId, version, include]);
 
   const reload = useCallback(() => setVersion((v) => v + 1), []);
+  usePersonalEvents(useCallback((event) => event.type === 'access' && reload(), [reload]));
   return { info, error, reload };
 }

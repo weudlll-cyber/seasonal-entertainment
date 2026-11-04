@@ -2,16 +2,20 @@
 // File:        AccountPage.jsx
 // Path:        client/src/pages/AccountPage.jsx
 // Project:     Seasonal Entertainment
-// Description: The signed-in user's own account: details, password change, two-factor
-//              authentication, private messages (unlock, recovery code), privacy ("Show when I'm
-//              online", link previews in direct messages), browser notifications, logout, and
-//              deleting the account (DeleteAccountForm).
+// Description: The signed-in user's own account: details, Discord (link, steps, unlink:
+//              discord/DiscordSection.jsx, while Discord login is set up), password change (or,
+//              for an account made with Discord, setting a first one), two-factor
+//              authentication (it needs a password), private messages (unlock, recovery code),
+//              privacy ("Show when I'm online", link previews in direct messages), browser
+//              notifications, logout, and deleting the account (DeleteAccountForm).
 // ============================================================
 
 import { roleAtLeast } from '@seasonal-entertainment/shared/accountRules.js';
 import { useNavigate } from 'react-router';
 import ChangePasswordForm from '../components/ChangePasswordForm.jsx';
 import DeleteAccountForm from '../components/DeleteAccountForm.jsx';
+import DiscordSection from '../discord/DiscordSection.jsx';
+import FirstPasswordForm from '../discord/FirstPasswordForm.jsx';
 import PrivacySettings from '../components/PrivacySettings.jsx';
 import NotificationSettings from '../notify/NotificationSettings.jsx';
 import TwoFactorDisable from '../components/TwoFactorDisable.jsx';
@@ -35,15 +39,27 @@ export default function AccountPage() {
         <dt>Username</dt>
         <dd>{user.username}</dd>
         <dt>Email</dt>
-        <dd>{user.email}</dd>
+        <dd>{user.email ?? 'none (signed up with Discord)'}</dd>
         <dt>Role</dt>
         <dd>{user.role}</dd>
       </dl>
-      <h2>Change password</h2>
-      <p>Changing your password logs you out everywhere else.</p>
-      <ChangePasswordForm />
+      <DiscordSection />
+      {user.hasPassword ? (
+        <>
+          <h2>Change password</h2>
+          <p>Changing your password logs you out everywhere else.</p>
+          <ChangePasswordForm />
+        </>
+      ) : (
+        <>
+          <h2 id="password">Set a password</h2>
+          <FirstPasswordForm />
+        </>
+      )}
       <h2 id="two-factor">Two-factor authentication</h2>
-      {user.twoFactorEnabled ? (
+      {!user.hasPassword ? (
+        <p>Two-factor authentication works with a password: set one first (above).</p>
+      ) : user.twoFactorEnabled ? (
         <>
           <p>Two-factor authentication is on.</p>
           <TwoFactorDisable onDisabled={refresh} />

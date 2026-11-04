@@ -22,6 +22,7 @@ import ChatTabs from './ChatTabs.jsx';
 import { readDrawerState, rememberDrawerOpen } from './chatDrawerState.js';
 import DirectTab from './DirectTab.jsx';
 import DrawerRooms from './DrawerRooms.jsx';
+import IconButton from './IconButton.jsx';
 import NotificationsMenu from '../notify/NotificationsMenu.jsx';
 import Icon from './icons.jsx';
 import UnreadDots, { unreadSummary } from './UnreadDots.jsx';
@@ -77,6 +78,7 @@ export default function ChatDrawer() {
         type="button"
         className="chat-launcher"
         aria-label={`Chat${unreadSummary(unread)}`}
+        title={open ? 'Close chat' : 'Open chat'}
         aria-expanded={open}
         aria-controls="chat-drawer"
         onClick={open ? closeDrawer : openDrawer}
@@ -101,14 +103,7 @@ export default function ChatDrawer() {
               Open full chat
             </Link>
             <NotificationsMenu />
-            <button
-              type="button"
-              className="icon-button"
-              aria-label="Close chat"
-              onClick={closeDrawer}
-            >
-              <Icon name="close" />
-            </button>
+            <IconButton label="Close chat" icon="close" onClick={closeDrawer} />
           </div>
           {user && (
             <ChatTabs

@@ -7,7 +7,8 @@
 //              focus in, Escape and the close button close it and focus goes back; the room
 //              picker switches the panel's room and works by keyboard; the browser remembers
 //              open state and room (and copes with blocked storage or a room the reader can
-//              no longer read).
+//              no longer read; with no room at all it says so). The button's tooltip says open or close; the compact
+//              composer's buttons have their texts as tooltips.
 // ============================================================
 
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
@@ -16,7 +17,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeSocket } from '../test/fakeSocket.js';
 import { GUEST, mockApi } from '../test/mockApi.js';
 import App from './App.jsx';
-import { roomToShow } from './chatDrawerState.js';
+import { roomToShow } from '../chat/index.js';
 
 const ROOMS = [
   { slug: 'general', name: 'General', canWrite: true },
@@ -93,10 +94,14 @@ describe('where the chat button is', () => {
 describe('the drawer', () => {
   it('opens with focus inside; Escape closes it and focus goes back to the button', async () => {
     renderAt('/games');
+    expect(launcher()).toHaveAttribute('title', 'Open chat');
     fireEvent.click(launcher());
     expect(drawer()).toHaveFocus();
     expect(launcher()).toHaveAttribute('aria-expanded', 'true');
+    expect(launcher()).toHaveAttribute('title', 'Close chat');
     expect(await within(drawer()).findByText('hello from general')).toBeInTheDocument();
+    // The compact composer hides its buttons' texts: they are their tooltips there.
+    expect(within(drawer()).getByRole('button', { name: 'Send' })).toHaveAttribute('title', 'Send');
     fireEvent.keyDown(drawer(), { key: 'Escape' });
     expect(screen.queryByRole('dialog', { name: 'Chat' })).toBeNull();
     expect(launcher()).toHaveFocus();
@@ -170,6 +175,19 @@ describe('remembered per browser', () => {
     fireEvent.click(launcher());
     expect(drawer()).toBeInTheDocument();
     vi.restoreAllMocks();
+  });
+
+  it('a reader without any room gets "No rooms available."', async () => {
+    mockApi({
+      ...GUEST,
+      'GET /chat/rooms': {
+        body: { ok: true, rooms: [], me: { guestName: null, moderator: false } },
+      },
+      'GET /games': { body: { ok: true, games: [] } },
+    });
+    renderAt('/games');
+    fireEvent.click(launcher());
+    expect(await within(drawer()).findByText('No rooms available.')).toBeInTheDocument();
   });
 
   it('a remembered room the reader may no longer read falls back to the first', () => {

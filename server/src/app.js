@@ -13,7 +13,9 @@
 //              (recap/job.js). The embedded chat on approved foreign sites (embed/) adds its CSP,
 //              its token check and its routes; prices and bot events (bots/) are read-only public
 //              reads; /api/bot-admin/authorize lets staff through to the event bot's admin page
-//              (bots/adminAuthorizeRoutes.js, only with BOT_ADMIN_EMBEDDED=1).
+//              (bots/adminAuthorizeRoutes.js, only with BOT_ADMIN_EMBEDDED=1). Discord login and
+//              roles (discord/) only while set up; app.locals.discord.start() runs the daily
+//              role read.
 // ============================================================
 
 import { existsSync } from 'node:fs';
@@ -37,6 +39,8 @@ import { callRoutes } from './calls/routes.js';
 import { callSpotlightRoutes } from './calls/spotlightRoutes.js';
 import { callStageRoutes } from './calls/stageRoutes.js';
 import { createCallService } from './calls/service.js';
+import { adminDiscordRoutes } from './discord/adminRoutes.js';
+import { createDiscord } from './discord/index.js';
 import { startStaleCalls } from './calls/staleCalls.js';
 import { mountChat } from './chat/mount.js';
 import { adminEmbedRoutes } from './embed/adminRoutes.js';
@@ -63,10 +67,12 @@ import { bindSettingsConfig } from './settings/store.js';
 import { twoFactorGate } from './twofa/gate.js';
 import { twoFactorRoutes } from './twofa/routes.js';
 
-// previewNetwork: how link previews reach the internet (tests replace it); botImageNetwork:
+// previewNetwork: how link previews and the Discord steps' "Icon from link" reach the internet
+// (tests replace it); botImageNetwork:
 // how the event bot's images are fetched (tests, and development's fixture,
 // bots/fixtureNetwork.js); callService: the call service (calls/service.js; tests hand in a
-// stand-in), built from config by default.
+// stand-in), built from config by default; discordFetch: how the server reaches Discord's API
+// (tests hand in a pretend Discord; discord/).
 export function createApp({
   buildInfo,
   config,
@@ -74,11 +80,14 @@ export function createApp({
   previewNetwork,
   botImageNetwork,
   callService = createCallService(config.calls),
+  discordFetch = globalThis.fetch,
 }) {
   // Settings whose default is a config (env) value read it from here (settings/store.js).
   bindSettingsConfig(db, config);
   const app = express();
   app.disable('x-powered-by');
+  // For code that has only the request (the chat viewer's Discord steps, chat/viewer.js).
+  app.locals.db = db;
   // Behind a reverse proxy, req.ip and req.protocol come from its X-Forwarded-* headers.
   app.set('trust proxy', config.trustProxy);
   // The foreign sites approved for the embedded chat: its CSP, tokens and sockets (embed/).
@@ -115,14 +124,27 @@ export function createApp({
   });
   app.locals.chat = chat;
 
+  // Discord login and roles (docs/AUTH.md, "Discord"): only while set up; otherwise its paths
+  // fall through to the API's 404.
+  const discord = createDiscord(db, config, {
+    fetchImpl: discordFetch,
+    chatSessions: chat.sessions,
+  });
+  if (discord) {
+    api.use('/auth/discord', discord.routes());
+    // The admins' steps: names, order, role ids, icons (stored through the chat's media).
+    api.use('/admin/discord', adminDiscordRoutes(db, chat.images, previewNetwork));
+  }
+  app.locals.discord = { start: (log) => discord?.start(log) ?? null };
+
   api.get('/health', allow('public'), (_req, res) => {
     res.json({ ok: true, version: buildInfo.version, commit: buildInfo.commit });
   });
-  api.use('/auth', accountRoutes(db, config, chat));
+  api.use('/auth', accountRoutes(db, config, chat, discord));
   api.use('/auth', bootstrapRoutes(db, config));
   api.use('/2fa', twoFactorRoutes(db, config, chat.sessions));
   api.use('/keys', keyRoutes(db, config));
-  api.use('/admin/users', adminUserRoutes(db, config, chat));
+  api.use('/admin/users', adminUserRoutes(db, config, chat, discord));
   api.use('/admin/audit', adminAuditRoutes(db));
   api.use('/info', infoRoutes(db));
   api.use('/admin/info', adminInfoRoutes(db));
