@@ -4,12 +4,14 @@
 // Project:     Seasonal Entertainment
 // Description: The "Chat" site settings take effect (settings/groups/chat.js): uploads in rooms
 //              and files in direct messages switched off are refused; the largest file, the
-//              daily quota and the largest image follow their settings; link previews in rooms
+//              daily quota and the largest image (an animation's frames together) follow their
+//              settings; link previews in rooms
 //              and in direct messages switched off fetch nothing; the open connections per
 //              member and per guest address, the messages per member and per guest and the days
 //              messages are kept follow theirs. Each changed at runtime, without a restart.
 // ============================================================
 
+import sharp from 'sharp';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TOO_MANY_CONNECTIONS } from '../src/chat/socket.js';
 import { runChatRetention } from '../src/chat/retention.js';
@@ -85,6 +87,38 @@ describe('uploads', () => {
       400,
       'The image may have at most 12 megapixels (width x height).',
     ]);
+  });
+
+  it('"Largest image" counts every frame of an animation', { timeout: 60_000 }, async () => {
+    const mia = await member();
+    setSetting(t.db, 'chat.imageMaxMegapixels', 12);
+    // 1000 x 1000 frames, each a different colour (equal ones would be merged): 13 megapixels
+    // in all, each frame well under the limit.
+    const animation = async (count) => {
+      const frames = await Promise.all(
+        Array.from({ length: count }, (_, i) =>
+          sharp({
+            create: {
+              width: 1000,
+              height: 1000,
+              channels: 3,
+              background: { r: i * 15, g: 0, b: 0 },
+            },
+          })
+            .png()
+            .toBuffer()
+        )
+      );
+      return sharp(frames, { join: { animated: true } })
+        .gif()
+        .toBuffer();
+    };
+    const refused = await upload(mia, await animation(13), 'many.gif');
+    expect([refused.status, refused.body.message]).toEqual([
+      400,
+      'An animation may have at most 12 megapixels in all its frames together.',
+    ]);
+    expect((await upload(mia, await animation(11), 'fewer.gif')).status).toBe(201);
   });
 
   it('"Files in direct messages" off refuses the encrypted upload', async () => {
