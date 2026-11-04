@@ -61,10 +61,11 @@ export function chatRoutes(db, config, hub, previews, allowMessage) {
 
   // The home page's Community box, for everyone: the number of members shown online
   // (hub.onlineUserIds: their own setting respected) and the newest messages of "general" —
-  // only while everyone may read that room, never a hidden message (not even for moderators).
+  // only while everyone may read that room (no rule for Discord steps either), never a hidden
+  // message (not even for moderators).
   router.get('/glimpse', allow('public'), (_req, res) => {
     const general = findRoomBySlug(db, GLIMPSE_ROOM);
-    const open = general?.readAccess === 'everyone';
+    const open = general?.readAccess === 'everyone' && !general.stepRule.length;
     const messages = open ? listMessages(db, general, { limit: GLIMPSE_COUNT }) : [];
     res.json({
       ok: true,

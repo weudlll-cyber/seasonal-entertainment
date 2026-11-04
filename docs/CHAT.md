@@ -538,7 +538,7 @@ The home page shows a glimpse of the public room "general" (decided 2026-10-21):
 its newest 3 messages (name, short text, time), then "Open the chat".
 
 - **Server**: `GET /api/chat/glimpse` (public): `{ online, room, messages }`. Messages only while
-  "general" may be read by everyone (`room` is then `"general"`, else `null` and no messages),
+  "general" may be read by everyone, with no rule for Discord steps (`room` is then `"general"`, else `null` and no messages),
   never a hidden one, not even for moderators. Never another room, never direct messages. When
   the online count changes (a member connects or leaves, or shows or hides their status), the
   hub pushes `{ type: 'online', count }` to the readers of "general", and the current count to
