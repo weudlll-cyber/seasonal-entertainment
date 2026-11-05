@@ -9,15 +9,18 @@
 //              event bot's image files, bots/fixtureNetwork.js), starts the chat (its own
 //              first-start content and retention job), the stale-call and reminder jobs, the
 //              reference prices job (with a CoinGecko key), the weekly recap and the daily
-//              Discord role read (while Discord is set up), seeds the Discord steps once (the
-//              project's discord/seed/, icons through the chat's icon pipeline), starts
-//              listening and attaches the chat WebSocket.
+//              Discord role read (while Discord is set up), the games' open sign-ups (in
+//              development also from a fake status host, games/statusFixture.js), seeds the
+//              Discord steps once (the project's discord/seed/, icons through the chat's icon
+//              pipeline), starts listening and attaches the chat WebSocket.
 // ============================================================
 
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { createApp } from './app.js';
 import { fixtureImageNetwork } from './bots/fixtureNetwork.js';
+import { internetNetwork } from './chat/mount.js';
+import { gameStatusFixtureNetwork } from './games/statusFixture.js';
 import { readBuildInfo } from './buildInfo.js';
 import { ENV_FILE, readConfig } from './config.js';
 import { openDatabase } from './db/database.js';
@@ -46,7 +49,12 @@ const botImageNetwork =
   !config.isProduction && fixtureImages && existsSync(fixtureImages)
     ? fixtureImageNetwork(fixtureImages)
     : undefined;
-const app = createApp({ buildInfo, config, db, botImageNetwork });
+// Development only: the fake game sign-up status host beside the database (games/statusFixture.js);
+// every other status URL, and all of production, the real internet.
+const gameStatusNetwork = config.isProduction
+  ? undefined
+  : gameStatusFixtureNetwork(path.dirname(config.databasePath), internetNetwork);
+const app = createApp({ buildInfo, config, db, botImageNetwork, gameStatusNetwork });
 // After the app: the steps' icons go through the chat's icon pipeline (images.storeIcon).
 const steps = await seedSteps(db, { storeIcon: app.locals.chat.images.storeIcon });
 if (steps) console.log(`Added ${steps} Discord steps from the project's seed (first start)`);
@@ -55,6 +63,7 @@ app.locals.calls.start();
 app.locals.reference.start();
 app.locals.recap.start();
 app.locals.discord.start();
+app.locals.games.start();
 
 const server = app.listen(config.port, config.host, () => {
   console.log(

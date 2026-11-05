@@ -2,7 +2,9 @@
 // File:        GameForm.jsx
 // Path:        client/src/admin/GameForm.jsx
 // Project:     Seasonal Entertainment
-// Description: Form for one game card: name, description, image, status, path, visibility.
+// Description: Form for one game card: name, description, image, status, path, visibility,
+//              and the optional sign-up status URL (https; where the game lists its open
+//              sign-ups, docs/OPEN-ROUNDS.md).
 // ============================================================
 
 import { useState } from 'react';
@@ -21,6 +23,7 @@ export const NEW_GAME = {
   status: 'coming_soon',
   path: '/games/',
   visibility: 'everyone',
+  statusUrl: '',
 };
 
 function Choice({ label, value, options, onChange, labels = {} }) {
@@ -85,6 +88,13 @@ export default function GameForm({ initial, onSave, onCancel, error }) {
         value={game.visibility}
         options={GAME_VISIBILITIES}
         onChange={set('visibility')}
+      />
+      <FormField
+        label="Sign-up status URL (optional)"
+        type="url"
+        value={game.statusUrl ?? ''}
+        onChange={(e) => set('statusUrl')(e.target.value)}
+        hint="Where the game lists its open sign-ups (https://…); the site shows them on the home page and the games page."
       />
       <FormMessage error={error} />
       <div className="admin-row-actions">

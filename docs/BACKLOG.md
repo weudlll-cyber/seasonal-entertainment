@@ -73,6 +73,12 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Games' open sign-ups on the website** — closed by `feat/se-open-rounds` (SE-OPEN-ROUNDS,
+  decided 2026-11-04): a game's optional sign-up status URL (Admin → Games) is read every minute
+  through the guarded fetch and checked against the shared contract (docs/OPEN-ROUNDS.md); the
+  home page's Featured game box rotates with open sign-ups first (8 s, holds on hover, keyboard
+  focus and tap, a pause button, reduced motion respected), and the games page's cards show
+  "Sign-up open" with Join, for everyone (`server/src/games/openRounds.js`, `client/src/games/`).
 - **Deleting a call** — closed by `feat/se-calls-delete` (decided 2026-11-04: a technical test
   call leaves nothing visible): admins delete an ended call completely, with its chat, recordings
   and every row and file of it, audited (`DELETE /api/calls/:id`, `server/src/calls/deleteCall.js`,

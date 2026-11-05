@@ -76,6 +76,15 @@ is the site's usual behaviour, so nothing changes until an admin changes it (dec
 | Site banner  | Banner link (`banner.link`)                                          | short text   | empty                                    | a path on this site (one leading /)     | "Read more"                                                                                                                                                                                   |
 | Site banner  | Banner style (`banner.style`)                                        | choice       | Info                                     | Info, Warning                           | warning: announced at once, red edge                                                                                                                                                          |
 
+## Admin → Games
+
+The games hub's cards are not site settings but have their own admin page (`/admin/games`,
+`server/src/games/adminRoutes.js`): name, description, image, status, path, who may see it, and
+(since 2026-11-04) an optional **Sign-up status URL**: where the game lists its open sign-ups
+(docs/OPEN-ROUNDS.md). https only, at most 300 characters, no credentials in it; empty for none.
+Every change is audited (`game.create`, `game.edit` with the fields that changed, the status URL
+among them, `game.delete`); a saved URL is read at once.
+
 ## What stays fixed, and why
 
 - End-to-end encryption of direct messages: the server must never be able to read them.

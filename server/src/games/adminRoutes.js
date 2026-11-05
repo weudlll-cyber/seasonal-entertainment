@@ -2,8 +2,10 @@
 // File:        adminRoutes.js
 // Path:        server/src/games/adminRoutes.js
 // Project:     Seasonal Entertainment
-// Description: /api/admin/games (admins only): list all, create, edit, delete game cards.
-//              Every change writes one audit entry with the fields that changed.
+// Description: /api/admin/games (admins only): list all, create, edit, delete game cards, each
+//              with its optional sign-up status URL (https only; docs/OPEN-ROUNDS.md), read at once
+//              after a save (openRounds.js). Every change writes one audit entry with the fields
+//              that changed.
 // ============================================================
 
 import express from 'express';
@@ -30,6 +32,19 @@ import {
 const oneOf = (label, list) => (v) =>
   list.includes(v) ? null : `${label} must be one of: ${list.join(', ')}.`;
 
+// Optional: absent, empty or null for none; else an https address without credentials.
+function statusUrlField(v) {
+  if (v === undefined || v === null || v === '') return null;
+  const wrong = 'Sign-up status URL must be an https:// address (at most 300 characters).';
+  if (typeof v !== 'string' || v.length > 300) return wrong;
+  try {
+    const url = new URL(v);
+    return url.protocol === 'https:' && !url.username && !url.password ? null : wrong;
+  } catch {
+    return wrong;
+  }
+}
+
 const GAME_FIELDS = {
   name: required('Name', 80),
   description: (v) =>
@@ -43,10 +58,16 @@ const GAME_FIELDS = {
       ? null
       : 'Path must look like /games/name (lowercase letters, digits, "-").',
   visibility: oneOf('Visibility', GAME_VISIBILITIES),
+  statusUrl: statusUrlField,
 };
 
-export function adminGameRoutes(db) {
+// openRounds: the poller (openRounds.js); a saved game's sign-ups are read at once.
+export function adminGameRoutes(db, openRounds) {
   const router = express.Router();
+  const readSignups = (game) =>
+    openRounds
+      .refresh(game)
+      .catch((err) => console.warn(`[games] reading sign-ups failed: ${err.message}`));
 
   // Loaded after allow(): who may not use these routes cannot probe which ids exist.
   const loadGame = loadById((id) => findGame(db, id), 'game', 'game');
@@ -64,7 +85,12 @@ export function adminGameRoutes(db) {
     if (!input) return;
     try {
       const game = createGame(db, input);
-      audit(req, 'game.create', game.id, null, { name: game.name, status: game.status });
+      audit(req, 'game.create', game.id, null, {
+        name: game.name,
+        status: game.status,
+        statusUrl: game.statusUrl,
+      });
+      readSignups(game);
       res.status(201).json({ ok: true, game });
     } catch (err) {
       if (err instanceof DuplicatePathError) return pathTaken(res);
@@ -86,6 +112,7 @@ export function adminGameRoutes(db) {
         }
       }
       audit(req, 'game.edit', game.id, before, after);
+      readSignups(game);
       res.json({ ok: true, game });
     } catch (err) {
       if (err instanceof DuplicatePathError) return pathTaken(res);

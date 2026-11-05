@@ -38,7 +38,7 @@ const OFFLINE = {
 // discordFetch: the pretend Discord (helpers/fakeDiscord.js), with overrides.discord its config.
 export function makeTestApp(
   overrides = {},
-  { previewNetwork, botImageNetwork, callService = null, discordFetch } = {}
+  { previewNetwork, botImageNetwork, gameStatusNetwork, callService = null, discordFetch } = {}
 ) {
   const dir = mkdtempSync(path.join(tmpdir(), 'se-test-'));
   const base = readConfig({
@@ -71,6 +71,7 @@ export function makeTestApp(
     db,
     previewNetwork: previewNetwork ?? OFFLINE,
     botImageNetwork: botImageNetwork ?? OFFLINE,
+    gameStatusNetwork: gameStatusNetwork ?? OFFLINE,
     callService,
     discordFetch: discordFetch ?? (() => Promise.reject(new Error('no Discord in tests'))),
   });

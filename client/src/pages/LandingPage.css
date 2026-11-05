@@ -216,10 +216,98 @@
   font-weight: var(--font-weight-strong);
 }
 
-/* Centred while it fits; "safe": content taller than the box starts at its top, never cut
-   there. */
-.home__game {
-  justify-content: safe center;
+/* "All games" and "All events" (homeCards.jsx): the same link at the same place in each box,
+   its text on the box's first content line, so side by side the two share one line whatever
+   the boxes hold. Out of the flow, it adds no height; its 44px target reaches into the padding. */
+.home__card-more {
+  position: absolute;
+  top: calc(var(--space-2) - (var(--hit-target) - 1lh) / 2);
+  inset-inline-end: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit-target);
+  font-weight: var(--font-weight-strong);
+}
+
+/* The eyebrow on the box's first line (beside "All games"), the game centred in the space
+   below while it fits; with no space left the auto margins are 0 and nothing is cut. */
+.home__game > .home__eyebrow,
+.home__game-row {
+  margin-block-end: auto;
+}
+
+/* The game shown now (the box rotates: homeCards.jsx); its parts keep the box's spacing. */
+.home__game-slide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* Compact, so the home page fits its window with the tallest box (docs/DESIGN.md): the name and
+   the description in one line each (both whole in their tooltip). */
+.home__game-name,
+.home__game-description {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+/* Join and Play side by side, then the controls in the same row while they fit (pushed to its
+   end), else on the line below. */
+.home__game-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.home__game-row .button {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+/* Previous, the dots, next and pause: each a 44px target, drawn small. */
+.home__game-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-inline-start: auto;
+}
+
+.home__game-step,
+.home__game-dot {
+  display: inline-grid;
+  place-items: center;
+  min-width: var(--hit-target);
+  min-height: var(--hit-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.home__game-step:hover,
+.home__game-dot:hover {
+  color: var(--color-text);
+}
+
+.home__game-dot::before {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+  content: '';
+}
+
+.home__game-dot[aria-current='true']::before {
+  background: var(--color-text);
 }
 
 .home__game-name {
@@ -353,8 +441,9 @@
 /* On a phone the featured game's content starts at the top: centred in its kept room, the
    "Featured game" label sat in the middle until the game arrived and then jumped up 87px. */
 @media (max-width: 599.98px) {
-  .home__game {
-    justify-content: flex-start;
+  .home__game > .home__eyebrow,
+  .home__game-row {
+    margin-block-end: 0;
   }
 }
 
@@ -419,5 +508,11 @@
 
   .home__card {
     padding: 1.125rem 1.25rem;
+  }
+
+  /* Still on the first content line with the phone's padding. */
+  .home__card-more {
+    top: calc(1.125rem - (var(--hit-target) - 1lh) / 2);
+    inset-inline-end: 1.25rem;
   }
 }

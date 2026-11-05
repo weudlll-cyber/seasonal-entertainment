@@ -18,6 +18,10 @@ import { mediaRoutes } from '../media/routes.js';
 import { seedChatMedia } from '../media/seed.js';
 import { fetchImage } from '../previews/fetchImage.js';
 import { FetchRefused, safeFetch } from '../previews/safeFetch.js';
+
+// The real internet as the guarded fetch reaches it, for a development network that answers
+// one fake host itself and hands every other one on (games/statusFixture.js, through index.js).
+export { realNetwork as internetNetwork } from '../previews/safeFetch.js';
 import { imageMaxPixels } from '../settings/derived.js';
 import { getSetting } from '../settings/store.js';
 import { directFileRoutes } from '../directFiles/routes.js';

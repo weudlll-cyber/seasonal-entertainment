@@ -494,7 +494,8 @@ server/
   src/admin/               /api/admin routes (users, audit); areas add their own editors
   src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md,
                            seed/earlier-seeds.json)
-  src/games/               games hub: schema, store, public and admin routes, seed
+  src/games/               games hub: schema, store, public and admin routes, seed; the games'
+                           open sign-ups (openRounds.js, docs/OPEN-ROUNDS.md)
   src/bingo/               Seasonal Bingo Royale's sign-in (authorize) and account-changes feed
                            (docs/AUTH.md, "Seasonal Bingo Royale")
   src/chat/                chat area, mounted by mount.js (the only entry for the rest of the
