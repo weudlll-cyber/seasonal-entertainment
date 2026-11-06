@@ -66,17 +66,18 @@ export function embeddedGameRoutes(db, config, urlOf) {
     config.games.embedded.map((slug) => [slug, makeLimiter(config.rateLimits.gamesFeed)])
   );
 
-  // Before everything, so even a refusal is never cached; a game switched off (or none of the
-  // list: the switched-on slugs are all from it) does not exist here.
-  router.param('game', (_req, res, next, game) => {
+  // First after allow('public') on each route (never router.param, which would run before it;
+  // test/accessBeforeLookup.test.js), so even a refusal is never cached; a game switched off
+  // (or none of the list: the switched-on slugs are all from it) does not exist here.
+  const gameOn = (req, res, next) => {
     res.set('Cache-Control', 'no-store');
-    if (!config.games.embedded.includes(game)) {
+    if (!config.games.embedded.includes(req.params.game)) {
       return sendError(res, 404, 'not_found', 'No such API endpoint.');
     }
     next();
-  });
+  };
 
-  router.all('/:game/authorize', allow('public'), (req, res, next) => {
+  router.all('/:game/authorize', allow('public'), gameOn, (req, res, next) => {
     if (req.method !== 'GET') return sendError(res, 405, 'method_not_allowed', 'GET only.');
     next();
   });
@@ -101,7 +102,7 @@ export function embeddedGameRoutes(db, config, urlOf) {
 
   // Public as far as the site's sessions go: the sync token is the game's whole proof.
   const feedLimit = (req, res, next) => feedLimits[req.params.game](req, res, next);
-  router.get('/:game/account-changes', allow('public'), feedLimit, (req, res) => {
+  router.get('/:game/account-changes', allow('public'), gameOn, feedLimit, (req, res) => {
     if (!tokenMatches(req.get('x-games-sync-token'), config.games.syncToken)) {
       return sendError(res, 401, 'token_invalid', 'A valid X-Games-Sync-Token is required.');
     }
