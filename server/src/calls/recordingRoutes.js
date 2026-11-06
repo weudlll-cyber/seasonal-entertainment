@@ -10,7 +10,9 @@
 //              then says a recording runs (roomState.js), which every client shows. Ending the
 //              call stops it (endCall.js). The recordings of a call are listed, and played
 //              (with range requests, so a player can seek), for the same audience as the call
-//              itself; organisers and admins delete one (file and row). Nothing is deleted
+//              itself; organisers and admins delete one (file and row). A start the recording
+//              service does not answer (timeout, unavailable) is 503 recording_unavailable, not a
+//              server error. Nothing is deleted
 //              automatically. The archive lists every finished recording with its call and
 //              chapters (GET /api/calls/recordings); the chapter routes are chapterRoutes.js.
 // ============================================================
@@ -35,6 +37,7 @@ import {
 } from './recordings.js';
 import { publishRoomState } from './roomState.js';
 import { canManage } from './routes.js';
+import { serviceDidNotAnswer } from './service.js';
 
 // Stops the call's running recording, if any: the egress, then its row, then the room says so.
 // Used by the stop route and by endCall.js (where the room is closed right after).
@@ -95,7 +98,21 @@ export function callRecordingRoutes(db, config, service) {
       return sendError(res, 409, 'recording_running', 'This call is being recorded already.');
     }
     const file = `call-${req.call.id}-${Date.now()}-${randomBytes(4).toString('hex')}.mp4`;
-    const egressId = await service.startRecording(req.call.roomName, file);
+    let egressId;
+    try {
+      egressId = await service.startRecording(req.call.roomName, file);
+    } catch (error) {
+      // An egress that declines the job (no free CPU, docs/CALLS.md, "Recording") or is down
+      // never answers: tell the organiser, keep the log short; nothing was stored yet.
+      if (!serviceDidNotAnswer(error)) throw error;
+      console.error(`[calls] recording of call ${req.call.id} not started: ${error.message}`);
+      return sendError(
+        res,
+        503,
+        'recording_unavailable',
+        'The recording service did not answer. Try again in a minute.'
+      );
+    }
     addRecording(db, { callId: req.call.id, egressId, file, startedBy: req.user.username });
     await publishRoomState(db, service, req.call);
     audit(req, 'call.recording_start', req.call);

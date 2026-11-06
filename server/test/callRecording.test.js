@@ -8,8 +8,9 @@
 //              the call's answers say it runs; while it runs, joining without confirming gets
 //              no token; ending the call stops it; the finished recording plays for the call's
 //              audience (calls are shown to everyone) and only once stopped, with the file's own
-//              length (none while unknown); organisers delete
-//              file and row; with recording not set up there is no button and no start.
+//              length (none while unknown); organisers delete file and row; an egress that does
+//              not answer gives 503 recording_unavailable and stores nothing; with recording not
+//              set up there is no button and no start.
 // ============================================================
 
 import { existsSync, rmSync, writeFileSync } from 'node:fs';
@@ -140,6 +141,32 @@ describe('call recording', () => {
     expect(existsSync(path.join(dir, file))).toBe(false);
     expect(await recordingsOf(t.client(), call)).toEqual([]);
     expect(auditActions(t)).toContain('call.recording_delete');
+  });
+
+  it('an egress that does not answer: 503 with a message, nothing stored, a retry works', async () => {
+    const service = app();
+    const olga = await organiser(t);
+    const call = await liveCall(olga, 'Town hall');
+    const start = service.startRecording;
+    // What livekit-server-sdk throws when its request timeout runs out (AbortSignal.timeout).
+    service.startRecording = async () => {
+      throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+    };
+    const res = await olga.post(`/api/calls/${call.id}/recording/start`);
+    expect([res.status, res.body.error, res.body.message]).toEqual([
+      503,
+      'recording_unavailable',
+      'The recording service did not answer. Try again in a minute.',
+    ]);
+    expect((await t.client().get(`/api/calls/${call.id}`)).body.call.recording).toBe(false);
+    expect(auditActions(t)).not.toContain('call.recording_start');
+    // Any other failure is still a server error, not "did not answer".
+    service.startRecording = async () => {
+      throw new Error('bad request');
+    };
+    expect((await olga.post(`/api/calls/${call.id}/recording/start`)).status).toBe(500);
+    service.startRecording = start;
+    expect((await olga.post(`/api/calls/${call.id}/recording/start`)).status).toBe(200);
   });
 
   it('recording not set up: no button, no start', async () => {
