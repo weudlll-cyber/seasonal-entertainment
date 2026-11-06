@@ -42,7 +42,7 @@ import { ChatHub } from './hub.js';
 import { adminChatRoomRoutes, chatModerationRoutes } from './moderationRoutes.js';
 import { startChatRetention } from './retention.js';
 import { chatRoutes } from './routes.js';
-import { seedChatRooms } from './seed.js';
+import { ensureGameRooms, seedChatRooms } from './seed.js';
 import { ensureGuest } from './guestIdentity.js';
 import {
   activeSanction,
@@ -226,9 +226,13 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
     },
     // The live connection, once the HTTP server listens.
     attach: (server) => attachChatSocket(server, { hub, sessionParser, db, config, embedOrigins }),
-    // First-start rooms and stickers/GIFs, then the retention job (unless switched off).
+    // First-start rooms, the embedded games' rooms where missing, stickers/GIFs, then the
+    // retention job (unless switched off).
     async start(log = console.log) {
       if (seedChatRooms(db)) log('Added the chat rooms (first start)');
+      for (const slug of ensureGameRooms(db, config.games.embedded)) {
+        log(`Added the chat room "${slug}" for its embedded game`);
+      }
       const media = await seedChatMedia(db, config);
       if (media) log(`Added ${media} chat stickers and GIFs (first start)`);
       if (config.backgroundJobs) startChatRetention(db, config, log);
