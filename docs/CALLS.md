@@ -393,6 +393,15 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
     encoding options have no channel setting, so mono cannot be set (measured: stereo).
   - **The egress writes** to `CALLS_EGRESS_OUTPUT_DIR` (its own mount of the same folder; the
     same path when unset). The file is named `call-<id>-<time>-<random>.mp4`.
+- **CPU** (decided 2026-11-06): the egress container is limited to 3 CPUs and counts a
+  recording at 2.0 of them (`cpu_cost.room_composite_cpu_cost` in
+  `deploy/calls/docker-compose.recording.yml`). Egress v1.15.0 takes a job only when that cost
+  fits its free CPUs, read from the container's limit: all of them while idle, 80 % minus what
+  runs once a job runs. So one recording at a time; a second one started meanwhile is declined.
+  Its default cost (4) is more than the earlier 2-CPU limit, so every start went unanswered.
+- **When the egress does not answer**: the start request gives up after 8 seconds (the egress
+  client's `requestTimeout`, `service.js`) and the site answers `503 recording_unavailable`,
+  "The recording service did not answer. Try again in a minute."; nothing is stored.
 - **Allowed** (2026-10-23): the "Recording allowed" setting (on by default, docs/SETTINGS.md); off,
   no new recording starts and the button goes, while a running one can still be stopped and
   stored recordings stay.

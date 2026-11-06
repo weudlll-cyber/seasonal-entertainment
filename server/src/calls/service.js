@@ -8,7 +8,8 @@
 //              still exist (the stale-call job, staleCalls.js), set the room's
 //              metadata (the spotlight, a running recording), and sign join tokens (grants.js);
 //              with recording configured, start and stop a room's recording (LiveKit Egress,
-//              room composite to an MP4 file). Built from config.calls; the routes take it as a
+//              room composite to an MP4 file; serviceDidNotAnswer tells when the egress did not
+//              take the job). Built from config.calls; the routes take it as a
 //              parameter, so tests hand in a stand-in with the same methods and never need a
 //              running call server.
 // ============================================================
@@ -44,11 +45,24 @@ const RECORDING_ENCODING = {
 // speakers' tiles otherwise.
 const RECORDING_LAYOUT = 'speaker';
 
+// The egress client's requests give up after this many seconds (the SDK's default is 10). An
+// egress that takes a job answers within a second or two: it launches the recording and returns
+// (egress v1.15.0, pkg/server/server_rpc.go StartEgress); one that declines it never answers.
+const EGRESS_TIMEOUT_S = 8;
+
+// A request that failed because nothing answered (used for a recording's start): the SDK's own timeout (a DOMException
+// named TimeoutError, livekit-server-sdk TwirpRPC.js) or LiveKit's 503 "unavailable". Anything
+// else is a real error and stays one.
+export const serviceDidNotAnswer = (error) =>
+  error?.name === 'TimeoutError' || error?.status === 503 || error?.code === 'unavailable';
+
 // calls: config.calls ({ url, httpOrigin, apiKey, apiSecret, recording }) or null (feature off).
 export function createCallService(calls) {
   if (!calls) return null;
   const rooms = new RoomServiceClient(calls.httpOrigin, calls.apiKey, calls.apiSecret);
-  const egress = new EgressClient(calls.httpOrigin, calls.apiKey, calls.apiSecret);
+  const egress = new EgressClient(calls.httpOrigin, calls.apiKey, calls.apiSecret, {
+    requestTimeout: EGRESS_TIMEOUT_S,
+  });
   return {
     url: calls.url,
     openRoom: (name, maxParticipants) =>

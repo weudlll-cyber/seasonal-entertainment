@@ -77,8 +77,8 @@ video rooms on the site: a stage with up to 10 speakers and up to 200 listeners)
 (a second domain whose A record points at the server, the extra ports, about one CPU core per
 busy call), and that an empty answer is the safe choice when unsure. Before "Record calls?" it
 says the same for recording (organisers and admins record, everyone is told and must agree, up
-to about 480 MB per recorded hour on the server and in the backups, one more CPU core while it
-runs; "no" when unsure). A question answered by the answers file or an earlier run is not asked,
+to about 480 MB per recorded hour on the server and in the backups, about two more CPU cores (up
+to three) while it runs; "no" when unsure). A question answered by the answers file or an earlier run is not asked,
 and its explanation is not shown.
 
 The password is typed with one `*` per character (backspace and Ctrl-U work). Before the
@@ -1073,8 +1073,10 @@ server (docs/CALLS.md, "Moving the call service").
 
 The installer sets this up with `RECORDING=yes`. By hand (docs/CALLS.md, "Recording"):
 `deploy/calls/docker-compose.recording.yml` adds
-LiveKit's egress (records in its own Chrome, about one CPU while recording, limited to 2 CPUs
-and 2 GB) and Redis (127.0.0.1 only). In `deploy/calls/.env` set `LIVEKIT_API_KEY` and
+LiveKit's egress (records in its own Chrome; limited to 3 CPUs and 2 GB, and a recording is
+counted at 2.0 CPUs, its `cpu_cost`) and Redis (127.0.0.1 only). Egress takes a recording only
+when that cost fits its free CPUs; with its default cost (4) and the earlier 2-CPU limit it
+declined every one, and the start timed out (fixed 2026-11-06; docs/CALLS.md, "Recording"). In `deploy/calls/.env` set `LIVEKIT_API_KEY` and
 `LIVEKIT_API_SECRET` (the same pair) and `RECORDINGS_DIR=<site-data mountpoint>/media/recordings`
 (`docker volume inspect seasonal-site_site-data --format '{{ .Mountpoint }}'`). In `site.env` set
 `CALLS_RECORDINGS_DIR=/data/media/recordings` and `CALLS_EGRESS_OUTPUT_DIR=/recordings`. Start

@@ -176,7 +176,7 @@ recording_explanation() {
 Recording lets organisers and admins record a call (video and sound). Everyone in the call
 sees that it is recorded and must agree before joining. Recordings are kept on this server
 with the site's uploads (up to about 480 MB per recorded hour) and go into the backups; a
-running recording needs about one more CPU core.
+running recording needs about two more CPU cores (up to three).
 Not sure? Answer no: it can be switched on later the same way.
 EOF
 }
