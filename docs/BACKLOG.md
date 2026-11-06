@@ -76,9 +76,9 @@ entry waits for.
 - **After the login a game's page opened inside the app** — closed by `fix/games-next`
   (SE-GAMES-NEXT, merged 2026-11-06; found in the Mini Games rehearsal on master 82e9e30, Bingo
   the same): after the login, the registration or the Discord sign-up a `next` under
-  `/games/<slug>/` showed "Page not found" until a reload. Now opened with a full page load that replaces the login page in the
-  history (`goToNext`, `client/src/session/nextPage.js`); `/games` and every other path stay inside
-  the app (docs/AUTH.md, "Embedded games").
+  `/games/<slug>/` showed "Page not found" until a reload. Now opened with a full page load that
+  replaces the login page in the history (`goToNext`, `client/src/session/nextPage.js`); `/games`
+  and every other path stay inside the app (docs/AUTH.md, "Embedded games").
 - **Embedded games as a list: Seasonal Mini Games beside Seasonal Bingo Royale** — closed by
   `feat/embedded-games` (SE-EMBEDDED-GAMES; decided 2026-11-04, merged 2026-11-06): one mechanism
   for every embedded game, a fixed list `bingo` and `mini-games` (`server/src/games/embedded.js`,
