@@ -1,24 +1,26 @@
 // ============================================================
-// File:        routes.js
-// Path:        server/src/bingo/routes.js
+// File:        embeddedRoutes.js
+// Path:        server/src/games/embeddedRoutes.js
 // Project:     Seasonal Entertainment
-// Description: The site's side of Seasonal Bingo Royale at /games/bingo (docs/AUTH.md, "Seasonal
-//              Bingo Royale"; decided 2026-11-02: inside this site players sign in only through
-//              this site's login, delivered like the event bot's admin page). Only while
-//              GAMES_BINGO_EMBEDDED=1, else every route here answers 404; every answer is
-//              Cache-Control: no-store.
-//              - GET /authorize: the game's sign-in route asks it through nginx's auth_request
-//                (or Caddy's forward_auth) with the browser's cookie, X-Original-Method and
-//                Origin. A state-changing original method needs this site's Origin (the CSRF
-//                rule, http/csrf.js), an unknown or missing one is refused (403, fail closed).
-//                Then always 204: a signed-in account in good standing gets the X-Acting-User-*
-//                headers (memberHeaders); anyone else, guests watching included (decided
-//                2026-11-04), X-Acting-Guest: true alone. Never 401, never audited. Any other
-//                method on the route itself: 405.
-//              - GET /account-changes?since=<cursor>: the account changes the game must act on
-//                (accounts/accountChanges.js), for the game over the site's local port only
-//                (the site's nginx denies this path); only with X-Games-Sync-Token equal to
-//                the installer's token (401 otherwise), rate-limited.
+// Description: The site's side of the embedded games at /games/<slug> (games/embedded.js:
+//              bingo, mini-games; docs/AUTH.md, "Embedded games"; decided 2026-11-02 for Bingo
+//              and 2026-11-04 for Mini Games: inside this site players sign in only through this
+//              site's login, delivered like the event bot's admin page). One mechanism for every
+//              game: a slug not switched on (GAMES_EMBEDDED), or not in the list at all, answers
+//              404; every answer is Cache-Control: no-store.
+//              - GET /api/games/<slug>/authorize: the game's sign-in route asks it through
+//                nginx's auth_request (or Caddy's forward_auth) with the browser's cookie,
+//                X-Original-Method and Origin. A state-changing original method needs this
+//                site's Origin (the CSRF rule, http/csrf.js), an unknown or missing one is
+//                refused (403, fail closed). Then always 204: a signed-in account in good
+//                standing gets the X-Acting-User-* headers (memberHeaders); anyone else, guests
+//                watching included (decided 2026-11-04), X-Acting-Guest: true alone. Never 401,
+//                never audited. Any other method on the route itself: 405.
+//              - GET /api/games/<slug>/account-changes?since=<cursor>: the account changes the
+//                games must act on (accounts/accountChanges.js; one feed, each game with its own
+//                cursor), for the game over the site's local port only (the site's nginx denies
+//                these paths, its Caddy answers 404); only with X-Games-Sync-Token equal to the
+//                installer's token, one for all games (401 otherwise), rate-limited per game.
 // ============================================================
 
 import express from 'express';
@@ -55,19 +57,27 @@ export function memberHeaders(db, user, urlOf) {
   };
 }
 
-// urlOf: the chat handle's media address (chat.images.url), for the steps' icons.
-export function bingoRoutes(db, config, urlOf) {
+// Mounted at /api/games, before the games list (games/routes.js). urlOf: the chat handle's media
+// address (chat.images.url), for the steps' icons.
+export function embeddedGameRoutes(db, config, urlOf) {
   const router = express.Router();
-  const feedLimit = makeLimiter(config.rateLimits.bingoFeed);
+  // One limiter per game: each game may read as often as Bingo alone could.
+  const feedLimits = Object.fromEntries(
+    config.games.embedded.map((slug) => [slug, makeLimiter(config.rateLimits.gamesFeed)])
+  );
 
-  // Before everything, so even a refusal is never cached; off, nothing here exists.
-  router.use((_req, res, next) => {
+  // First after allow('public') on each route (never router.param, which would run before it;
+  // test/accessBeforeLookup.test.js), so even a refusal is never cached; a game switched off
+  // (or none of the list: the switched-on slugs are all from it) does not exist here.
+  const gameOn = (req, res, next) => {
     res.set('Cache-Control', 'no-store');
-    if (!config.bingo.embedded) return sendError(res, 404, 'not_found', 'No such API endpoint.');
+    if (!config.games.embedded.includes(req.params.game)) {
+      return sendError(res, 404, 'not_found', 'No such API endpoint.');
+    }
     next();
-  });
+  };
 
-  router.all('/authorize', allow('public'), (req, res, next) => {
+  router.all('/:game/authorize', allow('public'), gameOn, (req, res, next) => {
     if (req.method !== 'GET') return sendError(res, 405, 'method_not_allowed', 'GET only.');
     next();
   });
@@ -75,7 +85,7 @@ export function bingoRoutes(db, config, urlOf) {
   // allow('public'): guests are let in to watch. req.user is the site's own answer: no
   // session, a locked account's ended session (http/session.js) and a member who must still
   // set up 2FA (twofa/gate.js) all come as null; staff without their 2FA carry staffRefusal.
-  router.get('/authorize', allow('public'), (req, res) => {
+  router.get('/:game/authorize', allow('public'), (req, res) => {
     const method = (req.get('x-original-method') ?? '').toUpperCase();
     if (isStateChanging(method)) {
       // The browser's own Origin, carried by nginx: a foreign page cannot act as the visitor.
@@ -91,8 +101,9 @@ export function bingoRoutes(db, config, urlOf) {
   });
 
   // Public as far as the site's sessions go: the sync token is the game's whole proof.
-  router.get('/account-changes', allow('public'), feedLimit, (req, res) => {
-    if (!tokenMatches(req.get('x-games-sync-token'), config.bingo.syncToken)) {
+  const feedLimit = (req, res, next) => feedLimits[req.params.game](req, res, next);
+  router.get('/:game/account-changes', allow('public'), gameOn, feedLimit, (req, res) => {
+    if (!tokenMatches(req.get('x-games-sync-token'), config.games.syncToken)) {
       return sendError(res, 401, 'token_invalid', 'A valid X-Games-Sync-Token is required.');
     }
     const since = req.query.since ?? '0';

@@ -64,7 +64,7 @@ services:
       - host.docker.internal:host-gateway
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      # Other projects' route files (Seasonal Bingo Royale); kept by .gitkeep, never committed.
+      # Other projects' route files (the embedded games); kept by .gitkeep, never committed.
       - ./routes:/etc/caddy/routes:ro
       # Extra site blocks; calls.caddy while the call service runs on this VPS. The installer
       # points CADDY_SITES_DIR at its own folder with only the blocks the answers need.

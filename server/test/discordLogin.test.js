@@ -7,9 +7,10 @@
 //              state, denied consent, the sign-up (no email, no password, the name offered and
 //              made to fit), logging in a linked account, linking only after the password was
 //              proven (once per proof, checked at the start and at the callback), a Discord user
-//              linked to a second account refused, unlinking only with a password, the staff 2FA step after a
-//              Discord login, failed callbacks counting on the login limit, the feature off, and
-//              the client secret and tokens never reaching the browser.
+//              linked to a second account refused, unlinking only with a password, the staff 2FA
+//              step after a Discord login, the way back to an embedded game (/games/<slug>/...),
+//              failed callbacks counting on the login limit, the feature off, and the client
+//              secret and tokens never reaching the browser.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -174,6 +175,17 @@ describe('signing up with Discord', () => {
     const back = await discordFlow(agent, discord, DISCORD_ID, 'intent=login&next=/chat');
     expect(back.headers.location).toBe('/chat');
     expect((await agent.get('/api/auth/session')).body.user.id).toBe(userId);
+  });
+
+  it("returns to an embedded game's sign-in route, its own next included", async () => {
+    const discord = setup();
+    await signUp(t.client(), discord);
+    for (const slug of ['bingo', 'mini-games']) {
+      const next = `/games/${slug}/auth/website?next=%2Fgames%2F${slug}%2F`;
+      const query = `intent=login&next=${encodeURIComponent(next)}`;
+      const back = await discordFlow(t.client(), discord, DISCORD_ID, query);
+      expect(back.headers.location).toBe(next);
+    }
   });
 
   it('refuses a locked account', async () => {

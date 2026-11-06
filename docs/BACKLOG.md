@@ -73,6 +73,18 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Embedded games as a list: Seasonal Mini Games beside Seasonal Bingo Royale** — closed by
+  `feat/embedded-games` (SE-EMBEDDED-GAMES; decided 2026-11-04, merged 2026-11-06): one mechanism
+  for every embedded game, a fixed list `bingo` and `mini-games` (`server/src/games/embedded.js`,
+  `embeddedRoutes.js`): `GET /api/games/<slug>/authorize` and `/account-changes` per game switched
+  on (`GAMES_EMBEDDED`; `GAMES_BINGO_EMBEDDED=1` still means bingo), else 404; one feed, one
+  token, each game its own cursor. Each game's chat room (`bingo`, `mini-games`) made at the start
+  while the game is on, never overwritten or deleted afterwards (`ensureGameRooms`,
+  `server/src/chat/seed.js`). The installer asks one question per game (`--bingo`,
+  `--mini-games`; `deploy/install/lib/games.sh`) and denies every feed in nginx and Caddy.
+  Recorded choices (2026-11-06): a game room an admin deleted comes back on the next start while
+  its game is on (docs/EMBED.md, "The embedded games' rooms"); the installer writes
+  `GAMES_EMBEDDED` and removes `GAMES_BINGO_EMBEDDED` (docs/DEPLOYMENT.md, "Embedded games").
 - **Games' open sign-ups on the website** — closed by `feat/se-open-rounds` (SE-OPEN-ROUNDS,
   decided 2026-11-04): a game's optional sign-up status URL (Admin → Games) is read every minute
   through the guarded fetch and checked against the shared contract (docs/OPEN-ROUNDS.md); the
@@ -90,8 +102,9 @@ entry waits for.
   Discord steps; `X-Acting-Guest` for everyone else), account ids never issued twice, an
   account-changes feed for the game (deleted, locked, unlocked, rights) over the local port with
   the installer's sync token, and the installer's `--bingo`, routes include, port file and token
-  (`server/src/bingo/routes.js`, `deploy/install/lib/bingo.sh`; docs/AUTH.md and
-  docs/DEPLOYMENT.md, "Seasonal Bingo Royale").
+  (then `server/src/bingo/routes.js` and `deploy/install/lib/bingo.sh`; since
+  `feat/embedded-games` `server/src/games/embeddedRoutes.js` and `deploy/install/lib/games.sh`;
+  docs/AUTH.md and docs/DEPLOYMENT.md, "Embedded games").
 - **Four points of the security check of 2026-11-04** — closed by decision 2026-11-04:
   - **"Confirm with Discord" needs no click at Discord** (`prompt=none`): a click at Discord each
     time would only annoy; an attacker needs the open session and the victim's click anyway.

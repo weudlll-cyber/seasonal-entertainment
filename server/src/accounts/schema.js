@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS users (
 //                   one (users.id has no AUTOINCREMENT), and a game keyed on it would hand the
 //                   new account the deleted one's stats (decided 2026-11-04). One row.
 // account_changes:  the account changes the games must learn of (accountChanges.js; GET
-//                   /api/games/bingo/account-changes): user id, kind, time only, kept 365 days.
+//                   /api/games/<slug>/account-changes): user id, kind, time only, kept 365 days.
 //                   AUTOINCREMENT: seq is the feed's cursor and must never go back.
 export const ACCOUNT_IDS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS account_ids (

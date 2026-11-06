@@ -33,6 +33,31 @@ header, sidebar or footer (`client/src/embed/EmbedChatPage.jsx`): the room, and 
   `/login?next=<the game page>`); a frame that is already open shows the new state after it
   reloads.
 
+### The embedded games' rooms
+
+Each embedded game (docs/AUTH.md, "Embedded games") shows this site's chat through this same-site
+embed, in a room of its own (decided 2026-11-04 for both; Bingo uses one room of this site's chat
+as its chat, decided 2026-10-19):
+
+| Game                  | Room slug    | Room name    | Embed URL inside the game                |
+| --------------------- | ------------ | ------------ | ---------------------------------------- |
+| Seasonal Bingo Royale | `bingo`      | "Bingo"      | `/embed/chat?room=bingo&theme=auto`      |
+| Seasonal Mini Games   | `mini-games` | "Mini Games" | `/embed/chat?room=mini-games&theme=auto` |
+
+`theme` may also be `light` or `dark` ("The embed page" above).
+
+- **Who creates them**: the site, at its start, while the game is switched on and no room has
+  that slug (`ensureGameRooms` in `server/src/chat/seed.js`, keyed by the game's slug; the
+  first-start rooms come first). Defaults: everyone reads (guests included), members write, not
+  guest-writable, listed, the usual moderation.
+- **After that they are ordinary rooms**: admins change their rules in the admin area like any
+  room, and a later start never changes them again. Switching a game off never deletes its room
+  or messages. A room an admin deleted, or gave another slug, comes back with the defaults on
+  the next start while its game is on, as the game shows it (recorded choice, 2026-11-06).
+- **Framing**: the game's pages are under `/games/<slug>/` on this site's own domain, so
+  `frame-ancestors 'self'` lets them frame `/embed/chat` (`server/src/http/securityHeaders.js`);
+  nothing to approve.
+
 ### On an approved other site
 
 - **No cookie there**: browsers block or partition third-party cookies, so the frame does not
@@ -250,6 +275,9 @@ different sites to the browser.
   message; a site's own rule beats the global one for each.
 - `server/test/embedSocket.test.js`: the WebSocket with a token (subprotocol), refused for an
   unknown token, closed at once on revocation, the member's own cookie socket untouched.
+- `server/test/gameRooms.test.js`: the embedded games' rooms (created once with their defaults,
+  an admin's edit kept, kept when the game is off) and `/embed/chat?room=<slug>` framed from
+  `/games/<slug>/` for both games.
 - `client/src/embed/embedChat.test.jsx`: same-site embed (panel only, login state, guests,
   theme, origin checks, unread).
 - `client/src/embed/embedForeign.test.jsx`: talks only to an approved parent; the hand-over

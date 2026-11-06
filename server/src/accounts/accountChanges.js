@@ -2,13 +2,14 @@
 // File:        accountChanges.js
 // Path:        server/src/accounts/accountChanges.js
 // Project:     Seasonal Entertainment
-// Description: The account changes the games must learn of (decided 2026-11-04: the site reports
-//              every account change that matters to Seasonal Bingo Royale, which then ends that
-//              player's game session; a deleted account becomes "Deleted player" there). Noted in
-//              the same transaction as the change: deleted (deletion.js), locked and unlocked
-//              (userAdmin.js setLocked), rights (setRole, setCanStartGames) — the user id, the
-//              kind and the time, nothing else, kept CHANGES_KEEP_DAYS. The game reads them in
-//              order through GET /api/games/bingo/account-changes (bingo/routes.js), from a
+// Description: The account changes the embedded games must learn of (decided 2026-11-04: the
+//              site reports every account change that matters to Seasonal Bingo Royale and
+//              Seasonal Mini Games, which then end that player's game session; a deleted account
+//              becomes "Deleted player" there). Noted in the same transaction as the change:
+//              deleted (deletion.js), locked and unlocked (userAdmin.js setLocked), rights
+//              (setRole, setCanStartGames) — the user id, the kind and the time, nothing else,
+//              kept CHANGES_KEEP_DAYS. One feed for all games: each reads it in order through
+//              GET /api/games/<slug>/account-changes (games/embeddedRoutes.js), from its own
 //              cursor (the table's seq, which never goes back).
 // ============================================================
 

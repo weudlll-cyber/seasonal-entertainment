@@ -3,7 +3,7 @@
 // Path:        server/src/accounts/accountIds.js
 // Project:     Seasonal Entertainment
 // Description: Account ids are never issued twice (docs/AUTH.md, "Account ids"; decided
-//              2026-11-04): games keyed on the id (Seasonal Bingo Royale) must never hand a new
+//              2026-11-04): games keyed on the id (the embedded games) must never hand a new
 //              account a deleted one's stats. users.id has no AUTOINCREMENT, so SQLite alone would
 //              give a new account the id of the newest deleted one. The highest id issued is kept
 //              twice: in the database (account_ids, survives deletions and the users table's

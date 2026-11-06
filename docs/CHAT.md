@@ -715,7 +715,8 @@ const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork, em
 // chat.images.iconLimit                          { bytes, message }: the icon limit (256 KB)
 //                                                and the upload's answer beyond it
 // chat.attach(httpServer)                        the WebSocket, once the server listens
-// await chat.start()                             first-start rooms and media, retention job
+// await chat.start()                             first-start rooms, the embedded games' rooms
+//                                                where missing, media, retention job
 ```
 
 **Unlisted and closed rooms** (2026-10-19, for calls, docs/CALLS.md): an unlisted room is left
@@ -739,7 +740,10 @@ panel, for members with **Rooms | Direct** tabs, the room's rules, and a small p
 docs/EMBED.md.
 
 - **On this site's own pages** (the games under the main domain; SE-NIGHT-2 part 6): the site's
-  login cookie and device unlock, exactly as on the site.
+  login cookie and device unlock, exactly as on the site. The embedded games have rooms of their
+  own, `bingo` and `mini-games`, made by the site while the game is switched on (guests read,
+  members write; afterwards an ordinary room an admin edits; never deleted by switching the
+  game off; docs/EMBED.md, "The embedded games' rooms"; decided 2026-11-04).
 - **On other sites an admin approved** (SE-NIGHT-2 follow-up, part A; owner decision
   2026-10-19): no cookie there. A login popup on this site hands the frame an embed token
   (docs/AUTH.md, "Embed tokens") and, unlocked with the password in the popup, the member's
