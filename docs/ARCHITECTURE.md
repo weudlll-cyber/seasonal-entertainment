@@ -99,6 +99,9 @@ commit, which the client build carries for the update notice):
 | `PRICE_BOT_MINING_RATES`            | (unset: no fair price, no mining times)       | the price bot's `mining_rates.json`, read-only (docs/BOTS.md)             |
 | `COINGECKO_API_KEY`                 | (unset: ETH, POL, BTC not connected)          | CoinGecko Demo key: the server fetches ETH/POL/BTC history (docs/BOTS.md) |
 | `BOT_ADMIN_EMBEDDED`                | (unset: off; `1` on)                          | embeds the event bot's admin page at `/bot-admin/` (docs/BOTS.md)         |
+| `GAMES_EMBEDDED`                    | (unset: none)                                 | the embedded games, slugs `bingo`, `mini-games` (docs/AUTH.md)            |
+| `GAMES_BINGO_EMBEDDED`              | (unset: off; `1` on)                          | also puts `bingo` in that list (installs from before it)                  |
+| `GAMES_SYNC_TOKEN`                  | (unset: the feed refuses everyone)            | the embedded games' token for their account-changes feed                  |
 | `DISCORD_CLIENT_ID`                 | (unset: Discord login off)                    | the Discord application's client id (docs/AUTH.md, "Discord")             |
 | `DISCORD_GUILD_ID`                  | (unset: Discord login off)                    | the Seasonal Tokens Discord server whose roles are read                   |
 | `DISCORD_CLIENT_SECRET`             | (unset: Discord login off)                    | the application's client secret (or the file below)                       |
@@ -205,7 +208,10 @@ games get a Play link. Images are chosen from a fixed list of the site's own ass
 (`shared/gameRules.js`), so no outside image is ever loaded. Admins edit cards at
 `/admin/games`; every change is audited. First start adds "Seasonal Race" (coming soon,
 `/games/race`, everyone); the race game itself stays in its own repository and is not connected
-yet.
+yet. Two games run inside the site as embedded games, each its own project: Seasonal Bingo
+Royale at `/games/bingo` and Seasonal Mini Games at `/games/mini-games`, signed in through this
+site's login and fed its account changes (`server/src/games/embedded.js`, `embeddedRoutes.js`;
+docs/AUTH.md, "Embedded games"), each with its chat room (docs/EMBED.md).
 
 ## Chat
 
@@ -495,9 +501,10 @@ server/
   src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md,
                            seed/earlier-seeds.json)
   src/games/               games hub: schema, store, public and admin routes, seed; the games'
-                           open sign-ups (openRounds.js, docs/OPEN-ROUNDS.md)
-  src/bingo/               Seasonal Bingo Royale's sign-in (authorize) and account-changes feed
-                           (docs/AUTH.md, "Seasonal Bingo Royale")
+                           open sign-ups (openRounds.js, docs/OPEN-ROUNDS.md); the embedded
+                           games, Bingo and Mini Games: their list (embedded.js), sign-in
+                           (authorize) and account-changes feed (embeddedRoutes.js; docs/AUTH.md,
+                           "Embedded games")
   src/chat/                chat area, mounted by mount.js (the only entry for the rest of the
                            server): schema, store, messages and what may be sent, viewer rules,
                            routes, moderation, WebSocket endpoint (socket.js) and hub, sender

@@ -17,6 +17,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readCallsConfig } from './calls/config.js';
 import { readDiscordConfig } from './discord/config.js';
+import { readEmbeddedGames } from './games/embedded.js';
 import { checkProduction } from './productionConfig.js';
 import { readSecretKey } from './secretKey.js';
 
@@ -180,14 +181,18 @@ export function readConfig(env = process.env) {
     // page"): the host's nginx asks GET /api/bot-admin/authorize before every request to it.
     // Off: that route answers 404 and the sidebar has no "Manage events".
     botAdminEmbedded: readOnOff(env.BOT_ADMIN_EMBEDDED, 'BOT_ADMIN_EMBEDDED'),
-    // Seasonal Bingo Royale at /games/bingo (docs/AUTH.md, "Seasonal Bingo Royale"): the host's
-    // nginx asks GET /api/games/bingo/authorize who the visitor is; the game reads the
-    // account-changes feed (deleted, locked, unlocked, rights; accounts/accountChanges.js) over
-    // the local port with syncToken (the installer's root-only
+    // The embedded games at /games/<slug> (games/embedded.js; docs/AUTH.md, "Embedded games"):
+    // the host's nginx asks GET /api/games/<slug>/authorize who the visitor is; each game reads
+    // the account-changes feed (deleted, locked, unlocked, rights; accounts/accountChanges.js)
+    // over the local port with syncToken, one for all games (the installer's root-only
     // /etc/seasonal/games-sync-token, passed in site.env; null: the feed refuses everyone).
-    // Off: both routes answer 404.
-    bingo: {
-      embedded: readOnOff(env.GAMES_BINGO_EMBEDDED, 'GAMES_BINGO_EMBEDDED'),
+    // embedded: the switched-on slugs (GAMES_EMBEDDED; GAMES_BINGO_EMBEDDED=1 still adds bingo,
+    // so a Bingo-only install keeps working); a game not in it: both routes answer 404.
+    games: {
+      embedded: readEmbeddedGames(
+        env.GAMES_EMBEDDED,
+        readOnOff(env.GAMES_BINGO_EMBEDDED, 'GAMES_BINGO_EMBEDDED')
+      ),
       syncToken: readSyncToken(env.GAMES_SYNC_TOKEN),
     },
     // ETH, POL and BTC prices from CoinGecko's free Demo API (reference/, docs/BOTS.md); null:
@@ -209,7 +214,7 @@ export function readConfig(env = process.env) {
       bootstrap: { windowMs: 60 * 60_000, max: 10 }, // attempts per IP
       twoFactor: { windowMs: 15 * 60_000, max: 5 }, // failed codes per user / per IP at login
       chatReport: { windowMs: 60_000, max: 10 }, // chat reports per IP
-      bingoFeed: { windowMs: 60_000, max: 60 }, // account-changes feed reads per address
+      gamesFeed: { windowMs: 60_000, max: 60 }, // account-changes feed reads per game and address
       memberSearch: { windowMs: 60_000, max: 60 }, // member searches per account
       // Guests per IP, so clearing cookies does not reset them. In memory, no IP is stored.
       chatGuestPost: { windowMs: 60_000, max: 20 }, // guest messages per IP

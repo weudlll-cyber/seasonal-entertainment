@@ -4,7 +4,7 @@
 // Project:     Seasonal Entertainment
 // Description: Comparing a secret a request sends with the one the server holds, in constant
 //              time: the bootstrap token (accounts/bootstrap.js) and the games' sync token
-//              (bingo/routes.js).
+//              (games/embeddedRoutes.js).
 // ============================================================
 
 import { createHash, timingSafeEqual } from 'node:crypto';

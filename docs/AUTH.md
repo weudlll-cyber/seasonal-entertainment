@@ -527,7 +527,7 @@ All answer `429 too_many_attempts`. Numbers are in `server/src/config.js` (`rate
 | `POST /api/2fa/login`                                        | 15 min | 5     | account  | failed codes    |
 | every `GET` under `/api`                                     | 1 min  | 1200  | IP       | every request   |
 | `POST /api/keys/handover`                                    | 1 h    | 10    | account  | every request   |
-| `GET /api/games/bingo/account-changes`                       | 1 min  | 60    | IP       | every request   |
+| `GET /api/games/<slug>/account-changes`                      | 1 min  | 60    | game, IP | every request   |
 
 `POST /api/auth/prelogin` also shares the two login limiters above (the same counters): a blocked
 name or address gets neither salts nor logins. The limit on every read (since 2026-10-21) covers
@@ -642,7 +642,7 @@ chat retention).
     sockets that may read the room), and they drop them at once, for moderators too (since
     2026-11-04; `useChatRoom.js`; the home page's Community box asks again).
 - **For the games**: the account's id and the time are noted as a `deleted` change for
-  Seasonal Bingo Royale (`account_changes`, "Seasonal Bingo Royale" below), in the same
+  the embedded games (`account_changes`, "Embedded games" below), in the same
   transaction; its id is never issued again ("Account ids").
 - **Open sockets** of the account close (`chatSessions.accountChanged`, all of them, embedded
   chats included).
@@ -737,30 +737,46 @@ of the file's message; a hidden message's file goes to moderators only; a file n
 to its uploader only; otherwise the answer is the same 404 as for an unknown file. "Remove file"
 is an organiser/admin route (with 2FA). Details: ARCHITECTURE.md, "Chat".
 
-## Seasonal Bingo Royale (/games/bingo)
+## Embedded games (/games/<slug>)
 
-The bingo game (its own repository, installable on its own with its own login) runs inside this
-site at `https://<site domain>/games/bingo`. There players sign in **only through this site's
-login**, delivered like the event bot's admin page: the host's nginx asks the site who the
-visitor is, and the game never sees a password or a session of this site (decided 2026-11-02).
-Code: `server/src/bingo/routes.js`. Both routes exist only while `GAMES_BINGO_EMBEDDED=1` (the
-installer's `--bingo`, docs/DEPLOYMENT.md); otherwise they answer 404. Every answer carries
-`Cache-Control: no-store`. Decisions:
+Two games, each its own repository, installable on its own with its own login, run inside this
+site at `https://<site domain>/games/<slug>` (a fixed list, `server/src/games/embedded.js`):
 
-- a website admin is a bingo admin (2026-11-03);
+| Game                  | Slug         | Path                | Chat room    | Decided                  |
+| --------------------- | ------------ | ------------------- | ------------ | ------------------------ |
+| Seasonal Bingo Royale | `bingo`      | `/games/bingo`      | `bingo`      | 2026-11-02 (room: 11-04) |
+| Seasonal Mini Games   | `mini-games` | `/games/mini-games` | `mini-games` | 2026-11-04               |
+
+There players sign in **only through this site's login**, delivered like the event bot's admin
+page: the host's nginx asks the site who the visitor is, and a game never sees a password or a
+session of this site (decided 2026-11-02 for Bingo, 2026-11-04 for Mini Games). One mechanism
+serves every game, the same for each: `server/src/games/embeddedRoutes.js`. A game's routes
+exist only while it is switched on: `GAMES_EMBEDDED`, a comma list of slugs (the installer's
+`--bingo` and `--mini-games`, docs/DEPLOYMENT.md, "Embedded games"); `GAMES_BINGO_EMBEDDED=1`,
+the switch of installs from before the list, still puts `bingo` in it. A game switched off,
+and any slug not in the list, answers 404. Every answer carries `Cache-Control: no-store`.
+Each game shows this site's chat in its own room (docs/EMBED.md, "The embedded games' rooms").
+Decisions, the same for both games (taken for Bingo on the dates given, for Mini Games on
+2026-11-04):
+
+- a website admin is a game admin (2026-11-03);
 - who may host matches is "may start games" (`users.can_start_games`; admins always), and every
-  account in good standing counts as confirmed for the bingo leaderboard (2026-11-04);
+  account in good standing counts as confirmed for a game's leaderboard (2026-11-04);
 - guests may watch matches and see the leaderboard without signing in; playing needs an account
   (2026-11-04);
 - a member's Discord steps show in the game as on this site (2026-11-04);
-- the site reports every account change that matters to the game; the game then ends that
+- the site reports every account change that matters to the games; a game then ends that
   player's game session, and a deleted account becomes "Deleted player" there, its points kept in
   past rounds and gone from the leaderboard (2026-11-04);
 - a renamed account shows its new name in the game from its next sign-in; nothing more
-  (2026-11-04).
+  (2026-11-04);
+- each game stays its own project, installable on its own; this site's installer only prepares
+  the site, and each game's installer writes its own route file (2026-11-04).
 
-**`GET /api/games/bingo/authorize`** is asked by the game's sign-in route
-(`/games/bingo/auth/website`) through nginx's `auth_request` (or Caddy's `forward_auth`), with the
+Below, `<slug>` is `bingo` or `mini-games`; both games get exactly the same answers.
+
+**`GET /api/games/<slug>/authorize`** is asked by the game's sign-in route (for example
+`/games/bingo/auth/website`) through nginx's `auth_request` (or Caddy's `forward_auth`), with the
 browser's own `Cookie`, `X-Original-Method` and `Origin`. The game keeps its own session
 afterwards.
 
@@ -804,25 +820,29 @@ database (the backups copy the database, never this file, so a restore of an old
 lower it). A new account gets one more than the highest of both and of the users table
 (`server/src/accounts/accountIds.js`, used by `createUser`). No rebuild of the users table.
 
-**Account changes for the game**: `account_changes` notes, in the same transaction as the change,
+**Account changes for the games**: `account_changes` notes, in the same transaction as the change,
 the account's id, the kind and the time, nothing else, for 365 days
 (`server/src/accounts/accountChanges.js`): `deleted` (an account's deletion, `deletion.js`),
 `locked` and `unlocked` (an admin's lock, `setLocked`), `rights` (a role change, `setRole`, or
 "may start games", `setCanStartGames`), each only when the value really changes.
-`GET /api/games/bingo/account-changes?since=<cursor>` answers
+One feed and one table for all games: `GET /api/games/<slug>/account-changes?since=<cursor>`
+answers the same for every switched-on game, and each game keeps its own cursor. It answers
 `{"changes":[{"id":<user id>,"kind":"deleted|locked|unlocked|rights"}],"next":"<cursor>"}` in
 order, at most 500 an answer (ask again with `next`; `since` absent or `0` from the start;
 `next` stays the same while nothing is new), for example
 `{"changes":[{"id":42,"kind":"locked"},{"id":17,"kind":"deleted"}],"next":"118"}`.
 
 - Only with the header `X-Games-Sync-Token` equal to the token in the root-only file
-  `/etc/seasonal/games-sync-token` (mode 600, made once by the installer, passed to the site as
-  `GAMES_SYNC_TOKEN` in `site.env`, never printed or logged), compared in constant time
+  `/etc/seasonal/games-sync-token` (mode 600, made once by the installer, one for all games,
+  passed to the site as `GAMES_SYNC_TOKEN` in `site.env`, never printed or logged), compared in constant time
   (`server/src/http/tokenMatches.js`); a wrong or missing token, or none set up: 401.
-- Rate-limited (`rateLimits.bingoFeed`, 60 a minute per address); 404 while switched off.
+- Rate-limited (`rateLimits.gamesFeed`, 60 a minute per game and address); 404 while that game
+  is switched off.
 - Reached by the game over the site's local port only (`http://127.0.0.1:<port>`, the port in
-  `/etc/seasonal/site-local-port`); the site's nginx server block denies the path.
-- Tests: `server/test/bingo.test.js`.
+  `/etc/seasonal/site-local-port`); the site's nginx server block denies these paths, its own
+  Caddy answers them 404.
+- Tests: `server/test/embeddedGames.test.js` (sign-in, the list), `server/test/embeddedFeed.test.js`
+  (the feed, account ids), `server/test/gameRooms.test.js` (the rooms and the framed chat).
 
 ## Tests
 
