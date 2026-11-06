@@ -68,7 +68,7 @@ run (see "Rollback").
 | CoinGecko Demo API key           | —                                                                     | hidden, on a terminal, once; empty: no prices; later with `--coingecko`                                |
 | Discord login                    | `DISCORD_CLIENT_ID`, `DISCORD_GUILD_ID`, `DISCORD_CLIENT_SECRET_FILE` | once; the secret from a file or typed hidden; empty: none; later with `--discord` ("Discord login")    |
 | The event bot's admin page       | `BOT_ADMIN_URL`, `BOT_ADMIN_TOKEN_FILE`, `BOT_ADMIN_TOKEN_KEY`        | nginx mode only; empty: none, not asked again; later with `--bot-admin` ("The event bot's admin page") |
-| Seasonal Bingo Royale            | `BINGO` (yes/no)                                                      | default no; asked once; later with `--bingo` ("Seasonal Bingo Royale")                                 |
+| Embedded games                   | `BINGO`, `MINI_GAMES` (yes/no)                                        | default no; each asked once; later with `--bingo`, `--mini-games` ("Embedded games")                   |
 | The first admin's name and email | `ADMIN_NAME`, `ADMIN_EMAIL`                                           | asked at the end                                                                                       |
 | The first admin's password       | —                                                                     | **always** typed on the terminal, shown as `*`; never from a file or flag                              |
 
@@ -370,37 +370,53 @@ list, since the bot takes the token only from allowed addresses; and the token h
 Caddy from a root-only file mounted into the container, never in the Caddyfile in the
 repository.
 
-### Seasonal Bingo Royale
+### Embedded games
 
-The bingo game is its own project with its own installer; inside this site it runs at
-`https://<site domain>/games/bingo`, and players sign in there with this site's login (docs/AUTH.md,
-"Seasonal Bingo Royale"). This installer only prepares the site
-(`deploy/install/lib/bingo.sh`); the bingo installer writes its own route file and never edits
-this site's files.
+Two games can run inside this site, each its own project with its own installer (decided
+2026-11-04): Seasonal Bingo Royale at `https://<site domain>/games/bingo` and Seasonal Mini Games at
+`https://<site domain>/games/mini-games`. Players sign in there with this site's login
+(docs/AUTH.md, "Embedded games"), and each game shows this site's chat in its own room
+(docs/EMBED.md). This installer only prepares the site (`deploy/install/lib/games.sh`); each
+game's installer writes its own route file and never edits this site's files.
 
-- **The question** "Will Seasonal Bingo Royale be embedded at /games/bingo?" (default no) is asked
-  once on a terminal and remembered (`BINGO` in `install.conf`); `sudo ./deploy/install.sh
---bingo` asks again, also with `--update`; `BINGO=yes|no` in an answers file; an unattended run
-  never asks and keeps what was remembered (no when nothing was).
-- **With yes**: the games' sync token is made once, 64 hex characters, in
+- **The questions**, one per game, default no, each asked once on a terminal and remembered in
+  `install.conf`:
+
+  | Question                                                     | Answer key   | Asks again     |
+  | ------------------------------------------------------------ | ------------ | -------------- |
+  | "Will Seasonal Bingo Royale be embedded at /games/bingo?"    | `BINGO`      | `--bingo`      |
+  | "Will Seasonal Mini Games be embedded at /games/mini-games?" | `MINI_GAMES` | `--mini-games` |
+
+  `sudo ./deploy/install.sh --bingo` or `--mini-games` asks that one again, also with `--update`
+  (not with `--yes`); `BINGO=yes|no` and `MINI_GAMES=yes|no` in an answers file. An unattended
+  run never asks and keeps what was remembered (no when nothing was).
+
+- **An install from before Mini Games** (`BINGO` remembered, no `MINI_GAMES`): `--update` on a
+  terminal asks the Mini Games question once; an unattended one keeps Bingo as it was and
+  remembers Mini Games as no. Nothing else to do.
+- **With any game yes**: the games' sync token is made once, 64 hex characters, in
   `/etc/seasonal/games-sync-token` (root, mode 600, never printed or logged; kept on every later
-  run), and `site.env` gets `GAMES_BINGO_EMBEDDED=1` and `GAMES_SYNC_TOKEN` (its value). With no,
-  neither; the site's bingo routes then answer 404. The bingo installer reads the token from
-  that file and sends it as `X-Games-Sync-Token` to the account-changes feed.
+  run; one token for all games), and `site.env` gets `GAMES_EMBEDDED` (the games answered yes,
+  e.g. `bingo,mini-games`) and `GAMES_SYNC_TOKEN` (its value). With both no, neither; the games'
+  routes then answer 404. `GAMES_BINGO_EMBEDDED`, written by installs from before the list, is
+  removed (the site still reads it as "bingo is in the list"). Each game's installer reads the
+  token from that file and sends it as `X-Games-Sync-Token` to the account-changes feed.
 - **nginx mode**: the site's server block (its domain's, on 443) holds exactly
   `include /etc/seasonal/routes/*.conf;`, and the folder `/etc/seasonal/routes/` (root, 755) is made
-  on every run if missing. The bingo installer puts its file there (it holds a proxy secret,
+  on every run if missing. Each game's installer puts its file there (it holds a proxy secret,
   mode 600). This installer never reads, logs, copies, backs up or removes files in it; `nginx -t`
   passes with the folder empty, and a broken file there makes the usual check fail before a
-  reload. The same server block denies `/api/games/bingo/account-changes` (`deny all`, 403): the
-  game reads that feed over the site's local port, `http://127.0.0.1:<port>`, the port in
+  reload. The same server block denies every game's feed, `/api/games/bingo/account-changes` and
+  `/api/games/mini-games/account-changes` (`deny all`, 403), whether the game is on or not: a game
+  reads its feed over the site's local port, `http://127.0.0.1:<port>`, the port in
   `/etc/seasonal/site-local-port` (root, 644; written on every run, 3800).
 - **Own-Caddy mode**: the site block of `deploy/site/Caddyfile` has
   `import /etc/caddy/routes/*.caddy`, and `deploy/site/routes/` is mounted there (kept in git by
-  its `.gitkeep`; anything else in it is ignored by git). The feed's path answers 404 there. The
-  site's port is not published on the host in this mode, so no port file is written: the game
-  reaches the feed only from the site's Docker network (`http://site:3800`).
-- Tests: `bash deploy/test/bingo.test.sh` (CI too).
+  its `.gitkeep`; anything else in it is ignored by git). Both feeds answer 404 there. The site's
+  port is not published on the host in this mode, so no port file is written: a game reaches the
+  feed only from the site's Docker network (`http://site:3800`).
+- Tests: `bash deploy/test/games.test.sh` (CI too; with Docker it also runs the real nginx and
+  the site's Caddy).
 
 ### What you still do yourself
 

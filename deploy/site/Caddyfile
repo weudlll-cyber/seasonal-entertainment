@@ -34,11 +34,13 @@
 	# Caddy replaces any X-Forwarded-For a visitor sends with the visitor's real address;
 	# the site trusts exactly this one proxy (TRUST_PROXY=1).
 	reverse_proxy site:3800
-	# Routes of other projects (Seasonal Bingo Royale's installer writes its own file into
+	# Routes of other projects (each embedded game's installer writes its own file into
 	# deploy/site/routes/, mounted here; docs/DEPLOYMENT.md). This site never edits them.
 	import /etc/caddy/routes/*.caddy
-	# The games' account feed is for the game itself, never through this proxy (docs/AUTH.md).
-	respond /api/games/bingo/account-changes* 404
+	# The games' account feeds are for the games themselves, never through this proxy
+	# (docs/AUTH.md): every game of deploy/install/lib/games.sh.
+	@gameFeeds path /api/games/bingo/account-changes* /api/games/mini-games/account-changes*
+	respond @gameFeeds 404
 	log {
 		output stdout
 		# The access log writes request and answer headers (Caddy itself hides only Cookie,

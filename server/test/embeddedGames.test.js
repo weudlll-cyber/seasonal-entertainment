@@ -1,6 +1,6 @@
 // ============================================================
-// File:        bingo.test.js
-// Path:        server/test/bingo.test.js
+// File:        embeddedGames.test.js
+// Path:        server/test/embeddedGames.test.js
 // Project:     Seasonal Entertainment
 // Description: Guards the sign-in of the embedded games (games/embeddedRoutes.js,
 //              games/embedded.js; docs/AUTH.md, "Embedded games"), for Bingo and Mini Games
