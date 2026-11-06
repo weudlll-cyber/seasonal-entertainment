@@ -14,21 +14,6 @@ entry waits for.
 - **Site and bots on the same VPS** — reading the bots' files through read-only mounts assumes
   it (the installer's bot-file answers, docs/DEPLOYMENT.md, "What it asks").
 
-### Built, waiting for the merge
-
-- **Embedded games as a list: Seasonal Mini Games beside Seasonal Bingo Royale** — built on
-  `feat/embedded-games`, waiting for the owner's approval to merge (SE-EMBEDDED-GAMES; decided
-  2026-11-04): one mechanism for every embedded game, a fixed list `bingo` and `mini-games`
-  (`server/src/games/embedded.js`, `embeddedRoutes.js`): `GET /api/games/<slug>/authorize` and
-  `/account-changes` per game switched on (`GAMES_EMBEDDED`; `GAMES_BINGO_EMBEDDED=1` still means
-  bingo), else 404; one feed, one token, each game its own cursor. Each game's chat room
-  (`bingo`, `mini-games`) made at the start while the game is on, never overwritten or deleted
-  afterwards (`ensureGameRooms`, `server/src/chat/seed.js`). The installer asks one question per
-  game (`--bingo`, `--mini-games`; `deploy/install/lib/games.sh`) and denies every feed in nginx
-  and Caddy. Recorded choices (2026-11-06): a game room an admin deleted comes back on the next
-  start while its game is on (docs/EMBED.md, "The embedded games' rooms"); the installer writes
-  `GAMES_EMBEDDED` and removes `GAMES_BINGO_EMBEDDED` (docs/DEPLOYMENT.md, "Embedded games").
-
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
@@ -88,6 +73,18 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Embedded games as a list: Seasonal Mini Games beside Seasonal Bingo Royale** — closed by
+  `feat/embedded-games` (SE-EMBEDDED-GAMES; decided 2026-11-04, merged 2026-11-06): one mechanism
+  for every embedded game, a fixed list `bingo` and `mini-games` (`server/src/games/embedded.js`,
+  `embeddedRoutes.js`): `GET /api/games/<slug>/authorize` and `/account-changes` per game switched
+  on (`GAMES_EMBEDDED`; `GAMES_BINGO_EMBEDDED=1` still means bingo), else 404; one feed, one
+  token, each game its own cursor. Each game's chat room (`bingo`, `mini-games`) made at the start
+  while the game is on, never overwritten or deleted afterwards (`ensureGameRooms`,
+  `server/src/chat/seed.js`). The installer asks one question per game (`--bingo`,
+  `--mini-games`; `deploy/install/lib/games.sh`) and denies every feed in nginx and Caddy.
+  Recorded choices (2026-11-06): a game room an admin deleted comes back on the next start while
+  its game is on (docs/EMBED.md, "The embedded games' rooms"); the installer writes
+  `GAMES_EMBEDDED` and removes `GAMES_BINGO_EMBEDDED` (docs/DEPLOYMENT.md, "Embedded games").
 - **Games' open sign-ups on the website** — closed by `feat/se-open-rounds` (SE-OPEN-ROUNDS,
   decided 2026-11-04): a game's optional sign-up status URL (Admin → Games) is read every minute
   through the guarded fetch and checked against the shared contract (docs/OPEN-ROUNDS.md); the
