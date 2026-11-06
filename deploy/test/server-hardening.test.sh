@@ -10,10 +10,13 @@
 #              without their query, nothing else's logging changed; LiveKit's signalling port
 #              listens on 127.0.0.1 (every address only in Caddy mode); the installer refuses a
 #              checkout that anyone but root could change; the backup folder is 750, its writer
-#              uid 1000, its group the PC's read-only backup user when there is one. Generated
+#              uid 1000, its group the PC's read-only backup user when there is one; the recordings
+#              folder is 2775, owner 1000, group 0, and a link in its place is refused. Generated
 #              files and folder rules are checked as text, with stat, id and install pretended,
-#              so no root is needed; as root, the backup folder's rules are also tried for real
-#              (uid 1000 writes and reads, another uid cannot list). Plain checks, no framework.
+#              so no root is needed; as root, both folders' rules are also tried for real
+#              (backups: uid 1000 writes and reads, another uid cannot list; recordings: the egress
+#              user, uid 1001 group 0, writes, the site's uid 1000 reads and deletes, another uid
+#              cannot write). Plain checks, no framework.
 #              Run: bash deploy/test/server-hardening.test.sh; CI runs it. Exit code 1 on any
 #              failure.
 # ============================================================
@@ -35,6 +38,8 @@ source "$LIB/nginx.sh"
 source "$LIB/nginx-default.sh"
 # shellcheck source=SCRIPTDIR/../install/lib/bot-admin.sh
 source "$LIB/bot-admin.sh"
+# shellcheck source=SCRIPTDIR/../install/lib/games.sh
+source "$LIB/games.sh"
 # shellcheck source=SCRIPTDIR/../install/lib/services.sh
 source "$LIB/services.sh"
 
@@ -129,6 +134,31 @@ if [[ "$EUID" == 0 ]] && command -v setpriv >/dev/null; then
   if ! setpriv --reuid 1001 --regid 1001 --clear-groups ls "$BACKUP_HOST_DIR" >/dev/null 2>&1; then ok 'another account cannot even list it'; else bad 'another account lists the backups'; fi
 else
   echo "skip the backup folder for real (needs root and setpriv)"
+fi
+
+# --- The recordings folder ---
+REC_DIR="$work/recordings"
+install() { echo "install $*" >>"$work/install"; }
+: >"$work/install"
+prepare_recordings_dir "$REC_DIR"
+if [[ "$(cat "$work/install")" == "install -d -m 2775 -o 1000 -g 0 $REC_DIR" ]]; then ok 'recordings folder 2775, owner 1000, group 0'; else bad "recordings folder: $(cat "$work/install")"; fi
+unset -f install
+ln -s "$work" "$work/rec-link"
+out="$( (prepare_recordings_dir "$work/rec-link") 2>&1)"
+if [[ "$out" == *"is a link, not the recordings folder"* ]]; then ok 'a link in its place is refused, nothing changed'; else bad "link: $out"; fi
+
+# As root: the rules for real, on a folder made 755 1000:1000 as before 2026-11-06.
+if [[ "$EUID" == 0 ]] && command -v setpriv >/dev/null; then
+  mkdir -p "$REC_DIR" && chown 1000:1000 "$REC_DIR" && chmod 755 "$REC_DIR"
+  prepare_recordings_dir "$REC_DIR"
+  if [[ "$(command stat -c '%a %u %g' "$REC_DIR")" == '2775 1000 0' ]]; then ok 'a re-run fixes an old folder: 2775 1000:0'; else bad "real recordings folder: $(command stat -c '%a %u %g' "$REC_DIR")"; fi
+  chmod 755 "$work"
+  # The egress image's user: uid 1001, primary group 0, umask 022.
+  if setpriv --reuid 1001 --regid 0 --clear-groups sh -c "umask 022 && echo mp4 >'$REC_DIR/call.mp4'"; then ok 'the egress (uid 1001, group 0) writes a recording'; else bad 'the egress cannot write'; fi
+  if setpriv --reuid 1000 --regid 1000 --clear-groups sh -c "cat '$REC_DIR/call.mp4' >/dev/null && rm '$REC_DIR/call.mp4'"; then ok 'the site (uid 1000) reads and deletes it'; else bad 'the site cannot read or delete'; fi
+  if ! setpriv --reuid 1002 --regid 1002 --clear-groups sh -c "echo x >'$REC_DIR/other'" 2>/dev/null; then ok 'another account cannot write there'; else bad 'another account writes recordings'; fi
+else
+  echo "skip the recordings folder for real (needs root and setpriv)"
 fi
 
 [[ "$failures" -eq 0 ]] || { echo "$failures failed"; exit 1; }

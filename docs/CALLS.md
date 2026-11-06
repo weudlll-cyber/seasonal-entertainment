@@ -393,6 +393,16 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
     encoding options have no channel setting, so mono cannot be set (measured: stereo).
   - **The egress writes** to `CALLS_EGRESS_OUTPUT_DIR` (its own mount of the same folder; the
     same path when unset). The file is named `call-<id>-<time>-<random>.mp4`.
+  - **The folder** (decided 2026-11-06): owner uid 1000, group 0, mode 2775. The egress image
+    (v1.15.0) runs as uid 1001 with group 0 and writes its files 644; the site's user (uid 1000)
+    reads them and deletes them, which needs write on the folder; setgid keeps group 0 on what
+    lands there. The installer sets this on every run (`prepare_recordings_dir`,
+    `deploy/install/lib/services.sh`). Before, the folder was 755 1000:1000: egress recorded
+    and then failed at the stop with "Local upload failed: … permission denied", and no file was
+    kept. The owner's PC test of 2026-10-22 did not show it: Docker Desktop's folders ignore
+    these permissions.
+  - **Memory**: the egress container may use 3 GB; one recording peaked at 1.79 GB on the VPS
+    (egress's "maxMemory", 2026-11-06).
 - **CPU** (decided 2026-11-06): the egress container is limited to 3 CPUs and counts a
   recording at 2.0 of them (`cpu_cost.room_composite_cpu_cost` in
   `deploy/calls/docker-compose.recording.yml`). Egress v1.15.0 takes a job only when that cost
