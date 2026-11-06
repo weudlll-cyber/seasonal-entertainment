@@ -4,9 +4,9 @@
 // Project:     Seasonal Entertainment
 // Description: Login form, with a second step (code or recovery code) for accounts with 2FA.
 //              After success it returns to the page that sent the visitor here (?next=,
-//              same-site paths only; session/nextPage.js) or to the account page; a member who
-//              must still set up 2FA (the site requires it for everyone) goes to its setup
-//              instead; the link to
+//              same-site paths only, an embedded game's page with a full page load;
+//              session/nextPage.js goToNext) or to the account page; a member who must still set
+//              up 2FA (the site requires it for everyone) goes to its setup instead; the link to
 //              the registration keeps ?next=. The password itself never leaves
 //              the browser: only the auth key derived from it is sent (session/credentials.js).
 //              Once logged in, the same derived keys open (or first create) the member's key
@@ -25,7 +25,7 @@ import { FormField, FormMessage } from '../components/FormField.jsx';
 import SecondFactorForm from '../components/SecondFactorForm.jsx';
 import { useKeys } from '../keys/KeyContext.jsx';
 import { logIn } from '../session/credentials.js';
-import { inEmbedLoginFlow, safeNext, withNext } from '../session/nextPage.js';
+import { goToNext, inEmbedLoginFlow, withNext } from '../session/nextPage.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { BusyButton } from '../components/BusyButton.jsx';
 import DiscordButton from '../discord/DiscordButton.jsx';
@@ -52,7 +52,8 @@ export default function LoginPage() {
     passwordKeys.current = null;
     setUser(user);
     const setUp2fa = user.twoFactorRequired && !roleAtLeast(user.role, 'organiser');
-    navigate(setUp2fa ? '/account#two-factor' : safeNext(params.get('next')), { replace: true });
+    if (setUp2fa) navigate('/account#two-factor', { replace: true });
+    else goToNext(navigate, params.get('next'));
   }
 
   async function onSubmit(event) {

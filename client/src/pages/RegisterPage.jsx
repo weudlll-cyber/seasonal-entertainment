@@ -9,7 +9,8 @@
 //              key derived from it are sent (session/credentials.js). The new member's key pair
 //              for private messages is made right away (keys/), and the recovery code offered.
 //              Afterwards it returns to the page that sent the visitor (?next=, e.g. the
-//              embedded chat's login popup), like the login page (session/nextPage.js). The card
+//              embedded chat's login popup, or a game's page), like the login page
+//              (session/nextPage.js goToNext). The card
 //              shows the logo (FormLogo.jsx), except in the chat's login popup. While the
 //              "Registration open" setting is off, the page says registration is closed. While
 //              Discord login is set up, a hint with "Sign up with Discord" comes first (only
@@ -33,7 +34,7 @@ import { FormField, FormMessage } from '../components/FormField.jsx';
 import { RepeatPasswordField, useRepeatPassword } from '../components/RepeatPasswordField.jsx';
 import { useKeys } from '../keys/KeyContext.jsx';
 import { keysForNewPassword } from '../session/credentials.js';
-import { inEmbedLoginFlow, safeNext, withNext } from '../session/nextPage.js';
+import { goToNext, inEmbedLoginFlow, withNext } from '../session/nextPage.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { BusyButton } from '../components/BusyButton.jsx';
 import DiscordSignupHint from '../discord/DiscordSignupHint.jsx';
@@ -74,7 +75,7 @@ export default function RegisterPage() {
       await keys.openWithPassword({ authKey, wrapKey }, user.id).catch(() => {});
       setUser(user);
       // Back where the visitor came from (e.g. the embedded chat's login popup), as after login.
-      navigate(safeNext(params.get('next')), { replace: true });
+      goToNext(navigate, params.get('next'));
     } catch (err) {
       setError(err.message);
       setBusy(false);
