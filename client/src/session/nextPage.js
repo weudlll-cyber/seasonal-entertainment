@@ -24,11 +24,13 @@ const GAME_PAGE = /^\/games\/./;
 
 // After a login, registration or Discord sign-up: to the safe `next` (raw ?next= value). A game's
 // page needs a real request (the app has no route for it, and the game's sign-in route must be
-// asked); safeNext keeps it a path on this site, so the page load never leaves the origin.
-// navigate: the router's, used for every other path as before (replacing the login page).
+// asked); safeNext keeps it a path on this site, so the page load never leaves the origin. Both
+// ways replace the login page in the browser's history, so Back does not return to a form that
+// is already done: location.replace for a game, navigate(…, { replace: true }), the router's,
+// for every other path as before.
 export function goToNext(navigate, next) {
   const path = safeNext(next);
-  if (GAME_PAGE.test(path)) window.location.assign(path);
+  if (GAME_PAGE.test(path)) window.location.replace(path);
   else navigate(path, { replace: true });
 }
 

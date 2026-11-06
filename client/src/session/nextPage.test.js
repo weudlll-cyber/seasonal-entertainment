@@ -32,10 +32,17 @@ it("knows the embedded chat's login popup only by a safe next", () => {
 describe('goToNext', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  // Where goToNext sends `next`: ['load', path] for a full page load, ['app', path] inside the app.
+  // Where goToNext sends `next`: ['load', path] for a full page load in place of the current page,
+  // ['app', path, options] inside the app.
   function wentTo(next) {
     const went = [];
-    vi.stubGlobal('location', { ...window.location, assign: (path) => went.push(['load', path]) });
+    // A page load that keeps the login page in the history (assign) would be wrong.
+    const load = (how) => (path) => went.push([how, path]);
+    vi.stubGlobal('location', {
+      ...window.location,
+      assign: load('assign'),
+      replace: load('load'),
+    });
     goToNext((path, options) => went.push(['app', path, options]), next);
     return went;
   }

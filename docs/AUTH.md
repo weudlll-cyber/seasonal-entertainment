@@ -814,7 +814,9 @@ afterwards.
   of this site's app, so after the login, the registration and the Discord sign-up a `next` under
   `/games/<slug>/` is opened with a full page load (`goToNext` in `client/src/session/nextPage.js`;
   otherwise the app would show "Page not found" until a reload); `/games` itself and every other
-  path stay inside the app. The Discord login redirects on the server and needs nothing more.
+  path stay inside the app. Either way the login or registration page is replaced in the browser's
+  history, so Back does not return to it. The Discord login redirects on the server and needs
+  nothing more.
 
 **Account ids** (decided 2026-11-04): `users.id` has no AUTOINCREMENT, so SQLite alone would give
 a new account the id of the newest deleted one, and the game would hand it that player's stats.

@@ -36,11 +36,14 @@ const renderAt = (path) =>
 const type = (label, value) =>
   fireEvent.change(screen.getByLabelText(label), { target: { value } });
 
-// The browser's full page loads (window.location.assign), recorded instead of made.
+// The browser's full page loads, recorded instead of made: replace (the login page leaves the
+// history), never assign (it would stay there).
 let assign;
+let replace;
 beforeEach(() => {
   assign = vi.fn();
-  vi.stubGlobal('location', { ...window.location, assign });
+  replace = vi.fn();
+  vi.stubGlobal('location', { ...window.location, assign, replace });
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -62,16 +65,19 @@ it("the brief's address decodes to the game's sign-in route", () => {
 it('after the login a path of the app stays inside the app', async () => {
   await logIn('/chat');
   await screen.findByText('/chat', {}, { timeout: 20_000 });
-  expect(assign).not.toHaveBeenCalled();
+  expect([assign, replace].map((fn) => fn.mock.calls.length)).toEqual([0, 0]);
 });
 
 describe.each(['bingo', 'mini-games'])('the way back to /games/%s', (slug) => {
   const NEXT = `/games/${slug}/auth/website?next=%2Fgames%2F${slug}%2F`;
-  const loaded = () => expect.poll(() => assign.mock.calls, { timeout: 20_000 });
+  const loaded = async (path) => {
+    await expect.poll(() => replace.mock.calls, { timeout: 20_000 }).toEqual([[path]]);
+    expect(assign).not.toHaveBeenCalled();
+  };
 
   it("after the login the browser loads the game's sign-in route", async () => {
     await logIn(NEXT);
-    await loaded().toEqual([[NEXT]]);
+    await loaded(NEXT);
   });
 
   it('after the registration too', async () => {
@@ -83,7 +89,7 @@ describe.each(['bingo', 'mini-games'])('the way back to /games/%s', (slug) => {
     type('Repeat password', 'correct-horse-1');
     fireEvent.click(screen.getByLabelText(/at least 14 years old/));
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
-    await loaded().toEqual([[NEXT]]);
+    await loaded(NEXT);
   });
 
   it('after the Discord sign-up too', async () => {
@@ -96,7 +102,7 @@ describe.each(['bingo', 'mini-games'])('the way back to /games/%s', (slug) => {
     await screen.findByLabelText('Username');
     fireEvent.click(screen.getByLabelText(/at least 14 years old/));
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
-    await loaded().toEqual([[NEXT]]);
+    await loaded(NEXT);
   });
 
   it('"Register" and "Log in with Discord" carry the same next along', async () => {
