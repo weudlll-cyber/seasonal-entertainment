@@ -12,8 +12,9 @@
 #              scripts/bootstrap-admin.mjs on stdin, after which BOOTSTRAP_TOKEN is removed; the
 #              nightly encrypted backup and one backup now on every run (none in the re-run of
 #              --update, which took its own before the new code), in a backup folder only its
-#              writer, root and the PC's read-only backup user may open (750). Long steps and
-#              waits run under run_step (common.sh).
+#              writer, root and the PC's read-only backup user may open (750); the recordings
+#              folder the egress writes into and the site reads and deletes from (2775, owner
+#              uid 1000, group 0). Long steps and waits run under run_step (common.sh).
 # ============================================================
 
 compose_site() { (cd "$INSTALL_DIR/$SITE_DIR_REL" && docker compose "$@"); }
@@ -28,6 +29,19 @@ prepare_backup_dir() {
   local group=0
   if id -u "$BACKUP_READER" >/dev/null 2>&1; then group="$(id -g "$BACKUP_READER")"; fi
   install -d -m 750 -o 1000 -g "$group" "$BACKUP_HOST_DIR"
+}
+
+# The recordings folder (docs/CALLS.md, "Recording"): the egress image's user writes the files
+# (uid 1001, primary group 0, umask 022: files 644, livekit/egress v1.15.0), the site's "node"
+# user (uid 1000) reads them and deletes them, which needs write on the folder. So owner 1000,
+# group 0 with write, setgid so whatever lands there keeps group 0: 2775. Like the backup folder,
+# install -d also sets an existing folder's mode and owner (one made 755 1000:1000 before
+# 2026-11-06 is fixed on the next run). The folder lies in the site's volume, under media/ that
+# the site's own user owns: a link there would make root change something else, so it is refused.
+prepare_recordings_dir() {
+  local dir="$1"
+  [[ ! -L "$dir" ]] || die "$dir is a link, not the recordings folder; remove it and run the installer again"
+  install -d -m 2775 -o 1000 -g 0 "$dir"
 }
 
 start_site() {
@@ -85,7 +99,7 @@ calls_answer() { [[ "$(curl_here "$CALLS_DOMAIN" / 2>/dev/null)" == OK ]]; }
 start_calls() {
   [[ -n "${CALLS_DOMAIN:-}" ]] || return 0
   if [[ "${RECORDING:-no}" == yes ]]; then
-    install -d -m 755 -o 1000 -g 1000 "$(recordings_host_dir)"
+    prepare_recordings_dir "$(recordings_host_dir)"
   fi
   write_calls_env
   if [[ "$MODE" == caddy ]]; then

@@ -60,4 +60,6 @@ services:
       resources:
         limits:
           cpus: '3'
-          memory: 2G
+          # Measured on the VPS: up to 1.79 GB while recording (egress's own "maxMemory",
+          # 2026-11-06), too close to the earlier 2G.
+          memory: 3G

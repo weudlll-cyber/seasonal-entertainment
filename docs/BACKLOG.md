@@ -14,18 +14,6 @@ entry waits for.
 - **Site and bots on the same VPS** — reading the bots' files through read-only mounts assumes
   it (the installer's bot-file answers, docs/DEPLOYMENT.md, "What it asks").
 
-### Built, waiting for the merge
-
-- **"Start recording" failed on the VPS** — built on `fix/recording-cpu` (found live 2026-11-06:
-  "Something went wrong on the server.", the site logged an unhandled TimeoutError, the egress
-  logged nothing). Egress v1.15.0 takes a recording only when its CPU cost (default 4) fits the
-  container's CPUs (2): it declined every one and LiveKit's start hung until the SDK gave up.
-  Now 3 CPUs and a cost of 2.0 (`deploy/calls/docker-compose.recording.yml`), the egress
-  client gives up after 8 seconds, and a start nobody answers is `503 recording_unavailable`
-  with a message (`server/src/calls/service.js`, `recordingRoutes.js`; docs/CALLS.md,
-  "Recording"). Applied on the VPS by the installer's `--update`; a real recorded call there
-  is still to try (below).
-
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
@@ -85,6 +73,23 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Recordings failed at their end on the VPS: "permission denied"** — closed by
+  `fix/recording-dir` (found live 2026-11-06, after PR #47): egress recorded, then could not write
+  its file, as the recordings folder was 755 1000:1000 and the egress image's user is uid 1001,
+  group 0. Now owner 1000, group 0, mode 2775, set by the installer on every run
+  (`prepare_recordings_dir`, `deploy/install/lib/services.sh`; a link there is refused), and
+  the egress may use 3 GB (one recording peaked at 1.79 GB). docs/CALLS.md and
+  docs/DEPLOYMENT.md, "Recording" and "Call recording".
+- **"Start recording" failed on the VPS** — closed by `fix/recording-cpu` (PR #47, merged
+  2026-11-06; found live: "Something went wrong on the server.", the site logged an unhandled
+  TimeoutError, the egress logged nothing). Egress v1.15.0 takes a recording only when its CPU
+  cost (default 4) fits the container's CPUs (2): it declined every one and LiveKit's start hung
+  until the SDK gave up.
+  Now 3 CPUs and a cost of 2.0 (`deploy/calls/docker-compose.recording.yml`), the egress
+  client gives up after 8 seconds, and a start nobody answers is `503 recording_unavailable`
+  with a message (`server/src/calls/service.js`, `recordingRoutes.js`; docs/CALLS.md,
+  "Recording"). Applied on the VPS by the installer's `--update`; a real recorded call there
+  is still to try (part one, "A recorded call on the VPS").
 - **After the login a game's page opened inside the app** — closed by `fix/games-next`
   (SE-GAMES-NEXT, merged 2026-11-06; found in the Mini Games rehearsal on master 82e9e30, Bingo
   the same): after the login, the registration or the Discord sign-up a `next` under

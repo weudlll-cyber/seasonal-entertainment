@@ -1072,13 +1072,19 @@ server (docs/CALLS.md, "Moving the call service").
 ### Call recording
 
 The installer sets this up with `RECORDING=yes`. By hand (docs/CALLS.md, "Recording"):
-`deploy/calls/docker-compose.recording.yml` adds
-LiveKit's egress (records in its own Chrome; limited to 3 CPUs and 2 GB, and a recording is
-counted at 2.0 CPUs, its `cpu_cost`) and Redis (127.0.0.1 only). Egress takes a recording only
-when that cost fits its free CPUs; with its default cost (4) and the earlier 2-CPU limit it
-declined every one, and the start timed out (fixed 2026-11-06; docs/CALLS.md, "Recording"). In `deploy/calls/.env` set `LIVEKIT_API_KEY` and
-`LIVEKIT_API_SECRET` (the same pair) and `RECORDINGS_DIR=<site-data mountpoint>/media/recordings`
-(`docker volume inspect seasonal-site_site-data --format '{{ .Mountpoint }}'`). In `site.env` set
+`deploy/calls/docker-compose.recording.yml` adds LiveKit's egress (records in its own Chrome;
+limited to 3 CPUs and 3 GB, and a recording is counted at 2.0 CPUs, its `cpu_cost`) and Redis
+(127.0.0.1 only). Egress takes a recording only when that cost fits its free CPUs; with its
+default cost (4) and the earlier 2-CPU limit it declined every one, and the start timed out
+(fixed 2026-11-06). Memory: a recording on the VPS peaked at 1.79 GB (2026-11-06), too close to
+the earlier 2 GB. In `deploy/calls/.env` set `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` (the same
+pair) and `RECORDINGS_DIR=<site-data mountpoint>/media/recordings`
+(`docker volume inspect seasonal-site_site-data --format '{{ .Mountpoint }}'`). That folder must
+be owner uid 1000 (the site, which reads and deletes recordings), group 0 with write (the egress
+image's user, uid 1001, group 0, writes them) and setgid: `chown 1000:0` and `chmod 2775` on the
+folder itself (the installer does this on every run, `prepare_recordings_dir` in
+`deploy/install/lib/services.sh`; before 2026-11-06 it was 755 1000:1000, and every recording
+failed at its end with "permission denied"). In `site.env` set
 `CALLS_RECORDINGS_DIR=/data/media/recordings` and `CALLS_EGRESS_OUTPUT_DIR=/recordings`. Start
 with both compose files. Size: at most about **480 MB per recorded hour** (a moving test camera
 measured about 270 MB); plan the disk and the backups by the hours recorded.
