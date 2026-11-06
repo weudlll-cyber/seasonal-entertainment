@@ -14,6 +14,15 @@ entry waits for.
 - **Site and bots on the same VPS** — reading the bots' files through read-only mounts assumes
   it (the installer's bot-file answers, docs/DEPLOYMENT.md, "What it asks").
 
+### Built, waiting for the merge
+
+- **After the login a game's page opened inside the app** — built on `fix/games-next`
+  (SE-GAMES-NEXT; found in the Mini Games rehearsal on master 82e9e30, Bingo the same): after the
+  login, the registration or the Discord sign-up a `next` under `/games/<slug>/` showed "Page not
+  found" until a reload. Now opened with a full page load (`goToNext`,
+  `client/src/session/nextPage.js`); `/games` and every other path stay inside the app
+  (docs/AUTH.md, "Embedded games").
+
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):

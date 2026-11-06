@@ -7,7 +7,8 @@
 //              15 minutes. Here they choose the username (offered: their Discord name made to fit
 //              the site's rules, and free) and confirm their age, as on every registration. No
 //              email and no password: they log in with Discord, and can set a password later on
-//              the account page. Then on to the page they came from (?next=).
+//              the account page. Then on to the page they came from (?next=; a game's page with
+//              a full page load, session/nextPage.js goToNext).
 // ============================================================
 
 import {
@@ -21,7 +22,7 @@ import { api } from '../api/http.js';
 import FormLogo from '../brand/FormLogo.jsx';
 import { BusyButton } from '../components/BusyButton.jsx';
 import { FormField, FormMessage } from '../components/FormField.jsx';
-import { safeNext } from '../session/nextPage.js';
+import { goToNext } from '../session/nextPage.js';
 import { useSession } from '../session/SessionContext.jsx';
 
 export default function DiscordSignupPage() {
@@ -55,7 +56,7 @@ export default function DiscordSignupPage() {
     try {
       await api('/auth/discord/register', { method: 'POST', body });
       await refresh();
-      navigate(safeNext(params.get('next')), { replace: true });
+      goToNext(navigate, params.get('next'));
     } catch (err) {
       setError(err.message);
       setBusy(false);
