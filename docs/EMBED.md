@@ -1,5 +1,8 @@
 # Embedding the chat
 
+For integrating an entire standalone game, start with
+[GAME-INTEGRATION.md](GAME-INTEGRATION.md). This document is the detailed chat contract.
+
 The chat can be placed as an iframe of `/embed/chat` on:
 
 - **this same site's pages**: the games, which live under the main domain (decided

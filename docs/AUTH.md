@@ -739,6 +739,9 @@ is an organiser/admin route (with 2FA). Details: ARCHITECTURE.md, "Chat".
 
 ## Embedded games (/games/<slug>)
 
+For the complete game-developer entry point, copyable implementation brief and acceptance
+checklist, start with [GAME-INTEGRATION.md](GAME-INTEGRATION.md).
+
 Two games, each its own repository, installable on its own with its own login, run inside this
 site at `https://<site domain>/games/<slug>` (a fixed list, `server/src/games/embedded.js`):
 

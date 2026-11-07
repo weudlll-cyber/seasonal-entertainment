@@ -372,6 +372,9 @@ repository.
 
 ### Embedded games
 
+Game developers: [GAME-INTEGRATION.md](GAME-INTEGRATION.md) brings together the website
+contracts, game-side requirements and acceptance checklist.
+
 Two games can run inside this site, each its own project with its own installer (decided
 2026-11-04): Seasonal Bingo Royale at `https://<site domain>/games/bingo` and Seasonal Mini Games at
 `https://<site domain>/games/mini-games`. Players sign in there with this site's login

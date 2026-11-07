@@ -28,6 +28,13 @@ npm run verify                    # lint, format, tests, build, browser tests
 More: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/BACKLOG.md](docs/BACKLOG.md),
 build rules in [CLAUDE.md](CLAUDE.md).
 
+## Integrate a game
+
+Start with [docs/GAME-INTEGRATION.md](docs/GAME-INTEGRATION.md): the shared website login,
+chat and account-sync contracts, setup steps, a copyable task brief and an acceptance checklist
+for new games and existing standalone games. Current behavior and proposed improvements are
+marked separately.
+
 ## License
 
 Copyright (C) 2026 weudlll-cyber
