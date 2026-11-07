@@ -35,6 +35,9 @@ chat and account-sync contracts, setup steps, a copyable task brief and an accep
 for new games and existing standalone games. Current behavior and proposed improvements are
 marked separately.
 
+For an independent review of proposed account synchronization, logout, isolation and
+permission improvements, see [docs/PROJECT-LEAD-REVIEW.md](docs/PROJECT-LEAD-REVIEW.md).
+
 ## License
 
 Copyright (C) 2026 weudlll-cyber
