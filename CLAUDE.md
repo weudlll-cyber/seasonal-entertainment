@@ -47,4 +47,7 @@ These rules apply to every change in this repository, by people and by agents.
 ## Where things are
 
 - Architecture, ports and folder layout: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Creating or adapting games: [docs/GAME-INTEGRATION.md](docs/GAME-INTEGRATION.md).
+  Start there for website login, chat, account synchronization and deployment contracts;
+  update it alongside contract changes and distinguish implemented behavior from proposals.
 - Open and closed work: [docs/BACKLOG.md](docs/BACKLOG.md)
