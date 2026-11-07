@@ -10,22 +10,28 @@
 //              here (Layout, Sidebar). Sound starts only after "Join call" (browsers need a
 //              click before they play sound). Not live: what is the case, and the chat. A call
 //              linked to an event bot occurrence names that event (docs/CALLS.md). Recording
-//              (docs/CALLS.md, "Recording"): organisers start and stop it here; while it runs
-//              the call shows a red "Recording" (and, to someone not in it, "Being recorded"),
-//              a start during the call shows a banner, and joining or sending asks first
+//              (docs/CALLS.md, "Recording"): organisers start and stop it here (also while it
+//              starts); while it runs the call shows a red "Recording" (and, to someone not in
+//              it, "Being recorded"), "Recording starts…" until the egress records; a start
+//              during the call shows a banner; organisers see "The recording did not start. Try
+//              again." after a start that did not come; and joining or sending asks first
 //              (RecordingConsent); the recordings are listed with a player (CallRecordings).
 //              Admins delete an ended call here ("Delete call", calls/deleteCall.js), and land on
-//              the calls list.
+//              the calls list. Sent here by starting a call (calls/callIntent.js), it joins once
+//              by itself through the same join as the button, or shows why the start failed; a
+//              failed join leaves the Join button and its error, a reload never joins.
 //              Loading the call is asked again while it is refused for the moment (too many
 //              reads from one address, a restart, the network): without the answer there is no
 //              Join button, and one lost answer must not leave the page without it.
 // ============================================================
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { api, ApiError } from '../api/http.js';
 import CallChat, { useChatCollapsed } from '../calls/CallChat.jsx';
 import CallRecordings from '../calls/CallRecordings.jsx';
+import { useCallIntent } from '../calls/callIntent.js';
+import { RECORDING_FAILED, recordingLabel } from '../calls/recordingLabel.js';
 import CallStage from '../calls/CallStage.jsx';
 import { confirmAndDeleteCall } from '../calls/deleteCall.js';
 import LiveBadge from '../calls/LiveBadge.jsx';
@@ -54,12 +60,15 @@ const STATUS_TEXT = {
 export default function CallPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  // { join } or { startError } from the Calls page, this visit only.
+  const intent = useCallIntent();
+  const autoJoined = useRef(false);
   // GET /api/calls/:id: { call, canManage, recordingEnabled }.
   const [answer, setAnswer] = useState(null);
   const [version, setVersion] = useState(0); // after a recording starts or stops
   const [attempt, setAttempt] = useState(0); // a load refused for the moment, asked again
   const [loadError, setLoadError] = useState(null);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(intent.startError ?? null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatCollapsed, setChatCollapsed] = useChatCollapsed();
   const live = useCallRoom(id);
@@ -83,6 +92,22 @@ export default function CallPage() {
       clearTimeout(retry);
     };
   }, [id, live.status, live.recording, version, attempt]);
+  // Just started by this organiser: join once the call is known to be live, as "Join call" does.
+  const liveNow = answer?.call.status === 'live';
+  useEffect(() => {
+    if (!intent.join || !liveNow || autoJoined.current || live.status !== 'idle') return;
+    autoJoined.current = true;
+    live.controls.join();
+  }, [intent.join, liveNow, live.status, live.controls]);
+  // Not in the call, a recording starting: asked again until it records or is given up (in
+  // the call the room's metadata says it).
+  const startingOutside =
+    live.status !== 'joined' && ['starting', 'waiting'].includes(answer?.call.recordingState);
+  useEffect(() => {
+    if (!startingOutside) return undefined;
+    const again = setTimeout(() => setVersion((v) => v + 1), RETRY_MS);
+    return () => clearTimeout(again);
+  }, [startingOutside, version]);
   // An ended call changes the list and the sidebar's LIVE badge.
   useEffect(() => {
     if (live.status === 'ended') callsChanged();
@@ -92,6 +117,8 @@ export default function CallPage() {
   const info = answer.call;
   const joined = live.status === 'joined';
   const recording = joined ? live.recording : info.recording;
+  const recordingState = joined ? live.recordingState : info.recordingState;
+  const recordingFailedAt = joined ? live.recordingFailedAt : info.recordingFailedAt;
   const canRecord = answer.canManage && answer.recordingEnabled && info.status === 'live';
 
   async function toggleRecording() {
@@ -125,7 +152,7 @@ export default function CallPage() {
           {joined && recording && (
             <span className="call-recording-mark" role="status">
               <Icon name="record" size={16} />
-              Recording
+              {recordingLabel(recordingState, 'Recording')}
             </span>
           )}
         </h1>
@@ -134,7 +161,7 @@ export default function CallPage() {
           {info.status === 'scheduled' && 'This call has not started yet.'}
           {info.status === 'ended' && 'This call has ended.'}
           {info.event && ` · Event: ${info.event.name}`}
-          {!joined && recording && ' · Being recorded'}
+          {!joined && recording && ` · ${recordingLabel(recordingState, 'Being recorded')}`}
           {joined && ` · ${speakers} speaking · ${live.people.length - speakers} listening`}
         </p>
         {canRecord && (
@@ -159,7 +186,7 @@ export default function CallPage() {
         {/* Inside the header: the page is a grid of header, stage and chat. */}
         {live.recordingNotice && (
           <p className="banner call-recording-banner" role="status">
-            This call is now being recorded{' '}
+            {recordingLabel(recordingState, 'This call is now being recorded')}{' '}
             <button
               type="button"
               className="button button--secondary"
@@ -168,6 +195,10 @@ export default function CallPage() {
               Dismiss
             </button>
           </p>
+        )}
+        {/* Only while nothing records: a new start clears it on the server. */}
+        {answer.canManage && info.status === 'live' && !recording && recordingFailedAt && (
+          <FormMessage error={RECORDING_FAILED} />
         )}
         <FormMessage error={error ?? loadError} />
       </header>

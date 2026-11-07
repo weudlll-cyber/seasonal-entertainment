@@ -8,8 +8,8 @@
 //              still exist (the stale-call job, staleCalls.js), set the room's
 //              metadata (the spotlight, a running recording), and sign join tokens (grants.js);
 //              with recording configured, start and stop a room's recording (LiveKit Egress,
-//              room composite to an MP4 file; serviceDidNotAnswer tells when the egress did not
-//              take the job). Built from config.calls; the routes take it as a
+//              room composite to an MP4 file, no manifest beside it; serviceDidNotAnswer tells
+//              when the egress did not take the job) and ask how far one is (listEgress). Built from config.calls; the routes take it as a
 //              parameter, so tests hand in a stand-in with the same methods and never need a
 //              running call server.
 // ============================================================
@@ -17,6 +17,7 @@
 import {
   AudioCodec,
   EgressClient,
+  EgressStatus,
   EncodedFileOutput,
   EncodedFileType,
   EncodingOptions,
@@ -56,6 +57,17 @@ const EGRESS_TIMEOUT_S = 8;
 export const serviceDidNotAnswer = (error) =>
   error?.name === 'TimeoutError' || error?.status === 503 || error?.code === 'unavailable';
 
+// The egress's states as one word each (recordingStart.js reads them).
+const EGRESS_STATES = {
+  [EgressStatus.EGRESS_STARTING]: 'starting',
+  [EgressStatus.EGRESS_ACTIVE]: 'active',
+  [EgressStatus.EGRESS_ENDING]: 'ending',
+  [EgressStatus.EGRESS_COMPLETE]: 'complete',
+  [EgressStatus.EGRESS_FAILED]: 'failed',
+  [EgressStatus.EGRESS_ABORTED]: 'aborted',
+  [EgressStatus.EGRESS_LIMIT_REACHED]: 'limit_reached',
+};
+
 // calls: config.calls ({ url, httpOrigin, apiKey, apiSecret, recording }) or null (feature off).
 export function createCallService(calls) {
   if (!calls) return null;
@@ -90,12 +102,21 @@ export function createCallService(calls) {
       const output = new EncodedFileOutput({
         fileType: EncodedFileType.MP4,
         filepath: `${calls.recording.egressDir}/${file}`,
+        // Egress would write an EG_<id>.json beside every MP4 (its manifest, egress v1.15.0
+        // pkg/config/manifest.go:85-96); the site never reads it. Older ones stay.
+        disableManifest: true,
       });
       const info = await egress.startRoomCompositeEgress(name, output, {
         layout: RECORDING_LAYOUT,
         encodingOptions: new EncodingOptions(RECORDING_ENCODING),
       });
       return info.egressId;
+    },
+    // That recording as the egress reports it: [{ egressId, status }], status one of
+    // EGRESS_STATES ([] when the egress does not know it).
+    async listEgress(egressId) {
+      const list = await egress.listEgress({ egressId });
+      return list.map((info) => ({ egressId: info.egressId, status: EGRESS_STATES[info.status] }));
     },
     // A recording that already stopped (the room closed) is fine.
     async stopRecording(egressId) {

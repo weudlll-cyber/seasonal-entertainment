@@ -7,9 +7,11 @@
 //              room (an unlisted chat room, read-only once the call ends), the name of its room on
 //              the call service, who is in the spotlight (spotlight.js) and since when a live
 //              call's room has been missing on the call service (staleCalls.js), and the event bot
-//              occurrence it is linked to (eventLink.js: its id and start). Recordings
-//              (recordings.js): one row per recording of a call, its file in the recordings folder,
-//              while running and after, and its length once read from the file; deleted by an
+//              occurrence it is linked to (eventLink.js: its id and start), whether it is
+//              recorded from its start (record_from_start) and when its last recording failed to
+//              start (recordingStart.js). Recordings (recordings.js): one row
+//              per recording of a call, its file in the recordings folder, whether it was started
+//              with the call (from_start), while starting (no active_at yet), running and after, and its length once read from the file; deleted by an
 //              organiser, or with its whole call by an admin (deleteCall.js: every table here goes
 //              with the call row, by cascade). Its chapter marks (chapters.js: a time and a title, set by organisers and
 //              admins; a new table, so CREATE TABLE IF NOT EXISTS adds it to an older database,
@@ -18,7 +20,9 @@
 //              notice was delivered (reminders.js; a new table, so CREATE TABLE IF NOT EXISTS adds
 //              it to an older database, SE-HOME-LIVE-1). migrateCalls() brings an older calls table
 //              up (columns that came later: the spotlight, SE-CALLS-2; room_missing_since,
-//              SE-NIGHT-2; the bot occurrence link and a recording's length, SE-NIGHT-5).
+//              SE-NIGHT-2; the bot occurrence link and a recording's length, SE-NIGHT-5; when a
+//              recording became active, a failed start and recording from the start,
+//              2026-11-07).
 // ============================================================
 
 import { addMissingColumns } from '../db/addColumns.js';
@@ -41,7 +45,9 @@ CREATE TABLE IF NOT EXISTS calls (
   spotlight_by  TEXT CHECK (spotlight_by IN ('organiser', 'self', 'share')),
   room_missing_since TEXT,
   bot_occurrence_id    INTEGER,
-  bot_occurrence_start INTEGER
+  bot_occurrence_start INTEGER,
+  recording_failed_at  TEXT,
+  record_from_start    INTEGER NOT NULL DEFAULT 0 CHECK (record_from_start IN (0, 1))
 );
 CREATE INDEX IF NOT EXISTS calls_by_status ON calls (status);
 CREATE TABLE IF NOT EXISTS call_participants (
@@ -75,7 +81,9 @@ CREATE TABLE IF NOT EXISTS call_recordings (
   started_at TEXT    NOT NULL,
   stopped_at TEXT,
   started_by TEXT    NOT NULL,
-  seconds    INTEGER
+  seconds    INTEGER,
+  active_at  TEXT,
+  from_start INTEGER NOT NULL DEFAULT 0 CHECK (from_start IN (0, 1))
 );
 CREATE INDEX IF NOT EXISTS call_recordings_by_call ON call_recordings (call_id);
 CREATE TABLE IF NOT EXISTS call_recording_chapters (
@@ -100,5 +108,13 @@ export function migrateCalls(db) {
     ['calls', 'bot_occurrence_id', 'INTEGER'],
     ['calls', 'bot_occurrence_start', 'INTEGER'],
     ['call_recordings', 'seconds', 'INTEGER'],
+    ['calls', 'recording_failed_at', 'TEXT'],
+    ['call_recordings', 'active_at', 'TEXT'],
+    [
+      'calls',
+      'record_from_start',
+      'INTEGER NOT NULL DEFAULT 0 CHECK (record_from_start IN (0, 1))',
+    ],
+    ['call_recordings', 'from_start', 'INTEGER NOT NULL DEFAULT 0 CHECK (from_start IN (0, 1))'],
   ]);
 }

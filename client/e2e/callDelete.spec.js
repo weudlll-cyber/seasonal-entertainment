@@ -3,9 +3,10 @@
 // Path:        client/e2e/callDelete.spec.js
 // Project:     Seasonal Entertainment
 // Description: Deleting a call in a real browser (docs/CALLS.md, "Deleting a call"): the run's
-//              admin creates, starts and ends a call on /calls, then deletes it there after the
-//              confirmation, which names it; the "Recent" list no longer shows it, and its page
-//              says it does not exist.
+//              admin creates a planned call on /calls, starts it (which opens its page,
+//              docs/CALLS.md, "Calls on the site"), ends it back on /calls, then deletes it there
+//              after the confirmation, which names it; the "Recent" list no longer shows it, and
+//              its page says it does not exist.
 // ============================================================
 
 import { expect, test } from '@playwright/test';
@@ -20,8 +21,13 @@ test('an admin creates, starts, ends and deletes a call; "Recent" no longer show
   await page.goto('/calls');
   const form = page.getByRole('form', { name: 'New call' });
   await form.getByLabel('Title').fill(title);
+  // Planned, so the form only creates it ("Start call now" would start it at once).
+  await form.getByLabel('Planned start (optional)').fill('2030-01-01T19:00');
   await form.getByRole('button', { name: 'Create call' }).click();
   await page.getByRole('button', { name: `Start ${title}` }).click();
+  // Starting opens the call's page; the call is ended from the list.
+  await expect(page).toHaveURL(/\/calls\/\d+$/);
+  await page.goto('/calls');
   await page.getByRole('button', { name: `End ${title} for everyone` }).click();
   const recent = page.getByRole('region', { name: 'Recent' });
   const deleteButton = recent.getByRole('button', { name: `Delete ${title}` });

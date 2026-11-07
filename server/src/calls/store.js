@@ -19,7 +19,8 @@ const RECENT = 10;
 const COLUMNS = `c.id, c.title, c.description, c.status, c.scheduled_for AS scheduledFor,
   c.created_at AS createdAt, c.started_at AS startedAt, c.ended_at AS endedAt,
   c.chat_room_id AS chatRoomId, c.room_name AS roomName, u.username AS createdBy,
-  c.bot_occurrence_id AS botOccurrenceId, c.bot_occurrence_start AS botOccurrenceStart`;
+  c.bot_occurrence_id AS botOccurrenceId, c.bot_occurrence_start AS botOccurrenceStart,
+  c.record_from_start AS recordFromStart`;
 const FROM = 'calls c LEFT JOIN users u ON u.id = c.created_by';
 
 export function findCall(db, id) {
@@ -31,8 +32,9 @@ export function findCall(db, id) {
 export function createCall(db, call, createdBy) {
   const { lastInsertRowid } = db
     .prepare(
-      `INSERT INTO calls (title, description, scheduled_for, created_by, created_at, room_name)
-       VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT INTO calls (title, description, scheduled_for, created_by, created_at, room_name,
+         record_from_start)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       call.title,
@@ -40,7 +42,8 @@ export function createCall(db, call, createdBy) {
       call.scheduledFor ?? null,
       createdBy,
       now(),
-      `call-${randomBytes(8).toString('hex')}`
+      `call-${randomBytes(8).toString('hex')}`,
+      call.recordFromStart ? 1 : 0
     );
   return Number(lastInsertRowid);
 }

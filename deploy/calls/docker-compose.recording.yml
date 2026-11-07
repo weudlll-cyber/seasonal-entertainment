@@ -40,14 +40,16 @@ services:
       # the container had: it declined every recording without a word (its "cpu check" is
       # logged at debug) and the site's start request timed out. One recording here is counted
       # at 2.0 instead (1280 x 720, 15 frames a second, server/src/calls/service.js; decided
-      # 2026-11-06).
+      # 2026-11-06). logging.level: egress v1.15.0's own key (pkg/config/base.go:43, its
+      # BaseConfig.Logging); the "log_level" written here before was no key of it (2026-11-07).
       EGRESS_CONFIG_BODY: |
         api_key: ${LIVEKIT_API_KEY:?set LIVEKIT_API_KEY in deploy/calls/.env}
         api_secret: ${LIVEKIT_API_SECRET:?set LIVEKIT_API_SECRET in deploy/calls/.env}
         ws_url: ws://127.0.0.1:7880
         redis:
           address: 127.0.0.1:6379
-        log_level: info
+        logging:
+          level: info
         cpu_cost:
           room_composite_cpu_cost: 2.0
     volumes:

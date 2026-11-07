@@ -7,7 +7,8 @@
 //              service built from config) and, when a built client exists, the static client
 //              (hashed assets/ cached for a year) with a fallback to index.html for client routes.
 //              No listen(), so tests drive it directly; app.locals.chat is the chat's handle,
-//              app.locals.calls.start() starts the stale-call and reminder jobs
+//              app.locals.calls.start() watches recordings still starting again
+//              (calls/recordingStart.js) and starts the stale-call and reminder jobs
 //              (calls/staleCalls.js, calls/reminders.js), app.locals.reference.start() the ETH, POL
 //              and BTC prices job (reference/sync.js), app.locals.recap.start() the weekly recap
 //              (recap/job.js). The embedded chat on approved foreign sites (embed/) adds its CSP,
@@ -38,6 +39,7 @@ import { callReminderRoutes } from './calls/reminderRoutes.js';
 import { sendCallReminders, startCallReminders } from './calls/reminders.js';
 import { callEventRoutes } from './calls/eventRoutes.js';
 import { callRecordingRoutes } from './calls/recordingRoutes.js';
+import { resumeRecordingStarts } from './calls/recordingStart.js';
 import { chapterRoutes } from './calls/chapterRoutes.js';
 import { callRoutes } from './calls/routes.js';
 import { callSpotlightRoutes } from './calls/spotlightRoutes.js';
@@ -196,6 +198,8 @@ export function createApp({
   // start() returns the function that stops both jobs, or null when neither runs.
   app.locals.calls = {
     start: (log) => {
+      // Recordings still starting when the server stopped are watched again.
+      if (callService && config.calls?.recording) resumeRecordingStarts(db, callService);
       const stops = [
         startStaleCalls(db, config, callService, chat, log),
         callService ? startCallReminders(db, config, notifyMember, log) : null,

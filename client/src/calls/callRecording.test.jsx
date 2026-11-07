@@ -9,7 +9,10 @@
 //              before it started is asked before their microphone goes on; organisers get
 //              Start / Stop recording only when it is set up; recordings are listed with their
 //              length (none while it is unknown) and a player, organisers delete them; the
-//              Calls page says "Being recorded".
+//              Calls page says "Being recorded". Until the egress records it says "Recording
+//              starts…" (in the call, beside it and on the Calls page; "Recording starts when
+//              someone speaks…" for one started with the call), and organisers see "The
+//              recording did not start. Try again." after a start that did not come.
 // ============================================================
 
 import { act, fireEvent, screen, within } from '@testing-library/react';
@@ -42,13 +45,14 @@ const CALL = (extra) => ({
   ...extra,
 });
 
-// The call's answers; recording: whether one runs; manage: an organiser with recording set up.
-function answers({ recording = false, manage = false, recordings = [] } = {}) {
+// The call's answers; recording: whether one runs; manage: an organiser with recording set up;
+// state: the call's recordingState and recordingFailedAt.
+function answers({ recording = false, manage = false, recordings = [], state = {} } = {}) {
   return {
     'GET /calls/7': {
       body: {
         ok: true,
-        call: CALL({ recording }),
+        call: CALL({ recording, ...state }),
         canManage: manage,
         recordingEnabled: manage,
       },
@@ -122,6 +126,39 @@ describe('a recording that starts during the call', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Recording');
   });
 
+  it('"Recording starts…" until the egress records, then "Recording"', async () => {
+    const { room } = await joined();
+    const metadata = (recordingState) =>
+      act(() => {
+        room.metadata = JSON.stringify({ spotlight: null, recording: true, recordingState });
+        room.emit('roomMetadataChanged');
+      });
+    metadata('starting');
+    const heading = screen.getByRole('heading', { level: 1 });
+    await vi.waitFor(() => expect(heading).toHaveTextContent('Recording starts…'));
+    expect(screen.getByText('Recording starts…', { selector: '.banner' })).toBeInTheDocument();
+    metadata('active');
+    await vi.waitFor(() => expect(heading).not.toHaveTextContent('Recording starts…'));
+    expect(heading).toHaveTextContent('Recording');
+    expect(screen.getByText('This call is now being recorded')).toBeInTheDocument();
+  });
+
+  it('one started with the call: "Recording starts when someone speaks…"', async () => {
+    const { room } = await joined();
+    act(() => {
+      room.metadata = JSON.stringify({
+        spotlight: null,
+        recording: true,
+        recordingState: 'waiting',
+      });
+      room.emit('roomMetadataChanged');
+    });
+    const heading = screen.getByRole('heading', { level: 1 });
+    await vi.waitFor(() =>
+      expect(heading).toHaveTextContent('Recording starts when someone speaks…')
+    );
+  });
+
   it('someone who joined before it started is asked before the microphone goes on', async () => {
     const { room } = await joined();
     act(() => {
@@ -157,6 +194,27 @@ describe('organisers and the recordings', () => {
     );
   });
 
+  it('not in the call: "Recording starts…"; a start that did not come: the message', async () => {
+    const olga = signedIn({ username: 'olga', role: 'organiser' });
+    mockApi({
+      ...olga,
+      ...answers({ recording: true, manage: true, state: { recordingState: 'starting' } }),
+    });
+    await renderApp('/calls/7');
+    expect(await screen.findByText(/· Recording starts…/)).toBeInTheDocument();
+    expect(screen.queryByText('The recording did not start. Try again.')).toBeNull();
+  });
+
+  it('organisers see that the last start did not come, while nothing records', async () => {
+    const failed = { recordingState: null, recordingFailedAt: '2026-11-07T10:00:00Z' };
+    mockApi({
+      ...signedIn({ username: 'olga', role: 'organiser' }),
+      ...answers({ manage: true, state: failed }),
+    });
+    await renderApp('/calls/7');
+    expect(await screen.findByText('The recording did not start. Try again.')).toBeInTheDocument();
+  });
+
   it('no button without recording set up', async () => {
     mockApi({ ...signedIn({ username: 'olga', role: 'organiser' }), ...answers() });
     await renderApp('/calls/7');
@@ -188,7 +246,7 @@ describe('organisers and the recordings', () => {
   });
 });
 
-it('the Calls page says "Being recorded"', async () => {
+it('the Calls page says "Being recorded", or "Recording starts…" until it records', async () => {
   mockApi({
     ...mia,
     'GET /calls/summary': { body: { ok: true, configured: true, live: true } },
@@ -197,7 +255,14 @@ it('the Calls page says "Being recorded"', async () => {
         ok: true,
         configured: true,
         canManage: false,
-        calls: { live: [CALL({ recording: true })], upcoming: [], recent: [] },
+        calls: {
+          live: [
+            CALL({ recording: true, recordingState: 'active' }),
+            CALL({ id: 8, title: 'Q&A', recording: true, recordingState: 'starting' }),
+          ],
+          upcoming: [],
+          recent: [],
+        },
         reminders: [],
       },
     },
@@ -205,4 +270,5 @@ it('the Calls page says "Being recorded"', async () => {
   await renderApp('/calls');
   const live = await screen.findByRole('region', { name: 'Live now' });
   expect(await within(live).findByText('Being recorded')).toBeInTheDocument();
+  expect(within(live).getByText('Recording starts…')).toBeInTheDocument();
 });

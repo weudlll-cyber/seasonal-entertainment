@@ -203,6 +203,7 @@ it('organisers create, start and end calls', async () => {
     description: '',
     scheduledFor: new Date('2026-10-20T19:30').toISOString(),
     botOccurrenceId: null,
+    recordFromStart: false,
   });
 
   fireEvent.click(screen.getByRole('button', { name: 'Start Race night' }));
@@ -286,6 +287,10 @@ it("organisers link a new call and a planned one to the event bot's occurrences"
   const picker = within(form).getByLabelText('Event of the event bot (optional)');
   await within(picker).findByRole('option', { name: /^Bot Quiz Night — / });
   fireEvent.change(within(form).getByLabelText('Title'), { target: { value: 'Quiz call' } });
+  // Planned, so the form only creates it ("Start call now" is quickStart.test.jsx's).
+  fireEvent.change(within(form).getByLabelText('Planned start (optional)'), {
+    target: { value: '2026-10-27T19:00' },
+  });
   fireEvent.change(picker, { target: { value: '41' } });
   fireEvent.click(within(form).getByRole('button', { name: 'Create call' }));
   await vi.waitFor(() =>

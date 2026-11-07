@@ -67,6 +67,17 @@ Generate a production pair on the call server with
   limit `callManage` per account, an audit entry `call.create` / `call.start` / `call.end`
   each). Admins alone delete an ended call ("Deleting a call" below). Everyone may see the list
   and a call.
+- **Starting a call** (decided 2026-11-06): in the "New call" form the button reads **Start call
+  now** while "Planned start (optional)" is empty and **Create call** once a time is set, as the
+  field changes. "Start call now" makes the two calls an organiser would (`POST /api/calls`,
+  then `POST /api/calls/:id/start`), opens the call's page and joins the organiser there; a
+  planned call is only created, as before. "Start <title>" on a planned call's card also opens
+  its page and joins. The join is the page's own ("Join call", `useCallRoom.js`), asked for
+  through react-router's navigation state and taken once (`client/src/calls/callIntent.js`):
+  the page clears it on arrival, so a reload or a later visit never joins by itself. A join that
+  fails shows the Join button and its error; a start that fails after the create opens the
+  still planned call with the error. No server route of its own. Tests:
+  `client/src/calls/quickStart.test.jsx`.
 - **Status**: `scheduled` → `live` → `ended`, or `scheduled` → `ended` (cancelled); never back.
   A change applies only from the expected status, so two organisers acting at once cannot both
   succeed. Starting opens the call's room on the call service with the participant cap; ending
@@ -392,7 +403,10 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
   - **Stereo, about 64 kbit/s** (decided 2026-10-22): recordings stay stereo. LiveKit's
     encoding options have no channel setting, so mono cannot be set (measured: stereo).
   - **The egress writes** to `CALLS_EGRESS_OUTPUT_DIR` (its own mount of the same folder; the
-    same path when unset). The file is named `call-<id>-<time>-<random>.mp4`.
+    same path when unset). The file is named `call-<id>-<time>-<random>.mp4`. Egress writes
+    no `EG_<id>.json` manifest beside it any more (`disableManifest` on the file output,
+    `service.js`; egress v1.15.0 has no service-wide switch, `pkg/config/manifest.go:85-96`);
+    manifests written before 2026-11-07 stay in the folder.
   - **The folder** (decided 2026-11-06): owner uid 1000, group 0, mode 2775. The egress image
     (v1.15.0) runs as uid 1001 with group 0 and writes its files 644; the site's user (uid 1000)
     reads them and deletes them, which needs write on the folder; setgid keeps group 0 on what
@@ -418,6 +432,38 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
 - **Who**: only organisers and admins start and stop the recording of a live call
   (`POST /api/calls/:id/recording/start|stop`, audited `call.recording_start|stop`). One
   recording per call at a time. Ending the call stops it (`endCall.js`).
+- **Starting, then recording** (decided 2026-11-07): live, the egress took about 20 s from the
+  start request to its first frame, while the site already said "Recording". Now a started
+  recording is **starting** until the egress reports it active, then **active**:
+  - **Polling, not webhooks**: `server/src/calls/recordingStart.js` asks the egress
+    (`service.listEgress`) at once and then every 2 s. Active: the row gets `active_at` and
+    every client is told (the room's metadata, `roomState.js`: `recording`, `recordingState`,
+    `recordingFailedAt`). Failed, aborted or ended, or not active within **60 s**: the egress is
+    stopped if it still runs, the row goes (there is no file) and the call keeps
+    `recording_failed_at`; organisers see "The recording did not start. Try again." while nothing
+    records, until the next start clears it. After a restart the calls job watches a starting
+    recording again (the 60 s count from its start).
+  - **Stopping while it starts** is allowed: the egress stops and the row goes, without that
+    message. Ending the call does the same.
+- **Record from the start** (decided 2026-11-07): a checkbox in the "New call" form, off by
+  default and shown only while recording is set up and allowed (the list's
+  `recordingEnabled`); stored per call (`calls.record_from_start`). Starting such a call (the
+  card's "Start", or "Start call now") starts its recording right away, through the same
+  `startCallRecording` (`recordingStart.js`) as the button, audited `call.recording_start`.
+  - **Why at the start**: the egress's room composite template waits for media before it
+    records (egress v1.15.0 `template-default/src/Room.tsx:66-110`: decoded video frames, or
+    sound after 0.5 s); the egress itself waits for that signal without a time limit
+    (`pkg/pipeline/controller.go:292-301`). So it records once someone speaks.
+  - **Waiting, not starting**: its state is **waiting** ("Recording starts when someone
+    speaks…"), with no 60 s rule. If the room closes first (LiveKit's empty timeout, the egress
+    then ends it) or the call ends, it is stopped and its row goes, without the failure message.
+  - **If it cannot start** (the egress does not answer), the call still runs; the organisers
+    see "The recording did not start. Try again." as for the button.
+  - **The words**: "Recording starts…" while starting (the red mark in the call, its banner,
+    "· Recording starts…" beside it and on the Calls page), then "Recording" / "This call is now
+    being recorded" / "Being recorded" as before (`client/src/calls/recordingLabel.js`).
+    Joining asks for consent from the start already. Someone outside the call sees it change
+    within 5 s (the page asks again while it starts).
 - **Notice, always**:
   - **The room's metadata says it runs** (`roomState.js`, together with the spotlight), so
     everyone in the call sees a red **Recording** beside the title.
@@ -464,7 +510,9 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
   530 kbit/s, AAC 64 kbit/s. An empty room does not record: the egress aborts with "Start
   signal not received".
 - Tests: `server/test/callRecording.test.js` (with the stand-in call service, which writes a
-  file when a recording stops), `server/test/recordingArchive.test.js`,
+  file when a recording stops and reports each one's egress state),
+  `server/test/recordingStart.test.js` (starting → active, failed, 60 s, stop while starting,
+  restart), `server/test/recordingArchive.test.js`,
   `server/test/callsConfig.test.js`, `shared/chapterRules.test.js`,
   `client/src/calls/callRecording.test.jsx`, `client/src/calls/recordingsArchive.test.jsx`.
 

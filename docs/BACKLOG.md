@@ -33,6 +33,11 @@ entry waits for.
 
 ### Proposals not decided
 
+- **Warm the recording egress after it starts** — proposal 1 of the measurement of 2026-11-07
+  (docs/reports/2026-11-07-recording-start.md): the first starts after the egress container came
+  up took 17–20 s or failed, every later one 7–8.5 s; the live 20 s came right after an update.
+  Proposed: one throw-away recording at egress start. Decision pending the live check of two
+  recordings in a row on the VPS.
 - **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
   login is not planned, decided 2026-11-02).
 - **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
@@ -40,6 +45,10 @@ entry waits for.
 
 ### Known limits
 
+- **A call recorded from its start blocks a second recording meanwhile** — while it waits for
+  its first speaker, the egress keeps its Chrome and its 2.0-CPU share, so a recording started in
+  a second call at the same time is declined ("did not start"). Accepted by the owner on
+  2026-11-07; listed only (docs/CALLS.md, "Recording").
 - **A restore does not revoke Discord tokens** — analysed by SE-AUDIT-2 (2026-11-04), kept: a
   restore deletes an account deleted after the backup again, its Discord link with it, and
   revokes nothing. The token in the backup is dead already: the deletion revoked that grant, and
@@ -73,6 +82,23 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Quick call start** — closed by `feat/quick-call-start` (decided 2026-11-06; merged
+  2026-11-07 with `feat/recording-start`): an organiser needed four steps before a call ran
+  (create, start on the card, open, join). Now "Start call now" in the form (no planned start)
+  creates, starts, opens and joins in one click, and "Start <title>" on a card opens and joins;
+  once only, never on a reload (`client/src/calls/callIntent.js`; docs/CALLS.md, "Calls on the
+  site").
+- **An honest recording state** — closed by `feat/recording-start` (night chain, piece 1,
+  merged 2026-11-07; found live 2026-11-06/07: the egress records about 20 s after the start
+  request, the site said "Recording" from the first second): "Recording starts…" until the
+  egress reports it active, polled every 2 s; a start that fails or is not active within 60 s is
+  stopped and dropped with "The recording did not start. Try again."; no more `EG_<id>.json`
+  manifests (`server/src/calls/recordingStart.js`; docs/CALLS.md, "Recording").
+- **Record from the start** — closed by `feat/recording-start` (night chain, piece 2, merged
+  2026-11-07): a checkbox in the "New call" form (off by default, only while recording is
+  allowed); starting the call starts its recording, which waits for the first speaker
+  ("Recording starts when someone speaks…", no 60 s rule) and goes quietly if the room closes
+  first (docs/CALLS.md, "Recording").
 - **Recordings failed at their end on the VPS: "permission denied"** — closed by
   `fix/recording-dir` (found live 2026-11-06, after PR #47): egress recorded, then could not write
   its file, as the recordings folder was 755 1000:1000 and the egress image's user is uid 1001,
