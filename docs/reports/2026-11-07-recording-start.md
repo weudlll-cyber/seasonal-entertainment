@@ -94,12 +94,18 @@ are from an idle egress on a busy PC.
    minimum here was 2.33 s). Evidence: the fixed 3.4 s gap above, and 1 s failing every start
    (N=3). Small gain against egress's own warning; not recommended before 1 and 2.
 
+## Decided (owner, 2026-11-07)
+
+- **Merge**: `feat/recording-start` (with `feat/quick-call-start`) into master.
+- **`log_level: info`** replaced by egress v1.15.0's own key, `logging: level: info`
+  (`pkg/config/base.go:43`), in `deploy/calls/docker-compose.recording.yml`.
+- **The egress warm-up** (proposal 1): decision pending the live check of two recordings in a row
+  on the VPS (docs/BACKLOG.md, "Proposals not decided").
+- **A waiting recording blocks a second one**: accepted; listed under the known limits.
+
 ## Needs the owner's word
 
-- **Piece 3's proposals** (below): whether to warm the egress after it starts (1), and a debug
-  measurement on the VPS first (2). Nothing of them is built.
-- **`log_level: info`** in `deploy/calls/docker-compose.recording.yml` is not a key egress
-  v1.15.0 knows (`logging: level:` is); left as it is, since info is the default.
+- Only the warm-up, after the live check above.
 
 - **A waiting recording holds the egress**: started with the call, it keeps Chrome running and
   egress's 2.0-CPU reservation until someone speaks, so a button recording in another call
