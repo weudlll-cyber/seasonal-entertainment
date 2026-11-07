@@ -8,8 +8,10 @@
 //              with calls switched on and the seeded chat rooms, creating and starting a call as an
 //              organiser, and joining one. The stand-in also records: it remembers each started
 //              recording and, when stopped, writes a small file into the recordings folder, as
-//              LiveKit's egress service would. recordingApp: an app recording into a temporary
-//              folder; mp4Lasting: a minimal MP4 of a given length.
+//              LiveKit's egress service would, and reports each running one's state as
+//              egressStatus ("active" unless a test sets another; recordingStart.js asks).
+//              recordingApp: an app recording into a temporary folder; mp4Lasting: a minimal MP4
+//              of a given length.
 // ============================================================
 
 import { mkdtempSync, writeFileSync } from 'node:fs';
@@ -56,6 +58,12 @@ export function fakeCallService({ recordingDir } = {}) {
     },
     muteTrack: async (_room, identity, sid) => log.push(['mute', identity, sid]),
     setRoomMetadata: async (_room, metadata) => log.push(['metadata', JSON.parse(metadata)]),
+    // What the egress reports for every recording (recordingStart.js asks): a test sets it.
+    egressStatus: 'active',
+    listEgress: async function (egressId) {
+      log.push(['recordState', egressId]);
+      return recordings.has(egressId) ? [{ egressId, status: this.egressStatus }] : [];
+    },
     startRecording: async (room, file) => {
       const egressId = `EG_${recordings.size + log.length}`;
       log.push(['recordStart', room, file]);

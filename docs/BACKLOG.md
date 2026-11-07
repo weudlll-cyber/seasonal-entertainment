@@ -22,6 +22,13 @@ entry waits for.
   <title>" on a card opens and joins; once only, never on a reload
   (`client/src/calls/callIntent.js`; docs/CALLS.md, "Calls on the site").
 
+- **An honest recording state** — built on `feat/recording-start` (night chain, piece 1;
+  found live 2026-11-06/07: the egress records about 20 s after the start request, the site said
+  "Recording" from the first second): "Recording starts…" until the egress reports it active,
+  polled every 2 s; a start that fails or is not active within 60 s is stopped and dropped with
+  "The recording did not start. Try again."; no more `EG_<id>.json` manifests
+  (`server/src/calls/recordingStart.js`; docs/CALLS.md, "Recording").
+
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):

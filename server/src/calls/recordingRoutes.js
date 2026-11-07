@@ -5,10 +5,11 @@
 // Description: Call recording (docs/CALLS.md, "Recording", decided 2026-10-22), on only when
 //              recording is configured (config.calls.recording); starting one also needs the
 //              "Recording allowed" setting (stopping and deleting never do). Organisers and
-//              admins start and
-//              stop the recording of a live call (one at a time; audited); the room's metadata
-//              then says a recording runs (roomState.js), which every client shows. Ending the
-//              call stops it (endCall.js). The recordings of a call are listed, and played
+//              admins start and stop the recording of a live call (one at a time; audited); the
+//              room's metadata then says a recording runs (roomState.js), which every client
+//              shows: "starting" until the egress reports it active, then "active"
+//              (recordingStart.js watches it; a start that does not come is dropped). Stopping is
+//              allowed while it starts. Ending the call stops it (endCall.js). The recordings of a call are listed, and played
 //              (with range requests, so a player can seek), for the same audience as the call
 //              itself; organisers and admins delete one (file and row). A start the recording
 //              service does not answer (timeout, unavailable) is 503 recording_unavailable, not a
@@ -30,21 +31,29 @@ import {
   activeRecording,
   addRecording,
   deleteRecordingRow,
+  dropStartingRecording,
   findRecording,
   listAllRecordings,
   listRecordings,
   markRecordingStopped,
+  stateOf,
 } from './recordings.js';
 import { publishRoomState } from './roomState.js';
 import { canManage } from './routes.js';
+import { watchRecordingStart } from './recordingStart.js';
 import { serviceDidNotAnswer } from './service.js';
 
 // Stops the call's running recording, if any: the egress, then its row, then the room says so.
-// Used by the stop route and by endCall.js (where the room is closed right after).
+// Used by the stop route and by endCall.js (where the room is closed right after). One still
+// starting has no file: its row goes, without a failure notice (recordingStart.js then ends).
 export async function stopCallRecording(db, service, call) {
   const running = activeRecording(db, call.id);
   if (!running) return false;
   await service.stopRecording(running.egressId);
+  if (stateOf(running) === 'starting') {
+    dropStartingRecording(db, running, { notice: false });
+    return true;
+  }
   return markRecordingStopped(db, running.id);
 }
 
@@ -113,9 +122,16 @@ export function callRecordingRoutes(db, config, service) {
         'The recording service did not answer. Try again in a minute.'
       );
     }
-    addRecording(db, { callId: req.call.id, egressId, file, startedBy: req.user.username });
+    // Starting until the egress reports it active (recordingStart.js).
+    const id = addRecording(db, {
+      callId: req.call.id,
+      egressId,
+      file,
+      startedBy: req.user.username,
+    });
     await publishRoomState(db, service, req.call);
     audit(req, 'call.recording_start', req.call);
+    watchRecordingStart(db, service, req.call, id);
     res.json({ ok: true });
   });
 

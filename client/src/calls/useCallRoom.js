@@ -12,13 +12,22 @@
 //              "Recording"), joining — and, for someone who joined before it started, turning
 //              on the microphone, camera or a screen share — waits for "I understand this call
 //              is being recorded" (consent); a recording that starts during the call shows its
-//              banner once (recordingNotice).
+//              banner once (recordingNotice). How far it is (recordingState: starting until the
+//              egress records, then active) and when its last start failed (recordingFailedAt)
+//              come from the room's metadata too.
 // ============================================================
 
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { DisconnectReason, Room, RoomEvent, Track } from 'livekit-client';
 import { ApiError, api } from '../api/http.js';
-import { isChromium, personOf, recordingOf, shareAudioNotice, spotlightOf } from './stageModel.js';
+import {
+  isChromium,
+  personOf,
+  recordingOf,
+  recordingStateOf,
+  shareAudioNotice,
+  spotlightOf,
+} from './stageModel.js';
 
 // Every event that changes what the page shows.
 const REDRAW = [
@@ -197,6 +206,9 @@ export function useCallRoom(callId) {
 
   const current = room.current;
   const recording = recordingOf(current?.metadata);
+  const { state: recordingState, failedAt: recordingFailedAt } = recordingStateOf(
+    current?.metadata
+  );
   // A recording that starts while this member is in the call: its banner, once per start.
   const wasRecording = useRef(null);
   useEffect(() => {
@@ -223,6 +235,8 @@ export function useCallRoom(callId) {
     people,
     spotlight: spotlightOf(current?.metadata),
     recording,
+    recordingState,
+    recordingFailedAt,
     recordingNotice,
     consent: Boolean(consent),
     activeSpeakers: new Set((current?.activeSpeakers ?? []).map((p) => p.identity)),

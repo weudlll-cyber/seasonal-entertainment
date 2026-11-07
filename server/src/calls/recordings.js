@@ -3,7 +3,9 @@
 // Path:        server/src/calls/recordings.js
 // Project:     Seasonal Entertainment
 // Description: Data access for call recordings (docs/CALLS.md, "Recording"): the running one of
-//              a call (at most one), starting and stopping its row, a call's recordings and
+//              a call (at most one; "starting" until the egress reports it active, then
+//              "active"), adding, activating and stopping its row, the rows still starting, a
+//              failed start's time on the call, a call's recordings and
 //              every recording (the archive), with their length and chapters, one recording,
 //              and deleting one (the file goes with it). Nothing
 //              is deleted automatically. The length is the file's own (mp4Duration.js), read
@@ -17,7 +19,7 @@ import { mp4Duration } from './mp4Duration.js';
 
 const now = () => new Date().toISOString();
 const COLUMNS = `id, call_id AS callId, egress_id AS egressId, file, started_at AS startedAt,
-  stopped_at AS stoppedAt, started_by AS startedBy, seconds`;
+  stopped_at AS stoppedAt, started_by AS startedBy, seconds, active_at AS activeAt`;
 
 export function activeRecording(db, callId) {
   return db
@@ -25,22 +27,70 @@ export function activeRecording(db, callId) {
     .get(callId);
 }
 
-// Live calls being recorded right now, by call id (the Calls page's "Being recorded").
-export function recordedCallIds(db) {
-  return new Set(
+// A running recording's state: 'starting' until the egress reports it active, then 'active'.
+export const stateOf = (running) => (running.activeAt ? 'active' : 'starting');
+
+// Live calls being recorded right now: call id -> 'starting' | 'active' (the Calls page).
+export function recordingStates(db) {
+  return new Map(
     db
-      .prepare('SELECT call_id AS id FROM call_recordings WHERE stopped_at IS NULL')
+      .prepare(
+        'SELECT call_id AS id, active_at AS activeAt FROM call_recordings WHERE stopped_at IS NULL'
+      )
       .all()
-      .map((r) => r.id)
+      .map((r) => [r.id, stateOf(r)])
   );
 }
 
-export function addRecording(db, { callId, egressId, file, startedBy }) {
-  db.prepare(
-    `INSERT INTO call_recordings (call_id, egress_id, file, started_at, started_by)
-     VALUES (?, ?, ?, ?, ?)`
-  ).run(callId, egressId, file, now(), startedBy);
+// Every recording still starting (a restart picks their watch up again, recordingStart.js).
+export function startingRecordings(db) {
+  return db
+    .prepare(
+      `SELECT ${COLUMNS} FROM call_recordings WHERE stopped_at IS NULL AND active_at IS NULL`
+    )
+    .all();
 }
+
+// A new row, starting; its id. A new start also clears the call's last failed start.
+export function addRecording(db, { callId, egressId, file, startedBy }) {
+  db.prepare('UPDATE calls SET recording_failed_at = NULL WHERE id = ?').run(callId);
+  return Number(
+    db
+      .prepare(
+        `INSERT INTO call_recordings (call_id, egress_id, file, started_at, started_by)
+         VALUES (?, ?, ?, ?, ?)`
+      )
+      .run(callId, egressId, file, now(), startedBy).lastInsertRowid
+  );
+}
+
+// The egress reported it active; true when this did it (the row still starting).
+export function markRecordingActive(db, id) {
+  return (
+    db
+      .prepare(
+        'UPDATE call_recordings SET active_at = ? WHERE id = ? AND active_at IS NULL AND stopped_at IS NULL'
+      )
+      .run(now(), id).changes === 1
+  );
+}
+
+// A start that did not come: the row goes (no file) and, notice: true, the call keeps the time
+// for the organisers' message (recordingFailedAt).
+export function dropStartingRecording(db, recording, { notice }) {
+  db.transaction(() => {
+    db.prepare('DELETE FROM call_recordings WHERE id = ?').run(recording.id);
+    if (notice) {
+      db.prepare('UPDATE calls SET recording_failed_at = ? WHERE id = ?').run(
+        now(),
+        recording.callId
+      );
+    }
+  })();
+}
+
+export const recordingFailedAt = (db, callId) =>
+  db.prepare('SELECT recording_failed_at AS at FROM calls WHERE id = ?').get(callId)?.at ?? null;
 
 // true when this stopped it (a second stop at the same time does nothing).
 export function markRecordingStopped(db, id) {

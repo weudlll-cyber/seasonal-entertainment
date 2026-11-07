@@ -12,7 +12,9 @@
 //              going live starts a reminder round at once (remindNow). A new call may be linked
 //              to an upcoming event bot occurrence (botOccurrenceId; eventLink.js), and one
 //              call's answer names that occurrence while it still exists (event). Calls say
-//              whether a recording runs (recording; recordingRoutes.js).
+//              whether a recording runs (recording) and how far it is (recordingState: starting
+//              or active); one call also when its last recording failed to start
+//              (recordingFailedAt; recordingRoutes.js, recordingStart.js).
 // ============================================================
 
 import express from 'express';
@@ -29,7 +31,7 @@ import { deleteCall } from './deleteCall.js';
 import { endCall } from './endCall.js';
 import { callSteps } from './middleware.js';
 import { linkedOccurrence, occurrenceIdField, pickedOccurrence } from './eventLink.js';
-import { activeRecording, recordedCallIds } from './recordings.js';
+import { activeRecording, recordingFailedAt, recordingStates, stateOf } from './recordings.js';
 import {
   createCall,
   findCall,
@@ -98,12 +100,17 @@ export function callRoutes(db, config, service, chat, remindNow) {
   router.get('/', allow('public'), (req, res) => {
     const empty = { live: [], upcoming: [], recent: [] };
     const lists = service ? listCalls(db) : empty;
-    // "Being recorded" on a call whose recording runs (docs/CALLS.md, "Recording").
-    const recorded = recordedCallIds(db);
+    // "Being recorded" (or "Recording starts…") on a call whose recording runs (docs/CALLS.md,
+    // "Recording").
+    const recorded = recordingStates(db);
     const calls = Object.fromEntries(
       Object.entries(lists).map(([key, list]) => [
         key,
-        list.map((c) => ({ ...shown(c, chat), recording: recorded.has(c.id) })),
+        list.map((c) => ({
+          ...shown(c, chat),
+          recording: recorded.has(c.id),
+          recordingState: recorded.get(c.id) ?? null,
+        })),
       ])
     );
     // The member's own reminders (the "Remind me" toggles); guests have none.
@@ -123,10 +130,17 @@ export function callRoutes(db, config, service, chat, remindNow) {
     const event = linkedOccurrence(config, req.call);
     // Whether a recording runs, and whether the button shows: recording set up and allowed (a
     // site setting), or one running (so it can always be stopped).
-    const recording = Boolean(activeRecording(db, req.call.id));
+    const running = activeRecording(db, req.call.id);
+    const recording = Boolean(running);
     res.json({
       ok: true,
-      call: { ...shown(req.call, chat), event, recording },
+      call: {
+        ...shown(req.call, chat),
+        event,
+        recording,
+        recordingState: running ? stateOf(running) : null,
+        recordingFailedAt: recordingFailedAt(db, req.call.id),
+      },
       canManage: canManage(req),
       canDelete: canDelete(req),
       recordingEnabled:

@@ -96,6 +96,19 @@ export function recordingOf(metadata) {
   }
 }
 
+// How far the recording is ({ recordingState, recordingFailedAt } in the same metadata): state
+// 'starting' (the egress does not record yet), 'active' or null; failedAt: when the last start
+// failed, or null. A server from before the two states says only recording: true, read as active.
+export function recordingStateOf(metadata) {
+  try {
+    const parsed = JSON.parse(metadata || '{}');
+    const state = parsed.recording === true ? (parsed.recordingState ?? 'active') : null;
+    return { state, failedAt: parsed.recordingFailedAt ?? null };
+  } catch {
+    return { state: null, failedAt: null };
+  }
+}
+
 // The speaker the server's spotlight names, if they are on the stage now (a stale choice —
 // they left — counts as none).
 export function spotlightSpeaker(spotlight, speakers) {

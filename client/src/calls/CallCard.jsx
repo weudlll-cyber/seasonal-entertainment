@@ -8,7 +8,8 @@
 //              and the member's reminder (CallActions.jsx); for organisers and admins the Start /
 //              End button its status allows and, on a planned call, its event bot occurrence
 //              (EventSelect.jsx); for admins, on an ended call, "Delete <title>"
-//              (calls/deleteCall.js). A call whose recording runs says "Being recorded".
+//              (calls/deleteCall.js). A call whose recording runs says "Being recorded", or
+//              "Recording starts…" until the egress records.
 // ============================================================
 
 import { Link } from 'react-router';
@@ -16,6 +17,7 @@ import { formatWhen } from '../app/dates.js';
 import CallActions from './CallActions.jsx';
 import EventSelect from './EventSelect.jsx';
 import LiveBadge from './LiveBadge.jsx';
+import { recordingLabel } from './recordingLabel.js';
 
 function timeLine(call) {
   if (call.status === 'live') return `Started ${formatWhen(call.startedAt)}`;
@@ -33,7 +35,11 @@ export default function CallCard({ call, reminded, onAction, onLink, onDelete, e
         {call.title}
         {call.status === 'live' && <LiveBadge />}
       </h3>
-      {call.recording && <p className="call-card__recording">Being recorded</p>}
+      {call.recording && (
+        <p className="call-card__recording">
+          {recordingLabel(call.recordingState, 'Being recorded')}
+        </p>
+      )}
       <p className="call-card__time">{timeLine(call)}</p>
       {call.description && <p>{call.description}</p>}
       {call.createdBy && <p className="call-card__by">Created by {call.createdBy}</p>}
