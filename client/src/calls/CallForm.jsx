@@ -4,7 +4,10 @@
 // Project:     Seasonal Entertainment
 // Description: Creating a call (organisers and admins): title, optional description, an
 //              optional planned start in the browser's local time (sent as UTC) and, optionally,
-//              the event bot occurrence it belongs to (EventSelect.jsx).
+//              the event bot occurrence it belongs to (EventSelect.jsx). Without a planned start
+//              the button reads "Start call now" (the Calls page then starts the call and joins
+//              it, docs/CALLS.md, "Starting a call"); with one, "Create call". It switches as the
+//              field changes.
 // ============================================================
 
 import { useState } from 'react';
@@ -13,8 +16,9 @@ import EventSelect from './EventSelect.jsx';
 
 const EMPTY = { title: '', description: '', when: '', event: null };
 
-// onCreate({ title, description, scheduledFor, botOccurrenceId }) resolves when saved, throws
-// on an error. events: the bot's upcoming occurrences for the picker.
+// onCreate({ title, description, scheduledFor, botOccurrenceId }) resolves when saved (and, with
+// no scheduledFor, started), throws on an error. events: the bot's upcoming occurrences for the
+// picker.
 export default function CallForm({ onCreate, events }) {
   const [call, setCall] = useState(EMPTY);
   const [error, setError] = useState(null);
@@ -59,7 +63,7 @@ export default function CallForm({ onCreate, events }) {
       />
       <FormMessage error={error} />
       <button className="button" type="submit">
-        Create call
+        {call.when ? 'Create call' : 'Start call now'}
       </button>
     </form>
   );

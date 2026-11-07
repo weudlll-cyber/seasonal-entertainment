@@ -67,6 +67,17 @@ Generate a production pair on the call server with
   limit `callManage` per account, an audit entry `call.create` / `call.start` / `call.end`
   each). Admins alone delete an ended call ("Deleting a call" below). Everyone may see the list
   and a call.
+- **Starting a call** (decided 2026-11-06): in the "New call" form the button reads **Start call
+  now** while "Planned start (optional)" is empty and **Create call** once a time is set, as the
+  field changes. "Start call now" makes the two calls an organiser would (`POST /api/calls`,
+  then `POST /api/calls/:id/start`), opens the call's page and joins the organiser there; a
+  planned call is only created, as before. "Start <title>" on a planned call's card also opens
+  its page and joins. The join is the page's own ("Join call", `useCallRoom.js`), asked for
+  through react-router's navigation state and taken once (`client/src/calls/callIntent.js`):
+  the page clears it on arrival, so a reload or a later visit never joins by itself. A join that
+  fails shows the Join button and its error; a start that fails after the create opens the
+  still planned call with the error. No server route of its own. Tests:
+  `client/src/calls/quickStart.test.jsx`.
 - **Status**: `scheduled` → `live` → `ended`, or `scheduled` → `ended` (cancelled); never back.
   A change applies only from the expected status, so two organisers acting at once cannot both
   succeed. Starting opens the call's room on the call service with the participant cap; ending

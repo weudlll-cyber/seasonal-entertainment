@@ -14,6 +14,14 @@ entry waits for.
 - **Site and bots on the same VPS** — reading the bots' files through read-only mounts assumes
   it (the installer's bot-file answers, docs/DEPLOYMENT.md, "What it asks").
 
+### Built, waiting for the merge
+
+- **Quick call start** — built on `feat/quick-call-start` (decided 2026-11-06): an organiser
+  needed four steps before a call ran (create, start on the card, open, join). Now "Start call
+  now" in the form (no planned start) creates, starts, opens and joins in one click, and "Start
+  <title>" on a card opens and joins; once only, never on a reload
+  (`client/src/calls/callIntent.js`; docs/CALLS.md, "Calls on the site").
+
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):

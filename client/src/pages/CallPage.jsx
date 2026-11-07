@@ -15,17 +15,20 @@
 //              a start during the call shows a banner, and joining or sending asks first
 //              (RecordingConsent); the recordings are listed with a player (CallRecordings).
 //              Admins delete an ended call here ("Delete call", calls/deleteCall.js), and land on
-//              the calls list.
+//              the calls list. Sent here by starting a call (calls/callIntent.js), it joins once
+//              by itself through the same join as the button, or shows why the start failed; a
+//              failed join leaves the Join button and its error, a reload never joins.
 //              Loading the call is asked again while it is refused for the moment (too many
 //              reads from one address, a restart, the network): without the answer there is no
 //              Join button, and one lost answer must not leave the page without it.
 // ============================================================
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { api, ApiError } from '../api/http.js';
 import CallChat, { useChatCollapsed } from '../calls/CallChat.jsx';
 import CallRecordings from '../calls/CallRecordings.jsx';
+import { useCallIntent } from '../calls/callIntent.js';
 import CallStage from '../calls/CallStage.jsx';
 import { confirmAndDeleteCall } from '../calls/deleteCall.js';
 import LiveBadge from '../calls/LiveBadge.jsx';
@@ -54,12 +57,15 @@ const STATUS_TEXT = {
 export default function CallPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  // { join } or { startError } from the Calls page, this visit only.
+  const intent = useCallIntent();
+  const autoJoined = useRef(false);
   // GET /api/calls/:id: { call, canManage, recordingEnabled }.
   const [answer, setAnswer] = useState(null);
   const [version, setVersion] = useState(0); // after a recording starts or stops
   const [attempt, setAttempt] = useState(0); // a load refused for the moment, asked again
   const [loadError, setLoadError] = useState(null);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(intent.startError ?? null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatCollapsed, setChatCollapsed] = useChatCollapsed();
   const live = useCallRoom(id);
@@ -83,6 +89,13 @@ export default function CallPage() {
       clearTimeout(retry);
     };
   }, [id, live.status, live.recording, version, attempt]);
+  // Just started by this organiser: join once the call is known to be live, as "Join call" does.
+  const liveNow = answer?.call.status === 'live';
+  useEffect(() => {
+    if (!intent.join || !liveNow || autoJoined.current || live.status !== 'idle') return;
+    autoJoined.current = true;
+    live.controls.join();
+  }, [intent.join, liveNow, live.status, live.controls]);
   // An ended call changes the list and the sidebar's LIVE badge.
   useEffect(() => {
     if (live.status === 'ended') callsChanged();

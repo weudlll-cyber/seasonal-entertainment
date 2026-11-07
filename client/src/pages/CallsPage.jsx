@@ -10,14 +10,17 @@
 //              friendly card instead (never a bare "None."). Planned calls offer "Add to
 //              calendar" and, to members, "Remind me on this site" (CallActions.jsx). Organisers
 //              link a planned call to an event bot occurrence (docs/CALLS.md). "All recordings"
-//              leads to the archive (/calls/recordings).
+//              leads to the archive (/calls/recordings). A call made without a planned start is
+//              started at once, and starting a call leads to its page, joined there
+//              (calls/callIntent.js; docs/CALLS.md, "Starting a call").
 // ============================================================
 
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { api } from '../api/http.js';
 import CallCard from '../calls/CallCard.jsx';
 import CallForm from '../calls/CallForm.jsx';
+import { goToCall } from '../calls/callIntent.js';
 import { confirmAndDeleteCall } from '../calls/deleteCall.js';
 import PageHeader from '../brand/PageHeader.jsx';
 import { callsChanged } from '../calls/useCallsSummary.js';
@@ -43,6 +46,7 @@ const EMPTY = {
 
 export default function CallsPage() {
   const { user } = useSession();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [version, setVersion] = useState(0);
@@ -75,6 +79,8 @@ export default function CallsPage() {
     try {
       await api(`/calls/${call.id}/${action}`, { method: 'POST' });
       changed();
+      // A started call: on to its page, joined there.
+      if (action === 'start') goToCall(navigate, call.id, { join: true });
     } catch (err) {
       setError(err.message);
     }
@@ -99,9 +105,20 @@ export default function CallsPage() {
     }
   }
 
+  // Without a planned start, "Start call now": the two calls an organiser would make (create,
+  // then start), then its page, joined there. A start that fails leaves the call planned and
+  // shows why on its page.
   async function create(call) {
-    await api('/calls', { method: 'POST', body: call });
+    const { call: created } = await api('/calls', { method: 'POST', body: call });
     changed();
+    if (call.scheduledFor) return;
+    try {
+      await api(`/calls/${created.id}/start`, { method: 'POST' });
+      changed();
+      goToCall(navigate, created.id, { join: true });
+    } catch (err) {
+      goToCall(navigate, created.id, { startError: err.message });
+    }
   }
 
   if (data && !data.configured) {
