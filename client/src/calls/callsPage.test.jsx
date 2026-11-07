@@ -203,6 +203,7 @@ it('organisers create, start and end calls', async () => {
     description: '',
     scheduledFor: new Date('2026-10-20T19:30').toISOString(),
     botOccurrenceId: null,
+    recordFromStart: false,
   });
 
   fireEvent.click(screen.getByRole('button', { name: 'Start Race night' }));

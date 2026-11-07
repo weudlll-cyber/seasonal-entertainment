@@ -10,7 +10,8 @@
 //              Start / Stop recording only when it is set up; recordings are listed with their
 //              length (none while it is unknown) and a player, organisers delete them; the
 //              Calls page says "Being recorded". Until the egress records it says "Recording
-//              starts…" (in the call, beside it and on the Calls page), and organisers see "The
+//              starts…" (in the call, beside it and on the Calls page; "Recording starts when
+//              someone speaks…" for one started with the call), and organisers see "The
 //              recording did not start. Try again." after a start that did not come.
 // ============================================================
 
@@ -140,6 +141,22 @@ describe('a recording that starts during the call', () => {
     await vi.waitFor(() => expect(heading).not.toHaveTextContent('Recording starts…'));
     expect(heading).toHaveTextContent('Recording');
     expect(screen.getByText('This call is now being recorded')).toBeInTheDocument();
+  });
+
+  it('one started with the call: "Recording starts when someone speaks…"', async () => {
+    const { room } = await joined();
+    act(() => {
+      room.metadata = JSON.stringify({
+        spotlight: null,
+        recording: true,
+        recordingState: 'waiting',
+      });
+      room.emit('roomMetadataChanged');
+    });
+    const heading = screen.getByRole('heading', { level: 1 });
+    await vi.waitFor(() =>
+      expect(heading).toHaveTextContent('Recording starts when someone speaks…')
+    );
   });
 
   it('someone who joined before it started is asked before the microphone goes on', async () => {

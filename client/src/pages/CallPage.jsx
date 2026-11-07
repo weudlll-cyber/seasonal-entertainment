@@ -101,7 +101,8 @@ export default function CallPage() {
   }, [intent.join, liveNow, live.status, live.controls]);
   // Not in the call, a recording starting: asked again until it records or is given up (in
   // the call the room's metadata says it).
-  const startingOutside = live.status !== 'joined' && answer?.call.recordingState === 'starting';
+  const startingOutside =
+    live.status !== 'joined' && ['starting', 'waiting'].includes(answer?.call.recordingState);
   useEffect(() => {
     if (!startingOutside) return undefined;
     const again = setTimeout(() => setVersion((v) => v + 1), RETRY_MS);

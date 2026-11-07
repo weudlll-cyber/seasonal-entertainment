@@ -12,12 +12,19 @@
 //              runs, the row goes (no file) and the call keeps the time of the failed start for
 //              the organisers' message. A recording stopped meanwhile (the stop route, the call
 //              ending) ends the watch. A restart picks up every recording still starting
-//              (resumeRecordingStarts, from the calls job in app.js).
+//              (resumeRecordingStarts, from the calls job in app.js). startCallRecording is the
+//              one way a recording starts: the button (recordingRoutes.js) and a call recorded
+//              from its start (routes.js, decided 2026-11-07). That one waits for the first
+//              speaker without a time limit (the egress's template waits for media, egress
+//              v1.15.0 template-default/src/Room.tsx:66-110): no 60 s rule, and when the egress
+//              ends it unstarted (the room closed) the row goes without the failure notice.
 // ============================================================
 
+import { randomBytes } from 'node:crypto';
 import { publishRoomState } from './roomState.js';
 import {
   activeRecording,
+  addRecording,
   dropStartingRecording,
   markRecordingActive,
   startingRecordings,
@@ -39,15 +46,17 @@ async function publish(db, service, call) {
 }
 
 // The start did not come: the egress stopped (a stop of one that ended is fine, service.js),
-// the row dropped, the call noted for the organisers' "did not start" message.
+// the row dropped and, unless it waited for the first speaker, the call noted for the
+// organisers' "did not start" message.
 async function failed(db, service, call, running, why) {
-  console.error(`[calls] recording of call ${call.id} did not start (${why})`);
+  const notice = !running.fromStart;
+  if (notice) console.error(`[calls] recording of call ${call.id} did not start (${why})`);
   try {
     await service.stopRecording(running.egressId);
   } catch (error) {
     console.error(`[calls] recording of call ${call.id} not stopped: ${error.message}`);
   }
-  dropStartingRecording(db, running, { notice: true });
+  dropStartingRecording(db, running, { notice });
   await publish(db, service, call);
 }
 
@@ -71,7 +80,7 @@ export function watchRecordingStart(db, service, call, recordingId) {
         return;
       }
       if (OVER.has(status)) return await failed(db, service, call, running, `egress ${status}`);
-      if (Date.now() - Date.parse(running.startedAt) >= START_LIMIT_MS) {
+      if (!running.fromStart && Date.now() - Date.parse(running.startedAt) >= START_LIMIT_MS) {
         return await failed(db, service, call, running, 'not active within 60 s');
       }
       schedule();
@@ -82,6 +91,17 @@ export function watchRecordingStart(db, service, call, recordingId) {
   // Never keeps the process alive on its own (a stopping server, a test run).
   const schedule = () => setTimeout(tick, POLL_MS).unref?.();
   tick();
+}
+
+// Starts recording `call` ({ id, roomName }) for the organiser `startedBy` (a username);
+// fromStart: started with the call. Resolves once the egress took the job; service.startRecording's
+// error is the caller's (the button answers 503, a call's start keeps running).
+export async function startCallRecording(db, service, call, startedBy, { fromStart = false } = {}) {
+  const file = `call-${call.id}-${Date.now()}-${randomBytes(4).toString('hex')}.mp4`;
+  const egressId = await service.startRecording(call.roomName, file);
+  const id = addRecording(db, { callId: call.id, egressId, file, startedBy, fromStart });
+  await publishRoomState(db, service, call);
+  watchRecordingStart(db, service, call, id);
 }
 
 // After a restart: every recording still starting is watched again.

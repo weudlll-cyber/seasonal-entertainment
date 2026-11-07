@@ -19,7 +19,8 @@ import { mp4Duration } from './mp4Duration.js';
 
 const now = () => new Date().toISOString();
 const COLUMNS = `id, call_id AS callId, egress_id AS egressId, file, started_at AS startedAt,
-  stopped_at AS stoppedAt, started_by AS startedBy, seconds, active_at AS activeAt`;
+  stopped_at AS stoppedAt, started_by AS startedBy, seconds, active_at AS activeAt,
+  from_start AS fromStart`;
 
 export function activeRecording(db, callId) {
   return db
@@ -27,15 +28,20 @@ export function activeRecording(db, callId) {
     .get(callId);
 }
 
-// A running recording's state: 'starting' until the egress reports it active, then 'active'.
-export const stateOf = (running) => (running.activeAt ? 'active' : 'starting');
+// A running recording's state: 'starting' until the egress reports it active, then 'active';
+// one started with its call is 'waiting' instead (for the first speaker, recordingStart.js).
+export function stateOf(running) {
+  if (running.activeAt) return 'active';
+  return running.fromStart ? 'waiting' : 'starting';
+}
 
-// Live calls being recorded right now: call id -> 'starting' | 'active' (the Calls page).
+// Live calls being recorded right now: call id -> its stateOf (the Calls page).
 export function recordingStates(db) {
   return new Map(
     db
       .prepare(
-        'SELECT call_id AS id, active_at AS activeAt FROM call_recordings WHERE stopped_at IS NULL'
+        `SELECT call_id AS id, active_at AS activeAt, from_start AS fromStart
+         FROM call_recordings WHERE stopped_at IS NULL`
       )
       .all()
       .map((r) => [r.id, stateOf(r)])
@@ -51,17 +57,23 @@ export function startingRecordings(db) {
     .all();
 }
 
-// A new row, starting; its id. A new start also clears the call's last failed start.
-export function addRecording(db, { callId, egressId, file, startedBy }) {
+// A new row, starting (fromStart: started with its call); its id. A new start also clears the
+// call's last failed start.
+export function addRecording(db, { callId, egressId, file, startedBy, fromStart = false }) {
   db.prepare('UPDATE calls SET recording_failed_at = NULL WHERE id = ?').run(callId);
   return Number(
     db
       .prepare(
-        `INSERT INTO call_recordings (call_id, egress_id, file, started_at, started_by)
-         VALUES (?, ?, ?, ?, ?)`
+        `INSERT INTO call_recordings (call_id, egress_id, file, started_at, started_by, from_start)
+         VALUES (?, ?, ?, ?, ?, ?)`
       )
-      .run(callId, egressId, file, now(), startedBy).lastInsertRowid
+      .run(callId, egressId, file, now(), startedBy, fromStart ? 1 : 0).lastInsertRowid
   );
+}
+
+// A start that did not come, for the organisers' "did not start" message.
+export function noteFailedStart(db, callId) {
+  db.prepare('UPDATE calls SET recording_failed_at = ? WHERE id = ?').run(now(), callId);
 }
 
 // The egress reported it active; true when this did it (the row still starting).
@@ -80,12 +92,7 @@ export function markRecordingActive(db, id) {
 export function dropStartingRecording(db, recording, { notice }) {
   db.transaction(() => {
     db.prepare('DELETE FROM call_recordings WHERE id = ?').run(recording.id);
-    if (notice) {
-      db.prepare('UPDATE calls SET recording_failed_at = ? WHERE id = ?').run(
-        now(),
-        recording.callId
-      );
-    }
+    if (notice) noteFailedStart(db, recording.callId);
   })();
 }
 

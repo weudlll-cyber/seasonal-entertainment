@@ -29,6 +29,12 @@ entry waits for.
   "The recording did not start. Try again."; no more `EG_<id>.json` manifests
   (`server/src/calls/recordingStart.js`; docs/CALLS.md, "Recording").
 
+- **Record from the start** — built on `feat/recording-start` (night chain, piece 2): a
+  checkbox in the "New call" form (off by default, only while recording is allowed); starting the
+  call starts its recording, which waits for the first speaker ("Recording starts when someone
+  speaks…", no 60 s rule) and goes quietly if the room closes first (docs/CALLS.md,
+  "Recording").
+
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):

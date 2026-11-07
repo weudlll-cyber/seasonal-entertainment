@@ -7,19 +7,22 @@
 //              the event bot occurrence it belongs to (EventSelect.jsx). Without a planned start
 //              the button reads "Start call now" (the Calls page then starts the call and joins
 //              it, docs/CALLS.md, "Starting a call"); with one, "Create call". It switches as the
-//              field changes.
+//              field changes. While recording is set up and allowed (canRecord), "Record from the
+//              start" (off by default): starting the call starts its recording too (docs/CALLS.md,
+//              "Recording").
 // ============================================================
 
 import { useState } from 'react';
 import { FormField, FormMessage } from '../components/FormField.jsx';
 import EventSelect from './EventSelect.jsx';
 
-const EMPTY = { title: '', description: '', when: '', event: null };
+const EMPTY = { title: '', description: '', when: '', event: null, recordFromStart: false };
 
-// onCreate({ title, description, scheduledFor, botOccurrenceId }) resolves when saved (and, with
+// onCreate({ title, description, scheduledFor, botOccurrenceId, recordFromStart }) resolves when
+// saved (and, with
 // no scheduledFor, started), throws on an error. events: the bot's upcoming occurrences for the
 // picker.
-export default function CallForm({ onCreate, events }) {
+export default function CallForm({ onCreate, events, canRecord }) {
   const [call, setCall] = useState(EMPTY);
   const [error, setError] = useState(null);
   const set = (name) => (event) => setCall({ ...call, [name]: event.target.value });
@@ -34,6 +37,7 @@ export default function CallForm({ onCreate, events }) {
         // datetime-local has no time zone: the browser's own, turned into UTC here.
         scheduledFor: call.when ? new Date(call.when).toISOString() : null,
         botOccurrenceId: call.event,
+        recordFromStart: canRecord && call.recordFromStart,
       });
       setCall(EMPTY);
     } catch (err) {
@@ -61,6 +65,16 @@ export default function CallForm({ onCreate, events }) {
         onChange={(event) => setCall({ ...call, event })}
         occurrences={events}
       />
+      {canRecord && (
+        <label className="form-check">
+          <input
+            type="checkbox"
+            checked={call.recordFromStart}
+            onChange={(event) => setCall({ ...call, recordFromStart: event.target.checked })}
+          />
+          <span>Record from the start</span>
+        </label>
+      )}
       <FormMessage error={error} />
       <button className="button" type="submit">
         {call.when ? 'Create call' : 'Start call now'}

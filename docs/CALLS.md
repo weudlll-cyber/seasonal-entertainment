@@ -445,6 +445,20 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
     recording again (the 60 s count from its start).
   - **Stopping while it starts** is allowed: the egress stops and the row goes, without that
     message. Ending the call does the same.
+- **Record from the start** (decided 2026-11-07): a checkbox in the "New call" form, off by
+  default and shown only while recording is set up and allowed (the list's
+  `recordingEnabled`); stored per call (`calls.record_from_start`). Starting such a call (the
+  card's "Start", or "Start call now") starts its recording right away, through the same
+  `startCallRecording` (`recordingStart.js`) as the button, audited `call.recording_start`.
+  - **Why at the start**: the egress's room composite template waits for media before it
+    records (egress v1.15.0 `template-default/src/Room.tsx:66-110`: decoded video frames, or
+    sound after 0.5 s); the egress itself waits for that signal without a time limit
+    (`pkg/pipeline/controller.go:292-301`). So it records once someone speaks.
+  - **Waiting, not starting**: its state is **waiting** ("Recording starts when someone
+    speaks…"), with no 60 s rule. If the room closes first (LiveKit's empty timeout, the egress
+    then ends it) or the call ends, it is stopped and its row goes, without the failure message.
+  - **If it cannot start** (the egress does not answer), the call still runs; the organisers
+    see "The recording did not start. Try again." as for the button.
   - **The words**: "Recording starts…" while starting (the red mark in the call, its banner,
     "· Recording starts…" beside it and on the Calls page), then "Recording" / "This call is now
     being recorded" / "Being recorded" as before (`client/src/calls/recordingLabel.js`).

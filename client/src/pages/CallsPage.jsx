@@ -168,7 +168,9 @@ export default function CallsPage() {
           </section>
         ))}
       {/* After the lists: live calls stay on top (decided 2026-10-18). */}
-      {canManage && <CallForm onCreate={create} events={events} />}
+      {canManage && (
+        <CallForm onCreate={create} events={events} canRecord={Boolean(data?.recordingEnabled)} />
+      )}
     </section>
   );
 }

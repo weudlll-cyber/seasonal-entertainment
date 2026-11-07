@@ -18,7 +18,6 @@
 //              chapters (GET /api/calls/recordings); the chapter routes are chapterRoutes.js.
 // ============================================================
 
-import { randomBytes } from 'node:crypto';
 import { mkdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import express from 'express';
@@ -29,28 +28,27 @@ import { getSetting } from '../settings/store.js';
 import { callSteps } from './middleware.js';
 import {
   activeRecording,
-  addRecording,
   deleteRecordingRow,
   dropStartingRecording,
   findRecording,
   listAllRecordings,
   listRecordings,
   markRecordingStopped,
-  stateOf,
 } from './recordings.js';
 import { publishRoomState } from './roomState.js';
 import { canManage } from './routes.js';
-import { watchRecordingStart } from './recordingStart.js';
+import { startCallRecording } from './recordingStart.js';
 import { serviceDidNotAnswer } from './service.js';
 
 // Stops the call's running recording, if any: the egress, then its row, then the room says so.
-// Used by the stop route and by endCall.js (where the room is closed right after). One still
-// starting has no file: its row goes, without a failure notice (recordingStart.js then ends).
+// Used by the stop route and by endCall.js (where the room is closed right after). One not yet
+// active (starting, or waiting for the first speaker) has no file: its row goes, without a
+// failure notice (recordingStart.js then ends).
 export async function stopCallRecording(db, service, call) {
   const running = activeRecording(db, call.id);
   if (!running) return false;
   await service.stopRecording(running.egressId);
-  if (stateOf(running) === 'starting') {
+  if (!running.activeAt) {
     dropStartingRecording(db, running, { notice: false });
     return true;
   }
@@ -106,10 +104,9 @@ export function callRecordingRoutes(db, config, service) {
     if (activeRecording(db, req.call.id)) {
       return sendError(res, 409, 'recording_running', 'This call is being recorded already.');
     }
-    const file = `call-${req.call.id}-${Date.now()}-${randomBytes(4).toString('hex')}.mp4`;
-    let egressId;
     try {
-      egressId = await service.startRecording(req.call.roomName, file);
+      // Starting until the egress reports it active (recordingStart.js).
+      await startCallRecording(db, service, req.call, req.user.username);
     } catch (error) {
       // An egress that declines the job (no free CPU, docs/CALLS.md, "Recording") or is down
       // never answers: tell the organiser, keep the log short; nothing was stored yet.
@@ -122,16 +119,7 @@ export function callRecordingRoutes(db, config, service) {
         'The recording service did not answer. Try again in a minute.'
       );
     }
-    // Starting until the egress reports it active (recordingStart.js).
-    const id = addRecording(db, {
-      callId: req.call.id,
-      egressId,
-      file,
-      startedBy: req.user.username,
-    });
-    await publishRoomState(db, service, req.call);
     audit(req, 'call.recording_start', req.call);
-    watchRecordingStart(db, service, req.call, id);
     res.json({ ok: true });
   });
 

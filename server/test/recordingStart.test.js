@@ -8,12 +8,18 @@
 //              that fails, or is not active within 60 s, is stopped, its row goes and the call
 //              keeps the time of the failed start; a stop while it starts drops it without that
 //              notice and ends the watch; a restart watches a starting recording again; a new
-//              start clears the notice. With the stand-in call service and fake timers.
+//              start clears the notice. A call recorded from its start: off by default; on, starting
+//              it (at once or planned) starts the recording, "waiting" with no 60 s rule until
+//              the egress records; the room closing or the call ending first drops it without a
+//              notice; a recording that cannot start leaves the call running with the notice;
+//              "Recording allowed" off records nothing. With the stand-in call service and fake
+//              timers.
 // ============================================================
 
 import { rmSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { POLL_MS, START_LIMIT_MS, resumeRecordingStarts } from '../src/calls/recordingStart.js';
+import { setSetting } from '../src/settings/store.js';
 import { liveCall, organiser, recordingApp } from './helpers/calls.js';
 
 let t;
@@ -118,5 +124,86 @@ describe('a recording start', () => {
     service.egressStatus = 'starting';
     await olga.post(`/api/calls/${call.id}/recording/start`);
     expect((await callOf(call)).recordingFailedAt).toBeNull();
+  });
+});
+
+describe('a call recorded from its start', () => {
+  // Creates a call (planned or not) with the option, then starts it as an organiser.
+  async function startedWith(recordFromStart, extra = {}) {
+    const olga = await organiser(t);
+    const made = await olga
+      .post('/api/calls')
+      .send({ title: 'Town hall', recordFromStart, ...extra });
+    expect(made.status).toBe(201);
+    const call = made.body.call;
+    const start = await olga.post(`/api/calls/${call.id}/start`);
+    expect(start.status).toBe(200);
+    return { olga, call };
+  }
+
+  it('off (the default): starting the call records nothing', async () => {
+    const { call } = await startedWith(undefined);
+    expect(kinds('recordStart')).toBe(0);
+    expect(await callOf(call)).toMatchObject({ recordFromStart: false, recording: false });
+  });
+
+  it.each([
+    ['started at once (quick start)', {}],
+    ['a planned call, started later', { scheduledFor: '2026-12-01T19:00:00Z' }],
+  ])('%s: the recording starts with it, waiting for the first speaker', async (_name, extra) => {
+    const { call } = await startedWith(true, extra);
+    expect(kinds('recordStart')).toBe(1);
+    expect(await callOf(call)).toMatchObject({ recordFromStart: true, recordingState: 'waiting' });
+    expect(metadata()).toMatchObject({ recording: true, recordingState: 'waiting' });
+    // No 60 s rule: it waits as long as nobody speaks.
+    await vi.advanceTimersByTimeAsync(START_LIMIT_MS * 2);
+    expect((await callOf(call)).recordingState).toBe('waiting');
+    service.egressStatus = 'active';
+    await vi.advanceTimersByTimeAsync(POLL_MS);
+    expect((await callOf(call)).recordingState).toBe('active');
+  });
+
+  it('the room closes before anyone spoke: the row goes without a notice', async () => {
+    const { call } = await startedWith(true);
+    // The egress ends it when its room closes (the empty timeout).
+    service.egressStatus = 'complete';
+    await vi.advanceTimersByTimeAsync(POLL_MS);
+    expect(await callOf(call)).toMatchObject({
+      recording: false,
+      recordingState: null,
+      recordingFailedAt: null,
+    });
+  });
+
+  it('the call ends before anyone spoke: stopped, no notice', async () => {
+    const { olga, call } = await startedWith(true);
+    expect((await olga.post(`/api/calls/${call.id}/end`)).status).toBe(200);
+    expect(kinds('recordStop')).toBe(1);
+    expect((await callOf(call)).recordingFailedAt).toBeNull();
+    expect((await t.client().get(`/api/calls/${call.id}/recordings`)).body.recordings).toEqual([]);
+  });
+
+  it('a recording that cannot start: the call runs, the organisers get the notice', async () => {
+    service.startRecording = async () => {
+      throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+    };
+    const { call } = await startedWith(true);
+    const now = await callOf(call);
+    expect(now).toMatchObject({ status: 'live', recording: false });
+    expect(now.recordingFailedAt).toEqual(expect.any(String));
+    expect(metadata()).toMatchObject({ recordingFailedAt: now.recordingFailedAt });
+  });
+
+  it('"Recording allowed" off: the call starts without recording', async () => {
+    setSetting(t.db, 'calls.recording', false);
+    const { call } = await startedWith(true);
+    expect(kinds('recordStart')).toBe(0);
+    expect((await callOf(call)).recording).toBe(false);
+  });
+
+  it('the option must be yes or no', async () => {
+    const olga = await organiser(t);
+    const res = await olga.post('/api/calls').send({ title: 'Town hall', recordFromStart: 'yes' });
+    expect(res.status).toBe(400);
   });
 });

@@ -14,7 +14,11 @@
 //              call's answer names that occurrence while it still exists (event). Calls say
 //              whether a recording runs (recording) and how far it is (recordingState: starting
 //              or active); one call also when its last recording failed to start
-//              (recordingFailedAt; recordingRoutes.js, recordingStart.js).
+//              (recordingFailedAt; recordingRoutes.js, recordingStart.js). A call may be recorded
+//              from its start (recordFromStart, offered while recording is set up and allowed:
+//              recordingEnabled): starting it starts the recording too (recordingStart.js); a
+//              recording that does not start leaves the call running, with the organisers'
+//              notice.
 // ============================================================
 
 import express from 'express';
@@ -31,7 +35,15 @@ import { deleteCall } from './deleteCall.js';
 import { endCall } from './endCall.js';
 import { callSteps } from './middleware.js';
 import { linkedOccurrence, occurrenceIdField, pickedOccurrence } from './eventLink.js';
-import { activeRecording, recordingFailedAt, recordingStates, stateOf } from './recordings.js';
+import {
+  activeRecording,
+  noteFailedStart,
+  recordingFailedAt,
+  recordingStates,
+  stateOf,
+} from './recordings.js';
+import { startCallRecording } from './recordingStart.js';
+import { publishRoomState } from './roomState.js';
 import {
   createCall,
   findCall,
@@ -54,12 +66,19 @@ const CALL_FIELDS = {
       ? null
       : 'Planned start must be a date and time.',
   botOccurrenceId: occurrenceIdField,
+  // Record it from its start (decided 2026-11-07); off unless asked for.
+  recordFromStart: (v) =>
+    v === undefined || typeof v === 'boolean' ? null : 'Record from the start is yes or no.',
 };
 
 // What the browser sees of a call: never the call service's room name.
 export const shown = (call, chat) => {
-  const { roomName, chatRoomId, ...rest } = call;
-  return { ...rest, chatRoom: chatRoomId ? (chat.rooms.find(chatRoomId)?.slug ?? null) : null };
+  const { roomName, chatRoomId, recordFromStart, ...rest } = call;
+  return {
+    ...rest,
+    recordFromStart: Boolean(recordFromStart),
+    chatRoom: chatRoomId ? (chat.rooms.find(chatRoomId)?.slug ?? null) : null,
+  };
 };
 
 // Organisers and admins with 2FA in order (the gate's mark), as allow('organiser') decides;
@@ -91,6 +110,22 @@ export function callRoutes(db, config, service, chat, remindNow) {
       targetId: call.id,
       after: { title: call.title },
     });
+  // Recording set up and the "Recording allowed" setting on (as the button needs).
+  const recordingAllowed = () =>
+    Boolean(config.calls?.recording) && getSetting(db, 'calls.recording');
+  // A call recorded from its start, as the organiser who starts it. Whatever goes wrong, the
+  // call runs on: the organisers see the "did not start" notice instead (docs/CALLS.md).
+  async function recordFromStart(req) {
+    try {
+      await startCallRecording(db, service, req.call, req.user.username, { fromStart: true });
+      audit(req, 'call.recording_start', req.call);
+    } catch (error) {
+      console.error(`[calls] recording of call ${req.call.id} from its start: ${error.message}`);
+      noteFailedStart(db, req.call.id);
+      // The room was opened a moment ago; if it cannot be told, the call's answer still says it.
+      await publishRoomState(db, service, req.call).catch(() => {});
+    }
+  }
 
   // Public: whether calls exist at all and whether one is live (the sidebar's badge).
   router.get('/summary', allow('public'), (_req, res) => {
@@ -120,6 +155,8 @@ export function callRoutes(db, config, service, chat, remindNow) {
       configured: Boolean(service),
       canManage: canManage(req),
       canDelete: canDelete(req),
+      // The form's "Record from the start": recording set up and allowed.
+      recordingEnabled: recordingAllowed(),
       calls,
       reminders,
     });
@@ -185,6 +222,7 @@ export function callRoutes(db, config, service, chat, remindNow) {
     }
     audit(req, 'call.start', req.call);
     remindNow();
+    if (req.call.recordFromStart && recordingAllowed()) await recordFromStart(req);
     res.json({ ok: true, call: shown(findCall(db, req.call.id), chat) });
   });
 

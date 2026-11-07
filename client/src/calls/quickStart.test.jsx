@@ -8,7 +8,8 @@
 //              the call's page and joins it; "Start <title>" on a card opens and joins too; the
 //              join happens once (calls/callIntent.js), never on a reload; a start that fails
 //              after the create shows the planned call with the error; a join that fails leaves
-//              the Join button and its error. With a stand-in for livekit-client.
+//              the Join button and its error. "Record from the start" shows only while recording is
+//              allowed, starts off and goes with the new call. With a stand-in for livekit-client.
 // ============================================================
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -164,4 +165,35 @@ it('a join that fails leaves the Join button and its error', async () => {
   await renderApp({ pathname: '/calls/7', state: { join: true } });
   expect(await screen.findByText('No joining.')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Join call' })).toBeInTheDocument();
+});
+
+it('"Record from the start": only while recording is allowed, off by default, sent with the call', async () => {
+  const listWith = (recordingEnabled) => ({
+    ...LIST,
+    'GET /calls': { body: { ...LIST['GET /calls'].body, recordingEnabled } },
+  });
+  mockApi({ ...ORGANISER, ...listWith(false) });
+  const { unmount } = await renderApp('/calls');
+  await screen.findByRole('form', { name: 'New call' });
+  expect(screen.queryByLabelText('Record from the start')).toBeNull();
+  unmount();
+
+  const calls = mockApi({
+    ...ORGANISER,
+    ...listWith(true),
+    'POST /calls': { status: 201, body: { ok: true, call: CALL(7, 'Q&A', 'scheduled') } },
+  });
+  await renderApp('/calls');
+  const form = await screen.findByRole('form', { name: 'New call' });
+  const box = within(form).getByLabelText('Record from the start');
+  expect(box).not.toBeChecked();
+  fireEvent.click(box);
+  fireEvent.change(within(form).getByLabelText('Title'), { target: { value: 'Q&A' } });
+  fireEvent.change(within(form).getByLabelText('Planned start (optional)'), {
+    target: { value: '2026-11-20T19:30' },
+  });
+  fireEvent.click(within(form).getByRole('button', { name: 'Create call' }));
+  await vi.waitFor(() =>
+    expect(calls.find((c) => c.key === 'POST /calls')?.body.recordFromStart).toBe(true)
+  );
 });

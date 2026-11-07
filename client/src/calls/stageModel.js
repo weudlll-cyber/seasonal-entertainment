@@ -97,7 +97,8 @@ export function recordingOf(metadata) {
 }
 
 // How far the recording is ({ recordingState, recordingFailedAt } in the same metadata): state
-// 'starting' (the egress does not record yet), 'active' or null; failedAt: when the last start
+// 'starting' or 'waiting' (the egress does not record yet; waiting: started with the call, for
+// the first speaker), 'active' or null; failedAt: when the last start
 // failed, or null. A server from before the two states says only recording: true, read as active.
 export function recordingStateOf(metadata) {
   try {
