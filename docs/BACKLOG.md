@@ -54,6 +54,10 @@ entry waits for.
 
 ### Proposals not decided
 
+- **Warm the recording egress after it starts** — measured on the PC (2026-11-07,
+  docs/reports/2026-11-07-recording-start.md): the first starts after the egress container came
+  up took 17–20 s or failed, every later one 7–8.5 s; the live 20 s came right after an update.
+  Proposed: one throw-away recording at egress start, and a debug measurement on the VPS first.
 - **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
   login is not planned, decided 2026-11-02).
 - **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
