@@ -23,6 +23,14 @@ entry waits for.
 
 ### To try on the live server
 
+- **A recording with silent audio** — open (VPS, 2026-11-09): recording EG_XPnJouKUiaPU (one
+  organiser, camera and microphone on) has an AAC track of digital silence (mean −91.0 dB, max
+  −84.3 dB, N=1) while its video works. Not reproduced on the PC (2026-11-09, N=20, all with
+  sound: the LiveKit CLI and a browser with the site's livekit-client as publishers, with and
+  without the `egress-cache` volume, whose PulseAudio runtime folder the image's entrypoint
+  clears at every start). Cause unknown. Next step on the VPS: does a second participant hear the
+  organiser; LiveKit's log for the microphone track (published, muted); `pactl list short sinks`
+  and `sources` in the egress container during a recording.
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
   restore one nightly backup there once, as docs/DEPLOYMENT.md describes, and check the site.
 
