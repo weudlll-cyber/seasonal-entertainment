@@ -14,6 +14,10 @@ entry waits for.
 
 ### Built, waiting for the merge
 
+- **A call load test for the VPS** — built on `night/2026-11-10` (piece 5):
+  `sudo ./deploy/calls/loadtest.sh`, three 3-minute steps up to 100 subscribers, stopping at load
+  5, under 1.5 GB free or after 20 minutes (docs/CALLS.md, "Load test"). Still to run once on the
+  VPS.
 - **A password change or reset ends game sessions** — built on `night/2026-11-10` (piece 2;
   decided 2026-11-09): a member's own change and an admin's reset are noted for the games as
   "rights", so both games sign the member out; not the first password of a Discord account

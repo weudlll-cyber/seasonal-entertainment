@@ -1072,6 +1072,12 @@ instead: copy `deploy/calls/` there, set `ACME_EMAIL`, start it with
 `docker compose --profile proxy up -d` (its own Caddy), and remove `calls.caddy` from the site's
 server (docs/CALLS.md, "Moving the call service").
 
+### Call load test
+
+To see what the call service carries on this server, run `sudo ./deploy/calls/loadtest.sh` in
+the checkout (about 10 minutes; docs/CALLS.md, "Load test"). It stops by itself when the server
+gets too busy, and leaves nothing behind.
+
 ### Call recording
 
 The installer sets this up with `RECORDING=yes`. By hand (docs/CALLS.md, "Recording"):

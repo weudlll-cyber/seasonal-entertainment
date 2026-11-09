@@ -13,12 +13,13 @@
 #              and checks the compose files and Caddyfiles, so the deployment files cannot rot;
 #              it also decrypts an encrypted backup with the real age tool, runs the PC-side
 #              tests (deploy/pc/: PowerShell for Windows, POSIX sh for Linux and macOS), the
-#              installer's token, Discord, update-copy, hardening and embedded-games tests
-#              (deploy/test/bot-admin-token.test.sh, deploy/test/discord.test.sh,
-#              deploy/test/update-copy.test.sh, deploy/test/server-hardening.test.sh,
-#              deploy/test/games.test.sh) and
-#              shellcheck over the installer, its tests and the PC-side shell scripts
-#              (deploy/install.sh, deploy/install/, deploy/test/, deploy/pc/).
+#              installer's token, Discord, update-copy, hardening and embedded-games tests and the
+#              call load test's plan (deploy/test/bot-admin-token.test.sh,
+#              deploy/test/discord.test.sh, deploy/test/update-copy.test.sh,
+#              deploy/test/server-hardening.test.sh, deploy/test/games.test.sh,
+#              deploy/test/loadtest.test.sh) and shellcheck over the installer, its tests, the
+#              load test and the PC-side shell scripts (deploy/install.sh, deploy/install/,
+#              deploy/test/, deploy/calls/loadtest.sh, deploy/pc/).
 # ============================================================
 
 name: CI
@@ -127,6 +128,9 @@ jobs:
       - name: The installer prepares the embedded games (questions, routes, feeds denied, token)
         run: bash deploy/test/games.test.sh
 
+      - name: The call load test's plan (steps, limits, keys never shown)
+        run: bash deploy/test/loadtest.test.sh
+
       # As root, so the backup folder's rules are also tried for real.
       - name: The installer's hardening (bot page headers, logs, LiveKit, checkout, backup folder)
         run: sudo bash deploy/test/server-hardening.test.sh
@@ -174,5 +178,6 @@ jobs:
           deploy/test/checks-bot-admin.sh deploy/test/bot-admin-token.test.sh
           deploy/test/discord.test.sh deploy/test/update-copy.test.sh
           deploy/test/server-hardening.test.sh deploy/test/games.test.sh
+          deploy/calls/loadtest.sh deploy/test/loadtest.test.sh
           deploy/test/prepare-nginx.sh deploy/test/prepare-ufw.sh
           deploy/pc/get-seasonal-backups.sh deploy/pc/get-seasonal-backups.test.sh
