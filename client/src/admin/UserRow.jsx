@@ -2,7 +2,9 @@
 // File:        UserRow.jsx
 // Path:        client/src/admin/UserRow.jsx
 // Project:     Seasonal Entertainment
-// Description: One row of the admin users list. Every control calls its own admin route;
+// Description: One row of the admin users list. Every control calls its own admin route; one
+//              box per embedded game says whether this account may host it (decided 2026-11-09;
+//              an admin may host every game, so theirs are ticked and fixed);
 //              a refusal (e.g. "the last admin cannot be removed") is shown in the row. A
 //              password reset checks the shared password rules and the repeated password
 //              (RepeatPasswordField.jsx) here and sends only a new salt and auth key derived from
@@ -16,7 +18,8 @@ import { api } from '../api/http.js';
 import { RepeatPasswordField, useRepeatPassword } from '../components/RepeatPasswordField.jsx';
 import { keysForNewPassword } from '../session/credentials.js';
 
-export default function UserRow({ user, onChanged }) {
+// games: [{ slug, name }] of every embedded game (GET /api/admin/users).
+export default function UserRow({ user, games, onChanged }) {
   const [message, setMessage] = useState(null);
   const [resetting, setResetting] = useState(false);
   const label = (what) => `${what} for ${user.username}`;
@@ -90,16 +93,19 @@ export default function UserRow({ user, onChanged }) {
         </select>
       </td>
       <td>
-        {/* The label adds no text (the box has its own name): it makes the target 44px. */}
-        <label className="table-check">
-          <input
-            type="checkbox"
-            aria-label={label('Can start games')}
-            checked={user.canStartGames || user.role === 'admin'}
-            disabled={user.role === 'admin'}
-            onChange={(e) => change('can-start-games', { value: e.target.checked })}
-          />
-        </label>
+        {games.map((game) => (
+          // The game's name is the box's visible label; the 44px target is the whole label.
+          <label key={game.slug} className="table-check">
+            <input
+              type="checkbox"
+              aria-label={label(`May host ${game.name}`)}
+              checked={user.role === 'admin' || user.hostGames.includes(game.slug)}
+              disabled={user.role === 'admin'}
+              onChange={(e) => change('game-host', { game: game.slug, value: e.target.checked })}
+            />
+            <span>{game.name}</span>
+          </label>
+        ))}
       </td>
       <td>
         <label className="table-check">

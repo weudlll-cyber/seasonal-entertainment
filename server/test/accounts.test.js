@@ -28,7 +28,9 @@ describe('registration', () => {
     const agent = t.client();
     const res = await agent.post('/api/auth/register').send(await newAccount());
     expect(res.status).toBe(201);
-    expect(res.body.user).toMatchObject({ username: 'anna', role: 'member', canStartGames: false });
+    expect(res.body.user).toMatchObject({ username: 'anna', role: 'member' });
+    // Hosting is per game now (accounts/gameHosts.js), never part of the session answer.
+    expect(res.body.user).not.toHaveProperty('canStartGames');
     const session = await agent.get('/api/auth/session');
     expect(session.body.user.username).toBe('anna');
   });

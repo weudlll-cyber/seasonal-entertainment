@@ -16,6 +16,11 @@ entry waits for.
 
 ### Built, waiting for the merge
 
+- **Hosting per game** — built on `night/2026-11-10` (piece 1; decided 2026-11-09): an admin
+  grants hosting per embedded game (Admin → Users, one box per game); admins always may.
+  `X-Acting-User-Can-Host` answers for the game asking. The old flag `users.can_start_games`
+  became a grant for every game of each account that had it, then went
+  (`server/src/accounts/gameHosts.js`; docs/AUTH.md, "Embedded games").
 - **Starting a call turns the microphone on** — built on `feat/start-mic-on` (decided 2026-11-09):
   joined automatically after "Start call now" or "Start <title>", the organiser's microphone goes
   on and the camera stays off; an ordinary join stays all off (`client/src/pages/CallPage.jsx`;

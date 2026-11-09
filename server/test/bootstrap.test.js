@@ -74,7 +74,7 @@ describe('bootstrap', () => {
     const agent = t.client();
     const res = await agent.post('/api/auth/bootstrap').set('x-bootstrap-token', TOKEN).send(admin);
     expect(res.status).toBe(201);
-    expect(res.body.user).toMatchObject({ username: 'boss', role: 'admin', canStartGames: true });
+    expect(res.body.user).toMatchObject({ username: 'boss', role: 'admin' });
     expect((await agent.get('/api/auth/session')).body.user.role).toBe('admin');
     const again = await t
       .client()

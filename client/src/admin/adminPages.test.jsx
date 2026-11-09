@@ -3,7 +3,8 @@
 // Path:        client/src/admin/adminPages.test.jsx
 // Project:     Seasonal Entertainment
 // Description: Guards the admin area screens: who can open them, the users list and its
-//              controls (including a refusal shown in the row, and a password reset that checks
+//              controls (one hosting box per embedded game, named as the game; a refusal shown in
+//              the row, and a password reset that checks
 //              the password rules and sends only a new salt and auth key, and a deletion only
 //              after the admin confirms it), and the audit log.
 // ============================================================
@@ -23,9 +24,14 @@ const bert = {
   username: 'bert',
   email: 'bert@example.org',
   role: 'member',
-  canStartGames: false,
+  hostGames: ['mini-games'],
   locked: false,
 };
+// The embedded games, as GET /api/admin/users lists them.
+const GAMES = [
+  { slug: 'bingo', name: 'Seasonal Bingo Royale' },
+  { slug: 'mini-games', name: 'Seasonal Mini Games' },
+];
 
 function renderAt(path) {
   return render(
@@ -53,8 +59,23 @@ describe('access to /admin', () => {
 describe('users page', () => {
   const answers = (overrides = {}) => ({
     ...signedIn(admin),
-    'GET /admin/users?q=': { body: { ok: true, users: [bert] } },
+    'GET /admin/users?q=': { body: { ok: true, games: GAMES, users: [bert] } },
     ...overrides,
+  });
+
+  it('one hosting box per game, named as the game; a change goes to that game', async () => {
+    const calls = mockApi(answers({ 'POST /admin/users/2/game-host': { body: { ok: true } } }));
+    renderAt('/admin/users');
+    const bingo = await screen.findByLabelText('May host Seasonal Bingo Royale for bert');
+    const mini = screen.getByLabelText('May host Seasonal Mini Games for bert');
+    expect([bingo.checked, mini.checked]).toEqual([false, true]);
+    expect(screen.getByText('Seasonal Bingo Royale')).toBeInTheDocument();
+    fireEvent.click(bingo);
+    expect(await screen.findByText('Saved.')).toBeInTheDocument();
+    expect(calls.find((c) => c.key === 'POST /admin/users/2/game-host').body).toEqual({
+      game: 'bingo',
+      value: true,
+    });
   });
 
   it('lists users and changes a role', async () => {

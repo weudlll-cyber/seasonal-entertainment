@@ -45,7 +45,7 @@ describe.each(GAMES)('GET /api/games/%s/account-changes', (slug) => {
     await admin.post(`/api/admin/users/${id}/lock`).send({ locked: false });
     await admin.post(`/api/admin/users/${id}/role`).send({ role: 'organiser' });
     await admin.post(`/api/admin/users/${id}/role`).send({ role: 'organiser' }); // no change
-    await admin.post(`/api/admin/users/${id}/can-start-games`).send({ value: true });
+    await admin.post(`/api/admin/users/${id}/game-host`).send({ game: 'mini-games', value: true });
     await mia.delete('/api/auth/account').send(await proof('correct-horse-1'));
     expect(await after()).toEqual([
       { id, kind: 'locked' },

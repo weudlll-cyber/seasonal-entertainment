@@ -7,8 +7,8 @@
 //              Seasonal Mini Games, which then end that player's game session; a deleted account
 //              becomes "Deleted player" there). Noted in the same transaction as the change:
 //              deleted (deletion.js), locked and unlocked (userAdmin.js setLocked), rights
-//              (setRole, setCanStartGames) — the user id, the kind and the time, nothing else,
-//              kept CHANGES_KEEP_DAYS. One feed for all games: each reads it in order through
+//              (setRole; setGameHost, gameHosts.js) — the user id, the kind and the time,
+//              nothing else, kept CHANGES_KEEP_DAYS. One feed for all games: each reads it in order through
 //              GET /api/games/<slug>/account-changes (games/embeddedRoutes.js), from its own
 //              cursor (the table's seq, which never goes back).
 // ============================================================

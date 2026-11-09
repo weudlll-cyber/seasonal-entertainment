@@ -32,6 +32,7 @@ import { isStateChanging, originRefusal } from '../http/csrf.js';
 import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { tokenMatches } from '../http/tokenMatches.js';
+import { mayHost } from '../accounts/gameHosts.js';
 
 // Methods that only read.
 const READS = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -40,11 +41,12 @@ const READS = new Set(['GET', 'HEAD', 'OPTIONS']);
 const base64url = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
 
 // The headers of a signed-in account in good standing: its never-reused id
-// (accounts/accountIds.js), name, role, whether it may host matches ("may start games",
-// admins always; decided 2026-11-04), and its Discord steps as this site shows them: the highest
-// per ladder, at most three, each icon a public site address or null (decided 2026-11-04).
-// urlOf: the chat handle's media address (chat.images.url), as the account page uses it.
-export function memberHeaders(db, user, urlOf) {
+// (accounts/accountIds.js), name, role, whether it may host matches of `game` (the slug asking:
+// an admin's grant for that game, admins always; accounts/gameHosts.js, decided 2026-11-09), and
+// its Discord steps as this site shows them: the highest per ladder, at most three, each icon a
+// public site address or null (decided 2026-11-04). urlOf: the chat handle's media address
+// (chat.images.url), as the account page uses it.
+export function memberHeaders(db, user, urlOf, game) {
   return {
     'X-Acting-User-Id': String(user.id),
     'X-Acting-User': user.username,
@@ -52,7 +54,7 @@ export function memberHeaders(db, user, urlOf) {
     // Every account in good standing counts as confirmed for the leaderboard (decided
     // 2026-11-04); the header's name is the game's.
     'X-Acting-User-Email-Verified': 'true',
-    'X-Acting-User-Can-Host': String(user.canStartGames || user.role === 'admin'),
+    'X-Acting-User-Can-Host': String(mayHost(db, user, game)),
     'X-Acting-User-Steps': base64url(shownSteps(stepsOfUser(db, user.id), urlOf)),
   };
 }
@@ -96,7 +98,9 @@ export function embeddedGameRoutes(db, config, urlOf) {
       return sendError(res, 403, 'method_unknown', 'Request refused: unknown method.');
     }
     const member = req.user && !req.staffRefusal && roleAtLeast(req.user.role, 'member');
-    res.set(member ? memberHeaders(db, req.user, urlOf) : { 'X-Acting-Guest': 'true' });
+    res.set(
+      member ? memberHeaders(db, req.user, urlOf, req.params.game) : { 'X-Acting-Guest': 'true' }
+    );
     res.status(204).end();
   });
 

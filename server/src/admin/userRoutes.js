@@ -2,8 +2,9 @@
 // File:        userRoutes.js
 // Path:        server/src/admin/userRoutes.js
 // Project:     Seasonal Entertainment
-// Description: /api/admin/users (admins only): list/search, change role, grant/revoke "can
-//              start games", lock/unlock, reset password (a new salt and auth key derived in
+// Description: /api/admin/users (admins only): list/search (with the embedded games, whose
+//              hosting is granted per account: accounts/gameHosts.js), change role, grant/revoke
+//              hosting one game (audited user.game_host with the game), lock/unlock, reset password (a new salt and auth key derived in
 //              the admin's browser, docs/AUTH.md), delete an account (accounts/deletion.js;
 //              never the last admin, never the admin's own: that is the account page's, with
 //              the password). Each change writes exactly one audit entry; a password reset
@@ -16,13 +17,9 @@ import { ROLES } from '@seasonal-entertainment/shared/accountRules.js';
 import { authKeyField, saltField } from '../accounts/credentials.js';
 import { deleteAccount } from '../accounts/deletion.js';
 import { hashPassword } from '../accounts/passwords.js';
-import {
-  LastAdminError,
-  listUsers,
-  setCanStartGames,
-  setLocked,
-  setRole,
-} from '../accounts/userAdmin.js';
+import { isGame, setGameHost } from '../accounts/gameHosts.js';
+import { LastAdminError, listUsers, setLocked, setRole } from '../accounts/userAdmin.js';
+import { EMBEDDED_GAMES } from '../games/embedded.js';
 import { findUserById, setPasswordHash } from '../accounts/userStore.js';
 import { recordAudit } from '../audit/auditLog.js';
 import { allow } from '../http/access.js';
@@ -70,7 +67,9 @@ export function adminUserRoutes(
 
   router.get('/', allow('admin'), (req, res) => {
     const search = typeof req.query.q === 'string' ? req.query.q.slice(0, 100) : '';
-    res.json({ ok: true, users: listUsers(db, { search }) });
+    // games: every game of the allowlist, for one hosting box each (named as the game is).
+    const games = Object.entries(EMBEDDED_GAMES).map(([slug, game]) => ({ slug, name: game.name }));
+    res.json({ ok: true, games, users: listUsers(db, { search }) });
   });
 
   router.post('/:id/role', allow('admin'), loadTarget, (req, res) => {
@@ -85,15 +84,19 @@ export function adminUserRoutes(
     res.json({ ok: true });
   });
 
-  router.post('/:id/can-start-games', allow('admin'), loadTarget, (req, res) => {
-    const input = validBody(req, res, { value: isBoolean('value') });
+  // One game's hosting for one account; a change ends the member's game sessions ("rights").
+  router.post('/:id/game-host', allow('admin'), loadTarget, (req, res) => {
+    const input = validBody(req, res, {
+      game: (v) => (isGame(v) ? null : 'Pick one of the embedded games.'),
+      value: isBoolean('value'),
+    });
     if (!input) return;
-    setCanStartGames(db, req.target, input.value);
+    const changed = setGameHost(db, req.target, input.game, input.value);
     audit(
       req,
-      'user.can_start_games',
-      { canStartGames: req.target.canStartGames },
-      { canStartGames: input.value }
+      'user.game_host',
+      { game: input.game, value: changed ? !input.value : input.value },
+      { game: input.game, value: input.value }
     );
     res.json({ ok: true });
   });

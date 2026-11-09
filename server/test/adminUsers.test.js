@@ -23,7 +23,7 @@ describe('access', () => {
     ['get', '/api/admin/audit'],
     ['post', '/api/admin/users/1/role'],
     ['post', '/api/admin/users/1/lock'],
-    ['post', '/api/admin/users/1/can-start-games'],
+    ['post', '/api/admin/users/1/game-host'],
     ['post', '/api/admin/users/1/password'],
   ];
 
@@ -61,7 +61,7 @@ describe('user changes', () => {
     expect(found.body.users[0]).not.toHaveProperty('passwordHash');
   });
 
-  it('changes role, can-start-games and lock, one audit entry each with before/after', async () => {
+  it('changes role, hosting a game and lock, one audit entry each with before/after', async () => {
     t = makeTestApp();
     const { agent } = await makeStaff(t, 'ada', 'admin');
     const { user: bert } = await registerUser(t, 'bert');
@@ -78,16 +78,34 @@ describe('user changes', () => {
       after: '{"role":"organiser"}',
     });
 
-    expect((await agent.post(`${base}/can-start-games`).send({ value: true })).status).toBe(200);
+    const host = (game, value) => agent.post(`${base}/game-host`).send({ game, value });
+    expect((await host('bingo', true)).status).toBe(200);
     expect(auditCount()).toBe(2);
-    expect(lastAudit().action).toBe('user.can_start_games');
+    expect(lastAudit()).toMatchObject({
+      action: 'user.game_host',
+      before: '{"game":"bingo","value":false}',
+      after: '{"game":"bingo","value":true}',
+    });
+    // Only games of the allowlist, and only yes or no.
+    expect((await host('chess', true)).status).toBe(400);
+    expect((await host('bingo', 'yes')).status).toBe(400);
+    expect(auditCount()).toBe(2);
 
     expect((await agent.post(`${base}/lock`).send({ locked: true })).status).toBe(200);
     expect(auditCount()).toBe(3);
     expect(lastAudit().action).toBe('user.lock');
 
-    const list = (await agent.get('/api/admin/users?q=bert')).body.users[0];
-    expect(list).toMatchObject({ role: 'organiser', canStartGames: true, locked: true });
+    const answer = (await agent.get('/api/admin/users?q=bert')).body;
+    expect(answer.users[0]).toMatchObject({
+      role: 'organiser',
+      hostGames: ['bingo'],
+      locked: true,
+    });
+    // One box per game of the allowlist, named as the game.
+    expect(answer.games).toEqual([
+      { slug: 'bingo', name: 'Seasonal Bingo Royale' },
+      { slug: 'mini-games', name: 'Seasonal Mini Games' },
+    ]);
   });
 
   it('refuses bad input without an audit entry', async () => {

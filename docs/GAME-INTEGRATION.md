@@ -78,14 +78,14 @@ give 403. Disabled or unknown game slugs give 404. Responses are `Cache-Control:
 
 A website member in good standing receives **204 with no body** and:
 
-| Header                         | Contract                                                                           |
-| ------------------------------ | ---------------------------------------------------------------------------------- |
-| `X-Acting-User-Id`             | Website account ID as text; currently numeric and never reused                     |
-| `X-Acting-User`                | Website username                                                                   |
-| `X-Acting-User-Roles`          | Currently one of `member`, `organiser`, `admin`; existing games parse a comma list |
-| `X-Acting-User-Email-Verified` | Currently `true` for every member in good standing                                 |
-| `X-Acting-User-Can-Host`       | `true` or `false`; website's "Can start games" flag, always true for admins        |
-| `X-Acting-User-Steps`          | Base64URL of compact JSON, highest Discord step per ladder, at most three          |
+| Header                         | Contract                                                                               |
+| ------------------------------ | -------------------------------------------------------------------------------------- |
+| `X-Acting-User-Id`             | Website account ID as text; currently numeric and never reused                         |
+| `X-Acting-User`                | Website username                                                                       |
+| `X-Acting-User-Roles`          | Currently one of `member`, `organiser`, `admin`; existing games parse a comma list     |
+| `X-Acting-User-Email-Verified` | Currently `true` for every member in good standing                                     |
+| `X-Acting-User-Can-Host`       | `true` or `false` for this game (granted per game, 2026-11-09); always true for admins |
+| `X-Acting-User-Steps`          | Base64URL of compact JSON, highest Discord step per ladder, at most three              |
 
 The verification header is the existing **game scoring eligibility convention**, not proof
 of an email verification message. No email address is transmitted.
