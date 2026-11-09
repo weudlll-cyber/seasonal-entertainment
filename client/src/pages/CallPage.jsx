@@ -19,7 +19,8 @@
 //              Admins delete an ended call here ("Delete call", calls/deleteCall.js), and land on
 //              the calls list. Sent here by starting a call (calls/callIntent.js), it joins once
 //              by itself through the same join as the button, or shows why the start failed; a
-//              failed join leaves the Join button and its error, a reload never joins.
+//              failed join leaves the Join button and its error, a reload never joins. Joined so,
+//              the organiser's microphone goes on, the camera stays off (decided 2026-11-09).
 //              Loading the call is asked again while it is refused for the moment (too many
 //              reads from one address, a restart, the network): without the answer there is no
 //              Join button, and one lost answer must not leave the page without it.
@@ -63,6 +64,7 @@ export default function CallPage() {
   // { join } or { startError } from the Calls page, this visit only.
   const intent = useCallIntent();
   const autoJoined = useRef(false);
+  const micAfterStart = useRef(false);
   // GET /api/calls/:id: { call, canManage, recordingEnabled }.
   const [answer, setAnswer] = useState(null);
   const [version, setVersion] = useState(0); // after a recording starts or stops
@@ -108,6 +110,16 @@ export default function CallPage() {
     const again = setTimeout(() => setVersion((v) => v + 1), RETRY_MS);
     return () => clearTimeout(again);
   }, [startingOutside, version]);
+  // Joined that way and on the stage (organisers start there while it has room): the
+  // microphone on, once, through the button's own toggle, so a running recording asks first
+  // (useCallRoom.js sending) and a refused microphone shows as the page's error line, the call
+  // joined. The camera stays off; an ordinary join turns nothing on.
+  const onStage = live.people.some((p) => p.isLocal && p.speaker);
+  useEffect(() => {
+    if (!intent.join || micAfterStart.current || live.status !== 'joined' || !onStage) return;
+    micAfterStart.current = true;
+    live.controls.toggleMicrophone();
+  }, [intent.join, live.status, onStage, live.controls]);
   // An ended call changes the list and the sidebar's LIVE badge.
   useEffect(() => {
     if (live.status === 'ended') callsChanged();
