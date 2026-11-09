@@ -23,14 +23,6 @@ entry waits for.
 
 ### To try on the live server
 
-- **A recording with silent audio** — open (VPS, 2026-11-09): recording EG_XPnJouKUiaPU (one
-  organiser, camera and microphone on) has an AAC track of digital silence (mean −91.0 dB, max
-  −84.3 dB, N=1) while its video works. Not reproduced on the PC (2026-11-09, N=20, all with
-  sound: the LiveKit CLI and a browser with the site's livekit-client as publishers, with and
-  without the `egress-cache` volume, whose PulseAudio runtime folder the image's entrypoint
-  clears at every start). Cause unknown. Next step on the VPS: does a second participant hear the
-  organiser; LiveKit's log for the microphone track (published, muted); `pactl list short sinks`
-  and `sources` in the egress container during a recording.
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
   restore one nightly backup there once, as docs/DEPLOYMENT.md describes, and check the site.
 
@@ -92,6 +84,16 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **The call page's rail opened expanded** — closed by `fix/rail-stays-open` (seen live
+  2026-11-09): after leaving a call page through a link in the expanded rail, the next call page
+  started expanded, as the rail's state outlived the page (the sidebar stays mounted, and the
+  pointer never "left"). Now reset whenever the rail turns on or off
+  (`client/src/app/useRail.js`; docs/DESIGN.md, "Call page").
+- **A recording with silent audio** — closed, no defect (2026-11-09): recording EG_XPnJouKUiaPU
+  had an AAC track of digital silence (mean −91.0 dB, N=1). The organiser's laptop microphone
+  was switched off with its hardware key (owner's check, 2026-11-09): Chrome's own level meter
+  showed no input, LiveKit received the track. The PC had sound in every one of 20 recordings;
+  nothing in the site or egress to change.
 - **A recording's start took up to 27 s or failed** — closed by `fix/egress-chrome-start` (PR
   #52, merged 2026-11-09; part 1; live 2026-11-09: 20.8 s then "websocket url timeout reached",
   11 s, 27 s; owner's rule: at most 10 s). Cause: the first Chrome in a newly made egress

@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: The call page's room around the stage: the sidebar becomes an icon rail there
 //              (expanded by its menu button or keyboard focus; the normal sidebar again on
-//              other pages); the call chat collapses to a slim tab that counts new messages,
+//              other pages; the next call page starts collapsed, also after leaving one through
+//              the expanded rail); the call chat collapses to a slim tab that counts new messages,
 //              and this browser remembers the choice.
 // ============================================================
 
@@ -76,6 +77,46 @@ it('the sidebar is a rail on a call page: the button or focus expands it', async
   expect(sidebar()).toHaveAttribute('data-expanded', 'true');
   fireEvent.blur(screen.getByRole('link', { name: 'Games' }), { relatedTarget: document.body });
   expect(sidebar()).not.toHaveAttribute('data-expanded');
+});
+
+it('the next call page starts collapsed, however the last one was left', async () => {
+  // A mouse, so pointing at the rail expands it (useRail.js hasMouse).
+  vi.stubGlobal('matchMedia', (query) => ({
+    matches: query.includes('hover: hover'),
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+  const live = { ...answers['GET /calls'].body, calls: { live: [CALL], upcoming: [], recent: [] } };
+  mockApi({
+    ...answers,
+    'GET /calls': { body: live },
+    // The sidebar's Calls item shows once the summary answers.
+    'GET /calls/summary': { body: { ok: true, configured: true, live: true } },
+  });
+  await renderApp('/calls/7');
+  await screen.findByRole('heading', { name: /Town hall/ });
+  const backToCall = async () => {
+    fireEvent.click(await screen.findByRole('link', { name: 'Open Town hall' }));
+    await screen.findByRole('heading', { name: /Town hall/ });
+  };
+
+  // Pointed at, then left through one of its links: the pointer never "leaves" the rail.
+  fireEvent.mouseEnter(sidebar());
+  expect(sidebar()).toHaveAttribute('data-expanded', 'true');
+  fireEvent.click(screen.getByRole('link', { name: /^Calls/ }));
+  await screen.findByRole('heading', { name: 'Calls' });
+  await backToCall();
+  expect(sidebar()).not.toHaveAttribute('data-expanded');
+
+  // Opened by the menu button, then left the same way.
+  fireEvent.click(screen.getByRole('button', { name: 'Expand menu' }));
+  expect(sidebar()).toHaveAttribute('data-expanded', 'true');
+  fireEvent.click(screen.getByRole('link', { name: /^Calls/ }));
+  await screen.findByRole('heading', { name: 'Calls' });
+  await backToCall();
+  expect(sidebar()).not.toHaveAttribute('data-expanded');
+  expect(screen.getByRole('button', { name: 'Expand menu' })).toBeInTheDocument();
 });
 
 it('other pages keep the normal sidebar', async () => {
