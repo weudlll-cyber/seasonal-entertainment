@@ -9,10 +9,12 @@
 //              of the account's conversations — and the media files of everything the account's
 //              deletion removes, room uploads, direct files and shared report files alike. Pages
 //              already open hear which of the account's room messages went ("deleted",
-//              messagesDeleted()), so they drop them without a reload.
+//              messagesDeleted()), so they drop them without a reload, and the room's readers
+//              recount their unread messages ("activity", as after a hidden message).
 // ============================================================
 
 import { deleteMediaFile } from '../media/files.js';
+import { findRoom } from './store.js';
 
 // Every file on disk that belongs to the account's chat rows, as media paths: its room uploads,
 // the direct files of its conversations (both partners'), and the files shared with reports
@@ -58,10 +60,15 @@ export function deleteChatData(db, userId) {
 
 // One "deleted" event per room through the hub's usual push (hub.broadcast: only to sockets
 // that may read the room), naming the room messages that went (deleteChatData's messages).
-export function messagesDeleted(hub, messages) {
+// Then, as for a hidden message (moderationRoutes.js), "activity" to every member who may read
+// the room, also on pages that do not show it: their unread counts (unread.js) are read again
+// and stop counting the messages that went.
+export function messagesDeleted(hub, db, messages) {
   const byRoom = Map.groupBy(messages, (m) => m.roomId);
   for (const [roomId, rows] of byRoom) {
     hub.broadcast(roomId, { type: 'deleted', ids: rows.map((m) => m.id) });
+    const room = findRoom(db, roomId);
+    hub.notifyReaders(room, { type: 'activity', room: room?.slug });
   }
 }
 

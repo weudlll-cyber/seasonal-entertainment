@@ -138,9 +138,14 @@ describe('deleting your own account', () => {
     const guest = connect(url);
     await guest.opened;
     expect((await guest.subscribe('general')).type).toBe('subscribed');
+    // A member whose page shows another room: told to recount, so the badge drops the messages.
+    const reader = connect(url, { cookie: cookieOf(other) });
+    await reader.opened;
     expect((await deleteOwn(agent)).status).toBe(200);
     expect(await guest.next('deleted')).toEqual({ type: 'deleted', ids: mine, room: 'general' });
+    expect(await reader.next('activity')).toEqual({ type: 'activity', room: 'general' });
     guest.ws.close();
+    reader.ws.close();
   });
 
   it('is not open to the embedded chat on other sites', async () => {

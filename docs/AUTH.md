@@ -640,7 +640,9 @@ chat retention).
     thumbnails), direct files and shared report files; and chat pages already open hear which room
     messages went: one `{ type: 'deleted', ids }` per room through the hub's usual push (only to
     sockets that may read the room), and they drop them at once, for moderators too (since
-    2026-11-04; `useChatRoom.js`; the home page's Community box asks again).
+    2026-11-04; `useChatRoom.js`; the home page's Community box asks again). Every member who
+    may read the room is also told to recount ("activity", as after a hidden message), so the
+    unread counts already shown stop counting those messages (since 2026-11-10).
 - **For the games**: the account's id and the time are noted as a `deleted` change for
   the embedded games (`account_changes`, "Embedded games" below), in the same
   transaction; its id is never issued again ("Account ids").

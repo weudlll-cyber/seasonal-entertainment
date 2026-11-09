@@ -5,7 +5,8 @@
 // Description: The unread counters in the browser: a room's count shows in the full chat's room
 //              list and on the tab and the sidebar's "Chat" item; showing the room's newest
 //              message moves the read marker; an "activity" or "read" event from the server (a
-//              message elsewhere, a read in another tab) recounts everything; 0 shows nothing,
+//              message elsewhere, a read in another tab, an account deleted with messages in a
+//              room) recounts everything; 0 shows nothing,
 //              more than 99 shows "99+"; guests have no counters and ask for none.
 // ============================================================
 
@@ -100,6 +101,20 @@ it('recounts on the server events (a message elsewhere, a read in another tab)',
   act(() => FakeSocket.all.at(-1).push({ type: 'read' }));
   await vi.waitFor(() => expect(within(roomList()).queryByRole('img')).toBeNull());
   expect(screen.getByRole('link', { name: 'Chat' })).toBeInTheDocument();
+});
+
+it("an account deleted with messages in a room not shown: that room's badge drops them", async () => {
+  chatPage(signedIn({ id: 1, username: 'mia', role: 'member' }));
+  await screen.findByRole('navigation', { name: 'Rooms' });
+  await within(roomList()).findByRole('img', { name: '4 unread in Help' });
+  // Three of Help's four were the deleted account's (server: chat/accountData.js): this page
+  // shows General, so it hears only Help's "activity", and counts again.
+  counts.help = 1;
+  act(() => FakeSocket.all.at(-1).push({ type: 'activity', room: 'help' }));
+  expect(
+    await within(roomList()).findByRole('img', { name: '1 unread in Help' })
+  ).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /^Chat: 1 unread room message/ })).toBeInTheDocument();
 });
 
 it('guests have no counters and ask for none', async () => {

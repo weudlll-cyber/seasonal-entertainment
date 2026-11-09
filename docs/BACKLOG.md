@@ -14,6 +14,10 @@ entry waits for.
 
 ### Built, waiting for the merge
 
+- **Unread counts after an account deletion** — built on `night/2026-11-10` (piece 8; SE-AUDIT-2):
+  the counts already shown kept counting a deleted account's room messages. Now every reader of
+  each room is told to recount ("activity", as after a hidden message), also on pages not
+  showing the room (`server/src/chat/accountData.js`; docs/AUTH.md, "Deleting an account").
 - **One source per game-integration fact** — built on `night/2026-11-10` (piece 7):
   docs/GAME-INTEGRATION.md keeps the overview, the game's requirements, the task brief and the
   checklist and links to AUTH, EMBED, DEPLOYMENT and OPEN-ROUNDS for the contracts; it marks what
@@ -84,9 +88,6 @@ entry waits for.
   older than 15 minutes; a `POST /api/auth/discord/register` that read it a moment before could
   then store a grant just revoked, and the new account would start out needing a Discord login.
   Needs a request in flight at exactly the 15-minute mark; not reproduced.
-- **A deleted account's messages and the unread counts** (SE-AUDIT-2) — open pages drop the
-  messages at once (one `deleted` event per room, every id in one frame), but unread counts
-  already shown keep counting them until the page reads its counts again.
 
 ## PART TWO — closed
 
