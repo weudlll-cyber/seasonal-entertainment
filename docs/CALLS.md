@@ -76,7 +76,12 @@ Generate a production pair on the call server with
   through react-router's navigation state and taken once (`client/src/calls/callIntent.js`):
   the page clears it on arrival, so a reload or a later visit never joins by itself. A join that
   fails shows the Join button and its error; a start that fails after the create opens the
-  still planned call with the error. No server route of its own. Tests:
+  still planned call with the error.
+  Joined that way, the organiser's **microphone goes on** and the camera stays off (decided
+  2026-11-09): once, when they are on the stage (organisers start there while it has room),
+  through the microphone button's own toggle, so a running recording asks for consent first and
+  a microphone the browser refuses leaves the call joined with the error shown (`CallPage.jsx`).
+  An ordinary join ("Join call", a reload, a later visit) turns nothing on. No server route of its own. Tests:
   `client/src/calls/quickStart.test.jsx`.
 - **Status**: `scheduled` → `live` → `ended`, or `scheduled` → `ended` (cancelled); never back.
   A change applies only from the expected status, so two organisers acting at once cannot both

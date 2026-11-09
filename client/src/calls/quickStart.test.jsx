@@ -9,12 +9,15 @@
 //              join happens once (calls/callIntent.js), never on a reload; a start that fails
 //              after the create shows the planned call with the error; a join that fails leaves
 //              the Join button and its error. "Record from the start" shows only while recording is
-//              allowed, starts off and goes with the new call. With a stand-in for livekit-client.
+//              allowed, starts off and goes with the new call. Joined after a start, the
+//              microphone goes on (the camera stays off); an ordinary join or a reload turns
+//              nothing on; a refused microphone leaves the call joined with the error. With a
+//              stand-in for livekit-client.
 // ============================================================
 
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router';
-import { beforeEach, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../app/App.jsx';
 import { FakeSocket } from '../test/fakeSocket.js';
 import { rooms } from '../test/fakeLiveKit.js';
@@ -196,4 +199,47 @@ it('"Record from the start": only while recording is allowed, off by default, se
   await vi.waitFor(() =>
     expect(calls.find((c) => c.key === 'POST /calls')?.body.recordFromStart).toBe(true)
   );
+});
+
+describe('the microphone after a start', () => {
+  // The room's stand-in puts its member on the stage, as LiveKit does after the join.
+  const onStage = () =>
+    act(() => {
+      rooms[0].localParticipant.permissions = { canPublish: true };
+      rooms[0].emit('participantPermissionsChanged');
+    });
+  const local = () => rooms[0].localParticipant;
+
+  it('joined after starting: the microphone goes on, the camera stays off', async () => {
+    mockApi({ ...ORGANISER, ...LIST, ...page(7, 'live') });
+    await renderApp({ pathname: '/calls/7', state: { join: true } });
+    await vi.waitFor(() => expect(rooms[0]?.connect).toHaveBeenCalled());
+    await screen.findByRole('button', { name: 'Leave call' });
+    onStage();
+    await vi.waitFor(() => expect(local().setMicrophoneEnabled).toHaveBeenCalledWith(true));
+    expect(local().setMicrophoneEnabled).toHaveBeenCalledTimes(1);
+    expect(local().setCameraEnabled).not.toHaveBeenCalled();
+  });
+
+  it('an ordinary join, also after a reload, turns nothing on', async () => {
+    mockApi({ ...ORGANISER, ...LIST, ...page(7, 'live') });
+    await renderApp({ pathname: '/calls/7', state: null });
+    fireEvent.click(await screen.findByRole('button', { name: 'Join call' }));
+    await screen.findByRole('button', { name: 'Leave call' });
+    onStage();
+    // Give an effect the chance it must not take.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(local().setMicrophoneEnabled).not.toHaveBeenCalled();
+    expect(local().setCameraEnabled).not.toHaveBeenCalled();
+  });
+
+  it('a microphone the browser refuses: the call stays joined, the error shows', async () => {
+    mockApi({ ...ORGANISER, ...LIST, ...page(7, 'live') });
+    await renderApp({ pathname: '/calls/7', state: { join: true } });
+    await screen.findByRole('button', { name: 'Leave call' });
+    local().setMicrophoneEnabled.mockRejectedValueOnce(new Error('Permission denied'));
+    onStage();
+    expect(await screen.findByText('Permission denied')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Leave call' })).toBeInTheDocument();
+  });
 });

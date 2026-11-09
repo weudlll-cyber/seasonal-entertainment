@@ -16,23 +16,21 @@ entry waits for.
 
 ### Built, waiting for the merge
 
-- **A recording's start took up to 27 s or failed** — built on `fix/egress-chrome-start` (part
-  1; live 2026-11-09: 20.8 s then "websocket url timeout reached", 11 s, 27 s; owner's rule: at
-  most 10 s). Cause: the first Chrome in a newly made egress container builds its own font cache
-  before it answers. Now kept in the volume `egress-cache` and filled by a one-shot service before
-  egress starts; on the PC 15 of 15 starts active within 7.6 s, against 12 of 15 within 10 s
-  before (`deploy/calls/docker-compose.recording.yml`; docs/CALLS.md, "Recording"). Replaces
-  the warm-up proposal of 2026-11-07, which closes: a warm-up recording was not needed. Still to
-  confirm on the VPS (two recordings in a row after the update).
-- **A recording from the start that failed vanished without a word** — built on
-  `fix/egress-chrome-start` (part 2; seen live 2026-11-09): every end of a recording started
-  with the call was dropped silently. Now only a call that ended or a room that closed before
-  anyone spoke stays silent; an egress that fails, or aborts while the room is still there, shows
-  "The recording did not start. Try again." (`server/src/calls/recordingStart.js`, `callOver`;
-  docs/CALLS.md, "Recording").
+- **Starting a call turns the microphone on** — built on `feat/start-mic-on` (decided 2026-11-09):
+  joined automatically after "Start call now" or "Start <title>", the organiser's microphone goes
+  on and the camera stays off; an ordinary join stays all off (`client/src/pages/CallPage.jsx`;
+  docs/CALLS.md, "Calls on the site").
 
 ### To try on the live server
 
+- **A recording with silent audio** — open (VPS, 2026-11-09): recording EG_XPnJouKUiaPU (one
+  organiser, camera and microphone on) has an AAC track of digital silence (mean −91.0 dB, max
+  −84.3 dB, N=1) while its video works. Not reproduced on the PC (2026-11-09, N=20, all with
+  sound: the LiveKit CLI and a browser with the site's livekit-client as publishers, with and
+  without the `egress-cache` volume, whose PulseAudio runtime folder the image's entrypoint
+  clears at every start). Cause unknown. Next step on the VPS: does a second participant hear the
+  organiser; LiveKit's log for the microphone track (published, muted); `pactl list short sinks`
+  and `sources` in the egress container during a recording.
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
   restore one nightly backup there once, as docs/DEPLOYMENT.md describes, and check the site.
 
@@ -94,6 +92,21 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **A recording's start took up to 27 s or failed** — closed by `fix/egress-chrome-start` (PR
+  #52, merged 2026-11-09; part 1; live 2026-11-09: 20.8 s then "websocket url timeout reached",
+  11 s, 27 s; owner's rule: at most 10 s). Cause: the first Chrome in a newly made egress
+  container builds its own font cache before it answers. Now kept in the volume `egress-cache`
+  and filled by a one-shot service before egress starts; on the PC 15 of 15 starts active within
+  7.6 s, against 12 of 15 within 10 s before (`deploy/calls/docker-compose.recording.yml`;
+  docs/CALLS.md, "Recording"). Replaces the warm-up proposal of 2026-11-07, which closes: a
+  warm-up recording was not needed. Still to confirm on the VPS (two recordings in a row after
+  the update).
+- **A recording from the start that failed vanished without a word** — closed by
+  `fix/egress-chrome-start` (PR #52, merged 2026-11-09; part 2; seen live 2026-11-09): every end
+  of a recording started with the call was dropped silently. Now only a call that ended or a room
+  that closed before anyone spoke stays silent; an egress that fails, or aborts while the room is
+  still there, shows "The recording did not start. Try again."
+  (`server/src/calls/recordingStart.js`, `callOver`; docs/CALLS.md, "Recording").
 - **Quick call start** — closed by `feat/quick-call-start` (decided 2026-11-06; merged
   2026-11-07 with `feat/recording-start`): an organiser needed four steps before a call ran
   (create, start on the card, open, join). Now "Start call now" in the form (no planned start)
