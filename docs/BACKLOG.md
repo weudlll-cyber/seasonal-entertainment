@@ -16,6 +16,14 @@ entry waits for.
 
 ### Built, waiting for the merge
 
+- **A recording's start took up to 27 s or failed** — built on `fix/egress-chrome-start` (part
+  1; live 2026-11-09: 20.8 s then "websocket url timeout reached", 11 s, 27 s; owner's rule: at
+  most 10 s). Cause: the first Chrome in a newly made egress container builds its own font cache
+  before it answers. Now kept in the volume `egress-cache` and filled by a one-shot service before
+  egress starts; on the PC 15 of 15 starts active within 7.6 s, against 12 of 15 within 10 s
+  before (`deploy/calls/docker-compose.recording.yml`; docs/CALLS.md, "Recording"). Replaces
+  the warm-up proposal of 2026-11-07, which closes: a warm-up recording was not needed. Still to
+  confirm on the VPS (two recordings in a row after the update).
 - **A recording from the start that failed vanished without a word** — built on
   `fix/egress-chrome-start` (part 2; seen live 2026-11-09): every end of a recording started
   with the call was dropped silently. Now only a call that ended or a room that closed before
@@ -42,11 +50,6 @@ entry waits for.
 
 ### Proposals not decided
 
-- **Warm the recording egress after it starts** — proposal 1 of the measurement of 2026-11-07
-  (docs/reports/2026-11-07-recording-start.md): the first starts after the egress container came
-  up took 17–20 s or failed, every later one 7–8.5 s; the live 20 s came right after an update.
-  Proposed: one throw-away recording at egress start. Decision pending the live check of two
-  recordings in a row on the VPS.
 - **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
   login is not planned, decided 2026-11-02).
 - **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its

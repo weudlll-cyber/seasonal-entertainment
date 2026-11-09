@@ -1080,7 +1080,9 @@ limited to 3 CPUs and 3 GB, and a recording is counted at 2.0 CPUs, its `cpu_cos
 (127.0.0.1 only). Egress takes a recording only when that cost fits its free CPUs; with its
 default cost (4) and the earlier 2-CPU limit it declined every one, and the start timed out
 (fixed 2026-11-06). Memory: a recording on the VPS peaked at 1.79 GB (2026-11-06), too close to
-the earlier 2 GB. In `deploy/calls/.env` set `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` (the same
+the earlier 2 GB. Chrome's font cache is the volume `egress-cache`, filled once by the one-shot
+service of the same name before egress starts, so the first recording after an update does not
+wait for Chrome to build it (docs/CALLS.md, "Recording"; fixed 2026-11-09). In `deploy/calls/.env` set `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` (the same
 pair) and `RECORDINGS_DIR=<site-data mountpoint>/media/recordings`
 (`docker volume inspect seasonal-site_site-data --format '{{ .Mountpoint }}'`). That folder must
 be owner uid 1000 (the site, which reads and deletes recordings), group 0 with write (the egress

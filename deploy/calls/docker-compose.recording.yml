@@ -11,7 +11,10 @@
 #              RECORDINGS_DIR on the host, the folder the site reads (its CALLS_RECORDINGS_DIR);
 #              inside the egress container it is /recordings (the site's
 #              CALLS_EGRESS_OUTPUT_DIR). Keys from ./.env (not committed). Egress gets 3 CPUs and
-#              counts a recording at 2.0 of them (cpu_cost), so it accepts one.
+#              counts a recording at 2.0 of them (cpu_cost), so it accepts one. Chrome's font cache
+#              lives in the volume egress-cache, filled once by egress-cache (the service) before
+#              egress starts, so a recording is active within about 7.6 s also right after an
+#              update (2026-11-09, measured below).
 # ============================================================
 
 services:
@@ -27,12 +30,45 @@ services:
     # Only this machine: nothing outside talks to Redis.
     command: ['redis-server', '--bind', '127.0.0.1', '--port', '6379', '--save', '']
 
+  # Fills Chrome's font cache before egress starts (decided 2026-11-09). Chrome brings its own
+  # fontconfig, which cannot use the image's prebuilt cache, so the first Chrome in a newly made
+  # container writes ~/.cache/fontconfig itself (4.7 MB) before it answers. That delayed the
+  # first recording after every update: egress waits 20 s for Chrome's DevTools address
+  # (chromedp v0.16.0 allocate.go:40, :249-250; egress sets no other value,
+  # pkg/pipeline/source/web.go:235-288), then fails with "websocket url timeout reached" (live
+  # 2026-11-09). Measured on the PC (2026-11-09; 15 starts each: 3 in a newly made container, 4
+  # after 1-5 min idle, 8 back-to-back), time from the start request to egress_active:
+  #   as before: 12 of 15 within 10 s; 5.2-14.5 s; new containers 10.3, 12.0, 14.5 s
+  #   this cache, kept in the volume: 15 of 15; 5.1-7.4 s
+  #   this cache, the volume new and filled here first (a first install or update): 15 of 15;
+  #     5.1-7.6 s
+  # One headless run (about 5 s, once per "up"); no network, no rights beyond the image's user.
+  egress-cache:
+    image: livekit/egress:v1.15.0@sha256:ac244a40268ce1dd1510fbff6eb529609ec68aceff1602343f79be8ca08c355b
+    network_mode: none
+    restart: 'no'
+    entrypoint:
+      [
+        'google-chrome',
+        '--headless=new',
+        '--no-sandbox',
+        '--disable-gpu',
+        '--dump-dom',
+        'about:blank',
+      ]
+    volumes:
+      - egress-cache:/home/egress/.cache
+
   egress:
     image: livekit/egress:v1.15.0@sha256:ac244a40268ce1dd1510fbff6eb529609ec68aceff1602343f79be8ca08c355b
     restart: unless-stopped
     network_mode: host
     # Chrome inside records the room's layout; it needs this to run its sandbox.
     cap_add: [SYS_ADMIN]
+    # Only once Chrome's font cache is in place (egress-cache above).
+    depends_on:
+      egress-cache:
+        condition: service_completed_successfully
     environment:
       # cpu_cost: egress takes a job only when the job's cost fits its free CPUs, counted from
       # the container's limit below (cpus: 3, all free while idle; 80 % of them, the default
@@ -55,6 +91,8 @@ services:
     volumes:
       # The site reads the finished files from the same folder (and backs them up).
       - ${RECORDINGS_DIR:?set RECORDINGS_DIR in deploy/calls/.env}:/recordings
+      # Chrome's caches, kept across container changes (egress-cache above).
+      - egress-cache:/home/egress/.cache
     # A recording is counted at 2.0 CPUs while it runs (Chrome plus the encoder; cpu_cost
     # above); 3 lets egress accept one (2.0 <= 3, and <= 3 x 0.8 = 2.4 with headroom), leaving the
     # VPS's other cores to LiveKit and the site. One recording at a time.
@@ -65,3 +103,8 @@ services:
           # Measured on the VPS: up to 1.79 GB while recording (egress's own "maxMemory",
           # 2026-11-06), too close to the earlier 2G.
           memory: 3G
+
+volumes:
+  # Chrome's font cache for egress (egress-cache above); only a cache: removing it costs one
+  # slower first start.
+  egress-cache:
