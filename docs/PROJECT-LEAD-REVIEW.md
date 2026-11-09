@@ -4,6 +4,22 @@
 architecture and effort of the proposals below before implementation is authorized.
 This is a discussion brief, not an approved roadmap.
 
+## Decisions (2026-11-09)
+
+- **A** (harden account-change synchronization): rejected. The feed keeps changes 365 days and
+  polling suffices.
+- **B** (logout and revocation): a password change or an admin's password reset notes "rights",
+  so both games end the member's sessions (built, `night/2026-11-10`). Sign-out everywhere and
+  per-device logout are not planned.
+- **C** (exposure between same-origin applications): the website's cookies are stripped in the
+  games' own route files (requested from both game plannings on 2026-11-09).
+- **D** (explicit game permissions) and **E** (per-game sync token): not needed while both games
+  are the owner's own on the same server. Hosting is granted per game (built,
+  `night/2026-11-10`).
+- **F** (dependencies and operations): the development dependencies are updated
+  (`night/2026-11-10`, piece 6); the live restore drill is open; Imprint and Privacy were filled in
+  on the live site on 2026-11-04 (the seed placeholders apply only to a fresh install).
+
 ## Context and evidence
 
 The read-only repository audit covered Seasonal Entertainment `master` at

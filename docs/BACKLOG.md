@@ -11,8 +11,6 @@ entry waits for.
 
 - **Real sites to approve for the chat embed** — which game sites go on Admin → Embedding once
   the site is live (only exact `https://` origins).
-- **Site and bots on the same VPS** — reading the bots' files through read-only mounts assumes
-  it (the installer's bot-file answers, docs/DEPLOYMENT.md, "What it asks").
 
 ### Built, waiting for the merge
 
@@ -25,27 +23,11 @@ entry waits for.
   `X-Acting-User-Can-Host` answers for the game asking. The old flag `users.can_start_games`
   became a grant for every game of each account that had it, then went
   (`server/src/accounts/gameHosts.js`; docs/AUTH.md, "Embedded games").
-- **Starting a call turns the microphone on** — built on `feat/start-mic-on` (decided 2026-11-09):
-  joined automatically after "Start call now" or "Start <title>", the organiser's microphone goes
-  on and the camera stays off; an ordinary join stays all off (`client/src/pages/CallPage.jsx`;
-  docs/CALLS.md, "Calls on the site").
 
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
   restore one nightly backup there once, as docs/DEPLOYMENT.md describes, and check the site.
-
-- **A recorded call on the VPS** — call recording is tested with a real egress on the PC; one
-  real recorded call on the server is still to try (docs/CALLS.md, "Recording"). Also untested
-  there: call media over UDP from outside (signalling through nginx answered 101 on 2026-11-01).
-  LiveKit logged "could not validate external IP" at start (docs/DEPLOYMENT.md,
-  "Troubleshooting").
-
-### Planned for later
-
-- **Settings export/import between the PC test site and the live site** — later (decided
-  2026-11-03): carrying settings over by hand for now; the Discord steps alone already travel
-  with the project's seed (`npm run steps:export`).
 
 ### Proposals not decided
 
@@ -56,6 +38,10 @@ entry waits for.
 
 ### Known limits
 
+- **Only the owner's own games are embedded** — if a game not run by the owner is ever embedded,
+  revisit proposals C (keep the website's cookies from it: a separate origin), D (per-game
+  capabilities beyond hosting) and E (a sync token per game) of docs/PROJECT-LEAD-REVIEW.md. Not
+  needed while both games are the owner's own on the same server (decided 2026-11-09).
 - **A call recorded from its start blocks a second recording meanwhile** — while it waits for
   its first speaker, the egress keeps its Chrome and its 2.0-CPU share, so a recording started in
   a second call at the same time is declined ("did not start"). Accepted by the owner on
@@ -93,6 +79,22 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Site and bots on the same VPS** — closed (2026-11-09): the site and the owner's bots run on
+  the same server, and the installer reads the bots' files there through read-only mounts
+  (docs/DEPLOYMENT.md, "What it asks").
+- **A recorded call on the VPS** — closed (2026-11-09): five recordings live, 4.3–8.8 s from the
+  start to active, one of them with sound (mean −28 dB; the others' microphone was off). The
+  egress start fix (PR #52) and the recordings folder (PR #48) made it work. LiveKit's "could
+  not validate external IP" at start stays described in docs/DEPLOYMENT.md, "Troubleshooting".
+- **Call media over UDP from outside** — closed (2026-11-06): the owner joined a live call from
+  his home network with camera and screen share.
+- **Settings export/import between the PC test site and the live site** — not planned (decided
+  2026-11-09): settings are carried over by hand; the Discord steps travel with the project's
+  seed (`npm run steps:export`).
+- **Starting a call turns the microphone on** — closed by `feat/start-mic-on` (PR #53, merged
+  2026-11-09): joined automatically after "Start call now" or "Start <title>", the organiser's
+  microphone goes on and the camera stays off; an ordinary join stays all off
+  (`client/src/pages/CallPage.jsx`; docs/CALLS.md, "Calls on the site").
 - **The call page's rail opened expanded** — closed by `fix/rail-stays-open` (seen live
   2026-11-09): after leaving a call page through a link in the expanded rail, the next call page
   started expanded, as the rail's state outlived the page (the sidebar stays mounted, and the
