@@ -2,13 +2,15 @@
 // File:        userAdmin.js
 // Path:        server/src/accounts/userAdmin.js
 // Project:     Seasonal Entertainment
-// Description: Admin-side changes to accounts: list/search, role, "can start games", lock.
+// Description: Admin-side changes to accounts: list/search (with the games each may host,
+//              gameHosts.js), role, lock.
 //              The last active admin can be neither demoted nor locked, nor deleted
 //              (deletion.js): enforced here, in the data layer, so no route can bypass it (as
 //              in the race game).
 // ============================================================
 
 import { noteAccountChange } from './accountChanges.js';
+import { grantedGamesByUser } from './gameHosts.js';
 import { escapeLike } from '../db/like.js';
 
 export class LastAdminError extends Error {
@@ -17,14 +19,16 @@ export class LastAdminError extends Error {
   }
 }
 
-const LIST_COLUMNS = `id, username, email, role, can_start_games AS canStartGames, locked,
+const LIST_COLUMNS = `id, username, email, role, locked,
   created_at AS createdAt,
   EXISTS (SELECT 1 FROM two_factor t WHERE t.user_id = users.id AND t.enabled_at IS NOT NULL)
     AS twoFactorEnabled`;
 
 // Search matches username or email, case-insensitively; results in username order.
+// hostGames: the game slugs an admin granted (admins may host every game anyway).
 export function listUsers(db, { search = '', limit = 200 } = {}) {
   const pattern = `%${escapeLike(search)}%`;
+  const hosts = grantedGamesByUser(db);
   return db
     .prepare(
       `SELECT ${LIST_COLUMNS} FROM users
@@ -34,7 +38,7 @@ export function listUsers(db, { search = '', limit = 200 } = {}) {
     .all(pattern, pattern, limit)
     .map((u) => ({
       ...u,
-      canStartGames: u.canStartGames === 1,
+      hostGames: hosts.get(u.id) ?? [],
       locked: u.locked === 1,
       twoFactorEnabled: u.twoFactorEnabled === 1,
     }));
@@ -54,7 +58,8 @@ export function guardLastAdmin(db, user, { role, locked, deleted = false }) {
 }
 
 // Each change that really changes something is noted for the games in the same transaction
-// (accountChanges.js): "rights" for the role and "can start games", "locked" / "unlocked".
+// (accountChanges.js): "rights" for the role (and, in gameHosts.js, a game's hosting),
+// "locked" / "unlocked".
 export function setRole(db, user, role) {
   db.transaction(() => {
     guardLastAdmin(db, user, { role });
@@ -70,12 +75,5 @@ export function setLocked(db, user, locked) {
     if (Boolean(locked) !== Boolean(user.locked)) {
       noteAccountChange(db, user.id, locked ? 'locked' : 'unlocked');
     }
-  })();
-}
-
-export function setCanStartGames(db, user, value) {
-  db.transaction(() => {
-    db.prepare('UPDATE users SET can_start_games = ? WHERE id = ?').run(value ? 1 : 0, user.id);
-    if (Boolean(value) !== Boolean(user.canStartGames)) noteAccountChange(db, user.id, 'rights');
   })();
 }

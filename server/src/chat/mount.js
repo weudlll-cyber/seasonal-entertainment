@@ -76,7 +76,7 @@ export const chatAccounts = (db, config, hub = null) => ({
   deleteData: (userId) => deleteChatData(db, userId),
   afterCommit: ({ files, messages }) => {
     deleteChatFiles(config, files);
-    if (hub) messagesDeleted(hub, messages);
+    if (hub) messagesDeleted(hub, db, messages);
   },
 });
 

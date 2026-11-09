@@ -61,7 +61,7 @@ describe.each(GAMES)('GET /api/games/%s/authorize', (game) => {
     });
   });
 
-  it('organiser and admin carry their role; admins and "may start games" may host', async () => {
+  it('organiser and admin carry their role; admins, and members granted this game, may host', async () => {
     withGames();
     const { agent: olga } = await makeStaff(t, 'olga', 'organiser');
     const { agent: ada } = await makeStaff(t, 'ada', 'admin');
@@ -75,7 +75,16 @@ describe.each(GAMES)('GET /api/games/%s/authorize', (game) => {
     expect([admin.headers['x-acting-user-roles'], admin.headers['x-acting-user-can-host']]).toEqual(
       ['admin', 'true']
     );
-    t.db.prepare('UPDATE users SET can_start_games = 1 WHERE id = ?').run(user.id);
+    // A grant for the other game is not one for this game.
+    const other = GAMES.find((g) => g !== slug);
+    const grant = (game) =>
+      t.db.prepare('INSERT INTO user_game_hosts (user_id, game) VALUES (?, ?)').run(user.id, game);
+    grant(other);
+    expect((await authorize(mia)).headers['x-acting-user-can-host']).toBe('false');
+    expect((await authorize(mia, 'GET', undefined, other)).headers['x-acting-user-can-host']).toBe(
+      'true'
+    );
+    grant(slug);
     expect((await authorize(mia)).headers['x-acting-user-can-host']).toBe('true');
   });
 

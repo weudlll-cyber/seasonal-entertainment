@@ -10,7 +10,7 @@
 
 import { nextAccountId, noteIssuedId } from './accountIds.js';
 
-const COLUMNS = `id, username, email, role, can_start_games AS canStartGames, locked,
+const COLUMNS = `id, username, email, role, locked,
   session_epoch AS sessionEpoch, show_online AS showOnline, dm_link_previews AS dmLinkPreviews,
   notify_mentions AS notifyMentions, notify_direct AS notifyDirect, notify_recap AS notifyRecap,
   (password_hash IS NOT NULL) AS hasPassword, created_at AS createdAt`;
@@ -19,7 +19,6 @@ function toUser(row) {
   if (!row) return null;
   return {
     ...row,
-    canStartGames: row.canStartGames === 1,
     locked: row.locked === 1,
     showOnline: row.showOnline === 1,
     dmLinkPreviews: row.dmLinkPreviews === 1,
@@ -155,7 +154,6 @@ export function publicUser(user) {
     username: user.username,
     email: user.email,
     role: user.role,
-    canStartGames: user.canStartGames || user.role === 'admin',
     showOnline: user.showOnline,
     dmLinkPreviews: user.dmLinkPreviews,
     notifyMentions: user.notifyMentions,

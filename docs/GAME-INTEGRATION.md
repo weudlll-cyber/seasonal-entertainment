@@ -1,13 +1,15 @@
 # Game integration guide
 
 **Start here when creating a game or adapting an existing standalone game for Seasonal
-Entertainment.** This is the shared entry point for game developers and coding agents:
-architecture, website contracts, implementation checklist and known limitations in one place.
-The game keeps its own repository, installer, database and game logic.
+Entertainment.** This is the entry point for game developers and coding agents: the
+architecture, what a game must do, a copyable task brief and the acceptance checklist. The
+website's contracts themselves are defined once, in the documents this guide links to; where
+the two differ, those documents are right. The game keeps its own repository, installer,
+database and game logic.
 
 ## Status and scope
 
-Verified against the default branches on **2026-11-07**:
+The game-side facts below were verified against the default branches on **2026-11-07**:
 
 | Repository                             | Commit                                     |
 | -------------------------------------- | ------------------------------------------ |
@@ -15,15 +17,29 @@ Verified against the default branches on **2026-11-07**:
 | `weudlll-cyber/seasonal-bingo-royale`  | `0e9eab9f81080e68cb86668c050140bfc770897e` |
 | `weudlll-cyber/seasonal-mini-games`    | `5d7ddc6e88de3363b7c6808b02162e3b78ffb664` |
 
-This describes repository behavior, not proof of a live deployment. **Current** means
-implemented at those commits. **Required** means a requirement for a game adopting this
-integration. **Proposed** means an improvement, not an available website capability or an
-approved implementation decision. Recheck the relevant source when updating a contract;
-do not treat older game specifications as overriding current website behavior.
+Labels used here:
+
+- **Current**: implemented at those commits.
+- **Built**: implemented on the website since then, on `night/2026-11-10` (waiting for the
+  merge; decided 2026-11-09).
+- **Requested**: asked of the games, their own work.
+- **Required**: a requirement for a game adopting this integration.
+- **Proposed**: an idea, neither available nor decided.
+
+The website's contracts:
+
+| Contract                                         | Defined in                                                                     |
+| ------------------------------------------------ | ------------------------------------------------------------------------------ |
+| Sign-in (authorize), identity headers, decisions | [AUTH.md, "Embedded games"](AUTH.md#embedded-games-gamesslug)                  |
+| Account-changes feed, account ids                | [AUTH.md, "Embedded games"](AUTH.md#embedded-games-gamesslug)                  |
+| The chat inside a game, its room, postMessage    | [EMBED.md](EMBED.md#the-embedded-games-rooms), [snippet](EMBED.md#the-snippet) |
+| Installing: questions, routes folder, token      | [DEPLOYMENT.md, "Embedded games"](DEPLOYMENT.md#embedded-games)                |
+| Optional open sign-ups listing                   | [OPEN-ROUNDS.md](OPEN-ROUNDS.md)                                               |
 
 ## 1. Architecture and deployment profile
 
-The current profile is for **trusted games operated with the website on the same origin**.
+The current profile is for **trusted games operated with the website on the same origin**:
+both embedded games are the owner's own, on the same server (decided 2026-11-09).
 
 ```text
 Browser -> website nginx / Caddy
@@ -33,8 +49,8 @@ Browser -> website nginx / Caddy
 ```
 
 The browser navigates to the game's own application under `/games/<slug>/`. The website
-does not currently wrap these applications in a game iframe. The game embeds the
-**website chat** in an iframe.
+does not wrap these applications in a game iframe. The game embeds the **website chat** in an
+iframe.
 
 | Owner         | Responsibilities                                                                                                         |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -52,76 +68,40 @@ Required: all assets, API routes, WebSockets, redirects and cookies work under t
 base path. Do not hard-code root paths such as `/api` for a game hosted under `/games/<slug>/`.
 Keep game rules independent of the identity and chat adapters.
 
-## 2. Website sign-in contract
+## 2. Signing in through the website
 
-### Routes and sequence
+The contract (routes, methods, the same-origin rule, every header and its value) is in
+[AUTH.md, "Embedded games"](AUTH.md#embedded-games-gamesslug). In short:
 
 ```text
 1. Browser GET /games/<slug>/auth/website?next=<encoded game page>
 2. Proxy asks GET /api/games/<slug>/authorize with the browser's website cookie,
    Host, Origin and X-Original-Method.
-3. Website answers with member headers or a guest header.
+3. Website answers 204: the X-Acting-User-* headers for a member in good standing, or
+   X-Acting-Guest: true alone for anyone else (never 401).
 4. Proxy forwards that answer's identity headers and its own game-specific secret.
 5. Game validates the trusted connection, maps the account, rotates its own session,
    and redirects to the requested game page.
 ```
 
-Only the exact game sign-in route receives trusted identity headers. Other game routes use
-the game's own session, without asking the website again.
+Only the exact game sign-in route receives trusted identity headers; other game routes use
+the game's own session. A 204 alone is not a sign-in: only the member headers are.
 
-The authorize endpoint itself accepts GET only (other methods: 405). The original browser
-method must be supplied: GET, HEAD and OPTIONS are accepted; state-changing methods require
-the website's own Origin; unknown/missing original methods or an invalid required Origin
-give 403. Disabled or unknown game slugs give 404. Responses are `Cache-Control: no-store`.
+- **`X-Acting-User-Can-Host`** answers for the game asking (**built**: hosting is granted per
+  game by an admin; admins always may). A grant for one game is no grant for another.
+- **`X-Acting-User-Steps`**: required, validate the decoded structure, bound its size, and never
+  treat an icon as arbitrary HTML or an unrestricted external URL; invalid optional steps must
+  not grant rights.
+- **`X-Acting-User-Email-Verified`** is the games' scoring-eligibility convention, not proof of
+  an email check; no email address is sent.
 
-### Member and guest answers
-
-A website member in good standing receives **204 with no body** and:
-
-| Header                         | Contract                                                                           |
-| ------------------------------ | ---------------------------------------------------------------------------------- |
-| `X-Acting-User-Id`             | Website account ID as text; currently numeric and never reused                     |
-| `X-Acting-User`                | Website username                                                                   |
-| `X-Acting-User-Roles`          | Currently one of `member`, `organiser`, `admin`; existing games parse a comma list |
-| `X-Acting-User-Email-Verified` | Currently `true` for every member in good standing                                 |
-| `X-Acting-User-Can-Host`       | `true` or `false`; website's "Can start games" flag, always true for admins        |
-| `X-Acting-User-Steps`          | Base64URL of compact JSON, highest Discord step per ladder, at most three          |
-
-The verification header is the existing **game scoring eligibility convention**, not proof
-of an email verification message. No email address is transmitted.
-
-Decoded steps example (encode this array as Base64URL before putting it in the header):
-
-```json
-[
-  {
-    "ladder": "holder",
-    "name": "Golden",
-    "icon": "/media/step-icons/0123456789abcdef0123456789abcdef.webp"
-  }
-]
-```
-
-Ladders: `holder`, `farmer`, `investor`. Icon: public website-relative path or null.
-Without steps the array is `[]`. No Discord tokens or private keys are handed to the game.
-Required: validate the decoded structure, bound its size, and never treat an icon as arbitrary
-HTML or an unrestricted external URL. Invalid optional steps must not grant rights.
-
-Signed-out users, locked accounts and accounts blocked by website 2FA requirements receive
-**204 with only `X-Acting-Guest: true`**, without member headers. Therefore a successful
-HTTP status is not sufficient to sign someone in. Normal guests are not a 401 error.
-
-### Trust checks and return paths
-
-Required: read identity headers only in website mode and only on the dedicated sign-in route.
-Check the actual TCP peer against the configured trusted proxy addresses/CIDRs, not a
-browser-supplied forwarding header. Also check a game-specific proxy secret in constant time.
-Without either trust check, refuse sign-in.
-
-Current secret headers: Bingo `X-Sbr-Proxy-Secret`, Mini Games `X-Smg-Proxy-Secret`.
-The proxy overwrites/clears the configured identity and secret headers received from clients;
-the secret is added after authorization, not sent as part of the website identity request.
-Keep secrets out of source control, browser responses, status output and logs.
+Required trust checks: read identity headers only in website mode and only on the dedicated
+sign-in route. Check the actual TCP peer against the configured trusted proxy
+addresses/CIDRs, not a browser-supplied forwarding header, and a game-specific proxy secret
+in constant time; without either, refuse sign-in. Current secret headers: Bingo
+`X-Sbr-Proxy-Secret`, Mini Games `X-Smg-Proxy-Secret`. The proxy overwrites or clears the
+identity and secret headers clients send; the secret is added after authorization, never sent
+to the website. Keep secrets out of source control, browser responses, status output and logs.
 
 Required game login hop:
 
@@ -130,19 +110,18 @@ GET /games/<slug>/auth/website/login?next=<encoded game page>
   -> /login?next=<encoded /games/<slug>/auth/website?next=...>
 ```
 
-Encode each nested query parameter separately, including any game URL fragment. Preserve
-the return path through registration and Discord login too. Accept only local return paths
-under the game's base path; reject schemes, external hosts, `//`, backslashes and invalid
-characters. Existing games bound `next` to 512 characters and printable ASCII and fall back
-to the lobby. The website already uses a full page navigation for `/games/...` return paths,
-not its internal SPA router.
+Encode each nested query parameter separately, including any URL fragment. The website keeps
+`next` through login, registration and Discord login, and opens a `/games/...` return path
+with a full page load (AUTH.md). Accept only local return paths under the game's base path;
+reject schemes, external hosts, `//`, backslashes and invalid characters. Both games bound
+`next` to 512 printable ASCII characters and fall back to the lobby.
 
 ## 3. Account mapping, rights and sessions
 
-Required account key: **(website origin, website user ID)**. Never automatically link by
+Required account key: **(website origin, website user ID)**. Never link automatically by
 username or email. On first sign-in create a game account without a local password or email.
-On later sign-ins follow the website display name, resolve game-name collisions, update
-steps, and recompute website-derived roles. Stable identity must survive a rename.
+On later sign-ins follow the website display name, resolve game-name collisions, update steps
+and recompute website-derived roles; the stable identity survives a rename.
 
 | Website input                  | Current game mapping in both games |
 | ------------------------------ | ---------------------------------- |
@@ -152,235 +131,137 @@ steps, and recompute website-derived roles. Stable identity must survive a renam
 | `organiser` alone              | No additional hosting right        |
 
 Never map website claims to `super_admin` or `security_admin`. Track mapped assignments
-separately from game-managed assignments so recomputing them does not retain revoked mapped
-rights or delete unrelated local assignments. Enforce permissions on the server.
+separately from game-managed ones, so recomputing them neither keeps a revoked mapped right
+nor deletes an unrelated local assignment. Enforce permissions on the server.
 
-Each game creates and rotates its **own** session. Use a unique HttpOnly, Secure,
-SameSite=Lax cookie scoped to the game path in production, and the game's own CSRF protection
-for state-changing requests. The website session is not a substitute for a game session.
-Bingo caps website player sessions at seven days; do not assume both games have identical
-session lifetimes.
+Each game creates and rotates its **own** session: a unique HttpOnly, Secure, SameSite=Lax
+cookie scoped to the game path in production, and its own CSRF protection for state-changing
+requests. Current: in website mode a game session lasts **7 days** in both games. The website
+session is not a substitute for a game session.
 
-**Trust limitation:** same-origin apps are not isolated security boundaries. The current
-game proxy routes do not explicitly filter the website session cookie out of all forwarded
-requests. The game does not use it as its login proof, but it may still reach the game server.
-Do not claim that the website cookie is technically never visible there.
+**Trust limitation:** same-origin applications are not isolated from each other. **Requested**
+(2026-11-09, from both games): the games' own route files strip the website's cookies before
+forwarding to the game server. Until a game has done so, its server may receive the website
+session cookie, though it never uses it as login proof. If a game not run by the owner is ever
+embedded, a separate origin and per-game capabilities and sync tokens come back on the table
+(docs/BACKLOG.md, "Known limits").
 
 ## 4. Account changes and session revocation
 
-Current internal, server-to-server contract:
+The feed (request, answer, kinds, cursor, paging, token, rate limit, where it is reachable) is
+in [AUTH.md, "Embedded games"](AUTH.md#embedded-games-gamesslug). One website journal serves
+all enabled games; each game keeps its own cursor and fetches pages until caught up.
 
-```http
-GET /api/games/<slug>/account-changes?since=118
-X-Games-Sync-Token: <operator-provided sync token>
-```
+Required: persist the cursor only after successful processing, and make processing safe to
+repeat. What the games do today:
 
-```json
-{
-  "changes": [
-    { "id": 42, "kind": "locked" },
-    { "id": 17, "kind": "deleted" }
-  ],
-  "next": "120"
-}
-```
-
-One website journal serves all enabled games; each game persists its own cursor. Missing
-`since` or `0` starts from the beginning; cursors supplied to the website are 1-15 digits.
-At most 500 changes per page; fetch subsequent pages using `next` until caught up. Persist
-the cursor only after successful processing, and make processing safe to repeat.
-
-| Kind       | Current consequence                                                                                                                                |
+| Kind       | Current consequence in the games                                                                                                                   |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `locked`   | Revoke the linked player's game sessions and close their live connections                                                                          |
 | `rights`   | Same; the next sign-in recomputes rights                                                                                                           |
 | `unlocked` | Bingo revokes sessions; Mini Games takes no additional action                                                                                      |
 | `deleted`  | Revoke sessions, remove/anonymize personal account data, exclude from active leaderboards; keep historical results under a deleted-player identity |
 
-Bingo also remembers deleted website identities to reject their later sign-in. Mini Games
-keeps an anonymized account marked deleted and removes its external identity link.
+The website sends `rights` for a role change, a change of who may host that game, and
+(**built**) a member's password change or an admin's password reset, so whoever knew the old
+password is signed out of the games too; not for the first password of an account made with
+Discord. Bingo also remembers deleted website identities to refuse their later sign-in; Mini
+Games keeps an anonymized account marked deleted and removes its external identity link.
 
-The website records changes transactionally and retains them for 365 days. Unknown game
-accounts need no update. A game offline beyond that retention cannot assume its cursor
-provides a complete history: reconciliation would need an additional mechanism.
+Current polling: Bingo every two minutes; Mini Games normally every 15 seconds, with backoff
+on failure. These are not immediate revocations; both keep playing when the feed fails and
+log the failure rather than enforcing a maximum delay. The website keeps 365 days of changes;
+a game offline longer cannot assume a complete history. Decided 2026-11-09: no shorter limit,
+polling suffices; a normal website logout ends only the website session, and "sign out
+everywhere" or per-device logout are not planned.
 
-Current polling: Bingo every two minutes; Mini Games normally every 15 seconds, with
-failure backoff. These are not immediate revocations. Both keep playing on feed failures
-and expose/log failures rather than providing a strict maximum revocation delay.
+## 5. The website chat inside a game
 
-The shared token is generated once at `/etc/seasonal/games-sync-token` (root-only, 0600),
-passed to the website as `GAMES_SYNC_TOKEN`, and copied by game installers into protected
-configuration. Wrong/missing token: 401; invalid cursor: 400; disabled game: 404;
-rate limit: 60 requests/minute per game and address. The public proxy denies the feed.
-Use the website's private address: container network `http://site:3800`, or the operator's
-local port recorded in `/etc/seasonal/site-local-port` where applicable.
+The embed (its URL, the game's room and its defaults, framing, postMessage messages and the
+snippet) is in [EMBED.md](EMBED.md#the-embedded-games-rooms). In short: frame
+`/embed/chat?room=<slug>&theme=<light|dark|auto>`; it signs in with the **website session**,
+not the game's, so it may show a member before the game has a session. The website makes one
+room per game (not per match) while the game is switched on.
 
-**Not implemented:** complete single logout. Normal website logout, password changes and
-password resets are not journal events in this contract. Do not promise that those actions
-immediately revoke existing game sessions.
+Required: allow the iframe in the game's `frame-src` CSP; keep a referrer (`strict-origin`)
+so Firefox can identify the parent; if sandboxing, keep what the chat and its login popup need.
+Validate `event.origin`, `event.source === iframe.contentWindow`, `data.source` and the fields
+used; send only to the chat's explicit origin, never `'*'`; re-send the current visibility on
+`ready`, and keep the iframe mounted while hidden if it must count arrivals.
 
-## 5. Website chat contract
+Current: Bingo embeds the chat and follows theme changes but does not use the unread and
+visibility messages; Mini Games uses them behind the round view's Chat button. Both keep game
+announcements in their own UI; neither posts winners into the website room.
 
-The game frames the website's chat, which authenticates with the **website session**, not the
-game session. It can therefore show a logged-in member before the game has a player session.
-Chat rules, moderation and private-message key handling stay with the website.
+## 6. Website setup and the optional open-rounds listing
 
-```html
-<iframe
-  id="website-chat"
-  title="Chat"
-  src="/embed/chat?room=YOUR-SLUG&theme=auto"
-  referrerpolicy="strict-origin"
-  style="width: 100%; height: 32rem; border: 0"
-></iframe>
-```
+Three separate steps, not one switch (details in
+[DEPLOYMENT.md, "Embedded games"](DEPLOYMENT.md#embedded-games)):
 
-Theme: `light`, `dark` or `auto`. Required: allow the iframe in the game's `frame-src` CSP.
-The website permits same-origin parents on `/embed/` through `frame-ancestors 'self'`;
-same-origin games need no external embed approval. Preserve a suitable referrer so Firefox
-can identify the parent. If sandboxing, preserve the capabilities needed by the chat and
-its login flow; test the resulting configuration, especially navigation and popups.
-
-The website creates a room with the enabled game's slug on startup if missing: everyone
-reads, members write, guests cannot write by default. Thereafter admins manage it as an
-ordinary room. Disabling a game does not delete its room/messages; deleting or renaming
-that room makes the expected slug reappear with defaults on a later enabled startup.
-There is one website room per game, not automatically one per match.
-
-### postMessage protocol
-
-| Direction    | Message                                                      |
-| ------------ | ------------------------------------------------------------ |
-| Chat -> game | `{ source: 'seasonal-chat', type: 'ready', room, signedIn }` |
-| Chat -> game | `{ source: 'seasonal-chat', type: 'unread', room, count }`   |
-| Chat -> game | `{ source: 'seasonal-chat', type: 'resize', height }`        |
-| Game -> chat | `{ source: 'seasonal-chat-host', type: 'visible', visible }` |
-| Game -> chat | `{ source: 'seasonal-chat-host', type: 'theme', theme }`     |
-
-`room` is the actual selected room or null. `unread` counts arrivals while the game reports
-`visible: false`, resets when visible, and is not the entire account's unread total.
-`height` is pixels. No token, private key or message text is sent to the game.
-
-Required: validate `event.origin`, `event.source === iframe.contentWindow`, `data.source`
-and the fields used. Send only to the chat's explicit origin, never `'*'`. Re-send current
-visibility on `ready` and keep the iframe mounted while hidden if it must count arrivals.
-Use the website's [complete snippet and embed rules](EMBED.md#the-snippet).
-
-Bingo currently embeds the chat and follows theme changes but its `ChatDock` does not consume
-the unread/visibility protocol. Mini Games implements that protocol behind the round-view
-Chat button, not in every lobby/waiting view. Both keep game announcements in their own UI;
-neither posts winners automatically into the website room.
-
-## 6. Website setup and optional open-rounds listing
-
-These are three separate steps, not one switch:
-
-1. **Register and enable the integration.** Current fixed slugs: `bingo`, `mini-games`.
-   `GAMES_EMBEDDED=bingo,mini-games` enables website authorize/feed routes and room creation.
-   Unknown slugs currently stop startup. For a new game extend
-   `server/src/games/embedded.js`, the list and activation handling in
-   `deploy/install/lib/games.sh`, and public feed-denial rules in `deploy/site/Caddyfile`.
-   Update related docs and tests. Merely adding an environment value or a game card is not enough.
+1. **Register and enable the integration.** The slugs are a fixed list
+   (`server/src/games/embedded.js`: `bingo`, `mini-games`); the installer's question switches a
+   game on (`GAMES_EMBEDDED`). A new game also needs its entry in `deploy/install/lib/games.sh`
+   and its feed denied in `deploy/site/Caddyfile`, with docs and tests; an environment value or
+   a game card alone is not enough.
 2. **Install the game.** Its installer writes its own route file into the website's prepared
-   nginx include directory `/etc/seasonal/routes/*.conf`, or the directory mounted as
-   `/etc/caddy/routes/*.caddy`. Keep route files containing secrets 0600; validate the proxy
-   configuration before reload and restore the previous route on validation failure.
-   Route HTTP and WebSockets to the game without changing website-owned files.
-3. **Create the catalogue card in Admin -> Games.** Set name, description, image, status,
-   visibility and path `/games/<slug>` (no trailing slash in the card). The current seed
-   does not automatically add Bingo or Mini Games cards. Card visibility and maintenance
-   status are presentation, not a substitute for game route authorization.
+   routes folder (nginx `/etc/seasonal/routes/*.conf`, or `/etc/caddy/routes/*.caddy`), keeps
+   files holding secrets 0600, validates the proxy configuration before a reload and restores
+   the previous route if the check fails. It never changes website-owned files.
+3. **Create the catalogue card** in Admin → Games (path `/games/<slug>`, no trailing slash).
+   Card visibility and maintenance status are presentation, not route authorization.
 
-Optional: provide the website's [open-rounds contract](OPEN-ROUNDS.md) and put its HTTPS
-status URL in the card's "Sign-up status URL" field:
+Optional: the [open-rounds contract](OPEN-ROUNDS.md), its HTTPS status URL in the card's
+"Sign-up status URL". Current: Bingo provides `/games/bingo/api/public/open-rounds`; Mini Games
+does not expose it.
 
-```json
-{
-  "version": 1,
-  "rounds": [
-    {
-      "id": "round-123",
-      "title": "Evening round",
-      "kind": "My game",
-      "startsAt": null,
-      "signupClosesAt": null,
-      "players": 12,
-      "maxPlayers": 100,
-      "joinUrl": "https://website.example/games/my-game/#/match/ABC123"
-    }
-  ]
-}
-```
+## 7. Other profiles and proposals
 
-Public, no personal data, at most 20 currently open host-approved entries, JSON and
-`Cache-Control: public, max-age=30`. String limits: ID 64, title 80, kind 40 characters.
-Dates are ISO UTC ending in `Z` or null; players is a nonnegative integer; maxPlayers is
-a positive integer or null. The join URL must be absolute HTTPS on the status URL's origin.
-The website polls every 60 seconds and retains the last good answer for at most three minutes.
-It uses a guarded public HTTPS fetch (port 443, no redirects, public addresses, five-second
-timeout, 64 KB limit); do not configure this field with a private container address.
+**Not the current website login:** Mini Games also implements a third-party game iframe loader
+and JWT handoff; Bingo's loader is a placeholder; OIDC is not implemented. Do not copy them as
+working website capabilities. The chat separately supports approved foreign sites with its own
+popup and embed token, which authorizes website chat, not a game ([EMBED.md](EMBED.md)).
 
-Bingo provides `/games/bingo/api/public/open-rounds`. Mini Games does not currently expose
-this shared open-rounds endpoint; its other public APIs are not interchangeable with it.
-
-## 7. Other profiles and proposed improvements
-
-**Not the current website login:** Mini Games additionally implements a third-party game
-iframe loader and JWT handoff. Bingo's comparable loader is still a placeholder. OIDC is
-not implemented for the current website integration. Do not copy planned Bingo JWT/embed
-examples as working website capabilities.
-
-The chat separately supports approved foreign origins using its own popup and embed token.
-That token authorizes website chat, not a game. See [EMBED.md](EMBED.md).
-The proposed website season feed is not implemented, and Bingo's stored call reference
-does not yet render an embedded website call. Neither is a prerequisite for integration.
-
-Recommended follow-ups, **proposed and not implemented by this document**:
-
-| Improvement                                                         | Purpose                                                                               |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Filter website cookies before forwarding to game servers            | Reduce unnecessary exposure; does not make same-origin games isolated                 |
-| Add explicit cross-game session revocation events                   | Cover password reset/change and "sign out everywhere"; decide normal logout semantics |
-| Define feed freshness limits for privileged actions                 | Avoid retaining administrative rights indefinitely during synchronization failure     |
-| Version identity/feed contracts and share executable contract tests | Prevent incompatible changes and divergent adapters                                   |
-| Give games separate sync credentials                                | Reduce the scope of compromise; current token is shared                               |
-| Consolidate game registration metadata                              | Avoid independently maintained server/installer/proxy lists                           |
-| Grant explicit per-game administrative capabilities                 | Avoid automatically giving every website admin broad rights in every game             |
-
-For independently operated or untrusted games, use a separate-origin profile rather than
-treating a website subpath as isolation. Standard OIDC Authorization Code + PKCE is a
-candidate for that future profile; it requires website/provider work and is not available
-just by changing a game setting.
+| Idea                                                                | Status                                                                  |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Strip the website's cookies before forwarding to game servers       | Requested from both games (2026-11-09)                                  |
+| Revocation events for a password change or reset                    | Built (`rights`); sign-out everywhere and per-device logout not planned |
+| Freshness limits for privileged actions on feed failure             | Rejected (2026-11-09): the 365-day feed and polling suffice             |
+| Hosting granted per game                                            | Built                                                                   |
+| Per-game capabilities beyond hosting; a sync token per game         | Not needed while both games are the owner's (2026-11-09)                |
+| Versioned identity/feed contracts with shared executable tests      | Proposed                                                                |
+| One registration list for server, installer and proxy               | Proposed                                                                |
+| A separate-origin profile (e.g. OIDC with PKCE) for untrusted games | Proposed; needed only for a game not run by the owner                   |
 
 ## 8. Copyable task brief for a game repository
 
-Use this with the chosen slug and repository. It is an implementation brief, not a claim
-that the website already knows arbitrary slugs.
+Use this with the chosen slug and repository. It is an implementation brief, not a claim that
+the website already knows arbitrary slugs.
 
 ```text
 Integrate this standalone game with Seasonal Entertainment.
-Reference: weudlll-cyber/seasonal-entertainment, docs/GAME-INTEGRATION.md.
+Reference: weudlll-cyber/seasonal-entertainment, docs/GAME-INTEGRATION.md (start there),
+then docs/AUTH.md "Embedded games", docs/EMBED.md and docs/DEPLOYMENT.md "Embedded games".
 Game slug: <slug>. Public base path: /games/<slug>/.
 Profile: trusted same-origin application with proxy-header login and website chat.
 
 Preserve local standalone behavior. Add a website identity adapter and disable local
 registration/password login in website mode. Implement auth/website and its login hop,
 validate TCP proxy trust plus a game-specific secret, map (website origin, user ID),
-recompute mapped rights, and create a rotated game session scoped to the base path.
-Keep authentication, authorization and game rules separate.
+recompute mapped rights (Can-Host is for this game), and create a rotated game session
+scoped to the base path. Keep authentication, authorization and game rules separate.
 
 Process the internal account-changes feed with a durable cursor and repeat-safe handling;
 revoke sessions and live connections on lock/rights changes and anonymize deletions.
-Document polling delays, failure behavior and the lack of complete single logout.
+Document polling delays and failure behavior.
 
 Embed /embed/chat?room=<slug> with theme and safe seasonal-chat postMessage handling.
 Do not copy website passwords, private-message keys or chat state into the game.
 Make assets, APIs, WebSockets, redirects and cookies work under the base path.
 
-Provide an installer-owned nginx/Caddy route and document configuration without secrets.
-Coordinate website slug registration, activation, feed protection and catalogue setup.
-Optionally implement docs/OPEN-ROUNDS.md. Do not assume OIDC, a website JWT issuer,
-season feed, embedded calls or per-match website chatrooms are already available.
+Provide an installer-owned nginx/Caddy route that strips the website's cookies, and document
+configuration without secrets. Coordinate website slug registration, activation, feed
+protection and catalogue setup. Optionally implement docs/OPEN-ROUNDS.md. Do not assume OIDC,
+a website JWT issuer, a season feed, embedded calls or per-match website chat rooms.
 Use the acceptance checklist below; report remaining gaps explicitly.
 ```
 
@@ -395,36 +276,40 @@ Add game-specific automated checks and exercise the real proxy path before deplo
 - [ ] External or malformed return paths cannot redirect outside the game.
 - [ ] Direct identity injection, wrong secrets and untrusted TCP peers cannot sign in.
 - [ ] Guests can only use intended reads; member/host/admin actions are protected server-side.
-- [ ] Hosting follows `Can-Host`, not `organiser` alone; high-privilege roles cannot be mapped.
+- [ ] Hosting follows `Can-Host` for this game, not `organiser` alone; high-privilege roles
+      cannot be mapped.
 - [ ] Name/steps changes follow the next sign-in without changing the identity link.
-- [ ] Locks/rights changes revoke sessions and sockets within the documented healthy-feed delay.
-- [ ] Deletion removes personal display data and active board entries without losing historical scores.
-- [ ] Cursor survives restart; replayed pages are safe; feed errors are observable without secrets.
-- [ ] Cookie scope, CSRF checks and logout behavior match the documented session policy.
+- [ ] Locks, rights changes and password changes/resets revoke sessions and sockets within the
+      documented healthy-feed delay.
+- [ ] Deletion removes personal display data and active board entries without losing
+      historical scores.
+- [ ] Cursor survives restart; replayed pages are safe; feed errors are observable without
+      secrets.
+- [ ] The route file strips the website's cookies; cookie scope, CSRF checks and logout
+      behavior match the documented session policy.
 - [ ] Chat works for website guests/members, on phones and desktops, and in Firefox.
 - [ ] Theme, hidden-panel arrivals and unread reset work where the chat badge is offered.
 - [ ] Foreign-origin/window messages and malformed postMessage fields are ignored.
 - [ ] Proxy config validation/rollback and separate catalogue setup work.
-- [ ] Optional status feed meets exact field/size/origin rules and excludes closed/private rounds.
+- [ ] Optional status feed meets exact field/size/origin rules and excludes closed/private
+      rounds.
 
 ## 10. Source map and maintenance
 
-Website contracts and operations:
+Website code:
 
-- [AUTH.md, embedded games](AUTH.md#embedded-games-gamesslug)
-- [EMBED.md](EMBED.md), [OPEN-ROUNDS.md](OPEN-ROUNDS.md),
-  [DEPLOYMENT.md, embedded games](DEPLOYMENT.md#embedded-games)
-- Identity endpoints: `server/src/games/embeddedRoutes.js`
+- Identity endpoints: `server/src/games/embeddedRoutes.js`; who may host:
+  `server/src/accounts/gameHosts.js`
 - Allowed slugs: `server/src/games/embedded.js`; activation: `server/src/config.js`
-- Journal and non-reused IDs: `server/src/accounts/accountChanges.js`, `accountIds.js`
+- Journal and non-reused ids: `server/src/accounts/accountChanges.js`, `accountIds.js`
 - Rooms: `server/src/chat/seed.js`; framing: `server/src/http/securityHeaders.js`
 - Chat messages: `client/src/embed/embedProtocol.js`
 - Login return navigation: `client/src/session/nextPage.js`
 - Installation: `deploy/install/lib/games.sh`, `deploy/site/Caddyfile`
 - Catalogue/status: `server/src/games/adminRoutes.js`, `seed.js`, `openRoundsContract.js`
 - Website tests: `server/test/embeddedGames.test.js`, `embeddedFeed.test.js`,
-  `gameRooms.test.js`, `openRounds.test.js`; chat browser cases in `client/e2e/embed*.spec.js`;
-  installer checks in `deploy/test/games.test.sh`
+  `gameHosts.test.js`, `gameRooms.test.js`, `openRounds.test.js`; chat browser cases in
+  `client/e2e/embed*.spec.js`; installer checks in `deploy/test/games.test.sh`
 
 Game-side reference implementations at the verified commits:
 
@@ -437,8 +322,8 @@ Game-side reference implementations at the verified commits:
   [account changes](https://github.com/weudlll-cyber/seasonal-mini-games/blob/5d7ddc6e88de3363b7c6808b02162e3b78ffb664/apps/server/src/integration/accountChanges.ts),
   [chat protocol](https://github.com/weudlll-cyber/seasonal-mini-games/blob/5d7ddc6e88de3363b7c6808b02162e3b78ffb664/apps/web/src/chat/useHostChatFrame.ts)
 
-When changing a website contract, update this guide and the detailed contract document in
-the same change. Coordinate consumer changes in game repositories before deploying a breaking
-change. Refresh the verified snapshot and label new proposals separately from implemented
-behavior. Game agents should start with this guide, then read only the sources relevant to
-their task rather than rediscovering the architecture across all repositories.
+When a website contract changes, change its defining document (AUTH, EMBED, DEPLOYMENT,
+OPEN-ROUNDS) and this guide's summary in the same change. Coordinate consumer changes in the
+game repositories before deploying a breaking change. Refresh the verified snapshot and keep
+proposals labelled apart from what is built. Game agents start with this guide, then read only
+the sources relevant to their task.

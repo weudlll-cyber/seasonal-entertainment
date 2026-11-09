@@ -2,22 +2,23 @@
 // File:        schema.js
 // Path:        server/src/accounts/schema.js
 // Project:     Seasonal Entertainment
-// Description: Tables of the accounts area: users, the highest id ever issued and the deleted
-//              account changes for the games (ACCOUNT_IDS_SCHEMA, apart from the users table's own
-//              schema, which the one-time rebuild below re-runs). Sessions live in the
+// Description: Tables of the accounts area: users, the highest id ever issued, the account
+//              changes for the games and who may host which game (ACCOUNT_IDS_SCHEMA, apart
+//              from the users table's own schema, which the one-time rebuild below re-runs). Sessions live in the
 //              "sessions" table, which the session store creates itself. migrateAccounts() brings
 //              older databases up, including the one-time rebuild that made email and the password
-//              optional for accounts that log in with Discord (SE-DISCORD-1, docs/AUTH.md).
+//              optional for accounts that log in with Discord (SE-DISCORD-1, docs/AUTH.md), and
+//              the move of "may start games" to a grant per game (2026-11-09, gameHosts.js).
 // ============================================================
 
 import { addMissingColumns } from '../db/addColumns.js';
+import { EMBEDDED_GAMES } from '../games/embedded.js';
 
 // username/email: COLLATE NOCASE makes uniqueness case-insensitive in the database itself.
 // email:           NULL for an account made with Discord (no email is asked there; several
 //                  NULLs do not collide under UNIQUE).
 // session_epoch: bumped on every password change or reset; a session stamped with an older
 //                epoch is no longer valid (pattern from the race game).
-// can_start_games: separate permission granted by admins (admins have it implicitly).
 // password_hash:   bcrypt of the auth key the browser derives from the password (docs/AUTH.md,
 //                  "Login key split"); NULL for an account without a password (made with
 //                  Discord and none set yet), which then cannot log in with a password.
@@ -38,7 +39,6 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash   TEXT,
   role            TEXT    NOT NULL DEFAULT 'member'
                           CHECK (role IN ('member', 'organiser', 'admin')),
-  can_start_games INTEGER NOT NULL DEFAULT 0 CHECK (can_start_games IN (0, 1)),
   locked          INTEGER NOT NULL DEFAULT 0 CHECK (locked IN (0, 1)),
   session_epoch   INTEGER NOT NULL DEFAULT 0,
   kdf_salt        TEXT,
@@ -58,6 +58,9 @@ CREATE TABLE IF NOT EXISTS users (
 // account_changes:  the account changes the games must learn of (accountChanges.js; GET
 //                   /api/games/<slug>/account-changes): user id, kind, time only, kept 365 days.
 //                   AUTOINCREMENT: seq is the feed's cursor and must never go back.
+// user_game_hosts:  the embedded games a member may host (gameHosts.js; admins always may):
+//                   one row per account and game slug of games/embedded.js, gone with the
+//                   account.
 export const ACCOUNT_IDS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS account_ids (
   key  TEXT    PRIMARY KEY CHECK (key = 'issued'),
@@ -68,6 +71,11 @@ CREATE TABLE IF NOT EXISTS account_changes (
   user_id    INTEGER NOT NULL,
   kind       TEXT    NOT NULL CHECK (kind IN ('deleted', 'locked', 'unlocked', 'rights')),
   changed_at TEXT    NOT NULL
+);
+CREATE TABLE IF NOT EXISTS user_game_hosts (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  game    TEXT    NOT NULL,
+  PRIMARY KEY (user_id, game)
 );
 `;
 
@@ -83,7 +91,24 @@ export function migrateAccounts(db) {
     ['users', 'notify_direct', 'INTEGER NOT NULL DEFAULT 0 CHECK (notify_direct IN (0, 1))'],
     ['users', 'notify_recap', 'INTEGER NOT NULL DEFAULT 0 CHECK (notify_recap IN (0, 1))'],
   ]);
+  // Before the rebuild below, whose new users table no longer has the flag.
+  splitHostFlag(db);
   relaxEmailAndPassword(db);
+}
+
+// "May start games" was one flag for every game (users.can_start_games); it is a grant per game
+// since 2026-11-09 (gameHosts.js). Every account that had the flag gets every game of the
+// allowlist, so nobody gains or loses a right; then the flag goes. Once, in one transaction.
+function splitHostFlag(db) {
+  const columns = db.prepare('PRAGMA table_info(users)').all();
+  if (!columns.some((c) => c.name === 'can_start_games')) return;
+  const grant = db.prepare(
+    'INSERT OR IGNORE INTO user_game_hosts (user_id, game) SELECT id, ? FROM users WHERE can_start_games = 1'
+  );
+  db.transaction(() => {
+    for (const game of Object.keys(EMBEDDED_GAMES)) grant.run(game);
+    db.exec('ALTER TABLE users DROP COLUMN can_start_games');
+  })();
 }
 
 // Databases from before Discord logins have email and password_hash NOT NULL. SQLite cannot

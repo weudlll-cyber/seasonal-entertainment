@@ -11,32 +11,45 @@ entry waits for.
 
 - **Real sites to approve for the chat embed** — which game sites go on Admin → Embedding once
   the site is live (only exact `https://` origins).
-- **Site and bots on the same VPS** — reading the bots' files through read-only mounts assumes
-  it (the installer's bot-file answers, docs/DEPLOYMENT.md, "What it asks").
 
 ### Built, waiting for the merge
 
-- **Starting a call turns the microphone on** — built on `feat/start-mic-on` (decided 2026-11-09):
-  joined automatically after "Start call now" or "Start <title>", the organiser's microphone goes
-  on and the camera stays off; an ordinary join stays all off (`client/src/pages/CallPage.jsx`;
-  docs/CALLS.md, "Calls on the site").
+- **A held Discord sign-up timing out while it is being completed** — built on
+  `night/2026-11-10` (piece 9; SE-AUDIT-2): the registration now claims its sign-up from the
+  session row inside the transaction that stores the link (`claimSignup`,
+  `server/src/discord/droppedGrants.js`), the row the sweep takes it from. Either the account
+  starts with a live grant, or the answer is `signup_expired` ("start again"). Reproduced in a
+  test before the fix: a request that read its session a second before the timeout, with the
+  sweep landing in between, stored an account holding the revoked grant.
+- **Unread counts after an account deletion** — built on `night/2026-11-10` (piece 8; SE-AUDIT-2):
+  the counts already shown kept counting a deleted account's room messages. Now every reader of
+  each room is told to recount ("activity", as after a hidden message), also on pages not
+  showing the room (`server/src/chat/accountData.js`; docs/AUTH.md, "Deleting an account").
+- **One source per game-integration fact** — built on `night/2026-11-10` (piece 7):
+  docs/GAME-INTEGRATION.md keeps the overview, the game's requirements, the task brief and the
+  checklist and links to AUTH, EMBED, DEPLOYMENT and OPEN-ROUNDS for the contracts; it marks what
+  is current, built, requested or proposed.
+- **The development dependency advisories** — built on `night/2026-11-10` (piece 6): `npm audit`
+  is clean; `minimatch` is overridden to `^11.0.5` for ESLint's `@eslint/config-array`, without
+  downgrading ESLint (docs/ARCHITECTURE.md, "Stack").
+- **A call load test for the VPS** — built on `night/2026-11-10` (piece 5):
+  `sudo ./deploy/calls/loadtest.sh`, three 3-minute steps up to 100 subscribers, stopping at load
+  5, under 1.5 GB free or after 20 minutes (docs/CALLS.md, "Load test"). Still to run once on the
+  VPS.
+- **A password change or reset ends game sessions** — built on `night/2026-11-10` (piece 2;
+  decided 2026-11-09): a member's own change and an admin's reset are noted for the games as
+  "rights", so both games sign the member out; not the first password of a Discord account
+  (`server/src/accounts/routes.js`, `server/src/admin/userRoutes.js`; docs/AUTH.md).
+- **Hosting per game** — built on `night/2026-11-10` (piece 1; decided 2026-11-09): an admin
+  grants hosting per embedded game (Admin → Users, one box per game); admins always may.
+  `X-Acting-User-Can-Host` answers for the game asking. The old flag `users.can_start_games`
+  became a grant for every game of each account that had it, then went
+  (`server/src/accounts/gameHosts.js`; docs/AUTH.md, "Embedded games").
 
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
   restore one nightly backup there once, as docs/DEPLOYMENT.md describes, and check the site.
-
-- **A recorded call on the VPS** — call recording is tested with a real egress on the PC; one
-  real recorded call on the server is still to try (docs/CALLS.md, "Recording"). Also untested
-  there: call media over UDP from outside (signalling through nginx answered 101 on 2026-11-01).
-  LiveKit logged "could not validate external IP" at start (docs/DEPLOYMENT.md,
-  "Troubleshooting").
-
-### Planned for later
-
-- **Settings export/import between the PC test site and the live site** — later (decided
-  2026-11-03): carrying settings over by hand for now; the Discord steps alone already travel
-  with the project's seed (`npm run steps:export`).
 
 ### Proposals not decided
 
@@ -47,6 +60,10 @@ entry waits for.
 
 ### Known limits
 
+- **Only the owner's own games are embedded** — if a game not run by the owner is ever embedded,
+  revisit proposals C (keep the website's cookies from it: a separate origin), D (per-game
+  capabilities beyond hosting) and E (a sync token per game) of docs/PROJECT-LEAD-REVIEW.md. Not
+  needed while both games are the owner's own on the same server (decided 2026-11-09).
 - **A call recorded from its start blocks a second recording meanwhile** — while it waits for
   its first speaker, the egress keeps its Chrome and its 2.0-CPU share, so a recording started in
   a second call at the same time is declined ("did not start"). Accepted by the owner on
@@ -70,20 +87,30 @@ entry waits for.
   by SE-AUDIT-2 (2026-11-04): 5 runs alone, 5 next to the full server suite, and one with Vite's
   dependency cache cleared (a dependency reload of the open page was the suspect; none was
   logged). A guest's message enters the list from the POST answer (`useChatRoom.js`), so no
-  list race was found either. More than 5 runs a server cannot be tried: each run registers an
-  account, 5 an hour per address.
-
-- **A held Discord sign-up timing out while it is being completed** (SE-AUDIT-2, theoretical) — the
-  minute sweep (`sweepSignups`, `server/src/discord/droppedGrants.js`) revokes a held sign-up
-  older than 15 minutes; a `POST /api/auth/discord/register` that read it a moment before could
-  then store a grant just revoked, and the new account would start out needing a Discord login.
-  Needs a request in flight at exactly the 15-minute mark; not reproduced.
-- **A deleted account's messages and the unread counts** (SE-AUDIT-2) — open pages drop the
-  messages at once (one `deleted` event per room, every id in one frame), but unread counts
-  already shown keep counting them until the page reads its counts again.
+  list race was found either. Not reproduced on `night/2026-11-10` either (piece 10,
+  2026-11-09): 10 runs, each with its own fresh servers (so the 5 registrations an hour never
+  bind), 5 alone (26–32 s) and 5 started next to the full server suite (the first took 2.0 min
+  and the second 52 s while the suite ran; the suite ended during the second, so the last three
+  ran at 29–31 s on a quiet machine). All passed; the code stays as it is.
 
 ## PART TWO — closed
 
+- **Site and bots on the same VPS** — closed (2026-11-09): the site and the owner's bots run on
+  the same server, and the installer reads the bots' files there through read-only mounts
+  (docs/DEPLOYMENT.md, "What it asks").
+- **A recorded call on the VPS** — closed (2026-11-09): five recordings live, 4.3–8.8 s from the
+  start to active, one of them with sound (mean −28 dB; the others' microphone was off). The
+  egress start fix (PR #52) and the recordings folder (PR #48) made it work. LiveKit's "could
+  not validate external IP" at start stays described in docs/DEPLOYMENT.md, "Troubleshooting".
+- **Call media over UDP from outside** — closed (2026-11-06): the owner joined a live call from
+  his home network with camera and screen share.
+- **Settings export/import between the PC test site and the live site** — not planned (decided
+  2026-11-09): settings are carried over by hand; the Discord steps travel with the project's
+  seed (`npm run steps:export`).
+- **Starting a call turns the microphone on** — closed by `feat/start-mic-on` (PR #53, merged
+  2026-11-09): joined automatically after "Start call now" or "Start <title>", the organiser's
+  microphone goes on and the camera stays off; an ordinary join stays all off
+  (`client/src/pages/CallPage.jsx`; docs/CALLS.md, "Calls on the site").
 - **The call page's rail opened expanded** — closed by `fix/rail-stays-open` (seen live
   2026-11-09): after leaving a call page through a link in the expanded rail, the next call page
   started expanded, as the rail's state outlived the page (the sidebar stays mounted, and the

@@ -2,7 +2,8 @@
 // File:        AdminUsersPage.jsx
 // Path:        client/src/admin/AdminUsersPage.jsx
 // Project:     Seasonal Entertainment
-// Description: Admin users list with search; each row changes role, "can start games",
+// Description: Admin users list with search; each row changes role, which embedded games the
+//              account may host (one box per game),
 //              lock and password, or deletes the account (UserRow). The list reloads after every
 //              change.
 // ============================================================
@@ -14,7 +15,8 @@ import UserRow from './UserRow.jsx';
 
 export default function AdminUsersPage() {
   const [search, setSearch] = useState('');
-  const [users, setUsers] = useState(null);
+  // GET /api/admin/users: { users, games } (games: one hosting box each).
+  const [list, setList] = useState(null);
   const [error, setError] = useState(null);
   const [version, setVersion] = useState(0); // bumped after a change to reload the list
 
@@ -22,7 +24,7 @@ export default function AdminUsersPage() {
   useEffect(() => {
     let current = true;
     api(`/admin/users?q=${encodeURIComponent(search)}`)
-      .then((data) => current && (setUsers(data.users), setError(null)))
+      .then((data) => current && (setList(data), setError(null)))
       .catch((err) => current && setError(err.message));
     return () => {
       current = false;
@@ -39,22 +41,27 @@ export default function AdminUsersPage() {
         </label>
       </form>
       <FormMessage error={error} />
-      {users && (
+      {list && (
         <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
                 <th>User</th>
                 <th>Role</th>
-                <th>Can start games</th>
+                <th>May host</th>
                 <th>Locked</th>
                 <th>Password</th>
                 <th>Account</th>
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
-                <UserRow key={user.id} user={user} onChanged={() => setVersion((v) => v + 1)} />
+              {list.users.map((user) => (
+                <UserRow
+                  key={user.id}
+                  user={user}
+                  games={list.games}
+                  onChanged={() => setVersion((v) => v + 1)}
+                />
               ))}
             </tbody>
           </table>

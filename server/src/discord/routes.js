@@ -20,7 +20,8 @@
 //                Failures go back to the page with ?discord=<reason> and count on the login's
 //                per-IP limit;
 //              - GET /signup and POST /register: the sign-up's offered name, then the account
-//                (the chosen name and the age confirmation; no email, no password);
+//                (the chosen name and the age confirmation; no email, no password), with the
+//                sign-up claimed from the session row first, so the sweep cannot revoke it;
 //              - DELETE /: unlink (only with a password to log in with afterwards; proven with
 //                it), the token revoked at Discord.
 //              A fresh grant that is not kept (already logged in, registration closed, a link
@@ -45,7 +46,7 @@ import { getSetting } from '../settings/store.js';
 import { beginSecondFactor } from '../twofa/routes.js';
 import { isTwoFactorEnabled } from '../twofa/store.js';
 import { CALLBACK_PATH } from './config.js';
-import { dropGrant, dropSignup, signupExpired } from './droppedGrants.js';
+import { claimSignup, dropGrant, dropSignup, signupExpired } from './droppedGrants.js';
 import { storeRead } from './refresh.js';
 import { DiscordTakenError, deleteLink, findLink, findLinkByDiscordId, saveRead } from './store.js';
 import { openToken, sealToken } from './tokenBox.js';
@@ -305,8 +306,10 @@ export function discordRoutes(db, appConfig, discord) {
     }
     let user;
     try {
-      // The account and its link together, or neither.
+      // The account and its link together, or neither; and only with the sign-up claimed from
+      // the session row, so the sweep cannot be revoking this grant (droppedGrants.js).
       user = db.transaction(() => {
+        if (!claimSignup(db, req.sessionID, signup)) return null;
         const created = createUser(db, {
           username: input.username,
           email: null,
@@ -330,6 +333,12 @@ export function discordRoutes(db, appConfig, discord) {
         return sendError(res, 409, 'discord_taken', 'This Discord account is already linked.');
       }
       throw err;
+    }
+    if (!user) {
+      // The sweep took it (or it timed out just now): this copy must not be saved back.
+      delete req.session.discordSignup;
+      await saved(req);
+      return sendError(res, 409, 'signup_expired', 'Please start again with Discord.');
     }
     await startSession(req, user);
     // The Discord login just happened: it counts as the proof for the first key setup.

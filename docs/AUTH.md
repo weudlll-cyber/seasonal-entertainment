@@ -8,8 +8,8 @@ from the race game's `docs/AUTH.md` are marked _(race game)_.
 
 - **Roles:** `member`, `organiser`, `admin`, in that order. A guest is anyone not signed in;
   guests have no account and no stored role.
-- **"Can start games"** is a separate flag on the account, granted by admins; admins have it
-  implicitly (`canStartGames` in the session answer is true for every admin).
+- **Hosting a game** is granted by admins per embedded game (decided 2026-11-09; "Embedded
+  games" below); admins may host every game.
 - **Two ways in** (decided 2026-11-02): Discord, the primary one (an account made with it has no
   email and no password until it sets one; "Discord" below), and username and password.
 - **Registration is open to everyone** (decided 2026-10-16; admins can close it with the
@@ -241,10 +241,14 @@ character: in the probe, invisible leading spaces in the portal broke it.
   logged in, a sign-up while registration is closed, a link refused (`other_user`,
   `not_linked`), and a held sign-up that is replaced by another Discord user's or times out:
   revoked when the browser comes back, or by the daily job's minute tick (`sweepSignups`) when
-  it never does. Because revoking ends the whole grant, nothing is revoked while an account here
+  it never does. A registration claims its held sign-up from the session row in the transaction
+  that stores the link (`claimSignup`), the same row the sweep takes it from, so only one of the
+  two gets it: the account starts with a live grant, or the answer is `signup_expired` and the
+  member starts again with Discord. Because revoking ends the whole grant, nothing is revoked while an account here
   holds that Discord user: a locked account's login, a link refused as `taken`, and a login
   while someone else is signed in keep the linked account's grant working. A sign-up held again
-  for the same Discord user is not revoked either. Tests: `server/test/discordGrants.test.js`.
+  for the same Discord user is not revoked either. Tests: `server/test/discordGrants.test.js`,
+  `server/test/discordSignupClaim.test.js`.
 - Only the Discord user id (unique), its name and the role ids are stored, never an email. The
   client secret and the tokens never reach a browser or a log. The secret goes only to Discord,
   in the token calls' `Authorization` header.
@@ -640,7 +644,9 @@ chat retention).
     thumbnails), direct files and shared report files; and chat pages already open hear which room
     messages went: one `{ type: 'deleted', ids }` per room through the hub's usual push (only to
     sockets that may read the room), and they drop them at once, for moderators too (since
-    2026-11-04; `useChatRoom.js`; the home page's Community box asks again).
+    2026-11-04; `useChatRoom.js`; the home page's Community box asks again). Every member who
+    may read the room is also told to recount ("activity", as after a hidden message), so the
+    unread counts already shown stop counting those messages (since 2026-11-10).
 - **For the games**: the account's id and the time are noted as a `deleted` change for
   the embedded games (`account_changes`, "Embedded games" below), in the same
   transaction; its id is never issued again ("Account ids").
@@ -763,8 +769,15 @@ Decisions, the same for both games (taken for Bingo on the dates given, for Mini
 2026-11-04):
 
 - a website admin is a game admin (2026-11-03);
-- who may host matches is "may start games" (`users.can_start_games`; admins always), and every
-  account in good standing counts as confirmed for a game's leaderboard (2026-11-04);
+- who may host matches is decided per game (2026-11-09): an admin always, a member only for the
+  games an admin granted them (Admin → Users, one box per game, named as the game; audited
+  `user.game_host` with the game and the value; `user_game_hosts`,
+  `server/src/accounts/gameHosts.js`).
+  The games are the whole allowlist of `server/src/games/embedded.js`, switched on or not, so a
+  game added there gets its own box with nothing else to change. The one flag "may start games"
+  (`users.can_start_games`, 2026-11-04) became a grant for every game for each account that had
+  it, then went (`migrateAccounts`); nobody gained or lost a right. Every account in good
+  standing counts as confirmed for a game's leaderboard (2026-11-04);
 - guests may watch matches and see the leaderboard without signing in; playing needs an account
   (2026-11-04);
 - a member's Discord steps show in the game as on this site (2026-11-04);
@@ -790,14 +803,14 @@ afterwards.
 - It never answers 401: always **204**, in one of two forms.
 - **A signed-in account in good standing**, by the site's own rules, gets exactly these headers:
 
-  | Header                         | Value                                                       |
-  | ------------------------------ | ----------------------------------------------------------- |
-  | `X-Acting-User-Id`             | the account's id, never issued twice ("Account ids" below)  |
-  | `X-Acting-User`                | the username (the display name)                             |
-  | `X-Acting-User-Roles`          | `member`, `organiser` or `admin`                            |
-  | `X-Acting-User-Email-Verified` | `true` (decision 2026-11-04; the name is the game's)        |
-  | `X-Acting-User-Can-Host`       | `true` with "may start games" or for an admin, else `false` |
-  | `X-Acting-User-Steps`          | base64url of compact JSON: the account's Discord steps      |
+  | Header                         | Value                                                            |
+  | ------------------------------ | ---------------------------------------------------------------- |
+  | `X-Acting-User-Id`             | the account's id, never issued twice ("Account ids" below)       |
+  | `X-Acting-User`                | the username (the display name)                                  |
+  | `X-Acting-User-Roles`          | `member`, `organiser` or `admin`                                 |
+  | `X-Acting-User-Email-Verified` | `true` (decision 2026-11-04; the name is the game's)             |
+  | `X-Acting-User-Can-Host`       | `true` for an admin, or a member granted this game; else `false` |
+  | `X-Acting-User-Steps`          | base64url of compact JSON: the account's Discord steps           |
 
   The steps are what this site shows next to the name: an array of at most three
   `{"ladder":"holder|farmer|investor","name":"<step name>","icon":"<site-relative URL or null>"}`,
@@ -833,7 +846,10 @@ lower it). A new account gets one more than the highest of both and of the users
 the account's id, the kind and the time, nothing else, for 365 days
 (`server/src/accounts/accountChanges.js`): `deleted` (an account's deletion, `deletion.js`),
 `locked` and `unlocked` (an admin's lock, `setLocked`), `rights` (a role change, `setRole`, or
-"may start games", `setCanStartGames`), each only when the value really changes.
+the hosting of one game, `setGameHost`, or a password change or an admin's password reset, so
+that whoever knew the old password is signed out of the games too: decided 2026-11-09; not the
+first password of an account made with Discord, which had none to know), each only when the
+value really changes.
 One feed and one table for all games: `GET /api/games/<slug>/account-changes?since=<cursor>`
 answers the same for every switched-on game, and each game keeps its own cursor. It answers
 `{"changes":[{"id":<user id>,"kind":"deleted|locked|unlocked|rights"}],"next":"<cursor>"}` in

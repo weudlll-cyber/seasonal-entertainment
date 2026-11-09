@@ -589,6 +589,31 @@ its own, `docker compose --profile proxy up -d` also starts a Caddy for it
 (`deploy/calls/Caddyfile`). The site's `CALLS_URL` is `wss://<calls domain>`. Step by step:
 docs/DEPLOYMENT.md.
 
+### Load test
+
+`deploy/calls/loadtest.sh` measures what the call service on the VPS carries (built 2026-11-10;
+run by the owner, never by CI): `sudo ./deploy/calls/loadtest.sh` in the checkout.
+
+- **Steps**, 3 minutes each: 3 video publishers (2 cameras and a screen share: LiveKit's CLI has
+  no screen share, so it is a third video publisher at high resolution) and 2 audio publishers,
+  with 25, then 50, then 100 subscribers. The load comes from LiveKit's CLI (`lk load-test`,
+  livekit-cli 2.19.3 pinned by digest) on the host network against `ws://127.0.0.1:7880`, in a
+  container capped at 2 CPUs and 2 GB.
+- **Measured** every 10 s: the CPU of LiveKit, egress and the site (`docker stats`), the 1-minute
+  load and the free memory. At the end a table per step: LiveKit's CPU peak and average,
+  egress's and the site's peaks, the highest load, the lowest free memory, and from the CLI the
+  tracks subscribed, the packet loss and the failed subscribers. The full log is
+  `/var/log/se-loadtest-<time>.log`.
+- **Safety**: it stops at once when the load passes 5, the free memory drops under 1.5 GB, on
+  Ctrl-C, or after 20 minutes in all. Its containers are `--rm` and only its own
+  (`se-loadtest-*`); its rooms are deleted after; the keys come from `deploy/calls/.env` through
+  a temporary file and are never printed. Nothing else on the server is touched (the bots keep
+  running).
+- **Pessimistic**: the load generator shares the host with LiveKit, so real participants on
+  their own machines cost the server less than these numbers show.
+- `--dry-run` prints the plan without starting anything; `deploy/test/loadtest.test.sh` checks
+  it (CI too).
+
 ### Moving the call service to its own VPS
 
 Nothing in the site changes except one setting:

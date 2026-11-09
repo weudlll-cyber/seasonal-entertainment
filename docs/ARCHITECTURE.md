@@ -31,6 +31,12 @@ wording (`disclaimer.js`), the season clock from the token contracts (`seasonClo
 calls in the event lists (`callEntries.js`, used by "Up next" and the weekly recap), how a
 price change reads (`priceChange.js`) and a recording's times and chapters (`chapterRules.js`).
 
+The root `package.json` overrides `minimatch` to `^11.0.5` (2026-11-10): ESLint 10's
+`@eslint/config-array` still asks for `minimatch` 10, whose versions all carry a moderate
+advisory (GHSA-g3hv-75wg-m249); npm's own fix would have downgraded ESLint to 9. Development
+only: `npm audit --omit=dev` was clean before and after. Remove the override once
+`@eslint/config-array` asks for `minimatch` 11 itself.
+
 ## Data
 
 One SQLite file (`DATABASE_PATH`, default `data/seasonal.db`; `data/` is gitignored),
