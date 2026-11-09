@@ -424,7 +424,9 @@ header). The site's chat button is not shown on a call page.
   counters shrink to dots. The menu button at the top expands it until pressed again; pointing at
   the rail with a mouse slides the full sidebar over the stage (an overlay: the stage does not
   move) until the pointer leaves; keyboard focus inside opens it too. Touch screens use the
-  button only. Other pages have the normal sidebar.
+  button only. Other pages have the normal sidebar. Every call page starts with the rail
+  collapsed, also after the last one was left through a link in the expanded rail (fixed
+  2026-11-09).
 - **Stage**: on the surface-2 colour with the card radius. Fitting pictures (2026-10-18,
   SE-CALLS-4): shared screens are always letterboxed (`object-fit: contain`), never cropped; a
   camera shown large — alone on the stage or in the spotlight — is letterboxed too; in the grid of
