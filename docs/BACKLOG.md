@@ -14,6 +14,13 @@ entry waits for.
 
 ### Built, waiting for the merge
 
+- **A held Discord sign-up timing out while it is being completed** — built on
+  `night/2026-11-10` (piece 9; SE-AUDIT-2): the registration now claims its sign-up from the
+  session row inside the transaction that stores the link (`claimSignup`,
+  `server/src/discord/droppedGrants.js`), the row the sweep takes it from. Either the account
+  starts with a live grant, or the answer is `signup_expired` ("start again"). Reproduced in a
+  test before the fix: a request that read its session a second before the timeout, with the
+  sweep landing in between, stored an account holding the revoked grant.
 - **Unread counts after an account deletion** — built on `night/2026-11-10` (piece 8; SE-AUDIT-2):
   the counts already shown kept counting a deleted account's room messages. Now every reader of
   each room is told to recount ("activity", as after a hidden message), also on pages not
@@ -82,12 +89,6 @@ entry waits for.
   logged). A guest's message enters the list from the POST answer (`useChatRoom.js`), so no
   list race was found either. More than 5 runs a server cannot be tried: each run registers an
   account, 5 an hour per address.
-
-- **A held Discord sign-up timing out while it is being completed** (SE-AUDIT-2, theoretical) — the
-  minute sweep (`sweepSignups`, `server/src/discord/droppedGrants.js`) revokes a held sign-up
-  older than 15 minutes; a `POST /api/auth/discord/register` that read it a moment before could
-  then store a grant just revoked, and the new account would start out needing a Discord login.
-  Needs a request in flight at exactly the 15-minute mark; not reproduced.
 
 ## PART TWO — closed
 

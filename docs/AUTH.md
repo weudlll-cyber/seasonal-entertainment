@@ -241,10 +241,14 @@ character: in the probe, invisible leading spaces in the portal broke it.
   logged in, a sign-up while registration is closed, a link refused (`other_user`,
   `not_linked`), and a held sign-up that is replaced by another Discord user's or times out:
   revoked when the browser comes back, or by the daily job's minute tick (`sweepSignups`) when
-  it never does. Because revoking ends the whole grant, nothing is revoked while an account here
+  it never does. A registration claims its held sign-up from the session row in the transaction
+  that stores the link (`claimSignup`), the same row the sweep takes it from, so only one of the
+  two gets it: the account starts with a live grant, or the answer is `signup_expired` and the
+  member starts again with Discord. Because revoking ends the whole grant, nothing is revoked while an account here
   holds that Discord user: a locked account's login, a link refused as `taken`, and a login
   while someone else is signed in keep the linked account's grant working. A sign-up held again
-  for the same Discord user is not revoked either. Tests: `server/test/discordGrants.test.js`.
+  for the same Discord user is not revoked either. Tests: `server/test/discordGrants.test.js`,
+  `server/test/discordSignupClaim.test.js`.
 - Only the Discord user id (unique), its name and the role ids are stored, never an email. The
   client secret and the tokens never reach a browser or a log. The secret goes only to Discord,
   in the token calls' `Authorization` header.
