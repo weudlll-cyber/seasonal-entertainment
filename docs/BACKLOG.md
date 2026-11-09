@@ -87,8 +87,11 @@ entry waits for.
   by SE-AUDIT-2 (2026-11-04): 5 runs alone, 5 next to the full server suite, and one with Vite's
   dependency cache cleared (a dependency reload of the open page was the suspect; none was
   logged). A guest's message enters the list from the POST answer (`useChatRoom.js`), so no
-  list race was found either. More than 5 runs a server cannot be tried: each run registers an
-  account, 5 an hour per address.
+  list race was found either. Not reproduced on `night/2026-11-10` either (piece 10,
+  2026-11-09): 10 runs, each with its own fresh servers (so the 5 registrations an hour never
+  bind), 5 alone (26–32 s) and 5 started next to the full server suite (the first took 2.0 min
+  and the second 52 s while the suite ran; the suite ended during the second, so the last three
+  ran at 29–31 s on a quiet machine). All passed; the code stays as it is.
 
 ## PART TWO — closed
 
