@@ -417,6 +417,20 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
     these permissions.
   - **Memory**: the egress container may use 3 GB; one recording peaked at 1.79 GB on the VPS
     (egress's "maxMemory", 2026-11-06).
+- **Chrome's start** (decided 2026-11-09; owner's rule: a recording really records at most
+  10 s after the request): egress records the room in its own Chrome, and egress waits 20 s for
+  Chrome's DevTools address (chromedp v0.16.0 `allocate.go:40`, `:249-250`), then fails with
+  "page load error: websocket url timeout reached" (live 2026-11-09). Chrome's own fontconfig
+  cannot use the image's prebuilt font cache, so the first Chrome in a newly made container
+  writes `~/.cache/fontconfig` (4.7 MB) before it answers: 4.7–8.5 s instead of 1.2–2.0 s on the
+  PC, and past 20 s on the VPS after an update. So `~/.cache` is the volume `egress-cache`, kept
+  across container changes, and the one-shot service `egress-cache` fills it with one headless
+  Chrome before egress starts (`deploy/calls/docker-compose.recording.yml`). Measured on the PC
+  (15 starts each: 3 in a newly made container, 4 after 1–5 min idle, 8 back-to-back; time to
+  active): before, 12 of 15 within 10 s (5.2–14.5 s); with the cache, 15 of 15 (5.1–7.4 s); with
+  the volume new and filled first, as after a first install, 15 of 15 (5.1–7.6 s). About 3.4 s of
+  every start is egress's own pipeline latency after START_RECORDING
+  (`pkg/config/service.go:52`; it cannot go below about 2.3 s, measured 2026-11-07).
 - **CPU** (decided 2026-11-06): the egress container is limited to 3 CPUs and counts a
   recording at 2.0 of them (`cpu_cost.room_composite_cpu_cost` in
   `deploy/calls/docker-compose.recording.yml`). Egress v1.15.0 takes a job only when that cost
@@ -457,6 +471,11 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
   - **Waiting, not starting**: its state is **waiting** ("Recording starts when someone
     speaks…"), with no 60 s rule. If the room closes first (LiveKit's empty timeout, the egress
     then ends it) or the call ends, it is stopped and its row goes, without the failure message.
+    Any other end is a real failure and shows "The recording did not start. Try again." as for
+    the button: the egress failing, or aborting while the call runs and its room is still there
+    (egress reports a closed room as aborted too, so the site checks the call and the room,
+    `callOver` in `recordingStart.js`; fixed 2026-11-09, seen live: a failed start had vanished
+    without a word).
   - **If it cannot start** (the egress does not answer), the call still runs; the organisers
     see "The recording did not start. Try again." as for the button.
   - **The words**: "Recording starts…" while starting (the red mark in the call, its banner,
