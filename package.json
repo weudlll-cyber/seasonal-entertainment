@@ -43,5 +43,8 @@
     "globals": "^17.13.0",
     "prettier": "^3.9.10",
     "svgo": "^4.1.0"
+  },
+  "overrides": {
+    "minimatch": "^11.0.5"
   }
 }

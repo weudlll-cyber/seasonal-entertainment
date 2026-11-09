@@ -14,6 +14,9 @@ entry waits for.
 
 ### Built, waiting for the merge
 
+- **The development dependency advisories** — built on `night/2026-11-10` (piece 6): `npm audit`
+  is clean; `minimatch` is overridden to `^11.0.5` for ESLint's `@eslint/config-array`, without
+  downgrading ESLint (docs/ARCHITECTURE.md, "Stack").
 - **A call load test for the VPS** — built on `night/2026-11-10` (piece 5):
   `sudo ./deploy/calls/loadtest.sh`, three 3-minute steps up to 100 subscribers, stopping at load
   5, under 1.5 GB free or after 20 minutes (docs/CALLS.md, "Load test"). Still to run once on the
