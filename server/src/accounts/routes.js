@@ -10,7 +10,9 @@
 //              split"); the server stores bcrypt of the auth key. The password rules are checked in
 //              the browser (shared/accountRules.js). A password change also carries the private key
 //              sealed again with the new wrapping key (keys/), stored in the same transaction as
-//              the new verifier. Logout and password change also close the affected chat sockets
+//              the new verifier, and is noted for the embedded games as "rights" (they end the
+//              member's sessions there; not the first password of a Discord account). Logout and
+//              password change also close the affected chat sockets
 //              (chat/mount.js); logout also ends the member's embed tokens (embed/tokens.js). PUT
 //              /api/auth/privacy: the member's own "Show when I'm online" and "Link previews in
 //              direct messages"; PUT /api/auth/notifications: which browser notifications they want
@@ -38,6 +40,7 @@ import { accountView as discordAccountView } from '../discord/index.js';
 import { getSetting, publicSettings } from '../settings/store.js';
 import { twoFactorStatus } from '../twofa/gate.js';
 import { resealKey } from '../keys/store.js';
+import { noteAccountChange } from './accountChanges.js';
 import { authKeyField, optional, saltField, sealedKeyField } from './credentials.js';
 import { accountDeleteRoutes } from './deleteRoutes.js';
 import { discordProofUntil, provesIdentity } from './identityProof.js';
@@ -150,9 +153,12 @@ export function accountRoutes(
       return sendError(res, 401, 'invalid_credentials', 'The current password is wrong.');
     }
     const newHash = await hashPassword(input.newAuthKey, config.bcryptCost);
-    // Verifier and sealed key change together, or neither does.
+    // Verifier and sealed key change together, or neither does. The games end the member's
+    // sessions too ("rights", the kind both already act on; decided 2026-11-09): someone who
+    // knew the old password may have signed in there.
     const epoch = db.transaction(() => {
       if (input.sealedPrivateKey) resealKey(db, req.user.id, input.sealedPrivateKey);
+      noteAccountChange(db, req.user.id, 'rights');
       return setPasswordHash(db, req.user.id, newHash, input.newSalt);
     })();
     // Every other session of this account ends; this one is re-stamped and stays.
@@ -164,7 +170,8 @@ export function accountRoutes(
   // The first password of an account made with Discord (it had none): proven by a fresh Discord
   // login, as nothing else could prove it. From then on it logs in with either. The private
   // key sealed for the new password (when the device has it open) is stored in the same
-  // transaction; every other session of the account ends, as after a password change.
+  // transaction; every other session of the account ends, as after a password change. Not
+  // noted for the games: no old credential existed that anyone could have used.
   router.post('/password/first', allow('member'), passwordLimiter, async (req, res) => {
     if (req.user.hasPassword) {
       return sendError(res, 409, 'has_password', 'This account already has a password.');

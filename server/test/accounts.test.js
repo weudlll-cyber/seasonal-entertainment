@@ -9,7 +9,7 @@
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { keysFor, logIn, registration } from './helpers/accountKeys.js';
+import { logIn, passwordChange, registration } from './helpers/accountKeys.js';
 import { ORIGIN, makeTestApp, registerUser } from './helpers/testApp.js';
 
 let t;
@@ -99,14 +99,6 @@ describe('login and logout', () => {
     expect(res.body.error).toBe('account_locked');
   });
 });
-
-// The body of an own password change: the current password proven by its auth key, the new
-// one as a new salt and auth key.
-async function passwordChange(current, next, newSalt = 'bmV3LXNhbHQtLTE2Ynl0ZQ==') {
-  const { authKey: currentAuthKey } = await keysFor(current);
-  const { authKey: newAuthKey } = await keysFor(next, newSalt);
-  return { currentAuthKey, newSalt, newAuthKey };
-}
 
 describe('own password change', () => {
   it('ends every other session of the account and keeps this one', async () => {

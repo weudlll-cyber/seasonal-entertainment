@@ -16,6 +16,10 @@ entry waits for.
 
 ### Built, waiting for the merge
 
+- **A password change or reset ends game sessions** — built on `night/2026-11-10` (piece 2;
+  decided 2026-11-09): a member's own change and an admin's reset are noted for the games as
+  "rights", so both games sign the member out; not the first password of a Discord account
+  (`server/src/accounts/routes.js`, `server/src/admin/userRoutes.js`; docs/AUTH.md).
 - **Hosting per game** — built on `night/2026-11-10` (piece 1; decided 2026-11-09): an admin
   grants hosting per embedded game (Admin → Users, one box per game); admins always may.
   `X-Acting-User-Can-Host` answers for the game asking. The old flag `users.can_start_games`

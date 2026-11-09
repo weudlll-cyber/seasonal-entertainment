@@ -840,7 +840,10 @@ lower it). A new account gets one more than the highest of both and of the users
 the account's id, the kind and the time, nothing else, for 365 days
 (`server/src/accounts/accountChanges.js`): `deleted` (an account's deletion, `deletion.js`),
 `locked` and `unlocked` (an admin's lock, `setLocked`), `rights` (a role change, `setRole`, or
-the hosting of one game, `setGameHost`), each only when the value really changes.
+the hosting of one game, `setGameHost`, or a password change or an admin's password reset, so
+that whoever knew the old password is signed out of the games too: decided 2026-11-09; not the
+first password of an account made with Discord, which had none to know), each only when the
+value really changes.
 One feed and one table for all games: `GET /api/games/<slug>/account-changes?since=<cursor>`
 answers the same for every switched-on game, and each game keeps its own cursor. It answers
 `{"changes":[{"id":<user id>,"kind":"deleted|locked|unlocked|rights"}],"next":"<cursor>"}` in

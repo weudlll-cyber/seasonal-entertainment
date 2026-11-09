@@ -59,6 +59,14 @@ export async function proveForLink(agent, password = 'correct-horse-1') {
   if (res.status !== 200) throw new Error(`link proof failed: ${res.status} ${res.text}`);
 }
 
+// The body of an own password change: the current password proven by its auth key, the new
+// one as a new salt and auth key.
+export async function passwordChange(current, next, newSalt = 'bmV3LXNhbHQtLTE2Ynl0ZQ==') {
+  const { authKey: currentAuthKey } = await keysFor(current);
+  const { authKey: newAuthKey } = await keysFor(next, newSalt);
+  return { currentAuthKey, newSalt, newAuthKey };
+}
+
 export async function newPasswordBody(password) {
   const { salt, authKey } = await keysFor(password, RESET_SALT);
   return { salt, authKey };

@@ -193,7 +193,7 @@ the cursor only after successful processing, and make processing safe to repeat.
 | Kind       | Current consequence                                                                                                                                |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `locked`   | Revoke the linked player's game sessions and close their live connections                                                                          |
-| `rights`   | Same; the next sign-in recomputes rights                                                                                                           |
+| `rights`   | Same; the next sign-in recomputes rights. Also sent for a password change or an admin's reset (2026-11-09; not a Discord account's first password) |
 | `unlocked` | Bingo revokes sessions; Mini Games takes no additional action                                                                                      |
 | `deleted`  | Revoke sessions, remove/anonymize personal account data, exclude from active leaderboards; keep historical results under a deleted-player identity |
 

@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: Guards the account-changes feed of the embedded games (games/embeddedRoutes.js,
 //              accounts/accountChanges.js; docs/AUTH.md, "Embedded games"), for Bingo and Mini
-//              Games alike: each kind recorded by its own action and nothing else, in order, paged
+//              Games alike: each kind recorded by its own action and nothing else (a password
+//              change or an admin's reset as "rights"), in order, paged
 //              by its cursor, only with the one sync token; one feed, each game with its own
 //              cursor. Account ids are never issued twice, also after a restore of an older
 //              database. The games hub takes the game at /games/bingo.
@@ -13,7 +14,7 @@
 import { rmSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CHANGES_PAGE, noteAccountChange } from '../src/accounts/accountChanges.js';
-import { proof } from './helpers/accountKeys.js';
+import { newPasswordBody, passwordChange, proof } from './helpers/accountKeys.js';
 import { GAMES, TOKEN, gamesApp } from './helpers/embeddedGames.js';
 import { makeStaff, registerUser } from './helpers/testApp.js';
 
@@ -46,10 +47,21 @@ describe.each(GAMES)('GET /api/games/%s/account-changes', (slug) => {
     await admin.post(`/api/admin/users/${id}/role`).send({ role: 'organiser' });
     await admin.post(`/api/admin/users/${id}/role`).send({ role: 'organiser' }); // no change
     await admin.post(`/api/admin/users/${id}/game-host`).send({ game: 'mini-games', value: true });
-    await mia.delete('/api/auth/account').send(await proof('correct-horse-1'));
+    // A password change and an admin's reset: whoever knew the old one is signed out (decided
+    // 2026-11-09).
+    await mia
+      .post('/api/auth/password')
+      .send(await passwordChange('correct-horse-1', 'next-horse-2'));
+    await admin
+      .post(`/api/admin/users/${id}/password`)
+      .send(await newPasswordBody('third-horse-3'));
+    // The reset ended her sessions too, so an admin deletes the account.
+    expect((await admin.delete(`/api/admin/users/${id}`)).status).toBe(200);
     expect(await after()).toEqual([
       { id, kind: 'locked' },
       { id, kind: 'unlocked' },
+      { id, kind: 'rights' },
+      { id, kind: 'rights' },
       { id, kind: 'rights' },
       { id, kind: 'rights' },
       { id, kind: 'deleted' },

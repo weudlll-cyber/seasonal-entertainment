@@ -5,7 +5,7 @@
 // Description: /api/admin/users (admins only): list/search (with the embedded games, whose
 //              hosting is granted per account: accounts/gameHosts.js), change role, grant/revoke
 //              hosting one game (audited user.game_host with the game), lock/unlock, reset password (a new salt and auth key derived in
-//              the admin's browser, docs/AUTH.md), delete an account (accounts/deletion.js;
+//              the admin's browser, docs/AUTH.md; noted for the games as "rights"), delete an account (accounts/deletion.js;
 //              never the last admin, never the admin's own: that is the account page's, with
 //              the password). Each change writes exactly one audit entry; a password reset
 //              ends all of that user's sessions (epoch bump). Role, lock, password changes and
@@ -20,6 +20,7 @@ import { hashPassword } from '../accounts/passwords.js';
 import { isGame, setGameHost } from '../accounts/gameHosts.js';
 import { LastAdminError, listUsers, setLocked, setRole } from '../accounts/userAdmin.js';
 import { EMBEDDED_GAMES } from '../games/embedded.js';
+import { noteAccountChange } from '../accounts/accountChanges.js';
 import { findUserById, setPasswordHash } from '../accounts/userStore.js';
 import { recordAudit } from '../audit/auditLog.js';
 import { allow } from '../http/access.js';
@@ -126,7 +127,11 @@ export function adminUserRoutes(
     const input = validBody(req, res, { salt: saltField, authKey: authKeyField('New password') });
     if (!input) return;
     const verifier = await hashPassword(input.authKey, config.bcryptCost);
-    setPasswordHash(db, req.target.id, verifier, input.salt);
+    // As a member's own change: the games end that member's sessions too ("rights").
+    db.transaction(() => {
+      noteAccountChange(db, req.target.id, 'rights');
+      setPasswordHash(db, req.target.id, verifier, input.salt);
+    })();
     chatSessions.accountChanged(req.target.id);
     audit(req, 'user.password_reset', null, { sessionsEnded: true });
     res.json({ ok: true });

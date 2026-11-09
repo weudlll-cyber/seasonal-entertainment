@@ -123,6 +123,9 @@ describe('a first password', () => {
     expect((await agent.get('/api/auth/session')).body.user.hasPassword).toBe(true);
     // Every other session ended, as after a password change; this one stays.
     expect((await other.get('/api/auth/session')).body.user).toBeNull();
+    // Not for the games: no old password existed that anyone could have used.
+    const changes = t.db.prepare('SELECT COUNT(*) AS n FROM account_changes WHERE user_id = ?');
+    expect(changes.get(userId).n).toBe(0);
     // Only once: the account has one now (and a password change goes the usual way).
     expect((await agent.post('/api/auth/password/first').send({ salt, authKey })).status).toBe(409);
     // It logs in with the password.
