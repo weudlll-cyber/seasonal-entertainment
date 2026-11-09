@@ -14,6 +14,10 @@ entry waits for.
 
 ### Built, waiting for the merge
 
+- **One source per game-integration fact** — built on `night/2026-11-10` (piece 7):
+  docs/GAME-INTEGRATION.md keeps the overview, the game's requirements, the task brief and the
+  checklist and links to AUTH, EMBED, DEPLOYMENT and OPEN-ROUNDS for the contracts; it marks what
+  is current, built, requested or proposed.
 - **The development dependency advisories** — built on `night/2026-11-10` (piece 6): `npm audit`
   is clean; `minimatch` is overridden to `^11.0.5` for ESLint's `@eslint/config-array`, without
   downgrading ESLint (docs/ARCHITECTURE.md, "Stack").
