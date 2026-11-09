@@ -14,6 +14,15 @@ entry waits for.
 - **Site and bots on the same VPS** — reading the bots' files through read-only mounts assumes
   it (the installer's bot-file answers, docs/DEPLOYMENT.md, "What it asks").
 
+### Built, waiting for the merge
+
+- **A recording from the start that failed vanished without a word** — built on
+  `fix/egress-chrome-start` (part 2; seen live 2026-11-09): every end of a recording started
+  with the call was dropped silently. Now only a call that ended or a room that closed before
+  anyone spoke stays silent; an egress that fails, or aborts while the room is still there, shows
+  "The recording did not start. Try again." (`server/src/calls/recordingStart.js`, `callOver`;
+  docs/CALLS.md, "Recording").
+
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):

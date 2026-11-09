@@ -11,7 +11,7 @@
 //              start clears the notice. A call recorded from its start: off by default; on, starting
 //              it (at once or planned) starts the recording, "waiting" with no 60 s rule until
 //              the egress records; the room closing or the call ending first drops it without a
-//              notice; a recording that cannot start leaves the call running with the notice;
+//              notice, an egress failing (or aborting with the room still there) shows it; a recording that cannot start leaves the call running with the notice;
 //              "Recording allowed" off records nothing. With the stand-in call service and fake
 //              timers.
 // ============================================================
@@ -165,8 +165,9 @@ describe('a call recorded from its start', () => {
 
   it('the room closes before anyone spoke: the row goes without a notice', async () => {
     const { call } = await startedWith(true);
-    // The egress ends it when its room closes (the empty timeout).
-    service.egressStatus = 'complete';
+    // LiveKit closes the empty room; the egress then ends it unstarted, as aborted.
+    service.rooms.clear();
+    service.egressStatus = 'aborted';
     await vi.advanceTimersByTimeAsync(POLL_MS);
     expect(await callOf(call)).toMatchObject({
       recording: false,
@@ -174,6 +175,19 @@ describe('a call recorded from its start', () => {
       recordingFailedAt: null,
     });
   });
+
+  it.each(['failed', 'aborted'])(
+    'an egress %s while the room is still there: a real failure, the organisers get the notice',
+    async (status) => {
+      const { call } = await startedWith(true);
+      service.egressStatus = status;
+      await vi.advanceTimersByTimeAsync(POLL_MS);
+      const now = await callOf(call);
+      expect(now).toMatchObject({ status: 'live', recording: false, recordingState: null });
+      expect(now.recordingFailedAt).toEqual(expect.any(String));
+      expect(metadata()).toMatchObject({ recordingFailedAt: now.recordingFailedAt });
+    }
+  );
 
   it('the call ends before anyone spoke: stopped, no notice', async () => {
     const { olga, call } = await startedWith(true);

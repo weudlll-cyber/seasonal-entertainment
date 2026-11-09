@@ -457,6 +457,11 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
   - **Waiting, not starting**: its state is **waiting** ("Recording starts when someone
     speaks…"), with no 60 s rule. If the room closes first (LiveKit's empty timeout, the egress
     then ends it) or the call ends, it is stopped and its row goes, without the failure message.
+    Any other end is a real failure and shows "The recording did not start. Try again." as for
+    the button: the egress failing, or aborting while the call runs and its room is still there
+    (egress reports a closed room as aborted too, so the site checks the call and the room,
+    `callOver` in `recordingStart.js`; fixed 2026-11-09, seen live: a failed start had vanished
+    without a word).
   - **If it cannot start** (the egress does not answer), the call still runs; the organisers
     see "The recording did not start. Try again." as for the button.
   - **The words**: "Recording starts…" while starting (the red mark in the call, its banner,

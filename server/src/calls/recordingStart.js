@@ -17,7 +17,9 @@
 //              from its start (routes.js, decided 2026-11-07). That one waits for the first
 //              speaker without a time limit (the egress's template waits for media, egress
 //              v1.15.0 template-default/src/Room.tsx:66-110): no 60 s rule, and when the egress
-//              ends it unstarted (the room closed) the row goes without the failure notice.
+//              ends it unstarted because its room closed or the call ended, the row goes without
+//              the failure notice; any other end (failed, or aborted with the room still there)
+//              is a real failure and gets it, as for the button (fixed 2026-11-09).
 // ============================================================
 
 import { randomBytes } from 'node:crypto';
@@ -45,11 +47,24 @@ async function publish(db, service, call) {
   }
 }
 
+// The call is over for its recording: ended on the site, or its room gone on the call service
+// (LiveKit's empty timeout). Egress reports both as aborted, like a real failure (egress v1.15.0
+// pkg/pipeline/controller.go:381-396, :561-564), so the site asks itself. Unknown (the call
+// service does not answer): not over, so the organisers hear of it.
+async function callOver(db, service, call) {
+  if (findCall(db, call.id)?.status === 'ended') return true;
+  try {
+    return !(await service.existingRooms([call.roomName])).includes(call.roomName);
+  } catch {
+    return false;
+  }
+}
+
 // The start did not come: the egress stopped (a stop of one that ended is fine, service.js),
-// the row dropped and, unless it waited for the first speaker, the call noted for the
-// organisers' "did not start" message.
+// the row dropped and the call noted for the organisers' "did not start" message, except for a
+// recording that waited for the first speaker of a call that is over now (nobody spoke).
 async function failed(db, service, call, running, why) {
-  const notice = !running.fromStart;
+  const notice = !(running.fromStart && (await callOver(db, service, call)));
   if (notice) console.error(`[calls] recording of call ${call.id} did not start (${why})`);
   try {
     await service.stopRecording(running.egressId);
