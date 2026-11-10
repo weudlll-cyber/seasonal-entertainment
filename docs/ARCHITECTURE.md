@@ -420,7 +420,10 @@ bytes, GHSA-27r3-jxmh-p828, fixed in body-parser 2.4.0, which the lockfile now h
 
 ```
 .github/workflows/ci.yml   CI: npm run verify; a failed browser test's trace and screenshot
-                           uploaded as the artefact playwright-test-results (7 days)
+                           uploaded as the artefact playwright-test-results (7 days); the
+                           deployment files; security (gitleaks, npm audit, osv-scanner)
+.github/workflows/codeql.yml  CodeQL scanning of the JavaScript (pushes, pull requests, weekly)
+.gitleaksignore            gitleaks findings checked and accepted, by fingerprint with a reason
 .claude/settings.json      agent permissions for this repository
 client/                    React + Vite client
   index.html               HTML shell

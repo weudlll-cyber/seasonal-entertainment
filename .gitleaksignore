@@ -1,0 +1,22 @@
+# ============================================================
+# File:        .gitleaksignore
+# Path:        .gitleaksignore
+# Project:     Seasonal Entertainment
+# Description: gitleaks findings in the history that were checked one by one and are not
+#              secrets (2026-11-10), each by its exact fingerprint with the reason above it. Used
+#              by the CI job "security" (.github/workflows/ci.yml); anything new still fails.
+# ============================================================
+
+# The browser tests' fixed SECRET_ENCRYPTION_KEY ("e2e-only-…" in base64); used by no server
+# but the e2e run's own; production keys are made by the installer.
+ab45608325f70b5b248365ffdbcb6fd88aa47ab8:playwright.config.js:generic-api-key:52
+839345ee86d92cf2a67d2f10dd531d3191bbd64e:playwright.config.js:generic-api-key:73
+# The public id of the community's Discord server (guild), the installer's default answer.
+7c87938ef0f82b031b5221fdd0a234141e5cbd18:deploy/install/answers.example:discord-client-id:40
+7c87938ef0f82b031b5221fdd0a234141e5cbd18:deploy/install/lib/discord.sh:discord-client-id:17
+# A Discord user id the server tests act as against the pretend Discord; an id, not a credential.
+b68c69141e00bf1b1ce6000cefb34e70e70f9b6a:server/test/discordKeys.test.js:discord-client-id:28
+570cb19d803be314ea8e285e9da694888df85501:server/test/discordRoles.test.js:discord-client-id:24
+80d06f611eead9643aafe12d1c60ebf6db056a91:server/test/discordLogin.test.js:discord-client-id:25
+# The sample Sec-WebSocket-Key of RFC 6455 ("the sample nonce"), sent by the server checks.
+b06d9acd89f6e31271e44598cc4b302fa235feb5:deploy/test/checks.sh:generic-api-key:74

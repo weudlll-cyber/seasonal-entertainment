@@ -19,7 +19,12 @@
 #              deploy/test/server-hardening.test.sh, deploy/test/games.test.sh,
 #              deploy/test/loadtest.test.sh) and shellcheck over the installer, its tests, the
 #              load test and the PC-side shell scripts (deploy/install.sh, deploy/install/,
-#              deploy/test/, deploy/calls/loadtest.sh, deploy/pc/).
+#              deploy/test/, deploy/calls/loadtest.sh, deploy/pc/), and that the scripts the
+#              docs say to run directly are executable in git.
+#              A third job, "security", scans as the game repositories do (2026-11-10): gitleaks
+#              over the full history (accepted findings by fingerprint in .gitleaksignore), npm
+#              audit of the production dependencies (fails on high or critical) and osv-scanner
+#              on package-lock.json (fails from CVSS 7). CodeQL runs in codeql.yml.
 # ============================================================
 
 name: CI
@@ -33,6 +38,12 @@ on:
 
 permissions:
   contents: read
+
+# Scanner images pinned by digest, like the actions by commit SHA (the same pins as the game
+# repositories' CI).
+env:
+  OSV_SCANNER_IMAGE: ghcr.io/google/osv-scanner:v2.7.0@sha256:4f3b7e2c64b9d38a5febc5a7e4a3dfef1d1362f726dea7a2ef4762b46469fcd0
+  GITLEAKS_IMAGE: ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
 
 jobs:
   verify:
@@ -131,6 +142,9 @@ jobs:
       - name: The call load test's plan (steps, limits, keys never shown)
         run: bash deploy/test/loadtest.test.sh
 
+      - name: The scripts started directly are executable in git
+        run: bash deploy/test/executable.test.sh
+
       # As root, so the backup folder's rules are also tried for real.
       - name: The installer's hardening (bot page headers, logs, LiveKit, checkout, backup folder)
         run: sudo bash deploy/test/server-hardening.test.sh
@@ -178,6 +192,46 @@ jobs:
           deploy/test/checks-bot-admin.sh deploy/test/bot-admin-token.test.sh
           deploy/test/discord.test.sh deploy/test/update-copy.test.sh
           deploy/test/server-hardening.test.sh deploy/test/games.test.sh
-          deploy/calls/loadtest.sh deploy/test/loadtest.test.sh
+          deploy/calls/loadtest.sh deploy/test/loadtest.test.sh deploy/test/executable.test.sh
           deploy/test/prepare-nginx.sh deploy/test/prepare-ufw.sh
           deploy/pc/get-seasonal-backups.sh deploy/pc/get-seasonal-backups.test.sh
+
+  security:
+    name: security
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          # gitleaks scans the full history, not just the last commit.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+
+      - name: gitleaks (full history)
+        run: docker run --rm -v "$PWD:/repo" "$GITLEAKS_IMAGE" git /repo --redact --no-banner --exit-code 1
+
+      # From the lockfile alone: nothing is installed, no install script runs.
+      - name: npm audit (production dependencies)
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: osv-scanner (lockfile)
+        run: |
+          set +e
+          docker run --rm -v "$PWD:/src" -w /src "$OSV_SCANNER_IMAGE" scan source \
+            --lockfile=package-lock.json --format json --output-file osv.json
+          code=$?
+          set -e
+          # Exit 1 means "findings"; anything else besides 0 is a scanner error.
+          if [ "$code" -ne 0 ] && [ "$code" -ne 1 ]; then exit "$code"; fi
+          jq -r '.results[]?.packages[]? | .package as $p | .groups[]?
+            | "\($p.name)@\($p.version) \(.ids | join(",")) severity=\(.max_severity // "unknown")"' osv.json
+          # High = CVSS >= 7. An unrated finding counts as high so nothing slips through.
+          high=$(jq '[.results[]?.packages[]?.groups[]?
+            | select((.max_severity // "") == "" or (.max_severity | tonumber) >= 7)] | length' osv.json)
+          if [ "$high" -gt 0 ]; then
+            echo "::error::$high high or critical osv-scanner finding(s)"
+            exit 1
+          fi
