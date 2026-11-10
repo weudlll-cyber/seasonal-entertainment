@@ -6,7 +6,8 @@
 //              question; fixed answers (2 to 10, one or several may be chosen, optionally an
 //              "Other answer" text) or free text only; when the results show; anonymous or
 //              not; who may vote (all members, Discord steps grouped by ladder, or organisers
-//              and admins only); a fixed end or "end by hand". With free text on, a warning says those
+//              and admins only); a fixed end or "end by hand" (in a live call instead 1, 2 or
+//              5 minutes or by hand, callId). With free text on, a warning says those
 //              answers are evaluated by hand. Checked like the server (shared/pollRules.js
 //              validatePoll) before it is sent; onCreated() after the server stored it.
 // ============================================================
@@ -48,9 +49,20 @@ function Choice({ name, value, current, onPick, children }) {
   );
 }
 
-// steps: the Discord steps a poll can be limited to ({ id, ladder, name }, GET /api/polls).
-export default function PollForm({ steps = [], onCreated }) {
-  const [poll, setPoll] = useState(EMPTY);
+// A call's poll lasts minutes: these, or by hand.
+const CALL_MINUTES = [1, 2, 5];
+
+// steps: the Discord steps a poll can be limited to ({ id, ladder, name }, GET /api/polls);
+// callId: started in this live call (its page), with an end in minutes.
+// The end chosen: a fixed time, minutes from now (a call's poll), or none (by hand).
+function endOf(poll) {
+  if (poll.ending === 'time') return poll.endsAt ? new Date(poll.endsAt).toISOString() : null;
+  const minutes = Number(poll.ending);
+  return minutes ? new Date(Date.now() + minutes * 60_000).toISOString() : null;
+}
+
+export default function PollForm({ steps = [], callId = null, onCreated }) {
+  const [poll, setPoll] = useState(callId === null ? EMPTY : { ...EMPTY, ending: '1' });
   const [error, setError] = useState(null);
   const set = (key) => (value) => setPoll((now) => ({ ...now, [key]: value }));
   const setOption = (i, value) =>
@@ -69,7 +81,8 @@ export default function PollForm({ steps = [], onCreated }) {
       voters: poll.voters,
       steps: poll.voters === 'steps' ? poll.steps : [],
       // datetime-local has no time zone: the browser's own, turned into UTC here.
-      endsAt: poll.ending === 'time' && poll.endsAt ? new Date(poll.endsAt).toISOString() : null,
+      endsAt: endOf(poll),
+      ...(callId === null ? {} : { callId }),
     };
     const problem =
       poll.ending === 'time' && !poll.endsAt
@@ -215,12 +228,26 @@ export default function PollForm({ steps = [], onCreated }) {
         </fieldset>
       )}
       <fieldset aria-label="End">
+        {callId !== null &&
+          CALL_MINUTES.map((minutes) => (
+            <Choice
+              key={minutes}
+              name="ending"
+              value={String(minutes)}
+              current={poll.ending}
+              onPick={set('ending')}
+            >
+              {minutes === 1 ? '1 minute' : `${minutes} minutes`}
+            </Choice>
+          ))}
         <Choice name="ending" value="hand" current={poll.ending} onPick={set('ending')}>
           End by hand
         </Choice>
-        <Choice name="ending" value="time" current={poll.ending} onPick={set('ending')}>
-          End at a fixed time
-        </Choice>
+        {callId === null && (
+          <Choice name="ending" value="time" current={poll.ending} onPick={set('ending')}>
+            End at a fixed time
+          </Choice>
+        )}
       </fieldset>
       {poll.ending === 'time' && (
         <FormField

@@ -34,6 +34,7 @@ export default function PollsPage() {
       signedIn={Boolean(user)}
       canManage={answer.canManage}
       canDelete={answer.canDelete}
+      showCall
     />
   );
 

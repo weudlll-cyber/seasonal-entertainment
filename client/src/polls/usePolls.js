@@ -8,7 +8,7 @@
 //              "polls" event of the chat's live connection (usePersonalEvents), every page
 //              after this page changed a poll (pollsChanged(), as callsChanged() does for
 //              calls), every minute for guests' pages (useCallsSummary's interval), and when
-//              the next open poll reaches its end time.
+//              the next open poll reaches its end time; a call's page every 10 seconds.
 // ============================================================
 
 import { useCallback, useEffect, useState } from 'react';
@@ -16,13 +16,17 @@ import { api } from '../api/http.js';
 import { usePersonalEvents } from '../chat/index.js';
 
 const POLL_MS = 60_000;
+// On a call's page its polls last minutes: everyone in the call (guests too, who get no live
+// event) sees a new poll or a vote within seconds.
+const CALL_POLL_MS = 10_000;
 const CHANGED = 'se:polls-changed';
 
 // Tell every polls list on the page to ask again (after a vote, a new poll, an end).
 export const pollsChanged = () => window.dispatchEvent(new Event(CHANGED));
 
-// path's answer, reloaded as above; endsOf(answer): the end times (ISO) of its open polls.
-function useLivePolls(path, endsOf) {
+// path's answer, reloaded as above (every `every` ms); endsOf(answer): the end times (ISO) of
+// its open polls.
+function useLivePolls(path, endsOf, every = POLL_MS) {
   const [answer, setAnswer] = useState(null);
   const [error, setError] = useState(null);
   const load = useCallback(
@@ -37,13 +41,13 @@ function useLivePolls(path, endsOf) {
   );
   useEffect(() => {
     load();
-    const timer = setInterval(load, POLL_MS);
+    const timer = setInterval(load, every);
     window.addEventListener(CHANGED, load);
     return () => {
       clearInterval(timer);
       window.removeEventListener(CHANGED, load);
     };
-  }, [load]);
+  }, [load, every]);
   usePersonalEvents(useCallback((event) => event.type === 'polls' && load(), [load]));
 
   // The soonest end of an open poll: reload just after it, so it shows as ended.
@@ -61,8 +65,14 @@ function useLivePolls(path, endsOf) {
 
 const openEnds = (polls) => polls.filter((p) => p.open && p.endsAt).map((p) => p.endsAt);
 
-// { answer: { canManage, canDelete, steps (for the create form), polls } or null, error }.
-export const usePolls = () => useLivePolls('/polls', (answer) => openEnds(answer.polls));
+// { answer: { canManage, canDelete, steps (for the create form), polls } or null, error };
+// callId: only that call's polls (its page), asked every 10 seconds.
+export const usePolls = (callId = null) =>
+  useLivePolls(
+    callId === null ? '/polls' : `/polls?call=${callId}`,
+    (answer) => openEnds(answer.polls),
+    callId === null ? POLL_MS : CALL_POLL_MS
+  );
 
 // { answer: { unvoted, newest (the newest open poll the viewer sees, or null) } or null }.
 export const usePollSummary = () =>

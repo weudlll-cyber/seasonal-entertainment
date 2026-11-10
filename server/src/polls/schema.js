@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: The polls' tables (docs/POLLS.md, "Data"; decided 2026-11-10). A poll with its
 //              fixed answers and who may vote (all members, Discord steps in poll_step_rules,
-//              or organisers and admins only, "team"); one ballot per vote (the chosen answers
+//              or organisers and admins only, "team"), and the call it was started in, if
+//              any; one ballot per vote (the chosen answers
 //              in poll_ballot_options, the free text in its text); poll_voters says who voted,
 //              one row per account and
 //              poll, which is what keeps it to one vote per account. A ballot names its account
@@ -28,8 +29,12 @@ CREATE TABLE IF NOT EXISTS polls (
   ends_at     TEXT,
   ended_at    TEXT,
   created_by  INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  created_at  TEXT    NOT NULL
+  created_at  TEXT    NOT NULL,
+  -- Started in a live call (piece 4): shown on its page, ended with it; a deleted call leaves
+  -- the poll on the Polls page without its call.
+  call_id     INTEGER REFERENCES calls(id) ON DELETE SET NULL
 );
+CREATE INDEX IF NOT EXISTS polls_by_call ON polls (call_id);
 -- "Who may vote: Discord steps": that step or a higher one in its ladder (discord/steps.js).
 -- A step deleted later leaves the poll (CASCADE); with none left only staff may vote.
 CREATE TABLE IF NOT EXISTS poll_step_rules (

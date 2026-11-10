@@ -6,7 +6,8 @@
                 site's other cards (border, card background, radius), its vote form with the
                 site's checkbox lines (form-check) and its fields outside a form card
                 (search-input), the results as bars in the accent colour, the organisers'
-                actions in a wrapping row; the create form as the site's form.
+                actions in a wrapping row; the create form as the site's form; a call's polls
+                under its stage (at most a third of the height) with their countdown.
    ============================================================ */
 
 .poll-list {
@@ -130,4 +131,24 @@
 
 .poll-form__option .form-field {
   flex: 1;
+}
+
+/* A call's polls under its stage (calls/CallPolls.jsx): at most a third of the main column's
+   height, scrolling inside, so the stage keeps the rest. */
+.call-polls {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+  max-height: 33vh;
+  overflow-y: auto;
+}
+
+.call-polls .poll-list {
+  width: 100%;
+  margin: 0;
+}
+
+.poll-countdown {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-strong);
 }

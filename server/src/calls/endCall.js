@@ -6,9 +6,11 @@
 //              stale-call job (staleCalls.js) alike: status ended, a running recording stopped
 //              (recordingRoutes.js), the call service's room closed (which disconnects
 //              everyone), the call's chat room read-only, its reminders removed
-//              (reminders.js), an audit entry naming who ended it.
+//              (reminders.js), its open polls ended (polls/store.js), an audit entry naming
+//              who ended it.
 // ============================================================
 
+import { endCallPolls } from '../polls/store.js';
 import { recordAudit } from '../audit/auditLog.js';
 import { stopCallRecording } from './recordingRoutes.js';
 import { removeCallReminders } from './reminders.js';
@@ -27,6 +29,8 @@ export async function endCall(db, service, chat, call, actor) {
   await service.closeRoom(call.roomName);
   if (call.chatRoomId) chat.rooms.close(call.chatRoomId);
   removeCallReminders(db, call.id);
+  // Its polls end with it (docs/POLLS.md, "Polls in a call"); members' pages hear of it.
+  if (endCallPolls(db, call.id)) chat.notify.members({ type: 'polls' });
   recordAudit(db, actor, {
     action: 'call.end',
     targetType: 'call',

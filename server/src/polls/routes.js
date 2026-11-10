@@ -8,7 +8,8 @@
 //              first vote; signed-in members vote, one vote per account, where the poll lets
 //              them (all members, Discord steps, or organisers and admins only; a team poll
 //              is "no such poll" for others); only admins delete. GET /summary: the sidebar's
-//              dot and the home card.
+//              dot and the home card. A poll started in a live call (callId) is listed with
+//              ?call=<id> on its page; ending the call ends it (calls/endCall.js).
 //              Creating, ending, extending and deleting are audited (poll.create, poll.end,
 //              poll.extend, poll.delete). Every change tells the members' open pages at once
 //              ("polls" over the chat's live connection); guests' pages reload on a timer.
@@ -18,6 +19,7 @@ import express from 'express';
 import { validatePoll, validateVote } from '@seasonal-entertainment/shared/pollRules.js';
 import { recordAudit } from '../audit/auditLog.js';
 import { canDelete, canManage } from '../calls/routes.js';
+import { findCall } from '../calls/store.js';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { loadById } from '../http/loadById.js';
@@ -51,7 +53,10 @@ const pollInput = (body = {}) => ({
   voters: body.voters ?? 'members',
   steps: body.steps ?? [],
   endsAt: body.endsAt ?? null,
+  callId: Number.isInteger(body.callId) ? body.callId : null,
 });
+
+const queryCall = (req) => (/^\d+$/.test(req.query.call ?? '') ? Number(req.query.call) : null);
 
 // chat: mountChat's handle (notify.members: an event to every signed-in member's open pages).
 export function pollRoutes(db, config, chat) {
@@ -91,7 +96,8 @@ export function pollRoutes(db, config, chat) {
       ok: true,
       canManage: canManage(req),
       canDelete: canDelete(req),
-      polls: listPolls(db, viewerOf(req)),
+      // ?call=<id>: that call's polls only (its page).
+      polls: listPolls(db, viewerOf(req), Date.now(), queryCall(req)),
       // The steps a poll can be limited to, for the create form.
       ...(canManage(req)
         ? { steps: listSteps(db).map(({ id, ladder, name }) => ({ id, ladder, name })) }
@@ -106,6 +112,9 @@ export function pollRoutes(db, config, chat) {
 
   router.post('/', allow('organiser'), manageLimit, (req, res) => {
     const input = pollInput(req.body);
+    if (input.callId !== null && findCall(db, input.callId)?.status !== 'live') {
+      return sendError(res, 409, 'call_not_live', 'A poll can be started only in a live call.');
+    }
     const known = new Set(listSteps(db).map((s) => s.id));
     const problem =
       validatePoll(input) ??
@@ -114,7 +123,7 @@ export function pollRoutes(db, config, chat) {
         : null);
     if (problem) return sendError(res, 400, 'invalid_input', problem);
     const poll = findPoll(db, createPoll(db, input, req.user));
-    audit(req, 'poll.create', poll);
+    audit(req, 'poll.create', poll, poll.callId ? { callId: poll.callId } : {});
     changed();
     res.status(201).json({ ok: true, poll: shownPoll(db, poll, viewerOf(req)) });
   });

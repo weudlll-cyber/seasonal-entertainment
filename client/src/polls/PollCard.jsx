@@ -6,7 +6,8 @@
 //              the number of votes and whether it is anonymous; the vote form while the viewer
 //              may vote (PollVote), the results when the server shows them (PollResults),
 //              otherwise why not ("Results after the end", "Sign in to vote", "Voting from
-//              <steps>" for a member without the step); a team poll says so. Organisers and
+//              <steps>" for a member without the step); a team poll says so; a call's poll
+//              counts down (Countdown) and, on the Polls page, links its call. Organisers and
 //              admins end it early, extend it, and switch anonymous before the first vote;
 //              admins delete it after a question. Every change reloads the lists
 //              (pollsChanged).
@@ -17,18 +18,21 @@ import { Link } from 'react-router';
 import { api } from '../api/http.js';
 import { formatWhen } from '../app/dates.js';
 import { FormField, FormMessage } from '../components/FormField.jsx';
+import Countdown from './Countdown.jsx';
 import PollResults from './PollResults.jsx';
 import PollVote from './PollVote.jsx';
 import { pollsChanged } from './usePolls.js';
 
+// A call's poll counts down (it lasts minutes); others name their end.
 function endLine(poll) {
   if (!poll.open) return `Ended ${formatWhen(poll.endedAt ?? poll.endsAt)}`;
+  if (poll.endsAt && poll.callId) return <Countdown endsAt={poll.endsAt} />;
   return poll.endsAt ? `Ends ${formatWhen(poll.endsAt)}` : 'Ends by hand';
 }
 
 // signedIn: whether someone is signed in (guests get a sign-in hint); canManage, canDelete:
-// the list's answer.
-export default function PollCard({ poll, signedIn, canManage, canDelete }) {
+// the list's answer; showCall: name the call a poll was started in (the Polls page).
+export default function PollCard({ poll, signedIn, canManage, canDelete, showCall = false }) {
   const [extendTo, setExtendTo] = useState('');
   const [asking, setAsking] = useState(false);
   const [error, setError] = useState(null);
@@ -51,6 +55,12 @@ export default function PollCard({ poll, signedIn, canManage, canDelete }) {
         {endLine(poll)} · {votes} · {poll.anonymous ? 'Anonymous' : 'Not anonymous'}
         {poll.voters === 'team' && ' · Organisers and admins only'}
         {poll.createdBy && ` · by ${poll.createdBy}`}
+        {showCall && poll.callId && (
+          <>
+            {' · in the call '}
+            <Link to={`/calls/${poll.callId}`}>{poll.callTitle}</Link>
+          </>
+        )}
       </p>
       {poll.canVote && <PollVote poll={poll} onVoted={pollsChanged} />}
       {poll.open && signedIn && !poll.mayVote && poll.steps.length > 0 && (

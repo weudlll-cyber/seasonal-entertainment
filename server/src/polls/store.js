@@ -12,7 +12,8 @@
 //              answer only in a poll that is not anonymous. Who may vote (seesPoll, mayVoteIn):
 //              all members, members with one of the chosen Discord steps or a higher one, or
 //              organisers and admins only, whose polls only they see; and the summary for the
-//              sidebar's dot and the home card (pollSummary).
+//              sidebar's dot and the home card (pollSummary). A poll started in a call names
+//              it (callId, callTitle) and ends with it (endCallPolls).
 // ============================================================
 
 import { passesStepRule } from '../discord/steps.js';
@@ -21,7 +22,9 @@ const now = () => new Date().toISOString();
 
 const COLUMNS = `p.id, p.question, p.kind, p.multiple, p.other_text AS otherText, p.results,
   p.anonymous, p.voters, p.ends_at AS endsAt, p.ended_at AS endedAt, p.created_at AS createdAt,
-  u.username AS createdBy`;
+  u.username AS createdBy, p.call_id AS callId, c.title AS callTitle`;
+const FROM =
+  'polls p LEFT JOIN users u ON u.id = p.created_by LEFT JOIN calls c ON c.id = p.call_id';
 
 // Open: not ended by hand and its end time (if any) not reached.
 export const isOpen = (poll, at = Date.now()) =>
@@ -51,14 +54,7 @@ function withOptions(db, row) {
 }
 
 export function findPoll(db, id) {
-  return withOptions(
-    db,
-    db
-      .prepare(
-        `SELECT ${COLUMNS} FROM polls p LEFT JOIN users u ON u.id = p.created_by WHERE p.id = ?`
-      )
-      .get(id)
-  );
+  return withOptions(db, db.prepare(`SELECT ${COLUMNS} FROM ${FROM} WHERE p.id = ?`).get(id));
 }
 
 // input: validatePoll's (shared/pollRules.js), already checked. Returns the new poll's id.
@@ -68,7 +64,7 @@ export function createPoll(db, input, user) {
       db
         .prepare(
           `INSERT INTO polls (question, kind, multiple, other_text, results, anonymous, voters,
-             ends_at, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+             ends_at, created_by, created_at, call_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
           input.question.trim(),
@@ -80,7 +76,8 @@ export function createPoll(db, input, user) {
           input.voters,
           input.endsAt === null ? null : new Date(input.endsAt).toISOString(),
           user.id,
-          now()
+          now(),
+          input.callId ?? null
         ).lastInsertRowid
     );
     const add = db.prepare('INSERT INTO poll_options (poll_id, position, label) VALUES (?, ?, ?)');
@@ -146,6 +143,15 @@ export function endPoll(db, id) {
   return (
     db.prepare('UPDATE polls SET ended_at = ? WHERE id = ? AND ended_at IS NULL').run(now(), id)
       .changes === 1
+  );
+}
+
+// A call that ends ends its open polls with it (calls/endCall.js); true when any was open.
+export function endCallPolls(db, callId) {
+  return (
+    db
+      .prepare('UPDATE polls SET ended_at = ? WHERE call_id = ? AND ended_at IS NULL')
+      .run(now(), callId).changes > 0
   );
 }
 
@@ -249,8 +255,12 @@ export function shownPoll(db, poll, viewer, at = Date.now()) {
 
 // Every poll as the viewer sees it: open ones first (soonest end first, then newest), then
 // ended ones, newest first.
-export function listPolls(db, viewer, at = Date.now()) {
-  const ids = db.prepare('SELECT id FROM polls ORDER BY id DESC').all();
+// callId: only that call's polls (its page), else all.
+export function listPolls(db, viewer, at = Date.now(), callId = null) {
+  const ids =
+    callId === null
+      ? db.prepare('SELECT id FROM polls ORDER BY id DESC').all()
+      : db.prepare('SELECT id FROM polls WHERE call_id = ? ORDER BY id DESC').all(callId);
   const polls = ids
     .map(({ id }) => findPoll(db, id))
     .filter((poll) => seesPoll(poll, viewer))

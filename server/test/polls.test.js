@@ -10,11 +10,14 @@
 //              answer only when not anonymous, and an anonymous ballot names nobody; anonymous
 //              switches only before the first vote; ending, extending and (admins only)
 //              deleting are audited; an account's deletion takes its votes along, an anonymous
-//              ballot stays; members' open pages hear of every change at once.
+//              ballot stays; members' open pages hear of every change at once; who may vote
+//              (Discord steps, team polls) and the summary; a poll started in a live call is
+//              listed on its page and ends with the call.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
 import { proof } from './helpers/accountKeys.js';
+import { callApp, liveCall, newCall } from './helpers/calls.js';
 import { auditActions } from './helpers/chat.js';
 import { connect, cookieOf, listeningChat, stopServer } from './helpers/chatSocket.js';
 import { seedTestSteps } from './helpers/steps.js';
@@ -262,6 +265,32 @@ describe('ending, extending, deleting', () => {
     expect((await list(mia)).polls.map((p) => p.id)).toEqual([second.id]);
     expect(auditActions(t)).toEqual(
       expect.arrayContaining(['poll.create', 'poll.extend', 'poll.end', 'poll.delete'])
+    );
+  });
+});
+
+describe('polls in a call', () => {
+  it('start only in a live call, are listed on its page, and end with the call', async () => {
+    ({ t } = callApp());
+    const olga = (await makeStaff(t, 'olga', 'organiser')).agent;
+    const { agent: mia } = await registerUser(t, 'mia');
+    const planned = await newCall(olga, 'Later');
+    const early = await olga.post('/api/polls').send({ ...CHOICE, callId: planned.id });
+    expect(early.status).toBe(409);
+    expect(early.body.error).toBe('call_not_live');
+
+    const call = await liveCall(olga, 'Town hall');
+    const inCall = await create(olga, { ...CHOICE, callId: call.id, endsAt: later(60_000) });
+    expect(inCall).toMatchObject({ callId: call.id, callTitle: 'Town hall' });
+    await create(olga, CHOICE);
+    const onPage = (await mia.get(`/api/polls?call=${call.id}`)).body.polls;
+    expect(onPage.map((p) => p.id)).toEqual([inCall.id]);
+    expect((await list(mia)).polls).toHaveLength(2);
+
+    expect((await olga.post(`/api/calls/${call.id}/end`)).status).toBe(200);
+    expect((await shown(mia, inCall.id)).open).toBe(false);
+    expect((await vote(mia, inCall.id, { options: optionIds(inCall).slice(0, 1) })).status).toBe(
+      409
     );
   });
 });
