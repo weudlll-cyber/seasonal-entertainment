@@ -3,7 +3,7 @@
 // Path:        client/src/app/navigation.js
 // Project:     Seasonal Entertainment
 // Description: The one definition of the site's navigation: the sidebar's main items (with
-//              their icons and season dots), the Calls item, the staff items (Site banner,
+//              their icons and season dots; Polls has no season of its own), the Calls item, the staff items (Site banner,
 //              Admin, Manage events) and who sees them, the legal links (with "Not financial
 //              advice"), and the admin area's sections.
 //              Used by the sidebar, the admin layout and their tests.
@@ -20,6 +20,8 @@ export const MAIN_NAV = [
   { to: '/games', label: 'Games', icon: 'games', dot: 'spring' },
   { to: '/events', label: 'Events', icon: 'events', dot: 'summer' },
   { to: '/chat', label: 'Chat', icon: 'chat', dot: 'autumn' },
+  // After Calls (the sidebar puts Calls right after Chat): polls for everyone (2026-11-10).
+  { to: '/polls', label: 'Polls', icon: 'poll' },
   { to: '/info', label: 'Seasonal Tokens', icon: 'tokens' },
 ];
 

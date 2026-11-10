@@ -273,8 +273,11 @@ minimum window:
   sight. 8px between nav, account card and legal links (was 16px), 2px between the pills (was
   4px; they keep their 44px), 8px above the logo (was 16px), none between the logo bar and the
   first pill (was 8px), 8px at the bottom (was 16px), 4px around the divider (was 8px) and 8px
-  above the account card (was 16px): about 9px to spare there. A shorter window or a larger zoom
-  scrolls the menu again (nothing is lost, it scrolls).
+  above the account card (was 16px): about 9px to spare there. Since "Polls" joined the main
+  items (2026-11-10) the pills are 40px tall instead of 44px in a window under 660px high
+  (`sidebar.css`), which gives back the 40px the new pill takes; 40px stays well above the 24px
+  minimum target. A shorter window or a larger zoom scrolls the menu again (nothing is lost, it
+  scrolls).
 - **A narrow Fair price box** (one column of a 1280px window, beside Next call) drops its four
   marks and takes the title on one line; its text wrapped so far that the Disclaimer link was
   cut.

@@ -22,6 +22,7 @@ import { INFO_SCHEMA } from '../info/schema.js';
 import { KEYS_SCHEMA } from '../keys/schema.js';
 import { MEDIA_SCHEMA } from '../media/schema.js';
 import { PREVIEW_SCHEMA } from '../previews/schema.js';
+import { POLLS_SCHEMA } from '../polls/schema.js';
 import { REFERENCE_SCHEMA } from '../reference/schema.js';
 import { SETTINGS_SCHEMA } from '../settings/schema.js';
 import { UPLOAD_SCHEMA } from '../uploads/schema.js';
@@ -47,6 +48,7 @@ const SCHEMAS = [
   REFERENCE_SCHEMA,
   CALLS_SCHEMA,
   EMBED_SCHEMA,
+  POLLS_SCHEMA,
 ];
 
 export function openDatabase(databasePath) {

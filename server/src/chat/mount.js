@@ -212,8 +212,12 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
       },
     },
     // For areas that tell a member something live (call reminders, calls/reminders.js): an
-    // event to every open page of that account; returns how many got it.
-    notify: { member: (userId, event) => hub.sendToUser(userId, event) },
+    // event to every open page of that account; returns how many got it. members: to every
+    // signed-in member's open pages (a poll changed, polls/routes.js).
+    notify: {
+      member: (userId, event) => hub.sendToUser(userId, event),
+      members: (event) => hub.sendToMembers(event),
+    },
     // For areas that let chat users in (a call, calls/): who is asking — an account, or a
     // guest with their chat identity (given now if needed; null after answering 503) — and
     // their chat sanction (mute or ban), if any.

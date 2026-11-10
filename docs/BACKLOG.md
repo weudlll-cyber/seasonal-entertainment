@@ -14,7 +14,12 @@ entry waits for.
 
 ### Built, waiting for the merge
 
-- None.
+- **Polls** — built on `feat/polls` (piece 2; decided 2026-11-10): `/polls` for everyone;
+  organisers and admins create (fixed answers or free text, results after the vote or after
+  the end, anonymous or not, a fixed end or by hand), end early, extend; members vote once
+  (changed only where results come after the end and the poll is not anonymous); written
+  answers only for organisers and admins; admins delete; audited; live for members over the
+  chat connection, every minute for guests (docs/POLLS.md).
 
 ### To try on the live server
 

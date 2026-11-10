@@ -39,6 +39,7 @@ import { callReminderRoutes } from './calls/reminderRoutes.js';
 import { sendCallReminders, startCallReminders } from './calls/reminders.js';
 import { callEventRoutes } from './calls/eventRoutes.js';
 import { callRecordingRoutes } from './calls/recordingRoutes.js';
+import { pollRoutes } from './polls/routes.js';
 import { resumeRecordingStarts } from './calls/recordingStart.js';
 import { chapterRoutes } from './calls/chapterRoutes.js';
 import { callRoutes } from './calls/routes.js';
@@ -207,6 +208,8 @@ export function createApp({
       return stops.length ? () => stops.forEach((stop) => stop()) : null;
     },
   };
+  // Polls (polls/, docs/POLLS.md): changes reach members' pages over the chat's connection.
+  api.use('/polls', pollRoutes(db, config, chat));
   // The weekly recap (recap/): posted by the site on Mondays, or now by an admin (audited).
   const recap = { db, config, chat, callsConfigured: Boolean(callService) };
   api.use('/admin/recap', adminRecapRoutes(recap));

@@ -33,6 +33,8 @@ const PATHS = {
   megaphone: 'M4 10v4h3l7 4.5v-13L7 10ZM17 9.5a3.5 3.5 0 0 1 0 5M7 14l1.5 5h2.5l-1.3-5',
   bell: 'M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15ZM10 20.5h4',
   bellOff: 'M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15ZM10 20.5h4M4 4l16 16',
+  // Polls: three bars on a base line.
+  poll: 'M4 20h16M7 17v-5M12 17V6M17 17v-8',
   mic: 'M12 3.5a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0v-5a3 3 0 0 0-3-3ZM6 11a6 6 0 0 0 12 0M12 17v3.5M8.5 20.5h7',
   micOff:
     'M12 3.5a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0v-5a3 3 0 0 0-3-3ZM6 11a6 6 0 0 0 12 0M12 17v3.5M8.5 20.5h7M4 4l16 16',

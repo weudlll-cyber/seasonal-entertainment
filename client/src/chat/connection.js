@@ -46,6 +46,7 @@ const PERSONAL = new Set([
   'mention',
   'recap', // the weekly recap is out (server/src/recap/job.js)
   'access', // the account's Discord steps changed: room lists reload (useChatRooms.js)
+  'polls', // a poll was created, voted in, ended or deleted (polls/usePolls.js)
 ]);
 const personal = new Set(); // their handlers
 let socket = null;

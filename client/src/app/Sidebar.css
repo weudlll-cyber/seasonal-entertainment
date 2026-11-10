@@ -93,6 +93,15 @@
   text-decoration: none;
 }
 
+/* A short window (the owner's 1915 x 913 at 150 % zoom leaves 609px): the pills are 40px tall
+   instead of 44px, so the fullest staff menu still fits without a scrollbar since Polls joined
+   it (2026-11-10, docs/DESIGN.md). 40px stays well above the 24px minimum target. */
+@media (max-height: 660px) {
+  .nav-item {
+    min-height: 40px;
+  }
+}
+
 /* The label takes the row's free width: badges, unread dots and the season dot sit at its end. */
 .nav-item__label {
   flex: 1;

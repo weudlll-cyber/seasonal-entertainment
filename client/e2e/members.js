@@ -46,6 +46,7 @@ const MEMBERS = [
   'stepnone',
   'picsender',
   'picrecip',
+  'pollvoter',
 ];
 
 async function insertMember(db, username) {
