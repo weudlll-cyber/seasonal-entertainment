@@ -99,6 +99,11 @@
   margin: 0;
 }
 
+/* The box keeps its size when the text beside it is long or the space is tight. */
+.form-check input {
+  flex-shrink: 0;
+}
+
 /* A checkbox in a table row (no visible text): its label is an empty 44px square around it. */
 .table-check {
   display: inline-grid;

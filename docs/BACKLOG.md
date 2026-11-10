@@ -95,6 +95,11 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **The "May host" boxes in Admin → Users ran together** — closed by `fix/host-boxes-layout`
+  (2026-11-10): the game names stood in one run with each box above its name, because every
+  game used the centred one-box style of a table cell. Now one game per line, the box beside its
+  name, the whole line the 44px target (the site's `form-check`); a name stays on its line and
+  the table scrolls sideways on a narrow screen (`client/src/admin/UserRow.jsx`, `admin.css`).
 - **Site and bots on the same VPS** — closed (2026-11-09): the site and the owner's bots run on
   the same server, and the installer reads the bots' files there through read-only mounts
   (docs/DEPLOYMENT.md, "What it asks").
