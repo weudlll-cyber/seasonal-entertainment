@@ -612,7 +612,20 @@ run by the owner, never by CI): `sudo ./deploy/calls/loadtest.sh` in the checkou
 - **Pessimistic**: the load generator shares the host with LiveKit, so real participants on
   their own machines cost the server less than these numbers show.
 - `--dry-run` prints the plan without starting anything; `deploy/test/loadtest.test.sh` checks
-  it (CI too).
+  it (CI too). The script is executable in git (`deploy/test/executable.test.sh`).
+
+**Measured live on 2026-11-10** (the VPS, master c9980a7; 3 video + 2 audio publishers; the
+generator on the same host, capped at 2 CPUs and 2 GB):
+
+| Subscribers | LiveKit CPU avg / peak | Host load max | Free memory min | Tracks  | Packet loss | Errors |
+| ----------- | ---------------------- | ------------- | --------------- | ------- | ----------- | ------ |
+| 25          | 85 % / 156 %           | 3.48          | 10378 MB        | 125/125 | 0.001 %     | 0      |
+| 50          | 111 % / 177 %          | 3.74          | 10117 MB        | 250/250 | 0.112 %     | 0      |
+| 100         | 163 % / 208 %          | 4.22          | 9541 MB         | 500/500 | 0.47 %      | 0      |
+
+Every track arrived in every step and no subscriber failed; the load stayed under the stop
+limit of 5 at 100 subscribers. Not measured: the internet uplink (the test runs over loopback
+only), so the server's outgoing bandwidth is the open question for large calls.
 
 ### Moving the call service to its own VPS
 

@@ -14,37 +14,7 @@ entry waits for.
 
 ### Built, waiting for the merge
 
-- **A held Discord sign-up timing out while it is being completed** — built on
-  `night/2026-11-10` (piece 9; SE-AUDIT-2): the registration now claims its sign-up from the
-  session row inside the transaction that stores the link (`claimSignup`,
-  `server/src/discord/droppedGrants.js`), the row the sweep takes it from. Either the account
-  starts with a live grant, or the answer is `signup_expired` ("start again"). Reproduced in a
-  test before the fix: a request that read its session a second before the timeout, with the
-  sweep landing in between, stored an account holding the revoked grant.
-- **Unread counts after an account deletion** — built on `night/2026-11-10` (piece 8; SE-AUDIT-2):
-  the counts already shown kept counting a deleted account's room messages. Now every reader of
-  each room is told to recount ("activity", as after a hidden message), also on pages not
-  showing the room (`server/src/chat/accountData.js`; docs/AUTH.md, "Deleting an account").
-- **One source per game-integration fact** — built on `night/2026-11-10` (piece 7):
-  docs/GAME-INTEGRATION.md keeps the overview, the game's requirements, the task brief and the
-  checklist and links to AUTH, EMBED, DEPLOYMENT and OPEN-ROUNDS for the contracts; it marks what
-  is current, built, requested or proposed.
-- **The development dependency advisories** — built on `night/2026-11-10` (piece 6): `npm audit`
-  is clean; `minimatch` is overridden to `^11.0.5` for ESLint's `@eslint/config-array`, without
-  downgrading ESLint (docs/ARCHITECTURE.md, "Stack").
-- **A call load test for the VPS** — built on `night/2026-11-10` (piece 5):
-  `sudo ./deploy/calls/loadtest.sh`, three 3-minute steps up to 100 subscribers, stopping at load
-  5, under 1.5 GB free or after 20 minutes (docs/CALLS.md, "Load test"). Still to run once on the
-  VPS.
-- **A password change or reset ends game sessions** — built on `night/2026-11-10` (piece 2;
-  decided 2026-11-09): a member's own change and an admin's reset are noted for the games as
-  "rights", so both games sign the member out; not the first password of a Discord account
-  (`server/src/accounts/routes.js`, `server/src/admin/userRoutes.js`; docs/AUTH.md).
-- **Hosting per game** — built on `night/2026-11-10` (piece 1; decided 2026-11-09): an admin
-  grants hosting per embedded game (Admin → Users, one box per game); admins always may.
-  `X-Acting-User-Can-Host` answers for the game asking. The old flag `users.can_start_games`
-  became a grant for every game of each account that had it, then went
-  (`server/src/accounts/gameHosts.js`; docs/AUTH.md, "Embedded games").
+- None.
 
 ### To try on the live server
 
@@ -95,8 +65,44 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **CI security scans** — closed by `chore/ci-security` (2026-11-10): the CI job "security"
+  runs gitleaks over the full history, `npm audit` of the production dependencies (high or
+  critical fails) and osv-scanner on `package-lock.json` (CVSS 7 or more fails); the workflow
+  "CodeQL" scans the JavaScript on pushes, pull requests and weekly, as the game repositories
+  do. The 8 findings in the history were checked one by one (an e2e-only key, the public guild
+  id, test user ids, RFC 6455's sample key) and are accepted by fingerprint in
+  `.gitleaksignore`. `deploy/calls/loadtest.sh` is executable in git now (it failed live with
+  "command not found"); `deploy/test/executable.test.sh` checks every script started directly.
+- **A call load test for the VPS** — closed by `night/2026-11-10` (PR #55, merged 2026-11-10 as c9980a7) (piece 5), run live on 2026-11-10 (master c9980a7):
+  with 3 video and 2 audio publishers and 25, 50 and 100 subscribers LiveKit used 85, 111 and
+  163 % CPU on average (peaks 156, 177 and 208 %), the host load peaked at 3.48, 3.74 and 4.22,
+  at least 9541 MB stayed free, every track arrived (125, 250 and 500), packet loss was 0.001,
+  0.112 and 0.47 %, no errors. The internet uplink was not measured (loopback only)
+  (docs/CALLS.md, "Load test").
+- **A held Discord sign-up timing out while it is being completed** — closed by `night/2026-11-10` (PR #55, merged 2026-11-10 as c9980a7) (piece 9;
+  SE-AUDIT-2): the registration claims its sign-up from the session row inside the transaction
+  that stores the link (`claimSignup`, `server/src/discord/droppedGrants.js`), the row the sweep
+  takes it from; either the account starts with a live grant, or the answer is
+  `signup_expired` ("start again").
+- **Unread counts after an account deletion** — closed by `night/2026-11-10` (PR #55, merged 2026-11-10 as c9980a7) (piece 8; SE-AUDIT-2): every reader of
+  each room is told to recount, also on pages not showing the room
+  (`server/src/chat/accountData.js`; docs/AUTH.md, "Deleting an account").
+- **One source per game-integration fact** — closed by `night/2026-11-10` (PR #55, merged 2026-11-10 as c9980a7) (piece 7): docs/GAME-INTEGRATION.md keeps the
+  overview, the game's requirements, the task brief and the checklist and links to AUTH, EMBED,
+  DEPLOYMENT and OPEN-ROUNDS for the contracts, marking what is current, built, requested or
+  proposed.
+- **The development dependency advisories** — closed by `night/2026-11-10` (PR #55, merged 2026-11-10 as c9980a7) (piece 6): `npm audit` is clean;
+  `minimatch` is overridden to `^11.0.5` for ESLint's `@eslint/config-array` (docs/ARCHITECTURE.md,
+  "Stack").
+- **A password change or reset ends game sessions** — closed by `night/2026-11-10` (PR #55, merged 2026-11-10 as c9980a7) (piece 2; decided 2026-11-09): a
+  member's own change and an admin's reset are noted for the games as "rights"; not the first
+  password of a Discord account (docs/AUTH.md).
+- **Hosting per game** — closed by `night/2026-11-10` (PR #55, merged 2026-11-10 as c9980a7) (piece 1; decided 2026-11-09): an admin grants hosting per
+  embedded game (Admin → Users); admins always may; `X-Acting-User-Can-Host` answers for the
+  game asking; the old flag `users.can_start_games` became a grant for every game of each
+  account that had it (`server/src/accounts/gameHosts.js`; docs/AUTH.md, "Embedded games").
 - **The "May host" boxes in Admin → Users ran together** — closed by `fix/host-boxes-layout`
-  (2026-11-10): the game names stood in one run with each box above its name, because every
+  (PR #56, merged 2026-11-10 as 88153a7): the game names stood in one run with each box above its name, because every
   game used the centred one-box style of a table cell. Now one game per line, the box beside its
   name, the whole line the 44px target (the site's `form-check`); a name stays on its line and
   the table scrolls sideways on a narrow screen (`client/src/admin/UserRow.jsx`, `admin.css`).

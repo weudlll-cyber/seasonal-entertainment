@@ -1,0 +1,38 @@
+# ============================================================
+# File:        codeql.yml
+# Path:        .github/workflows/codeql.yml
+# Project:     Seasonal Entertainment
+# Description: CodeQL code scanning of the JavaScript (server, client, shared, scripts) on pushes
+#              to master, on pull requests against master and weekly, so new queries also run
+#              against unchanged code; results go to GitHub code scanning. Modelled on the game
+#              repositories' codeql.yml (2026-11-10), actions pinned to commit SHAs as in ci.yml.
+# ============================================================
+
+name: CodeQL
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule:
+    # Mondays 04:41 UTC.
+    - cron: '41 4 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: CodeQL (JavaScript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: github/codeql-action/init@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          languages: javascript-typescript
+          # JavaScript is analysed from source; no build needed.
+          build-mode: none
+      - uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
