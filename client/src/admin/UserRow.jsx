@@ -92,10 +92,11 @@ export default function UserRow({ user, games, onChanged }) {
           ))}
         </select>
       </td>
-      <td>
+      <td className="admin-host-games">
         {games.map((game) => (
-          // The game's name is the box's visible label; the 44px target is the whole label.
-          <label key={game.slug} className="table-check">
+          // One game per line: the box and its name side by side (form-check, the site's
+          // checkbox with text; table-check centres a lone box), the whole line the 44px target.
+          <label key={game.slug} className="form-check">
             <input
               type="checkbox"
               aria-label={label(`May host ${game.name}`)}

@@ -2,7 +2,8 @@
    File:        admin.css
    Path:        client/src/admin/admin.css
    Project:     Seasonal Entertainment
-   Description: Styles of the admin area: section navigation, compact row controls, the audit
+   Description: Styles of the admin area: section navigation, compact row controls, the users
+                list's "May host" cell, the audit
                 log's details, the info editor (form beside its preview), the media packs and the
                 settings page's groups.
    ============================================================ */
@@ -38,6 +39,13 @@
 .admin-row-actions .link-button {
   min-width: var(--hit-target);
   min-height: var(--hit-target);
+}
+
+/* The users list's "May host" cell (UserRow.jsx): a game's name stays on its one line; on a
+   narrow screen the table scrolls sideways (.table-wrap) rather than breaking names into words
+   that run into the next game's. */
+.admin-host-games .form-check {
+  white-space: nowrap;
 }
 
 .admin-json {
