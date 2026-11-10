@@ -4,7 +4,10 @@
 // Project:     Seasonal Entertainment
 // Description: One poll (the Polls page; docs/POLLS.md): its question, when it ends or ended,
 //              the number of votes and whether it is anonymous; the vote form while the viewer
-//              may vote (PollVote), the results when the server shows them (PollResults),
+//              may vote (PollVote), the rule of when its results show ("Results after you
+//              vote" / "after the poll ends"; organisers and admins: live), "You voted" with
+//              the way to change it where the poll allows, the results when the server shows
+//              them (PollResults),
 //              otherwise why not ("Results after the end", "Sign in to vote", "Voting from
 //              <steps>" for a member without the step); a team poll says so; a call's poll
 //              counts down (Countdown) and, on the Polls page, links its call. Organisers and
@@ -28,6 +31,15 @@ function endLine(poll) {
   if (!poll.open) return `Ended ${formatWhen(poll.endedAt ?? poll.endsAt)}`;
   if (poll.endsAt && poll.callId) return <Countdown endsAt={poll.endsAt} />;
   return poll.endsAt ? `Ends ${formatWhen(poll.endsAt)}` : 'Ends by hand';
+}
+
+// When the results show (decided 2026-11-11: every voter sees the rule); organisers and admins
+// see them live whatever it says.
+function resultsRule(poll, canManage) {
+  const rule = poll.resultsWhen === 'after_end' ? 'after the poll ends' : 'after you vote';
+  return canManage
+    ? `You see live results. Members: results ${rule === 'after you vote' ? 'after their vote' : rule}.`
+    : `Results ${rule}.`;
 }
 
 // signedIn: whether someone is signed in (guests get a sign-in hint); canManage, canDelete:
@@ -62,6 +74,13 @@ export default function PollCard({ poll, signedIn, canManage, canDelete, showCal
           </>
         )}
       </p>
+      {poll.open && <p className="poll-card__rule">{resultsRule(poll, canManage)}</p>}
+      {poll.canVote && poll.voted && (
+        <p>
+          You voted. You can change your vote until the poll ends
+          {poll.anonymous && ' (it is anonymous: your earlier answers are not shown)'}.
+        </p>
+      )}
       {poll.canVote && <PollVote poll={poll} onVoted={pollsChanged} />}
       {poll.open && signedIn && !poll.mayVote && poll.steps.length > 0 && (
         <p>Voting from {poll.steps.join(' or ')}.</p>

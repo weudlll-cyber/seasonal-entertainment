@@ -64,6 +64,7 @@ app.locals.reference.start();
 app.locals.recap.start();
 app.locals.discord.start();
 app.locals.games.start();
+app.locals.polls.start();
 
 const server = app.listen(config.port, config.host, () => {
   console.log(

@@ -30,11 +30,15 @@ everyone sees them. The page is `/polls` ("Polls" in the sidebar, after Calls).
   in the results); everyone else sees how many there are.
 - **Results**, chosen at creation: **right after your vote** or **after the poll ends**.
   Organisers and admins always see the live results, written answers included. A guest sees
-  the results once the poll has ended.
+  the results once the poll has ended. Every open poll states its rule to voters ("Results
+  after you vote" / "Results after the poll ends"; organisers and admins read that they see
+  live results; 2026-11-11). The rule travels as `resultsWhen`; the results stay hidden as
+  before.
 - **Changing a vote**: only in a poll whose results show after the end, until the end;
-  otherwise a vote is final. In an **anonymous** poll a vote is always final: nothing links an
-  account to its ballot there, so there is nothing to change (see "Data"; decision taken
-  unattended on 2026-11-10, open for the owner's word).
+  otherwise a vote is final. This holds for **anonymous** polls too (decided 2026-11-11): while
+  such a poll is open the site keeps which ballot is whose (`poll_ballot_links`, see "Data"),
+  only so the vote can be replaced; the form then starts empty, as the earlier answers are
+  never sent back. The card says "You voted. You can change your vote until the poll ends".
 - **Anonymous or not**, chosen at creation; organisers and admins can switch it until the
   first vote, then it is fixed.
   - **Anonymous**: nobody, admins included, sees who voted what. Only what keeps it to one
@@ -43,13 +47,16 @@ everyone sees them. The page is `/polls` ("Polls" in the sidebar, after Calls).
     vote form says "This poll is not anonymous – your name will be shown".
 - **End**: a fixed end time or "end by hand". Organisers and admins end a poll early and
   extend it (a later end time, also for one that was to end by hand) while it is open. Ended
-  polls stay on the page with their results, after the open ones (the archive). **Only admins
+  polls stay on the page with their results, after the open ones (the archive). Open and ended
+  polls are each listed newest first (2026-11-11). **Only admins
   delete** a poll (with its votes), after a question.
 - **Audit**: `poll.create`, `poll.end`, `poll.extend`, `poll.delete` (with the question; an
   extension also with the new end). The anonymous switch is not audited.
 - **Deleting an account** removes its votes and written answers in polls that are not
-  anonymous, as its chat messages (decided 2026-11-01). In an anonymous poll its ballot
-  carries nothing of the account and stays; only the mark that it voted goes.
+  anonymous, as its chat messages (decided 2026-11-01), and in an anonymous poll whose results
+  show after the end while it is still open (through the link). After such a poll has ended, and
+  in an anonymous poll with results after the vote, its ballot names nobody and stays
+  unattributed; only the mark that it voted goes.
 
 ## Polls in a call
 
@@ -111,6 +118,15 @@ In an anonymous poll the ballot's `user_id` is empty. `poll_voters` keeps no tim
 `WITHOUT ROWID` table, so not even the order in which accounts voted is kept to be matched
 with the order of the ballots. Deleting an account removes its `poll_voters` rows and its
 named ballots (`ON DELETE CASCADE`).
+
+**`poll_ballot_links`** (2026-11-11): for an anonymous poll whose results show after the end,
+which ballot is whose (poll, account, ballot), only while the poll is open, so a voter can
+replace their ballot. It is never sent anywhere (no API answer, log, audit entry or admin page
+carries it). Every row of a poll goes the moment it ends: by hand and with its call at once
+(`endPoll`, `endCallPolls`), when its end time passes within 10 seconds (the polls job,
+`startPollJobs`, and before every vote and list: `dropEndedLinks`). A trigger,
+`poll_links_account_gone`, deletes a still-linked ballot when its account is deleted.
+`migratePolls()` adds columns to a polls table from an earlier state of the branch.
 
 ## API
 

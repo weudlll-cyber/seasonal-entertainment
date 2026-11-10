@@ -38,6 +38,7 @@
 }
 
 .poll-card__meta,
+.poll-card__rule,
 .poll-results__voters,
 .poll-results__by {
   color: var(--color-text-muted);

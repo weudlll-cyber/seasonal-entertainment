@@ -15,13 +15,18 @@
 //              listed on its page and ends with the call.
 // ============================================================
 
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { openDatabase } from '../src/db/database.js';
 import { proof } from './helpers/accountKeys.js';
 import { callApp, liveCall, newCall } from './helpers/calls.js';
 import { auditActions } from './helpers/chat.js';
 import { connect, cookieOf, listeningChat, stopServer } from './helpers/chatSocket.js';
 import { seedTestSteps } from './helpers/steps.js';
-import { makeStaff, makeTestApp, registerUser } from './helpers/testApp.js';
+import { dropEndedLinks } from '../src/polls/store.js';
+import { makeStaff, registerUser } from './helpers/testApp.js';
 
 let t;
 let server;
@@ -45,8 +50,9 @@ const CHOICE = {
   endsAt: null,
 };
 
+// An app with the stand-in call service (calls/ helpers), for the polls started in a call.
 async function setup() {
-  t = makeTestApp();
+  ({ t } = callApp());
   const olga = (await makeStaff(t, 'olga', 'organiser')).agent;
   const mia = (await registerUser(t, 'mia')).agent;
   const ben = (await registerUser(t, 'ben')).agent;
@@ -148,6 +154,17 @@ describe('voting', () => {
   });
 });
 
+it('lists open polls newest first, then ended ones newest first', async () => {
+  const { olga, mia } = await setup();
+  const soon = await create(olga, { ...CHOICE, endsAt: later(60_000) });
+  const late = await create(olga, { ...CHOICE, endsAt: later(5 * HOUR) });
+  const ended = await create(olga, CHOICE);
+  await olga.post(`/api/polls/${ended.id}/end`);
+  // The older poll ends sooner, yet the newest comes first (decided 2026-11-11).
+  expect((await list(mia)).polls.map((p) => p.id)).toEqual([late.id, soon.id, ended.id]);
+  expect((await shown(mia, soon.id)).resultsWhen).toBe('after_vote');
+});
+
 describe('who may vote', () => {
   // Golden (Holder ladder) mapped to a Discord role; links an account holding these roles.
   const GOLDEN = '1110000000000000004';
@@ -221,23 +238,100 @@ describe('who may vote', () => {
 });
 
 describe('anonymous polls', () => {
-  it('name nobody, keep the first vote, and switch only before the first vote', async () => {
+  const links = () => t.db.prepare('SELECT COUNT(*) AS n FROM poll_ballot_links').get().n;
+
+  it('name nobody; results after the vote: the first vote stays; switch before the first vote', async () => {
     const { olga, mia } = await setup();
-    const poll = await create(olga, { ...CHOICE, results: 'after_end', anonymous: false });
+    const poll = await create(olga, { ...CHOICE, anonymous: false });
     expect(
       (await olga.post(`/api/polls/${poll.id}/anonymous`).send({ anonymous: true })).status
     ).toBe(200);
     const [friday, saturday] = optionIds(poll);
     await vote(mia, poll.id, { options: [friday], text: '' });
-    // Results after the end, but anonymous: nothing links mia to her ballot, so it stays.
-    expect((await shown(mia, poll.id)).canVote).toBe(false);
     expect((await vote(mia, poll.id, { options: [saturday] })).status).toBe(409);
     expect(t.db.prepare('SELECT user_id FROM poll_ballots').all()).toEqual([{ user_id: null }]);
-    const results = (await shown(olga, poll.id)).results;
-    expect(results.options[0]).toEqual({ id: friday, count: 1 });
+    // Results right after the vote: no link is kept at all.
+    expect(links()).toBe(0);
+    expect((await shown(olga, poll.id)).results.options[0]).toEqual({ id: friday, count: 1 });
     expect((await shown(mia, poll.id)).myVote).toBeNull();
     const locked = await olga.post(`/api/polls/${poll.id}/anonymous`).send({ anonymous: false });
     expect(locked.status).toBe(409);
+  });
+
+  it('results after the end: the vote changes until the end; no answer carries the link', async () => {
+    const { olga, mia } = await setup();
+    const poll = await create(olga, { ...CHOICE, results: 'after_end', anonymous: true });
+    const [friday, saturday] = optionIds(poll);
+    const first = await vote(mia, poll.id, { options: [friday] });
+    expect(first.body.poll).toMatchObject({ voted: true, canVote: true, myVote: null });
+    const changed = await vote(mia, poll.id, { options: [saturday] });
+    expect(changed.status).toBe(200);
+    expect(links()).toBe(1);
+    expect(t.db.prepare('SELECT user_id FROM poll_ballots').all()).toEqual([{ user_id: null }]);
+    // Nothing the API answers names the link or a ballot (vote, list, summary, as staff too).
+    const answers = [
+      first.text,
+      changed.text,
+      (await mia.get('/api/polls')).text,
+      (await olga.get('/api/polls')).text,
+      (await mia.get('/api/polls/summary')).text,
+    ];
+    for (const text of answers) expect(text).not.toMatch(/ballot|link/i);
+    await olga.post(`/api/polls/${poll.id}/end`);
+    expect(links()).toBe(0);
+    expect((await shown(olga, poll.id)).results.options.map((o) => o.count)).toEqual([0, 1, 0]);
+  });
+
+  it('the links go however the poll ends: its end time, its call', async () => {
+    const { olga, mia, ben } = await setup();
+    const timed = await create(olga, {
+      ...CHOICE,
+      results: 'after_end',
+      anonymous: true,
+      endsAt: later(60_000),
+    });
+    await vote(mia, timed.id, { options: optionIds(timed).slice(0, 1) });
+    expect(links()).toBe(1);
+    // Its end time passes: the polls job's sweep (dropEndedLinks) takes the link.
+    dropEndedLinks(t.db, Date.now() + 120_000);
+    expect(links()).toBe(0);
+
+    const call = await liveCall(olga, 'Town hall');
+    const inCall = await create(olga, {
+      ...CHOICE,
+      results: 'after_end',
+      anonymous: true,
+      callId: call.id,
+    });
+    await vote(ben, inCall.id, { options: optionIds(inCall).slice(0, 1) });
+    expect(links()).toBe(1);
+    await olga.post(`/api/calls/${call.id}/end`);
+    expect(links()).toBe(0);
+  });
+
+  it('an account deleted before the end takes its anonymous ballot and text; after, it stays', async () => {
+    const { olga } = await setup();
+    const { agent: kim } = await registerUser(t, 'kim');
+    const { agent: lea } = await registerUser(t, 'lea');
+    const open = await create(olga, {
+      ...CHOICE,
+      results: 'after_end',
+      anonymous: true,
+      otherText: true,
+    });
+    const ended = await create(olga, { ...CHOICE, results: 'after_end', anonymous: true });
+    await vote(kim, open.id, { text: 'Monday' });
+    await vote(lea, ended.id, { options: optionIds(ended).slice(0, 1) });
+    await olga.post(`/api/polls/${ended.id}/end`);
+    for (const agent of [kim, lea]) {
+      expect(
+        (await agent.delete('/api/auth/account').send(await proof('correct-horse-1'))).status
+      ).toBe(200);
+    }
+    expect((await shown(olga, open.id)).results).toMatchObject({ textCount: 0, texts: [] });
+    expect((await shown(olga, open.id)).votes).toBe(0);
+    // Ended before the deletion: the ballot names nobody and stays.
+    expect((await shown(olga, ended.id)).votes).toBe(1);
   });
 });
 
@@ -324,4 +418,30 @@ it("members' open pages hear of every change at once", async () => {
   await create(olga, CHOICE);
   expect(await socket.next('polls')).toEqual({ type: 'polls' });
   socket.ws.close();
+});
+
+it('an older polls table (an earlier state of the branch) is brought up to date on start', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'se-polls-'));
+  const file = path.join(dir, 'old.db');
+  try {
+    let db = openDatabase(file);
+    // The first polls table: without voters, call_id and room_id.
+    db.exec(`DROP TABLE poll_step_rules; DROP TABLE poll_ballot_links; DROP TABLE poll_voters;
+      DROP TABLE poll_ballot_options; DROP TABLE poll_ballots; DROP TABLE poll_options;
+      DROP TABLE polls;
+      CREATE TABLE polls (id INTEGER PRIMARY KEY, question TEXT NOT NULL, kind TEXT NOT NULL,
+        multiple INTEGER NOT NULL DEFAULT 0, other_text INTEGER NOT NULL DEFAULT 0,
+        results TEXT NOT NULL, anonymous INTEGER NOT NULL, ends_at TEXT, ended_at TEXT,
+        created_by INTEGER, created_at TEXT NOT NULL);`);
+    db.close();
+    db = openDatabase(file);
+    const columns = db
+      .prepare('PRAGMA table_info(polls)')
+      .all()
+      .map((c) => c.name);
+    expect(columns).toEqual(expect.arrayContaining(['voters', 'call_id', 'room_id']));
+    db.close();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

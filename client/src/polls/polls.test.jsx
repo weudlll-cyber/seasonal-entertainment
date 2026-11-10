@@ -32,6 +32,7 @@ const base = {
   voters: 'members',
   steps: [],
   mayVote: true,
+  resultsWhen: 'after_vote',
   endsAt: null,
   endedAt: null,
   createdBy: 'olga',
@@ -258,6 +259,41 @@ describe('who may vote, the home box, the sidebar dot', () => {
         options: [2],
         text: '',
       })
+    );
+  });
+});
+
+describe('the results rule and changing a vote', () => {
+  it('voters read the rule; an anonymous vote after-the-end poll can be changed', async () => {
+    mockApi({
+      ...member,
+      ...listed([
+        {
+          ...OPEN,
+          resultsWhen: 'after_end',
+          anonymous: true,
+          voted: true,
+          canVote: true,
+          myVote: null,
+          results: null,
+        },
+      ]),
+    });
+    await renderApp('/polls');
+    const open = await screen.findByRole('list', { name: 'Open polls' });
+    expect(open).toHaveTextContent('Results after the poll ends.');
+    expect(open).toHaveTextContent('your earlier answers are not shown');
+    expect(within(open).getByRole('button', { name: 'Change vote' })).toBeInTheDocument();
+  });
+
+  it('organisers read that they see live results', async () => {
+    mockApi({
+      ...signedIn({ username: 'olga', role: 'organiser' }),
+      ...listed([{ ...OPEN, canVote: false, results: null }], { canManage: true }),
+    });
+    await renderApp('/polls');
+    expect(await screen.findByText(/^You see live results\./)).toHaveTextContent(
+      'Members: results after their vote.'
     );
   });
 });

@@ -4,8 +4,9 @@
 // Project:     Seasonal Entertainment
 // Description: Polls in the database (docs/POLLS.md; tables in schema.js): creating one,
 //              voting (one ballot per account; changed only where the results show after the
-//              end, until then, and never in an anonymous poll: nothing links an account to its
-//              ballot there), ending early, extending, the anonymous switch before the first
+//              end, until then; in an anonymous one through poll_ballot_links, which exist only
+//              while it is open and are never sent anywhere: dropEndedLinks, startPollJobs),
+//              ending early, extending, the anonymous switch before the first
 //              vote, deleting; and each poll as one viewer may see it (shownPoll): the results
 //              for organisers and admins always, for others after their vote or after the end
 //              as the poll says; free-text answers only for organisers and admins; names per
@@ -116,16 +117,55 @@ const voteCount = (db, pollId) =>
   db.prepare('SELECT COUNT(*) AS n FROM poll_ballots WHERE poll_id = ?').get(pollId).n;
 
 // A vote may be changed: results after the end, still open, and a ballot that names its account.
+// Results after the end, still open: anonymous or not (decided 2026-11-11; an anonymous one
+// finds the earlier ballot through poll_ballot_links while it is open).
 export const mayChange = (poll, at = Date.now()) =>
-  poll.results === 'after_end' && !poll.anonymous && isOpen(poll, at);
+  poll.results === 'after_end' && isOpen(poll, at);
+
+// Anonymous with results after the end: its ballots are linked to their accounts while open.
+const linksBallots = (poll) => poll.anonymous && poll.results === 'after_end';
+
+// Every link of every ended poll goes (by hand, its call, its end time). Run before any vote or
+// list, by endPoll and endCallPolls, and every few seconds by the polls job (startPollJobs).
+export function dropEndedLinks(db, at = Date.now()) {
+  db.prepare(
+    `DELETE FROM poll_ballot_links WHERE poll_id IN (SELECT id FROM polls
+     WHERE ended_at IS NOT NULL OR (ends_at IS NOT NULL AND ends_at <= ?))`
+  ).run(new Date(at).toISOString());
+}
+
+const LINK_SWEEP_MS = 10_000;
+
+// The polls job (app.locals.polls.start): the links of a poll whose end time passed go within
+// seconds even when nobody looks. Returns the function that stops it.
+export function startPollJobs(db) {
+  const timer = setInterval(() => dropEndedLinks(db), LINK_SWEEP_MS);
+  timer.unref();
+  return () => clearInterval(timer);
+}
 
 // Stores one ballot (validateVote's, checked): { options, text }. 'voted' when this account
 // voted already and may not change it; otherwise null. A change replaces the earlier ballot.
 export function castVote(db, poll, userId, ballot) {
   return db.transaction(() => {
+    dropEndedLinks(db);
     if (hasVoted(db, poll.id, userId)) {
       if (!mayChange(poll)) return 'voted';
-      db.prepare('DELETE FROM poll_ballots WHERE poll_id = ? AND user_id = ?').run(poll.id, userId);
+      if (linksBallots(poll)) {
+        // The earlier ballot through its link (the link row goes with it, ON DELETE CASCADE).
+        const link = db
+          .prepare(
+            'SELECT ballot_id AS id FROM poll_ballot_links WHERE poll_id = ? AND user_id = ?'
+          )
+          .get(poll.id, userId);
+        if (!link) return 'voted';
+        db.prepare('DELETE FROM poll_ballots WHERE id = ?').run(link.id);
+      } else {
+        db.prepare('DELETE FROM poll_ballots WHERE poll_id = ? AND user_id = ?').run(
+          poll.id,
+          userId
+        );
+      }
     } else {
       db.prepare('INSERT INTO poll_voters (poll_id, user_id) VALUES (?, ?)').run(poll.id, userId);
     }
@@ -135,24 +175,31 @@ export function castVote(db, poll, userId, ballot) {
       .run(poll.id, poll.anonymous ? null : userId, text).lastInsertRowid;
     const pick = db.prepare('INSERT INTO poll_ballot_options (ballot_id, option_id) VALUES (?, ?)');
     for (const optionId of ballot.options ?? []) pick.run(ballotId, optionId);
+    if (linksBallots(poll)) {
+      db.prepare(
+        'INSERT INTO poll_ballot_links (poll_id, user_id, ballot_id) VALUES (?, ?, ?)'
+      ).run(poll.id, userId, ballotId);
+    }
     return null;
   })();
 }
 
 export function endPoll(db, id) {
-  return (
+  const ended =
     db.prepare('UPDATE polls SET ended_at = ? WHERE id = ? AND ended_at IS NULL').run(now(), id)
-      .changes === 1
-  );
+      .changes === 1;
+  dropEndedLinks(db);
+  return ended;
 }
 
 // A call that ends ends its open polls with it (calls/endCall.js); true when any was open.
 export function endCallPolls(db, callId) {
-  return (
+  const ended =
     db
       .prepare('UPDATE polls SET ended_at = ? WHERE call_id = ? AND ended_at IS NULL')
-      .run(now(), callId).changes > 0
-  );
+      .run(now(), callId).changes > 0;
+  dropEndedLinks(db);
+  return ended;
 }
 
 export function extendPoll(db, id, endsAt) {
@@ -241,6 +288,8 @@ export function shownPoll(db, poll, viewer, at = Date.now()) {
   const { stepRule, ...rest } = poll;
   return {
     ...rest,
+    // The rule ("after_vote" / "after_end"); `results` below are the results themselves.
+    resultsWhen: rest.results,
     // The steps' names only ("Voting from …"); ladders and positions stay on the server.
     steps: stepRule.map((s) => s.name),
     open,
@@ -253,10 +302,10 @@ export function shownPoll(db, poll, viewer, at = Date.now()) {
   };
 }
 
-// Every poll as the viewer sees it: open ones first (soonest end first, then newest), then
-// ended ones, newest first.
+// Every poll as the viewer sees it: open ones first, then ended ones, each newest first.
 // callId: only that call's polls (its page), else all.
 export function listPolls(db, viewer, at = Date.now(), callId = null) {
+  dropEndedLinks(db, at);
   const ids =
     callId === null
       ? db.prepare('SELECT id FROM polls ORDER BY id DESC').all()
@@ -265,9 +314,8 @@ export function listPolls(db, viewer, at = Date.now(), callId = null) {
     .map(({ id }) => findPoll(db, id))
     .filter((poll) => seesPoll(poll, viewer))
     .map((poll) => shownPoll(db, poll, viewer, at));
-  const ending = (p) => (p.endsAt ? Date.parse(p.endsAt) : Number.POSITIVE_INFINITY);
-  const open = polls.filter((p) => p.open).sort((a, b) => ending(a) - ending(b) || b.id - a.id);
-  return [...open, ...polls.filter((p) => !p.open)];
+  // Newest first in both parts (decided 2026-11-11): the ids come in that order.
+  return [...polls.filter((p) => p.open), ...polls.filter((p) => !p.open)];
 }
 
 // For the sidebar's dot and the home card: how many open polls this viewer may vote in and has

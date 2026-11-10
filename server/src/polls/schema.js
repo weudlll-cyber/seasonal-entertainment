@@ -13,8 +13,12 @@
 //              an account to its ballot, and poll_voters keeps no time and, WITHOUT ROWID, no
 //              order of arrival either, so the order of the ballots cannot be matched to it.
 //              An account's deletion takes its poll_voters rows and its named ballots with it
-//              (ON DELETE CASCADE); a poll's creator becomes unknown (SET NULL).
+//              (ON DELETE CASCADE); a poll's creator becomes unknown (SET NULL). An anonymous
+//              poll with results after the end links ballots to accounts only while it is open
+//              (poll_ballot_links). migratePolls() brings an older polls table up to date.
 // ============================================================
+
+import { addMissingColumns } from '../db/addColumns.js';
 
 export const POLLS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS polls (
@@ -32,9 +36,11 @@ CREATE TABLE IF NOT EXISTS polls (
   created_at  TEXT    NOT NULL,
   -- Started in a live call (piece 4): shown on its page, ended with it; a deleted call leaves
   -- the poll on the Polls page without its call.
-  call_id     INTEGER REFERENCES calls(id) ON DELETE SET NULL
+  call_id     INTEGER REFERENCES calls(id) ON DELETE SET NULL,
+  -- Started in a chat room (2026-11-11): its card in the room's timeline; seen only by those
+  -- who may read the room; goes with the room.
+  room_id     INTEGER REFERENCES chat_rooms(id) ON DELETE CASCADE
 );
-CREATE INDEX IF NOT EXISTS polls_by_call ON polls (call_id);
 -- "Who may vote: Discord steps": that step or a higher one in its ladder (discord/steps.js).
 -- A step deleted later leaves the poll (CASCADE); with none left only staff may vote.
 CREATE TABLE IF NOT EXISTS poll_step_rules (
@@ -68,4 +74,35 @@ CREATE TABLE IF NOT EXISTS poll_voters (
   PRIMARY KEY (poll_id, user_id)
 ) WITHOUT ROWID;
 CREATE INDEX IF NOT EXISTS poll_voters_by_user ON poll_voters (user_id);
+-- An anonymous poll whose results show after the end (decided 2026-11-11): which ballot is
+-- whose, kept only while the poll is open so its voters may change their vote until the end.
+-- Never sent anywhere; every row of a poll goes the moment it ends (store.js dropEndedLinks).
+CREATE TABLE IF NOT EXISTS poll_ballot_links (
+  poll_id   INTEGER NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
+  user_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ballot_id INTEGER NOT NULL REFERENCES poll_ballots(id) ON DELETE CASCADE,
+  PRIMARY KEY (poll_id, user_id)
+) WITHOUT ROWID;
+-- An account deleted while such a link exists takes its ballot (and written answer) along; the
+-- trigger runs before the link row itself goes with the account.
+CREATE TRIGGER IF NOT EXISTS poll_links_account_gone BEFORE DELETE ON users BEGIN
+  DELETE FROM poll_ballots
+  WHERE id IN (SELECT ballot_id FROM poll_ballot_links WHERE user_id = OLD.id);
+END;
 `;
+
+// Columns added after a polls table was first created (a development database that ran an
+// earlier state of the branch), then the indexes on them.
+export function migratePolls(db) {
+  addMissingColumns(db, [
+    [
+      'polls',
+      'voters',
+      "TEXT NOT NULL DEFAULT 'members' CHECK (voters IN ('members', 'steps', 'team'))",
+    ],
+    ['polls', 'call_id', 'INTEGER REFERENCES calls(id) ON DELETE SET NULL'],
+    ['polls', 'room_id', 'INTEGER REFERENCES chat_rooms(id) ON DELETE CASCADE'],
+  ]);
+  db.exec(`CREATE INDEX IF NOT EXISTS polls_by_call ON polls (call_id);
+    CREATE INDEX IF NOT EXISTS polls_by_room ON polls (room_id);`);
+}
