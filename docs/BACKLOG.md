@@ -14,7 +14,10 @@ entry waits for.
 
 ### Built, waiting for the merge
 
-- None.
+- **Dependency updates by Renovate** — built on `chore/renovate` (2026-11-10): `renovate.json`
+  as in the game repositories (weekly grouped minor/patch, 3 days' wait, security at once),
+  covering npm, the actions, the images in `deploy/`, the CI's scanner images and the LiveKit
+  binary (docs/DEPLOYMENT.md, "Dependency updates"). Renovate's onboarding PR is left alone.
 
 ### To try on the live server
 

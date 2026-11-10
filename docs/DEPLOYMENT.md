@@ -490,6 +490,29 @@ Secrets, data, certificates and answers are kept. The site is down for the few s
 container needs to start. Chat connections reconnect by themselves, and running calls continue
 when only the site changes. Database changes are additive (added on start).
 
+### Dependency updates
+
+New versions of what the site is built from arrive as pull requests from Renovate (the GitHub
+app, installed 2026-11-10; configuration `renovate.json`, modelled on the game repositories).
+Nothing reaches the server by itself: every update PR needs the owner's approval to merge
+(master is protected, and its checks must pass), and the server gets it only with the next
+`--update`.
+
+- **Weekly**: one PR, "minor and patch updates", gathers every non-major update, digest and pin
+  of the week; a new version waits 3 days first. A major update comes as its own PR.
+- **Security fixes** come at once, labelled `security`, without the wait.
+- **What it covers**: the npm dependencies (pinned to exact versions), the GitHub Actions
+  (pinned to commit SHAs), the images in `deploy/` (the Dockerfile's `NODE_IMAGE`, the compose
+  files' LiveKit, egress, Redis and Caddy, by tag and digest), the CI's scanner images and
+  shellcheck, and the LiveKit binary of the browser tests (`scripts/calls-binary.mjs`).
+- **LiveKit** comes as its own PR, "LiveKit server": the server image and the browser tests'
+  binary move together. Renovate changes the binary's version but cannot know its SHA-256
+  values, so that PR's CI fails until the three checksums in `scripts/calls-binary.mjs` are
+  updated from LiveKit's release (the download is checked against them).
+- `deploy/test/renovate.test.sh` (CI) checks that the configuration still finds those pins.
+- Not covered: the load test's `livekit-cli` image (`deploy/calls/loadtest.sh`), pinned by digest
+  only; it is updated by hand when needed.
+
 ### What visitors see
 
 A page that was open during the update keeps working and never reloads by itself in the middle

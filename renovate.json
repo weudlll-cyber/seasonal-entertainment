@@ -1,0 +1,52 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Dependency updates (docs/DEPLOYMENT.md, \"Dependency updates\"; modelled on the game repositories, 2026-11-10): one weekly PR for minor/patch/pin/digest updates, majors one by one, 3 days of stability for a new version, security fixes at any time. Every PR needs the owner's approval to merge (master is protected). Covers npm, the GitHub Actions, the Dockerfile and compose images in deploy/, the CI's scanner images and the LiveKit binary of the browser tests.",
+  "extends": [
+    "config:recommended",
+    "schedule:weekly",
+    "helpers:pinGitHubActionDigests",
+    "docker:pinDigests"
+  ],
+  "minimumReleaseAge": "3 days",
+  "rangeStrategy": "pin",
+  "packageRules": [
+    {
+      "description": "One weekly PR for all non-major updates.",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "minor and patch updates"
+    },
+    {
+      "description": "The LiveKit server image (deploy/calls) and the binary the browser tests run (scripts/calls-binary.mjs) move together, in their own PR: the binary's three SHA-256 values must be updated by hand in that PR, its CI fails until they are.",
+      "matchPackageNames": ["livekit/livekit-server", "livekit/livekit"],
+      "groupName": "LiveKit server"
+    }
+  ],
+  "customManagers": [
+    {
+      "description": "The CI's scanner images, pinned by tag and digest in the workflows' env (\"GITLEAKS_IMAGE: name:tag@sha256:…\"), and the shellcheck image of the deployment checks.",
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.yml$/"],
+      "matchStrings": [
+        "_IMAGE: (?<depName>[a-z0-9./-]+):(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]{64})",
+        "(?<depName>koalaman/shellcheck):(?<currentValue>v[0-9.]+)"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "The LiveKit binary of the browser tests (scripts/calls-binary.mjs, LIVEKIT_VERSION), from LiveKit's GitHub releases.",
+      "customType": "regex",
+      "managerFilePatterns": ["/^scripts/calls-binary\\.mjs$/"],
+      "matchStrings": ["LIVEKIT_VERSION = '(?<currentValue>[0-9.]+)'"],
+      "depNameTemplate": "livekit/livekit",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    }
+  ],
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "description": "Security fixes skip the weekly schedule and the stability wait.",
+    "schedule": ["at any time"],
+    "minimumReleaseAge": null,
+    "labels": ["security"]
+  }
+}
