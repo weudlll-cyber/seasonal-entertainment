@@ -5,7 +5,8 @@
 // Description: Builds the Express app: security headers, CSRF origin check, sessions, the JSON API
 //              under /api (the chat area through mountChat; calls, docs/CALLS.md, with the call
 //              service built from config) and, when a built client exists, the static client
-//              (hashed assets/ cached for a year) with a fallback to index.html for client routes.
+//              (hashed assets/ cached for a year) with a fallback to index.html for client routes
+//              and a recording's share page with its preview tags (calls/recordingShare.js).
 //              No listen(), so tests drive it directly; app.locals.chat is the chat's handle,
 //              app.locals.calls.start() watches recordings still starting again
 //              (calls/recordingStart.js) and starts the stale-call and reminder jobs
@@ -39,6 +40,7 @@ import { callReminderRoutes } from './calls/reminderRoutes.js';
 import { sendCallReminders, startCallReminders } from './calls/reminders.js';
 import { callEventRoutes } from './calls/eventRoutes.js';
 import { callRecordingRoutes } from './calls/recordingRoutes.js';
+import { recordingSharePage } from './calls/recordingShare.js';
 import { resumeRecordingStarts } from './calls/recordingStart.js';
 import { chapterRoutes } from './calls/chapterRoutes.js';
 import { callRoutes } from './calls/routes.js';
@@ -231,6 +233,8 @@ export function createApp({
       express.static(path.join(config.clientDist, 'assets'), { immutable: true, maxAge: '365d' })
     );
     app.use(express.static(config.clientDist));
+    // A recording's share page: index.html with its preview card's meta tags (recordingShare.js).
+    app.get('/recordings/:id', allow('public'), recordingSharePage(db, config, callService));
     // Any other GET is a client route (/events, /info/faq, ...): the client decides, and
     // shows its own 404 page for paths it does not know.
     app.get('/{*clientRoute}', allow('public'), (_req, res) => {

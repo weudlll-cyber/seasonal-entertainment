@@ -31,7 +31,8 @@ const EMPTY_TIMEOUT_S = 10 * 60;
 
 // A recording (decided 2026-10-22): 1280 x 720 at 15 frames a second, H.264 at about 1 Mbit/s
 // and AAC at 64 kbit/s; a call without video is a mostly still picture and stays small.
-const RECORDING_ENCODING = {
+// Also the share page's video size (recordingShare.js, og:video:width/height).
+export const RECORDING_ENCODING = {
   width: 1280,
   height: 720,
   framerate: 15,
