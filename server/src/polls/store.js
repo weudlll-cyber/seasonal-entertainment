@@ -9,13 +9,18 @@
 //              vote, deleting; and each poll as one viewer may see it (shownPoll): the results
 //              for organisers and admins always, for others after their vote or after the end
 //              as the poll says; free-text answers only for organisers and admins; names per
-//              answer only in a poll that is not anonymous.
+//              answer only in a poll that is not anonymous. Who may vote (seesPoll, mayVoteIn):
+//              all members, members with one of the chosen Discord steps or a higher one, or
+//              organisers and admins only, whose polls only they see; and the summary for the
+//              sidebar's dot and the home card (pollSummary).
 // ============================================================
+
+import { passesStepRule } from '../discord/steps.js';
 
 const now = () => new Date().toISOString();
 
 const COLUMNS = `p.id, p.question, p.kind, p.multiple, p.other_text AS otherText, p.results,
-  p.anonymous, p.ends_at AS endsAt, p.ended_at AS endedAt, p.created_at AS createdAt,
+  p.anonymous, p.voters, p.ends_at AS endsAt, p.ended_at AS endedAt, p.created_at AS createdAt,
   u.username AS createdBy`;
 
 // Open: not ended by hand and its end time (if any) not reached.
@@ -27,12 +32,21 @@ function withOptions(db, row) {
   const options = db
     .prepare('SELECT id, label FROM poll_options WHERE poll_id = ? ORDER BY position')
     .all(row.id);
+  // The steps that may vote, in ladder order (listSteps' order).
+  const stepRule = db
+    .prepare(
+      `SELECT s.id, s.ladder, s.position, s.name FROM poll_step_rules r
+       JOIN discord_steps s ON s.id = r.step_id WHERE r.poll_id = ?
+       ORDER BY CASE s.ladder WHEN 'holder' THEN 1 WHEN 'farmer' THEN 2 ELSE 3 END, s.position`
+    )
+    .all(row.id);
   return {
     ...row,
     multiple: Boolean(row.multiple),
     otherText: Boolean(row.otherText),
     anonymous: Boolean(row.anonymous),
     options,
+    stepRule,
   };
 }
 
@@ -53,8 +67,8 @@ export function createPoll(db, input, user) {
     const id = Number(
       db
         .prepare(
-          `INSERT INTO polls (question, kind, multiple, other_text, results, anonymous, ends_at,
-             created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          `INSERT INTO polls (question, kind, multiple, other_text, results, anonymous, voters,
+             ends_at, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
           input.question.trim(),
@@ -63,6 +77,7 @@ export function createPoll(db, input, user) {
           input.kind === 'choice' && input.otherText ? 1 : 0,
           input.results,
           input.anonymous ? 1 : 0,
+          input.voters,
           input.endsAt === null ? null : new Date(input.endsAt).toISOString(),
           user.id,
           now()
@@ -70,8 +85,29 @@ export function createPoll(db, input, user) {
     );
     const add = db.prepare('INSERT INTO poll_options (poll_id, position, label) VALUES (?, ?, ?)');
     if (input.kind === 'choice') input.options.forEach((label, i) => add.run(id, i, label.trim()));
+    const rule = db.prepare(
+      'INSERT OR IGNORE INTO poll_step_rules (poll_id, step_id) VALUES (?, ?)'
+    );
+    if (input.voters === 'steps') for (const stepId of input.steps) rule.run(id, stepId);
     return id;
   })();
+}
+
+// viewer: { userId (null for a guest), team (organiser or admin), steps (the account's Discord
+// steps, discord/steps.js stepsOfUser; read only when a step poll asks) }.
+// A team poll is seen by organisers and admins only; every other poll by everyone.
+export const seesPoll = (poll, viewer) => poll.voters !== 'team' || viewer.team;
+
+// May this viewer vote at all (open or not)? Organisers and admins always; a step poll: that
+// step or a higher one in its ladder (passesStepRule, as the chat rooms), none left: nobody.
+export function mayVoteIn(poll, viewer) {
+  if (viewer.userId === null) return false;
+  if (viewer.team) return true;
+  if (poll.voters === 'team') return false;
+  if (poll.voters === 'steps') {
+    return poll.stepRule.length > 0 && passesStepRule(poll.stepRule, viewer.steps);
+  }
+  return true;
 }
 
 export const hasVoted = (db, pollId, userId) =>
@@ -196,12 +232,16 @@ export function shownPoll(db, poll, viewer, at = Date.now()) {
   const open = isOpen(poll, at);
   const voted = viewer.userId !== null && hasVoted(db, poll.id, viewer.userId);
   const seesResults = viewer.team || !open || (poll.results === 'after_vote' && voted);
+  const { stepRule, ...rest } = poll;
   return {
-    ...poll,
+    ...rest,
+    // The steps' names only ("Voting from …"); ladders and positions stay on the server.
+    steps: stepRule.map((s) => s.name),
     open,
     votes: voteCount(db, poll.id),
     voted,
-    canVote: viewer.userId !== null && open && (!voted || mayChange(poll, at)),
+    mayVote: mayVoteIn(poll, viewer),
+    canVote: mayVoteIn(poll, viewer) && open && (!voted || mayChange(poll, at)),
     myVote: voted && !poll.anonymous ? ownBallot(db, poll, viewer.userId) : null,
     results: seesResults ? resultsOf(db, poll, viewer.team) : null,
   };
@@ -211,8 +251,19 @@ export function shownPoll(db, poll, viewer, at = Date.now()) {
 // ended ones, newest first.
 export function listPolls(db, viewer, at = Date.now()) {
   const ids = db.prepare('SELECT id FROM polls ORDER BY id DESC').all();
-  const polls = ids.map(({ id }) => shownPoll(db, findPoll(db, id), viewer, at));
+  const polls = ids
+    .map(({ id }) => findPoll(db, id))
+    .filter((poll) => seesPoll(poll, viewer))
+    .map((poll) => shownPoll(db, poll, viewer, at));
   const ending = (p) => (p.endsAt ? Date.parse(p.endsAt) : Number.POSITIVE_INFINITY);
   const open = polls.filter((p) => p.open).sort((a, b) => ending(a) - ending(b) || b.id - a.id);
   return [...open, ...polls.filter((p) => !p.open)];
+}
+
+// For the sidebar's dot and the home card: how many open polls this viewer may vote in and has
+// not yet, and the newest open poll they see (or null).
+export function pollSummary(db, viewer, at = Date.now()) {
+  const open = listPolls(db, viewer, at).filter((p) => p.open);
+  const newest = open.reduce((a, b) => (!a || b.id > a.id ? b : a), null);
+  return { unvoted: open.filter((p) => p.canVote && !p.voted).length, newest };
 }

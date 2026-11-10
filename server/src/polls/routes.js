@@ -5,7 +5,10 @@
 // Description: The polls API under /api/polls (docs/POLLS.md, "API"; decided 2026-11-10):
 //              everyone lists the polls (each as the viewer may see it, store.js shownPoll);
 //              organisers and admins create, end early, extend and switch anonymous before the
-//              first vote; signed-in members vote, one vote per account; only admins delete.
+//              first vote; signed-in members vote, one vote per account, where the poll lets
+//              them (all members, Discord steps, or organisers and admins only; a team poll
+//              is "no such poll" for others); only admins delete. GET /summary: the sidebar's
+//              dot and the home card.
 //              Creating, ending, extending and deleting are audited (poll.create, poll.end,
 //              poll.extend, poll.delete). Every change tells the members' open pages at once
 //              ("polls" over the chat's live connection); guests' pages reload on a timer.
@@ -19,6 +22,7 @@ import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { loadById } from '../http/loadById.js';
 import { makeLimiter } from '../http/rateLimit.js';
+import { listSteps, stepsOfUser } from '../discord/steps.js';
 import {
   castVote,
   createPoll,
@@ -28,6 +32,9 @@ import {
   findPoll,
   isOpen,
   listPolls,
+  mayVoteIn,
+  pollSummary,
+  seesPoll,
   setAnonymous,
   shownPoll,
 } from './store.js';
@@ -41,6 +48,8 @@ const pollInput = (body = {}) => ({
   otherText: Boolean(body.otherText),
   results: body.results,
   anonymous: body.anonymous,
+  voters: body.voters ?? 'members',
+  steps: body.steps ?? [],
   endsAt: body.endsAt ?? null,
 });
 
@@ -50,8 +59,22 @@ export function pollRoutes(db, config, chat) {
   const perUser = (limit) => makeLimiter(limit, { keyGenerator: (req) => `user:${req.user.id}` });
   const manageLimit = perUser(config.rateLimits.pollManage);
   const voteLimit = perUser(config.rateLimits.pollVote);
+  // The account's Discord steps are read only when a step poll asks (once per request).
+  const viewerOf = (req) => {
+    let steps;
+    return {
+      userId: req.user?.id ?? null,
+      team: canManage(req),
+      get steps() {
+        steps ??= req.user ? stepsOfUser(db, req.user.id) : [];
+        return steps;
+      },
+    };
+  };
+  // A team poll is "no such poll" for everyone but organisers and admins.
   const loadPoll = loadById((id) => findPoll(db, id), 'poll', 'poll');
-  const viewerOf = (req) => ({ userId: req.user?.id ?? null, team: canManage(req) });
+  const visible = (req, res, next) =>
+    seesPoll(req.poll, viewerOf(req)) ? next() : sendError(res, 404, 'not_found', 'No such poll.');
   const changed = () => chat.notify.members({ type: 'polls' });
   const audit = (req, action, poll, after = {}) =>
     recordAudit(db, req.user, {
@@ -69,12 +92,26 @@ export function pollRoutes(db, config, chat) {
       canManage: canManage(req),
       canDelete: canDelete(req),
       polls: listPolls(db, viewerOf(req)),
+      // The steps a poll can be limited to, for the create form.
+      ...(canManage(req)
+        ? { steps: listSteps(db).map(({ id, ladder, name }) => ({ id, ladder, name })) }
+        : {}),
     });
+  });
+
+  // The sidebar's dot (open polls not yet voted in) and the home card (the newest open poll).
+  router.get('/summary', allow('public'), (req, res) => {
+    res.json({ ok: true, ...pollSummary(db, viewerOf(req)) });
   });
 
   router.post('/', allow('organiser'), manageLimit, (req, res) => {
     const input = pollInput(req.body);
-    const problem = validatePoll(input);
+    const known = new Set(listSteps(db).map((s) => s.id));
+    const problem =
+      validatePoll(input) ??
+      (input.voters === 'steps' && !input.steps.every((id) => known.has(id))
+        ? 'Please choose among the Discord steps.'
+        : null);
     if (problem) return sendError(res, 400, 'invalid_input', problem);
     const poll = findPoll(db, createPoll(db, input, req.user));
     audit(req, 'poll.create', poll);
@@ -82,16 +119,33 @@ export function pollRoutes(db, config, chat) {
     res.status(201).json({ ok: true, poll: shownPoll(db, poll, viewerOf(req)) });
   });
 
-  router.post('/:id/vote', allow('member'), voteLimit, loadPoll, mustBeOpen, (req, res) => {
-    const ballot = { options: req.body?.options ?? [], text: req.body?.text ?? '' };
-    const problem = validateVote(req.poll, ballot);
-    if (problem) return sendError(res, 400, 'invalid_input', problem);
-    if (castVote(db, req.poll, req.user.id, ballot) === 'voted') {
-      return sendError(res, 409, 'already_voted', 'You have voted in this poll already.');
+  router.post(
+    '/:id/vote',
+    allow('member'),
+    voteLimit,
+    loadPoll,
+    visible,
+    mustBeOpen,
+    (req, res) => {
+      if (!mayVoteIn(req.poll, viewerOf(req))) {
+        const from = req.poll.stepRule.map((s) => s.name).join(' or ');
+        return sendError(
+          res,
+          403,
+          'not_allowed',
+          from ? `Voting from ${from}.` : 'You cannot vote in this poll.'
+        );
+      }
+      const ballot = { options: req.body?.options ?? [], text: req.body?.text ?? '' };
+      const problem = validateVote(req.poll, ballot);
+      if (problem) return sendError(res, 400, 'invalid_input', problem);
+      if (castVote(db, req.poll, req.user.id, ballot) === 'voted') {
+        return sendError(res, 409, 'already_voted', 'You have voted in this poll already.');
+      }
+      changed();
+      res.json({ ok: true, poll: shownPoll(db, req.poll, viewerOf(req)) });
     }
-    changed();
-    res.json({ ok: true, poll: shownPoll(db, req.poll, viewerOf(req)) });
-  });
+  );
 
   router.post('/:id/end', allow('organiser'), manageLimit, loadPoll, mustBeOpen, (req, res) => {
     endPoll(db, req.poll.id);

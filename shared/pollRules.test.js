@@ -19,6 +19,7 @@ const POLL = {
   otherText: false,
   results: 'after_vote',
   anonymous: false,
+  voters: 'members',
   endsAt: null,
 };
 
@@ -33,6 +34,11 @@ describe('validatePoll', () => {
     expect(validatePoll({ ...POLL, options: ['Yes', 'yes'] })).toBe(
       'Every answer must be different.'
     );
+    expect(validatePoll({ ...POLL, voters: 'steps', steps: [] })).toBe(
+      'Please choose at least one Discord step.'
+    );
+    expect(validatePoll({ ...POLL, voters: 'steps', steps: [4] })).toBeNull();
+    expect(validatePoll({ ...POLL, voters: 'team' })).toBeNull();
     expect(validatePoll({ ...POLL, anonymous: undefined })).toBe(
       'Please choose whether the poll is anonymous.'
     );

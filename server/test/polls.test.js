@@ -17,6 +17,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { proof } from './helpers/accountKeys.js';
 import { auditActions } from './helpers/chat.js';
 import { connect, cookieOf, listeningChat, stopServer } from './helpers/chatSocket.js';
+import { seedTestSteps } from './helpers/steps.js';
 import { makeStaff, makeTestApp, registerUser } from './helpers/testApp.js';
 
 let t;
@@ -37,6 +38,7 @@ const CHOICE = {
   otherText: false,
   results: 'after_vote',
   anonymous: false,
+  voters: 'members',
   endsAt: null,
 };
 
@@ -140,6 +142,78 @@ describe('voting', () => {
     const other = await create(olga, { ...CHOICE, otherText: true });
     expect((await vote(mia, other.id, { text: 'Monday' })).status).toBe(200);
     expect((await shown(olga, other.id)).results.textCount).toBe(1);
+  });
+});
+
+describe('who may vote', () => {
+  // Golden (Holder ladder) mapped to a Discord role; links an account holding these roles.
+  const GOLDEN = '1110000000000000004';
+  const PLATINUM = '1110000000000000005';
+  const stepId = (name) => t.db.prepare('SELECT id FROM discord_steps WHERE name = ?').get(name).id;
+  function link(userId, roleIds) {
+    t.db
+      .prepare(
+        `INSERT INTO discord_links (user_id, discord_id, discord_name, status, role_ids, linked_at,
+           next_refresh_at) VALUES (?, ?, 'd', 'member', ?, 'now', 'later')`
+      )
+      .run(userId, String(400000000000000000n + BigInt(userId)), JSON.stringify(roleIds));
+  }
+
+  it('a step poll: that step or a higher one in its ladder; everyone sees it', async () => {
+    const { olga, mia, ben } = await setup();
+    await seedTestSteps(t.db);
+    t.db.prepare('UPDATE discord_steps SET role_id = ? WHERE name = ?').run(GOLDEN, 'Golden');
+    t.db.prepare('UPDATE discord_steps SET role_id = ? WHERE name = ?').run(PLATINUM, 'Platinum');
+    const { user: kim, agent: kimAgent } = await registerUser(t, 'kim');
+    link(kim.id, [PLATINUM]);
+    const unknown = await olga
+      .post('/api/polls')
+      .send({ ...CHOICE, voters: 'steps', steps: [9999] });
+    expect(unknown.body.message).toBe('Please choose among the Discord steps.');
+
+    const poll = await create(olga, { ...CHOICE, voters: 'steps', steps: [stepId('Golden')] });
+    expect(poll).toMatchObject({ voters: 'steps', steps: ['Golden'] });
+    expect(poll.stepRule).toBeUndefined();
+    const [friday] = optionIds(poll);
+    // Mia has no step: she sees the poll and why she cannot vote.
+    expect(await shown(mia, poll.id)).toMatchObject({ mayVote: false, canVote: false });
+    const refused = await vote(mia, poll.id, { options: [friday] });
+    expect(refused.status).toBe(403);
+    expect(refused.body.message).toBe('Voting from Golden.');
+    // Kim holds Platinum, higher in the same ladder; the organiser always may.
+    expect((await vote(kimAgent, poll.id, { options: [friday] })).status).toBe(200);
+    expect((await vote(olga, poll.id, { options: [friday] })).status).toBe(200);
+    expect((await shown(t.client(), poll.id)).question).toBe(CHOICE.question);
+    expect((await shown(ben, poll.id)).mayVote).toBe(false);
+  });
+
+  it('a team poll: only organisers and admins see it and vote', async () => {
+    const { olga, mia } = await setup();
+    const poll = await create(olga, { ...CHOICE, voters: 'team' });
+    expect(await shown(mia, poll.id)).toBeUndefined();
+    expect(await shown(t.client(), poll.id)).toBeUndefined();
+    expect((await vote(mia, poll.id, { options: optionIds(poll).slice(0, 1) })).status).toBe(404);
+    expect((await shown(olga, poll.id)).canVote).toBe(true);
+    expect((await mia.get('/api/polls/summary')).body).toEqual({
+      ok: true,
+      unvoted: 0,
+      newest: null,
+    });
+  });
+
+  it('the summary counts the open polls not yet voted in, and names the newest', async () => {
+    const { olga, mia } = await setup();
+    const first = await create(olga, CHOICE);
+    const second = await create(olga, CHOICE);
+    let summary = (await mia.get('/api/polls/summary')).body;
+    expect(summary.unvoted).toBe(2);
+    expect(summary.newest.id).toBe(second.id);
+    await vote(mia, first.id, { options: optionIds(first).slice(0, 1) });
+    await olga.post(`/api/polls/${second.id}/end`);
+    summary = (await mia.get('/api/polls/summary')).body;
+    expect(summary.unvoted).toBe(0);
+    expect(summary.newest.id).toBe(first.id);
+    expect((await t.client().get('/api/polls/summary')).body.unvoted).toBe(0);
   });
 });
 

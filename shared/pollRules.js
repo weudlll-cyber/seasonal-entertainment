@@ -6,7 +6,8 @@
 //              the create form and on the server: a question; either 2 to 10 fixed answers
 //              (single or multiple choice, optionally with an "Other answer" text) or free text
 //              only; free text at most 500 characters; results after the vote or after the
-//              end; anonymous or not; a fixed end time in the future or "end by hand".
+//              end; anonymous or not; who may vote (all members, Discord steps, or organisers
+//              and admins only); a fixed end time in the future or "end by hand".
 //              validatePoll answers the first problem as a sentence, or null; validateVote
 //              does the same for one ballot against its poll.
 // ============================================================
@@ -18,11 +19,15 @@ export const OPTIONS_MAX = 10;
 export const TEXT_MAX = 500;
 export const KINDS = ['choice', 'text'];
 export const RESULTS = ['after_vote', 'after_end'];
+// Who may vote: every member, members with one of the chosen Discord steps (or a higher one
+// in its ladder), or organisers and admins only (a team poll, seen only by them).
+export const VOTERS = ['members', 'steps', 'team'];
 
 const isText = (value) => typeof value === 'string';
 
-// input: { question, kind, options, multiple, otherText, results, anonymous, endsAt }
-// (endsAt: an ISO time, or null for "end by hand"). now: for the end time's check.
+// input: { question, kind, options, multiple, otherText, results, anonymous, voters, steps,
+// endsAt } (endsAt: an ISO time, or null for "end by hand"; steps: step ids for "steps").
+// now: for the end time's check.
 export function validatePoll(input, now = Date.now()) {
   const question = isText(input.question) ? input.question.trim() : '';
   if (!question) return 'Please enter the question.';
@@ -45,6 +50,13 @@ export function validatePoll(input, now = Date.now()) {
   }
   if (!RESULTS.includes(input.results)) return 'Please choose when the results show.';
   if (typeof input.anonymous !== 'boolean') return 'Please choose whether the poll is anonymous.';
+  if (!VOTERS.includes(input.voters)) return 'Please choose who may vote.';
+  if (input.voters === 'steps') {
+    const steps = Array.isArray(input.steps) ? input.steps : [];
+    if (steps.length === 0 || !steps.every(Number.isInteger)) {
+      return 'Please choose at least one Discord step.';
+    }
+  }
   if (input.endsAt !== null) {
     const end = isText(input.endsAt) ? Date.parse(input.endsAt) : Number.NaN;
     if (Number.isNaN(end)) return 'Please choose when the poll ends.';

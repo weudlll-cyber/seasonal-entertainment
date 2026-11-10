@@ -5,7 +5,8 @@
 // Description: Creating a poll (organisers and admins, the Polls page; docs/POLLS.md): the
 //              question; fixed answers (2 to 10, one or several may be chosen, optionally an
 //              "Other answer" text) or free text only; when the results show; anonymous or
-//              not; a fixed end or "end by hand". With free text on, a warning says those
+//              not; who may vote (all members, Discord steps grouped by ladder, or organisers
+//              and admins only); a fixed end or "end by hand". With free text on, a warning says those
 //              answers are evaluated by hand. Checked like the server (shared/pollRules.js
 //              validatePoll) before it is sent; onCreated() after the server stored it.
 // ============================================================
@@ -19,6 +20,7 @@ import {
   hasFreeText,
   validatePoll,
 } from '@seasonal-entertainment/shared/pollRules.js';
+import { LADDER_NAMES, LADDERS } from '@seasonal-entertainment/shared/discordLadders.js';
 import { api } from '../api/http.js';
 import { FormField, FormMessage } from '../components/FormField.jsx';
 
@@ -30,6 +32,8 @@ const EMPTY = {
   otherText: false,
   results: 'after_vote',
   anonymous: false,
+  voters: 'members',
+  steps: [],
   ending: 'hand',
   endsAt: '',
 };
@@ -44,7 +48,8 @@ function Choice({ name, value, current, onPick, children }) {
   );
 }
 
-export default function PollForm({ onCreated }) {
+// steps: the Discord steps a poll can be limited to ({ id, ladder, name }, GET /api/polls).
+export default function PollForm({ steps = [], onCreated }) {
   const [poll, setPoll] = useState(EMPTY);
   const [error, setError] = useState(null);
   const set = (key) => (value) => setPoll((now) => ({ ...now, [key]: value }));
@@ -61,6 +66,8 @@ export default function PollForm({ onCreated }) {
       otherText: poll.otherText,
       results: poll.results,
       anonymous: poll.anonymous,
+      voters: poll.voters,
+      steps: poll.voters === 'steps' ? poll.steps : [],
       // datetime-local has no time zone: the browser's own, turned into UTC here.
       endsAt: poll.ending === 'time' && poll.endsAt ? new Date(poll.endsAt).toISOString() : null,
     };
@@ -168,6 +175,45 @@ export default function PollForm({ onCreated }) {
         />
         <span>Anonymous: nobody, admins included, sees who voted what (a vote is then final)</span>
       </label>
+      <fieldset aria-label="Who may vote">
+        <Choice name="voters" value="members" current={poll.voters} onPick={set('voters')}>
+          All members
+        </Choice>
+        {steps.length > 0 && (
+          <Choice name="voters" value="steps" current={poll.voters} onPick={set('voters')}>
+            Members with a Discord step (that step or a higher one)
+          </Choice>
+        )}
+        <Choice name="voters" value="team" current={poll.voters} onPick={set('voters')}>
+          Organisers and admins only (only they see the poll)
+        </Choice>
+      </fieldset>
+      {poll.voters === 'steps' && (
+        <fieldset aria-label="Discord steps" className="poll-form__steps">
+          {LADDERS.map((ladder) => (
+            <div key={ladder} role="group" aria-label={LADDER_NAMES[ladder]}>
+              {steps
+                .filter((s) => s.ladder === ladder)
+                .map((step) => (
+                  <label key={step.id} className="form-check">
+                    <input
+                      type="checkbox"
+                      checked={poll.steps.includes(step.id)}
+                      onChange={(e) =>
+                        set('steps')(
+                          e.target.checked
+                            ? [...poll.steps, step.id]
+                            : poll.steps.filter((id) => id !== step.id)
+                        )
+                      }
+                    />
+                    <span>{step.name}</span>
+                  </label>
+                ))}
+            </div>
+          ))}
+        </fieldset>
+      )}
       <fieldset aria-label="End">
         <Choice name="ending" value="hand" current={poll.ending} onPick={set('ending')}>
           End by hand

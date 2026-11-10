@@ -5,7 +5,8 @@
 // Description: One poll (the Polls page; docs/POLLS.md): its question, when it ends or ended,
 //              the number of votes and whether it is anonymous; the vote form while the viewer
 //              may vote (PollVote), the results when the server shows them (PollResults),
-//              otherwise why not ("Results after the end", "Sign in to vote"). Organisers and
+//              otherwise why not ("Results after the end", "Sign in to vote", "Voting from
+//              <steps>" for a member without the step); a team poll says so. Organisers and
 //              admins end it early, extend it, and switch anonymous before the first vote;
 //              admins delete it after a question. Every change reloads the lists
 //              (pollsChanged).
@@ -48,9 +49,13 @@ export default function PollCard({ poll, signedIn, canManage, canDelete }) {
       <h2 className="poll-card__question">{poll.question}</h2>
       <p className="poll-card__meta">
         {endLine(poll)} · {votes} · {poll.anonymous ? 'Anonymous' : 'Not anonymous'}
+        {poll.voters === 'team' && ' · Organisers and admins only'}
         {poll.createdBy && ` · by ${poll.createdBy}`}
       </p>
       {poll.canVote && <PollVote poll={poll} onVoted={pollsChanged} />}
+      {poll.open && signedIn && !poll.mayVote && poll.steps.length > 0 && (
+        <p>Voting from {poll.steps.join(' or ')}.</p>
+      )}
       {poll.open && !signedIn && (
         <p>
           <Link to="/login">Sign in</Link> to vote.

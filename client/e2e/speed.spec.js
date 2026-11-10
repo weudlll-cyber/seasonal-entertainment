@@ -141,6 +141,10 @@ test.describe('on a phone, late data hardly moves the page', () => {
       // No calls: a call another spec made (callFit.spec.js) would join "Up next" and push the
       // second event out of it.
       await page.route('**/api/calls', (route) => route.fulfill({ json: noCalls }));
+      // No poll either: one polls.spec.js leaves open for a moment would add the home's box.
+      await page.route('**/api/polls/summary', (route) =>
+        route.fulfill({ json: { ok: true, unvoted: 0, newest: null } })
+      );
       await page.goto('/');
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
       // networkidle: after the late answers have arrived and been drawn.

@@ -1,0 +1,69 @@
+/* ============================================================
+   File:        homePoll.css
+   Path:        client/src/pages/homePoll.css
+   Project:     Seasonal Entertainment
+   Description: The home page's "Poll" box (HomePollCard.jsx; docs/DESIGN.md, "Home"): one
+                column of the top row beside "Up next", which then takes one column too (it
+                shows only the entries that fit); the question clamped at 2 lines; the vote as a
+                dropdown and its button on one line; stacked below 1000px, last.
+   ============================================================ */
+
+/* Within the grid: .home__card (span 2) is loaded after this file. */
+.home__grid:has(.home__poll) .home__upnext,
+.home__grid .home__poll {
+  grid-column: span 1;
+}
+
+.home__poll-question {
+  display: -webkit-box;
+  flex: none;
+  margin: 0;
+  overflow: hidden;
+  font-size: 1.125rem;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.home__poll p {
+  margin: 0;
+}
+
+.home__poll-note {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+/* One column no wider than the box (an auto column took the dropdown's own width and pushed
+   "Vote" out of the box at 1280 x 720). */
+.home__poll-vote {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.25rem;
+}
+
+/* The dropdown takes the room "Vote" leaves. */
+.home__poll-row {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.home__poll-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Stacked (below 1000px), the box comes last: it arrives with its own answer, and placed
+   above the others it would push them down as it appears (layout shift, docs/DESIGN.md,
+   "Speed"; speed.spec.js). */
+@media (max-width: 999.98px) {
+  .home__grid .home__poll {
+    order: 1;
+    grid-column: span 2;
+  }
+
+  .home__grid:has(.home__poll) .home__upnext {
+    grid-column: span 2;
+  }
+}

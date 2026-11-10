@@ -44,6 +44,7 @@ export default function PollsPage() {
       {answer?.canManage &&
         (creating ? (
           <PollForm
+            steps={answer.steps}
             onCreated={() => {
               setCreating(false);
               pollsChanged();

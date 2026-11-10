@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: The site's navigation (docs/DESIGN.md, "Shell"). From 760px a 248px sidebar:
 //              the emblem and wordmark, main items as pills with icons and their quarter's
-//              season dot (Calls with its LIVE badge after Chat), the staff
+//              season dot (Calls with its LIVE badge after Chat; Polls with a dot while open
+//              polls wait for the member's vote), the staff
 //              items (navigation.js: Admin, Site banner, Manage events) behind a divider, the account card with the theme toggle, legal links. On
 //              a call page (rail) it is an icon rail with tooltips and a LIVE dot, expanded by
 //              its menu button or, as an overlay, by pointing or keyboard focus (useRail.js).
@@ -19,11 +20,12 @@ import { EMBLEM } from '../brand/brand.js';
 import { useSession } from '../session/SessionContext.jsx';
 import ThemeToggle from '../theme/ThemeToggle.jsx';
 import AccountCard from './AccountCard.jsx';
-import { useUnread } from '../chat/index.js';
+import { UnreadCount, useUnread } from '../chat/index.js';
 import IconButton from './IconButton.jsx';
 import Icon from './icons.jsx';
 import LiveBadge from '../calls/LiveBadge.jsx';
 import { useCallsSummary } from '../calls/useCallsSummary.js';
+import { usePollSummary } from '../polls/usePolls.js';
 import { CALLS_ITEM, LEGAL_NAV, MAIN_NAV, staffNavFor } from './navigation.js';
 import UnreadDots, { unreadSummary } from './UnreadDots.jsx';
 import { useRail } from './useRail.js';
@@ -64,6 +66,29 @@ function CallsNavItem({ user }) {
       item={CALLS_ITEM}
       label={live ? `${CALLS_ITEM.label}: a call is live` : undefined}
       extra={live && <LiveBadge />}
+    />
+  );
+}
+
+// "Polls" with a dot while open polls wait for this member's vote (the chat's unread badge,
+// UnreadCount, in the same place); spoken in the link's name.
+function PollsNavItem({ item }) {
+  const unvoted = usePollSummary().answer?.unvoted ?? 0;
+  return (
+    <NavItem
+      item={item}
+      label={
+        unvoted
+          ? `${item.label}: ${unvoted} open poll${unvoted === 1 ? '' : 's'} to vote in`
+          : undefined
+      }
+      extra={
+        unvoted > 0 && (
+          <span className="unread-dots" aria-hidden="true">
+            <UnreadCount count={unvoted} kind="room" />
+          </span>
+        )
+      }
     />
   );
 }
@@ -148,6 +173,8 @@ export default function Sidebar({ rail = false }) {
                     <ChatNavItem item={item} />
                     <CallsNavItem user={user} />
                   </Fragment>
+                ) : item.to === '/polls' ? (
+                  <PollsNavItem key={item.to} item={item} />
                 ) : (
                   <NavItem key={item.to} item={item} />
                 )

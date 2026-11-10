@@ -3,8 +3,10 @@
 // Path:        server/src/polls/schema.js
 // Project:     Seasonal Entertainment
 // Description: The polls' tables (docs/POLLS.md, "Data"; decided 2026-11-10). A poll with its
-//              fixed answers; one ballot per vote (the chosen answers in poll_ballot_options,
-//              the free text in its text); poll_voters says who voted, one row per account and
+//              fixed answers and who may vote (all members, Discord steps in poll_step_rules,
+//              or organisers and admins only, "team"); one ballot per vote (the chosen answers
+//              in poll_ballot_options, the free text in its text); poll_voters says who voted,
+//              one row per account and
 //              poll, which is what keeps it to one vote per account. A ballot names its account
 //              (user_id) only in a poll that is not anonymous: in an anonymous one nothing links
 //              an account to its ballot, and poll_voters keeps no time and, WITHOUT ROWID, no
@@ -22,10 +24,18 @@ CREATE TABLE IF NOT EXISTS polls (
   other_text  INTEGER NOT NULL DEFAULT 0 CHECK (other_text IN (0, 1)),
   results     TEXT    NOT NULL CHECK (results IN ('after_vote', 'after_end')),
   anonymous   INTEGER NOT NULL CHECK (anonymous IN (0, 1)),
+  voters      TEXT    NOT NULL DEFAULT 'members' CHECK (voters IN ('members', 'steps', 'team')),
   ends_at     TEXT,
   ended_at    TEXT,
   created_by  INTEGER REFERENCES users(id) ON DELETE SET NULL,
   created_at  TEXT    NOT NULL
+);
+-- "Who may vote: Discord steps": that step or a higher one in its ladder (discord/steps.js).
+-- A step deleted later leaves the poll (CASCADE); with none left only staff may vote.
+CREATE TABLE IF NOT EXISTS poll_step_rules (
+  poll_id INTEGER NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
+  step_id INTEGER NOT NULL REFERENCES discord_steps(id) ON DELETE CASCADE,
+  PRIMARY KEY (poll_id, step_id)
 );
 CREATE TABLE IF NOT EXISTS poll_options (
   id       INTEGER PRIMARY KEY,

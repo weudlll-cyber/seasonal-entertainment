@@ -230,6 +230,12 @@ call (no Next call box). **No box is ever cut**, and **nothing a box shows lies 
 floating chat button**. `client/e2e/layout.spec.js` checks all three, in both cases, at
 1280 x 720, 1440 x 900 and 1920 x 1080. Below 1000px the page stacks and scrolls.
 
+**The Poll box** (2026-11-10, docs/POLLS.md): while an open poll exists, it takes one column of
+the top row and "Up next" the other (it shows only whole entries); its question is clamped at 2
+lines and its vote is a dropdown and "Vote" on one line, so the fullest box (a long question,
+not anonymous, a call planned) still fits 1280 x 720, 1440 x 900 and 1920 x 1080 with nothing
+cut (`layout.spec.js`, "Home with a call and a poll").
+
 To make room (2026-10-21), in this order:
 
 - **a)** a lower banner: 15 % of the window, 96–160px, its lettering scaled with that height

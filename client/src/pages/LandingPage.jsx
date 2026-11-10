@@ -10,7 +10,8 @@
 //              a grid that fits the main column at 1280 x 720 without scrolling: the featured
 //              game and "Up next": the next two of the event bot's occurrences (/api/bot-events)
 //              and the site's live and planned calls (shared/callEntries.js) in time order (a call
-//              linked to a listed bot event rides on it: "Listen on this site"), the four
+//              linked to a listed bot event rides on it: "Listen on this site"), beside them
+//              the newest open poll while there is one (HomePollCard.jsx), the four
 //              season price tiles (/api/prices, docs/BOTS.md), then Community (live:
 //              CommunityCard.jsx), the next call (only when one is live or planned:
 //              NextCallCard.jsx; else the fair-price box takes its column) and the way to the
@@ -28,6 +29,7 @@ import { useSession } from '../session/SessionContext.jsx';
 import { EMBLEM } from '../brand/brand.js';
 import CommunityCard from './CommunityCard.jsx';
 import { FairPriceCard, FeaturedGameCard, PriceTiles, UpNextCard } from './homeCards.jsx';
+import HomePollCard from './HomePollCard.jsx';
 import NextCallCard from './NextCallCard.jsx';
 import SeasonClock from './SeasonClock.jsx';
 import '../brand/seasonPattern.css';
@@ -136,6 +138,7 @@ export default function LandingPage({ timeZone = deviceZone() }) {
       <div className="home__grid">
         <FeaturedGameCard games={games} timeZone={timeZone} />
         <UpNextCard next={merged(next, calls, range.to)} timeZone={timeZone} />
+        <HomePollCard />
         <PriceTiles prices={prices} />
         <CommunityCard />
         <NextCallCard calls={calls} timeZone={timeZone} />

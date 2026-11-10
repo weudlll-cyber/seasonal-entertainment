@@ -19,7 +19,9 @@ entry waits for.
   the end, anonymous or not, a fixed end or by hand), end early, extend; members vote once
   (changed only where results come after the end and the poll is not anonymous); written
   answers only for organisers and admins; admins delete; audited; live for members over the
-  chat connection, every minute for guests (docs/POLLS.md).
+  chat connection, every minute for guests. Piece 3: who may vote (all members, Discord steps
+  with the chat rooms' step rule, or organisers and admins only), the home page's Poll box and
+  the dot on "Polls" (docs/POLLS.md).
 
 ### To try on the live server
 

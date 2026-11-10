@@ -7,7 +7,9 @@
 //              form; a member's vote sends the chosen answer, the form says when a poll is not
 //              anonymous and checks the answer first; results with counts and names; organisers
 //              and admins read the written answers, create polls (a warning when free text is
-//              on) and end one early; the list reloads on the live "polls" event.
+//              on, steps to choose) and end one early; the list reloads on the live "polls"
+//              event; who may vote ("Voting from …", team polls), the home box's dropdown
+//              vote and the sidebar's dot with its spoken count.
 // ============================================================
 
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
@@ -27,6 +29,9 @@ const base = {
   otherText: false,
   results: 'after_vote',
   anonymous: false,
+  voters: 'members',
+  steps: [],
+  mayVote: true,
   endsAt: null,
   endedAt: null,
   createdBy: 'olga',
@@ -146,6 +151,8 @@ describe('the Polls page', () => {
         otherText: true,
         results: 'after_vote',
         anonymous: false,
+        voters: 'members',
+        steps: [],
         endsAt: null,
       })
     );
@@ -160,6 +167,97 @@ describe('the Polls page', () => {
     FakeSocket.all.at(-1).push({ type: 'polls' });
     await waitFor(() =>
       expect(calls.filter((c) => c.key === 'GET /polls').length).toBeGreaterThan(before)
+    );
+  });
+});
+
+describe('who may vote, the home box, the sidebar dot', () => {
+  it('a member without the step sees "Voting from …"; a team poll says so', async () => {
+    mockApi({
+      ...member,
+      ...listed([
+        {
+          ...OPEN,
+          voters: 'steps',
+          steps: ['Golden', 'Farmer Silver'],
+          mayVote: false,
+          canVote: false,
+          results: null,
+        },
+        {
+          ...OPEN,
+          id: 8,
+          question: 'Team only?',
+          voters: 'team',
+          steps: [],
+          mayVote: true,
+          canVote: false,
+          results: null,
+        },
+      ]),
+    });
+    await renderApp('/polls');
+    const open = await screen.findByRole('list', { name: 'Open polls' });
+    expect(open).toHaveTextContent('Voting from Golden or Farmer Silver.');
+    expect(open).toHaveTextContent('Organisers and admins only');
+  });
+
+  it('the create form limits a poll to Discord steps', async () => {
+    const calls = mockApi({
+      ...signedIn({ username: 'olga', role: 'organiser' }),
+      ...listed([], {
+        canManage: true,
+        steps: [
+          { id: 4, ladder: 'holder', name: 'Golden' },
+          { id: 12, ladder: 'farmer', name: 'Farmer Silver' },
+        ],
+      }),
+      'POST /polls': { status: 201, body: { ok: true } },
+    });
+    await renderApp('/polls');
+    fireEvent.click(await screen.findByRole('button', { name: 'New poll' }));
+    const form = screen.getByRole('form', { name: 'New poll' });
+    fireEvent.change(within(form).getByLabelText('Question'), { target: { value: 'Whales?' } });
+    fireEvent.change(within(form).getByLabelText('Answer 1'), { target: { value: 'Yes' } });
+    fireEvent.change(within(form).getByLabelText('Answer 2'), { target: { value: 'No' } });
+    fireEvent.click(within(form).getByRole('radio', { name: /Members with a Discord step/ }));
+    fireEvent.click(within(form).getByRole('button', { name: 'Create poll' }));
+    expect(await within(form).findByRole('alert')).toHaveTextContent(
+      'Please choose at least one Discord step.'
+    );
+    fireEvent.click(within(form).getByRole('checkbox', { name: 'Farmer Silver' }));
+    fireEvent.click(within(form).getByRole('button', { name: 'Create poll' }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.key === 'POST /polls')?.body).toMatchObject({
+        voters: 'steps',
+        steps: [12],
+      })
+    );
+  });
+
+  it('the home box votes with its dropdown; the sidebar dot counts open polls to vote in', async () => {
+    const newest = { ...OPEN, mayVote: true, canVote: true, results: null };
+    const calls = mockApi({
+      ...member,
+      'GET /polls/summary': { body: { ok: true, unvoted: 2, newest } },
+      'POST /polls/7/vote': { body: { ok: true } },
+    });
+    await renderApp('/');
+    const nav = screen.getByRole('navigation', { name: 'Main' });
+    expect(
+      await within(nav).findByRole('link', { name: 'Polls: 2 open polls to vote in' })
+    ).toHaveAttribute('href', '/polls');
+    const box = await screen.findByRole('region', { name: 'Poll: Which day?' });
+    expect(box).toHaveTextContent('Not anonymous: your name is shown.');
+    fireEvent.change(within(box).getByRole('combobox', { name: 'Your answer' }), {
+      target: { value: '2' },
+    });
+    fireEvent.click(within(box).getByRole('button', { name: 'Vote' }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.key === 'POST /polls/7/vote')?.body).toEqual({
+        options: [2],
+        text: '',
+      })
     );
   });
 });

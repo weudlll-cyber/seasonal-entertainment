@@ -15,6 +15,17 @@ everyone sees them. The page is `/polls` ("Polls" in the sidebar, after Calls).
   A written answer has at most 500 characters. With free text on, the create form warns that
   these answers must be evaluated by hand.
 
+- **Who may vote**, chosen at creation:
+  - **All members** (the default).
+  - **Discord steps**: a member with one of the chosen steps or a higher one in the same
+    ladder votes. This is the chat rooms' step rule (`passesStepRule`,
+    `server/src/discord/steps.js`; `room_step_rules`: "in any one ladder, at least one of the
+    named steps"), reused unchanged, and organisers and admins always pass. A step poll is
+    seen by everyone; a member who may not vote reads "Voting from <steps>". A step deleted
+    later leaves the poll; with none left only organisers and admins vote (an empty room rule
+    lets everyone in; here it does not).
+  - **Organisers and admins only** (a team poll): seen only by them; for everyone else there
+    is no such poll (404).
 - **Written answers** ("other" and free text) are read only by organisers and admins (listed
   in the results); everyone else sees how many there are.
 - **Results**, chosen at creation: **right after your vote** or **after the poll ends**.
@@ -40,6 +51,21 @@ everyone sees them. The page is `/polls` ("Polls" in the sidebar, after Calls).
   anonymous, as its chat messages (decided 2026-11-01). In an anonymous poll its ballot
   carries nothing of the account and stays; only the mark that it voted goes.
 
+## The home page and the sidebar
+
+- **The Poll box** on the home page (`client/src/pages/HomePollCard.jsx`, `homePoll.css`): the
+  newest open poll the viewer sees, in the top row beside "Up next", which then takes one column
+  (it shows only the entries that fit). The question is clamped at 2 lines. A single-choice poll
+  without a written answer is voted right in the box: a dropdown of the answers and "Vote" on
+  one line, with "Not anonymous: your name is shown." above when it is not anonymous. A poll
+  with several answers or a written answer links to the Polls page ("Vote"): its form would not
+  fit the row, and the home page fits the window without scrolling (docs/DESIGN.md, "Home").
+  Afterwards "You voted" with the count; guests a sign-in hint. No open poll: no box.
+- **The dot on "Polls"** in the sidebar: the number of open polls the member may vote in and has
+  not, in the chat's unread badge (`UnreadCount`, as `UnreadDots.jsx`), spoken in the link's
+  name ("Polls: 2 open polls to vote in"). Both read `GET /api/polls/summary`
+  (`usePollSummary`).
+
 ## Live updates
 
 The site's existing ways, as for calls and the chat:
@@ -57,13 +83,14 @@ The site's existing ways, as for calls and the chat:
 
 `server/src/polls/schema.js`:
 
-| Table                 | Holds                                                                                                                                                            |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `polls`               | question, kind (`choice`/`text`), multiple, other text, results (`after_vote`/`after_end`), anonymous, `ends_at` (null: by hand), `ended_at`, creator (SET NULL) |
-| `poll_options`        | the fixed answers in their order                                                                                                                                 |
-| `poll_ballots`        | one per vote: its written text; its account (`user_id`) only when the poll is not anonymous                                                                      |
-| `poll_ballot_options` | the answers a ballot chose                                                                                                                                       |
-| `poll_voters`         | who voted in which poll (primary key: poll and account): one vote per account                                                                                    |
+| Table                 | Holds                                                                                                                                                                                               |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `polls`               | question, kind (`choice`/`text`), multiple, other text, results (`after_vote`/`after_end`), anonymous, voters (`members`/`steps`/`team`), `ends_at` (null: by hand), `ended_at`, creator (SET NULL) |
+| `poll_step_rules`     | the steps of a step poll (a deleted step leaves it)                                                                                                                                                 |
+| `poll_options`        | the fixed answers in their order                                                                                                                                                                    |
+| `poll_ballots`        | one per vote: its written text; its account (`user_id`) only when the poll is not anonymous                                                                                                         |
+| `poll_ballot_options` | the answers a ballot chose                                                                                                                                                                          |
+| `poll_voters`         | who voted in which poll (primary key: poll and account): one vote per account                                                                                                                       |
 
 In an anonymous poll the ballot's `user_id` is empty. `poll_voters` keeps no time and is a
 `WITHOUT ROWID` table, so not even the order in which accounts voted is kept to be matched
@@ -75,17 +102,20 @@ named ballots (`ON DELETE CASCADE`).
 All under `/api/polls` (`server/src/polls/routes.js`); the rules are `shared/pollRules.js`,
 checked the same way in the form.
 
-| Route                 | Who                | Does                                                                   |
-| --------------------- | ------------------ | ---------------------------------------------------------------------- |
-| `GET /`               | everyone           | `{ canManage, canDelete, polls }`, each poll as this viewer may see it |
-| `POST /`              | organisers, admins | creates one; 400 with the rule's sentence when a rule is broken        |
-| `POST /:id/vote`      | members            | `{ options, text }`; 409 `already_voted`, 409 `poll_ended`             |
-| `POST /:id/end`       | organisers, admins | ends it now (409 when ended)                                           |
-| `POST /:id/extend`    | organisers, admins | `{ endsAt }`, later than the current end and now                       |
-| `POST /:id/anonymous` | organisers, admins | `{ anonymous }`; 409 `poll_has_votes` after the first vote             |
-| `DELETE /:id`         | admins             | deletes it with its votes                                              |
+| Route                 | Who                | Does                                                                      |
+| --------------------- | ------------------ | ------------------------------------------------------------------------- |
+| `GET /`               | everyone           | `{ canManage, canDelete, polls }`, each poll as this viewer may see it    |
+| `GET /summary`        | everyone           | `{ unvoted, newest }`: the sidebar's dot and the home box                 |
+| `POST /`              | organisers, admins | creates one; 400 with the rule's sentence when a rule is broken           |
+| `POST /:id/vote`      | members            | `{ options, text }`; 409 `already_voted`, `poll_ended`; 403 `not_allowed` |
+| `POST /:id/end`       | organisers, admins | ends it now (409 when ended)                                              |
+| `POST /:id/extend`    | organisers, admins | `{ endsAt }`, later than the current end and now                          |
+| `POST /:id/anonymous` | organisers, admins | `{ anonymous }`; 409 `poll_has_votes` after the first vote                |
+| `DELETE /:id`         | admins             | deletes it with its votes                                                 |
 
-A poll as listed: its fields, `options`, `open`, `votes` (ballots), `voted`, `canVote`, `myVote`
+`GET /` also gives organisers and admins `steps` (`{ id, ladder, name }`) for the create form.
+A poll as listed: its fields, `options`, `steps` (the names of a step poll's steps), `mayVote`,
+`open`, `votes` (ballots), `voted`, `canVote`, `myVote`
 (`{ options, text }`, not in an anonymous poll) and `results` (null while this viewer may not
 see them): per answer `count` and, when not anonymous, `voters`; `textCount`; for organisers
 and admins `texts` (`{ text, by }`, `by` only when not anonymous). Rate limits per account:
@@ -93,7 +123,8 @@ and admins `texts` (`{ text, by }`, `by` only when not anonymous). Rate limits p
 
 ## Client
 
-`client/src/pages/PollsPage.jsx` (the page), `client/src/polls/`: `PollCard.jsx` (one poll and
+`client/src/pages/PollsPage.jsx` (the page), `client/src/pages/HomePollCard.jsx` (the home
+box), `client/src/polls/`: `PollCard.jsx` (one poll and
 the organisers' actions), `PollVote.jsx`, `PollResults.jsx`, `PollForm.jsx`, `usePolls.js`,
 `polls.css`.
 
