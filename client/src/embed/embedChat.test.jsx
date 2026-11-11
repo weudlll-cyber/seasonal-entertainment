@@ -106,10 +106,10 @@ it('lets a guest read and write where guests may; a room they may not read gives
 
   // Members only: not in a guest's list, so the guest's first room opens, with the neutral note
   // (the same as for a room that does not exist), and the host hears which room shows.
-  renderEmbed('room=seasonal-race');
+  renderEmbed('room=race');
   const panel = await screen.findByRole('region', { name: 'Chat: General' });
   expect(within(panel).getByRole('status')).toHaveTextContent("This room isn't available.");
-  expect(calls.some((c) => c.key.startsWith('GET /chat/rooms/seasonal-race/'))).toBe(false);
+  expect(calls.some((c) => c.key.startsWith('GET /chat/rooms/race/'))).toBe(false);
   await waitFor(() =>
     expect(sentToHost()).toContainEqual(
       expect.objectContaining({ type: 'ready', room: 'general', signedIn: false })

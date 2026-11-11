@@ -105,7 +105,7 @@ commit, which the client build carries for the update notice):
 | `PRICE_BOT_MINING_RATES`            | (unset: no fair price, no mining times)       | the price bot's `mining_rates.json`, read-only (docs/BOTS.md)             |
 | `COINGECKO_API_KEY`                 | (unset: ETH, POL, BTC not connected)          | CoinGecko Demo key: the server fetches ETH/POL/BTC history (docs/BOTS.md) |
 | `BOT_ADMIN_EMBEDDED`                | (unset: off; `1` on)                          | embeds the event bot's admin page at `/bot-admin/` (docs/BOTS.md)         |
-| `GAMES_EMBEDDED`                    | (unset: none)                                 | the embedded games, slugs `bingo`, `mini-games` (docs/AUTH.md)            |
+| `GAMES_EMBEDDED`                    | (unset: none)                                 | the embedded games, slugs `bingo`, `mini-games`, `race` (docs/AUTH.md)    |
 | `GAMES_BINGO_EMBEDDED`              | (unset: off; `1` on)                          | also puts `bingo` in that list (installs from before it)                  |
 | `GAMES_SYNC_TOKEN`                  | (unset: the feed refuses everyone)            | the embedded games' token for their account-changes feed                  |
 | `DISCORD_CLIENT_ID`                 | (unset: Discord login off)                    | the Discord application's client id (docs/AUTH.md, "Discord")             |
@@ -214,9 +214,10 @@ games get a Play link. Images are chosen from a fixed list of the site's own ass
 (`shared/gameRules.js`), so no outside image is ever loaded. Admins edit cards at
 `/admin/games`; every change is audited. First start adds "Seasonal Race" (coming soon,
 `/games/race`, everyone); the race game itself stays in its own repository and is not connected
-yet. Two games run inside the site as embedded games, each its own project: Seasonal Bingo
-Royale at `/games/bingo` and Seasonal Mini Games at `/games/mini-games`, signed in through this
-site's login and fed its account changes (`server/src/games/embedded.js`, `embeddedRoutes.js`;
+yet. Three games can run inside the site as embedded games, each its own project: Seasonal Bingo
+Royale at `/games/bingo`, Seasonal Mini Games at `/games/mini-games` and Seasonal Race at
+`/games/race` (the site's part since 2026-11-11), signed in through this site's login and fed
+its account changes (`server/src/games/embedded.js`, `embeddedRoutes.js`;
 docs/AUTH.md, "Embedded games"), each with its chat room (docs/EMBED.md).
 
 ## Chat
@@ -246,7 +247,7 @@ password change and turning 2FA on or off close the account's other sockets at o
 
 - **Rooms** (`chat_rooms`) say who may read and who may write: `everyone` (guests too),
   `members` or `organisers`. First start: General (guests read and write), Seasonal Race
-  (members), Organisers (organisers and admins), Announcements (everyone reads, organisers
+  (slug `race`, the race game's room; members), Organisers (organisers and admins), Announcements (everyone reads, organisers
   write). Admins edit rooms at `/admin/chat`; audited. A separate **guest-writable** flag
   decides whether guests may write; only General has it, new rooms start without it, and it can
   be set only where everyone may read and write (enforced in `server/src/chat/viewer.js`, not
@@ -515,7 +516,7 @@ server/
                            seed/earlier-seeds.json)
   src/games/               games hub: schema, store, public and admin routes, seed; the games'
                            open sign-ups (openRounds.js, docs/OPEN-ROUNDS.md); the embedded
-                           games, Bingo and Mini Games: their list (embedded.js), sign-in
+                           games, Bingo, Mini Games and the race: their list (embedded.js), sign-in
                            (authorize) and account-changes feed (embeddedRoutes.js; docs/AUTH.md,
                            "Embedded games")
   src/chat/                chat area, mounted by mount.js (the only entry for the rest of the

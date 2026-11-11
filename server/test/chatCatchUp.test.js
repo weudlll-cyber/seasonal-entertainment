@@ -32,8 +32,8 @@ it('returns only the messages newer than the id, oldest first', async () => {
 it('keeps the room rule: a guest cannot catch up on a members room', async () => {
   t = chatApp();
   const { agent } = await registerUser(t, 'mia');
-  await post(agent, 'seasonal-race', 'members only');
-  expect((await after(t.client(), 'seasonal-race', 0)).status).toBe(404);
+  await post(agent, 'race', 'members only');
+  expect((await after(t.client(), 'race', 0)).status).toBe(404);
 });
 
 it('treats a malformed id as no paging (the newest messages)', async () => {

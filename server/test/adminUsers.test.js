@@ -105,6 +105,7 @@ describe('user changes', () => {
     expect(answer.games).toEqual([
       { slug: 'bingo', name: 'Seasonal Bingo Royale' },
       { slug: 'mini-games', name: 'Seasonal Mini Games' },
+      { slug: 'race', name: 'Seasonal Race' },
     ]);
   });
 

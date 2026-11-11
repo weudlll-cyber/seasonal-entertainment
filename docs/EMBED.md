@@ -16,12 +16,12 @@ The chat can be placed as an iframe of `/embed/chat` on:
 header, sidebar or footer (`client/src/embed/EmbedChatPage.jsx`): the room, and for members a
 **Rooms | Direct** tab pair as in the chat drawer.
 
-- **room**: a room's slug, e.g. `general` or `seasonal-race`. Without it, the reader's first room
+- **room**: a room's slug, e.g. `general` or `race`. Without it, the reader's first room
   (docs/CHAT.md, "Which room opens"; `general` whenever they may read it).
 - **theme**: `light` or `dark` shows that theme in the frame without storing it; `auto`
   (default, also for any other value) follows the site's own rule: the visitor's stored choice,
   else the system setting.
-- **Room rules apply unchanged**: a guest can read `general` but not `seasonal-race` (members
+- **Room rules apply unchanged**: a guest can read `general` but not `race` (members
   only); there the frame opens the guest's first room with "This room isn't available." (the same
   as for a room that does not exist); a reader with no room at all gets "No rooms available." instead.
 - **After an update of the site** the frame shows "A new version of the chat is available." with
@@ -39,13 +39,14 @@ header, sidebar or footer (`client/src/embed/EmbedChatPage.jsx`): the room, and 
 ### The embedded games' rooms
 
 Each embedded game (docs/AUTH.md, "Embedded games") shows this site's chat through this same-site
-embed, in a room of its own (decided 2026-11-04 for both; Bingo uses one room of this site's chat
-as its chat, decided 2026-10-19):
+embed, in a room of its own (decided 2026-11-04 for Bingo and Mini Games, 2026-11-11 for the race; Bingo
+uses one room of this site's chat as its chat, decided 2026-10-19):
 
-| Game                  | Room slug    | Room name    | Embed URL inside the game                |
-| --------------------- | ------------ | ------------ | ---------------------------------------- |
-| Seasonal Bingo Royale | `bingo`      | "Bingo"      | `/embed/chat?room=bingo&theme=auto`      |
-| Seasonal Mini Games   | `mini-games` | "Mini Games" | `/embed/chat?room=mini-games&theme=auto` |
+| Game                  | Room slug    | Room name       | Embed URL inside the game                |
+| --------------------- | ------------ | --------------- | ---------------------------------------- |
+| Seasonal Bingo Royale | `bingo`      | "Bingo"         | `/embed/chat?room=bingo&theme=auto`      |
+| Seasonal Mini Games   | `mini-games` | "Mini Games"    | `/embed/chat?room=mini-games&theme=auto` |
+| Seasonal Race         | `race`       | "Seasonal Race" | `/embed/chat?room=race&theme=auto`       |
 
 `theme` may also be `light` or `dark` ("The embed page" above).
 
@@ -53,6 +54,11 @@ as its chat, decided 2026-10-19):
   that slug (`ensureGameRooms` in `server/src/chat/seed.js`, keyed by the game's slug; the
   first-start rooms come first). Defaults: everyone reads (guests included), members write, not
   guest-writable, listed, the usual moderation.
+- **The race's room is the first-start room "Seasonal Race"** (one race room, decided
+  2026-11-11): seeded with the slug `race`, so its game finds it there and the start adds
+  nothing. It keeps its own rules, members read and write (not the defaults above). A database
+  from before has it as `seasonal-race`; the start renames that slug once to `race`
+  (`migrateChat`, `server/src/chat/schema.js`), keeping its messages, rules and favourites.
 - **After that they are ordinary rooms**: admins change their rules in the admin area like any
   room, and a later start never changes them again. Switching a game off never deletes its room
   or messages. A room an admin deleted, or gave another slug, comes back with the defaults on
@@ -206,7 +212,7 @@ elsewhere. In the page's HTML:
 <iframe
   id="se-chat"
   title="Chat"
-  src="https://<this site>/embed/chat?room=seasonal-race&theme=auto"
+  src="https://<this site>/embed/chat?room=race&theme=auto"
   style="width: 100%; height: 32rem; border: 0"
 ></iframe>
 ```
@@ -279,8 +285,11 @@ different sites to the browser.
 - `server/test/embedSocket.test.js`: the WebSocket with a token (subprotocol), refused for an
   unknown token, closed at once on revocation, the member's own cookie socket untouched.
 - `server/test/gameRooms.test.js`: the embedded games' rooms (created once with their defaults,
-  an admin's edit kept, kept when the game is off) and `/embed/chat?room=<slug>` framed from
-  `/games/<slug>/` for both games.
+  an admin's edit kept, kept when the game is off; the race's the seeded room with its rules) and
+  `/embed/chat?room=<slug>` framed from `/games/<slug>/` for every game.
+- `server/test/raceRoomSlug.test.js`: the race room's one-time rename from `seasonal-race` to
+  `race`, keeping its id, rules, messages and favourites; a second run and an existing `race`
+  room change nothing.
 - `client/src/embed/embedChat.test.jsx`: same-site embed (panel only, login state, guests,
   theme, origin checks, unread).
 - `client/src/embed/embedForeign.test.jsx`: talks only to an approved parent; the hand-over

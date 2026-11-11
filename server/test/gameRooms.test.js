@@ -7,8 +7,10 @@
 //              switched on its room exists (bingo "Bingo", mini-games "Mini Games"), guests
 //              read, members write; created once, never recreated or changed after an admin
 //              edited it, kept with its messages when the game is switched off; the first-start
-//              rooms still come on an empty database. The chat embed (/embed/chat?room=<slug>)
-//              may be framed by this site's own pages, such as /games/<slug>/, for both games.
+//              rooms still come on an empty database. The race's room is the first-start room
+//              "Seasonal Race" (slug race, decided 2026-11-11): its game finds it and keeps its
+//              members-only rules. The chat embed (/embed/chat?room=<slug>) may be framed by
+//              this site's own pages, such as /games/<slug>/, for every game.
 // ============================================================
 
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -23,6 +25,8 @@ let t;
 afterEach(() => t?.close());
 
 const NAMES = { bingo: 'Bingo', 'mini-games': 'Mini Games' };
+// The games whose room the start adds; the race's comes with the first-start rooms.
+const ADDED = GAMES.filter((slug) => slug !== 'race');
 const roomOf = (slug) => t.db.prepare('SELECT * FROM chat_rooms WHERE slug = ?').get(slug);
 const roomCount = () => t.db.prepare('SELECT COUNT(*) AS n FROM chat_rooms').get().n;
 
@@ -38,7 +42,7 @@ describe("the embedded games' rooms", () => {
     t = gamesApp();
     const lines = await start();
     expect(roomOf('general')).toBeTruthy();
-    for (const slug of GAMES) {
+    for (const slug of ADDED) {
       expect(roomOf(slug)).toMatchObject({
         name: NAMES[slug],
         read_access: 'everyone',
@@ -49,6 +53,14 @@ describe("the embedded games' rooms", () => {
       });
       expect(lines).toContain(`Added the chat room "${slug}" for its embedded game`);
     }
+    // The race's room: the seeded one, found, not added, its rules as seeded.
+    expect(roomOf('race')).toMatchObject({
+      name: 'Seasonal Race',
+      read_access: 'members',
+      write_access: 'members',
+      guest_writable: 0,
+    });
+    expect(lines).not.toContain('Added the chat room "race" for its embedded game');
   });
 
   it('only the games switched on get a room', async () => {
@@ -62,7 +74,7 @@ describe("the embedded games' rooms", () => {
     t = gamesApp();
     await start();
     const { agent: member } = await registerUser(t, 'mia');
-    for (const slug of GAMES) {
+    for (const slug of ADDED) {
       expect((await post(member, slug, `hello ${slug}`)).status).toBe(201);
       expect(await bodies(t.client(), slug)).toEqual([`hello ${slug}`]);
       expect((await post(t.client(), slug, 'a guest')).status).toBe(403);

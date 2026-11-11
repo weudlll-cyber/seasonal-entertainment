@@ -3,7 +3,7 @@
 // Path:        server/test/helpers/embeddedGames.js
 // Project:     Seasonal Entertainment
 // Description: Test helpers for the embedded games (games/embedded.js): the slugs, a sync token
-//              and an app with the games switched on (both, unless the test names others).
+//              and an app with the games switched on (all of them, unless the test names others).
 // ============================================================
 
 import { EMBEDDED_GAMES } from '../../src/games/embedded.js';

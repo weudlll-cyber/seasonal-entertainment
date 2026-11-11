@@ -13,8 +13,8 @@
 #              encrypted backups. Re-running keeps secrets, data and answers. --update (a backup, or
 #              a local copy without backups, then the newest commit of origin's default branch), --commit <ref>, --coingecko
 #              (ask the CoinGecko key again), --discord (ask about the Discord login again),
-#              --bot-admin (ask about the event bot's admin page again; nginx mode), --bingo and
-#              --mini-games (ask again whether that game is embedded), --status,
+#              --bot-admin (ask about the event bot's admin page again; nginx mode), --bingo,
+#              --mini-games and --race (ask again whether that game is embedded), --status,
 #              --uninstall [--purge-data], --rollback <snapshot>,
 #              --admin, --backups. The parts live in deploy/install/lib/.
 # ============================================================
@@ -60,7 +60,7 @@ trap 'die "unexpected failure (line $LINENO: $BASH_COMMAND)"' ERR
 ANSWER_KEYS="SITE_DOMAIN WWW_REDIRECT CALLS_DOMAIN RECORDING ACME_EMAIL ADMIN_NAME ADMIN_EMAIL
 COINGECKO_API_KEY PRICE_BOT_DB PRICE_BOT_MINING_RATES EVENT_BOT_DB BACKUP_RECIPIENT ACME_SERVER
 ACME_CA_BUNDLE BOT_ADMIN_URL BOT_ADMIN_TOKEN_FILE BOT_ADMIN_TOKEN_KEY DISCORD_CLIENT_ID
-DISCORD_GUILD_ID DISCORD_CLIENT_SECRET_FILE BINGO MINI_GAMES"
+DISCORD_GUILD_ID DISCORD_CLIENT_SECRET_FILE BINGO MINI_GAMES RACE"
 
 usage() {
   cat <<'EOF'
@@ -80,6 +80,7 @@ Usage: sudo ./deploy/install.sh [options]
                          site (its address and token); Enter now removes it
   --bingo                ask again whether Seasonal Bingo Royale is embedded at /games/bingo
   --mini-games           ask again whether Seasonal Mini Games is embedded at /games/mini-games
+  --race                 ask again whether Seasonal Race is embedded at /games/race
   --commit REF           check out REF (a commit, tag or branch) first, then install it
   --admin                create the first admin (password asked on the terminal)
   --backups              set up or change the encrypted backups (asks for the age public key)
@@ -106,6 +107,7 @@ ASK_BOT_ADMIN=no
 ASK_DISCORD=no
 ASK_BINGO=no
 ASK_MINI_GAMES=no
+ASK_RACE=no
 ROLLBACK_DIR=""
 while (($#)); do
   case "$1" in
@@ -118,6 +120,7 @@ while (($#)); do
     --discord) ASK_DISCORD=yes ;;
     --bingo) ASK_BINGO=yes ;;
     --mini-games) ASK_MINI_GAMES=yes ;;
+    --race) ASK_RACE=yes ;;
     --admin) ACTION='admin' ;;
     --backups) ACTION=backups ;;
     --status) ACTION=status ;;
@@ -134,13 +137,15 @@ done
 [[ "$PURGE" == no || "$ACTION" == uninstall ]] || die "--purge-data goes with --uninstall"
 [[ "$UPDATE" == no || -z "$COMMIT_REF" ]] ||
   die "--update and --commit do not go together: --update takes the newest code, --commit REF a chosen one"
-[[ "$UPDATE" == no || "$ACTION" == install ]] || die "--update goes alone (with --answers, --yes, --coingecko, --discord, --bot-admin, --bingo or --mini-games at most)"
+[[ "$UPDATE" == no || "$ACTION" == install ]] || die "--update goes alone (with --answers, --yes, --coingecko, --discord, --bot-admin, --bingo, --mini-games or --race at most)"
 [[ "$ASK_DISCORD" == no || "$ACTION" == install ]] || die "--discord goes with an install, a re-run or --update"
 [[ "$ASK_DISCORD" == no || "$UNATTENDED" == no ]] || die "--discord asks on the terminal: not with --yes"
 [[ "$ASK_BINGO" == no || "$ACTION" == install ]] || die "--bingo goes with an install, a re-run or --update"
 [[ "$ASK_BINGO" == no || "$UNATTENDED" == no ]] || die "--bingo asks on the terminal: not with --yes"
 [[ "$ASK_MINI_GAMES" == no || "$ACTION" == install ]] || die "--mini-games goes with an install, a re-run or --update"
 [[ "$ASK_MINI_GAMES" == no || "$UNATTENDED" == no ]] || die "--mini-games asks on the terminal: not with --yes"
+[[ "$ASK_RACE" == no || "$ACTION" == install ]] || die "--race goes with an install, a re-run or --update"
+[[ "$ASK_RACE" == no || "$UNATTENDED" == no ]] || die "--race asks on the terminal: not with --yes"
 [[ "$ASK_COINGECKO" == no || "$ACTION" == install ]] || die "--coingecko goes with an install, a re-run or --update"
 [[ "$ASK_COINGECKO" == no || "$UNATTENDED" == no ]] || die "--coingecko asks on the terminal: not with --yes"
 [[ "$ASK_BOT_ADMIN" == no || "$ACTION" == install ]] || die "--bot-admin goes with an install, a re-run or --update"
