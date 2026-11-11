@@ -76,6 +76,11 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **The "Start here" browser test failed now and then** — closed on `feat/backup-recordings`
+  (2026-11-11): it read the steps' addresses once, and the call step's changes from `/calls` to
+  `/calls/<id>` when the recording-share spec plans a call on the shared test server
+  meanwhile; it now clicks each step by position and accepts either call address
+  (`client/e2e/start.spec.js`). Seen in two of four local runs, never on CI.
 - **A share link per recording** — closed by `feat/recording-share` (PR #59, merged 2026-11-11 as
   2b8a695; decided 2026-11-10):
   `/recordings/<id>` shows only that recording; the server adds the preview card's Open Graph
