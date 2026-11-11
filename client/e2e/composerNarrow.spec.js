@@ -3,11 +3,14 @@
 // Path:        client/e2e/composerNarrow.spec.js
 // Project:     Seasonal Entertainment
 // Description: The chat composer of the /chat page on a phone (decided 2026-11-11): at
-//              360 x 740 and 390 x 844, light and dark, in a room with an organiser's Poll
-//              button and in a direct message, no button overlaps another or spills its text
-//              out of its box, every button is a 44px target inside the window, nothing scrolls
-//              sideways and the message field keeps a usable width; at 360 the picker opens as
-//              wide as the message field.
+//              360 x 740, 390 x 844 and a short 375 x 548 (a phone's window under its browser
+//              bars), light and dark, in a room with an organiser's Poll button and in a direct
+//              message, no button overlaps another or spills its text out of its box, every
+//              button is a 44px target inside the window and inside the chat panel's card,
+//              nothing scrolls sideways, the message field keeps a usable width and the message
+//              list at least 8rem; at the two regular sizes the whole composer is in sight
+//              without scrolling, also in a room with more messages than the list shows; at 360
+//              the picker opens as wide as the message field.
 // ============================================================
 
 import { expect, test } from '@playwright/test';
@@ -17,17 +20,21 @@ import { memberPage } from './members.js';
 const SIZES = [
   [360, 740],
   [390, 844],
+  [375, 548],
 ];
 const SCHEMES = ['light', 'dark'];
 
 // The visible composer, measured: buttons that overlap or whose content is wider than their
-// box (its text spills over the next one), buttons under 44px or past the window's edge, the
-// page's sideways overflow and the message field's width.
+// box (its text spills over the next one), buttons under 44px, past the window's edge or out of
+// the chat panel's card (its .se-chat box), the page's sideways overflow, the message field's
+// width and the message list's height.
 const measure = (page) =>
   page.evaluate(() => {
     const form = [...document.querySelectorAll('form.chat-composer')].find(
       (f) => f.getBoundingClientRect().width > 0
     );
+    const card = form.closest('.se-chat');
+    const panel = card.getBoundingClientRect();
     const buttons = [...form.querySelectorAll('.chat-composer__actions button')]
       .map((el) => ({ el, box: el.getBoundingClientRect(), name: el.textContent.trim() }))
       .filter(({ box }) => box.width > 0);
@@ -48,8 +55,19 @@ const measure = (page) =>
       spilling: buttons.filter(({ el }) => el.scrollWidth > el.clientWidth + 1).map((b) => b.name),
       short: buttons.filter(({ box }) => box.height < 44).map((b) => b.name),
       outside: buttons.filter(({ box }) => box.right > window.innerWidth).map((b) => b.name),
+      outsidePanel: buttons
+        .filter(
+          ({ box }) =>
+            box.top < panel.top ||
+            box.bottom > panel.bottom ||
+            box.left < panel.left ||
+            box.right > panel.right
+        )
+        .map((b) => b.name),
       sideways: document.documentElement.scrollWidth - window.innerWidth,
       field: form.querySelector('textarea').getBoundingClientRect().width,
+      list: card.querySelector('.chat-messages').getBoundingClientRect().height,
+      belowWindow: buttons.filter(({ box }) => box.bottom > window.innerHeight).map((b) => b.name),
     };
   });
 
@@ -72,17 +90,40 @@ async function expectFits(page, expected) {
       expect(got.spilling, `${at}: text past its button`).toEqual([]);
       expect(got.short, `${at}: under 44px`).toEqual([]);
       expect(got.outside, `${at}: past the window`).toEqual([]);
+      expect(got.outsidePanel, `${at}: out of the chat panel's card`).toEqual([]);
       expect(got.sideways, `${at}: sideways scroll`).toBeLessThanOrEqual(0);
       // The field stands above the buttons, as wide as the composer: 70% of the window or more.
       expect(got.field, `${at}: message field`).toBeGreaterThanOrEqual(width * 0.7);
+      // The composer's room comes from the list above it, which keeps a few messages in sight.
+      expect(got.list, `${at}: message list`).toBeGreaterThanOrEqual(127);
+      // A regular phone needs no scrolling to reach the composer; only a short window does.
+      if (height >= 740) expect(got.belowWindow, `${at}: below the window`).toEqual([]);
     }
   }
 }
 
 test("a room's composer with the Poll button fits a phone", async ({ browser }) => {
+  // More messages than the list shows at 390 x 844, so they must scroll inside it, not the
+  // page. A member of this spec writes them: the run's admin writes in many specs at once and
+  // would meet its sending limit.
+  const { page: writer } = await memberPage(browser, 'narrowposter');
+  await writer.goto('/chat');
+  const lines = [];
+  for (let i = 1; i <= 4; i++) {
+    const text = `narrow composer line ${i} ${Date.now()}`;
+    await writer.getByLabel('Message', { exact: true }).fill(text);
+    await writer.getByRole('button', { name: 'Send' }).click();
+    await expect(
+      writer.getByRole('list', { name: 'Messages in General' }).getByText(text)
+    ).toBeVisible();
+    lines.push(text);
+  }
   const page = await (await browser.newContext({ storageState: ADMIN_STATE })).newPage();
   await page.goto('/chat');
   await expect(page.getByRole('button', { name: 'Poll' })).toBeVisible();
+  await expect(
+    page.getByRole('list', { name: 'Messages in General' }).getByText(lines[3])
+  ).toBeAttached();
   await expectFits(page, ['Emoji, stickers, GIFs', 'Attach file', 'Poll', 'Send']);
 
   // The picker opens as wide as the message field, not as narrow as its button.

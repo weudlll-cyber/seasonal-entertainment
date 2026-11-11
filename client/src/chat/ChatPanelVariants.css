@@ -4,8 +4,9 @@
    Project:     Seasonal Entertainment
    Description: The chat panel's two variants: compact (a box beside other content, or the
                 chat drawer) and full (fills its container; with room tabs the rooms stand in
-                a column on the left). Loaded after ChatPanel.css, so these rules win over the
-                base rules of the same weight.
+                a column on the left; below 600px they stand side by side above, and the full
+                panel's message list keeps 8rem while the composer stays whole). Loaded after
+                ChatPanel.css, so these rules win over the base rules of the same weight.
    ============================================================ */
 
 /* Compact: a box beside other content; full: a page of its own. */
@@ -38,6 +39,14 @@
   .se-chat--full.se-chat--rooms {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  /* The list gives the composer its room down to 8rem, a few messages in sight; below that
+     the /chat page grows and scrolls (styles/base.css). Its size ignores its messages, so a
+     long conversation scrolls inside the list, not the page. */
+  .se-chat--full .chat-messages {
+    min-height: 8rem;
+    contain: size;
   }
 
   .se-chat--rooms .chat-rooms {

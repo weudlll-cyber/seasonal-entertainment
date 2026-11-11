@@ -17,8 +17,9 @@ entry waits for.
 - **The chat composer at phone width** — built on `fix/composer-narrow` (2026-11-11): at 360px
   "Emoji, stickers, GIFs" overlapped "Attach file" on the /chat page, in rooms and in direct
   messages. Below 600px the full composer's buttons now wrap onto more lines, the picker on a
-  line of its own; desktop unchanged (docs/DESIGN.md, "Compact chat composer";
-  `client/e2e/composerNarrow.spec.js`).
+  line of its own; the whole composer stays inside the chat card, its room taken from the
+  message list (at least 8rem), and a window too short for that scrolls the page; desktop
+  unchanged (docs/DESIGN.md, "Compact chat composer"; `client/e2e/composerNarrow.spec.js`).
 
 ### To try on the live server
 
