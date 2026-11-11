@@ -538,8 +538,9 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
     page reads `GET /api/calls/recordings/:rid` (the recording with its call).
   - **The preview card**: the server answers `/recordings/<id>` with the client's `index.html`
     plus meta tags (`server/src/calls/recordingShare.js`): `og:title` (the call's title,
-    "(recording)"), `og:description` (the date in the site's time zone with its abbreviation, "CET"/"CEST":
-    `SITE_ZONE` in `shared/localWeek.js`, as the weekly recap; and the length), `og:url`, `og:type`
+    "(recording)"), `og:description` (the date in UTC, labelled "UTC": `UTC_ZONE` in
+    `shared/localWeek.js`, as the weekly recap's text, since one card is read in every zone
+    (decided 2026-11-11); and the length), `og:url`, `og:type`
     `video.other`, `og:image` (the site's logo, `/brand/logo.webp`), `og:video` and
     `og:video:secure_url` (the public video URL), `og:video:type` `video/mp4`,
     `og:video:width`/`height` (1280 x 720, the recording's size), and `twitter:card`

@@ -96,10 +96,10 @@ export function formatDay(instant, timeZone) {
   }).format(new Date(instant));
 }
 
-// The site's own time zone, where the server writes a date for people (the weekly recap's text,
-// a recording's share card; decided 2026-11-11): Vienna, with its abbreviation (CET / CEST).
-// In the browser every date is the device's own zone (client/src/app/dates.js).
-export const SITE_ZONE = 'Europe/Vienna';
+// The zone of the texts the server writes for many readers at once (the weekly recap's text, a
+// recording's share card; decided 2026-11-11): UTC, labelled "UTC", as no one reader's zone
+// fits them all. In the browser every date is the device's own zone (client/src/app/dates.js).
+export const UTC_ZONE = 'UTC';
 
 // A non-breaking space: the zone never ends up alone on the next line.
 const NBSP = String.fromCharCode(0xa0);

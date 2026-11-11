@@ -18,8 +18,10 @@ entry waits for.
   `/recordings/<id>` shows only that recording; the server adds the preview card's Open Graph
   and Twitter tags (the logo as the image, the video as `og:video`); "Share" on every recording
   copies the link or opens the phone's share sheet (docs/CALLS.md, "Sharing a recording"). The
-  card's date is in the site's time zone with its abbreviation (`SITE_ZONE`, Vienna, as the
-  weekly recap; 2026-11-11), no longer UTC.
+  card's date, like every time in the weekly recap's text, is in UTC, labelled "UTC" (`UTC_ZONE`
+  in `shared/localWeek.js`; decided 2026-11-11: texts the server writes for many readers at once
+  use UTC; pages keep each viewer's own device time zone). The recap's posting weekday and hour
+  stay in Vienna time.
 
 ### To try on the live server
 
