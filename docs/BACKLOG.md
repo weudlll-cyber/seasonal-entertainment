@@ -12,15 +12,6 @@ entry waits for.
 - **Real sites to approve for the chat embed** — which game sites go on Admin → Embedding once
   the site is live (only exact `https://` origins).
 
-### Built, waiting for the merge
-
-- **The chat composer at phone width** — built on `fix/composer-narrow` (2026-11-11): at 360px
-  "Emoji, stickers, GIFs" overlapped "Attach file" on the /chat page, in rooms and in direct
-  messages. Below 600px the full composer's buttons now wrap onto more lines, the picker on a
-  line of its own; the whole composer stays inside the chat card, its room taken from the
-  message list (at least 8rem), and a window too short for that scrolls the page; desktop
-  unchanged (docs/DESIGN.md, "Compact chat composer"; `client/e2e/composerNarrow.spec.js`).
-
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
@@ -73,6 +64,13 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **The chat composer at phone width** — closed by `fix/composer-narrow` (PR #65, merged
+  2026-11-11): at 360px "Emoji, stickers, GIFs" overlapped "Attach file" on the /chat page, in
+  rooms and in direct messages. Below 600px the full composer's buttons now wrap onto more
+  lines, the picker on a line of its own; the whole composer stays inside the chat card, its
+  room taken from the message list (at least 8rem), and a window too short for that scrolls the
+  page; desktop unchanged (docs/DESIGN.md, "Compact chat composer";
+  `client/e2e/composerNarrow.spec.js`).
 - **Polls** — closed by `feat/polls` (PR #63, merged 2026-11-11; decided 2026-11-10): `/polls`
   for everyone; organisers and admins create (fixed answers or free text, results after the
   vote or after the end, anonymous or not, a fixed end or by hand), end early, extend; members
