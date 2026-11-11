@@ -8,7 +8,8 @@
 //              upright by their orientation tag, every metadata block (EXIF with GPS, XMP,
 //              comments) dropped, animation kept, plus a thumbnail for the chat. PDFs are stored as
 //              they are (served only as a download). Names on disk are generated; the original file
-//              name survives only as cleaned-up display text.
+//              name survives only as cleaned-up display text. A profile picture takes the same
+//              way with images only (types; profiles/routes.js).
 // ============================================================
 
 import path from 'node:path';
@@ -17,6 +18,11 @@ import { saveMediaFile } from '../media/files.js';
 import { FILE_TYPES, ImageRejected, checkImage, sniffFileType } from '../media/imageCheck.js';
 
 const UPLOAD_TYPES = ['jpeg', 'png', 'webp', 'gif', 'pdf'];
+export const IMAGE_TYPES = ['jpeg', 'png', 'webp', 'gif'];
+const ALLOWED = {
+  [UPLOAD_TYPES.join()]: 'Allowed files: JPG, PNG, WebP, GIF and PDF.',
+  [IMAGE_TYPES.join()]: 'Allowed pictures: JPG, PNG, WebP and GIF.',
+};
 const SUBFOLDER = 'uploads';
 
 const ENCODE = {
@@ -58,15 +64,18 @@ async function storeImage(buffer, type, config) {
   };
 }
 
-// limits: { maxBytes, maxPixels } (the site settings, settings/derived.js). Returns the row to
-// store ({ kind, name, mime, bytes, file, thumbFile, width, height }); throws ImageRejected
-// with a message for the member.
-export async function processUpload(buffer, originalName, config, { maxBytes, maxPixels }) {
+// limits: { maxBytes, maxPixels } (the site settings, settings/derived.js) and the types taken
+// (UPLOAD_TYPES or IMAGE_TYPES). Returns the row to store ({ kind, name, mime, bytes, file,
+// thumbFile, width, height }); throws ImageRejected with a message for the member.
+export async function processUpload(
+  buffer,
+  originalName,
+  config,
+  { maxBytes, maxPixels, types = UPLOAD_TYPES }
+) {
   const { nameMax } = config.uploads;
   const type = Buffer.isBuffer(buffer) ? sniffFileType(buffer) : null;
-  if (!type || !UPLOAD_TYPES.includes(type)) {
-    throw new ImageRejected('Allowed files: JPG, PNG, WebP, GIF and PDF.');
-  }
+  if (!type || !types.includes(type)) throw new ImageRejected(ALLOWED[types.join()]);
   if (buffer.length > maxBytes) {
     throw new ImageRejected(`The file is larger than ${Math.round(maxBytes / 1024 / 1024)} MB.`);
   }

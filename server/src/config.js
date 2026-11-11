@@ -226,6 +226,7 @@ export function readConfig(env = process.env) {
       callCalendar: { windowMs: 60_000, max: 60 }, // calendar files per IP (guests too)
       pollManage: { windowMs: 60_000, max: 30 }, // poll creating, ending, extending per account
       pollVote: { windowMs: 60_000, max: 30 }, // votes per account
+      profileEdit: { windowMs: 60_000, max: 30 }, // About me and picture changes per account
       embedToken: { windowMs: 60 * 60_000, max: 30 }, // embed tokens per member (login popup)
       botRead: { windowMs: 60_000, max: 120 }, // price and bot-event reads per IP
       // Every GET under /api per IP (the public reads had none of their own): far above what
