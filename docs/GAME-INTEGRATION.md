@@ -20,8 +20,8 @@ The game-side facts below were verified against the default branches on **2026-1
 Labels used here:
 
 - **Current**: implemented at those commits.
-- **Built**: implemented on the website since then, on `night/2026-11-10` (waiting for the
-  merge; decided 2026-11-09).
+- **Built**: implemented on the website since then and merged into `master`: `night/2026-11-10`
+  (PR #55, merged 2026-11-10 as c9980a7; decided 2026-11-09).
 - **Requested**: asked of the games, their own work.
 - **Required**: a requirement for a game adopting this integration.
 - **Proposed**: an idea, neither available nor decided.
