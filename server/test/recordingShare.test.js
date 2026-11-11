@@ -6,8 +6,9 @@
 //              recording"): /recordings/:id answers the client's index.html with the preview
 //              card's meta tags (title, date and length, URL, the site's logo, the public video
 //              with its type and size), every value escaped, the page's own title replaced; a
-//              missing, deleted, running or malformed one answers 404 with the plain page. The
-//              API gives the one recording with its call for everyone.
+//              missing, deleted, running or malformed one answers 404 with the plain page; the
+//              page counts against the reads per IP like /api. The API gives the one recording
+//              with its call for everyone.
 // ============================================================
 
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -34,11 +35,11 @@ afterEach(() => {
   for (const folder of [dir, client]) rmSync(folder, { recursive: true, force: true });
 });
 
-// The app with a built client of one index.html.
-function app() {
+// The app with a built client of one index.html; overrides: config, e.g. rate limits.
+function app(overrides = {}) {
   client = mkdtempSync(path.join(tmpdir(), 'se-client-'));
   writeFileSync(path.join(client, 'index.html'), INDEX);
-  ({ t, dir } = recordingApp({ clientDist: client }));
+  ({ t, dir } = recordingApp({ clientDist: client, ...overrides }));
 }
 
 async function recorded(olga, title, seconds) {
@@ -114,4 +115,14 @@ it('answers 404 with the plain page for a missing, running, deleted or malformed
   await olga.delete(`/api/calls/${call.id}/recordings/${id}`);
   await plain(`/recordings/${id}`);
   expect((await t.client().get(`/api/calls/recordings/${id}`)).status).toBe(404);
+});
+
+it('counts against the reads per IP: each answer reads a file and the database', async () => {
+  app({ rateLimits: { apiRead: { windowMs: 60_000, max: 2 } } });
+  const ask = () => t.client().get('/recordings/1');
+  expect((await ask()).status).toBe(404);
+  expect((await ask()).status).toBe(404);
+  const third = await ask();
+  expect(third.status).toBe(429);
+  expect(third.body.error).toBe('too_many_attempts');
 });

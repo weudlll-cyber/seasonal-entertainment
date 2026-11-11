@@ -234,7 +234,14 @@ export function createApp({
     );
     app.use(express.static(config.clientDist));
     // A recording's share page: index.html with its preview card's meta tags (recordingShare.js).
-    app.get('/recordings/:id', allow('public'), recordingSharePage(db, config, callService));
+    // Each answer reads that file and the database, so it counts against the same reads per IP
+    // as /api (flagged by CodeQL, "Missing rate limiting").
+    app.get(
+      '/recordings/:id',
+      allow('public'),
+      readsPerIp,
+      recordingSharePage(db, config, callService)
+    );
     // Any other GET is a client route (/events, /info/faq, ...): the client decides, and
     // shows its own 404 page for paths it does not know.
     app.get('/{*clientRoute}', allow('public'), (_req, res) => {

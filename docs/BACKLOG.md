@@ -21,7 +21,8 @@ entry waits for.
   card's date, like every time in the weekly recap's text, is in UTC, labelled "UTC" (`UTC_ZONE`
   in `shared/localWeek.js`; decided 2026-11-11: texts the server writes for many readers at once
   use UTC; pages keep each viewer's own device time zone). The recap's posting weekday and hour
-  stay in Vienna time.
+  stay in Vienna time. The share page counts against the reads per IP of `/api` (CodeQL's
+  "Missing rate limiting" on the pull request, 2026-11-11).
 
 ### To try on the live server
 

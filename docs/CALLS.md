@@ -546,7 +546,9 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
     `og:video:width`/`height` (1280 x 720, the recording's size), and `twitter:card`
     `summary_large_image` (a "player" card would need an embeddable player page of its own).
     Every value is HTML-escaped; the page's `<title>` becomes the recording's. A missing,
-    deleted or unfinished recording answers 404 with the plain `index.html`. Only where the
+    deleted or unfinished recording answers 404 with the plain `index.html`. Each answer reads
+    that file and the database, so the page counts against the reads per IP of `/api`
+    (`API_READS_PER_MINUTE`, docs/AUTH.md; since 2026-11-11, after a CodeQL finding). Only where the
     built client is served (production, the browser tests); the Vite dev server answers
     without the tags. The URLs use `PUBLIC_ORIGIN`. Nothing new is loaded from elsewhere: the
     CSP and the embed rules are unchanged.
