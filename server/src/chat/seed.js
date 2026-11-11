@@ -3,10 +3,12 @@
 // Path:        server/src/chat/seed.js
 // Project:     Seasonal Entertainment
 // Description: First-start chat rooms. General: guests read and write (the only room marked
-//              guest-writable). Seasonal Race: members. Organisers: organisers and admins.
-//              Announcements: everyone reads, organisers and admins write. And the room of each
-//              switched-on embedded game (games/embedded.js; decided 2026-11-04), created on any
-//              start where its slug is missing: guests read, members write (docs/CHAT.md).
+//              guest-writable). Seasonal Race (slug race, the race game's room; decided
+//              2026-11-11): members. Organisers: organisers and admins. Announcements: everyone
+//              reads, organisers and admins write. And the room of each switched-on embedded
+//              game (games/embedded.js; decided 2026-11-04), created on any start where its slug
+//              is missing: guests read, members write (docs/CHAT.md). The race's room is seeded
+//              here with its own rules, so its game finds it and leaves it as it is.
 // ============================================================
 
 import { EMBEDDED_GAMES } from '../games/embedded.js';
@@ -20,7 +22,7 @@ const SEED_ROOMS = [
     guestWritable: 1,
   },
   {
-    slug: 'seasonal-race',
+    slug: 'race',
     name: 'Seasonal Race',
     readAccess: 'members',
     writeAccess: 'members',

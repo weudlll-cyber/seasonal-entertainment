@@ -38,12 +38,12 @@ it('subscribes with the token and gets room pushes; an unknown token is refused'
   const socket = connect(t.url, { protocols: embedProtocols(token) });
   await socket.opened;
   expect(socket.ws.protocol).toBe('se-chat');
-  expect(await socket.subscribe('seasonal-race')).toEqual({
+  expect(await socket.subscribe('race')).toEqual({
     type: 'subscribed',
-    room: 'seasonal-race',
+    room: 'race',
   });
   const zoe = await registerUser(t, 'zoe');
-  await post(zoe.agent, 'seasonal-race', 'members only, live');
+  await post(zoe.agent, 'race', 'members only, live');
   const pushed = await socket.next('message');
   expect(pushed.message.body).toBe('members only, live');
   socket.ws.close();

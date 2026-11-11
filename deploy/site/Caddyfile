@@ -39,7 +39,7 @@
 	import /etc/caddy/routes/*.caddy
 	# The games' account feeds are for the games themselves, never through this proxy
 	# (docs/AUTH.md): every game of deploy/install/lib/games.sh.
-	@gameFeeds path /api/games/bingo/account-changes* /api/games/mini-games/account-changes*
+	@gameFeeds path /api/games/bingo/account-changes* /api/games/mini-games/account-changes* /api/games/race/account-changes*
 	respond @gameFeeds 404
 	log {
 		output stdout

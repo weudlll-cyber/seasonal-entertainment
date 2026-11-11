@@ -180,7 +180,7 @@ describe('signing up with Discord', () => {
   it("returns to an embedded game's sign-in route, its own next included", async () => {
     const discord = setup();
     await signUp(t.client(), discord);
-    for (const slug of ['bingo', 'mini-games']) {
+    for (const slug of ['bingo', 'mini-games', 'race']) {
       const next = `/games/${slug}/auth/website?next=%2Fgames%2F${slug}%2F`;
       const query = `intent=login&next=${encodeURIComponent(next)}`;
       const back = await discordFlow(t.client(), discord, DISCORD_ID, query);

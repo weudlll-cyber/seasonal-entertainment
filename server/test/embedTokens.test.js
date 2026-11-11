@@ -71,7 +71,7 @@ describe('what a token may do', () => {
     expect(sent.status).toBe(201);
     expect(sent.body.message.author).toBe('mia');
     // Members-only rooms follow the member's rights.
-    expect((await embed.get('/api/chat/rooms/seasonal-race/messages')).status).toBe(200);
+    expect((await embed.get('/api/chat/rooms/race/messages')).status).toBe(200);
     expect((await embed.get('/api/chat/unread')).status).toBe(200);
     expect((await embed.put('/api/chat/favourites/rooms/general')).status).toBeLessThan(300);
     const report = await embed.post(`/api/chat/messages/${sent.body.message.id}/report`);

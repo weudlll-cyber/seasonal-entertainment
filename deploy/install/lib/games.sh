@@ -4,11 +4,12 @@
 # Path:        deploy/install/lib/games.sh
 # Project:     Seasonal Entertainment
 # Description: The embedded games inside the site (docs/DEPLOYMENT.md, "Embedded games";
-#              docs/AUTH.md): Seasonal Bingo Royale at /games/bingo and Seasonal Mini Games at
-#              /games/mini-games, each its own project with its own installer (decided
-#              2026-11-04). One question per game, whether it will be embedded (asked once on a
-#              terminal, default no, remembered as BINGO / MINI_GAMES in the state; --bingo and
-#              --mini-games ask again; BINGO=yes|no and MINI_GAMES=yes|no in an answers file;
+#              docs/AUTH.md): Seasonal Bingo Royale at /games/bingo, Seasonal Mini Games at
+#              /games/mini-games and Seasonal Race at /games/race (2026-11-11), each its own
+#              project with its own installer (decided 2026-11-04). One question per game,
+#              whether it will be embedded (asked once on a terminal, default no, remembered as
+#              BINGO / MINI_GAMES / RACE in the state; --bingo, --mini-games and --race ask
+#              again; BINGO=yes|no, MINI_GAMES=yes|no and RACE=yes|no in an answers file;
 #              an unattended run keeps what was remembered, no when nothing was). With any game
 #              on, the games' sync token made once in the root-only GAMES_SYNC_TOKEN_FILE (never
 #              printed) and passed to the site in site.env with the list GAMES_EMBEDDED. Always
@@ -28,6 +29,7 @@ GAMES_SYNC_TOKEN_FILE="$STATE_DIR/games-sync-token"
 EMBEDDED_GAMES=(
   "bingo BINGO Seasonal Bingo Royale"
   "mini-games MINI_GAMES Seasonal Mini Games"
+  "race RACE Seasonal Race"
 )
 
 game_explanation() {

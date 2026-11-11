@@ -42,10 +42,8 @@ describe('favourite rooms', () => {
     const { agent } = await registerUser(t, 'anna');
     expect((await agent.put('/api/chat/favourites/rooms/organisers')).status).toBe(404);
     expect((await agent.put('/api/chat/favourites/rooms/nope')).status).toBe(404);
-    await agent.put('/api/chat/favourites/rooms/seasonal-race').expect(200);
-    t.db
-      .prepare("UPDATE chat_rooms SET read_access = 'organisers' WHERE slug = 'seasonal-race'")
-      .run();
+    await agent.put('/api/chat/favourites/rooms/race').expect(200);
+    t.db.prepare("UPDATE chat_rooms SET read_access = 'organisers' WHERE slug = 'race'").run();
     expect((await favourites(agent)).rooms).toEqual([]);
   });
 });

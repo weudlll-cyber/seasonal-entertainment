@@ -3,9 +3,10 @@
 // Path:        server/src/games/embeddedRoutes.js
 // Project:     Seasonal Entertainment
 // Description: The site's side of the embedded games at /games/<slug> (games/embedded.js:
-//              bingo, mini-games; docs/AUTH.md, "Embedded games"; decided 2026-11-02 for Bingo
-//              and 2026-11-04 for Mini Games: inside this site players sign in only through this
-//              site's login, delivered like the event bot's admin page). One mechanism for every
+//              bingo, mini-games, race; docs/AUTH.md, "Embedded games"; decided 2026-11-02 for
+//              Bingo, 2026-11-04 for Mini Games and 2026-11-11 for the race: inside this site
+//              players sign in only through this site's login, delivered like the event bot's
+//              admin page). One mechanism for every
 //              game: a slug not switched on (GAMES_EMBEDDED), or not in the list at all, answers
 //              404; every answer is Cache-Control: no-store.
 //              - GET /api/games/<slug>/authorize: the game's sign-in route asks it through
