@@ -14,7 +14,12 @@ entry waits for.
 
 ### Built, waiting for the merge
 
-- None.
+- **Recordings backed up once each** — built on `feat/backup-recordings` (decided
+  2026-11-11): the nightly archive leaves the call recordings out; each finished recording is
+  encrypted once into the backup folder's `recordings/` (again only when it changed), kept 14
+  days after it was deleted on the site; the PC scripts fetch only what they do not have (by
+  name and size) and never delete; a restore takes `--recordings` and names every missing one
+  (docs/DEPLOYMENT.md, "Backups", "Restoring").
 
 ### To try on the live server
 

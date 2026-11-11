@@ -571,8 +571,18 @@ Every night at 03:30 `seasonal-backup.timer` runs `scripts/backup.mjs` inside th
 (`server/src/backup/`):
 
 - The database is copied through **SQLite's online backup API**, which stays consistent while the
-  site runs, and is checked with `PRAGMA integrity_check`. The media folder is copied too (with
-  call recordings, about 480 MB per recorded hour at most), together with a `manifest.json`.
+  site runs, and is checked with `PRAGMA integrity_check`. The media folder is copied too,
+  **without the call recordings**, together with a `manifest.json`.
+- **The call recordings are backed up once each** (decided 2026-11-11; an hour of recording is
+  about 450 MB, which every nightly archive would otherwise carry 14 times over): right after
+  the archive, on the same timer, every finished recording without a backup yet is encrypted to
+  the same key into `/var/backups/seasonal/recordings/<file>.age`
+  (`server/src/backup/recordings.js`). A file already backed up is not touched again, unless it
+  changed after its backup (then once more). A recording still being recorded waits for the
+  next night, so every recording is in a backup after the first nightly run after it ended
+  (none waits longer). A recording deleted on the site keeps its backup for **14 days**, like
+  the archives (a `<file>.age.gone` mark notes when it was first missed), then it goes. The
+  run's log line counts them: new, again, kept, still recording, removed.
 - **Encrypted** with age to your **public** key (decision rule of 2026-10-19). Only
   `/var/backups/seasonal/<UTC time>.tar.age` stays on the server. The private key exists only on
   your PC, so neither the server nor anyone who takes the files from it can read them.
@@ -593,6 +603,10 @@ the `age1…` key, enables the timer, runs one backup and checks it.
 
 On a Windows PC, once (all commands are PowerShell; `deploy/pc/` holds the scripts). Linux and
 macOS follow below; the server side (step 2) is the same for all three.
+
+The PC scripts also fetch the recordings' own backups into `<your backup folder>\recordings`
+(`recordings/` on Linux and macOS): each one that is not there yet or has another size; they
+are never deleted on the PC, also not when the server lets one go.
 
 **1. The age key pair.** Install the age tool, version **1.2.1** (the version the encryption is
 checked against): `winget install --id FiloSottile.age --version 1.2.1`. Or download
@@ -778,21 +792,38 @@ age -d -i ~/SeasonalBackupKey/backup-key.txt -o ~/restore.tar ~/SeasonalBackups/
 scp ~/restore.tar root@example.org:/var/backups/seasonal/restore.tar
 ```
 
+The recordings come from their own backups: decrypt each into one folder and copy it over
+(PowerShell; on Linux and macOS the same with `age -d` in a loop and `scp -r`):
+
+```powershell
+New-Item -ItemType Directory "$HOME\restore-recordings" | Out-Null
+Get-ChildItem "$HOME\SeasonalBackups\recordings\*.age" | ForEach-Object {
+  age -d -i "$HOME\SeasonalBackupKey\backup-key.txt" -o "$HOME\restore-recordings\$($_.BaseName)" $_.FullName }
+scp -r "$HOME\restore-recordings" root@example.org:/var/backups/seasonal/restore-recordings
+```
+
 On the server:
 
 ```sh
 cd /opt/seasonal-entertainment/deploy/site
 docker compose run --rm --no-deps site node scripts/restore.mjs /backups/restore.tar --check
 docker compose stop site
-docker compose run --rm --no-deps site node scripts/restore.mjs /backups/restore.tar --force
+docker compose run --rm --no-deps site node scripts/restore.mjs /backups/restore.tar --force \
+  --recordings /backups/restore-recordings
 docker compose start site
-rm /var/backups/seasonal/restore.tar          # the plain copy goes again
+sudo /opt/seasonal-entertainment/deploy/install.sh --update   # sets the recordings folder's rights again
+rm -r /var/backups/seasonal/restore.tar /var/backups/seasonal/restore-recordings   # plain copies go
 ```
 
-Then delete `restore.tar` on the PC too.
+Then delete `restore.tar` and `restore-recordings` on the PC too.
 
 - `--check` verifies the checksum, the SQLite integrity and the media count, and touches
   nothing.
+- **The recordings**: after the database, every finished recording the restored database names
+  is put back from `--recordings` (`restoreRecordings`, `server/src/backup/restore.js`); one in
+  place already is kept (an archive from before 2026-11-11 still holds them). Each recording with
+  no file anywhere is named ("MISSING recording …") and the restore ends with exit code 1, never
+  silently. Bring the missing ones and run the same command again, or accept the gap.
 - **Deleted accounts stay deleted** (decided 2026-11-02): every account deleted after the backup
   was taken is deleted again right after the restore, with its messages and files, exactly as the
   site deletes one. The site notes each deletion (account id, username, time; nothing else) in
@@ -812,7 +843,8 @@ Then delete `restore.tar` on the PC too.
 - **On a new server**, put the old `SECRET_ENCRYPTION_KEY` (the copy you took off the old
   server) into `deploy/site/site.env` before the restore and restart the site. Otherwise 2FA
   users must sign in with recovery codes.
-- A restore drill now and then is the only proof a backup works. CI decrypts one made by the
+- A restore drill now and then is the only proof a backup works: the archive, and the
+  recordings with `--recordings`, until the restore reports no MISSING recording. CI decrypts one made by the
   real image with the real age tool and runs the restore check on it.
 
 ## Troubleshooting

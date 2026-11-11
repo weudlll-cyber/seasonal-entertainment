@@ -14,6 +14,10 @@ import Database from 'better-sqlite3';
 export const DB_FILE = 'seasonal.db';
 export const MEDIA = 'media';
 export const MANIFEST = 'manifest.json';
+// The call recordings: media/recordings on the site, and the folder of their own backups beside
+// the nightly archives (recordings.js). The nightly archive leaves them out (decided
+// 2026-11-11): each one is backed up once instead.
+export const RECORDINGS = 'recordings';
 
 export const sha256Of = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
 

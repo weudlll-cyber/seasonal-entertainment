@@ -8,7 +8,9 @@
 #              backup user), keeps a set number of them, logs every run, and catches up after
 #              the PC was off: everything on the server that is not here yet is fetched (the
 #              server keeps 14 days). Files arrive as ".partial" and get their name only when
-#              complete. Works in Windows PowerShell 5.1 and PowerShell 7.
+#              complete. The call recordings' own backups (one per recording, since 2026-11-11)
+#              go to <LocalDir>\recordings: fetched when not here yet or of another size, never
+#              deleted here. Works in Windows PowerShell 5.1 and PowerShell 7.
 #              Get-SeasonalBackups.ps1 runs it; SeasonalBackups.Tests.ps1 tests it.
 # ============================================================
 
@@ -26,6 +28,18 @@ function Select-BackupNames {
 function Select-MissingBackups {
     param([string[]] $Remote, [string[]] $Local)
     @(Select-BackupNames $Remote | Where-Object { $Local -notcontains $_ })
+}
+
+# The call recordings' own backups (server/src/backup/recordings.js, since 2026-11-11) in an
+# "ls -l" listing: the size is the 5th field, the path the last; only .age files.
+function Select-RecordingBackups {
+    param([string[]] $Lines)
+    @($Lines | ForEach-Object {
+            $fields = -split "$_"
+            if ($fields.Count -ge 9 -and $fields[-1] -match '\.age$') {
+                [pscustomobject]@{ Name = Split-Path -Leaf $fields[-1]; Size = [long] $fields[4] }
+            }
+        })
 }
 
 # One line with the time into the log file (and the output).
@@ -107,6 +121,34 @@ function Invoke-BackupDownload {
             $failed += $name
         }
     }
+    # The recordings' own backups into <LocalDir>\recordings: each fetched once, again when its
+    # size on the server differs (backed up once more); never deleted here.
+    $recordingsDir = Join-Path $LocalDir 'recordings'
+    New-Item -ItemType Directory -Path $recordingsDir -Force | Out-Null
+    $listing = $null
+    try { $listing = Invoke-Sftp $Sftp $target $KeyFile "ls -l $RemoteDir/recordings" }
+    catch { Write-BackupLog $LogFile 'recordings: none on the server yet' }
+    if ($null -ne $listing) {
+        $fetched = 0
+        foreach ($backup in (Select-RecordingBackups $listing)) {
+            $file = Join-Path $recordingsDir $backup.Name
+            if ((Test-Path $file) -and (Get-Item $file).Length -eq $backup.Size) { continue }
+            $partial = "$file.partial"
+            try {
+                Invoke-Sftp $Sftp $target $KeyFile "get $RemoteDir/recordings/$($backup.Name) `"$partial`"" | Out-Null
+                if (-not (Test-Path $partial)) { throw 'nothing arrived' }
+                Move-Item -Path $partial -Destination $file -Force
+                $fetched++
+                Write-BackupLog $LogFile "fetched recording $($backup.Name)"
+            }
+            catch {
+                Write-BackupLog $LogFile "FAILED recording $($backup.Name) : $_"
+                $failed += "recording $($backup.Name)"
+            }
+        }
+        Get-ChildItem -Path $recordingsDir -Filter '*.partial' -File | Remove-Item -Force
+        Write-BackupLog $LogFile "recordings: $fetched fetched"
+    }
     foreach ($name in (Remove-OldBackups -LocalDir $LocalDir -Keep $Keep)) {
         Write-BackupLog $LogFile "removed $name (keeping $Keep)"
     }
@@ -114,5 +156,5 @@ function Invoke-BackupDownload {
     Write-BackupLog $LogFile 'done'
 }
 
-Export-ModuleMember -Function Select-BackupNames, Select-MissingBackups, Remove-OldBackups,
-    Write-BackupLog, Invoke-BackupDownload
+Export-ModuleMember -Function Select-BackupNames, Select-MissingBackups, Select-RecordingBackups,
+    Remove-OldBackups, Write-BackupLog, Invoke-BackupDownload

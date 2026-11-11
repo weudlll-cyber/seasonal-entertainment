@@ -531,7 +531,8 @@ server/
                            (the two members; a reporter's shared copy for moderators)
   src/recap/               the weekly recap: its text, its sources, the Monday job, the
                            admins' "Post recap now" (docs/CHAT.md, "Weekly recap")
-  src/backup/              backup and restore of the database and media (the scripts'
+  src/backup/              backup and restore of the database and media, the call
+                           recordings backed up once each (recordings.js; the scripts'
                            library; DEPLOYMENT.md)
   seeds/chat-media/        the starter stickers and GIFs (owner's own files, README credits)
   test/helpers/testApp.js  app on a temporary database for tests (chat.js: chat helpers,
