@@ -58,7 +58,8 @@ test('a profile: written on the account page, reached from chat, a message from 
   await expect(about.getByRole('link')).toHaveCount(0);
   const shown = two.getByRole('img', { name: 'Profile picture of profileone' });
   await expect(shown).toBeVisible();
-  expect(await shown.evaluate((img) => img.naturalWidth)).toBeGreaterThan(0);
+  // Loaded, not only placed: under load the picture may still be on its way.
+  await expect.poll(() => shown.evaluate((img) => img.naturalWidth)).toBeGreaterThan(0);
 
   // "Send message": the chat drawer opens that conversation.
   await two.getByRole('button', { name: 'Send message' }).click();

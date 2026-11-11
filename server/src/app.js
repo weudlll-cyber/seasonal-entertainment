@@ -165,9 +165,9 @@ export function createApp({
   api.use('/keys', keyRoutes(db, config));
   api.use('/admin/users', adminUserRoutes(db, config, chat, discord));
   // Member profiles (profiles/, docs/AUTH.md "Member profiles"): members only.
-  api.use('/admin/users', adminProfileRoutes(db, config));
-  api.use('/members', memberProfileRoutes(db, config));
-  api.use('/profile', ownProfileRoutes(db, config));
+  api.use('/admin/users', adminProfileRoutes(db, chat));
+  api.use('/members', memberProfileRoutes(db, config, chat));
+  api.use('/profile', ownProfileRoutes(db, config, chat));
   api.use('/admin/audit', adminAuditRoutes(db));
   api.use('/info', infoRoutes(db));
   api.use('/admin/info', adminInfoRoutes(db));

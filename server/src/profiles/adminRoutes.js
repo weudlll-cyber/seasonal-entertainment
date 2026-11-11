@@ -17,7 +17,8 @@ import { loadById } from '../http/loadById.js';
 import { deleteFiles } from './routes.js';
 import { removePicture, setAbout } from './store.js';
 
-export function adminProfileRoutes(db, config) {
+// chat: mountChat()'s handle, for removing the picture's files.
+export function adminProfileRoutes(db, chat) {
   const router = express.Router();
   const loadTarget = loadById((id) => findUserById(db, id), 'target', 'account');
   const audit = (req, action) =>
@@ -42,7 +43,7 @@ export function adminProfileRoutes(db, config) {
       audit(req, 'user.profile_picture_clear');
       return removed;
     })();
-    deleteFiles(config, files);
+    deleteFiles(chat, files);
     res.json({ ok: true });
   });
 

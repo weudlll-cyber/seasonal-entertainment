@@ -623,7 +623,8 @@ Decided 2026-11-11: each member has a profile page at `/members/<name>`
 - **The picture**: uploaded by the member, by the chat images' rules (JPG, PNG, WebP or GIF; the
   size and megapixel limits of the chat settings, docs/SETTINGS.md) and stored like them:
   re-encoded without metadata, full size and thumbnail under the media folder's `uploads/`
-  (`processUpload` with images only). A new one replaces the old, whose files go; the member
+  (`processUpload` with images only, through the chat handle's `images.storePicture`). A new one
+  replaces the old, whose files go; the member
   removes it; it goes with the account (`server/src/chat/accountData.js`). Served only to
   members (`GET /api/members/<name>/picture/<full|thumb>`), never cached; shown on the profile
   page only, not beside chat messages.

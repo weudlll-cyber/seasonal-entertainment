@@ -720,6 +720,10 @@ const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork, em
 //                                                from a link, discord/iconLink.js)
 // chat.images.iconLimit                          { bytes, message }: the icon limit (256 KB)
 //                                                and the upload's answer beyond it
+// chat.images.storePicture(buffer)               a member's profile picture by the chat
+//                                                images' rules, stored like them: { ok, stored }
+//                                                or { ok: false, message } (profiles/routes.js)
+// chat.images.pictureMaxBytes()                  the size setting now, its upload's limit
 // chat.attach(httpServer)                        the WebSocket, once the server listens
 // await chat.start()                             first-start rooms, the embedded games' rooms
 //                                                where missing, media, retention job

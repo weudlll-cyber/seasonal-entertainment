@@ -10,31 +10,29 @@
 //                A locked account is not found (404) like one that does not exist.
 //              - GET /api/members/:username/picture/:variant: thumb or full, never cached.
 //              - PUT /api/profile/about, POST and DELETE /api/profile/picture: one's own. The
-//                picture takes the chat images' rules (type, size and megapixels: site settings,
-//                processUpload) and storage (media files under uploads/); a new one replaces
-//                the old, whose files go.
+//                picture takes the chat images' rules (type, size and megapixels: site settings)
+//                and storage (media files under uploads/), through the chat handle
+//                (chat.images.storePicture, chat/mount.js); a new one replaces the old, whose
+//                files go.
 //              The writes count against one limit per account (profileEdit).
 // ============================================================
 
 import path from 'node:path';
 import express from 'express';
 import { cleanAbout, validateAbout } from '@seasonal-entertainment/shared/profileRules.js';
-import { stepsOf } from '../chat/authorSteps.js';
+import { shownSteps, stepsOfUser } from '../discord/steps.js';
 import { allow } from '../http/access.js';
 import { rawBody } from '../http/bodies.js';
 import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { currentKeyId } from '../keys/store.js';
-import { deleteMediaFile } from '../media/files.js';
-import { ImageRejected } from '../media/imageCheck.js';
-import { imageMaxPixels, uploadLimits } from '../settings/derived.js';
-import { IMAGE_TYPES, processUpload } from '../uploads/process.js';
 import { findProfile, removePicture, setAbout, setPicture } from './store.js';
 
 const VARIANTS = { full: 'pictureFile', thumb: 'pictureThumb' };
 
-// What a member sees of another (or of themselves: own).
-function profileView(db, profile, viewer) {
+// What a member sees of another (or of themselves: own). urlOf: the chat's media address of a
+// stored file (the step icons), as the chat shows them.
+function profileView(db, profile, viewer, urlOf) {
   const base = `/api/members/${encodeURIComponent(profile.username)}/picture`;
   // The version in the address: a new picture is a new address, so no page shows the old one.
   const version = encodeURIComponent(profile.pictureAt ?? '');
@@ -47,16 +45,17 @@ function profileView(db, profile, viewer) {
     picture: profile.pictureFile
       ? { full: `${base}/full?v=${version}`, thumb: `${base}/thumb?v=${version}` }
       : null,
-    steps: stepsOf(db, [profile.id]).get(profile.id) ?? [],
+    steps: shownSteps(stepsOfUser(db, profile.id), urlOf),
     canReceive: currentKeyId(db, profile.id) !== null,
     own: profile.id === viewer.id,
   };
 }
 
-// The files a change took away, deleted once it is written.
-const deleteFiles = (config, files) => files.forEach((file) => deleteMediaFile(config, file));
+// The files a change took away, deleted once it is written (through the chat handle).
+export const deleteFiles = (chat, files) => files.forEach((file) => chat.images.remove(file));
 
-export function memberProfileRoutes(db, config) {
+// chat: mountChat()'s handle (chat/mount.js), the only way into the chat area.
+export function memberProfileRoutes(db, config, chat) {
   const router = express.Router();
   const shown = (req, res, next) => {
     const profile = findProfile(db, req.params.username);
@@ -66,7 +65,7 @@ export function memberProfileRoutes(db, config) {
   };
 
   router.get('/:username', allow('member'), shown, (req, res) => {
-    res.json({ ok: true, profile: profileView(db, req.profile, req.user) });
+    res.json({ ok: true, profile: profileView(db, req.profile, req.user, chat.images.url) });
   });
 
   router.get('/:username/picture/:variant', allow('member'), shown, (req, res) => {
@@ -82,13 +81,13 @@ export function memberProfileRoutes(db, config) {
   return router;
 }
 
-export function ownProfileRoutes(db, config) {
+export function ownProfileRoutes(db, config, chat) {
   const router = express.Router();
   const perUser = makeLimiter(config.rateLimits.profileEdit, {
     keyGenerator: (req) => `user:${req.user.id}`,
   });
   // The size limit is a setting: read per request (as the chat's uploads do).
-  const rawFile = (req, res, next) => rawBody(uploadLimits(db).maxBytes)(req, res, next);
+  const rawFile = (req, res, next) => rawBody(chat.images.pictureMaxBytes())(req, res, next);
 
   router.put('/about', allow('member'), perUser, (req, res) => {
     const about = req.body?.about;
@@ -99,27 +98,18 @@ export function ownProfileRoutes(db, config) {
   });
 
   router.post('/picture', allow('member'), perUser, rawFile, async (req, res) => {
-    let stored;
-    try {
-      stored = await processUpload(req.body, 'picture', config, {
-        maxBytes: uploadLimits(db).maxBytes,
-        maxPixels: imageMaxPixels(db),
-        types: IMAGE_TYPES,
-      });
-    } catch (err) {
-      if (!(err instanceof ImageRejected)) throw err;
-      return sendError(res, 400, 'invalid_file', err.message);
+    const picture = Buffer.isBuffer(req.body) ? await chat.images.storePicture(req.body) : null;
+    if (!picture?.ok) {
+      return sendError(res, 400, 'invalid_file', picture?.message ?? 'No picture was sent.');
     }
-    deleteFiles(config, setPicture(db, req.user.id, stored));
+    deleteFiles(chat, setPicture(db, req.user.id, picture.stored));
     res.status(201).json({ ok: true });
   });
 
   router.delete('/picture', allow('member'), perUser, (req, res) => {
-    deleteFiles(config, removePicture(db, req.user.id));
+    deleteFiles(chat, removePicture(db, req.user.id));
     res.json({ ok: true });
   });
 
   return router;
 }
-
-export { deleteFiles };
