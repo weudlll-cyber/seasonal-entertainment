@@ -6,7 +6,8 @@
 //              recording"; decided 2026-11-10: recordings stay public, each with a stable link
 //              that shows a preview card where it is posted). The server answers the path with
 //              the client's index.html plus Open Graph and Twitter meta tags for that recording
-//              (the call's title, the date in UTC and the length, the page's URL, the site's logo
+//              (the call's title, the date in the site's time zone (Vienna, CET/CEST; SITE_ZONE)
+//              and the length, the page's URL, the site's logo
 //              as the image, the public video as og:video), every value HTML-escaped; the client
 //              then shows the page (pages/RecordingPage.jsx). A missing, deleted or unfinished
 //              recording, or calls or recording not set up, answer 404 with the plain
@@ -17,7 +18,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { formatDuration } from '@seasonal-entertainment/shared/chapterRules.js';
-import { formatDateTime } from '@seasonal-entertainment/shared/localWeek.js';
+import { SITE_ZONE, formatDateTime } from '@seasonal-entertainment/shared/localWeek.js';
 import { selfOrigin } from '../http/csrf.js';
 import { findListedRecording } from './recordings.js';
 import { RECORDING_ENCODING } from './service.js';
@@ -36,7 +37,8 @@ const escapeHtml = (value) =>
 export function shareTags(recording, origin) {
   const url = `${origin}/recordings/${recording.id}`;
   const video = `${origin}/api/calls/${recording.callId}/recordings/${recording.id}/video`;
-  const when = formatDateTime(recording.startedAt, 'UTC');
+  // In the site's time zone with its abbreviation, as the weekly recap writes dates.
+  const when = formatDateTime(recording.startedAt, SITE_ZONE);
   const length = recording.seconds === null ? '' : ` · ${formatDuration(recording.seconds)}`;
   const title = `${recording.title} (recording)`;
   const description = `Community call recording, ${when}${length}.`;

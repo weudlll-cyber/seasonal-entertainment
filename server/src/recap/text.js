@@ -13,10 +13,11 @@
 // ============================================================
 
 import { DISCLAIMER_PATH, NOT_ADVICE } from '@seasonal-entertainment/shared/disclaimer.js';
-import { formatDate, formatDateTime } from '@seasonal-entertainment/shared/localWeek.js';
+import { SITE_ZONE, formatDate, formatDateTime } from '@seasonal-entertainment/shared/localWeek.js';
 import { formatChange } from '@seasonal-entertainment/shared/priceChange.js';
 
-export const RECAP_ZONE = 'Europe/Vienna';
+// The recap is written in the site's time zone (shared/localWeek.js).
+export const RECAP_ZONE = SITE_ZONE;
 const capitalised = (token) => token[0].toUpperCase() + token.slice(1);
 
 // One event of the list: a bot event (perhaps with its call on this site) or a call.

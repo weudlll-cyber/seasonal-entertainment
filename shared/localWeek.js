@@ -96,6 +96,11 @@ export function formatDay(instant, timeZone) {
   }).format(new Date(instant));
 }
 
+// The site's own time zone, where the server writes a date for people (the weekly recap's text,
+// a recording's share card; decided 2026-11-11): Vienna, with its abbreviation (CET / CEST).
+// In the browser every date is the device's own zone (client/src/app/dates.js).
+export const SITE_ZONE = 'Europe/Vienna';
+
 // A non-breaking space: the zone never ends up alone on the next line.
 const NBSP = String.fromCharCode(0xa0);
 const yearOf = (instant, timeZone) =>

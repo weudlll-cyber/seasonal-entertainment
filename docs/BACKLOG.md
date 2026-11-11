@@ -17,7 +17,9 @@ entry waits for.
 - **A share link per recording** — built on `feat/recording-share` (decided 2026-11-10):
   `/recordings/<id>` shows only that recording; the server adds the preview card's Open Graph
   and Twitter tags (the logo as the image, the video as `og:video`); "Share" on every recording
-  copies the link or opens the phone's share sheet (docs/CALLS.md, "Sharing a recording").
+  copies the link or opens the phone's share sheet (docs/CALLS.md, "Sharing a recording"). The
+  card's date is in the site's time zone with its abbreviation (`SITE_ZONE`, Vienna, as the
+  weekly recap; 2026-11-11), no longer UTC.
 
 ### To try on the live server
 

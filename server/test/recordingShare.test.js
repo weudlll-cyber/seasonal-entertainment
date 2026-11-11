@@ -66,7 +66,8 @@ it('answers the page with the preview card of that recording, values escaped', a
   const html = res.text;
   expect(meta(html, 'og:title')).toBe('Q&amp;A &lt;night&gt; &quot;live&quot; (recording)');
   expect(html).not.toContain('<night>');
-  expect(meta(html, 'og:description')).toMatch(/^Community call recording, .+\sUTC · 12:34\.$/);
+  // The site's time zone with its abbreviation (SITE_ZONE, Vienna), not UTC.
+  expect(meta(html, 'og:description')).toMatch(/^Community call recording, .+\sCES?T · 12:34\.$/);
   expect(meta(html, 'og:url')).toBe(`${ORIGIN}/recordings/${id}`);
   expect(meta(html, 'og:type')).toBe('video.other');
   expect(meta(html, 'og:image')).toBe(`${ORIGIN}/brand/logo.webp`);
