@@ -940,13 +940,16 @@ The script takes the scenarios as arguments (`bash deploy/test/run.sh nginx`). I
 carries the label `seasonal.test` and is removed at the end (`KEEP=1` keeps it). Not testable
 there: UDP media from outside (the PC's Docker network is not the internet).
 
-Three quick ones run in CI (no root, no Docker): `bash deploy/test/bot-admin-token.test.sh` checks
+Four quick ones run in CI (no root, no Docker): `bash deploy/test/bot-admin-token.test.sh` checks
 how the event bot's token is read from its env file and which tokens nginx can carry ("The
 event bot's admin page", "The token"); `bash deploy/test/discord.test.sh` checks how the Discord
 settings are taken (from a secret file or the terminal, asked once, removed with `--discord`,
 the secret never shown; "Discord login"); `bash deploy/test/update-copy.test.sh` checks the copy
 `--update` makes without backups (where it lands, root only, the newest three kept, a failed
-copy stopping the update, no copy with backups set up; "Updating"). `sudo bash
+copy stopping the update, no copy with backups set up; "Updating"); `bash
+deploy/test/backup-listing.test.sh` checks that the installer's newest backup (before an
+install or update, and in `--status`) is an encrypted archive by name, never the `recordings/`
+folder beside them (since 2026-11-11). `sudo bash
 deploy/test/server-hardening.test.sh` checks the hardening of 2026-11-04 (the bot page's
 headers, the logs without secret queries, LiveKit on 127.0.0.1, the refusal of a checkout
 others could change, the backup folder 750; as root also the folder's rules for real).

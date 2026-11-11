@@ -22,7 +22,12 @@ entry waits for.
   (docs/DEPLOYMENT.md, "Backups", "Restoring"). Fixed with it (2026-11-11): the Windows module
   failed with "You cannot call a method on a null-valued expression" whenever the server held
   no archive (a fresh install before its first night, or only `recordings/`), because an empty
-  name list reached `Select-BackupNames` as `$null`; it now logs "0 backups" and goes on.
+  name list reached `Select-BackupNames` as `$null`; it now logs "0 backups" and goes on. Also
+  fixed with it: the installer took the newest entry of the backup folder by time (`ls -t`),
+  which after a night with a recording is `recordings/`, so an install or `--update` would have
+  stopped with "the newest backup is not an encrypted .tar.age" and `--status` named the folder;
+  `newest_backup` and `backup_count` (`deploy/install/lib/common.sh`) count only the archives.
+  The CI backup check picks the archive by name the same way (it failed on this pull request).
 
 ### To try on the live server
 

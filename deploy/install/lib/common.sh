@@ -9,8 +9,9 @@
 #              an explanation shown only when really asked; secrets echoed as one * per
 #              character), KEY=VALUE files read without executing them and edited key by key
 #              (from someone else's file, such as the event bot's, only the one key asked for),
-#              the installer's own state in /etc/seasonal/, and the refusal to run from a
-#              checkout anyone but root could change (refuse_unsafe_checkout).
+#              the installer's own state in /etc/seasonal/, the refusal to run from a
+#              checkout anyone but root could change (refuse_unsafe_checkout), and the newest
+#              encrypted backup and their count in the backup folder (newest_backup).
 # ============================================================
 
 # Where the installer keeps what it must remember between runs (root only).
@@ -18,6 +19,15 @@ STATE_DIR=/etc/seasonal
 STATE_FILE="$STATE_DIR/install.conf"
 # shellcheck disable=SC2034 # read by manage.sh
 SNAPSHOT_ROOT=/var/backups/seasonal-install
+
+# The newest encrypted backup's name in folder $1, or nothing (docs/DEPLOYMENT.md, "Backups").
+# Only <UTC time>.tar.age files count, never the recordings/ folder beside them: it is written
+# right after the archive, so by time it is often the newest entry. The names sort by time.
+newest_backup() {
+  find "$1" -maxdepth 1 -type f -name '*.tar.age' -printf '%f\n' 2>/dev/null | sort | tail -n 1
+}
+# How many encrypted backups folder $1 holds (0 when there is none, or no folder).
+backup_count() { find "$1" -maxdepth 1 -type f -name '*.tar.age' 2>/dev/null | wc -l; }
 
 say() { printf '[install] %s\n' "$*"; }
 warn() { printf '[install] WARNING: %s\n' "$*" >&2; }
