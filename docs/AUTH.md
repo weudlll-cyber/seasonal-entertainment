@@ -749,25 +749,31 @@ is an organiser/admin route (with 2FA). Details: ARCHITECTURE.md, "Chat".
 For the complete game-developer entry point, copyable implementation brief and acceptance
 checklist, start with [GAME-INTEGRATION.md](GAME-INTEGRATION.md).
 
-Two games, each its own repository, installable on its own with its own login, run inside this
-site at `https://<site domain>/games/<slug>` (a fixed list, `server/src/games/embedded.js`):
+Three games, each its own repository, installable on its own with its own login, run inside
+this site at `https://<site domain>/games/<slug>` (a fixed list, `server/src/games/embedded.js`):
 
 | Game                  | Slug         | Path                | Chat room    | Decided                  |
 | --------------------- | ------------ | ------------------- | ------------ | ------------------------ |
 | Seasonal Bingo Royale | `bingo`      | `/games/bingo`      | `bingo`      | 2026-11-02 (room: 11-04) |
 | Seasonal Mini Games   | `mini-games` | `/games/mini-games` | `mini-games` | 2026-11-04               |
+| Seasonal Race         | `race`       | `/games/race`       | `race`       | 2026-11-11               |
+
+The race's side is built in its own repository; this site's part (2026-11-11) changes nothing
+visible while the race is not switched on, and its card on /games stays "coming soon" until the
+race is live.
 
 There players sign in **only through this site's login**, delivered like the event bot's admin
 page: the host's nginx asks the site who the visitor is, and a game never sees a password or a
-session of this site (decided 2026-11-02 for Bingo, 2026-11-04 for Mini Games). One mechanism
+session of this site (decided 2026-11-02 for Bingo, 2026-11-04 for Mini Games, 2026-11-11 for
+the race). One mechanism
 serves every game, the same for each: `server/src/games/embeddedRoutes.js`. A game's routes
 exist only while it is switched on: `GAMES_EMBEDDED`, a comma list of slugs (the installer's
-`--bingo` and `--mini-games`, docs/DEPLOYMENT.md, "Embedded games"); `GAMES_BINGO_EMBEDDED=1`,
+`--bingo`, `--mini-games` and `--race`, docs/DEPLOYMENT.md, "Embedded games"); `GAMES_BINGO_EMBEDDED=1`,
 the switch of installs from before the list, still puts `bingo` in it. A game switched off,
 and any slug not in the list, answers 404. Every answer carries `Cache-Control: no-store`.
 Each game shows this site's chat in its own room (docs/EMBED.md, "The embedded games' rooms").
-Decisions, the same for both games (taken for Bingo on the dates given, for Mini Games on
-2026-11-04):
+Decisions, the same for every game (taken for Bingo on the dates given, for Mini Games on
+2026-11-04, for the race on 2026-11-11):
 
 - a website admin is a game admin (2026-11-03);
 - who may host matches is decided per game (2026-11-09): an admin always, a member only for the
@@ -790,7 +796,7 @@ Decisions, the same for both games (taken for Bingo on the dates given, for Mini
 - each game stays its own project, installable on its own; this site's installer only prepares
   the site, and each game's installer writes its own route file (2026-11-04).
 
-Below, `<slug>` is `bingo` or `mini-games`; both games get exactly the same answers.
+Below, `<slug>` is `bingo`, `mini-games` or `race`; every game gets exactly the same answers.
 
 **`GET /api/games/<slug>/authorize`** is asked by the game's sign-in route (for example
 `/games/bingo/auth/website`) through nginx's `auth_request` (or Caddy's `forward_auth`), with the

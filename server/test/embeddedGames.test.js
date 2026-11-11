@@ -3,8 +3,8 @@
 // Path:        server/test/embeddedGames.test.js
 // Project:     Seasonal Entertainment
 // Description: Guards the sign-in of the embedded games (games/embeddedRoutes.js,
-//              games/embedded.js; docs/AUTH.md, "Embedded games"), for Bingo and Mini Games
-//              alike: GET /api/games/<slug>/authorize answers 204 with exactly the
+//              games/embedded.js; docs/AUTH.md, "Embedded games"), for Bingo, Mini Games and the
+//              race alike: GET /api/games/<slug>/authorize answers 204 with exactly the
 //              X-Acting-User-* headers for a member, organiser and admin in good standing (id,
 //              name, role, email verified, may host, Discord steps as base64url JSON with public
 //              icon addresses) and X-Acting-Guest alone for anyone else (signed out, locked,
@@ -178,7 +178,13 @@ describe('the list of embedded games', () => {
     expect(games({ GAMES_BINGO_EMBEDDED: '0' })).toEqual([]);
     expect(games({ GAMES_EMBEDDED: 'mini-games' })).toEqual(['mini-games']);
     expect(games({ GAMES_EMBEDDED: ' mini-games , bingo ' })).toEqual(['bingo', 'mini-games']);
-    expect(games({ GAMES_EMBEDDED: 'mini-games', GAMES_BINGO_EMBEDDED: '1' })).toEqual(GAMES);
+    expect(games({ GAMES_EMBEDDED: 'mini-games', GAMES_BINGO_EMBEDDED: '1' })).toEqual([
+      'bingo',
+      'mini-games',
+    ]);
+    expect(games({ GAMES_EMBEDDED: 'race' })).toEqual(['race']);
+    expect(games({ GAMES_EMBEDDED: 'race,mini-games,bingo' })).toEqual(GAMES);
+    expect(GAMES).toEqual(['bingo', 'mini-games', 'race']);
     expect(() => games({ GAMES_EMBEDDED: 'bingo,chess' })).toThrow(/GAMES_EMBEDDED.*chess/);
   });
 

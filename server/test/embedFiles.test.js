@@ -39,7 +39,7 @@ async function embedded() {
 // An image mia sent in the members-only room from this site (her cookie).
 async function membersOnlyImage(here) {
   const sent = await upload(here, await makeImage('png'), 'pic.png');
-  await sendFile(here, sent.body.upload.id, 'look', 'seasonal-race');
+  await sendFile(here, sent.body.upload.id, 'look', 'race');
   return sent.body.upload;
 }
 const linksOf = (site, id) => site.post(`/api/chat/files/${id}/links`);

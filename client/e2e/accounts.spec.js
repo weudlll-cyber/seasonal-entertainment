@@ -81,10 +81,10 @@ test('register, log out and log in again', async ({ page }) => {
   // Only once the server accepted the subscription (a guest's socket is refused there) can a
   // push arrive; posting earlier would race the new connection.
   await expect
-    .poll(() => received.some((p) => p.includes('"subscribed"') && p.includes('seasonal-race')))
+    .poll(() => received.some((p) => p.includes('"subscribed"') && p.includes('"room":"race"')))
     .toBe(true);
   const live = `live ${Date.now()}`;
-  const posted = await page.request.post('/api/chat/rooms/seasonal-race/messages', {
+  const posted = await page.request.post('/api/chat/rooms/race/messages', {
     data: { body: live },
     headers: { Origin: SERVER },
   });

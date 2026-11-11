@@ -26,7 +26,7 @@ describe('rooms and guests', () => {
     expect(sent.body.message).toMatchObject({ body: 'hello', isGuest: true });
     expect(sent.body.message.author).toMatch(/^Guest-[a-z2-7]{6}$/);
     expect((await post(guest, 'announcements', 'hi')).status).toBe(403);
-    expect((await post(guest, 'seasonal-race', 'hi')).status).toBe(404);
+    expect((await post(guest, 'race', 'hi')).status).toBe(404);
     expect((await post(guest, 'organisers', 'hi')).status).toBe(404);
     const rooms = (await guest.get('/api/chat/rooms')).body;
     expect(rooms.rooms.map((r) => [r.slug, r.canWrite])).toEqual([
@@ -40,7 +40,7 @@ describe('rooms and guests', () => {
     t = chatApp();
     const { agent: member } = await registerUser(t, 'mia');
     const { agent: organiser } = await makeStaff(t, 'olga', 'organiser');
-    expect((await post(member, 'seasonal-race', 'hi')).status).toBe(201);
+    expect((await post(member, 'race', 'hi')).status).toBe(201);
     expect((await post(member, 'announcements', 'hi')).status).toBe(403);
     expect((await post(organiser, 'organisers', 'hi')).status).toBe(201);
     expect((await post(organiser, 'announcements', 'news')).status).toBe(201);

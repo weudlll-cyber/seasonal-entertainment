@@ -68,7 +68,7 @@ it('after the login a path of the app stays inside the app', async () => {
   expect([assign, replace].map((fn) => fn.mock.calls.length)).toEqual([0, 0]);
 });
 
-describe.each(['bingo', 'mini-games'])('the way back to /games/%s', (slug) => {
+describe.each(['bingo', 'mini-games', 'race'])('the way back to /games/%s', (slug) => {
   const NEXT = `/games/${slug}/auth/website?next=%2Fgames%2F${slug}%2F`;
   const loaded = async (path) => {
     await expect.poll(() => replace.mock.calls, { timeout: 20_000 }).toEqual([[path]]);

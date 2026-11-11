@@ -20,11 +20,20 @@ The game-side facts below were verified against the default branches on **2026-1
 Labels used here:
 
 - **Current**: implemented at those commits.
-- **Built**: implemented on the website since then, on `night/2026-11-10` (waiting for the
-  merge; decided 2026-11-09).
+- **Built**: implemented on the website since then and merged into `master`: `night/2026-11-10`
+  (PR #55, merged 2026-11-10 as c9980a7; decided 2026-11-09).
 - **Requested**: asked of the games, their own work.
 - **Required**: a requirement for a game adopting this integration.
 - **Proposed**: an idea, neither available nor decided.
+
+**Seasonal Race** (`race`) is the third embedded game (decided 2026-11-11). The website's
+part is built: the slug in the allowlist, its authorize route and account-changes feed, its
+"May host" box, the installer's `RACE` question and `--race`, its feed denied by nginx and
+Caddy, and its chat room `race` (the first-start room "Seasonal Race", members read and
+write; one race room, decided 2026-11-11). The race's own side is built in its own
+repository and was not verified here; nothing on this site changes visibly until the race is
+switched on, and its /games card stays "coming soon" until the race is live. The game-side
+facts in this guide are Bingo's and Mini Games'.
 
 The website's contracts:
 
@@ -39,13 +48,14 @@ The website's contracts:
 ## 1. Architecture and deployment profile
 
 The current profile is for **trusted games operated with the website on the same origin**:
-both embedded games are the owner's own, on the same server (decided 2026-11-09).
+the embedded games are the owner's own, on the same server (decided 2026-11-09).
 
 ```text
 Browser -> website nginx / Caddy
              /, /api/*, /embed/chat, /ws/chat -> website server
              /games/bingo/*                  -> Bingo server
              /games/mini-games/*             -> Mini Games server
+             /games/race/*                   -> race server (its own repository)
 ```
 
 The browser navigates to the game's own application under `/games/<slug>/`. The website
@@ -181,7 +191,9 @@ The embed (its URL, the game's room and its defaults, framing, postMessage messa
 snippet) is in [EMBED.md](EMBED.md#the-embedded-games-rooms). In short: frame
 `/embed/chat?room=<slug>&theme=<light|dark|auto>`; it signs in with the **website session**,
 not the game's, so it may show a member before the game has a session. The website makes one
-room per game (not per match) while the game is switched on.
+room per game (not per match) while the game is switched on; the race's room `race` is the
+first-start room "Seasonal Race", there before the race is switched on, with its own rules
+(members read and write): it embeds `/embed/chat?room=race&theme=auto`.
 
 Required: allow the iframe in the game's `frame-src` CSP; keep a referrer (`strict-origin`)
 so Firefox can identify the parent; if sandboxing, keep what the chat and its login popup need.
@@ -199,7 +211,7 @@ Three separate steps, not one switch (details in
 [DEPLOYMENT.md, "Embedded games"](DEPLOYMENT.md#embedded-games)):
 
 1. **Register and enable the integration.** The slugs are a fixed list
-   (`server/src/games/embedded.js`: `bingo`, `mini-games`); the installer's question switches a
+   (`server/src/games/embedded.js`: `bingo`, `mini-games`, `race`); the installer's question switches a
    game on (`GAMES_EMBEDDED`). A new game also needs its entry in `deploy/install/lib/games.sh`
    and its feed denied in `deploy/site/Caddyfile`, with docs and tests; an environment value or
    a game card alone is not enough.
@@ -227,7 +239,7 @@ popup and embed token, which authorizes website chat, not a game ([EMBED.md](EMB
 | Revocation events for a password change or reset                    | Built (`rights`); sign-out everywhere and per-device logout not planned |
 | Freshness limits for privileged actions on feed failure             | Rejected (2026-11-09): the 365-day feed and polling suffice             |
 | Hosting granted per game                                            | Built                                                                   |
-| Per-game capabilities beyond hosting; a sync token per game         | Not needed while both games are the owner's (2026-11-09)                |
+| Per-game capabilities beyond hosting; a sync token per game         | Not needed while the games are the owner's (2026-11-09)                 |
 | Versioned identity/feed contracts with shared executable tests      | Proposed                                                                |
 | One registration list for server, installer and proxy               | Proposed                                                                |
 | A separate-origin profile (e.g. OIDC with PKCE) for untrusted games | Proposed; needed only for a game not run by the owner                   |

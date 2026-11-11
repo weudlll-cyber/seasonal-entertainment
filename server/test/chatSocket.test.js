@@ -60,7 +60,7 @@ describe('chat WebSocket', () => {
     const url = await listening();
     const guest = connect(url);
     await guest.opened;
-    expect(await guest.subscribe('seasonal-race')).toEqual({ type: 'error', error: 'not_allowed' });
+    expect(await guest.subscribe('race')).toEqual({ type: 'error', error: 'not_allowed' });
     guest.ws.close();
   });
 

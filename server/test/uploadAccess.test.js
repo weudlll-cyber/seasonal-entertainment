@@ -73,7 +73,7 @@ describe('who gets a file', () => {
   it('readers of the room only; anyone else gets 404, like an unknown file', async () => {
     const { mia } = await start();
     const file = await uploadImage(mia);
-    await sendFile(mia, file.id, '', 'seasonal-race'); // members only
+    await sendFile(mia, file.id, '', 'race'); // members only
     const guest = await t.client().get(`/api/chat/files/${file.id}/full`);
     const unknown = await t.client().get('/api/chat/files/999999/full');
     expect([guest.status, unknown.status]).toEqual([404, 404]);

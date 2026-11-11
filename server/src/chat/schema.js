@@ -18,7 +18,7 @@
 //              mentioned member.
 //              Reports of a private conversation: the reason, and only when the reporter chose
 //              to share them, copies of the selected messages as the reporter provided them.
-//              migrateChat() brings older databases up.
+//              migrateChat() brings older databases up, the race room's new slug included.
 // ============================================================
 
 import { addMissingColumns } from '../db/addColumns.js';
@@ -170,4 +170,10 @@ export function migrateChat(db) {
   addMissingColumns(db, ADDED_COLUMNS);
   // Replaced by chat_reads (2026-10-18) before it was ever released; never held real data.
   db.exec('DROP TABLE IF EXISTS direct_reads');
+  // The seeded "Seasonal Race" room became the race game's room, whose slug is the game's
+  // (decided 2026-11-11). Only the slug changes: messages, rules and everything else hang on
+  // the room's id. Once: afterwards no room has the old slug, and a "race" room already there
+  // is never touched.
+  db.exec(`UPDATE chat_rooms SET slug = 'race'
+           WHERE slug = 'seasonal-race' AND NOT EXISTS (SELECT 1 FROM chat_rooms WHERE slug = 'race')`);
 }

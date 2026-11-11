@@ -747,7 +747,9 @@ docs/EMBED.md.
   login cookie and device unlock, exactly as on the site. The embedded games have rooms of their
   own, `bingo` and `mini-games`, made by the site while the game is switched on (guests read,
   members write; afterwards an ordinary room an admin edits; never deleted by switching the
-  game off; docs/EMBED.md, "The embedded games' rooms"; decided 2026-11-04).
+  game off; docs/EMBED.md, "The embedded games' rooms"; decided 2026-11-04), and `race`, the
+  first-start room "Seasonal Race" with its own rules, members read and write (its slug was
+  `seasonal-race` until 2026-11-11, renamed once at the start).
 - **On other sites an admin approved** (SE-NIGHT-2 follow-up, part A; owner decision
   2026-10-19): no cookie there. A login popup on this site hands the frame an embed token
   (docs/AUTH.md, "Embed tokens") and, unlocked with the password in the popup, the member's

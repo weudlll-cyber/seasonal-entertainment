@@ -24,8 +24,10 @@ entry waits for.
   server (an idea, not planned).
 - **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
   login is not planned, decided 2026-11-02).
-- **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
-  own repository and is not connected.
+- **Race-game connection** — the website's part is done (PR #64, 2026-11-11: the slug `race`,
+  its routes, room and installer question). Open: the race's own side, in its own repository;
+  then, once it is live, `RACE=yes` on the server and the /games card "Seasonal Race" switched
+  from "coming soon" to available.
 
 ### Known limits
 
@@ -71,6 +73,15 @@ entry waits for.
   room taken from the message list (at least 8rem), and a window too short for that scrolls the
   page; desktop unchanged (docs/DESIGN.md, "Compact chat composer";
   `client/e2e/composerNarrow.spec.js`).
+- **The race as the third embedded game, the website's part** — closed by `feat/race-slug`
+  (PR #64, merged 2026-11-11; decided 2026-11-11): `race` (Seasonal Race) in the allowlist, so
+  `/api/games/race/authorize`, `/api/games/race/account-changes`, its "May host" box and the
+  games list follow; the seeded "Seasonal Race" room is the race's room under the slug `race`
+  (one race room; older databases rename `seasonal-race` once, keeping everything; its rules
+  stay members read and write); the installer's `RACE` question (default no), `--race` and its
+  `--update` pass-through; the race's feed denied by nginx and Caddy. The /games card stays
+  "coming soon"; nothing visible changes while the race is off (docs/GAME-INTEGRATION.md,
+  docs/AUTH.md, "Embedded games", docs/EMBED.md).
 - **Polls** — closed by `feat/polls` (PR #63, merged 2026-11-11; decided 2026-11-10): `/polls`
   for everyone; organisers and admins create (fixed answers or free text, results after the
   vote or after the end, anonymous or not, a fixed end or by hand), end early, extend; members

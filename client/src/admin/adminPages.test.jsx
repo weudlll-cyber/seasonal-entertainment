@@ -31,6 +31,7 @@ const bert = {
 const GAMES = [
   { slug: 'bingo', name: 'Seasonal Bingo Royale' },
   { slug: 'mini-games', name: 'Seasonal Mini Games' },
+  { slug: 'race', name: 'Seasonal Race' },
 ];
 
 function renderAt(path) {
@@ -68,7 +69,8 @@ describe('users page', () => {
     renderAt('/admin/users');
     const bingo = await screen.findByLabelText('May host Seasonal Bingo Royale for bert');
     const mini = screen.getByLabelText('May host Seasonal Mini Games for bert');
-    expect([bingo.checked, mini.checked]).toEqual([false, true]);
+    const race = screen.getByLabelText('May host Seasonal Race for bert');
+    expect([bingo.checked, mini.checked, race.checked]).toEqual([false, true, false]);
     expect(screen.getByText('Seasonal Bingo Royale')).toBeInTheDocument();
     fireEvent.click(bingo);
     expect(await screen.findByText('Saved.')).toBeInTheDocument();
