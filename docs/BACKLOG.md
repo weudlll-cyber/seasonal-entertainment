@@ -12,21 +12,6 @@ entry waits for.
 - **Real sites to approve for the chat embed** — which game sites go on Admin → Embedding once
   the site is live (only exact `https://` origins).
 
-### Built, waiting for the merge
-
-- **Polls** — built on `feat/polls` (piece 2; decided 2026-11-10): `/polls` for everyone;
-  organisers and admins create (fixed answers or free text, results after the vote or after
-  the end, anonymous or not, a fixed end or by hand), end early, extend; members vote once
-  (changed only where results come after the end and the poll is not anonymous); written
-  answers only for organisers and admins; admins delete; audited; live for members over the
-  chat connection, every minute for guests. Piece 3: who may vote (all members, Discord steps
-  with the chat rooms' step rule, or organisers and admins only), the home page's Poll box and
-  the dot on "Polls". Piece 4: polls started in a live call, under its stage with a countdown
-  (1, 2 or 5 minutes or by hand), ended with the call. Follow-ups of 2026-11-11: newest first,
-  anonymous votes changeable until the end (ballot links only while open), the results rule
-  shown, polls in chat rooms (a card in the timeline, the room's read rules), every view
-  comfortable on a phone (docs/POLLS.md).
-
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
@@ -79,6 +64,18 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Polls** — closed by `feat/polls` (PR #63, merged 2026-11-11; decided 2026-11-10): `/polls`
+  for everyone; organisers and admins create (fixed answers or free text, results after the
+  vote or after the end, anonymous or not, a fixed end or by hand), end early, extend; members
+  vote once (changeable until the end where results come after the end); written answers only
+  for organisers and admins; admins delete; audited; live for members over the chat
+  connection, every minute for guests. Piece 3: who may vote (all members, Discord steps with
+  the chat rooms' step rule, or organisers and admins only), the home page's Poll box and the
+  dot on "Polls". Piece 4: polls started in a live call, under its stage with a countdown (1, 2
+  or 5 minutes or by hand), ended with the call. Follow-ups of 2026-11-11: newest first,
+  anonymous votes changeable too (ballot links only while open), the results rule shown, polls
+  in chat rooms (a card in the timeline, the room's read rules), every view comfortable on a
+  phone (docs/POLLS.md).
 - **Dependency updates by Renovate** — closed by `chore/renovate` (PR #61, merged 2026-11-11 as
   ab07274; 2026-11-10): `renovate.json`
   as in the game repositories (weekly grouped minor/patch, 3 days' wait, security at once),
