@@ -661,7 +661,8 @@ sftp -i "$HOME\.ssh\seasonal-backup" seasonal-backup@example.org     # "yes", th
 ```
 
 It fetches every backup the PC does not have yet, into `$HOME\SeasonalBackups`. It keeps the
-newest 30 there (`-Keep`) and logs each run to `download.log`.
+newest 30 there (`-Keep`) and logs each run to `download.log`. Run before the server's first
+night, it finds none yet: it logs "server has 0 backups, 0 new" and succeeds.
 
 **5. The daily task** (09:00; "run as soon as possible after a missed start" covers a PC that was
 off):

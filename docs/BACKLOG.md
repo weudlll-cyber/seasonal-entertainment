@@ -19,7 +19,10 @@ entry waits for.
   encrypted once into the backup folder's `recordings/` (again only when it changed), kept 14
   days after it was deleted on the site; the PC scripts fetch only what they do not have (by
   name and size) and never delete; a restore takes `--recordings` and names every missing one
-  (docs/DEPLOYMENT.md, "Backups", "Restoring").
+  (docs/DEPLOYMENT.md, "Backups", "Restoring"). Fixed with it (2026-11-11): the Windows module
+  failed with "You cannot call a method on a null-valued expression" whenever the server held
+  no archive (a fresh install before its first night, or only `recordings/`), because an empty
+  name list reached `Select-BackupNames` as `$null`; it now logs "0 backups" and goes on.
 
 ### To try on the live server
 

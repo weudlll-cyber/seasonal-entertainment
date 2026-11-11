@@ -36,7 +36,8 @@ function New-TempDir {
 function Stamp([int] $Day) { '2026-10-{0:d2}T03-30-00Z.tar.age' -f $Day }
 
 # A stand-in for sftp over $ServerDir: "ls -l" lists its recordings folder with sizes (fails
-# without one), "ls -1" lists it, "get" copies a file; a name in
+# without one), "ls -1" lists it as sftp does (its own command echoed first, folders too), "get"
+# copies a file; a name in
 # $FailOn makes get fail. Returns @{ Run = the stand-in; Calls = every call's arguments }.
 function New-FakeSftp([string] $ServerDir, [string[]] $FailOn = @()) {
     $calls = [System.Collections.ArrayList]::new()
@@ -53,7 +54,8 @@ function New-FakeSftp([string] $ServerDir, [string[]] $FailOn = @()) {
             }
         }
         elseif ($command -like 'ls -1 *') {
-            Get-ChildItem -Path $ServerDir -File | ForEach-Object { "/backups/$($_.Name)" }
+            "sftp> $command"
+            Get-ChildItem -Path $ServerDir | ForEach-Object { "/backups/$($_.Name)" }
         }
         elseif ($command -match '^get /backups/(\S+) "(.+)"$') {
             if ($FailOn -contains $Matches[1]) {
@@ -130,6 +132,21 @@ Assert-Equal $true (Test-Path (Join-Path $local 'recordings\a.mp4.age')) 'a reco
 $log = Get-Content -Path (Join-Path $local 'run.log')
 Assert-Equal $true (($log | Where-Object { $_ -match 'recordings: \d+ fetched$' } | Select-Object -Last 1) -match ': 0 fetched$') `
     'nothing fetched again'
+
+# --- no archive on the server yet: a fresh install before its first night, or a folder that holds
+# only recordings/. The run succeeds and still fetches the recordings.
+$server = New-TempDir
+$local = New-TempDir
+$failed = $null
+try { Invoke-Run $server $local (New-FakeSftp $server) } catch { $failed = "$_" }
+Assert-Equal $null $failed 'an empty server folder is no error'
+New-Item -ItemType Directory -Path (Join-Path $server 'recordings') | Out-Null
+Set-Content -Path (Join-Path $server 'recordings\d.mp4.age') -Value 'recording d'
+try { Invoke-Run $server $local (New-FakeSftp $server) } catch { $failed = "$_" }
+Assert-Equal $null $failed 'only recordings/ on the server is no error'
+Assert-Equal 'recording d' (Get-Content -Path (Join-Path $local 'recordings\d.mp4.age')) 'its recording arrived'
+$log = Get-Content -Path (Join-Path $local 'run.log')
+Assert-Equal $true (($log -join "`n") -match 'server has 0 backups, 0 new') 'the log says there is none yet'
 
 $script:tempDirs | ForEach-Object { Remove-Item -Path $_ -Recurse -Force }
 if ($script:failures -gt 0) {

@@ -17,10 +17,12 @@
 # What the server writes: its UTC time, then .tar.age (server/src/backup/encrypted.js).
 $script:BackupName = '^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z\.tar\.age$'
 
-# Backup file names among any names, oldest first (the names sort by time).
+# Backup file names among any names, oldest first (the names sort by time). $Names may be $null:
+# a function's empty result reaches its caller as $null (a server with no archive yet, its first
+# nights or only recordings/), and $null piped on still runs the block once, so it is skipped.
 function Select-BackupNames {
     param([string[]] $Names)
-    @($Names | ForEach-Object { Split-Path -Leaf $_.Trim() } |
+    @($Names | Where-Object { $_ } | ForEach-Object { Split-Path -Leaf $_.Trim() } |
         Where-Object { $_ -match $script:BackupName } | Sort-Object -Unique)
 }
 
