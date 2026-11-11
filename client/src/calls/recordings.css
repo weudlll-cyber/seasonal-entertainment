@@ -2,8 +2,9 @@
    File:        recordings.css
    Path:        client/src/calls/recordings.css
    Project:     Seasonal Entertainment
-   Description: Recordings in a list (RecordingItem.jsx: a call's page and the archive): one
-                under the other, each player at most the column's width, its chapters below.
+   Description: Recordings in a list (RecordingItem.jsx: a call's page, the archive and a
+                recording's own page): one under the other, each player at most the column's
+                width, "Share" and its chapters below.
    ============================================================ */
 
 .recording-list {
@@ -24,6 +25,11 @@
   width: min(100%, 640px);
   border-radius: var(--radius);
   background: #000;
+}
+
+/* "Share" under the player (ShareRecording.jsx), "Link copied" beside it. */
+.recording .recording-share {
+  margin-top: var(--space-1);
 }
 
 /* The chapters under the player: time and title, the editing actions beside them. */

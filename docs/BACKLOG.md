@@ -31,6 +31,9 @@ entry waits for.
 
 ### Proposals not decided
 
+- **A frame of the video as a recording's preview image** — the share card uses the site's logo
+  (2026-11-10); a picture taken from the recording itself would need new image tooling on the
+  server (an idea, not planned).
 - **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
   login is not planned, decided 2026-11-02).
 - **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
@@ -73,6 +76,16 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **A share link per recording** — closed by `feat/recording-share` (PR #59, merged 2026-11-11 as
+  2b8a695; decided 2026-11-10):
+  `/recordings/<id>` shows only that recording; the server adds the preview card's Open Graph
+  and Twitter tags (the logo as the image, the video as `og:video`); "Share" on every recording
+  copies the link or opens the phone's share sheet (docs/CALLS.md, "Sharing a recording"). The
+  card's date, like every time in the weekly recap's text, is in UTC, labelled "UTC" (`UTC_ZONE`
+  in `shared/localWeek.js`; decided 2026-11-11: texts the server writes for many readers at once
+  use UTC; pages keep each viewer's own device time zone). The recap's posting weekday and hour
+  stay in Vienna time. The share page counts against the reads per IP of `/api` (CodeQL's
+  "Missing rate limiting" on the pull request, 2026-11-11).
 - **CI security scans** — closed by `chore/ci-security` (2026-11-10): the CI job "security"
   runs gitleaks over the full history, `npm audit` of the production dependencies (high or
   critical fails) and osv-scanner on `package-lock.json` (CVSS 7 or more fails); the workflow
