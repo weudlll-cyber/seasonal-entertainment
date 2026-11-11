@@ -11,10 +11,12 @@
 //              in development mode (scripts/calls-dev.mjs, pinned and checksum-checked binary);
 //              the event bot is the run's own fake database (scripts/build-bot-fixtures.mjs).
 //              A second server on 3811 has Discord switched on, its calls to Discord answered by
-//              the server tests' pretend Discord (client/e2e/fakeDiscordPreload.mjs).
+//              the server tests' pretend Discord (client/e2e/fakeDiscordPreload.mjs). Web push is on
+//              with a key pair derived for the run (the account page's switch shows).
 //              On CI a failing test keeps its trace and screenshot for the workflow to upload.
 // ============================================================
 
+import { createECDH, createHash } from 'node:crypto';
 import { existsSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -38,6 +40,12 @@ if (!existsSync('client/dist/index.html')) {
 // This file is loaded by the runner and again by every worker; the env var makes them all
 // agree on one directory per run.
 process.env.SE_E2E_DIR ??= mkdtempSync(path.join(tmpdir(), 'se-e2e-'));
+
+// The run's web push key pair, derived from a fixed phrase: the same in every worker, and no
+// key-like literal in the repository (gitleaks). It signs nothing but this throw-away run's
+// messages; real keys are made by the installer.
+const e2ePush = createECDH('prime256v1');
+e2ePush.setPrivateKey(createHash('sha256').update('se-e2e-web-push').digest());
 
 // The real server's environment, set explicitly so a local .env (dev database, bootstrap token,
 // bot databases, Discord) can never leak in.
@@ -75,6 +83,9 @@ const serverEnv = {
   // bot stays off, so the home page keeps its season marks (seasonMarks.spec.js).
   BOT_FIXTURE_DIR: path.join(process.env.SE_E2E_DIR, 'bots'),
   EVENT_BOT_DB: path.join(process.env.SE_E2E_DIR, 'bots', 'stannouncebot.db'),
+  // Web push on (docs/CALLS.md), so the account page shows its switch (push.spec.js).
+  VAPID_PUBLIC_KEY: e2ePush.getPublicKey().toString('base64url'),
+  VAPID_PRIVATE_KEY: e2ePush.getPrivateKey().toString('base64url'),
 };
 
 export default defineConfig({

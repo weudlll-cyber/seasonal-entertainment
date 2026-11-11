@@ -396,6 +396,44 @@ Organisers and admins start a poll from a live call's page; it shows under the s
 countdown (1, 2 or 5 minutes, or by hand) and ends with the call at the latest (docs/POLLS.md,
 "Polls in a call"; decided 2026-11-10).
 
+## Push when a call starts
+
+One web push, decided 2026-11-10: when a call goes live (started at once, or a planned call
+started), every member who turned it on for a device gets "<call title> has started" there,
+also while the site and the browser are closed; a click opens the call's page.
+
+- **The switch**: "When a call starts (on this device, also while the site is closed)" in the
+  account page's Notifications section (`client/src/notify/PushSwitch.jsx`), off until the
+  member turns it on, per device: turning it on asks the browser's permission and subscribes
+  this browser; each device is turned on by itself. Members only; guests never have it. Not
+  shown where the browser cannot receive push, or while the site has no push keys.
+- **Only this**: chat, rooms, polls and everything else still notify only while a tab of the
+  site is open (docs/CHAT.md, "Notifications").
+- **Sending** (`server/src/push/`): the start route hands the call over without waiting
+  (`wentLive`, `server/src/app.js`), so a slow or failing push service never delays or fails
+  the start. The library `web-push` (3.6.7, MPL-2.0, pinned) signs each message with the
+  site's VAPID keys and encrypts it for the device; Node's `fetch` delivers it. A message lives
+  15 minutes at the push service; a subscription it answers 404 or 410 for is dropped.
+- **Who gets it**: every subscribed device of an unlocked account (calls are shown to
+  everyone). Locking an account removes its subscriptions (unlocking does not bring them back);
+  deleting it takes them with it.
+- **What is stored** (`push_subscriptions`): per account and device the browser's push
+  address, its two keys and which site key it was made for (one made for other keys, after a
+  restore onto a server with new ones, is dropped, never sent to). The push address lies at the
+  browser maker's push service (Google, Mozilla, Apple, Microsoft), which carries the encrypted
+  message; only those services are accepted as addresses, so no member can make the site call
+  an address of their choosing.
+- **Routes** (`/api/push`, members only, one limit per account, 30 a minute): `GET /` (the
+  public key, null while off), `POST /status`, `POST /subscriptions`, `DELETE /subscriptions`
+  (the device's address in the body, so it is in no log line).
+- **Keys**: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` in `site.env`, made once by the installer
+  (docs/DEPLOYMENT.md, "Web push"). Without them push is off.
+- **Trying it**: push needs a secure page: the live site (https), or `http://localhost` on the
+  computer running the site. On a phone, the site over plain `http://<PC address>` cannot
+  subscribe; on an iPhone, only after the site was added to the home screen (Safari's rule).
+- Tests: `server/test/push.test.js`, `client/src/notify/pushSwitch.test.jsx`,
+  `client/e2e/push.spec.js`, `deploy/test/push.test.sh`.
+
 ## Recording
 
 Call recording, video and audio (decided 2026-10-22). It is **off unless set up**:

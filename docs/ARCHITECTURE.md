@@ -108,6 +108,8 @@ commit, which the client build carries for the update notice):
 | `GAMES_EMBEDDED`                    | (unset: none)                                 | the embedded games, slugs `bingo`, `mini-games`, `race` (docs/AUTH.md)    |
 | `GAMES_BINGO_EMBEDDED`              | (unset: off; `1` on)                          | also puts `bingo` in that list (installs from before it)                  |
 | `GAMES_SYNC_TOKEN`                  | (unset: the feed refuses everyone)            | the embedded games' token for their account-changes feed                  |
+| `VAPID_PUBLIC_KEY`                  | (unset: no web push)                          | with `VAPID_PRIVATE_KEY`: the web push key pair (docs/CALLS.md)           |
+| `VAPID_PRIVATE_KEY`                 | (unset: no web push)                          | made once by the installer, never printed (docs/DEPLOYMENT.md)            |
 | `DISCORD_CLIENT_ID`                 | (unset: Discord login off)                    | the Discord application's client id (docs/AUTH.md, "Discord")             |
 | `DISCORD_GUILD_ID`                  | (unset: Discord login off)                    | the Seasonal Tokens Discord server whose roles are read                   |
 | `DISCORD_CLIENT_SECRET`             | (unset: Discord login off)                    | the application's client secret (or the file below)                       |
@@ -554,6 +556,8 @@ server/
                            (recordings.js, chapters.js, recordingRoutes.js, chapterRoutes.js)
   src/polls/               polls (docs/POLLS.md): schema, store (votes, results as each viewer
                            may see them), routes under /api/polls
+  src/push/                web push when a call starts (docs/CALLS.md): schema, store, config
+                           (VAPID keys, the push services), routes under /api/push, send
   src/settings/            admin-editable site settings (docs/SETTINGS.md): kinds, groups/,
                            definitions, store, admin routes, the organisers' banner routes
                            (bannerRoutes.js), one change with its audit entry (change.js)

@@ -424,6 +424,25 @@ game's installer writes its own route file and never edits this site's files.
 - Tests: `bash deploy/test/games.test.sh` (CI too; with Docker it also runs the real nginx and
   the site's Caddy).
 
+### Web push
+
+The site sends one web push, "<call title> has started", to the devices of members who turned
+it on (docs/CALLS.md, "Push when a call starts"; decided 2026-11-10). Nothing to answer:
+
+- **The keys**: the installer makes the site's VAPID key pair once with openssl (a P-256 key) into
+  `site.env` as `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` (mode 600, never printed or logged;
+  `deploy/install/lib/push.sh`). Every re-run and `--update` keeps them: the members'
+  subscriptions are bound to the public key. Only a half pair (one key removed by hand) is made
+  again whole. Without both keys the site has no push and the account page no switch.
+- **Backups and restoring**: like the other secrets in `site.env`, the keys are not in the
+  backups; the subscriptions are (the database). On the same server nothing changes. **On a new
+  server**, put the old `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` into `deploy/site/site.env`
+  with the old `SECRET_ENCRYPTION_KEY` ("Restoring") before the restore; with new keys the
+  restored subscriptions are dropped at the next call start and members turn the switch on
+  again.
+- No firewall change: the site posts to the browsers' push services over https, outbound only.
+- Tests: `bash deploy/test/push.test.sh` (CI too).
+
 ### What you still do yourself
 
 - **DNS records** (see "Requirements").
@@ -869,7 +888,8 @@ Then delete `restore.tar` and `restore-recordings` on the PC too.
   site looks right.
 - **On a new server**, put the old `SECRET_ENCRYPTION_KEY` (the copy you took off the old
   server) into `deploy/site/site.env` before the restore and restart the site. Otherwise 2FA
-  users must sign in with recovery codes.
+  users must sign in with recovery codes. The same for `VAPID_PUBLIC_KEY` and
+  `VAPID_PRIVATE_KEY` ("Web push"); otherwise members turn "When a call starts" on again.
 - A restore drill now and then is the only proof a backup works: the archive, and the
   recordings with `--recordings`, until the restore reports no MISSING recording. CI decrypts one made by the
   real image with the real age tool and runs the restore check on it.
@@ -1037,17 +1057,18 @@ chmod 600 .env site.env
 
 In **`site.env`**:
 
-| Key                     | Value                                                                                                                                        |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SESSION_SECRET`        | `openssl rand -hex 32` (production refuses less than 32 characters)                                                                          |
-| `BOOTSTRAP_TOKEN`       | `openssl rand -hex 32`, only until the first admin exists                                                                                    |
-| `SECRET_ENCRYPTION_KEY` | `openssl rand -base64 32`: encrypts 2FA secrets; **keep a copy off the server**, apart from the backups (losing it locks 2FA: docs/AUTH.md)  |
-| `CALLS_URL`             | `wss://<CALLS_DOMAIN>`                                                                                                                       |
-| `CALLS_API_KEY`         | a key name, e.g. `seasonal`                                                                                                                  |
-| `CALLS_API_SECRET`      | `openssl rand -hex 32` (the same pair goes into `deploy/calls/.env` as `LIVEKIT_KEYS="<key>: <secret>"`)                                     |
-| `COINGECKO_API_KEY`     | a free CoinGecko Demo key: ETH, POL and BTC prices on `/info/prices`; empty: "not connected" (docs/BOTS.md)                                  |
-| `BACKUP_RECIPIENT`      | the `age1…` public key ("Backups")                                                                                                           |
-| everything else         | empty: the defaults fit (docs/ARCHITECTURE.md, "Runtime configuration"); chat limits and link previews are admin settings (docs/SETTINGS.md) |
+| Key                     | Value                                                                                                                                         |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SESSION_SECRET`        | `openssl rand -hex 32` (production refuses less than 32 characters)                                                                           |
+| `BOOTSTRAP_TOKEN`       | `openssl rand -hex 32`, only until the first admin exists                                                                                     |
+| `SECRET_ENCRYPTION_KEY` | `openssl rand -base64 32`: encrypts 2FA secrets; **keep a copy off the server**, apart from the backups (losing it locks 2FA: docs/AUTH.md)   |
+| `CALLS_URL`             | `wss://<CALLS_DOMAIN>`                                                                                                                        |
+| `CALLS_API_KEY`         | a key name, e.g. `seasonal`                                                                                                                   |
+| `CALLS_API_SECRET`      | `openssl rand -hex 32` (the same pair goes into `deploy/calls/.env` as `LIVEKIT_KEYS="<key>: <secret>"`)                                      |
+| `COINGECKO_API_KEY`     | a free CoinGecko Demo key: ETH, POL and BTC prices on `/info/prices`; empty: "not connected" (docs/BOTS.md)                                   |
+| `BACKUP_RECIPIENT`      | the `age1…` public key ("Backups")                                                                                                            |
+| `VAPID_PUBLIC_KEY`      | with `VAPID_PRIVATE_KEY`: the web push key pair, base64url (P-256); `npx web-push generate-vapid-keys` makes one; empty: no push ("Web push") |
+| everything else         | empty: the defaults fit (docs/ARCHITECTURE.md, "Runtime configuration"); chat limits and link previews are admin settings (docs/SETTINGS.md)  |
 
 Set by `docker-compose.yml`, never in `site.env` (it would be overruled): `NODE_ENV=production`,
 `HOST`, `PORT`, `TRUST_PROXY=1` (exactly one proxy in front), `PUBLIC_ORIGIN=https://<SITE_DOMAIN>`,

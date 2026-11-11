@@ -12,6 +12,16 @@ entry waits for.
 - **Real sites to approve for the chat embed** — which game sites go on Admin → Embedding once
   the site is live (only exact `https://` origins).
 
+### Built, waiting for the merge
+
+- **Installable site and a "call started" web push** — built on `feat/push-call-started`
+  (decided 2026-11-10; replaces "Notifications when the browser is closed (web push) — not
+  built" of 2026-10-22): a web app manifest with icons from the emblem and a service worker that
+  caches nothing; one push only, "<call title> has started" when a call goes live, to members
+  who turned "When a call starts" on for a device (account page, Notifications); VAPID keys made
+  once by the installer (docs/CALLS.md, "Push when a call starts"; docs/DEPLOYMENT.md, "Web
+  push").
+
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
@@ -600,8 +610,6 @@ entry waits for.
     deletable, and production starts with a fresh database.
   - **Screenshots under `reports/`** — deleted (about 100 MB); the morning sheets stay.
   - **Docker leftovers of unproven origin** — left; they can be removed in Docker Desktop.
-- **Notifications when the browser is closed (web push)** — not built (decided 2026-10-22):
-  notifications come only while a tab of the site is open (docs/CHAT.md, "Notifications").
 - **No "best buy" wording** — closed by the SE-NIGHT-6 finish (`feat/se-night-6`; owner decision
   2026-10-23): the fair price table's rank shows only the number, under "Rank (vs. fair price)",
   with a line saying what it shows and the not-financial-advice link; "underpriced" and

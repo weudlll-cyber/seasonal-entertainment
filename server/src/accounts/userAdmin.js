@@ -3,7 +3,7 @@
 // Path:        server/src/accounts/userAdmin.js
 // Project:     Seasonal Entertainment
 // Description: Admin-side changes to accounts: list/search (with the games each may host,
-//              gameHosts.js), role, lock.
+//              gameHosts.js), role, lock (which also ends its web push, push/store.js).
 //              The last active admin can be neither demoted nor locked, nor deleted
 //              (deletion.js): enforced here, in the data layer, so no route can bypass it (as
 //              in the race game).
@@ -12,6 +12,7 @@
 import { noteAccountChange } from './accountChanges.js';
 import { grantedGamesByUser } from './gameHosts.js';
 import { escapeLike } from '../db/like.js';
+import { removeUserSubscriptions } from '../push/store.js';
 
 export class LastAdminError extends Error {
   constructor() {
@@ -72,6 +73,9 @@ export function setLocked(db, user, locked) {
   db.transaction(() => {
     guardLastAdmin(db, user, { locked });
     db.prepare('UPDATE users SET locked = ? WHERE id = ?').run(locked ? 1 : 0, user.id);
+    // A locked account's devices get no more web push; unlocking does not bring them back
+    // (the member turns the switch on again).
+    if (locked) removeUserSubscriptions(db, user.id);
     if (Boolean(locked) !== Boolean(user.locked)) {
       noteAccountChange(db, user.id, locked ? 'locked' : 'unlocked');
     }
