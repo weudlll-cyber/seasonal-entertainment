@@ -490,6 +490,29 @@ Secrets, data, certificates and answers are kept. The site is down for the few s
 container needs to start. Chat connections reconnect by themselves, and running calls continue
 when only the site changes. Database changes are additive (added on start).
 
+### Dependency updates
+
+New versions of what the site is built from arrive as pull requests from Renovate (the GitHub
+app, installed 2026-11-10; configuration `renovate.json`, modelled on the game repositories).
+Nothing reaches the server by itself: every update PR needs the owner's approval to merge
+(master is protected, and its checks must pass), and the server gets it only with the next
+`--update`.
+
+- **Weekly**: one PR, "minor and patch updates", gathers every non-major update, digest and pin
+  of the week; a new version waits 3 days first. A major update comes as its own PR.
+- **Security fixes** come at once, labelled `security`, without the wait.
+- **What it covers**: the npm dependencies (pinned to exact versions), the GitHub Actions
+  (pinned to commit SHAs), the images in `deploy/` (the Dockerfile's `NODE_IMAGE`, the compose
+  files' LiveKit, egress, Redis and Caddy, by tag and digest), the CI's scanner images and
+  shellcheck, and the LiveKit binary of the browser tests (`scripts/calls-binary.mjs`).
+- **LiveKit** comes as its own PR, "LiveKit server": the server image and the browser tests'
+  binary move together. Renovate changes the binary's version but cannot know its SHA-256
+  values, so that PR's CI fails until the three checksums in `scripts/calls-binary.mjs` are
+  updated from LiveKit's release (the download is checked against them).
+- `deploy/test/renovate.test.sh` (CI) checks that the configuration still finds those pins.
+- Not covered: the load test's `livekit-cli` image (`deploy/calls/loadtest.sh`), pinned by digest
+  only; it is updated by hand when needed.
+
 ### What visitors see
 
 A page that was open during the update keeps working and never reloads by itself in the middle
@@ -571,8 +594,18 @@ Every night at 03:30 `seasonal-backup.timer` runs `scripts/backup.mjs` inside th
 (`server/src/backup/`):
 
 - The database is copied through **SQLite's online backup API**, which stays consistent while the
-  site runs, and is checked with `PRAGMA integrity_check`. The media folder is copied too (with
-  call recordings, about 480 MB per recorded hour at most), together with a `manifest.json`.
+  site runs, and is checked with `PRAGMA integrity_check`. The media folder is copied too,
+  **without the call recordings**, together with a `manifest.json`.
+- **The call recordings are backed up once each** (decided 2026-11-11; an hour of recording is
+  about 450 MB, which every nightly archive would otherwise carry 14 times over): right after
+  the archive, on the same timer, every finished recording without a backup yet is encrypted to
+  the same key into `/var/backups/seasonal/recordings/<file>.age`
+  (`server/src/backup/recordings.js`). A file already backed up is not touched again, unless it
+  changed after its backup (then once more). A recording still being recorded waits for the
+  next night, so every recording is in a backup after the first nightly run after it ended
+  (none waits longer). A recording deleted on the site keeps its backup for **14 days**, like
+  the archives (a `<file>.age.gone` mark notes when it was first missed), then it goes. The
+  run's log line counts them: new, again, kept, still recording, removed.
 - **Encrypted** with age to your **public** key (decision rule of 2026-10-19). Only
   `/var/backups/seasonal/<UTC time>.tar.age` stays on the server. The private key exists only on
   your PC, so neither the server nor anyone who takes the files from it can read them.
@@ -593,6 +626,10 @@ the `age1…` key, enables the timer, runs one backup and checks it.
 
 On a Windows PC, once (all commands are PowerShell; `deploy/pc/` holds the scripts). Linux and
 macOS follow below; the server side (step 2) is the same for all three.
+
+The PC scripts also fetch the recordings' own backups into `<your backup folder>\recordings`
+(`recordings/` on Linux and macOS): each one that is not there yet or has another size; they
+are never deleted on the PC, also not when the server lets one go.
 
 **1. The age key pair.** Install the age tool, version **1.2.1** (the version the encryption is
 checked against): `winget install --id FiloSottile.age --version 1.2.1`. Or download
@@ -647,7 +684,8 @@ sftp -i "$HOME\.ssh\seasonal-backup" seasonal-backup@example.org     # "yes", th
 ```
 
 It fetches every backup the PC does not have yet, into `$HOME\SeasonalBackups`. It keeps the
-newest 30 there (`-Keep`) and logs each run to `download.log`.
+newest 30 there (`-Keep`) and logs each run to `download.log`. Run before the server's first
+night, it finds none yet: it logs "server has 0 backups, 0 new" and succeeds.
 
 **5. The daily task** (09:00; "run as soon as possible after a missed start" covers a PC that was
 off):
@@ -778,21 +816,38 @@ age -d -i ~/SeasonalBackupKey/backup-key.txt -o ~/restore.tar ~/SeasonalBackups/
 scp ~/restore.tar root@example.org:/var/backups/seasonal/restore.tar
 ```
 
+The recordings come from their own backups: decrypt each into one folder and copy it over
+(PowerShell; on Linux and macOS the same with `age -d` in a loop and `scp -r`):
+
+```powershell
+New-Item -ItemType Directory "$HOME\restore-recordings" | Out-Null
+Get-ChildItem "$HOME\SeasonalBackups\recordings\*.age" | ForEach-Object {
+  age -d -i "$HOME\SeasonalBackupKey\backup-key.txt" -o "$HOME\restore-recordings\$($_.BaseName)" $_.FullName }
+scp -r "$HOME\restore-recordings" root@example.org:/var/backups/seasonal/restore-recordings
+```
+
 On the server:
 
 ```sh
 cd /opt/seasonal-entertainment/deploy/site
 docker compose run --rm --no-deps site node scripts/restore.mjs /backups/restore.tar --check
 docker compose stop site
-docker compose run --rm --no-deps site node scripts/restore.mjs /backups/restore.tar --force
+docker compose run --rm --no-deps site node scripts/restore.mjs /backups/restore.tar --force \
+  --recordings /backups/restore-recordings
 docker compose start site
-rm /var/backups/seasonal/restore.tar          # the plain copy goes again
+sudo /opt/seasonal-entertainment/deploy/install.sh --update   # sets the recordings folder's rights again
+rm -r /var/backups/seasonal/restore.tar /var/backups/seasonal/restore-recordings   # plain copies go
 ```
 
-Then delete `restore.tar` on the PC too.
+Then delete `restore.tar` and `restore-recordings` on the PC too.
 
 - `--check` verifies the checksum, the SQLite integrity and the media count, and touches
   nothing.
+- **The recordings**: after the database, every finished recording the restored database names
+  is put back from `--recordings` (`restoreRecordings`, `server/src/backup/restore.js`); one in
+  place already is kept (an archive from before 2026-11-11 still holds them). Each recording with
+  no file anywhere is named ("MISSING recording …") and the restore ends with exit code 1, never
+  silently. Bring the missing ones and run the same command again, or accept the gap.
 - **Deleted accounts stay deleted** (decided 2026-11-02): every account deleted after the backup
   was taken is deleted again right after the restore, with its messages and files, exactly as the
   site deletes one. The site notes each deletion (account id, username, time; nothing else) in
@@ -812,7 +867,8 @@ Then delete `restore.tar` on the PC too.
 - **On a new server**, put the old `SECRET_ENCRYPTION_KEY` (the copy you took off the old
   server) into `deploy/site/site.env` before the restore and restart the site. Otherwise 2FA
   users must sign in with recovery codes.
-- A restore drill now and then is the only proof a backup works. CI decrypts one made by the
+- A restore drill now and then is the only proof a backup works: the archive, and the
+  recordings with `--recordings`, until the restore reports no MISSING recording. CI decrypts one made by the
   real image with the real age tool and runs the restore check on it.
 
 ## Troubleshooting
@@ -907,13 +963,16 @@ The script takes the scenarios as arguments (`bash deploy/test/run.sh nginx`). I
 carries the label `seasonal.test` and is removed at the end (`KEEP=1` keeps it). Not testable
 there: UDP media from outside (the PC's Docker network is not the internet).
 
-Three quick ones run in CI (no root, no Docker): `bash deploy/test/bot-admin-token.test.sh` checks
+Four quick ones run in CI (no root, no Docker): `bash deploy/test/bot-admin-token.test.sh` checks
 how the event bot's token is read from its env file and which tokens nginx can carry ("The
 event bot's admin page", "The token"); `bash deploy/test/discord.test.sh` checks how the Discord
 settings are taken (from a secret file or the terminal, asked once, removed with `--discord`,
 the secret never shown; "Discord login"); `bash deploy/test/update-copy.test.sh` checks the copy
 `--update` makes without backups (where it lands, root only, the newest three kept, a failed
-copy stopping the update, no copy with backups set up; "Updating"). `sudo bash
+copy stopping the update, no copy with backups set up; "Updating"); `bash
+deploy/test/backup-listing.test.sh` checks that the installer's newest backup (before an
+install or update, and in `--status`) is an encrypted archive by name, never the `recordings/`
+folder beside them (since 2026-11-11). `sudo bash
 deploy/test/server-hardening.test.sh` checks the hardening of 2026-11-04 (the bot page's
 headers, the logs without secret queries, LiveKit on 127.0.0.1, the refusal of a checkout
 others could change, the backup folder 750; as root also the folder's rules for real).

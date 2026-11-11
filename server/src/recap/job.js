@@ -18,10 +18,10 @@
 
 import { startOfWeek, weekTime } from '@seasonal-entertainment/shared/localWeek.js';
 import { recapNotifyIds } from '../accounts/userStore.js';
-import { RECAP_DAYS } from '../settings/groups/recap.js';
+import { RECAP_DAYS, RECAP_SCHEDULE_ZONE } from '../settings/groups/recap.js';
 import { getSetting, getTextSetting, setSetting } from '../settings/store.js';
 import { priceChanges, recentRecordings, upcomingWeek } from './sources.js';
-import { RECAP_ZONE, recapText } from './text.js';
+import { recapText } from './text.js';
 
 // After the room of the setting: where the recap goes when that room no longer exists.
 const RECAP_ROOMS = ['announcements', 'general'];
@@ -33,7 +33,7 @@ const CHECK_MS = 60_000;
 function postingTime(db, week) {
   const day = RECAP_DAYS.findIndex((d) => d.value === getSetting(db, 'recap.weekday'));
   const hour = Number(getSetting(db, 'recap.time').slice(0, 2));
-  return weekTime(week, day, hour, RECAP_ZONE);
+  return weekTime(week, day, hour, RECAP_SCHEDULE_ZONE);
 }
 
 // deps: { db, config, chat (the chat handle: system.post, notify.member), callsConfigured,
@@ -44,7 +44,7 @@ export function postRecap(
 ) {
   const body = recapText(
     {
-      weekStart: startOfWeek(now, RECAP_ZONE),
+      weekStart: startOfWeek(now, RECAP_SCHEDULE_ZONE),
       prices: priceChanges(config, log),
       upcoming: upcomingWeek(db, config, callsConfigured, now, log),
       recordings: recentRecordings(db, now),
@@ -64,8 +64,8 @@ export function postRecap(
 
 // The latest week (its Monday 00:00 in Vienna, ms) whose posting time has passed at `now`.
 function latestWeek(db, now) {
-  const week = startOfWeek(now, RECAP_ZONE);
-  return now >= postingTime(db, week) ? week : startOfWeek(now, RECAP_ZONE, -1);
+  const week = startOfWeek(now, RECAP_SCHEDULE_ZONE);
+  return now >= postingTime(db, week) ? week : startOfWeek(now, RECAP_SCHEDULE_ZONE, -1);
 }
 
 // The week whose recap is due at `now`, or null. On the very first round (nothing stored yet,

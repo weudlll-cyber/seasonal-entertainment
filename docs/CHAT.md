@@ -653,7 +653,8 @@ never posts twice in one week.
   only in these messages, paths on this site ("/calls/12") become links within the site
   (`MessageParts.jsx`).
 - **What it says** (`recap/text.js`), facts only, no advice, dates in the site's format in
-  Vienna time:
+  UTC, labelled "UTC" (`UTC_ZONE`; decided 2026-11-11: one text for readers in every zone; the
+  heading names the posting week's Monday, a date of the schedule's Vienna week):
   - each season token's price change over the past 7 days, from the first to the last price in
     the price bot's file (read-only; a token without data is left out, and without the price
     bot the whole part);

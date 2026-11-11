@@ -9,7 +9,9 @@
 #              user, never a prompt (BatchMode); everything on the server that is not here yet
 #              is fetched, so a PC that was off catches up (the server keeps 14 days); files
 #              arrive as ".partial" and get their name only when complete; the newest N are
-#              kept; every run is logged to download.log. Plain POSIX sh, for cron or launchd.
+#              kept; every run is logged to download.log. The call recordings' own backups
+#              (one per recording, since 2026-11-11) go to <local dir>/recordings/: fetched
+#              when not here yet or of another size, never deleted here. Plain POSIX sh, for cron or launchd.
 #              Exit code 0: all fetched; 1: something failed (see the log); 2: wrong usage.
 #              Example: get-seasonal-backups.sh --server example.org --key-file ~/.ssh/seasonal-backup
 #              Tested by get-seasonal-backups.test.sh.
@@ -97,8 +99,40 @@ for name in $missing; do
   fi
 done
 
-# Leftovers of broken downloads, then the oldest beyond the newest $keep.
-for partial in "$local_dir"/*.partial; do
+# The call recordings' own backups (server/src/backup/recordings.js, since 2026-11-11): each one
+# fetched once into <local dir>/recordings/, again only when its size on the server differs (it
+# was backed up once more); never deleted here, also when the server has let it go.
+rec_dir="$local_dir/recordings"
+mkdir -p "$rec_dir" || exit 1
+if rec_listing="$(run_sftp "ls -l $remote_dir/recordings")"; then
+  # "ls -l" lines: the size is the 5th field, the path the last; only encrypted backups.
+  printf '%s\n' "$rec_listing" |
+    awk '$NF ~ /\.age$/ { name = $NF; sub(/.*\//, "", name); print $5, name }' >"$rec_dir/.listing"
+  fetched=0
+  while read -r size name; do
+    have=""
+    [ -f "$rec_dir/$name" ] && have="$(wc -c <"$rec_dir/$name" | tr -d ' ')"
+    [ "${have:-}" = "$size" ] && continue
+    partial="$rec_dir/$name.partial"
+    if out="$(run_sftp "get $remote_dir/recordings/$name \"$partial\"")" && [ -f "$partial" ]; then
+      mv -f "$partial" "$rec_dir/$name"
+      fetched=$((fetched + 1))
+      log "fetched recording $name"
+    else
+      log "FAILED recording $name : $(printf '%s' "${out:-nothing arrived}" | tr '\n' ' ')"
+      failed="${failed:+$failed, }recording $name"
+    fi
+  done <"$rec_dir/.listing"
+  rm -f "$rec_dir/.listing"
+  log "recordings: $fetched fetched"
+else
+  # A server from before 2026-11-11 has no such folder yet: nothing to fetch, no failure.
+  log "recordings: none on the server yet"
+fi
+
+# Leftovers of broken downloads, then the oldest beyond the newest $keep (archives only: the
+# recordings are kept).
+for partial in "$local_dir"/*.partial "$rec_dir"/*.partial; do
   [ -f "$partial" ] || continue
   rm -f "$partial"
   log "removed ${partial##*/} (a broken download)"

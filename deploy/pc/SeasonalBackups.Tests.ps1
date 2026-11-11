@@ -35,7 +35,9 @@ function New-TempDir {
 
 function Stamp([int] $Day) { '2026-10-{0:d2}T03-30-00Z.tar.age' -f $Day }
 
-# A stand-in for sftp over $ServerDir: "ls -1" lists it, "get" copies a file; a name in
+# A stand-in for sftp over $ServerDir: "ls -l" lists its recordings folder with sizes (fails
+# without one), "ls -1" lists it as sftp does (its own command echoed first, folders too), "get"
+# copies a file; a name in
 # $FailOn makes get fail. Returns @{ Run = the stand-in; Calls = every call's arguments }.
 function New-FakeSftp([string] $ServerDir, [string[]] $FailOn = @()) {
     $calls = [System.Collections.ArrayList]::new()
@@ -43,8 +45,17 @@ function New-FakeSftp([string] $ServerDir, [string[]] $FailOn = @()) {
         [void] $calls.Add(@($args))
         $command = (Get-Content -Path $args[1]).Trim()
         $global:LASTEXITCODE = 0
-        if ($command -like 'ls -1 *') {
-            Get-ChildItem -Path $ServerDir -File | ForEach-Object { "/backups/$($_.Name)" }
+        if ($command -like 'ls -l *') {
+            # The recordings' folder (a server from before 2026-11-11 has none: sftp fails).
+            $dir = Join-Path $ServerDir 'recordings'
+            if (-not (Test-Path $dir)) { $global:LASTEXITCODE = 1; return "Can't ls: not found" }
+            Get-ChildItem -Path $dir -File | ForEach-Object {
+                '-rw-r-----    1 1000     1001     {0} Nov 11 03:30 /backups/recordings/{1}' -f $_.Length, $_.Name
+            }
+        }
+        elseif ($command -like 'ls -1 *') {
+            "sftp> $command"
+            Get-ChildItem -Path $ServerDir | ForEach-Object { "/backups/$($_.Name)" }
         }
         elseif ($command -match '^get /backups/(\S+) "(.+)"$') {
             if ($FailOn -contains $Matches[1]) {
@@ -79,7 +90,7 @@ Invoke-Run $server $local $sftp -Keep 3
 $have = Select-BackupNames (Get-ChildItem -Path $local -File | ForEach-Object { $_.Name })
 Assert-Equal @((Stamp 3), (Stamp 4), (Stamp 5)) $have 'caught up, newest three kept'
 Assert-Equal 'backup 5' (Get-Content -Path (Join-Path $local (Stamp 5))) 'the content arrived'
-Assert-Equal 5 $sftp.Calls.Count 'one listing and four downloads (2 to 5)'
+Assert-Equal 6 $sftp.Calls.Count 'two listings (backups, recordings) and four downloads (2 to 5)'
 $first = $sftp.Calls[0]
 Assert-Equal @('-b', '-i', 'C:\key', '-o', 'BatchMode=yes', 'seasonal-backup@vps.example') `
     @($first[0], $first[2], $first[3], $first[4], $first[5], $first[6]) 'key and batch mode, never a prompt'
@@ -100,6 +111,42 @@ Assert-Equal $true ($failed -match [regex]::Escape((Stamp 7))) 'the run fails, n
 # The next run fetches it once the server answers again.
 Invoke-Run $server $local (New-FakeSftp $server)
 Assert-Equal $true (Test-Path (Join-Path $local (Stamp 7))) 'the next run catches up'
+
+# --- the recordings' own backups: fetched once, again when their size differs, never deleted
+$server = New-TempDir
+$local = New-TempDir
+New-Item -ItemType Directory -Path (Join-Path $server 'recordings'), (Join-Path $local 'recordings') | Out-Null
+Set-Content -Path (Join-Path $server (Stamp 9)) -Value 'backup 9'
+Set-Content -Path (Join-Path $server 'recordings\a.mp4.age') -Value 'recording a'
+Set-Content -Path (Join-Path $server 'recordings\b.mp4.age') -Value 'recording b, backed up again'
+Set-Content -Path (Join-Path $server 'recordings\c.mp4.age.gone') -Value '2026-11-01T03:30:00.000Z'
+Set-Content -Path (Join-Path $local 'recordings\b.mp4.age') -Value 'recording b'
+Invoke-Run $server $local (New-FakeSftp $server)
+Assert-Equal 'recording a' (Get-Content -Path (Join-Path $local 'recordings\a.mp4.age')) 'a new recording arrived'
+Assert-Equal 'recording b, backed up again' (Get-Content -Path (Join-Path $local 'recordings\b.mp4.age')) `
+    'one of another size is fetched again'
+Assert-Equal $false (Test-Path (Join-Path $local 'recordings\c.mp4.age.gone')) 'only the backups, no marks'
+Remove-Item -Path (Join-Path $server 'recordings\a.mp4.age')
+Invoke-Run $server $local (New-FakeSftp $server)
+Assert-Equal $true (Test-Path (Join-Path $local 'recordings\a.mp4.age')) 'a recording gone from the server stays here'
+$log = Get-Content -Path (Join-Path $local 'run.log')
+Assert-Equal $true (($log | Where-Object { $_ -match 'recordings: \d+ fetched$' } | Select-Object -Last 1) -match ': 0 fetched$') `
+    'nothing fetched again'
+
+# --- no archive on the server yet: a fresh install before its first night, or a folder that holds
+# only recordings/. The run succeeds and still fetches the recordings.
+$server = New-TempDir
+$local = New-TempDir
+$failed = $null
+try { Invoke-Run $server $local (New-FakeSftp $server) } catch { $failed = "$_" }
+Assert-Equal $null $failed 'an empty server folder is no error'
+New-Item -ItemType Directory -Path (Join-Path $server 'recordings') | Out-Null
+Set-Content -Path (Join-Path $server 'recordings\d.mp4.age') -Value 'recording d'
+try { Invoke-Run $server $local (New-FakeSftp $server) } catch { $failed = "$_" }
+Assert-Equal $null $failed 'only recordings/ on the server is no error'
+Assert-Equal 'recording d' (Get-Content -Path (Join-Path $local 'recordings\d.mp4.age')) 'its recording arrived'
+$log = Get-Content -Path (Join-Path $local 'run.log')
+Assert-Equal $true (($log -join "`n") -match 'server has 0 backups, 0 new') 'the log says there is none yet'
 
 $script:tempDirs | ForEach-Object { Remove-Item -Path $_ -Recurse -Force }
 if ($script:failures -gt 0) {

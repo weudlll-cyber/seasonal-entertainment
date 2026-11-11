@@ -6,8 +6,10 @@
 //              pages/RecordingsPage.jsx; docs/CALLS.md, "Recording"): in the archive its call's
 //              title linking to the call; its date in the site's format, its length (the
 //              file's own; none while unknown) and a player (the video streams from this site;
-//              seeking asks for parts of it); its chapters (RecordingChapters); organisers and
-//              admins delete it (file and row), after a question.
+//              seeking asks for parts of it); a "Share" button with its stable link
+//              (ShareRecording); its chapters (RecordingChapters); organisers and admins delete
+//              it (file and row), after a question; onDeleted, when given, instead of a reload
+//              (the recording's own page leaves for the archive).
 // ============================================================
 
 import { useRef, useState } from 'react';
@@ -17,11 +19,19 @@ import { api } from '../api/http.js';
 import { formatWhen } from '../app/dates.js';
 import { FormMessage } from '../components/FormField.jsx';
 import RecordingChapters from './RecordingChapters.jsx';
+import ShareRecording from './ShareRecording.jsx';
 import './recordings.css';
 
 // recording: { id, startedAt, seconds, chapters }; title: the call's (archive) or none;
-// onChanged: reload the list after a change.
-export default function RecordingItem({ callId, recording, title, canManage, onChanged }) {
+// onChanged: reload after a change; onDeleted: after the delete instead (default onChanged).
+export default function RecordingItem({
+  callId,
+  recording,
+  title,
+  canManage,
+  onChanged,
+  onDeleted = onChanged,
+}) {
   const video = useRef(null);
   const [asking, setAsking] = useState(false);
   const [error, setError] = useState(null);
@@ -31,7 +41,7 @@ export default function RecordingItem({ callId, recording, title, canManage, onC
     setAsking(false);
     try {
       await api(`/calls/${callId}/recordings/${recording.id}`, { method: 'DELETE' });
-      onChanged();
+      onDeleted();
     } catch (err) {
       setError(err.message);
     }
@@ -55,6 +65,7 @@ export default function RecordingItem({ callId, recording, title, canManage, onC
         src={`/api/calls/${callId}/recordings/${recording.id}/video`}
         aria-label={`Recording of ${when}`}
       />
+      <ShareRecording recordingId={recording.id} title={title ?? `Recording of ${when}`} />
       <RecordingChapters
         callId={callId}
         recording={recording}

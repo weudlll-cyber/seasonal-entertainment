@@ -34,6 +34,9 @@ entry waits for.
 
 ### Proposals not decided
 
+- **A frame of the video as a recording's preview image** — the share card uses the site's logo
+  (2026-11-10); a picture taken from the recording itself would need new image tooling on the
+  server (an idea, not planned).
 - **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
   login is not planned, decided 2026-11-02).
 - **Race-game connection** — the games hub lists the race game as "coming soon"; it lives in its
@@ -76,6 +79,40 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Dependency updates by Renovate** — closed by `chore/renovate` (PR #61, merged 2026-11-11 as
+  ab07274; 2026-11-10): `renovate.json`
+  as in the game repositories (weekly grouped minor/patch, 3 days' wait, security at once),
+  covering npm, the actions, the images in `deploy/`, the CI's scanner images and the LiveKit
+  binary (docs/DEPLOYMENT.md, "Dependency updates"). Renovate's onboarding PR is left alone.
+- **Recordings backed up once each** — closed by `feat/backup-recordings` (PR #60, merged
+  2026-11-11 as 0c273d0; decided 2026-11-11): the nightly archive leaves the call recordings out; each finished recording is
+  encrypted once into the backup folder's `recordings/` (again only when it changed), kept 14
+  days after it was deleted on the site; the PC scripts fetch only what they do not have (by
+  name and size) and never delete; a restore takes `--recordings` and names every missing one
+  (docs/DEPLOYMENT.md, "Backups", "Restoring"). Fixed with it (2026-11-11): the Windows module
+  failed with "You cannot call a method on a null-valued expression" whenever the server held
+  no archive (a fresh install before its first night, or only `recordings/`), because an empty
+  name list reached `Select-BackupNames` as `$null`; it now logs "0 backups" and goes on. Also
+  fixed with it: the installer took the newest entry of the backup folder by time (`ls -t`),
+  which after a night with a recording is `recordings/`, so an install or `--update` would have
+  stopped with "the newest backup is not an encrypted .tar.age" and `--status` named the folder;
+  `newest_backup` and `backup_count` (`deploy/install/lib/common.sh`) count only the archives.
+  The CI backup check picks the archive by name the same way (it failed on this pull request).
+- **The "Start here" browser test failed now and then** — closed on `feat/backup-recordings`
+  (2026-11-11): it read the steps' addresses once, and the call step's changes from `/calls` to
+  `/calls/<id>` when the recording-share spec plans a call on the shared test server
+  meanwhile; it now clicks each step by position and accepts either call address
+  (`client/e2e/start.spec.js`). Seen in two of four local runs, never on CI.
+- **A share link per recording** — closed by `feat/recording-share` (PR #59, merged 2026-11-11 as
+  2b8a695; decided 2026-11-10):
+  `/recordings/<id>` shows only that recording; the server adds the preview card's Open Graph
+  and Twitter tags (the logo as the image, the video as `og:video`); "Share" on every recording
+  copies the link or opens the phone's share sheet (docs/CALLS.md, "Sharing a recording"). The
+  card's date, like every time in the weekly recap's text, is in UTC, labelled "UTC" (`UTC_ZONE`
+  in `shared/localWeek.js`; decided 2026-11-11: texts the server writes for many readers at once
+  use UTC; pages keep each viewer's own device time zone). The recap's posting weekday and hour
+  stay in Vienna time. The share page counts against the reads per IP of `/api` (CodeQL's
+  "Missing rate limiting" on the pull request, 2026-11-11).
 - **CI security scans** — closed by `chore/ci-security` (2026-11-10): the CI job "security"
   runs gitleaks over the full history, `npm audit` of the production dependencies (high or
   critical fails) and osv-scanner on `package-lock.json` (CVSS 7 or more fails); the workflow

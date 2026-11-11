@@ -88,7 +88,7 @@ commit, which the client build carries for the update notice):
 | `CHAT_RETENTION_DAYS`               | `90`                                          | default of the "Keep messages" setting (docs/SETTINGS.md)                 |
 | `CHAT_MAX_CONNECTIONS_PER_MEMBER`   | `5`                                           | default of "Open connections per member" (docs/SETTINGS.md)               |
 | `CHAT_MAX_GUEST_CONNECTIONS_PER_IP` | `20`                                          | default of "Open connections per guest address" (docs/SETTINGS.md)        |
-| `API_READS_PER_MINUTE`              | `1200`                                        | reads (`GET` under `/api`) per address and minute before 429 (AUTH.md)    |
+| `API_READS_PER_MINUTE`              | `1200`                                        | `GET` under `/api`, `/recordings/<id>` per address and minute (AUTH.md)   |
 | `MEDIA_DIR`                         | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`                |
 | `DELETION_JOURNAL`                  | `account-deletions.jsonl` beside the database | deleted accounts for a restore, 30 days (DEPLOYMENT.md, "Restoring")      |
 | `LINK_PREVIEWS`                     | `true`                                        | default of both link-preview settings (docs/SETTINGS.md)                  |
@@ -424,6 +424,8 @@ bytes, GHSA-27r3-jxmh-p828, fixed in body-parser 2.4.0, which the lockfile now h
                            deployment files; security (gitleaks, npm audit, osv-scanner)
 .github/workflows/codeql.yml  CodeQL scanning of the JavaScript (pushes, pull requests, weekly)
 .gitleaksignore            gitleaks findings checked and accepted, by fingerprint with a reason
+renovate.json              dependency update PRs by Renovate (docs/DEPLOYMENT.md, "Dependency
+                           updates")
 .claude/settings.json      agent permissions for this repository
 client/                    React + Vite client
   index.html               HTML shell
@@ -533,7 +535,8 @@ server/
                            (the two members; a reporter's shared copy for moderators)
   src/recap/               the weekly recap: its text, its sources, the Monday job, the
                            admins' "Post recap now" (docs/CHAT.md, "Weekly recap")
-  src/backup/              backup and restore of the database and media (the scripts'
+  src/backup/              backup and restore of the database and media, the call
+                           recordings backed up once each (recordings.js; the scripts'
                            library; DEPLOYMENT.md)
   seeds/chat-media/        the starter stickers and GIFs (owner's own files, README credits)
   test/helpers/testApp.js  app on a temporary database for tests (chat.js: chat helpers,

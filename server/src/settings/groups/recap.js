@@ -3,10 +3,12 @@
 // Path:        server/src/settings/groups/recap.js
 // Project:     Seasonal Entertainment
 // Description: The "Weekly recap" group of site settings (definitions.js): whether the site
-//              posts it, on which weekday, at which hour (Europe/Vienna, as the recap's text)
-//              and in which room. The room is a choice from the public rooms as they are now.
+//              posts it, on which weekday, at which hour (Europe/Vienna, RECAP_SCHEDULE_ZONE;
+//              the recap's text itself writes its times in UTC) and in which room. The room is a choice from the public rooms as they are now.
 // ============================================================
 
+// The zone of the weekday and hour above (decided 2026-11-11: it stays Vienna).
+export const RECAP_SCHEDULE_ZONE = 'Europe/Vienna';
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 export const RECAP_DAYS = DAYS.map((label) => ({ value: label.toLowerCase(), label }));
 const HOURS = Array.from({ length: 24 }, (_, hour) => `${String(hour).padStart(2, '0')}:00`);

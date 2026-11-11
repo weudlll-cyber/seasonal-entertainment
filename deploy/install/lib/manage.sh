@@ -88,8 +88,7 @@ status() {
   fi
   systemctl list-timers --all --no-legend 'seasonal-*' 2>/dev/null | awk '{ print "[install] timer " $NF ": next " $1 " " $2 " " $3 }'
   [[ -f "$UFW_ADDED" ]] && say "firewall rules added by the installer: $(paste -sd ';' "$UFW_ADDED" | sed 's/;/; /g')"
-  # shellcheck disable=SC2012 # backup names are plain timestamps
-  say "backups: $(ls -t "$BACKUP_HOST_DIR" 2>/dev/null | head -n 1 || true) ($(ls "$BACKUP_HOST_DIR" 2>/dev/null | wc -l) kept)"
+  say "backups: $(newest_backup "$BACKUP_HOST_DIR") ($(backup_count "$BACKUP_HOST_DIR") kept)"
   [[ "$ADMIN_DONE" == yes ]] || say "the first admin is not created yet: sudo $INSTALL_DIR/deploy/install.sh --admin"
 }
 

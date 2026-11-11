@@ -28,7 +28,8 @@ check() {
 
 stamp() { printf '2026-10-%02dT03-30-00Z.tar.age' "$1"; }
 
-# The fake sftp: records its arguments, reads the one batch command from stdin; "ls -1" lists
+# The fake sftp: records its arguments, reads the one batch command from stdin; "ls -l" lists
+# the recordings' folder with sizes (fails without one), "ls -1" lists
 # $FAKE_SERVER (with a line that is no backup name, and sftp's own echo), "get" copies a file;
 # a name in $FAKE_FAIL_ON leaves a half file and fails.
 mkdir -p "$work/bin"
@@ -40,6 +41,17 @@ case "$command" in
   "ls -1 "*)
     echo "sftp> $command"
     for file in "$FAKE_SERVER"/*; do echo "/backups/${file##*/}"; done
+    ;;
+  "ls -l "*)
+    # The recordings' folder (a server from before 2026-11-11 has none: sftp fails).
+    dir="$FAKE_SERVER/${command#ls -l /backups/}"
+    [ -d "$dir" ] || { echo "Can't ls: \"${command#ls -l }\" not found"; exit 1; }
+    echo "sftp> $command"
+    for file in "$dir"/*; do
+      [ -f "$file" ] || continue
+      printf -- '-rw-r-----    1 1000     1001     %s Nov 11 03:30 /backups/recordings/%s
+'         "$(wc -c <"$file" | tr -d ' ')" "${file##*/}"
+    done
     ;;
   "get "*)
     name="$(echo "$command" | sed 's|^get /backups/\([^ ]*\) .*|\1|')"
@@ -68,6 +80,7 @@ run_fails() { ! run "$@"; }
 # The file names in a folder, in order, without the run's log.
 names_in() {
   for file in "$1"/*; do
+    [ -d "$file" ] && continue # the recordings' own folder
     [ "${file##*/}" = run.log ] || printf '%s ' "${file##*/}"
   done
 }
@@ -83,7 +96,8 @@ check "the run succeeds" run "$work/local1" --keep 3
 check "caught up, newest three kept, only backup names" \
   test "$(names_in "$work/local1")" = "$(stamp 3) $(stamp 4) $(stamp 5) "
 check "the content arrived" test "$(cat "$work/local1/$(stamp 5)")" = "backup 5"
-check "one listing and four downloads (2 to 5)" test "$(wc -l <"$FAKE_CALLS" | tr -d ' ')" = 5
+check "two listings (backups, recordings) and four downloads (2 to 5)"   test "$(wc -l <"$FAKE_CALLS" | tr -d ' ')" = 6
+check "no recordings folder on the server is no failure"   grep -q 'recordings: none on the server yet$' "$work/local1/run.log"
 check "key and batch mode, never a prompt" \
   test "$(head -n 1 "$FAKE_CALLS")" = "-b - -i /home/me/key -o BatchMode=yes seasonal-backup@vps.example"
 check "the log says what it found" grep -q 'server has 5 backups, 4 new$' "$work/local1/run.log"
@@ -100,6 +114,25 @@ check "the log names the missing backup" grep -q "RUN FAILED: could not fetch: $
 FAKE_FAIL_ON=""
 check "the next run catches up" run "$work/local2"
 check "the missing backup is there now" test -f "$work/local2/$(stamp 7)"
+
+# --- the recordings' own backups: fetched once, again when their size differs, never deleted
+FAKE_SERVER="$work/server3" FAKE_CALLS="$work/calls3" FAKE_FAIL_ON=""
+mkdir -p "$FAKE_SERVER/recordings" "$work/local3/recordings"
+echo "backup 9" >"$FAKE_SERVER/$(stamp 9)"
+echo "recording a" >"$FAKE_SERVER/recordings/a.mp4.age"
+echo "recording b, backed up again" >"$FAKE_SERVER/recordings/b.mp4.age"
+echo "2026-11-01T03:30:00.000Z" >"$FAKE_SERVER/recordings/c.mp4.age.gone"
+echo "recording b" >"$work/local3/recordings/b.mp4.age"
+check "the run with recordings succeeds" run "$work/local3"
+check "a new recording arrived" test "$(cat "$work/local3/recordings/a.mp4.age")" = "recording a"
+check "one of another size is fetched again"   test "$(cat "$work/local3/recordings/b.mp4.age")" = "recording b, backed up again"
+check "only the backups, no marks" test ! -e "$work/local3/recordings/c.mp4.age.gone"
+check "the log counts them" grep -q 'recordings: 2 fetched$' "$work/local3/run.log"
+# The server let a.mp4.age go: the PC keeps it, and fetches nothing again.
+rm "$FAKE_SERVER/recordings/a.mp4.age"
+check "the next run succeeds" run "$work/local3"
+check "a recording gone from the server stays here" test -f "$work/local3/recordings/a.mp4.age"
+check "nothing fetched again" grep -q 'recordings: 0 fetched$' "$work/local3/run.log"
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures check(s) failed"

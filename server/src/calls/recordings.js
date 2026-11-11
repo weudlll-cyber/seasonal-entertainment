@@ -158,6 +158,20 @@ export function listAllRecordings(db, dir) {
   return rows.map((r, i) => ({ ...listed[i], callId: r.callId, title: r.title }));
 }
 
+// One finished recording as the archive lists it (its call's id and title too), or null: the
+// share page (/recordings/:id, recordingShare.js) and GET /api/calls/recordings/:rid.
+export function findListedRecording(db, id, dir) {
+  const row = db
+    .prepare(
+      `SELECT r.id, r.call_id AS callId, r.file, r.started_at AS startedAt, r.seconds, c.title
+       FROM call_recordings r JOIN calls c ON c.id = r.call_id
+       WHERE r.id = ? AND r.stopped_at IS NOT NULL`
+    )
+    .get(id);
+  if (!row) return null;
+  return { ...asListed(db, [row], dir)[0], callId: row.callId, title: row.title };
+}
+
 export function findRecording(db, callId, id) {
   return db
     .prepare(`SELECT ${COLUMNS} FROM call_recordings WHERE call_id = ? AND id = ?`)
