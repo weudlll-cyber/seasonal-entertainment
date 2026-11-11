@@ -5,7 +5,8 @@
 // Description: A consistent backup of the site's data while it runs (docs/DEPLOYMENT.md,
 //              "Backups"): the SQLite database through SQLite's online backup API (never a
 //              file copy, which could catch a write half-way), checked with integrity_check,
-//              plus the media folder, into <backupRoot>/<UTC time>/ with a manifest
+//              plus the media folder without the call recordings (backed up once each,
+//              recordings.js; decided 2026-11-11), into <backupRoot>/<UTC time>/ with a manifest
 //              (database checksum, media file count). A backup counts only once complete: it
 //              is written under a ".partial" name and renamed at the end. Backups older than
 //              14 days are deleted (encrypted ones too, encrypted.js). scripts/backup.mjs runs
@@ -21,6 +22,7 @@ import {
   DB_FILE,
   MANIFEST,
   MEDIA,
+  RECORDINGS,
   sha256Of,
   writeJson,
 } from './files.js';
@@ -65,8 +67,11 @@ export async function makeBackup({ databasePath, mediaDir, backupRoot, now = new
     }
     checkDatabase(target);
     const media = path.join(partial, MEDIA);
-    if (existsSync(mediaDir)) cpSync(mediaDir, media, { recursive: true });
-    else mkdirSync(media);
+    // Without the call recordings: each is backed up once, on its own (recordings.js).
+    const recordings = path.join(mediaDir, RECORDINGS);
+    if (existsSync(mediaDir)) {
+      cpSync(mediaDir, media, { recursive: true, filter: (from) => from !== recordings });
+    } else mkdirSync(media);
     const manifest = {
       createdAt: now.toISOString(),
       database: { file: DB_FILE, sha256: sha256Of(target) },

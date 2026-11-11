@@ -23,8 +23,9 @@ import { makeBackup, pruneBackups } from './backup.js';
 const ENCRYPTED_SUFFIX = '.tar.age';
 
 // The owner's age public key ("age1…"). A private key here would be a serious mistake: it must
-// stay on the owner's PC, so it is refused with that message.
-function checkRecipient(recipient) {
+// stay on the owner's PC, so it is refused with that message. Also for the recordings'
+// backups (recordings.js).
+export function checkRecipient(recipient) {
   if (typeof recipient !== 'string' || recipient.trim() === '') {
     throw new Error('BACKUP_RECIPIENT is not set: the age public key (age1…) of the owner');
   }

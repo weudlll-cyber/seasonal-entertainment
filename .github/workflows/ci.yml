@@ -13,9 +13,10 @@
 #              and checks the compose files and Caddyfiles, so the deployment files cannot rot;
 #              it also decrypts an encrypted backup with the real age tool, runs the PC-side
 #              tests (deploy/pc/: PowerShell for Windows, POSIX sh for Linux and macOS), the
-#              installer's token, Discord, update-copy, hardening and embedded-games tests and the
-#              call load test's plan (deploy/test/bot-admin-token.test.sh,
-#              deploy/test/discord.test.sh, deploy/test/update-copy.test.sh,
+#              installer's token, Discord, update-copy, backup-listing, hardening and
+#              embedded-games tests and the call load test's plan
+#              (deploy/test/bot-admin-token.test.sh, deploy/test/discord.test.sh,
+#              deploy/test/update-copy.test.sh, deploy/test/backup-listing.test.sh,
 #              deploy/test/server-hardening.test.sh, deploy/test/games.test.sh,
 #              deploy/test/loadtest.test.sh) and shellcheck over the installer, its tests, the
 #              load test and the PC-side shell scripts (deploy/install.sh, deploy/install/,
@@ -114,7 +115,9 @@ jobs:
           sudo apt-get install -y age > /dev/null
           age-keygen -o key.txt 2> /dev/null
           docker exec -e BACKUP_RECIPIENT="$(age-keygen -y key.txt)" site node scripts/backup.mjs
-          name=$(docker exec site sh -c 'ls /backups')
+          # Only the archive: the recordings' own backups have their folder beside it.
+          name=$(docker exec site sh -c 'cd /backups && ls *.tar.age')
+          docker exec site test -d /backups/recordings
           docker cp "site:/backups/$name" backup.tar.age
           age -d -i key.txt -o backup.tar backup.tar.age
           tar -tf backup.tar | grep -q '/seasonal.db$'
@@ -135,6 +138,9 @@ jobs:
 
       - name: Without backups, --update keeps a root-only local copy (the newest three)
         run: bash deploy/test/update-copy.test.sh
+
+      - name: The installer's newest backup is an archive, never the recordings folder
+        run: bash deploy/test/backup-listing.test.sh
 
       - name: The installer prepares the embedded games (questions, routes, feeds denied, token)
         run: bash deploy/test/games.test.sh
@@ -191,7 +197,7 @@ jobs:
           deploy/site/calls-cert.sh deploy/test/run.sh deploy/test/checks.sh
           deploy/test/checks-bot-admin.sh deploy/test/bot-admin-token.test.sh
           deploy/test/discord.test.sh deploy/test/update-copy.test.sh
-          deploy/test/server-hardening.test.sh deploy/test/games.test.sh
+          deploy/test/backup-listing.test.sh deploy/test/server-hardening.test.sh deploy/test/games.test.sh
           deploy/calls/loadtest.sh deploy/test/loadtest.test.sh deploy/test/executable.test.sh
           deploy/test/prepare-nginx.sh deploy/test/prepare-ufw.sh
           deploy/pc/get-seasonal-backups.sh deploy/pc/get-seasonal-backups.test.sh
