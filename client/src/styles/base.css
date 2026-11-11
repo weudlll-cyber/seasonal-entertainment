@@ -216,6 +216,18 @@ a {
   border-radius: var(--radius-card);
 }
 
+/* On a phone (the panel's own breakpoint, ChatPanelVariants.css) the page is at least the main
+   column's height and grows with the chat card's content: the composer's wrapped button rows
+   and the message list's least height (8rem). A window too short for that scrolls the main
+   column instead of the composer hanging out of the card (2026-11-11). */
+@media (max-width: 599.98px) {
+  .chat-page {
+    flex-shrink: 0;
+    height: auto;
+    min-height: 100%;
+  }
+}
+
 /* The two unread counters side by side (UnreadDots). */
 .unread-dots {
   display: inline-flex;

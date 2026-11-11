@@ -6,7 +6,8 @@
                 the message's one attachment with its ×, the upload button, and the @mention
                 suggestions. The compact variant (the drawer, a call's chat) is one row: a
                 single-line field and icon buttons (picker, attach, send) whose texts stay as
-                their accessible names; the picker opens above the row.
+                their accessible names; the picker opens above the row. The full variant's
+                buttons wrap onto more lines below 600px instead of overlapping.
    ============================================================ */
 
 .se-chat .chat-label {
@@ -115,6 +116,22 @@
 /* The full variant keeps its text buttons. */
 .se-chat--full .chat-composer .chat-button .icon {
   display: none;
+}
+
+/* Below 600px (the panel's own phone breakpoint, ChatPanelVariants.css) the grid's shrinking
+   first column squeezed the picker's "Emoji, stickers, GIFs" under "Attach file" (2026-11-11):
+   there the buttons form a row that wraps, each as wide as its text, one that does not fit
+   moving to the next line. The picker takes a line of its own, so its panel opens as wide as
+   the composer. */
+@media (max-width: 599.98px) {
+  .se-chat--full .chat-composer__actions {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .se-chat--full .chat-composer__actions .chat-picker {
+    flex: 1 1 100%;
+  }
 }
 
 /* --- compact: one row ------------------------------------------------------------------ */

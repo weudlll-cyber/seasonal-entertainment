@@ -469,7 +469,12 @@ first.
 **Compact chat composer** (the drawer and a call's chat, `client/src/chat/ChatComposer.css`): one
 row — a single-line message field and square 44px icon buttons (emoji/stickers/GIFs, attach,
 send); the "Message" heading and the button texts are kept for screen readers only. The picker
-opens above the row. The full chat page keeps its labelled text buttons.
+opens above the row. The full chat page keeps its labelled text buttons; below 600px they wrap
+onto more lines instead of overlapping, the picker on a line of its own so it opens as wide as
+the composer (2026-11-11). The whole composer stays inside the chat card: its room comes from the
+message list above, which keeps at least 8rem; a window too short for that scrolls the page,
+and the card grows with it. `client/e2e/composerNarrow.spec.js` checks a room's composer (with
+the Poll button) and a direct message's at 360 x 740, 390 x 844 and 375 x 548, light and dark.
 
 ## Chat drawer
 

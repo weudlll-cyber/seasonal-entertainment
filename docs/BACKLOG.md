@@ -66,6 +66,13 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **The chat composer at phone width** — closed by `fix/composer-narrow` (PR #65, merged
+  2026-11-11): at 360px "Emoji, stickers, GIFs" overlapped "Attach file" on the /chat page, in
+  rooms and in direct messages. Below 600px the full composer's buttons now wrap onto more
+  lines, the picker on a line of its own; the whole composer stays inside the chat card, its
+  room taken from the message list (at least 8rem), and a window too short for that scrolls the
+  page; desktop unchanged (docs/DESIGN.md, "Compact chat composer";
+  `client/e2e/composerNarrow.spec.js`).
 - **The race as the third embedded game, the website's part** — closed by `feat/race-slug`
   (PR #64, merged 2026-11-11; decided 2026-11-11): `race` (Seasonal Race) in the allowlist, so
   `/api/games/race/authorize`, `/api/games/race/account-changes`, its "May host" box and the
