@@ -12,6 +12,14 @@ entry waits for.
 - **Real sites to approve for the chat embed** — which game sites go on Admin → Embedding once
   the site is live (only exact `https://` origins).
 
+### Built, waiting for the merge
+
+- **The chat composer at phone width** — built on `fix/composer-narrow` (2026-11-11): at 360px
+  "Emoji, stickers, GIFs" overlapped "Attach file" on the /chat page, in rooms and in direct
+  messages. Below 600px the full composer's buttons now wrap onto more lines, the picker on a
+  line of its own; desktop unchanged (docs/DESIGN.md, "Compact chat composer";
+  `client/e2e/composerNarrow.spec.js`).
+
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
