@@ -179,13 +179,13 @@ install_admin() {
 }
 
 # backup_now WHAT: one backup through the systemd unit, as the timer runs it, under run_step;
-# stops the run unless the newest file is then an encrypted .tar.age. Sets NEWEST_BACKUP.
+# stops the run unless the backup folder then holds an encrypted .tar.age. Sets NEWEST_BACKUP, the
+# newest archive (newest_backup in common.sh; the recordings/ folder beside it never counts).
 backup_now() {
   run_step "$1" systemctl start seasonal-backup.service ||
     die "the backup failed (journalctl -u seasonal-backup.service)"
-  # shellcheck disable=SC2012 # backup names are plain timestamps
-  NEWEST_BACKUP="$(ls -t "$BACKUP_HOST_DIR" 2>/dev/null | head -n 1)"
-  [[ "$NEWEST_BACKUP" == *.tar.age ]] || die "the newest backup is not an encrypted .tar.age ($NEWEST_BACKUP)"
+  NEWEST_BACKUP="$(newest_backup "$BACKUP_HOST_DIR")"
+  [[ -n "$NEWEST_BACKUP" ]] || die "no encrypted .tar.age backup in $BACKUP_HOST_DIR"
 }
 
 # The nightly backup, encrypted to the owner's age public key (docs/DEPLOYMENT.md, "Backups"),

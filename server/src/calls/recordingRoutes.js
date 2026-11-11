@@ -15,7 +15,9 @@
 //              service does not answer (timeout, unavailable) is 503 recording_unavailable, not a
 //              server error. Nothing is deleted
 //              automatically. The archive lists every finished recording with its call and
-//              chapters (GET /api/calls/recordings); the chapter routes are chapterRoutes.js.
+//              chapters (GET /api/calls/recordings), and one of them for its share page
+//              (GET /api/calls/recordings/:rid, recordingShare.js); the chapter routes are
+//              chapterRoutes.js.
 // ============================================================
 
 import { mkdirSync, rmSync } from 'node:fs';
@@ -30,6 +32,7 @@ import {
   activeRecording,
   deleteRecordingRow,
   dropStartingRecording,
+  findListedRecording,
   findRecording,
   listAllRecordings,
   listRecordings,
@@ -90,6 +93,14 @@ export function callRecordingRoutes(db, config, service) {
   router.get('/recordings', allow('public'), steps.configured, (req, res) => {
     const list = recording ? listAllRecordings(db, recording.dir) : [];
     res.json({ ok: true, canManage: canManage(req), recordings: list });
+  });
+
+  // One finished recording with its call (the share page, /recordings/:id; recordingShare.js).
+  router.get('/recordings/:rid', allow('public'), steps.configured, (req, res) => {
+    const found =
+      recording && findListedRecording(db, Number.parseInt(req.params.rid, 10) || 0, recording.dir);
+    if (!found) return sendError(res, 404, 'not_found', 'No such recording.');
+    res.json({ ok: true, canManage: canManage(req), recording: found });
   });
 
   router.post('/:id/recording/start', ...manage, steps.live, async (req, res) => {

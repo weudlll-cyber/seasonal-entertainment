@@ -7,11 +7,14 @@
 //              target. Existing data is never overwritten silently: without `force` a target
 //              that exists is refused; with it, the old files are moved aside (renamed with
 //              ".before-restore-<time>"), never deleted. The site must be stopped while it
-//              runs (docs/DEPLOYMENT.md, "Restoring"). scripts/restore.mjs runs it.
+//              runs (docs/DEPLOYMENT.md, "Restoring"). Then the call recordings from their own
+//              backups (restoreRecordings; each one missing is named). scripts/restore.mjs
+//              runs it.
 // ============================================================
 
 import { copyFileSync, cpSync, existsSync, mkdirSync, renameSync } from 'node:fs';
 import path from 'node:path';
+import Database from 'better-sqlite3';
 import {
   checkDatabase,
   countFiles,
@@ -19,6 +22,7 @@ import {
   MANIFEST,
   MEDIA,
   readJson,
+  RECORDINGS,
   sha256Of,
 } from './files.js';
 
@@ -69,4 +73,36 @@ export function restoreBackup({
   cpSync(path.join(backupDir, MEDIA), mediaDir, { recursive: true });
   checkDatabase(databasePath);
   return { manifest, movedAside };
+}
+
+// After the database and media are back: the call recordings, from their own backups
+// (recordings.js), decrypted on the owner's PC into `fromDir` (or null when none were brought).
+// Every finished recording the restored database names is put into media/recordings unless it
+// is there already (an archive from before 2026-11-11 still holds them). Returns { restored,
+// present, missing }: file names copied now, found in place, and those with no file anywhere,
+// which the caller reports (never skipped silently).
+export function restoreRecordings({ databasePath, mediaDir, fromDir }) {
+  const db = new Database(databasePath, { readonly: true, fileMustExist: true });
+  let files;
+  try {
+    files = db
+      .prepare('SELECT file FROM call_recordings WHERE stopped_at IS NOT NULL ORDER BY id')
+      .all()
+      .map((r) => r.file);
+  } finally {
+    db.close();
+  }
+  const target = path.join(mediaDir, RECORDINGS);
+  mkdirSync(target, { recursive: true });
+  const result = { restored: [], present: [], missing: [] };
+  for (const file of files) {
+    const to = path.join(target, file);
+    const from = fromDir ? path.join(fromDir, file) : null;
+    if (existsSync(to)) result.present.push(file);
+    else if (from && existsSync(from)) {
+      copyFileSync(from, to);
+      result.restored.push(file);
+    } else result.missing.push(file);
+  }
+  return result;
 }
