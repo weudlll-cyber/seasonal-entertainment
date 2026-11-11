@@ -29,6 +29,10 @@ const ALLOWED_OUTSIDE = new Set([
   path.join(srcDir, 'session', 'SessionContext.jsx'),
   path.join(srcDir, 'api', 'http.js'),
   path.join(srcDir, 'app', 'icons.jsx'),
+  // Polls in a room (docs/POLLS.md): a poll's card in the timeline and the poll form for
+  // organisers and admins; both use only the chat's public entry (index.js) in return.
+  path.join(srcDir, 'polls', 'ChatPollCard.jsx'),
+  path.join(srcDir, 'polls', 'PollForm.jsx'),
   // The safety numbers' per-device marks (safetyStore.js).
   path.join(srcDir, 'app', 'storage.js'),
   // The embed state (imports only storage): files load through short-lived links in the chat

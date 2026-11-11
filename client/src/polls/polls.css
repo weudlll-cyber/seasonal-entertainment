@@ -1,0 +1,206 @@
+/* ============================================================
+   File:        polls.css
+   Path:        client/src/polls/polls.css
+   Project:     Seasonal Entertainment
+   Description: The Polls page (pages/PollsPage.jsx; docs/POLLS.md): one card per poll as the
+                site's other cards (border, card background, radius), its vote form with the
+                site's checkbox lines (form-check) and its fields outside a form card
+                (search-input), the results as bars in the accent colour, the organisers'
+                actions in a wrapping row; the create form as the site's form; a call's polls
+                under its stage (at most a third of the height) with their countdown.
+   ============================================================ */
+
+.poll-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-1) 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.poll-card {
+  display: grid;
+  gap: var(--space-1);
+  max-width: 40rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card);
+}
+
+.poll-card p,
+.poll-card__question {
+  margin: 0;
+}
+
+.poll-card__question {
+  font-size: 1.125rem;
+}
+
+.poll-card__meta,
+.poll-card__rule,
+.poll-results__voters,
+.poll-results__by {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.poll-vote {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+}
+
+.poll-vote__options {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.poll-vote textarea {
+  width: min(100%, 30rem);
+}
+
+.poll-vote__named {
+  font-weight: var(--font-weight-strong);
+}
+
+.poll-results__options,
+.poll-results__texts {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.poll-results__options li {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.poll-results__bar {
+  display: block;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.poll-results__bar span {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+}
+
+.poll-results__texts li {
+  padding-left: var(--space-1);
+  border-left: 3px solid var(--color-border);
+}
+
+/* End now, the new end and Extend, the anonymous switch: one wrapping row. */
+.poll-card__manage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: end;
+}
+
+.poll-form {
+  max-width: 32rem;
+  margin-bottom: var(--space-3);
+}
+
+.poll-form fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.poll-form__options {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+}
+
+.poll-form__option {
+  display: flex;
+  width: 100%;
+  gap: var(--space-1);
+  align-items: end;
+}
+
+.poll-form__option .form-field {
+  flex: 1;
+}
+
+/* A call's polls under its stage (calls/CallPolls.jsx): at most a third of the main column's
+   height, scrolling inside, so the stage keeps the rest. */
+.call-polls {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+  max-height: 33vh;
+  overflow-y: auto;
+}
+
+.call-polls .poll-list {
+  width: 100%;
+  margin: 0;
+}
+
+.poll-countdown {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-strong);
+}
+
+/* A poll's card in a chat room's timeline (ChatPollCard.jsx): the column's width. */
+.chat-poll {
+  margin: var(--space-1) 0 0;
+}
+
+.chat-poll .poll-card {
+  max-width: none;
+}
+
+/* The poll form above a room's composer (chat/ChatPanel.jsx): it scrolls inside, the
+   timeline keeps its room. */
+.chat-poll-form {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+/* On a phone (decided 2026-11-11; checked at 390 x 844 and 360 x 740, pollsPhone.spec.js):
+   nothing wider than the screen, every answer a full-width line of at least 44px with the
+   whole line its target, the vote buttons full width, the text fields and the new end the
+   card's width, a little less padding so the card keeps its width for the text. */
+@media (max-width: 599.98px) {
+  .poll-card {
+    padding: var(--space-2);
+    overflow-wrap: anywhere;
+  }
+
+  .poll-vote,
+  .poll-vote__options,
+  .poll-vote .form-check,
+  .poll-vote .form-field,
+  .poll-vote textarea,
+  .poll-vote > .button,
+  .poll-card__manage .form-field,
+  .poll-card__manage input {
+    width: 100%;
+  }
+
+  .poll-vote,
+  .poll-vote__options {
+    justify-items: stretch;
+  }
+
+  .poll-card__manage > .button {
+    flex: 1 1 auto;
+  }
+
+  .poll-form__option .button {
+    flex: none;
+  }
+}

@@ -472,6 +472,8 @@ client/                    React + Vite client
                            recording question, a recording with its player and chapters
                            (RecordingItem, RecordingChapters; the archive page is
                            pages/RecordingsPage.jsx)
+  src/polls/               polls (docs/POLLS.md): a poll's card, vote form, results, the
+                           create form, usePolls (the list kept live)
   src/keys/                a member's key pair in the browser: provider, device copy
                            (IndexedDB), unlock, recovery code, unlocking a new device from
                            an unlocked one, the choice of an account without a password
@@ -549,6 +551,8 @@ server/
                            the reminder job, the link to a bot event (eventLink.js),
                            recordings with their length and chapters and the archive
                            (recordings.js, chapters.js, recordingRoutes.js, chapterRoutes.js)
+  src/polls/               polls (docs/POLLS.md): schema, store (votes, results as each viewer
+                           may see them), routes under /api/polls
   src/settings/            admin-editable site settings (docs/SETTINGS.md): kinds, groups/,
                            definitions, store, admin routes, the organisers' banner routes
                            (bannerRoutes.js), one change with its audit entry (change.js)

@@ -178,7 +178,36 @@ const FULL_GAMES = [
   },
 ];
 
-async function fullestHome(page, withCall) {
+// The fullest poll box (HomePollCard.jsx): a question longer than its 2 lines, voted right in
+// the box (one answer of four), not anonymous (its note shows too).
+const POLL = {
+  id: 1,
+  question: 'Which evening suits you best for the next community call about the season clock?',
+  kind: 'choice',
+  multiple: false,
+  otherText: false,
+  anonymous: false,
+  voters: 'members',
+  steps: [],
+  open: true,
+  votes: 12,
+  voted: false,
+  mayVote: true,
+  canVote: true,
+  options: [
+    { id: 1, label: 'Friday evening' },
+    { id: 2, label: 'Saturday afternoon' },
+    { id: 3, label: 'Sunday evening' },
+    { id: 4, label: 'Any day works' },
+  ],
+};
+
+// withPoll: the poll box shown (the newest open poll); otherwise none, whatever polls the
+// run's other specs leave open.
+async function fullestHome(page, withCall, withPoll = false) {
+  await page.route('**/api/polls/summary', (route) =>
+    route.fulfill({ json: { ok: true, unvoted: withPoll ? 1 : 0, newest: withPoll ? POLL : null } })
+  );
   await page.route('**/api/games', (route) =>
     route.fulfill({ json: { ok: true, games: FULL_GAMES } })
   );
@@ -262,6 +291,17 @@ for (const [width, height] of DESKTOP) {
       await expect(
         page.getByRole('button', { name: /^Remind me of Seasonal Tokens/ })
       ).toBeVisible();
+      await expect(page.getByText('See you at the community call!')).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      expect(await homeState(page)).toEqual(HOME_OK);
+    });
+
+    test('Home with a call and a poll fits too, no box cut, nothing under the chat button', async ({
+      page,
+    }) => {
+      await fullestHome(page, true, true);
+      await page.goto('/');
+      await expect(page.getByRole('combobox', { name: 'Your answer' })).toBeVisible();
       await expect(page.getByText('See you at the community call!')).toBeVisible();
       await page.waitForLoadState('networkidle');
       expect(await homeState(page)).toEqual(HOME_OK);

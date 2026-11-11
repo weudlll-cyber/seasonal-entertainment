@@ -390,6 +390,12 @@ the browser's share dialog carries sound, and "Share again with sound") or that 
 cannot send it (Firefox, Safari): "The call page" above. Listening and speaking work in all
 current browsers.
 
+## Polls in a call
+
+Organisers and admins start a poll from a live call's page; it shows under the stage with a
+countdown (1, 2 or 5 minutes, or by hand) and ends with the call at the latest (docs/POLLS.md,
+"Polls in a call"; decided 2026-11-10).
+
 ## Recording
 
 Call recording, video and audio (decided 2026-10-22). It is **off unless set up**:

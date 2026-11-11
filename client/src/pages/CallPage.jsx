@@ -15,7 +15,9 @@
 //              it, "Being recorded"), "Recording starts…" until the egress records; a start
 //              during the call shows a banner; organisers see "The recording did not start. Try
 //              again." after a start that did not come; and joining or sending asks first
-//              (RecordingConsent); the recordings are listed with a player (CallRecordings).
+//              (RecordingConsent); the recordings are listed with a player (CallRecordings);
+//              the call's polls under the stage, started here by organisers and admins
+//              (CallPolls; docs/POLLS.md).
 //              Admins delete an ended call here ("Delete call", calls/deleteCall.js), and land on
 //              the calls list. Sent here by starting a call (calls/callIntent.js), it joins once
 //              by itself through the same join as the button, or shows why the start failed; a
@@ -30,6 +32,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { api, ApiError } from '../api/http.js';
 import CallChat, { useChatCollapsed } from '../calls/CallChat.jsx';
+import CallPolls from '../calls/CallPolls.jsx';
 import CallRecordings from '../calls/CallRecordings.jsx';
 import { useCallIntent } from '../calls/callIntent.js';
 import { RECORDING_FAILED, recordingLabel } from '../calls/recordingLabel.js';
@@ -70,6 +73,7 @@ export default function CallPage() {
   const [version, setVersion] = useState(0); // after a recording starts or stops
   const [attempt, setAttempt] = useState(0); // a load refused for the moment, asked again
   const [loadError, setLoadError] = useState(null);
+  const [pollForm, setPollForm] = useState(false); // "Start a poll" opened (CallPolls)
   const [error, setError] = useState(intent.startError ?? null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatCollapsed, setChatCollapsed] = useChatCollapsed();
@@ -181,6 +185,15 @@ export default function CallPage() {
             {recording ? 'Stop recording' : 'Start recording'}
           </button>
         )}
+        {answer.canManage && info.status === 'live' && !pollForm && (
+          <button
+            type="button"
+            className="button button--secondary"
+            onClick={() => setPollForm(true)}
+          >
+            Start a poll
+          </button>
+        )}
         {answer.canDelete && info.status === 'ended' && (
           <button type="button" className="button button--secondary" onClick={removeCall}>
             Delete call
@@ -229,6 +242,12 @@ export default function CallPage() {
             <CallRecordings callId={id} canManage={answer.canManage} version={version} />
           </div>
         )}
+        {/* Under the stage (an auto row of the main column; the stage keeps the rest). */}
+        <CallPolls
+          callId={Number(id)}
+          creating={pollForm && info.status === 'live'}
+          onDone={() => setPollForm(false)}
+        />
       </div>
       {live.consent && (
         <RecordingConsent

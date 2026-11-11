@@ -1,0 +1,334 @@
+// ============================================================
+// File:        store.js
+// Path:        server/src/polls/store.js
+// Project:     Seasonal Entertainment
+// Description: Polls in the database (docs/POLLS.md; tables in schema.js): creating one,
+//              voting (one ballot per account; changed only where the results show after the
+//              end, until then; in an anonymous one through poll_ballot_links, which exist only
+//              while it is open and are never sent anywhere: dropEndedLinks, startPollJobs),
+//              ending early, extending, the anonymous switch before the first
+//              vote, deleting; and each poll as one viewer may see it (shownPoll): the results
+//              for organisers and admins always, for others after their vote or after the end
+//              as the poll says; free-text answers only for organisers and admins; names per
+//              answer only in a poll that is not anonymous. Who may vote (seesPoll, mayVoteIn):
+//              all members, members with one of the chosen Discord steps or a higher one, or
+//              organisers and admins only, whose polls only they see; and the summary for the
+//              sidebar's dot and the home card (pollSummary). A poll started in a call names
+//              it (callId, callTitle) and ends with it (endCallPolls); one started in a chat room
+//              names it (roomSlug, roomName) and is seen only by those who may read the room.
+// ============================================================
+
+import { passesStepRule } from '../discord/steps.js';
+
+const now = () => new Date().toISOString();
+
+const COLUMNS = `p.id, p.question, p.kind, p.multiple, p.other_text AS otherText, p.results,
+  p.anonymous, p.voters, p.ends_at AS endsAt, p.ended_at AS endedAt, p.created_at AS createdAt,
+  u.username AS createdBy, p.call_id AS callId, c.title AS callTitle, p.room_id AS roomId,
+  r.slug AS roomSlug, r.name AS roomName`;
+const FROM = `polls p LEFT JOIN users u ON u.id = p.created_by LEFT JOIN calls c ON c.id = p.call_id
+  LEFT JOIN chat_rooms r ON r.id = p.room_id`;
+
+// Open: not ended by hand and its end time (if any) not reached.
+export const isOpen = (poll, at = Date.now()) =>
+  !poll.endedAt && (!poll.endsAt || Date.parse(poll.endsAt) > at);
+
+function withOptions(db, row) {
+  if (!row) return null;
+  const options = db
+    .prepare('SELECT id, label FROM poll_options WHERE poll_id = ? ORDER BY position')
+    .all(row.id);
+  // The steps that may vote, in ladder order (listSteps' order).
+  const stepRule = db
+    .prepare(
+      `SELECT s.id, s.ladder, s.position, s.name FROM poll_step_rules r
+       JOIN discord_steps s ON s.id = r.step_id WHERE r.poll_id = ?
+       ORDER BY CASE s.ladder WHEN 'holder' THEN 1 WHEN 'farmer' THEN 2 ELSE 3 END, s.position`
+    )
+    .all(row.id);
+  return {
+    ...row,
+    multiple: Boolean(row.multiple),
+    otherText: Boolean(row.otherText),
+    anonymous: Boolean(row.anonymous),
+    options,
+    stepRule,
+  };
+}
+
+export function findPoll(db, id) {
+  return withOptions(db, db.prepare(`SELECT ${COLUMNS} FROM ${FROM} WHERE p.id = ?`).get(id));
+}
+
+// input: validatePoll's (shared/pollRules.js), already checked. Returns the new poll's id.
+export function createPoll(db, input, user) {
+  return db.transaction(() => {
+    const id = Number(
+      db
+        .prepare(
+          `INSERT INTO polls (question, kind, multiple, other_text, results, anonymous, voters,
+             ends_at, created_by, created_at, call_id, room_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          input.question.trim(),
+          input.kind,
+          input.kind === 'choice' && input.multiple ? 1 : 0,
+          input.kind === 'choice' && input.otherText ? 1 : 0,
+          input.results,
+          input.anonymous ? 1 : 0,
+          input.voters,
+          input.endsAt === null ? null : new Date(input.endsAt).toISOString(),
+          user.id,
+          now(),
+          input.callId ?? null,
+          input.roomId ?? null
+        ).lastInsertRowid
+    );
+    const add = db.prepare('INSERT INTO poll_options (poll_id, position, label) VALUES (?, ?, ?)');
+    if (input.kind === 'choice') input.options.forEach((label, i) => add.run(id, i, label.trim()));
+    const rule = db.prepare(
+      'INSERT OR IGNORE INTO poll_step_rules (poll_id, step_id) VALUES (?, ?)'
+    );
+    if (input.voters === 'steps') for (const stepId of input.steps) rule.run(id, stepId);
+    return id;
+  })();
+}
+
+// viewer: { userId (null for a guest), team (organiser or admin), steps (the account's Discord
+// steps, discord/steps.js stepsOfUser; read only when a step poll asks), readsRoom(roomId)
+// (whether the viewer may read that chat room) }.
+// A team poll is seen by organisers and admins only; every other poll by everyone.
+// A room's poll only for those who may read the room (viewer.readsRoom: the chat's own rule).
+export const seesPoll = (poll, viewer) =>
+  (poll.voters !== 'team' || viewer.team) && (!poll.roomId || viewer.readsRoom(poll.roomId));
+
+// May this viewer vote at all (open or not)? Organisers and admins always; a step poll: that
+// step or a higher one in its ladder (passesStepRule, as the chat rooms), none left: nobody.
+export function mayVoteIn(poll, viewer) {
+  if (viewer.userId === null) return false;
+  if (viewer.team) return true;
+  if (poll.voters === 'team') return false;
+  if (poll.voters === 'steps') {
+    return poll.stepRule.length > 0 && passesStepRule(poll.stepRule, viewer.steps);
+  }
+  return true;
+}
+
+export const hasVoted = (db, pollId, userId) =>
+  Boolean(
+    db.prepare('SELECT 1 FROM poll_voters WHERE poll_id = ? AND user_id = ?').get(pollId, userId)
+  );
+
+const voteCount = (db, pollId) =>
+  db.prepare('SELECT COUNT(*) AS n FROM poll_ballots WHERE poll_id = ?').get(pollId).n;
+
+// A vote may be changed: results after the end, still open, and a ballot that names its account.
+// Results after the end, still open: anonymous or not (decided 2026-11-11; an anonymous one
+// finds the earlier ballot through poll_ballot_links while it is open).
+export const mayChange = (poll, at = Date.now()) =>
+  poll.results === 'after_end' && isOpen(poll, at);
+
+// Anonymous with results after the end: its ballots are linked to their accounts while open.
+const linksBallots = (poll) => poll.anonymous && poll.results === 'after_end';
+
+// Every link of every ended poll goes (by hand, its call, its end time). Run before any vote or
+// list, by endPoll and endCallPolls, and every few seconds by the polls job (startPollJobs).
+export function dropEndedLinks(db, at = Date.now()) {
+  db.prepare(
+    `DELETE FROM poll_ballot_links WHERE poll_id IN (SELECT id FROM polls
+     WHERE ended_at IS NOT NULL OR (ends_at IS NOT NULL AND ends_at <= ?))`
+  ).run(new Date(at).toISOString());
+}
+
+const LINK_SWEEP_MS = 10_000;
+
+// The polls job (app.locals.polls.start): the links of a poll whose end time passed go within
+// seconds even when nobody looks. Returns the function that stops it.
+export function startPollJobs(db) {
+  const timer = setInterval(() => dropEndedLinks(db), LINK_SWEEP_MS);
+  timer.unref();
+  return () => clearInterval(timer);
+}
+
+// Stores one ballot (validateVote's, checked): { options, text }. 'voted' when this account
+// voted already and may not change it; otherwise null. A change replaces the earlier ballot.
+export function castVote(db, poll, userId, ballot) {
+  return db.transaction(() => {
+    dropEndedLinks(db);
+    if (hasVoted(db, poll.id, userId)) {
+      if (!mayChange(poll)) return 'voted';
+      if (linksBallots(poll)) {
+        // The earlier ballot through its link (the link row goes with it, ON DELETE CASCADE).
+        const link = db
+          .prepare(
+            'SELECT ballot_id AS id FROM poll_ballot_links WHERE poll_id = ? AND user_id = ?'
+          )
+          .get(poll.id, userId);
+        if (!link) return 'voted';
+        db.prepare('DELETE FROM poll_ballots WHERE id = ?').run(link.id);
+      } else {
+        db.prepare('DELETE FROM poll_ballots WHERE poll_id = ? AND user_id = ?').run(
+          poll.id,
+          userId
+        );
+      }
+    } else {
+      db.prepare('INSERT INTO poll_voters (poll_id, user_id) VALUES (?, ?)').run(poll.id, userId);
+    }
+    const text = ballot.text?.trim() || null;
+    const ballotId = db
+      .prepare('INSERT INTO poll_ballots (poll_id, user_id, text) VALUES (?, ?, ?)')
+      .run(poll.id, poll.anonymous ? null : userId, text).lastInsertRowid;
+    const pick = db.prepare('INSERT INTO poll_ballot_options (ballot_id, option_id) VALUES (?, ?)');
+    for (const optionId of ballot.options ?? []) pick.run(ballotId, optionId);
+    if (linksBallots(poll)) {
+      db.prepare(
+        'INSERT INTO poll_ballot_links (poll_id, user_id, ballot_id) VALUES (?, ?, ?)'
+      ).run(poll.id, userId, ballotId);
+    }
+    return null;
+  })();
+}
+
+export function endPoll(db, id) {
+  const ended =
+    db.prepare('UPDATE polls SET ended_at = ? WHERE id = ? AND ended_at IS NULL').run(now(), id)
+      .changes === 1;
+  dropEndedLinks(db);
+  return ended;
+}
+
+// A call that ends ends its open polls with it (calls/endCall.js); true when any was open.
+export function endCallPolls(db, callId) {
+  const ended =
+    db
+      .prepare('UPDATE polls SET ended_at = ? WHERE call_id = ? AND ended_at IS NULL')
+      .run(now(), callId).changes > 0;
+  dropEndedLinks(db);
+  return ended;
+}
+
+export function extendPoll(db, id, endsAt) {
+  db.prepare('UPDATE polls SET ends_at = ? WHERE id = ?').run(new Date(endsAt).toISOString(), id);
+}
+
+// Anonymous or not can change only before the first vote; false once someone voted.
+export function setAnonymous(db, id, value) {
+  return (
+    db
+      .prepare(
+        `UPDATE polls SET anonymous = ? WHERE id = ?
+         AND NOT EXISTS (SELECT 1 FROM poll_ballots WHERE poll_id = ?)`
+      )
+      .run(value ? 1 : 0, id, id).changes === 1
+  );
+}
+
+export function deletePoll(db, id) {
+  db.prepare('DELETE FROM polls WHERE id = ?').run(id);
+}
+
+// The results: per answer its count (and, not anonymous, who chose it), the other answers'
+// and free texts' count, and for organisers and admins the texts themselves.
+function resultsOf(db, poll, team) {
+  const counts = new Map(
+    db
+      .prepare(
+        `SELECT bo.option_id AS id, COUNT(*) AS n FROM poll_ballot_options bo
+         JOIN poll_ballots b ON b.id = bo.ballot_id WHERE b.poll_id = ? GROUP BY bo.option_id`
+      )
+      .all(poll.id)
+      .map((r) => [r.id, r.n])
+  );
+  const names = new Map();
+  if (!poll.anonymous) {
+    for (const r of db
+      .prepare(
+        `SELECT bo.option_id AS id, u.username FROM poll_ballot_options bo
+         JOIN poll_ballots b ON b.id = bo.ballot_id JOIN users u ON u.id = b.user_id
+         WHERE b.poll_id = ? ORDER BY u.username COLLATE NOCASE`
+      )
+      .all(poll.id)) {
+      names.set(r.id, [...(names.get(r.id) ?? []), r.username]);
+    }
+  }
+  const texts = db
+    .prepare(
+      `SELECT b.text, u.username AS by FROM poll_ballots b LEFT JOIN users u ON u.id = b.user_id
+       WHERE b.poll_id = ? AND b.text IS NOT NULL ORDER BY b.id`
+    )
+    .all(poll.id);
+  return {
+    options: poll.options.map((o) => ({
+      id: o.id,
+      count: counts.get(o.id) ?? 0,
+      ...(poll.anonymous ? {} : { voters: names.get(o.id) ?? [] }),
+    })),
+    textCount: texts.length,
+    ...(team
+      ? {
+          texts: texts.map((t) => (poll.anonymous ? { text: t.text } : { text: t.text, by: t.by })),
+        }
+      : {}),
+  };
+}
+
+// This account's own ballot, where it names the account (not in an anonymous poll).
+function ownBallot(db, poll, userId) {
+  const ballot = db
+    .prepare('SELECT id, text FROM poll_ballots WHERE poll_id = ? AND user_id = ?')
+    .get(poll.id, userId);
+  if (!ballot) return null;
+  const options = db
+    .prepare('SELECT option_id AS id FROM poll_ballot_options WHERE ballot_id = ?')
+    .all(ballot.id)
+    .map((r) => r.id);
+  return { options, text: ballot.text ?? '' };
+}
+
+// viewer: { userId (null for a guest), team (organiser or admin) }.
+export function shownPoll(db, poll, viewer, at = Date.now()) {
+  const open = isOpen(poll, at);
+  const voted = viewer.userId !== null && hasVoted(db, poll.id, viewer.userId);
+  const seesResults = viewer.team || !open || (poll.results === 'after_vote' && voted);
+  const { stepRule, ...rest } = poll;
+  return {
+    ...rest,
+    // The rule ("after_vote" / "after_end"); `results` below are the results themselves.
+    resultsWhen: rest.results,
+    // The steps' names only ("Voting from …"); ladders and positions stay on the server.
+    steps: stepRule.map((s) => s.name),
+    open,
+    votes: voteCount(db, poll.id),
+    voted,
+    mayVote: mayVoteIn(poll, viewer),
+    canVote: mayVoteIn(poll, viewer) && open && (!voted || mayChange(poll, at)),
+    myVote: voted && !poll.anonymous ? ownBallot(db, poll, viewer.userId) : null,
+    results: seesResults ? resultsOf(db, poll, viewer.team) : null,
+  };
+}
+
+// Every poll as the viewer sees it: open ones first, then ended ones, each newest first.
+// callId: only that call's polls (its page), else all.
+export function listPolls(db, viewer, at = Date.now(), callId = null) {
+  dropEndedLinks(db, at);
+  const ids =
+    callId === null
+      ? db.prepare('SELECT id FROM polls ORDER BY id DESC').all()
+      : db.prepare('SELECT id FROM polls WHERE call_id = ? ORDER BY id DESC').all(callId);
+  const polls = ids
+    .map(({ id }) => findPoll(db, id))
+    .filter((poll) => seesPoll(poll, viewer))
+    .map((poll) => shownPoll(db, poll, viewer, at));
+  // Newest first in both parts (decided 2026-11-11): the ids come in that order.
+  return [...polls.filter((p) => p.open), ...polls.filter((p) => !p.open)];
+}
+
+// For the sidebar's dot and the home card: how many open polls this viewer may vote in and has
+// not yet, and the newest open poll they see (or null).
+export function pollSummary(db, viewer, at = Date.now()) {
+  const open = listPolls(db, viewer, at).filter((p) => p.open);
+  const newest = open.reduce((a, b) => (!a || b.id > a.id ? b : a), null);
+  return { unvoted: open.filter((p) => p.canVote && !p.voted).length, newest };
+}

@@ -12,7 +12,8 @@
 //              (calls/recordingStart.js) and starts the stale-call and reminder jobs
 //              (calls/staleCalls.js, calls/reminders.js), app.locals.reference.start() the ETH, POL
 //              and BTC prices job (reference/sync.js), app.locals.recap.start() the weekly recap
-//              (recap/job.js). The embedded chat on approved foreign sites (embed/) adds its CSP,
+//              (recap/job.js), app.locals.polls.start() the polls job (polls/store.js). The
+//              embedded chat on approved foreign sites (embed/) adds its CSP,
 //              its token check and its routes; prices and bot events (bots/) are read-only public
 //              reads; /api/bot-admin/authorize lets staff through to the event bot's admin page
 //              (bots/adminAuthorizeRoutes.js, only with BOT_ADMIN_EMBEDDED=1);
@@ -40,6 +41,8 @@ import { callReminderRoutes } from './calls/reminderRoutes.js';
 import { sendCallReminders, startCallReminders } from './calls/reminders.js';
 import { callEventRoutes } from './calls/eventRoutes.js';
 import { callRecordingRoutes } from './calls/recordingRoutes.js';
+import { pollRoutes } from './polls/routes.js';
+import { startPollJobs } from './polls/store.js';
 import { recordingSharePage } from './calls/recordingShare.js';
 import { resumeRecordingStarts } from './calls/recordingStart.js';
 import { chapterRoutes } from './calls/chapterRoutes.js';
@@ -209,6 +212,10 @@ export function createApp({
       return stops.length ? () => stops.forEach((stop) => stop()) : null;
     },
   };
+  // Polls (polls/, docs/POLLS.md): changes reach members' pages over the chat's connection.
+  api.use('/polls', pollRoutes(db, config, chat));
+  // The polls job (polls/store.js): an ended poll's ballot links go within seconds.
+  app.locals.polls = { start: () => (config.backgroundJobs ? startPollJobs(db) : null) };
   // The weekly recap (recap/): posted by the site on Mondays, or now by an admin (audited).
   const recap = { db, config, chat, callsConfigured: Boolean(callService) };
   api.use('/admin/recap', adminRecapRoutes(recap));

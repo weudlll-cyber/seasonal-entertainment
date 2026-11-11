@@ -44,6 +44,7 @@ describe('app shell', () => {
       ['Games', '/games'],
       ['Events', '/events'],
       ['Chat', '/chat'],
+      ['Polls', '/polls'],
       ['Seasonal Tokens', '/info'],
     ]);
     expect(within(nav).getByRole('link', { name: 'Home' })).toHaveAttribute('aria-current', 'page');

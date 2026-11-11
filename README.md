@@ -26,6 +26,7 @@ npm run verify                    # lint, format, tests, build, browser tests
 ```
 
 More: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/BACKLOG.md](docs/BACKLOG.md),
+[docs/POLLS.md](docs/POLLS.md) (polls),
 build rules in [CLAUDE.md](CLAUDE.md).
 
 ## Integrate a game

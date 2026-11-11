@@ -4,13 +4,17 @@
 // Project:     Seasonal Entertainment
 // Description: The chat module's one public component (docs/CHAT.md): a room's live messages,
 //              per-message actions and the composer, for whoever is signed in (or a guest);
-//              the connection-limit line when the live connection was refused (too many).
+//              the connection-limit line when the live connection was refused (too many);
+//              for organisers and admins a "Poll" button that opens the poll form for this
+//              room (polls/PollForm.jsx; its card then shows in the timeline).
 //              Self-contained: data, the shared live connection and styles live in this
 //              folder; it needs only its props and the site's account context.
 // ============================================================
 
+import { useState } from 'react';
+import PollForm from '../polls/PollForm.jsx';
 import { useSession } from '../session/SessionContext.jsx';
-import { ChatVariant } from './ChatButton.jsx';
+import ChatButton, { ChatVariant } from './ChatButton.jsx';
 import ChatComposer from './ChatComposer.jsx';
 import ChatNotice from './ChatNotice.jsx';
 import ConnectionLimitNotice from './ConnectionLimitNotice.jsx';
@@ -47,6 +51,7 @@ export default function ChatPanel({
   const chat = useChatRoom(roomInput, user, unlisted);
   const { info, room, current } = chat;
   const roomName = current?.name ?? room;
+  const [pollForm, setPollForm] = useState(false); // the room's poll form is open
 
   return (
     <section
@@ -77,13 +82,32 @@ export default function ChatPanel({
             !user && guestPrompt ? (
               guestPrompt
             ) : (
-              <ChatComposer
-                user={user}
-                guestName={info.me.guestName}
-                onSend={chat.send}
-                room={room}
-                files={files && settings['chat.uploads']}
-              />
+              <>
+                {pollForm && (
+                  <div className="chat-poll-form">
+                    <PollForm room={room} onCreated={() => setPollForm(false)} />
+                  </div>
+                )}
+                <ChatComposer
+                  user={user}
+                  guestName={info.me.guestName}
+                  onSend={chat.send}
+                  room={room}
+                  files={files && settings['chat.uploads']}
+                  actions={
+                    // Organisers and admins start a poll in this room (docs/POLLS.md).
+                    info?.me.moderator && (
+                      <ChatButton
+                        icon="poll"
+                        text={pollForm ? 'Close poll form' : 'Poll'}
+                        secondary
+                        aria-expanded={pollForm}
+                        onClick={() => setPollForm(!pollForm)}
+                      />
+                    )
+                  }
+                />
+              </>
             )
           ) : (
             current && <p className="chat-note">You can read this room, but not write in it.</p>

@@ -36,7 +36,7 @@ import { directRoutes } from './directRoutes.js';
 import { favouriteRoutes } from './favouriteRoutes.js';
 import { withAuthorSteps } from './authorSteps.js';
 import { withMentions } from './mentions.js';
-import { addSystemMessage } from './messages.js';
+import { addMessage, addSystemMessage } from './messages.js';
 import { memberRoutes } from './memberRoutes.js';
 import { ChatHub } from './hub.js';
 import { adminChatRoomRoutes, chatModerationRoutes } from './moderationRoutes.js';
@@ -52,7 +52,7 @@ import {
   findRoomBySlug,
 } from './store.js';
 import { findUserById } from '../accounts/userStore.js';
-import { accountViewer, canRead, chatViewer } from './viewer.js';
+import { accountViewer, canRead, canWrite, chatViewer } from './viewer.js';
 import { makeSenderLimit } from './senderLimit.js';
 import { attachChatSocket } from './socket.js';
 import { unreadRoutes } from './unreadRoutes.js';
@@ -212,8 +212,29 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
       },
     },
     // For areas that tell a member something live (call reminders, calls/reminders.js): an
-    // event to every open page of that account; returns how many got it.
-    notify: { member: (userId, event) => hub.sendToUser(userId, event) },
+    // event to every open page of that account; returns how many got it. members: to every
+    // signed-in member's open pages (a poll changed, polls/routes.js).
+    notify: {
+      member: (userId, event) => hub.sendToUser(userId, event),
+      members: (event) => hub.sendToMembers(event),
+    },
+    // For polls in a room (polls/routes.js; docs/POLLS.md): the room's own read and write rules
+    // for a request (accounts and guests alike), and the poll's card posted as its creator's
+    // message, pushed and counted for unread exactly as a member's post (routes.js).
+    polls: {
+      readable: (req, roomId) => {
+        const room = findRoom(db, roomId);
+        return Boolean(room && canRead(room, chatViewer(req)));
+      },
+      writable: (req, room) => canWrite(room, chatViewer(req)),
+      post(room, user, pollId) {
+        const created = addMessage(db, room, { user, guest: null }, { kind: 'text', pollId });
+        const { roomId, authorUserId, authorGuest, ...rest } = created;
+        const [message] = withAuthorSteps(db, withMentions(db, [rest]));
+        hub.broadcast(room.id, { type: 'message', message });
+        hub.notifyReaders(room, { type: 'activity', room: room.slug });
+      },
+    },
     // For areas that let chat users in (a call, calls/): who is asking — an account, or a
     // guest with their chat identity (given now if needed; null after answering 503) — and
     // their chat sanction (mute or ban), if any.

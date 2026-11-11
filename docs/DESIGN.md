@@ -230,6 +230,12 @@ call (no Next call box). **No box is ever cut**, and **nothing a box shows lies 
 floating chat button**. `client/e2e/layout.spec.js` checks all three, in both cases, at
 1280 x 720, 1440 x 900 and 1920 x 1080. Below 1000px the page stacks and scrolls.
 
+**The Poll box** (2026-11-10, docs/POLLS.md): while an open poll exists, it takes one column of
+the top row and "Up next" the other (it shows only whole entries); its question is clamped at 2
+lines and its vote is a dropdown and "Vote" on one line, so the fullest box (a long question,
+not anonymous, a call planned) still fits 1280 x 720, 1440 x 900 and 1920 x 1080 with nothing
+cut (`layout.spec.js`, "Home with a call and a poll").
+
 To make room (2026-10-21), in this order:
 
 - **a)** a lower banner: 15 % of the window, 96–160px, its lettering scaled with that height
@@ -273,8 +279,11 @@ minimum window:
   sight. 8px between nav, account card and legal links (was 16px), 2px between the pills (was
   4px; they keep their 44px), 8px above the logo (was 16px), none between the logo bar and the
   first pill (was 8px), 8px at the bottom (was 16px), 4px around the divider (was 8px) and 8px
-  above the account card (was 16px): about 9px to spare there. A shorter window or a larger zoom
-  scrolls the menu again (nothing is lost, it scrolls).
+  above the account card (was 16px): about 9px to spare there. Since "Polls" joined the main
+  items (2026-11-10) the pills are 40px tall instead of 44px in a window under 660px high
+  (`sidebar.css`), which gives back the 40px the new pill takes; 40px stays well above the 24px
+  minimum target. A shorter window or a larger zoom scrolls the menu again (nothing is lost, it
+  scrolls).
 - **A narrow Fair price box** (one column of a 1280px window, beside Next call) drops its four
   marks and takes the title on one line; its text wrapped so far that the Disclaimer link was
   cut.
