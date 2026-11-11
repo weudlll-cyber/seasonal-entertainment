@@ -51,6 +51,7 @@ const BannerPage = lazyPage(() => import('../pages/BannerPage.jsx'));
 const CallPage = lazyPage(() => import('../pages/CallPage.jsx'));
 const DiscordSignupPage = lazyPage(() => import('../pages/DiscordSignupPage.jsx'));
 const RecordingsPage = lazyPage(() => import('../pages/RecordingsPage.jsx'));
+const RecordingPage = lazyPage(() => import('../pages/RecordingPage.jsx'));
 const StartPage = lazyPage(() => import('../pages/StartPage.jsx'));
 const EmbedChatPage = lazyPage(() => import('../embed/EmbedChatPage.jsx'));
 const EmbedLoginPage = lazyPage(() => import('../embed/EmbedLoginPage.jsx'));
@@ -107,6 +108,7 @@ export default function App() {
               <Route path="calls" element={<CallsPage />} />
               <Route path="calls/recordings" element={<RecordingsPage />} />
               <Route path="calls/:id" element={<CallPage />} />
+              <Route path="recordings/:id" element={<RecordingPage />} />
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<RegisterPage />} />
               <Route path="register/discord" element={<DiscordSignupPage />} />

@@ -536,7 +536,8 @@ All answer `429 too_many_attempts`. Numbers are in `server/src/config.js` (`rate
 `POST /api/auth/prelogin` also shares the two login limiters above (the same counters): a blocked
 name or address gets neither salts nor logins. The limit on every read (since 2026-10-21) covers
 the public reads that have no limit of their own (session, info, games, calls, chat rooms and
-messages, files, the embed check); a page load makes a handful, so only a flood meets it. Routes
+messages, files, the embed check), and, since 2026-11-11, a recording's share page
+`/recordings/<id>` outside `/api` (docs/CALLS.md); a page load makes a handful, so only a flood meets it. Routes
 with their own limits (bots' reads, member search) keep them as well. `API_READS_PER_MINUTE`
 sets it (default 1200). The browser tests raise it (`playwright.config.js`): all their visitors
 come from 127.0.0.1, and a run that took under a minute met it (2026-10-23): the call page's one

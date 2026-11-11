@@ -209,19 +209,23 @@ describe('content', () => {
     for (const o of occurrences) {
       expect(
         eventLines.some(
-          (l) =>
-            l.includes(o.name) && l.includes(formatDateTime(o.start, 'Europe/Vienna', MONDAY_NINE))
+          (l) => l.includes(o.name) && l.includes(formatDateTime(o.start, 'UTC', MONDAY_NINE))
         )
       ).toBe(true);
     }
     expect(eventLines).toContain(
-      `- ${formatDateTime(MONDAY_NINE + 2 * DAY, 'Europe/Vienna', MONDAY_NINE)}: Community call, a call on this site: /calls/${callId}`
+      `- ${formatDateTime(MONDAY_NINE + 2 * DAY, 'UTC', MONDAY_NINE)}: Community call, a call on this site: /calls/${callId}`
     );
 
+    // Written in UTC, labelled (decided 2026-11-11): Wednesday 09:00 in Vienna is 08:00 UTC.
+    expect(eventLines).toContain(
+      `- Wednesday 28 October, 08:00\u00a0UTC: Community call, a call on this site: /calls/${callId}`
+    );
+    // The heading is still the posting week's Monday, not the Sunday that instant is in UTC.
     expect(lines[0]).toBe('Weekly recap for the week of Monday 26 October');
     expect(lines.slice(2, 7)).toEqual(['Prices over the past 7 days:', ...expected]);
     expect(lines).toContain(
-      `- Community call, ${formatDateTime(MONDAY_NINE - DAY, 'Europe/Vienna', MONDAY_NINE)}: /calls/${callId}`
+      `- Community call, ${formatDateTime(MONDAY_NINE - DAY, 'UTC', MONDAY_NINE)}: /calls/${callId}`
     );
     expect(lines.at(-1)).toBe(
       'Information only — not financial advice. Disclaimer: /info/disclaimer'

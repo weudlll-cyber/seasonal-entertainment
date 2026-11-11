@@ -526,8 +526,39 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
   audience (everyone), newest first, each with its call's title (a link to the call), date,
   length, player and chapters, and a search over the call titles
   (`GET /api/calls/recordings`, mounted before the call routes, whose `/:id` would take it).
-  The call page and the archive show a recording the same way (`RecordingItem.jsx`,
-  `recordings.css`).
+  The call page, the archive and a recording's own page show a recording the same way
+  (`RecordingItem.jsx`, `recordings.css`).
+- **Sharing a recording** (decided 2026-11-10: recordings stay public, each with a stable link
+  that shows a preview card where it is posted, on Discord, Telegram, X and the like):
+  - **The link** is `/recordings/<id>` (the recording's own id, never reused; the call's page
+    `/calls/<id>` keeps working). Its page (`pages/RecordingPage.jsx`) shows only that
+    recording for everyone: the call's title, a link to the call and to the archive, then the
+    recording as in a list. A recording that does not exist (or no longer) shows "Page not
+    found"; after an organiser or admin deletes it there, the page goes to the archive. The
+    page reads `GET /api/calls/recordings/:rid` (the recording with its call).
+  - **The preview card**: the server answers `/recordings/<id>` with the client's `index.html`
+    plus meta tags (`server/src/calls/recordingShare.js`): `og:title` (the call's title,
+    "(recording)"), `og:description` (the date in UTC, labelled "UTC": `UTC_ZONE` in
+    `shared/localWeek.js`, as the weekly recap's text, since one card is read in every zone
+    (decided 2026-11-11); and the length), `og:url`, `og:type`
+    `video.other`, `og:image` (the site's logo, `/brand/logo.webp`), `og:video` and
+    `og:video:secure_url` (the public video URL), `og:video:type` `video/mp4`,
+    `og:video:width`/`height` (1280 x 720, the recording's size), and `twitter:card`
+    `summary_large_image` (a "player" card would need an embeddable player page of its own).
+    Every value is HTML-escaped; the page's `<title>` becomes the recording's. A missing,
+    deleted or unfinished recording answers 404 with the plain `index.html`. Each answer reads
+    that file and the database, so the page counts against the reads per IP of `/api`
+    (`API_READS_PER_MINUTE`, docs/AUTH.md; since 2026-11-11, after a CodeQL finding). Only where the
+    built client is served (production, the browser tests); the Vite dev server answers
+    without the tags. The URLs use `PUBLIC_ORIGIN`. Nothing new is loaded from elsewhere: the
+    CSP and the embed rules are unchanged.
+  - **"Share"** on every recording (`calls/ShareRecording.jsx`, in `RecordingItem.jsx`): on a
+    touch screen with a share sheet (`navigator.share`) the sheet opens with the link; elsewhere
+    the link is copied and "Link copied" shows. Without a clipboard the link is shown to copy
+    by hand.
+  - Tests: `server/test/recordingShare.test.js`, `client/src/calls/recordingShare.test.jsx`,
+    `client/e2e/recordingShare.spec.js` (the browser tests run with `CALLS_RECORDINGS_DIR` set;
+    no egress runs there, so the spec stores its recording in the database).
 - **Tested for real on the owner's PC** (2026-10-22): LiveKit v1.13.10 with egress v1.15.0 and
   Redis in Docker. A browser with a fake camera and microphone was recorded through the
   site's own service code: a playable MP4, 1280 x 720, 15 frames a second, H.264 Main at about

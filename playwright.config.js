@@ -68,6 +68,9 @@ const serverEnv = {
   CALLS_URL,
   CALLS_API_KEY: 'devkey',
   CALLS_API_SECRET: 'secret',
+  // Recording on (no egress runs: nothing is recorded), so a recording a spec stores in the
+  // database is served and shown (recordingShare.spec.js).
+  CALLS_RECORDINGS_DIR: path.join(process.env.SE_E2E_DIR, 'recordings'),
   // The event bot, read-only (docs/BOTS.md): the fixture built just before. The price
   // bot stays off, so the home page keeps its season marks (seasonMarks.spec.js).
   BOT_FIXTURE_DIR: path.join(process.env.SE_E2E_DIR, 'bots'),
