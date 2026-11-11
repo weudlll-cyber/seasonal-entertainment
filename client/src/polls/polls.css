@@ -153,3 +153,54 @@
   font-variant-numeric: tabular-nums;
   font-weight: var(--font-weight-strong);
 }
+
+/* A poll's card in a chat room's timeline (ChatPollCard.jsx): the column's width. */
+.chat-poll {
+  margin: var(--space-1) 0 0;
+}
+
+.chat-poll .poll-card {
+  max-width: none;
+}
+
+/* The poll form above a room's composer (chat/ChatPanel.jsx): it scrolls inside, the
+   timeline keeps its room. */
+.chat-poll-form {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+/* On a phone (decided 2026-11-11; checked at 390 x 844 and 360 x 740, pollsPhone.spec.js):
+   nothing wider than the screen, every answer a full-width line of at least 44px with the
+   whole line its target, the vote buttons full width, the text fields and the new end the
+   card's width, a little less padding so the card keeps its width for the text. */
+@media (max-width: 599.98px) {
+  .poll-card {
+    padding: var(--space-2);
+    overflow-wrap: anywhere;
+  }
+
+  .poll-vote,
+  .poll-vote__options,
+  .poll-vote .form-check,
+  .poll-vote .form-field,
+  .poll-vote textarea,
+  .poll-vote > .button,
+  .poll-card__manage .form-field,
+  .poll-card__manage input {
+    width: 100%;
+  }
+
+  .poll-vote,
+  .poll-vote__options {
+    justify-items: stretch;
+  }
+
+  .poll-card__manage > .button {
+    flex: 1 1 auto;
+  }
+
+  .poll-form__option .button {
+    flex: none;
+  }
+}

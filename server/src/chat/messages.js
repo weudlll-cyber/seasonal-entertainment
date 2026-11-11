@@ -23,7 +23,7 @@ const now = () => new Date().toISOString();
 const MESSAGE_COLUMNS = `m.id, r.slug AS room, m.author_name AS author,
   m.author_user_id AS authorId, (m.author_guest IS NOT NULL) AS isGuest,
   CASE WHEN a.role IN ('admin', 'organiser') THEN a.role END AS authorRole,
-  m.author_system AS isSystem, m.kind, m.body, m.created_at AS createdAt,
+  m.author_system AS isSystem, m.kind, m.body, m.poll_id AS pollId, m.created_at AS createdAt,
   m.hidden_at AS hiddenAt, m.hidden_by AS hiddenBy,
   i.file AS mediaFile, i.alt AS mediaAlt, i.credit AS mediaCredit, i.width AS mediaWidth,
   i.height AS mediaHeight,
@@ -97,20 +97,19 @@ function toMessage(row, moderator) {
 }
 
 // input: { kind: 'text' | 'sticker' | 'gif', body (may be empty with an attachment), itemId,
-// uploadId }. The upload is attached in the same write: if it was taken meanwhile, nothing
-// is stored and this throws.
+// uploadId, pollId (a poll's card in the room, polls/routes.js) }. The upload is attached in
+// the same write: if it was taken meanwhile, nothing is stored and this throws.
 export function addMessage(
   db,
   room,
   { user, guest },
-  { kind, body = '', itemId = null, uploadId = null }
+  { kind, body = '', itemId = null, uploadId = null, pollId = null }
 ) {
   return db.transaction(() => {
     const { lastInsertRowid } = db
       .prepare(
-        `INSERT INTO chat_messages
-           (room_id, author_user_id, author_guest, author_name, kind, body, media_item_id, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO chat_messages (room_id, author_user_id, author_guest, author_name, kind, body,
+           media_item_id, created_at, poll_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         room.id,
@@ -120,7 +119,8 @@ export function addMessage(
         kind,
         body,
         itemId,
-        now()
+        now(),
+        pollId
       );
     const id = Number(lastInsertRowid);
     if (uploadId !== null && !attachUpload(db, uploadId, user.id, id)) {

@@ -12,7 +12,8 @@
 //              deleting are audited; an account's deletion takes its votes along, an anonymous
 //              ballot stays; members' open pages hear of every change at once; who may vote
 //              (Discord steps, team polls) and the summary; a poll started in a live call is
-//              listed on its page and ends with the call.
+//              listed on its page and ends with the call; a poll started in a chat room has a
+//              card in the timeline and is seen only by those who may read the room.
 // ============================================================
 
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -386,6 +387,46 @@ describe('polls in a call', () => {
     expect((await vote(mia, inCall.id, { options: optionIds(inCall).slice(0, 1) })).status).toBe(
       409
     );
+  });
+});
+
+describe('polls in chat rooms', () => {
+  const roomMessages = async (agent, slug) =>
+    (await agent.get(`/api/chat/rooms/${slug}/messages`)).body.messages;
+
+  it("a card in the room's timeline; seen by everyone who may read the room", async () => {
+    const { olga, mia } = await setup();
+    const admin = (await makeStaff(t, 'ada', 'admin')).agent;
+    expect((await mia.post('/api/polls').send({ ...CHOICE, room: 'general' })).status).toBe(403);
+    const missing = await olga.post('/api/polls').send({ ...CHOICE, room: 'nowhere' });
+    expect(missing.status).toBe(403);
+
+    const poll = await create(olga, { ...CHOICE, room: 'general' });
+    expect(poll).toMatchObject({ roomSlug: 'general', roomName: 'General' });
+    const card = (await roomMessages(t.client(), 'general')).find((m) => m.pollId === poll.id);
+    expect(card).toMatchObject({ author: 'olga', body: '' });
+    // Guests may read General: the poll is theirs to see too, alone (its card) and listed.
+    expect((await t.client().get(`/api/polls/${poll.id}`)).body.poll.question).toBe(
+      CHOICE.question
+    );
+    expect((await shown(t.client(), poll.id)).roomSlug).toBe('general');
+    expect((await vote(mia, poll.id, { options: optionIds(poll).slice(0, 1) })).status).toBe(200);
+
+    // Deleted by an admin: its card goes with it.
+    await admin.delete(`/api/polls/${poll.id}`);
+    expect((await roomMessages(t.client(), 'general')).some((m) => m.pollId === poll.id)).toBe(
+      false
+    );
+  });
+
+  it('a room members may not read: its poll is not theirs, anywhere', async () => {
+    const { olga, mia } = await setup();
+    const poll = await create(olga, { ...CHOICE, room: 'organisers' });
+    expect(await shown(mia, poll.id)).toBeUndefined();
+    expect((await mia.get(`/api/polls/${poll.id}`)).status).toBe(404);
+    expect((await vote(mia, poll.id, { options: optionIds(poll).slice(0, 1) })).status).toBe(404);
+    expect((await mia.get('/api/polls/summary')).body.newest).toBeNull();
+    expect((await shown(olga, poll.id)).roomName).toBe('Organisers');
   });
 });
 

@@ -80,7 +80,10 @@ the stars and bells match the rest of the site) and the never-throwing browser s
 marks) and the embed state (`client/src/embed/embedAuth.js`, which imports only that storage; since
 2026-10-23, so a file in the chat on another site loads through its short-lived link,
 `useFileLinks.js`) and the Discord ladders' names (`@seasonal-entertainment/shared/discordLadders.js`,
-since 2026-11-04, for the step badge); `client/src/chat/chatModule.test.js` fails on any other import, and on any page
+since 2026-11-04, for the step badge) and, for polls in a room (docs/POLLS.md; since 2026-11-11),
+a poll's card (`client/src/polls/ChatPollCard.jsx`) and the poll form
+(`client/src/polls/PollForm.jsx`), which use only the chat's `index.js` in return;
+`client/src/chat/chatModule.test.js` fails on any other import, and on any page
 importing a file of the module other than `index.js`.
 
 - **Styles** sit under one root class, `.se-chat` (`ChatPanel.css`, `ChatPanelVariants.css`,

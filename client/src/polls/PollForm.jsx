@@ -7,7 +7,7 @@
 //              "Other answer" text) or free text only; when the results show; anonymous or
 //              not; who may vote (all members, Discord steps grouped by ladder, or organisers
 //              and admins only); a fixed end or "end by hand" (in a live call instead 1, 2 or
-//              5 minutes or by hand, callId). With free text on, a warning says those
+//              5 minutes or by hand, callId; in a chat room: room). With free text on, a warning says those
 //              answers are evaluated by hand. Checked like the server (shared/pollRules.js
 //              validatePoll) before it is sent; onCreated() after the server stored it.
 // ============================================================
@@ -52,8 +52,6 @@ function Choice({ name, value, current, onPick, children }) {
 // A call's poll lasts minutes: these, or by hand.
 const CALL_MINUTES = [1, 2, 5];
 
-// steps: the Discord steps a poll can be limited to ({ id, ladder, name }, GET /api/polls);
-// callId: started in this live call (its page), with an end in minutes.
 // The end chosen: a fixed time, minutes from now (a call's poll), or none (by hand).
 function endOf(poll) {
   if (poll.ending === 'time') return poll.endsAt ? new Date(poll.endsAt).toISOString() : null;
@@ -61,7 +59,10 @@ function endOf(poll) {
   return minutes ? new Date(Date.now() + minutes * 60_000).toISOString() : null;
 }
 
-export default function PollForm({ steps = [], callId = null, onCreated }) {
+// steps: the Discord steps a poll can be limited to ({ id, ladder, name }, GET /api/polls);
+// callId: started in this live call (its page), with an end in minutes; room: started in this
+// chat room (its slug; chat/ChatPanel.jsx), its card then in the timeline.
+export default function PollForm({ steps = [], callId = null, room = null, onCreated }) {
   const [poll, setPoll] = useState(callId === null ? EMPTY : { ...EMPTY, ending: '1' });
   const [error, setError] = useState(null);
   const set = (key) => (value) => setPoll((now) => ({ ...now, [key]: value }));
@@ -83,6 +84,7 @@ export default function PollForm({ steps = [], callId = null, onCreated }) {
       // datetime-local has no time zone: the browser's own, turned into UTC here.
       endsAt: endOf(poll),
       ...(callId === null ? {} : { callId }),
+      ...(room === null ? {} : { room }),
     };
     const problem =
       poll.ending === 'time' && !poll.endsAt

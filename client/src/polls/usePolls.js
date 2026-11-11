@@ -8,7 +8,8 @@
 //              "polls" event of the chat's live connection (usePersonalEvents), every page
 //              after this page changed a poll (pollsChanged(), as callsChanged() does for
 //              calls), every minute for guests' pages (useCallsSummary's interval), and when
-//              the next open poll reaches its end time; a call's page every 10 seconds.
+//              the next open poll reaches its end time; a call's page every 10 seconds; one
+//              poll for a chat room's card (usePoll).
 // ============================================================
 
 import { useCallback, useEffect, useState } from 'react';
@@ -77,3 +78,7 @@ export const usePolls = (callId = null) =>
 // { answer: { unvoted, newest (the newest open poll the viewer sees, or null) } or null }.
 export const usePollSummary = () =>
   useLivePolls('/polls/summary', (answer) => (answer.newest ? openEnds([answer.newest]) : []));
+
+// { answer: { canManage, canDelete, poll } or null, error }: one poll (a room poll's card in
+// the chat's timeline, ChatPollCard.jsx); error once it is gone (deleted).
+export const usePoll = (id) => useLivePolls(`/polls/${id}`, (answer) => openEnds([answer.poll]));

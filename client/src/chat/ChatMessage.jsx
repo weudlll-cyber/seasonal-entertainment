@@ -13,6 +13,7 @@
 //              file / Remove preview). A message that mentions the reader is highlighted for them.
 // ============================================================
 
+import ChatPollCard from '../polls/ChatPollCard.jsx';
 import { useSession } from '../session/SessionContext.jsx';
 import MessageFile from './MessageFile.jsx';
 import MessageMenu, { roomMessageActions } from './MessageMenu.jsx';
@@ -67,6 +68,8 @@ export default function ChatMessage({ message, moderator, onAction }) {
       {(message.kind === 'sticker' || message.kind === 'gif') && (
         <MessageMedia kind={message.kind} media={message.media} />
       )}
+      {/* A poll's card (docs/POLLS.md): voted right here, live like the Polls page. */}
+      {message.pollId && <ChatPollCard pollId={message.pollId} />}
       {message.file && <MessageFile file={message.file} />}
       {message.preview && <PreviewCard preview={message.preview} />}
       {message.previewHeld && (

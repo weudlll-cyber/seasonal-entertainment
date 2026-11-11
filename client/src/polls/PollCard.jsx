@@ -43,7 +43,8 @@ function resultsRule(poll, canManage) {
 }
 
 // signedIn: whether someone is signed in (guests get a sign-in hint); canManage, canDelete:
-// the list's answer; showCall: name the call a poll was started in (the Polls page).
+// the list's answer; showCall: name the call or chat room a poll was started in (the Polls
+// page).
 export default function PollCard({ poll, signedIn, canManage, canDelete, showCall = false }) {
   const [extendTo, setExtendTo] = useState('');
   const [asking, setAsking] = useState(false);
@@ -67,6 +68,12 @@ export default function PollCard({ poll, signedIn, canManage, canDelete, showCal
         {endLine(poll)} · {votes} · {poll.anonymous ? 'Anonymous' : 'Not anonymous'}
         {poll.voters === 'team' && ' · Organisers and admins only'}
         {poll.createdBy && ` · by ${poll.createdBy}`}
+        {showCall && poll.roomSlug && (
+          <>
+            {' · in the room '}
+            <Link to={`/chat?room=${encodeURIComponent(poll.roomSlug)}`}>{poll.roomName}</Link>
+          </>
+        )}
         {showCall && poll.callId && (
           <>
             {' · in the call '}

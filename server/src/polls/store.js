@@ -14,7 +14,8 @@
 //              all members, members with one of the chosen Discord steps or a higher one, or
 //              organisers and admins only, whose polls only they see; and the summary for the
 //              sidebar's dot and the home card (pollSummary). A poll started in a call names
-//              it (callId, callTitle) and ends with it (endCallPolls).
+//              it (callId, callTitle) and ends with it (endCallPolls); one started in a chat room
+//              names it (roomSlug, roomName) and is seen only by those who may read the room.
 // ============================================================
 
 import { passesStepRule } from '../discord/steps.js';
@@ -23,9 +24,10 @@ const now = () => new Date().toISOString();
 
 const COLUMNS = `p.id, p.question, p.kind, p.multiple, p.other_text AS otherText, p.results,
   p.anonymous, p.voters, p.ends_at AS endsAt, p.ended_at AS endedAt, p.created_at AS createdAt,
-  u.username AS createdBy, p.call_id AS callId, c.title AS callTitle`;
-const FROM =
-  'polls p LEFT JOIN users u ON u.id = p.created_by LEFT JOIN calls c ON c.id = p.call_id';
+  u.username AS createdBy, p.call_id AS callId, c.title AS callTitle, p.room_id AS roomId,
+  r.slug AS roomSlug, r.name AS roomName`;
+const FROM = `polls p LEFT JOIN users u ON u.id = p.created_by LEFT JOIN calls c ON c.id = p.call_id
+  LEFT JOIN chat_rooms r ON r.id = p.room_id`;
 
 // Open: not ended by hand and its end time (if any) not reached.
 export const isOpen = (poll, at = Date.now()) =>
@@ -65,7 +67,8 @@ export function createPoll(db, input, user) {
       db
         .prepare(
           `INSERT INTO polls (question, kind, multiple, other_text, results, anonymous, voters,
-             ends_at, created_by, created_at, call_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+             ends_at, created_by, created_at, call_id, room_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
           input.question.trim(),
@@ -78,7 +81,8 @@ export function createPoll(db, input, user) {
           input.endsAt === null ? null : new Date(input.endsAt).toISOString(),
           user.id,
           now(),
-          input.callId ?? null
+          input.callId ?? null,
+          input.roomId ?? null
         ).lastInsertRowid
     );
     const add = db.prepare('INSERT INTO poll_options (poll_id, position, label) VALUES (?, ?, ?)');
@@ -92,9 +96,12 @@ export function createPoll(db, input, user) {
 }
 
 // viewer: { userId (null for a guest), team (organiser or admin), steps (the account's Discord
-// steps, discord/steps.js stepsOfUser; read only when a step poll asks) }.
+// steps, discord/steps.js stepsOfUser; read only when a step poll asks), readsRoom(roomId)
+// (whether the viewer may read that chat room) }.
 // A team poll is seen by organisers and admins only; every other poll by everyone.
-export const seesPoll = (poll, viewer) => poll.voters !== 'team' || viewer.team;
+// A room's poll only for those who may read the room (viewer.readsRoom: the chat's own rule).
+export const seesPoll = (poll, viewer) =>
+  (poll.voters !== 'team' || viewer.team) && (!poll.roomId || viewer.readsRoom(poll.roomId));
 
 // May this viewer vote at all (open or not)? Organisers and admins always; a step poll: that
 // step or a higher one in its ladder (passesStepRule, as the chat rooms), none left: nobody.

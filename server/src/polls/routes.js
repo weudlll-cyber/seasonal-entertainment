@@ -9,7 +9,10 @@
 //              them (all members, Discord steps, or organisers and admins only; a team poll
 //              is "no such poll" for others); only admins delete. GET /summary: the sidebar's
 //              dot and the home card. A poll started in a live call (callId) is listed with
-//              ?call=<id> on its page; ending the call ends it (calls/endCall.js).
+//              ?call=<id> on its page; ending the call ends it (calls/endCall.js). A poll
+//              started in a chat room (room: its slug; organisers and admins who may write
+//              there) gets a card in the room's timeline (chat.polls.post) and is seen only by
+//              those who may read the room; GET /:id gives one poll for that card.
 //              Creating, ending, extending and deleting are audited (poll.create, poll.end,
 //              poll.extend, poll.delete). Every change tells the members' open pages at once
 //              ("polls" over the chat's live connection); guests' pages reload on a timer.
@@ -54,6 +57,8 @@ const pollInput = (body = {}) => ({
   steps: body.steps ?? [],
   endsAt: body.endsAt ?? null,
   callId: Number.isInteger(body.callId) ? body.callId : null,
+  // A chat room's slug: the poll is started there (its card in the timeline).
+  room: typeof body.room === 'string' ? body.room : null,
 });
 
 const queryCall = (req) => (/^\d+$/.test(req.query.call ?? '') ? Number(req.query.call) : null);
@@ -74,6 +79,7 @@ export function pollRoutes(db, config, chat) {
         steps ??= req.user ? stepsOfUser(db, req.user.id) : [];
         return steps;
       },
+      readsRoom: (roomId) => chat.polls.readable(req, roomId),
     };
   };
   // A team poll is "no such poll" for everyone but organisers and admins.
@@ -115,6 +121,11 @@ export function pollRoutes(db, config, chat) {
     if (input.callId !== null && findCall(db, input.callId)?.status !== 'live') {
       return sendError(res, 409, 'call_not_live', 'A poll can be started only in a live call.');
     }
+    // A room poll: in a room this organiser or admin may write in (the room's own rules).
+    const room = input.room === null ? null : chat.rooms.findBySlug(input.room);
+    if (input.room !== null && (!room || !chat.polls.writable(req, room))) {
+      return sendError(res, 403, 'room_not_allowed', 'You cannot start a poll in this room.');
+    }
     const known = new Set(listSteps(db).map((s) => s.id));
     const problem =
       validatePoll(input) ??
@@ -122,10 +133,21 @@ export function pollRoutes(db, config, chat) {
         ? 'Please choose among the Discord steps.'
         : null);
     if (problem) return sendError(res, 400, 'invalid_input', problem);
-    const poll = findPoll(db, createPoll(db, input, req.user));
+    const poll = findPoll(db, createPoll(db, { ...input, roomId: room?.id ?? null }, req.user));
+    if (room) chat.polls.post(room, req.user, poll.id);
     audit(req, 'poll.create', poll, poll.callId ? { callId: poll.callId } : {});
     changed();
     res.status(201).json({ ok: true, poll: shownPoll(db, poll, viewerOf(req)) });
+  });
+
+  // One poll (a room poll's card in the timeline loads it by its id).
+  router.get('/:id', allow('public'), loadPoll, visible, (req, res) => {
+    res.json({
+      ok: true,
+      canManage: canManage(req),
+      canDelete: canDelete(req),
+      poll: shownPoll(db, req.poll, viewerOf(req)),
+    });
   });
 
   router.post(

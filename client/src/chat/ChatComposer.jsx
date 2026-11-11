@@ -30,7 +30,8 @@ import './ChatComposer.css';
 // a direct message's own upload (encrypted first) and file types (ComposerUpload).
 // room: the room's slug, for @mention suggestions (none in direct messages, none for guests).
 // onDraft(text): told every change of the text (also its clearing after sending); above: shown
-// above the field.
+// above the field; actions: more buttons before Send (a room's "Poll" for organisers and
+// admins, ChatPanel.jsx; never in direct messages).
 export default function ChatComposer({
   user,
   guestName,
@@ -41,6 +42,7 @@ export default function ChatComposer({
   above = null,
   uploadFile,
   accept,
+  actions = null,
 }) {
   const [draft, setDraft] = useState('');
   const [attachment, setAttachment] = useState(null); // { type, item } or { type: 'file', upload }
@@ -116,6 +118,7 @@ export default function ChatComposer({
             accept={accept}
           />
         )}
+        {actions}
         <ChatButton icon="send" text="Send" type="submit" disabled={!draft.trim() && !attachment} />
       </div>
     </form>

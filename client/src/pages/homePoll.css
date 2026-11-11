@@ -58,7 +58,8 @@
    above the others it would push them down as it appears (layout shift, docs/DESIGN.md,
    "Speed"; speed.spec.js). */
 @media (max-width: 999.98px) {
-  .home__grid .home__poll {
+  /* As specific as the build's merged rule above (:is() takes its most specific part). */
+  .home__grid:has(.home__poll) .home__poll {
     order: 1;
     grid-column: span 2;
   }

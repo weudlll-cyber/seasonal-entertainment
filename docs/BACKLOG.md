@@ -22,7 +22,10 @@ entry waits for.
   chat connection, every minute for guests. Piece 3: who may vote (all members, Discord steps
   with the chat rooms' step rule, or organisers and admins only), the home page's Poll box and
   the dot on "Polls". Piece 4: polls started in a live call, under its stage with a countdown
-  (1, 2 or 5 minutes or by hand), ended with the call (docs/POLLS.md).
+  (1, 2 or 5 minutes or by hand), ended with the call. Follow-ups of 2026-11-11: newest first,
+  anonymous votes changeable until the end (ballot links only while open), the results rule
+  shown, polls in chat rooms (a card in the timeline, the room's read rules), every view
+  comfortable on a phone (docs/POLLS.md).
 
 ### To try on the live server
 

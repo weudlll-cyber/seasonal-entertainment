@@ -7,19 +7,24 @@
 //              one, or only a text; at most 500 characters, checked like the server
 //              (shared/pollRules.js validateVote). A poll that is not anonymous says so before
 //              anyone votes. A vote that may still change starts from the member's own one.
+//              On a phone the text field and "Vote" stay above the keyboard (aboveKeyboard.js).
 //              onVoted(): after the vote was stored.
 // ============================================================
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TEXT_MAX, validateVote } from '@seasonal-entertainment/shared/pollRules.js';
 import { api } from '../api/http.js';
 import { FormMessage } from '../components/FormField.jsx';
+import { keepAboveKeyboard } from './aboveKeyboard.js';
 
 export default function PollVote({ poll, onVoted }) {
   const [chosen, setChosen] = useState(poll.myVote?.options ?? []);
   const [text, setText] = useState(poll.myVote?.text ?? '');
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const submitButton = useRef(null);
+  const stopFollowing = useRef(null);
+  useEffect(() => () => stopFollowing.current?.(), []);
   const name = `poll-${poll.id}`;
 
   function toggle(id, on) {
@@ -79,11 +84,16 @@ export default function PollVote({ poll, onVoted }) {
               setText(e.target.value);
               if (!poll.multiple && e.target.value) setChosen([]);
             }}
+            // On a phone the keyboard must not hide the field or "Vote" (aboveKeyboard.js).
+            onFocus={(e) => {
+              stopFollowing.current = keepAboveKeyboard(e.target, submitButton.current);
+            }}
+            onBlur={() => stopFollowing.current?.()}
           />
         </label>
       )}
       <FormMessage error={error} />
-      <button type="submit" className="button" disabled={busy}>
+      <button ref={submitButton} type="submit" className="button" disabled={busy}>
         {poll.voted ? 'Change vote' : 'Vote'}
       </button>
     </form>

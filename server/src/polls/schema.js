@@ -92,7 +92,8 @@ END;
 `;
 
 // Columns added after a polls table was first created (a development database that ran an
-// earlier state of the branch), then the indexes on them.
+// earlier state of the branch), the chat messages' link to a room poll's card, then the
+// indexes on them.
 export function migratePolls(db) {
   addMissingColumns(db, [
     [
@@ -102,6 +103,8 @@ export function migratePolls(db) {
     ],
     ['polls', 'call_id', 'INTEGER REFERENCES calls(id) ON DELETE SET NULL'],
     ['polls', 'room_id', 'INTEGER REFERENCES chat_rooms(id) ON DELETE CASCADE'],
+    // A room poll's card in the timeline (chat/messages.js): goes with its poll.
+    ['chat_messages', 'poll_id', 'INTEGER REFERENCES polls(id) ON DELETE CASCADE'],
   ]);
   db.exec(`CREATE INDEX IF NOT EXISTS polls_by_call ON polls (call_id);
     CREATE INDEX IF NOT EXISTS polls_by_room ON polls (room_id);`);
