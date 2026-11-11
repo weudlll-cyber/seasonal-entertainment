@@ -38,6 +38,9 @@ const ALLOWED_OUTSIDE = new Set([
   // The embed state (imports only storage): files load through short-lived links in the chat
   // on another site (useFileLinks.js).
   path.join(srcDir, 'embed', 'embedAuth.js'),
+  // A member's profile address and opening it from a name (docs/AUTH.md, "Member profiles";
+  // imports nothing).
+  path.join(srcDir, 'profiles', 'profilePath.js'),
 ]);
 
 const importsOf = (file) =>

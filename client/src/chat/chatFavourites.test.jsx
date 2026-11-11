@@ -136,6 +136,8 @@ describe('the name menu', () => {
     name.focus();
     fireEvent.keyDown(name, { key: 'ArrowDown' });
     const menu = screen.getByRole('menu', { name: 'zoe' });
+    expect(within(menu).getByRole('menuitem', { name: 'View profile' })).toHaveFocus();
+    fireEvent.keyDown(menu, { key: 'ArrowDown' });
     expect(within(menu).getByRole('menuitem', { name: 'Send private message' })).toHaveFocus();
     fireEvent.keyDown(menu, { key: 'ArrowDown' });
     const add = within(menu).getByRole('menuitem', { name: 'Add to favourites' });

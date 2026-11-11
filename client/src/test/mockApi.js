@@ -8,7 +8,9 @@
 //              answers binary data (a Uint8Array, read with arrayBuffer()); { headers } are the
 //              answer's response headers (read with headers.get). Returns the
 //              list of calls made ({ key, body, headers }). Unknown calls fail the test.
-//              PRELOGIN answers the login key split's pre-login step with a fixed salt; NO_KEY
+//              signedIn(user) answers the session and the member's own profile (the account
+//              page's Profile section). PRELOGIN answers the login key split's pre-login step
+//              with a fixed salt; NO_KEY
 //              is a member without a key pair yet; withSettings() adds site settings to a
 //              session answer (they travel with it), withFeatures() the server's optional
 //              features (features.botAdmin).
@@ -48,13 +50,13 @@ export function mockApi(answers) {
 export const GUEST = { 'GET /auth/session': { body: { ok: true, user: null } } };
 
 export function signedIn(user) {
+  const account = { id: 1, email: `${user.username}@example.org`, hasPassword: true, ...user };
   return {
-    'GET /auth/session': {
-      // hasPassword: every account but one made with Discord has one (docs/AUTH.md).
-      body: {
-        ok: true,
-        user: { id: 1, email: `${user.username}@example.org`, hasPassword: true, ...user },
-      },
+    // hasPassword: every account but one made with Discord has one (docs/AUTH.md).
+    'GET /auth/session': { body: { ok: true, user: account } },
+    // Their own profile, as the account page's Profile section reads it: nothing added yet.
+    [`GET /members/${encodeURIComponent(account.username)}`]: {
+      body: { ok: true, profile: { ...account, about: '', picture: null, steps: [], own: true } },
     },
   };
 }

@@ -6,7 +6,8 @@
 //              cropped), else their camera picture (or the name's first letter). Shown large
 //              (alone on the stage) the camera is never cropped either; in the grid of several
 //              the picture takes the camera's own aspect ratio, so filling it crops at most a
-//              thin edge (docs/DESIGN.md, "Call page"). Name, role (Host or Speaker),
+//              thin edge (docs/DESIGN.md, "Call page"). Name (a member's linking to their profile
+//              in a new tab, profiles/ProfileName.jsx), role (Host or Speaker),
 //              microphone state, and a ring while they talk. Organisers get a "…" menu on other
 //              speakers' tiles (Spotlight, Mute, Remove from the stage) — the chat module's
 //              MenuButton.
@@ -15,6 +16,7 @@
 import { Track } from 'livekit-client';
 import Icon from '../app/icons.jsx';
 import { MenuButton } from '../chat/index.js';
+import ProfileName from '../profiles/ProfileName.jsx';
 import { TrackVideo, aspectOf, hasMicrophoneOn, trackOf } from './TrackMedia.jsx';
 import './speakerTile.css';
 
@@ -50,7 +52,9 @@ export default function SpeakerTile({ person, room, talking, menu, large = false
         )}
       </div>
       <div className="speaker-tile__line">
-        <span className="speaker-tile__name">{name}</span>
+        <span className="speaker-tile__name">
+          <ProfileName person={person}>{name}</ProfileName>
+        </span>
         <span className="speaker-tile__role">{person.kind === 'host' ? 'Host' : 'Speaker'}</span>
         <span
           className={`speaker-tile__mic${micOn ? '' : ' speaker-tile__mic--off'}`}

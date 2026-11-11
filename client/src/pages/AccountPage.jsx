@@ -2,7 +2,8 @@
 // File:        AccountPage.jsx
 // Path:        client/src/pages/AccountPage.jsx
 // Project:     Seasonal Entertainment
-// Description: The signed-in user's own account: details, Discord (link, steps, unlink:
+// Description: The signed-in user's own account: details, the profile other members see (About
+//              me, picture: profiles/ProfileSettings.jsx), Discord (link, steps, unlink:
 //              discord/DiscordSection.jsx, while Discord login is set up), password change (or,
 //              for an account made with Discord, setting a first one), two-factor
 //              authentication (it needs a password), private messages (unlock, recovery code),
@@ -17,6 +18,7 @@ import DeleteAccountForm from '../components/DeleteAccountForm.jsx';
 import DiscordSection from '../discord/DiscordSection.jsx';
 import FirstPasswordForm from '../discord/FirstPasswordForm.jsx';
 import PrivacySettings from '../components/PrivacySettings.jsx';
+import ProfileSettings from '../profiles/ProfileSettings.jsx';
 import NotificationSettings from '../notify/NotificationSettings.jsx';
 import TwoFactorDisable from '../components/TwoFactorDisable.jsx';
 import TwoFactorSetup from '../components/TwoFactorSetup.jsx';
@@ -43,6 +45,7 @@ export default function AccountPage() {
         <dt>Role</dt>
         <dd>{user.role}</dd>
       </dl>
+      <ProfileSettings />
       <DiscordSection />
       {user.hasPassword ? (
         <>

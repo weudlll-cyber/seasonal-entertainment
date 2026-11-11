@@ -162,7 +162,8 @@
 /* Results and their stars side by side, row for row (every row is 44px high). */
 .se-chat .chat-member-search__results {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  /* The results, then the favourite stars and the profile buttons, one per row each. */
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 0.25rem;
 }
 
