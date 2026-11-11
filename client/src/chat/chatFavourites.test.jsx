@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: Favourites in the chat module: a member's favourite rooms come first under
 //              "Favourites" in the full chat's room list and the star adds and removes them;
-//              a member's name opens a keyboard-operable menu to add or remove them as a
+//              a member's name opens a keyboard-operable menu ("View profile" first, opening
+//              their profile) to add or remove them as a
 //              favourite; guests see no stars and no menus; guests' names and one's own name
 //              are never menus. The star is the outline icon when off, the filled one when on;
 //              its tooltip says what a click does (add to or remove from favourites).
@@ -128,6 +129,16 @@ describe('favourite rooms in the full chat', () => {
 });
 
 describe('the name menu', () => {
+  it('"View profile" in a name menu goes to the member profile', async () => {
+    const assign = vi.fn();
+    vi.stubGlobal('location', { ...window.location, assign });
+    api(signedIn({ username: 'mia', role: 'member' }));
+    show();
+    fireEvent.click(await screen.findByRole('button', { name: 'zoe' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'View profile' }));
+    expect(assign).toHaveBeenCalledWith('/members/zoe');
+  });
+
   it('adds and removes a member as a favourite, by keyboard', async () => {
     const calls = api(signedIn({ username: 'mia', role: 'member' }));
     show();

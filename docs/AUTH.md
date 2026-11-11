@@ -604,6 +604,49 @@ and after, never a password) through the one helper `recordAudit`
 (`server/src/audit/auditLog.js`); the Audit page lists it newest first. Every later admin or
 moderation action uses the same helper.
 
+## Member profiles
+
+Decided 2026-11-11: each member has a profile page at `/members/<name>`
+(`client/src/profiles/MemberProfilePage.jsx`; `server/src/profiles/`).
+
+- **Who sees it**: signed-in members only. A guest gets the normal sign-in page (`RequireUser`),
+  and the API answers guests 401. A locked account's profile is not found (404), like a name
+  that does not exist; a deleted account's is gone with it.
+- **What it shows**: the name; Admin or Organiser where that is the role; the Discord steps
+  with their names (as in the chat, `StepList`); "Member since", the account's `created_at`
+  as a date in the viewer's own time zone (`client/src/app/dates.js`); an optional "About me" and
+  an optional picture. No links field, no games section. About me is plain text: the page
+  writes it as text, so nothing in it ever becomes a link.
+- **About me**: at most 300 characters, counted as shown (an emoji is one), line breaks
+  allowed, no other control characters (`shared/profileRules.js`, the same check in the form and
+  on the server); stored trimmed; empty means none.
+- **The picture**: uploaded by the member, by the chat images' rules (JPG, PNG, WebP or GIF; the
+  size and megapixel limits of the chat settings, docs/SETTINGS.md) and stored like them:
+  re-encoded without metadata, full size and thumbnail under the media folder's `uploads/`
+  (`processUpload` with images only). A new one replaces the old, whose files go; the member
+  removes it; it goes with the account (`server/src/chat/accountData.js`). Served only to
+  members (`GET /api/members/<name>/picture/<full|thumb>`), never cached; shown on the profile
+  page only, not beside chat messages.
+- **Editing**: the account page's "Profile" section (`client/src/profiles/ProfileSettings.jsx`):
+  `PUT /api/profile/about`, `POST` and `DELETE /api/profile/picture`, one limit per account
+  (`profileEdit`, 30 a minute).
+- **Reaching it**: "View profile" first in a name's menu in a chat room (in the embedded chat it
+  opens in a new tab); a profile button beside each result of "Find a member" (choosing a result
+  still opens the conversation); a member's name in a call (speaker tiles, listener panel)
+  links to it in a new tab, so the call goes on; never for a guest or a listener who hides their
+  online status. On another member's profile "Send message" opens the direct conversation (the
+  chat drawer's Direct tab); not on one's own, nor where the member has no key for private
+  messages yet. The site has no member list of a room, so there is none to link from.
+- **Moderation**: an admin clears About me (`DELETE /api/admin/users/<id>/about`) or removes the
+  picture (`DELETE /api/admin/users/<id>/picture`) from the profile page, asked first; each
+  writes one audit entry (`user.profile_about_clear`, `user.profile_picture_clear`) naming the
+  account, never the text. The site's reports are for messages (rooms, direct messages); none
+  fits a profile, so a profile cannot be reported (noted 2026-11-11).
+- **Privacy**: the privacy page says what a profile shows and to whom (Info → Privacy, "Your
+  profile").
+- Tests: `server/test/profiles.test.js`, `client/src/profiles/profiles.test.jsx`,
+  `client/e2e/profiles.spec.js` (also 360 and 390 px wide).
+
 ## Deleting an account
 
 Decided 2026-11-01: deleting an account deletes its room messages at once (not only after the
@@ -633,7 +676,7 @@ chat retention).
     and role ids, every direct message sent or received (so the
     partner's copy of the conversation too), direct files of both partners, direct reports made
     by or about the account with their copies and shared files, embed tokens, call participation
-    and call reminders;
+    and call reminders, its member profile (About me, the picture's row: "Member profiles");
   - deleted explicitly, because the schemas keep them (`ON DELETE SET NULL`) or name the account
     only as text: by the chat handle (`chat.accounts.deleteData`, `server/src/chat/accountData.js`,
     as the rest of the server reaches into the chat only through `mountChat()`) the account's
@@ -642,7 +685,7 @@ chat retention).
     read marks of its conversations (`chat_reads.target_id`); by `deletion.js` its sessions (JSON
     in the `sessions` table);
   - after the commit (`chat.accounts.afterCommit`), the files on disk of those room uploads (with
-    thumbnails), direct files and shared report files; and chat pages already open hear which room
+    thumbnails), direct files, shared report files and the profile picture; and chat pages already open hear which room
     messages went: one `{ type: 'deleted', ids }` per room through the hub's usual push (only to
     sockets that may read the room), and they drop them at once, for moderators too (since
     2026-11-04; `useChatRoom.js`; the home page's Community box asks again). Every member who

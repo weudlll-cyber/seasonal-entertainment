@@ -15,7 +15,8 @@
 //              complain) with only the contact left to fill; it describes account deletion
 //              (what goes, what stays, how long backups keep it). A stored page still holding an
 //              earlier seed text gets the current one on start (Imprint and Privacy from before
-//              "Fill in before going live" too); an edited one is left alone.
+//              "Fill in before going live" and Privacy from before member profiles too); an edited
+//              one is left alone.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -190,12 +191,35 @@ describe('refreshing unedited seed pages', () => {
     expect(refreshSeedPages(t.db)).toBe(0);
   });
 
+  // What a seed page gained since 2026-11-04: the privacy page's "Your profile" (2026-11-11).
+  const profileEntry = () => {
+    const body = readSeedPage('privacy').body;
+    const start = body.indexOf('- **Your profile**');
+    return body.slice(start, body.indexOf('- **Discord login**', start));
+  };
+  const withoutLater = (slug) =>
+    slug === 'privacy'
+      ? readSeedPage(slug).body.replace(profileEntry(), '')
+      : readSeedPage(slug).body;
   // The texts before 2026-11-04, as a site seeded then still holds them where nobody edited them.
   const beforeFillIn = (slug) =>
-    readSeedPage(slug).body.replace(
+    withoutLater(slug).replace(
       '**Fill in before going live.**',
       '**Draft — needs legal review before publishing.**'
     );
+
+  it('gives a never-edited privacy from before member profiles the current text', () => {
+    t = makeTestApp();
+    seedInfoPages(t.db);
+    t.db
+      .prepare("UPDATE info_pages SET body = ? WHERE slug = 'privacy'")
+      .run(withoutLater('privacy'));
+    expect(profileEntry()).toMatch(/only to signed-in members/);
+    expect(refreshSeedPages(t.db)).toBe(1);
+    expect(t.db.prepare("SELECT body FROM info_pages WHERE slug = 'privacy'").get().body).toBe(
+      readSeedPage('privacy').body
+    );
+  });
 
   it.each(['imprint', 'privacy'])(
     'gives a never-edited %s the "Fill in before going live" text; an edited one stays',
