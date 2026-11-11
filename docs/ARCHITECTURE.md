@@ -424,6 +424,8 @@ bytes, GHSA-27r3-jxmh-p828, fixed in body-parser 2.4.0, which the lockfile now h
                            deployment files; security (gitleaks, npm audit, osv-scanner)
 .github/workflows/codeql.yml  CodeQL scanning of the JavaScript (pushes, pull requests, weekly)
 .gitleaksignore            gitleaks findings checked and accepted, by fingerprint with a reason
+renovate.json              dependency update PRs by Renovate (docs/DEPLOYMENT.md, "Dependency
+                           updates")
 .claude/settings.json      agent permissions for this repository
 client/                    React + Vite client
   index.html               HTML shell

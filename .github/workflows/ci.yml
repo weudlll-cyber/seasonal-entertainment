@@ -21,7 +21,8 @@
 #              deploy/test/loadtest.test.sh) and shellcheck over the installer, its tests, the
 #              load test and the PC-side shell scripts (deploy/install.sh, deploy/install/,
 #              deploy/test/, deploy/calls/loadtest.sh, deploy/pc/), and that the scripts the
-#              docs say to run directly are executable in git.
+#              docs say to run directly are executable in git, and that Renovate's configuration
+#              still finds the pins it updates (deploy/test/renovate.test.sh).
 #              A third job, "security", scans as the game repositories do (2026-11-10): gitleaks
 #              over the full history (accepted findings by fingerprint in .gitleaksignore), npm
 #              audit of the production dependencies (fails on high or critical) and osv-scanner
@@ -151,6 +152,9 @@ jobs:
       - name: The scripts started directly are executable in git
         run: bash deploy/test/executable.test.sh
 
+      - name: Renovate still finds the pins it updates (images, LiveKit binary)
+        run: bash deploy/test/renovate.test.sh
+
       # As root, so the backup folder's rules are also tried for real.
       - name: The installer's hardening (bot page headers, logs, LiveKit, checkout, backup folder)
         run: sudo bash deploy/test/server-hardening.test.sh
@@ -199,6 +203,7 @@ jobs:
           deploy/test/discord.test.sh deploy/test/update-copy.test.sh
           deploy/test/backup-listing.test.sh deploy/test/server-hardening.test.sh deploy/test/games.test.sh
           deploy/calls/loadtest.sh deploy/test/loadtest.test.sh deploy/test/executable.test.sh
+          deploy/test/renovate.test.sh
           deploy/test/prepare-nginx.sh deploy/test/prepare-ufw.sh
           deploy/pc/get-seasonal-backups.sh deploy/pc/get-seasonal-backups.test.sh
 

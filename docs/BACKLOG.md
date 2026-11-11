@@ -14,20 +14,10 @@ entry waits for.
 
 ### Built, waiting for the merge
 
-- **Recordings backed up once each** — built on `feat/backup-recordings` (decided
-  2026-11-11): the nightly archive leaves the call recordings out; each finished recording is
-  encrypted once into the backup folder's `recordings/` (again only when it changed), kept 14
-  days after it was deleted on the site; the PC scripts fetch only what they do not have (by
-  name and size) and never delete; a restore takes `--recordings` and names every missing one
-  (docs/DEPLOYMENT.md, "Backups", "Restoring"). Fixed with it (2026-11-11): the Windows module
-  failed with "You cannot call a method on a null-valued expression" whenever the server held
-  no archive (a fresh install before its first night, or only `recordings/`), because an empty
-  name list reached `Select-BackupNames` as `$null`; it now logs "0 backups" and goes on. Also
-  fixed with it: the installer took the newest entry of the backup folder by time (`ls -t`),
-  which after a night with a recording is `recordings/`, so an install or `--update` would have
-  stopped with "the newest backup is not an encrypted .tar.age" and `--status` named the folder;
-  `newest_backup` and `backup_count` (`deploy/install/lib/common.sh`) count only the archives.
-  The CI backup check picks the archive by name the same way (it failed on this pull request).
+- **Dependency updates by Renovate** — built on `chore/renovate` (2026-11-10): `renovate.json`
+  as in the game repositories (weekly grouped minor/patch, 3 days' wait, security at once),
+  covering npm, the actions, the images in `deploy/`, the CI's scanner images and the LiveKit
+  binary (docs/DEPLOYMENT.md, "Dependency updates"). Renovate's onboarding PR is left alone.
 
 ### To try on the live server
 
@@ -81,6 +71,20 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Recordings backed up once each** — closed by `feat/backup-recordings` (PR #60, merged
+  2026-11-11 as 0c273d0; decided 2026-11-11): the nightly archive leaves the call recordings out; each finished recording is
+  encrypted once into the backup folder's `recordings/` (again only when it changed), kept 14
+  days after it was deleted on the site; the PC scripts fetch only what they do not have (by
+  name and size) and never delete; a restore takes `--recordings` and names every missing one
+  (docs/DEPLOYMENT.md, "Backups", "Restoring"). Fixed with it (2026-11-11): the Windows module
+  failed with "You cannot call a method on a null-valued expression" whenever the server held
+  no archive (a fresh install before its first night, or only `recordings/`), because an empty
+  name list reached `Select-BackupNames` as `$null`; it now logs "0 backups" and goes on. Also
+  fixed with it: the installer took the newest entry of the backup folder by time (`ls -t`),
+  which after a night with a recording is `recordings/`, so an install or `--update` would have
+  stopped with "the newest backup is not an encrypted .tar.age" and `--status` named the folder;
+  `newest_backup` and `backup_count` (`deploy/install/lib/common.sh`) count only the archives.
+  The CI backup check picks the archive by name the same way (it failed on this pull request).
 - **The "Start here" browser test failed now and then** — closed on `feat/backup-recordings`
   (2026-11-11): it read the steps' addresses once, and the call step's changes from `/calls` to
   `/calls/<id>` when the recording-share spec plans a call on the shared test server
