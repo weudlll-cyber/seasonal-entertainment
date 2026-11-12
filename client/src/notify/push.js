@@ -7,12 +7,29 @@
 //              here), whether this device is on for this account (the server decides: a
 //              browser's subscription may still belong to another account that used it), and
 //              turning it on (the browser's permission, a subscription made for the site's key,
-//              handed to the server) or off (removed on both sides).
+//              handed to the server) or off (removed on both sides). Turning on either works or
+//              throws: a PushFailure says which step of the browser's failed (blocked, not
+//              asked, no answer within SUBSCRIBE_MS, or refused), an ApiError that the server
+//              refused; PushSwitch.jsx says it in words (seen 2026-11-12: the browser's push
+//              service took 32 s on a fresh Chrome profile, and the switch said nothing).
 // ============================================================
 
 import { api } from '../api/http.js';
 import { pushRegistration } from '../app/serviceWorker.js';
 import { askPermission } from './systemNotify.js';
+
+// How long the browser may take to register with its push service: the first time on a
+// fresh Chrome profile took 32 s (2026-11-12), so well above that, but never forever.
+export const SUBSCRIBE_MS = 90_000;
+
+// kind: 'blocked' (permission denied), 'not_asked' (the question was closed or never shown),
+// 'timeout' (no answer within SUBSCRIBE_MS) or 'refused' (the browser's own error, as cause).
+export class PushFailure extends Error {
+  constructor(kind, cause = undefined) {
+    super(kind, { cause });
+    this.kind = kind;
+  }
+}
 
 // The public key as the browser wants it: base64url to bytes.
 function keyBytes(key) {
@@ -45,23 +62,36 @@ export async function pushIsOn(key) {
   return answer.subscribed;
 }
 
-// Returns the browser's answer to the permission question ('granted' when it is on now).
-export async function turnPushOn(key) {
-  const answer = await askPermission();
-  if (answer !== 'granted') return answer;
+// The browser's part: a subscription for the site's key, made now unless it has one.
+async function browserSubscription(key) {
   const { registration, sub } = await currentSubscription();
-  let current = sub;
-  if (current && !madeFor(current, key)) {
-    await current.unsubscribe();
-    current = null;
-  }
-  current ??= await registration.pushManager.subscribe({
+  if (sub && madeFor(sub, key)) return sub;
+  if (sub) await sub.unsubscribe();
+  return registration.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: keyBytes(key),
   });
-  const { endpoint, keys } = current.toJSON();
+}
+
+// Resolves once the server has the subscription; otherwise throws (see the header).
+export async function turnPushOn(key) {
+  const answer = await askPermission();
+  if (answer === 'denied') throw new PushFailure('blocked');
+  if (answer !== 'granted') throw new PushFailure('not_asked');
+  let timer;
+  const late = new Promise((_resolve, reject) => {
+    timer = setTimeout(() => reject(new PushFailure('timeout')), SUBSCRIBE_MS);
+  });
+  let sub;
+  try {
+    sub = await Promise.race([browserSubscription(key), late]);
+  } catch (err) {
+    throw err instanceof PushFailure ? err : new PushFailure('refused', err);
+  } finally {
+    clearTimeout(timer);
+  }
+  const { endpoint, keys } = sub.toJSON();
   await api('/push/subscriptions', { method: 'POST', body: { endpoint, keys } });
-  return answer;
 }
 
 export async function turnPushOff() {

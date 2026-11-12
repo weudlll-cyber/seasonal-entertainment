@@ -406,7 +406,17 @@ also while the site and the browser are closed; a click opens the call's page.
   account page's Notifications section (`client/src/notify/PushSwitch.jsx`), off until the
   member turns it on, per device: turning it on asks the browser's permission and subscribes
   this browser; each device is turned on by itself. Members only; guests never have it. Not
-  shown where the browser cannot receive push, or while the site has no push keys.
+  shown while the site has no push keys; where the browser cannot receive push, a line says so
+  instead.
+- **Never a silent failure** (decided 2026-11-12, after the switch stayed off without a word in
+  Chrome on the PC): while it turns on, "Turning on… The first time, the browser can take up to
+  a minute." (a fresh Chrome profile took 32 s to register with its push service); the
+  browser's part has 90 s (`SUBSCRIBE_MS`, `client/src/notify/push.js`). When it does not end
+  "on", the switch stays off and a line under it says why and what to do: notifications blocked
+  for the site (allow them in the site settings), the permission question closed or not shown,
+  the browser's push service not answering in time, the browser's own refusal (its reason in
+  brackets), or the server's refusal (its message). Tests:
+  `client/src/notify/pushSwitch.test.jsx`.
 - **Only this**: chat, rooms, polls and everything else still notify only while a tab of the
   site is open (docs/CHAT.md, "Notifications").
 - **Sending** (`server/src/push/`): the start route hands the call over without waiting
