@@ -542,7 +542,10 @@ with their own limits (bots' reads, member search) keep them as well. `API_READS
 sets it (default 1200). The browser tests raise it (`playwright.config.js`): all their visitors
 come from 127.0.0.1, and a run that took under a minute met it (2026-10-23): the call page's one
 read was refused, it never asked again, and "Join call" never came. Since 2026-11-02 the call
-page asks again after a refusal that passes (429, a server error, no answer).
+page asks again after a refusal that passes (429, a server error, no answer). The bots' reads
+(prices, reference prices, events; 120 a minute per address) are set by `BOT_READS_PER_MINUTE`,
+and the browser tests raise them too: a full run on CI met them on the prices page, whose
+history answer became "Too many attempts" (2026-11-12).
 
 The per-username login limit is kept as it is on purpose (decided 2026-10-23): anyone who knows a
 name can block its logins for 15 minutes with wrong passwords, and a correct password does not
