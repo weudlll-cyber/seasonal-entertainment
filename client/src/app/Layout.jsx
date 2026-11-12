@@ -12,7 +12,8 @@
 //              On a call page the sidebar is an icon rail (more room for the stage). Right
 //              after a member's key pair was made, the recovery-code offer opens over the page.
 //              A newer version of the site than this page's comes first (UpdateNotice), then
-//              the site banner, while an admin has it on (SiteBanner).
+//              the site banner, while an admin has it on (SiteBanner). A member whose sign-in
+//              ended on the server is told so first of all (SessionEndedNotice).
 //              Members' call reminders show at the top of the main column (CallNotices); a
 //              new device's request for the key asks on an unlocked one (DeviceRequestPrompt);
 //              mentions and direct messages become browser notifications while no tab of the
@@ -27,6 +28,7 @@ import { useKeys } from '../keys/KeyContext.jsx';
 import { useSystemNotifications } from '../notify/useSystemNotifications.js';
 import RecoveryOffer from '../keys/RecoveryOffer.jsx';
 import { inEmbedLoginFlow } from '../session/nextPage.js';
+import SessionEndedNotice from '../session/SessionEndedNotice.jsx';
 import { useSession } from '../session/SessionContext.jsx';
 import ChatDrawer from './ChatDrawer.jsx';
 import LazyBoundary from './LazyBoundary.jsx';
@@ -55,6 +57,7 @@ export default function Layout() {
     <div className={`shell${rail ? ' shell--rail' : ''}`}>
       <Sidebar rail={rail} />
       <main className="shell__main">
+        <SessionEndedNotice />
         <UpdateNotice />
         <SiteBanner />
         {user?.twoFactorRequired && (

@@ -9,11 +9,15 @@
 //              otherwise). Loads
 //              /api/auth/session on start; pages call setUser after login/registration,
 //              refresh() after changing the account (e.g. 2FA), and logout() to sign out.
+//              When the server answers "not_authenticated" while a member is signed in here
+//              (the session ended on the server: idle limit, password change, a sign-out in
+//              another tab), the member is dropped once and sessionEnded stays true until the
+//              next sign-in (SessionEndedNotice.jsx; docs/AUTH.md, "Sessions").
 // ============================================================
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { PUBLIC_SETTING_DEFAULTS } from '@seasonal-entertainment/shared/siteSettings.js';
-import { api } from '../api/http.js';
+import { api, onSessionEnded } from '../api/http.js';
 
 const SessionContext = createContext(null);
 // Optional server features: all off until the session answer names them.
@@ -21,7 +25,13 @@ const NO_FEATURES = { botAdmin: false, discord: false };
 
 export function SessionProvider({ children }) {
   // undefined = still loading, null = guest, object = signed-in user
-  const [user, setUser] = useState(undefined);
+  const [user, setUserState] = useState(undefined);
+  const [sessionEnded, setSessionEnded] = useState(false);
+  // Every new answer about who is signed in replaces an ended session's notice.
+  const setUser = useCallback((next) => {
+    setSessionEnded(false);
+    setUserState(next);
+  }, []);
   const [settings, setSettings] = useState(PUBLIC_SETTING_DEFAULTS);
   const [features, setFeatures] = useState(NO_FEATURES);
 
@@ -34,21 +44,31 @@ export function SessionProvider({ children }) {
           setFeatures({ ...NO_FEATURES, ...data.features });
         })
         .catch(() => setUser(null)),
-    []
+    [setUser]
   );
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
+  // Listening only while a member is signed in: once dropped, further refusals change nothing,
+  // so a page that keeps asking cannot loop.
+  useEffect(() => {
+    if (!user) return undefined;
+    return onSessionEnded(() => {
+      setUserState(null);
+      setSessionEnded(true);
+    });
+  }, [user]);
+
   const logout = useCallback(async () => {
     await api('/auth/logout', { method: 'POST' });
     setUser(null);
-  }, []);
+  }, [setUser]);
 
   const value = useMemo(
-    () => ({ user, setUser, refresh, logout, settings, features }),
-    [user, refresh, logout, settings, features]
+    () => ({ user, setUser, refresh, logout, settings, features, sessionEnded }),
+    [user, setUser, refresh, logout, settings, features, sessionEnded]
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

@@ -12,6 +12,14 @@ entry waits for.
 - **Real sites to approve for the chat embed** — which game sites go on Admin → Embedding once
   the site is live (only exact `https://` origins).
 
+### Built, waiting for the merge
+
+- **A sign-in that ended on the server** — built on `fix/session-ended` (2026-11-12): the first
+  `401 not_authenticated` while the page shows a member drops the member once, says "Your
+  sign-in has ended. Please sign in again." and leads to the login page, which returns to the
+  page afterwards (docs/AUTH.md, "Sessions"). Seen 2026-11-12 as "Please log in." when unlocking
+  private messages.
+
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
