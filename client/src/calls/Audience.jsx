@@ -10,11 +10,13 @@
 //              listener") last, with a neutral circle. Organisers invite members from a compact
 //              button inside the chip (guests can only listen); hidden listeners are numbered in
 //              their Invite button's name ("Invite listener 2 to the stage"), so each button has
-//              its own name and organisers tell them apart by position.
+//              its own name and organisers tell them apart by position. A member's name links to
+//              their profile in a new tab (profiles/ProfileName.jsx).
 // ============================================================
 
 import { useState } from 'react';
 import Icon from '../app/icons.jsx';
+import ProfileName from '../profiles/ProfileName.jsx';
 import {
   audienceOrder,
   collapsedListeners,
@@ -35,7 +37,7 @@ function Chip({ person, inviteName, onInvite }) {
         {hidden ? <Icon name="person" size={16} /> : person.name.charAt(0).toUpperCase()}
       </span>
       <span className="audience-chip__name">
-        {person.name}
+        <ProfileName person={person}>{person.name}</ProfileName>
         {person.isLocal && ' (you)'}
       </span>
       {person.hand && (

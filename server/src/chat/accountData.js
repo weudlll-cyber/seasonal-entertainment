@@ -7,18 +7,20 @@
 //              the rows the chat schemas keep when an account goes (ON DELETE SET NULL) or name
 //              only as text — room messages and uploads, room reports, the partners' read marks
 //              of the account's conversations — and the media files of everything the account's
-//              deletion removes, room uploads, direct files and shared report files alike. Pages
+//              deletion removes, room uploads, direct files and shared report files alike (and
+//              the profile picture, profiles/). Pages
 //              already open hear which of the account's room messages went ("deleted",
 //              messagesDeleted()), so they drop them without a reload, and the room's readers
 //              recount their unread messages ("activity", as after a hidden message).
 // ============================================================
 
 import { deleteMediaFile } from '../media/files.js';
+import { profileFilesOf } from '../profiles/store.js';
 import { findRoom } from './store.js';
 
 // Every file on disk that belongs to the account's chat rows, as media paths: its room uploads,
 // the direct files of its conversations (both partners'), and the files shared with reports
-// made by or about it.
+// made by or about it; and its profile picture (profiles/, stored like the chat's images).
 function filesOf(db, userId) {
   const uploads = db
     .prepare('SELECT file, thumb_file AS thumbFile FROM chat_uploads WHERE user_id = ?')
@@ -35,7 +37,7 @@ function filesOf(db, userId) {
     )
     .all(userId, userId)
     .map((row) => row.file);
-  return [...uploads, ...direct, ...reported].filter(Boolean);
+  return [...uploads, ...direct, ...reported, ...profileFilesOf(db, userId)].filter(Boolean);
 }
 
 // Runs inside the caller's transaction, before the account row goes (its cascade removes the

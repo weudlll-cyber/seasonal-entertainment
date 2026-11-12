@@ -66,6 +66,12 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Member profile pages** — closed by `feat/member-profiles` (PR #66, merged 2026-11-12;
+  decided 2026-11-11): `/members/<name>` for signed-in members (name, role, Discord steps,
+  member since, About me up to 300 characters as plain text, a picture by the chat images'
+  rules), edited on the account page, reached from a chat name's menu, the member search and the
+  names in a call; "Send message"; admins clear About me and the picture (audited); the privacy
+  page says what a profile shows (docs/AUTH.md, "Member profiles").
 - **The chat composer at phone width** — closed by `fix/composer-narrow` (PR #65, merged
   2026-11-11): at 360px "Emoji, stickers, GIFs" overlapped "Attach file" on the /chat page, in
   rooms and in direct messages. Below 600px the full composer's buttons now wrap onto more

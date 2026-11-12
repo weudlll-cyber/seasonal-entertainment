@@ -20,3 +20,6 @@ b68c69141e00bf1b1ce6000cefb34e70e70f9b6a:server/test/discordKeys.test.js:discord
 80d06f611eead9643aafe12d1c60ebf6db056a91:server/test/discordLogin.test.js:discord-client-id:25
 # The sample Sec-WebSocket-Key of RFC 6455 ("the sample nonce"), sent by the server checks.
 b06d9acd89f6e31271e44598cc4b302fa235feb5:deploy/test/checks.sh:generic-api-key:74
+# A pretend browser's push "auth" value in the server tests ("sixteen-bytes-auth" in base64,
+# feat/push-call-started, checked 2026-11-12); the tests' own push service, no real browser.
+1b0ff6df6fc58bdd608952dce22a235359b00bc4:server/test/push.test.js:generic-api-key:60

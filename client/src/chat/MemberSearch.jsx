@@ -7,11 +7,15 @@
 //              starts it), Escape closes the list (a second Escape clears the field). Members
 //              who have not set up private messages are shown greyed and cannot be chosen.
 //              Each result has the favourite star (UserStar) beside it, in a column next to
-//              the listbox (a star inside an option could not be operated). A member's Discord
-//              steps show beside the name (StepMarks: the badge's look, nothing to operate).
+//              the listbox (a star inside an option could not be operated), and beside it a
+//              button to their profile (profiles/profilePath.js; choosing a result still opens
+//              the conversation). A member's Discord steps show beside the name (StepMarks: the
+//              badge's look, nothing to operate).
 // ============================================================
 
 import { useId, useState } from 'react';
+import Icon from '../app/icons.jsx';
+import { openProfile } from '../profiles/profilePath.js';
 import { showDirect } from './directView.js';
 import { StepMarks } from './StepBadge.jsx';
 import UserStar from './UserStar.jsx';
@@ -102,6 +106,22 @@ export default function MemberSearch() {
             members.map((m) => (
               <li key={m.id}>
                 <UserStar member={m} />
+              </li>
+            ))}
+        </ul>
+        <ul className="chat-member-search__stars" aria-label="Member profiles">
+          {open &&
+            members.map((m) => (
+              <li key={m.id}>
+                <button
+                  type="button"
+                  className="chat-toggle"
+                  aria-label={`Profile of ${m.username}`}
+                  title={`Profile of ${m.username}`}
+                  onClick={() => openProfile(m.username)}
+                >
+                  <Icon name="person" />
+                </button>
               </li>
             ))}
         </ul>

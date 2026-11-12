@@ -18,8 +18,9 @@
 //              reads; /api/bot-admin/authorize lets staff through to the event bot's admin page
 //              (bots/adminAuthorizeRoutes.js, only with BOT_ADMIN_EMBEDDED=1);
 //              /api/games/<slug>/authorize and the account-changes feed serve the embedded
-//              games, Bingo and Mini Games (games/embeddedRoutes.js, each only while in
-//              GAMES_EMBEDDED). Discord login and
+//              games, Bingo, Mini Games and the race (games/embeddedRoutes.js, each only while
+//              in GAMES_EMBEDDED); /api/members and /api/profile are the member profiles
+//              (profiles/). Discord login and
 //              roles (discord/) only while set up; app.locals.discord.start() runs the daily
 //              role read; app.locals.games.start() reads the games' open sign-ups every minute
 //              (games/openRounds.js).
@@ -42,6 +43,8 @@ import { sendCallReminders, startCallReminders } from './calls/reminders.js';
 import { callEventRoutes } from './calls/eventRoutes.js';
 import { callRecordingRoutes } from './calls/recordingRoutes.js';
 import { pollRoutes } from './polls/routes.js';
+import { adminProfileRoutes } from './profiles/adminRoutes.js';
+import { memberProfileRoutes, ownProfileRoutes } from './profiles/routes.js';
 import { startPollJobs } from './polls/store.js';
 import { recordingSharePage } from './calls/recordingShare.js';
 import { resumeRecordingStarts } from './calls/recordingStart.js';
@@ -161,6 +164,10 @@ export function createApp({
   api.use('/2fa', twoFactorRoutes(db, config, chat.sessions));
   api.use('/keys', keyRoutes(db, config));
   api.use('/admin/users', adminUserRoutes(db, config, chat, discord));
+  // Member profiles (profiles/, docs/AUTH.md "Member profiles"): members only.
+  api.use('/admin/users', adminProfileRoutes(db, chat));
+  api.use('/members', memberProfileRoutes(db, config, chat));
+  api.use('/profile', ownProfileRoutes(db, config, chat));
   api.use('/admin/audit', adminAuditRoutes(db));
   api.use('/info', infoRoutes(db));
   api.use('/admin/info', adminInfoRoutes(db));

@@ -19,6 +19,14 @@ This list describes what the website's software actually stores.
   your account" below). The
   confirmation that you are at least 14 is required to register but is not stored, and no date
   of birth is asked for.
+- **Your profile** (members, if you fill it in): an optional "About me" of at most 300
+  characters and an optional profile picture (stored like chat images: re-encoded, without
+  metadata such as location). Your profile page shows your username, Admin or Organiser if you
+  are one, your Discord steps, the date your account was created ("Member since"), your About me
+  and your picture, **only to signed-in members**: never to guests, never to search engines. A
+  locked account's profile is not shown. You change or remove both on your account page; admins
+  can clear them (each clear goes into the admin log, without the text). Deleted with your
+  account.
 - **Discord login** (if you log in with Discord or link your account to it): your Discord user
   id and Discord username, and the ids of your roles on the Seasonal Tokens Discord server, read
   with your consent when you log in and once a day. From them the site shows your steps (Holder,
