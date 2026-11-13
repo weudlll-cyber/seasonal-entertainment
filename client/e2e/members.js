@@ -58,6 +58,7 @@ const MEMBERS = [
   'narrowposter',
   'pushmember',
   'accountphone',
+  'accountdesk',
 ];
 
 async function insertMember(db, username) {

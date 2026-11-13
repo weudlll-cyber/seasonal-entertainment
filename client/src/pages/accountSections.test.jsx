@@ -79,7 +79,8 @@ describe('the account page', () => {
     renderAt('/account');
     const summary = (await screen.findByText('anna@example.org')).closest('dl');
     expect(within(summary).getByText('anna')).toBeInTheDocument();
-    expect(within(summary).getByText('member')).toBeInTheDocument();
+    // As the sidebar shows it (AccountCard's roleName).
+    expect(within(summary).getByText('Member')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Log out' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Log out' })).toBeNull();
     expect(await openOnes()).toEqual([]);

@@ -18,6 +18,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
+import { roleName } from '../app/AccountCard.jsx';
 import DeleteAccountForm from '../components/DeleteAccountForm.jsx';
 import Disclosure from '../components/Disclosure.jsx';
 import PrivacySettings from '../components/PrivacySettings.jsx';
@@ -112,7 +113,7 @@ export default function AccountPage() {
           <dt>Username</dt>
           <dd>{user.username}</dd>
           <dt>Role</dt>
-          <dd>{user.role}</dd>
+          <dd>{roleName(user.role)}</dd>
           <dt>Email</dt>
           <dd>{user.email ?? 'none (signed up with Discord)'}</dd>
         </dl>

@@ -4,6 +4,7 @@
 // Project:     Seasonal Entertainment
 // Description: The bottom of the sidebar: the signed-in account (initial, name, role; a link
 //              to /account) or, for guests, "Log in" and "Register"; with the theme toggle.
+//              roleName is the role as shown ("Member"), also in the account page's summary.
 // ============================================================
 
 import { Link } from 'react-router';
@@ -12,10 +13,11 @@ import ThemeToggle from '../theme/ThemeToggle.jsx';
 import './AccountCard.css';
 
 const ROLE_NAMES = { member: 'Member', organiser: 'Organiser', admin: 'Admin' };
+export const roleName = (role) => ROLE_NAMES[role] ?? role;
 
 export default function AccountCard() {
   const { user } = useSession();
-  const role = user && (ROLE_NAMES[user.role] ?? user.role);
+  const role = user && roleName(user.role);
   return (
     <div className="account-card">
       {user ? (
