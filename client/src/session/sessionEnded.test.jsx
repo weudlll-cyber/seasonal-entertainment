@@ -80,7 +80,10 @@ const count = (calls, key) => calls.filter((c) => c.key === key).length;
 describe('a sign-in that ended on the server', () => {
   it('drops the member, tells them, and signing in again returns to the page', async () => {
     const { answers, server } = await accountPage();
-    await section();
+    // The key has arrived (the section offers to unlock it) before the session ends: ended
+    // earlier, the key's own first load is refused and no unlock is ever offered (a race the
+    // test lost now and then under load, seen 2026-11-13).
+    await within(await section()).findByRole('button', { name: 'Unlock private messages' });
     const keyAnswer = answers['GET /keys/me'];
     answers['GET /keys/me'] = NOT_AUTHENTICATED; // the session ended meanwhile
 
