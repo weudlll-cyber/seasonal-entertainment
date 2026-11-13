@@ -5,9 +5,10 @@
 // Description: The vote form of one open poll (PollCard.jsx; docs/POLLS.md): one answer (radio
 //              buttons) or several (checkboxes), the "Other answer" text where the poll has
 //              one, or only a text; at most 500 characters, checked like the server
-//              (shared/pollRules.js validateVote). A poll that is not anonymous says so before
-//              anyone votes. A vote that may still change starts from the member's own one.
-//              On a phone the text field and "Vote" stay above the keyboard (aboveKeyboard.js).
+//              (shared/pollRules.js validateVote). A poll that is not anonymous says so (names
+//              go to signed-in members only) before anyone votes. A vote that may still change
+//              starts from the member's own one. On a phone the text field and "Vote" stay
+//              above the keyboard (aboveKeyboard.js).
 //              onVoted(): after the vote was stored.
 // ============================================================
 
@@ -53,7 +54,9 @@ export default function PollVote({ poll, onVoted }) {
   return (
     <form className="poll-vote" onSubmit={submit} aria-label={`Vote: ${poll.question}`}>
       {!poll.anonymous && (
-        <p className="poll-vote__named">This poll is not anonymous – your name will be shown.</p>
+        <p className="poll-vote__named">
+          This poll is not anonymous – your name will be shown to signed-in members.
+        </p>
       )}
       {poll.kind === 'choice' && (
         <fieldset className="poll-vote__options" aria-label="Answers">

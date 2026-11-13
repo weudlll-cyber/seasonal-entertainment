@@ -10,9 +10,10 @@
 //              vote, deleting; and each poll as one viewer may see it (shownPoll): the results
 //              for organisers and admins always, for others after their vote or after the end
 //              as the poll says; free-text answers only for organisers and admins; names per
-//              answer only in a poll that is not anonymous. Who may vote (seesPoll, mayVoteIn):
-//              all members, members with one of the chosen Discord steps or a higher one, or
-//              organisers and admins only, whose polls only they see; and the summary for the
+//              answer only in a poll that is not anonymous, and only to signed-in members.
+//              Who may vote (seesPoll, mayVoteIn): all members, members with one of the chosen
+//              Discord steps or a higher one, or organisers and admins only, whose polls only
+//              they see; and the summary for the
 //              sidebar's dot and the home card (pollSummary). A poll started in a call names
 //              it (callId, callTitle) and ends with it (endCallPolls); one started in a chat room
 //              names it (roomSlug, roomName) and is seen only by those who may read the room.
@@ -229,9 +230,11 @@ export function deletePoll(db, id) {
   db.prepare('DELETE FROM polls WHERE id = ?').run(id);
 }
 
-// The results: per answer its count (and, not anonymous, who chose it), the other answers'
-// and free texts' count, and for organisers and admins the texts themselves.
-function resultsOf(db, poll, team) {
+// The results: per answer its count (and, not anonymous, who chose it: for signed-in members
+// only, guests get the counts; decided 2026-11-13), the other answers' and free texts' count,
+// and for organisers and admins the texts themselves. viewer: as shownPoll's.
+function resultsOf(db, poll, viewer) {
+  const named = !poll.anonymous && viewer.userId !== null;
   const counts = new Map(
     db
       .prepare(
@@ -242,7 +245,7 @@ function resultsOf(db, poll, team) {
       .map((r) => [r.id, r.n])
   );
   const names = new Map();
-  if (!poll.anonymous) {
+  if (named) {
     for (const r of db
       .prepare(
         `SELECT bo.option_id AS id, u.username FROM poll_ballot_options bo
@@ -263,10 +266,10 @@ function resultsOf(db, poll, team) {
     options: poll.options.map((o) => ({
       id: o.id,
       count: counts.get(o.id) ?? 0,
-      ...(poll.anonymous ? {} : { voters: names.get(o.id) ?? [] }),
+      ...(named ? { voters: names.get(o.id) ?? [] } : {}),
     })),
     textCount: texts.length,
-    ...(team
+    ...(viewer.team
       ? {
           texts: texts.map((t) => (poll.anonymous ? { text: t.text } : { text: t.text, by: t.by })),
         }
@@ -305,7 +308,7 @@ export function shownPoll(db, poll, viewer, at = Date.now()) {
     mayVote: mayVoteIn(poll, viewer),
     canVote: mayVoteIn(poll, viewer) && open && (!voted || mayChange(poll, at)),
     myVote: voted && !poll.anonymous ? ownBallot(db, poll, viewer.userId) : null,
-    results: seesResults ? resultsOf(db, poll, viewer.team) : null,
+    results: seesResults ? resultsOf(db, poll, viewer) : null,
   };
 }
 

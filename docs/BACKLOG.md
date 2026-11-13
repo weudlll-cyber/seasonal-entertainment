@@ -40,6 +40,11 @@ entry waits for.
   server (an idea, not planned).
 - **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
   login is not planned, decided 2026-11-02).
+- **Each vote reloads the poll summary on every member's open page** — security review of
+  2026-11-13, L4 (left for now, decided 2026-11-13): every vote tells every member's page, and
+  the sidebar then reads `GET /api/polls/summary`, which goes through every poll ever made. An
+  idea: tell the pages at most once a second, read only open polls for the summary, and page
+  the archive.
 - **Race-game connection** — the website's part is done (PR #64, 2026-11-11: the slug `race`,
   its routes, room and installer question). Open: the race's own side, in its own repository;
   then, once it is live, `RACE=yes` on the server and the /games card "Seasonal Race" switched
@@ -82,6 +87,15 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Voters' names in polls only for signed-in members, and polls on the privacy page** — closed
+  on `night/2026-11-13` (security review of 2026-11-13, M2; decided 2026-11-13; not merged
+  yet): in a poll that is not anonymous the names per answer go to signed-in members only;
+  guests get the counts, in every answer with results (`resultsOf`,
+  `server/src/polls/store.js`). The vote form and the home box say members see the name. The
+  privacy page's new "Polls" entry says who sees what, that an anonymous poll's link between
+  ballot and account lasts only while it is open (and in the backups taken meanwhile until they
+  are deleted), and what an account's deletion takes; an unedited privacy page gets the new
+  text (`earlier-seeds.json`). docs/POLLS.md.
 - **A short account page** — closed by `feat/account-sections` (PR #69, merged
   2026-11-13; decided 2026-11-13): a summary (username, role as the sidebar shows it, email)
   with "Log out", then six collapsible sections, all closed by default (Profile; Sign-in &

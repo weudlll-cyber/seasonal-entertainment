@@ -14,10 +14,12 @@
 //              owner (consent as legal basis, no automatic deletion, the rights and where to
 //              complain) with only the contact left to fill; it describes account deletion
 //              (what goes, what stays, how long backups keep it) and what web push stores per
-//              device, for what, and how it is removed. A stored page still holding an earlier
-//              seed text gets the current one on start (Imprint and Privacy from before "Fill in
-//              before going live", Privacy from before member profiles and from before web push
-//              too); an edited one is left alone.
+//              device, for what, and how it is removed, and who sees what in polls (names to
+//              signed-in members only, written answers to staff, the anonymous links and the
+//              backups, what a deletion keeps). A stored page still holding an earlier seed text
+//              gets the current one on start (Imprint and Privacy from before "Fill in before
+//              going live", Privacy from before member profiles, from before web push and from
+//              before polls too); an edited one is left alone.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -179,6 +181,24 @@ it('the privacy draft says what web push stores per device, for what, and how it
   );
 });
 
+it('the privacy draft says who sees what in polls, the anonymous links, and the deletion', () => {
+  const { body } = readSeedPage('privacy');
+  const start = body.indexOf('- **Polls**');
+  const entry = body.slice(start, body.indexOf('\n- **', start + 1));
+  expect(start).toBeGreaterThan(0);
+  // polls/store.js shownPoll and resultsOf: names to members, texts to staff.
+  expect(entry).toMatch(/show who chose each answer, \*\*only to signed-in\s+members\*\*/);
+  expect(entry).toMatch(/Written answers[\s\S]*only to organisers and admins/);
+  // poll_ballot_links: only while open, gone at the end, and in the backups until they go.
+  expect(entry).toMatch(/deletes the\s+link the moment the poll ends/);
+  expect(entry).toMatch(/backup taken while the\s+poll was open still holds the link/);
+  expect(entry).toContain('**14 days**');
+  // The account deletion (ON DELETE CASCADE and the poll_links_account_gone trigger).
+  const deletion = body.slice(body.indexOf('## Deleting your account'));
+  expect(deletion).toMatch(/that you voted in a poll, and your ballots in polls that are not/);
+  expect(deletion).toMatch(/your ballots in anonymous polls \(other than the case above\)/);
+});
+
 describe('refreshing unedited seed pages', () => {
   const OLD = 'An earlier seed text.\n';
   const privacyRow = () =>
@@ -211,7 +231,8 @@ describe('refreshing unedited seed pages', () => {
   });
 
   // What a seed page gained since 2026-11-04: the privacy page's "Your profile" (2026-11-11),
-  // its web push entry and that line in the account deletion list (2026-11-13).
+  // its web push entry and that line in the account deletion list, then its polls entry and
+  // those lines in the deletion lists (both 2026-11-13).
   const between = (from, to) => {
     const body = readSeedPage('privacy').body;
     const start = body.indexOf(from);
@@ -220,10 +241,17 @@ describe('refreshing unedited seed pages', () => {
   const profileEntry = () => between('- **Your profile**', '- **Discord login**');
   const pushEntry = () =>
     between('- **Notifications when a call starts**', '- **Protection against abuse**');
+  const pollsEntry = () => between('- **Polls**', '- **Notifications when a call starts**');
+  const POLLS_DELETED = between('- that you voted in a poll', '- the devices you turned');
+  const POLLS_KEPT = between('- your ballots in anonymous polls', '- the backups (next');
+  const withoutPolls = () =>
+    readSeedPage('privacy')
+      .body.replace(pollsEntry(), '')
+      .replace(POLLS_DELETED, '')
+      .replace(POLLS_KEPT, '');
   const PUSH_DELETED =
     ';\n- the devices you turned "When a call starts" on for (their push addresses and keys).';
-  const withoutPush = () =>
-    readSeedPage('privacy').body.replace(pushEntry(), '').replace(PUSH_DELETED, '.');
+  const withoutPush = () => withoutPolls().replace(pushEntry(), '').replace(PUSH_DELETED, '.');
   const withoutLater = (slug) =>
     slug === 'privacy' ? withoutPush().replace(profileEntry(), '') : readSeedPage(slug).body;
   // The texts before 2026-11-04, as a site seeded then still holds them where nobody edited them.
@@ -251,6 +279,17 @@ describe('refreshing unedited seed pages', () => {
     seedInfoPages(t.db);
     expect(readSeedPage('privacy').body).toContain(PUSH_DELETED);
     t.db.prepare("UPDATE info_pages SET body = ? WHERE slug = 'privacy'").run(withoutPush());
+    expect(refreshSeedPages(t.db)).toBe(1);
+    expect(t.db.prepare("SELECT body FROM info_pages WHERE slug = 'privacy'").get().body).toBe(
+      readSeedPage('privacy').body
+    );
+  });
+
+  it('gives a never-edited privacy from before polls the current text', () => {
+    t = makeTestApp();
+    seedInfoPages(t.db);
+    expect(POLLS_DELETED).toMatch(/^- that you voted in a poll/);
+    t.db.prepare("UPDATE info_pages SET body = ? WHERE slug = 'privacy'").run(withoutPolls());
     expect(refreshSeedPages(t.db)).toBe(1);
     expect(t.db.prepare("SELECT body FROM info_pages WHERE slug = 'privacy'").get().body).toBe(
       readSeedPage('privacy').body

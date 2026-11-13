@@ -43,7 +43,9 @@ test('an admin creates a poll, a member votes, the admin sees it live', async ({
   const { page: member } = await memberPage(browser, name);
   await member.goto('/polls');
   const vote = member.getByRole('form', { name: `Vote: ${question}` });
-  await expect(vote).toContainText('This poll is not anonymous – your name will be shown.');
+  await expect(vote).toContainText(
+    'This poll is not anonymous – your name will be shown to signed-in members.'
+  );
   await vote.getByRole('radio', { name: 'Saturday' }).check();
   await vote.getByRole('button', { name: 'Vote' }).click();
   const results = member.getByRole('group', { name: `Results: ${question}` });

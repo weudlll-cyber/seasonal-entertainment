@@ -43,8 +43,12 @@ everyone sees them. The page is `/polls` ("Polls" in the sidebar, after Calls).
   first vote, then it is fixed.
   - **Anonymous**: nobody, admins included, sees who voted what. Only what keeps it to one
     vote per account is stored.
-  - **Not anonymous**: everyone who may see the results sees the names per answer, and the
-    vote form says "This poll is not anonymous – your name will be shown".
+  - **Not anonymous**: signed-in members who may see the results see the names per answer;
+    guests get the counts only, in every answer that carries results (`GET /api/polls`,
+    `GET /api/polls/:id` behind a room's poll card, the home box's summary; decided
+    2026-11-13). The vote form says "This poll is not anonymous – your name will be shown to
+    signed-in members" before anyone votes. The privacy page's "Polls" entry says who sees
+    what.
 - **End**: a fixed end time or "end by hand". Organisers and admins end a poll early and
   extend it (a later end time, also for one that was to end by hand) while it is open. Ended
   polls stay on the page with their results, after the open ones (the archive). Open and ended
@@ -116,7 +120,7 @@ a vote and answers in words at both sizes.
   newest open poll the viewer sees, in the top row beside "Up next", which then takes one column
   (it shows only the entries that fit). The question is clamped at 2 lines. A single-choice poll
   without a written answer is voted right in the box: a dropdown of the answers and "Vote" on
-  one line, with "Not anonymous: your name is shown." above when it is not anonymous. A poll
+  one line, with "Not anonymous: signed-in members see your name." above when it is not anonymous. A poll
   with several answers or a written answer links to the Polls page ("Vote"): its form would not
   fit the row, and the home page fits the window without scrolling (docs/DESIGN.md, "Home").
   Afterwards "You voted" with the count; guests a sign-in hint. No open poll: no box.
@@ -186,7 +190,8 @@ checked the same way in the form.
 A poll as listed: its fields, `options`, `steps` (the names of a step poll's steps), `mayVote`,
 `open`, `votes` (ballots), `voted`, `canVote`, `myVote`
 (`{ options, text }`, not in an anonymous poll) and `results` (null while this viewer may not
-see them): per answer `count` and, when not anonymous, `voters`; `textCount`; for organisers
+see them): per answer `count` and, when not anonymous and the viewer is signed in, `voters`;
+`textCount`; for organisers
 and admins `texts` (`{ text, by }`, `by` only when not anonymous). Rate limits per account:
 `pollManage` and `pollVote` (30 a minute each).
 

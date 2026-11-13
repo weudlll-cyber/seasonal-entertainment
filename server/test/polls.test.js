@@ -125,6 +125,20 @@ describe('voting', () => {
     expect((await vote(mia, poll.id, { options: [friday] })).status).toBe(409);
   });
 
+  it('names per answer only for signed-in members; guests get the counts', async () => {
+    const { olga, mia, ben } = await setup();
+    const poll = await create(olga, { ...CHOICE, results: 'after_end' });
+    const [friday] = optionIds(poll);
+    await vote(mia, poll.id, { options: [friday] });
+    await vote(ben, poll.id, { options: [friday] });
+    await olga.post(`/api/polls/${poll.id}/end`);
+    expect((await shown(ben, poll.id)).results.options[0].voters).toEqual(['ben', 'mia']);
+    // The list and the one poll (a room card's source): counts, no names.
+    const guestList = (await shown(t.client(), poll.id)).results.options[0];
+    const guestOne = (await t.client().get(`/api/polls/${poll.id}`)).body.poll.results.options[0];
+    for (const option of [guestList, guestOne]) expect(option).toEqual({ id: friday, count: 2 });
+  });
+
   it('free text: at most 500 characters, the texts only for organisers and admins', async () => {
     const { olga, mia, ben } = await setup();
     const poll = await create(olga, { ...CHOICE, kind: 'text', options: [] });

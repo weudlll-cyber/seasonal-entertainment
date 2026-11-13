@@ -88,7 +88,9 @@ describe('the Polls page', () => {
     });
     await renderApp('/polls');
     const form = await screen.findByRole('form', { name: 'Vote: Which day?' });
-    expect(form).toHaveTextContent('This poll is not anonymous – your name will be shown.');
+    expect(form).toHaveTextContent(
+      'This poll is not anonymous – your name will be shown to signed-in members.'
+    );
     fireEvent.click(within(form).getByRole('button', { name: 'Vote' }));
     expect(await within(form).findByRole('alert')).toHaveTextContent('Please choose an answer.');
     fireEvent.click(within(form).getByRole('radio', { name: 'Saturday' }));
@@ -249,7 +251,7 @@ describe('who may vote, the home box, the sidebar dot', () => {
       await within(nav).findByRole('link', { name: 'Polls: 2 open polls to vote in' })
     ).toHaveAttribute('href', '/polls');
     const box = await screen.findByRole('region', { name: 'Poll: Which day?' });
-    expect(box).toHaveTextContent('Not anonymous: your name is shown.');
+    expect(box).toHaveTextContent('Not anonymous: signed-in members see your name.');
     fireEvent.change(within(box).getByRole('combobox', { name: 'Your answer' }), {
       target: { value: '2' },
     });
