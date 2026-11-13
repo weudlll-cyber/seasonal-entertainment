@@ -8,7 +8,8 @@
 #              Race), asked once on a terminal (default no), again only with its flag, never
 #              unattended, read from an answers file; install.sh takes and lists each game's
 #              --<slug> and --update passes them on; the site's nginx server block includes
-#              /etc/seasonal/routes/*.conf exactly once and denies every game's account feed, the
+#              /etc/seasonal/routes/*.conf exactly once and denies every game's account feed (in
+#              any letter case: the site's router ignores it), the
 #              calls server neither; the routes folder (root, 755) and the port file are made;
 #              with any game on the sync token is made once (root only, 64 hex characters, kept
 #              on the next run, never printed) and site.env carries the list and the token, with
@@ -136,7 +137,7 @@ site="$(nginx_site_conf yes)"
 main="$(awk '/server_name example.org;/ { on = 1 } on { print } on && /^}$/ { exit }' <<<"$site")"
 if [[ "$(grep -c "include $ROUTES_DIR/\*.conf;" <<<"$site")" == 1 ]] && grep -q "include $ROUTES_DIR/\*.conf;" <<<"$main"; then ok 'the site server block includes the routes folder, once'; else bad 'routes include'; fi
 for slug in bingo mini-games race; do
-  if grep -A2 "location ^~ /api/games/$slug/account-changes {" <<<"$main" | grep -q 'deny all;'; then ok "the $slug feed is denied through nginx"; else bad "$slug feed not denied"; fi
+  if grep -A2 "location ~\* ^/api/games/$slug/account-changes {" <<<"$main" | grep -q 'deny all;'; then ok "the $slug feed is denied through nginx, in any letter case"; else bad "$slug feed not denied"; fi
 done
 if ! nginx_calls_conf yes | grep -q 'routes\|account-changes'; then ok 'the calls server has neither'; else bad 'calls server changed'; fi
 if ! nginx_site_conf no | grep -q 'routes'; then ok 'port 80 alone (before a certificate) has no include'; else bad 'port 80 include'; fi
@@ -185,7 +186,8 @@ if command -v docker >/dev/null && docker info >/dev/null 2>&1; then
   # listens on IPv4 only; Caddy: the site's name).
   # shellcheck disable=SC2016 # expanded inside the container
   probe='for p in $PATHS; do printf "%s %s\n" "$p" "$(wget -q -S -O /dev/null "$BASE$p" 2>&1 | sed -n "s/^ *HTTP\/1.1 \([0-9]*\).*/\1/p" | tail -1)"; done'
-  paths='/api/games/bingo/account-changes?since=0 /api/games/mini-games/account-changes /api/games/mini-games/authorize /games/mini-games/ /api/games/race/account-changes?since=0'
+  # The feed in other letter cases too: the site's router does not mind them.
+  paths='/api/games/bingo/account-changes?since=0 /api/games/mini-games/account-changes /api/games/mini-games/authorize /games/mini-games/ /api/games/race/account-changes?since=0 /api/games/race/Account-Changes /API/Games/Bingo/ACCOUNT-CHANGES'
 
   # nginx: the site's routes lines in a server block, a game's route file in the folder.
   conf="$work/nginx"
@@ -212,7 +214,9 @@ if command -v docker >/dev/null && docker info >/dev/null 2>&1; then
 /api/games/mini-games/account-changes 403
 /api/games/mini-games/authorize 200
 /games/mini-games/ 204
-/api/games/race/account-changes?since=0 403"
+/api/games/race/account-changes?since=0 403
+/api/games/race/Account-Changes 403
+/API/Games/Bingo/ACCOUNT-CHANGES 403"
   if [[ "$got" == "$want" ]]; then ok 'nginx -t passes; nginx denies every feed, the rest and a game route answer'; else bad "nginx: $got"; fi
 
   # The site's own Caddy (its pinned image): every feed 404, the rest goes to the site (absent
@@ -225,7 +229,9 @@ if command -v docker >/dev/null && docker info >/dev/null 2>&1; then
 /api/games/mini-games/account-changes 404
 /api/games/mini-games/authorize 502
 /games/mini-games/ 502
-/api/games/race/account-changes?since=0 404"
+/api/games/race/account-changes?since=0 404
+/api/games/race/Account-Changes 404
+/API/Games/Bingo/ACCOUNT-CHANGES 404"
   if [[ "$got" == "$want" ]]; then ok "the site's Caddy answers every feed 404"; else bad "caddy: $got"; fi
 elif [[ -n "${CI:-}" ]]; then
   bad 'Docker is needed in CI for the nginx and Caddy checks'

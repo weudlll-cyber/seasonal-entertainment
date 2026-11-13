@@ -16,7 +16,7 @@
 #              (nginx mode) the files the games' own installers read: the folder their route
 #              files go into (ROUTES_DIR, nginx includes every *.conf in it inside the site's
 #              server block; this installer never reads, copies, backs up or removes what is in
-#              it) and the site's local port (SITE_PORT_FILE); every game's account feed denied.
+#              it) and the site's local port (SITE_PORT_FILE); every game's account feed denied, in any letter case.
 # ============================================================
 
 ROUTES_DIR="$STATE_DIR/routes"
@@ -115,9 +115,10 @@ nginx_routes_lines() {
   echo "    # own file here (docs/DEPLOYMENT.md); this installer never reads or changes them."
   echo "    include $ROUTES_DIR/*.conf;"
   echo "    # The games' account feeds are for the games over the local port only (docs/AUTH.md)."
+  echo "    # In any letter case: the site's router ignores it, nginx's prefixes do not."
   for entry in "${EMBEDDED_GAMES[@]}"; do
     read -r slug key name <<<"$entry"
-    echo "    location ^~ /api/games/$slug/account-changes {"
+    echo "    location ~* ^/api/games/$slug/account-changes {"
     echo "        deny all;"
     echo "    }"
   done

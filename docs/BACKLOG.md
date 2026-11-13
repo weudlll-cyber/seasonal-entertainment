@@ -87,6 +87,12 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **nginx's deny of the game feeds in any letter case** — closed on `night/2026-11-13`
+  (security review of 2026-11-13, L5; decided 2026-11-13; not merged yet): the installer writes
+  `location ~* ^/api/games/<slug>/account-changes` (`deploy/install/lib/games.sh`), so
+  `/api/games/race/Account-Changes`, which the site's router serves, is denied as well; the
+  real nginx in `deploy/test/games.test.sh` answers 403 for it. Caddy already did.
+  docs/DEPLOYMENT.md.
 - **Votes of the wrong shape** — closed on `night/2026-11-13` (security review of 2026-11-13,
   L3; decided 2026-11-13; not merged yet): `validateVote` (`shared/pollRules.js`) refuses answers
   that are not a list, answers in a text poll and a text that is not a string, so the vote route
