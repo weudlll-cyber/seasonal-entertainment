@@ -7,48 +7,40 @@
 //              while the site is closed (docs/CALLS.md, "Push when a call starts"; decided
 //              2026-11-10). Per device: on here says nothing about the member's other devices.
 //              Not shown where the site has no push keys; where the browser cannot receive push,
-//              a line says so instead. Members only: the account page is. Turning it on says
-//              that it is working (the browser may take a while), and when it does not end
-//              "on", the switch stays off and a line under it says why and what to do (decided
-//              2026-11-12: never a silent failure). The browser's answer to the permission
-//              question also goes to onPermission, so the section shows how to unblock it.
+//              a line says so instead. Members only: the account page is. Turning it on shows it
+//              on at once; the rest finishes in the background (pushPending.js; decided
+//              2026-11-13), with "Finishing in the background…" under it meanwhile, and the rest
+//              of the page usable. Only a final failure turns it back off, with a line saying
+//              why and what to do (pushFailure.js; never a silent failure, decided 2026-11-12).
+//              The permission's answer also goes to onPermission, so the section shows how to
+//              unblock it.
 // ============================================================
 
 import { useEffect, useState } from 'react';
-import { ApiError } from '../api/http.js';
 import { pushSupported } from '../app/serviceWorker.js';
 import { FormMessage } from '../components/FormField.jsx';
-import { PushFailure, pushIsOn, pushKey, turnPushOff, turnPushOn } from './push.js';
+import { useSession } from '../session/SessionContext.jsx';
+import { pushIsOn, pushKey, turnPushOff } from './push.js';
+import { clearPushFailure, startPushOn, usePushProgress } from './pushPending.js';
 import { permission } from './systemNotify.js';
 
-const SITE_SETTINGS = 'the site settings (the icon left of the address)';
-export const PUSH_WORKING = 'Turning on… The first time, the browser can take up to a minute.';
+export const PUSH_FINISHING = 'Finishing in the background…';
 export const PUSH_UNSUPPORTED =
   'When a call starts: this browser cannot receive push notifications, so this is not available here.';
-const FAILURES = {
-  blocked: `Not turned on: notifications are blocked for this site in your browser. Allow them in ${SITE_SETTINGS}, reload the page and try again.`,
-  not_asked: `Not turned on: the browser did not allow notifications (the question was closed or not shown). Allow them in ${SITE_SETTINGS} and try again.`,
-  timeout:
-    "Not turned on: your browser's push service did not answer in time. Please try again later.",
-};
 
-// The words for a failed "on": the browser's step, the server's refusal, or anything else.
-export function pushFailureText(err) {
-  if (err instanceof PushFailure && FAILURES[err.kind]) return FAILURES[err.kind];
-  if (err instanceof PushFailure) {
-    const detail = err.cause?.message ? ` (${err.cause.message})` : '';
-    return `Not turned on: your browser could not set up push${detail}. Please try again later.`;
-  }
-  if (err instanceof ApiError) return `Not turned on: the site refused it. ${err.message}`;
-  return `Not turned on: ${err?.message || 'something went wrong'}. Please try again.`;
-}
-
-// run, busy: the section's (one change at a time, its error line).
+// run, busy: the section's (one change at a time, its error line), for turning it off.
 export default function PushSwitch({ run, busy, onPermission }) {
+  const { user } = useSession();
   const [key, setKey] = useState(null);
   const [on, setOn] = useState(false);
-  const [working, setWorking] = useState(false);
-  const [failure, setFailure] = useState(null);
+  const { finishing, failure } = usePushProgress(user.id);
+  // A turn-on that ends while this page shows (started here or resumed after a reload): on
+  // unless it failed.
+  const [wasFinishing, setWasFinishing] = useState(finishing);
+  if (wasFinishing !== finishing) {
+    setWasFinishing(finishing);
+    if (!finishing) setOn(!failure);
+  }
 
   useEffect(() => {
     let alive = true;
@@ -71,35 +63,35 @@ export default function PushSwitch({ run, busy, onPermission }) {
   if (!pushSupported()) return <p className="form-field__hint">{PUSH_UNSUPPORTED}</p>;
 
   const change = (event) => {
-    const wanted = event.target.checked;
-    setFailure(null);
-    return run(async () => {
-      if (!wanted) {
+    if (!event.target.checked) {
+      clearPushFailure();
+      return run(async () => {
         await turnPushOff();
         setOn(false);
-        return;
-      }
-      setWorking(true);
-      try {
-        await turnPushOn(key);
-        setOn(true);
-      } catch (err) {
-        setOn(false);
-        setFailure(pushFailureText(err));
-      } finally {
-        setWorking(false);
-        onPermission(permission());
-      }
-    });
+      });
+    }
+    // On at once (finishing); how it ends comes back through usePushProgress.
+    return startPushOn(user.id, key).then(() => onPermission(permission()));
   };
 
   return (
     <>
       <label className="form-check">
-        <input type="checkbox" role="switch" checked={on} disabled={busy} onChange={change} />
+        <input
+          type="checkbox"
+          role="switch"
+          checked={finishing || on}
+          disabled={busy || finishing}
+          onChange={change}
+        />
         <span>When a call starts (on this device, also while the site is closed)</span>
       </label>
-      <FormMessage error={failure} notice={working ? PUSH_WORKING : null} />
+      {finishing && (
+        <p className="form-field__hint" role="status">
+          {PUSH_FINISHING}
+        </p>
+      )}
+      <FormMessage error={finishing ? null : failure} />
     </>
   );
 }

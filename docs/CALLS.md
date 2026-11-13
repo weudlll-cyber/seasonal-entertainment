@@ -408,15 +408,28 @@ also while the site and the browser are closed; a click opens the call's page.
   this browser; each device is turned on by itself. Members only; guests never have it. Not
   shown while the site has no push keys; where the browser cannot receive push, a line says so
   instead.
+- **No waiting** (decided 2026-11-13): a click shows the switch on at once. The browser's
+  registration and the server request finish in the background
+  (`client/src/notify/pushPending.js`), with "Finishing in the background…" under the switch
+  meanwhile and the rest of the page usable. Going to another page of the site keeps it
+  running; a page closed or reloaded meanwhile leaves a mark in the browser's storage, and the
+  next page load of the site finishes it (`useResumePush`, `client/src/app/Layout.jsx`). The
+  background part has 90 s (`SUBSCRIBE_MS`, `client/src/notify/push.js`).
+- **Why Chrome can take a minute** (measured 2026-11-13 on the owner's PC with
+  `chrome://gcm-internals`): Chrome's push client connects to its service (`mtalk.google.com`)
+  at once, but a profile's first registration requests go out before its device check-in has
+  finished, are answered "DEVICE_REGISTRATION_ERROR" or "UNKNOWN_ERROR", and Chrome waits its
+  own retry delay (23–42 s) before the next one succeeds: 23–62 s in all. Once Chrome's push
+  client is ready, a registration takes about 2 s (1.6 s measured). This happens in Chrome,
+  roughly once per browser profile; the network was fine (ports 5228 and 443 answer in about
+  35 ms, no proxy, no firewall rule against Chrome).
 - **Never a silent failure** (decided 2026-11-12, after the switch stayed off without a word in
-  Chrome on the PC): while it turns on, "Turning on… The first time, the browser can take up to
-  a minute." (a fresh Chrome profile took 32 s to register with its push service); the
-  browser's part has 90 s (`SUBSCRIBE_MS`, `client/src/notify/push.js`). When it does not end
-  "on", the switch stays off and a line under it says why and what to do: notifications blocked
-  for the site (allow them in the site settings), the permission question closed or not shown,
-  the browser's push service not answering in time, the browser's own refusal (its reason in
-  brackets), or the server's refusal (its message). Tests:
-  `client/src/notify/pushSwitch.test.jsx`.
+  Chrome on the PC): only a final failure turns the switch back off, with a line under it saying
+  why and what to do (`client/src/notify/pushFailure.js`): notifications blocked for the site
+  (allow them in the site settings), the permission question closed or not shown, the browser's
+  push service not answering in time, the browser's own refusal (its reason in brackets), or the
+  server's refusal (its message). A failure while the account page was not open is shown there
+  next time. Tests: `client/src/notify/pushSwitch.test.jsx`.
 - **Only this**: chat, rooms, polls and everything else still notify only while a tab of the
   site is open (docs/CHAT.md, "Notifications").
 - **Sending** (`server/src/push/`): the start route hands the call over without waiting

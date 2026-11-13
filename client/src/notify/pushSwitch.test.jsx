@@ -6,16 +6,18 @@
 //              "Push when a call starts"): hidden where the site has no push keys, a line
 //              instead of it where the browser cannot receive push; shown off for a device the
 //              server does not know for this account (also when the browser holds another
-//              account's subscription), on for one it knows; turning it on says it is working,
-//              asks the browser's permission, subscribes with the site's key and hands the
-//              subscription to the server; off removes it on both sides. Every way turning it on
-//              can fail leaves it off with a line saying why (seen 2026-11-12: it stayed off
+//              account's subscription), on for one it knows; turning it on shows it on at once
+//              (decided 2026-11-13), even with a slow browser, and the rest of the page usable,
+//              while the background asks the permission, subscribes with the site's key and
+//              hands the subscription to the server; leaving the page, or closing it, does not
+//              lose it; off removes it on both sides. Every way turning it on can fail, also
+//              late, turns it back off with a line saying why (seen 2026-11-12: it stayed off
 //              without a word): a blocked or unanswered permission, a browser that refuses or
 //              does not answer, a server that refuses. jsdom has no service worker: stand-ins
 //              for it and for Notification.
 // ============================================================
 
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import App from '../app/App.jsx';
@@ -23,7 +25,8 @@ import { FakeSocket } from '../test/fakeSocket.js';
 import { mockApi, signedIn } from '../test/mockApi.js';
 import { BLOCKED_HELP } from './NotificationSettings.jsx';
 import { SUBSCRIBE_MS } from './push.js';
-import { PUSH_UNSUPPORTED, PUSH_WORKING } from './PushSwitch.jsx';
+import { PENDING_KEY } from './pushPending.js';
+import { PUSH_FINISHING, PUSH_UNSUPPORTED } from './PushSwitch.jsx';
 
 // base64url both ways, as the browser code does it.
 const toKey = (bytes) =>
@@ -80,6 +83,7 @@ beforeEach(() => {
   });
 });
 afterEach(() => {
+  localStorage.clear();
   vi.unstubAllGlobals();
   delete navigator.serviceWorker;
 });
@@ -131,20 +135,35 @@ it('on for a device the server knows for this account', async () => {
   await vi.waitFor(() => expect(screen.getByRole('switch', SWITCH)).toBeChecked());
 });
 
-it('on: permission, a subscription with the site key, handed to the server; off again', async () => {
-  // The browser takes its time, as Chrome's push service did (32 s on a fresh profile).
-  let answer;
+// A browser that takes its time, as Chrome's push service did (23-62 s on the owner's PC):
+// subscribe answers only when the test calls answer().
+function slowBrowser() {
+  const held = { answer: null, fail: null };
   const subscribe = pushManager.subscribe;
   pushManager.subscribe = vi.fn(
-    (options) => new Promise((resolve) => (answer = () => resolve(subscribe(options))))
+    (options) =>
+      new Promise((resolve, reject) => {
+        held.answer = () => resolve(subscribe(options));
+        held.fail = (err) => reject(err);
+      })
   );
+  return held;
+}
+
+it('on at once with a slow browser, finished in the background, the page usable; off again', async () => {
+  const browser = slowBrowser();
   const calls = await page();
   fireEvent.click(await screen.findByRole('switch', SWITCH));
-  expect(await screen.findByText(PUSH_WORKING)).toBeInTheDocument();
-  await vi.waitFor(() => expect(answer).toBeDefined());
-  answer();
-  await vi.waitFor(() => expect(screen.getByRole('switch', SWITCH)).toBeChecked());
-  expect(screen.queryByText(PUSH_WORKING)).toBeNull();
+  // Right after the click: on, the note, and the other switches still usable.
+  expect(screen.getByRole('switch', SWITCH)).toBeChecked();
+  expect(screen.getByText(PUSH_FINISHING)).toBeInTheDocument();
+  expect(screen.getByRole('switch', { name: 'Weekly recap' })).toBeEnabled();
+  expect(screen.queryByRole('alert')).toBeNull();
+
+  await vi.waitFor(() => expect(browser.answer).toBeTypeOf('function'));
+  browser.answer();
+  await vi.waitFor(() => expect(screen.queryByText(PUSH_FINISHING)).toBeNull());
+  expect(screen.getByRole('switch', SWITCH)).toBeChecked();
   expect(screen.queryByRole('alert')).toBeNull();
   expect(Notification.requestPermission).toHaveBeenCalledOnce();
   const [{ applicationServerKey, userVisibleOnly }] = pushManager.subscribe.mock.calls[0];
@@ -154,6 +173,7 @@ it('on: permission, a subscription with the site key, handed to the server; off 
     endpoint: ENDPOINT,
     keys: { p256dh: 'p', auth: 'a' },
   });
+  expect(localStorage.getItem(PENDING_KEY)).toBeNull();
 
   const held = browserSub;
   fireEvent.click(screen.getByRole('switch', SWITCH));
@@ -164,16 +184,71 @@ it('on: permission, a subscription with the site key, handed to the server; off 
   expect(held.unsubscribe).toHaveBeenCalledOnce();
 });
 
-// Turns the switch on and returns the line that says why it stayed off.
+it('a late failure turns it back off, with its reason', async () => {
+  const browser = slowBrowser();
+  const calls = await page();
+  fireEvent.click(await screen.findByRole('switch', SWITCH));
+  expect(screen.getByRole('switch', SWITCH)).toBeChecked();
+  await vi.waitFor(() => expect(browser.fail).toBeTypeOf('function'));
+  browser.fail(new DOMException('Registration failed - push service error', 'AbortError'));
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'could not set up push (Registration failed - push service error)'
+  );
+  expect(screen.getByRole('switch', SWITCH)).not.toBeChecked();
+  expect(screen.queryByText(PUSH_FINISHING)).toBeNull();
+  expect(calls.some((c) => c.key === 'POST /push/subscriptions')).toBe(false);
+});
+
+it('leaving the page and coming back keeps a turn-on that is still finishing', async () => {
+  const browser = slowBrowser();
+  await page();
+  fireEvent.click(await screen.findByRole('switch', SWITCH));
+  expect(screen.getByRole('switch', SWITCH)).toBeChecked();
+  cleanup(); // the account page is left; the turn-on goes on
+
+  await vi.waitFor(() => expect(browser.answer).toBeTypeOf('function'));
+  const calls = await page();
+  expect(await screen.findByRole('switch', SWITCH)).toBeChecked();
+  expect(screen.getByText(PUSH_FINISHING)).toBeInTheDocument();
+  browser.answer();
+  await vi.waitFor(() => expect(screen.queryByText(PUSH_FINISHING)).toBeNull());
+  expect(screen.getByRole('switch', SWITCH)).toBeChecked();
+  expect(calls.some((c) => c.key === 'POST /push/subscriptions')).toBe(true);
+});
+
+it('a turn-on that a closed page left unfinished is finished on the next page load', async () => {
+  // What a page closed while finishing leaves behind (the browser already subscribed).
+  browserSub = subscriptionFor(KEY);
+  localStorage.setItem(PENDING_KEY, JSON.stringify({ userId: 1, at: Date.now() }));
+  const calls = mockApi({
+    ...signedIn({ username: 'mia', role: 'member' }),
+    'GET /games': { body: { ok: true, games: [] } },
+    'GET /push': { body: { ok: true, publicKey: KEY } },
+    'POST /push/subscriptions': SAVED,
+  });
+  render(
+    <MemoryRouter initialEntries={['/games']}>
+      <App />
+    </MemoryRouter>
+  );
+  await vi.waitFor(() =>
+    expect(calls.some((c) => c.key === 'POST /push/subscriptions')).toBe(true)
+  );
+  await vi.waitFor(() => expect(localStorage.getItem(PENDING_KEY)).toBeNull());
+  expect(pushManager.subscribe).not.toHaveBeenCalled(); // the browser's subscription is used
+});
+
+// Turns the switch on (on at once) and returns the line that says why it went back off.
 async function failedOn() {
   fireEvent.click(await screen.findByRole('switch', SWITCH));
+  expect(screen.getByRole('switch', SWITCH)).toBeChecked();
   const alert = await screen.findByRole('alert');
   expect(screen.getByRole('switch', SWITCH)).not.toBeChecked();
-  expect(screen.queryByText(PUSH_WORKING)).toBeNull();
+  expect(screen.queryByText(PUSH_FINISHING)).toBeNull();
   return alert;
 }
 
-it('a blocked permission leaves it off and says how to allow it', async () => {
+it('a blocked permission turns it back off and says how to allow it', async () => {
   // As the browser does: the answer is also the permission from then on.
   Notification.requestPermission = vi.fn(async () => (Notification.permission = 'denied'));
   const calls = await page();
@@ -182,30 +257,19 @@ it('a blocked permission leaves it off and says how to allow it', async () => {
   expect(calls.some((c) => c.key === 'POST /push/subscriptions')).toBe(false);
 });
 
-it('a permission question closed or not shown leaves it off and says so', async () => {
+it('a permission question closed or not shown turns it back off and says so', async () => {
   Notification.requestPermission = vi.fn(async () => 'default');
   await page();
   expect(await failedOn()).toHaveTextContent(/did not allow notifications.*site settings/);
 });
 
-it("the browser's refusal to subscribe leaves it off and names the browser's reason", async () => {
-  pushManager.subscribe = vi.fn(async () => {
-    throw new DOMException('Registration failed - push service error', 'AbortError');
-  });
-  const calls = await page();
-  expect(await failedOn()).toHaveTextContent(
-    'could not set up push (Registration failed - push service error)'
-  );
-  expect(calls.some((c) => c.key === 'POST /push/subscriptions')).toBe(false);
-});
-
-it('a browser that never answers: off after SUBSCRIBE_MS, with a line', async () => {
+it('a browser that never answers: back off after SUBSCRIBE_MS, with a line', async () => {
   pushManager.subscribe = vi.fn(() => new Promise(() => {}));
   await page();
   vi.useFakeTimers({ shouldAdvanceTime: true });
   try {
     fireEvent.click(await screen.findByRole('switch', SWITCH));
-    expect(await screen.findByText(PUSH_WORKING)).toBeInTheDocument();
+    expect(screen.getByText(PUSH_FINISHING)).toBeInTheDocument();
     await vi.waitFor(() => expect(pushManager.subscribe).toHaveBeenCalled());
     await act(() => vi.advanceTimersByTimeAsync(SUBSCRIBE_MS));
     expect(await screen.findByRole('alert')).toHaveTextContent('did not answer in time');
@@ -215,7 +279,7 @@ it('a browser that never answers: off after SUBSCRIBE_MS, with a line', async ()
   }
 });
 
-it("the server's refusal leaves it off and says so", async () => {
+it("the server's refusal turns it back off and says so", async () => {
   const refused = {
     ok: false,
     error: 'bad_endpoint',
