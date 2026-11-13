@@ -23,6 +23,10 @@ entry waits for.
   sign-in-ended notice, hand the login the path, `?query` and `#anchor` (`herePath`,
   `client/src/session/nextPage.js`); still only paths on this site. The account page's Discord
   section comes back to `/account#discord` (docs/AUTH.md, "Sessions" and "Discord").
+- **The encrypted backup scripts' test under load** — built on `night/2026-11-13` (piece 3; it
+  timed out at 45 s twice in a full verify): measured, its time is four fresh node processes of
+  the real scripts (10–20 s alone, up to 56 s beside the full server suite), not its data; it has
+  a timeout of its own, 120 s (`server/test/backupEncrypted.test.js`).
 
 ### To try on the live server
 
