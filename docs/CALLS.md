@@ -402,7 +402,10 @@ countdown (1, 2 or 5 minutes, or by hand) and ends with the call at the latest (
 
 One web push, decided 2026-11-10: when a call goes live (started at once, or a planned call
 started), every member who turned it on for a device gets "<call title> has started" there,
-also while the site and the browser are closed; a click opens the call's page.
+also while the site and the browser are closed; a click opens the call's page, and only a
+path of this site: the service worker (`client/src/app/sw.js`) checks it with the login's rule,
+`shared/localPath.js`, which `client/serviceWorkerPlugin.js` puts in front of it as `/sw.js`
+(2026-11-13).
 
 - **The switch**: "When a call starts (on this device, also while the site is closed)" in the
   account page's Notifications section (`client/src/notify/PushSwitch.jsx`), off until the

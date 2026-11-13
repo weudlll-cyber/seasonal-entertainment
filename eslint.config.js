@@ -51,7 +51,7 @@ export default [
   },
   // The service worker runs in its own scope (self, clients, registration).
   {
-    files: ['client/public/sw.js'],
+    files: ['client/src/app/sw.js'],
     languageOptions: { globals: globals.serviceworker },
   },
   // Playwright specs run in Node; their page.evaluate callbacks run in the browser.

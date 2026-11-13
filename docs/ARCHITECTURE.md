@@ -494,6 +494,8 @@ client/                    React + Vite client
                            switches, mentions, direct messages, the weekly recap (docs/CHAT.md)
   src/games/               the games hub's card images
   public/theme-init.js     sets the theme before the first paint (external: strict CSP)
+  src/app/sw.js            the service worker; served as /sw.js with shared/localPath.js in
+                           front of it (serviceWorkerPlugin.js, beside vite.config.js)
   src/assets/              logo, season marks, fonts (woff2)
   src/assets/seasons/source/  original season marks, input of build-season-marks.mjs
   src/test/setup.js        Vitest setup

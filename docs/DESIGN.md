@@ -97,7 +97,7 @@ are made from the emblem by `scripts/build-app-icons.mjs` into `client/public/ic
 | `icon-maskable-512.png` | the emblem in the 80 % safe zone on night blue      |
 | `apple-touch-icon.png`  | 180 px on the page background (iOS shows no alpha)  |
 
-The service worker (`client/public/sw.js`) is there only for installing and the one web push
+The service worker (`client/src/app/sw.js`, served as `/sw.js` with the shared path rule by `client/serviceWorkerPlugin.js`) is there only for installing and the one web push
 (docs/CALLS.md, "Push when a call starts"): it caches nothing, so every page and answer still
 comes from the network and an update reaches visitors as before ("Speed").
 

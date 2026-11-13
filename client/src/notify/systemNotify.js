@@ -10,7 +10,7 @@
 //              event across tabs (the first tab to claim the event shows it, like the call
 //              notices; the tag also lets the browser replace a double). With no tab of the
 //              site open there are none; the one web push, when a call starts, comes from the
-//              service worker instead (public/sw.js, push.js).
+//              service worker instead (app/sw.js, push.js).
 // ============================================================
 
 import { readStored, writeStored } from '../app/storage.js';

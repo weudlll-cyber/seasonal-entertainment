@@ -2,7 +2,7 @@
 // File:        serviceWorker.js
 // Path:        client/src/app/serviceWorker.js
 // Project:     Seasonal Entertainment
-// Description: The service worker (public/sw.js): registered for every visitor once the page
+// Description: The service worker (/sw.js, from sw.js): registered for every visitor once the page
 //              has loaded, so the site can be installed and a member's device can get the
 //              "call has started" push (docs/CALLS.md, "Push when a call starts"). It caches
 //              nothing. pushRegistration() hands the push switch the ready registration.

@@ -6,12 +6,13 @@
 //              Ports and the API origin are read from the environment when Vite starts. A build
 //              carries the commit it was built from (import.meta.env.SE_BUILD_COMMIT, resolved
 //              like the server's /api/health commit), so an open page can tell that the site
-//              was updated (src/app/UpdateNotice.jsx).
+//              was updated (src/app/UpdateNotice.jsx). /sw.js comes from serviceWorkerPlugin.js.
 // ============================================================
 
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { readBuildInfo } from '../server/src/buildInfo.js';
+import { serviceWorkerPlugin } from './serviceWorkerPlugin.js';
 
 // 5380 keeps clear of the race game's 5173/4173; the API server listens on 3800.
 const devPort = Number(process.env.CLIENT_PORT ?? 5380);
@@ -24,7 +25,8 @@ const buildCommit = (command) =>
   command === 'build' ? readBuildInfo().commit : (process.env.SE_DEV_BUILD_COMMIT ?? '');
 
 export default defineConfig(({ command }) => ({
-  plugins: [react()],
+  // /sw.js: the service worker with the shared path rule (serviceWorkerPlugin.js).
+  plugins: [react(), serviceWorkerPlugin()],
   define: { 'import.meta.env.SE_BUILD_COMMIT': JSON.stringify(buildCommit(command)) },
   build: {
     // The cryptography chunk (libsodium with its WebAssembly, about 540 kB; the password-hashing

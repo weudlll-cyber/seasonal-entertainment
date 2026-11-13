@@ -87,6 +87,11 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **The notification click's path check** — closed on `night/2026-11-13` (security review of
+  2026-11-13, L2; decided 2026-11-13; not merged yet): the service worker checks the click's
+  target with `shared/localPath.js` (no `//`, no backslash), put in front of it as `/sw.js` by
+  `client/serviceWorkerPlugin.js`; it moved from `client/public/` to `client/src/app/sw.js`.
+  docs/CALLS.md.
 - **The share page and a `$` in a call title** — closed on `night/2026-11-13` (security review
   of 2026-11-13, L1; decided 2026-11-13; not merged yet): the preview tags go into the page
   through a replacer function (`server/src/calls/recordingShare.js`), so `$'`, `` $` `` or `$&` in
