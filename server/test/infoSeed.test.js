@@ -13,10 +13,11 @@
 //              and what the call server processes, and its recording section is a proposal for the
 //              owner (consent as legal basis, no automatic deletion, the rights and where to
 //              complain) with only the contact left to fill; it describes account deletion
-//              (what goes, what stays, how long backups keep it). A stored page still holding an
-//              earlier seed text gets the current one on start (Imprint and Privacy from before
-//              "Fill in before going live" and Privacy from before member profiles too); an edited
-//              one is left alone.
+//              (what goes, what stays, how long backups keep it) and what web push stores per
+//              device, for what, and how it is removed. A stored page still holding an earlier
+//              seed text gets the current one on start (Imprint and Privacy from before "Fill in
+//              before going live", Privacy from before member profiles and from before web push
+//              too); an edited one is left alone.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -160,6 +161,24 @@ it('the privacy draft describes account deletion: what goes, what stays, the bac
   expect(section).toContain('**newest 30 backups**');
 });
 
+it('the privacy draft says what web push stores per device, for what, and how it is removed', () => {
+  const { body } = readSeedPage('privacy');
+  const start = body.indexOf('- **Notifications when a call starts**');
+  const entry = body.slice(start, body.indexOf('\n- **', start + 1));
+  expect(start).toBeGreaterThan(0);
+  // What (push/schema.js), for what, through whom (push/send.js).
+  expect(entry).toMatch(/address your browser's push\s+service gave it, two keys/);
+  expect(entry).toMatch(/Used only to send the call's\s+title with "has started"/);
+  expect(entry).toMatch(/push service[\s\S]*cannot read it/);
+  // Every way it goes (push/store.js; deleting the account cascades).
+  expect(entry).toMatch(/turn the switch off on that device/);
+  expect(entry).toMatch(/no longer valid/);
+  expect(entry).toMatch(/account is locked, and with your account/);
+  expect(body.slice(body.indexOf('## Deleting your account'))).toMatch(
+    /devices you turned "When a call starts" on for/
+  );
+});
+
 describe('refreshing unedited seed pages', () => {
   const OLD = 'An earlier seed text.\n';
   const privacyRow = () =>
@@ -191,16 +210,22 @@ describe('refreshing unedited seed pages', () => {
     expect(refreshSeedPages(t.db)).toBe(0);
   });
 
-  // What a seed page gained since 2026-11-04: the privacy page's "Your profile" (2026-11-11).
-  const profileEntry = () => {
+  // What a seed page gained since 2026-11-04: the privacy page's "Your profile" (2026-11-11),
+  // its web push entry and that line in the account deletion list (2026-11-13).
+  const between = (from, to) => {
     const body = readSeedPage('privacy').body;
-    const start = body.indexOf('- **Your profile**');
-    return body.slice(start, body.indexOf('- **Discord login**', start));
+    const start = body.indexOf(from);
+    return body.slice(start, body.indexOf(to, start));
   };
+  const profileEntry = () => between('- **Your profile**', '- **Discord login**');
+  const pushEntry = () =>
+    between('- **Notifications when a call starts**', '- **Protection against abuse**');
+  const PUSH_DELETED =
+    ';\n- the devices you turned "When a call starts" on for (their push addresses and keys).';
+  const withoutPush = () =>
+    readSeedPage('privacy').body.replace(pushEntry(), '').replace(PUSH_DELETED, '.');
   const withoutLater = (slug) =>
-    slug === 'privacy'
-      ? readSeedPage(slug).body.replace(profileEntry(), '')
-      : readSeedPage(slug).body;
+    slug === 'privacy' ? withoutPush().replace(profileEntry(), '') : readSeedPage(slug).body;
   // The texts before 2026-11-04, as a site seeded then still holds them where nobody edited them.
   const beforeFillIn = (slug) =>
     withoutLater(slug).replace(
@@ -215,6 +240,17 @@ describe('refreshing unedited seed pages', () => {
       .prepare("UPDATE info_pages SET body = ? WHERE slug = 'privacy'")
       .run(withoutLater('privacy'));
     expect(profileEntry()).toMatch(/only to signed-in members/);
+    expect(refreshSeedPages(t.db)).toBe(1);
+    expect(t.db.prepare("SELECT body FROM info_pages WHERE slug = 'privacy'").get().body).toBe(
+      readSeedPage('privacy').body
+    );
+  });
+
+  it('gives a never-edited privacy from before web push the current text', () => {
+    t = makeTestApp();
+    seedInfoPages(t.db);
+    expect(readSeedPage('privacy').body).toContain(PUSH_DELETED);
+    t.db.prepare("UPDATE info_pages SET body = ? WHERE slug = 'privacy'").run(withoutPush());
     expect(refreshSeedPages(t.db)).toBe(1);
     expect(t.db.prepare("SELECT body FROM info_pages WHERE slug = 'privacy'").get().body).toBe(
       readSeedPage('privacy').body

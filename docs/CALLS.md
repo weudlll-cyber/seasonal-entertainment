@@ -445,7 +445,9 @@ also while the site and the browser are closed; a click opens the call's page.
   restore onto a server with new ones, is dropped, never sent to). The push address lies at the
   browser maker's push service (Google, Mozilla, Apple, Microsoft), which carries the encrypted
   message; only those services are accepted as addresses, so no member can make the site call
-  an address of their choosing.
+  an address of their choosing. The privacy page says this for members, with every way a
+  device's entry is removed (`server/src/info/seed/privacy.md`, "Notifications when a call
+  starts", and the account deletion list; 2026-11-13).
 - **Routes** (`/api/push`, members only, one limit per account, 30 a minute): `GET /` (the
   public key, null while off), `POST /status`, `POST /subscriptions`, `DELETE /subscriptions`
   (the device's address in the body, so it is in no log line).
