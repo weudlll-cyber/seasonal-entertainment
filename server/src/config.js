@@ -230,8 +230,11 @@ export function readConfig(env = process.env) {
       pollManage: { windowMs: 60_000, max: 30 }, // poll creating, ending, extending per account
       pollVote: { windowMs: 60_000, max: 30 }, // votes per account
       pushSubscribe: { windowMs: 60_000, max: 30 }, // push switch changes and checks per account
+      profileEdit: { windowMs: 60_000, max: 30 }, // About me and picture changes per account
       embedToken: { windowMs: 60 * 60_000, max: 30 }, // embed tokens per member (login popup)
-      botRead: { windowMs: 60_000, max: 120 }, // price and bot-event reads per IP
+      // Price and bot-event reads per IP. The browser tests raise it like apiRead below: a full
+      // run on CI met 120 on the prices page (2026-11-12, "Too many attempts").
+      botRead: { windowMs: 60_000, max: readInt(env, 'BOT_READS_PER_MINUTE', 120, 10, 1_000_000) },
       // Every GET under /api per IP (the public reads had none of their own): far above what
       // pages ask for (a page load makes a handful), so only a flood meets it. The browser
       // tests raise it: their hundred visitors all come from 127.0.0.1 (playwright.config.js).

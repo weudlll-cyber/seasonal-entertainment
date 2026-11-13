@@ -89,6 +89,7 @@ commit, which the client build carries for the update notice):
 | `CHAT_MAX_CONNECTIONS_PER_MEMBER`   | `5`                                           | default of "Open connections per member" (docs/SETTINGS.md)               |
 | `CHAT_MAX_GUEST_CONNECTIONS_PER_IP` | `20`                                          | default of "Open connections per guest address" (docs/SETTINGS.md)        |
 | `API_READS_PER_MINUTE`              | `1200`                                        | `GET` under `/api`, `/recordings/<id>` per address and minute (AUTH.md)   |
+| `BOT_READS_PER_MINUTE`              | `120`                                         | price and bot-event reads per address and minute (AUTH.md)                |
 | `MEDIA_DIR`                         | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`                |
 | `DELETION_JOURNAL`                  | `account-deletions.jsonl` beside the database | deleted accounts for a restore, 30 days (DEPLOYMENT.md, "Restoring")      |
 | `LINK_PREVIEWS`                     | `true`                                        | default of both link-preview settings (docs/SETTINGS.md)                  |
@@ -475,6 +476,8 @@ client/                    React + Vite client
                            recording question, a recording with its player and chapters
                            (RecordingItem, RecordingChapters; the archive page is
                            pages/RecordingsPage.jsx)
+  src/profiles/            member profiles (docs/AUTH.md): the profile page, the account page's
+                           Profile section, a name linking to it in a call, its address
   src/polls/               polls (docs/POLLS.md): a poll's card, vote form, results, the
                            create form, usePolls (the list kept live)
   src/keys/                a member's key pair in the browser: provider, device copy
@@ -554,6 +557,8 @@ server/
                            the reminder job, the link to a bot event (eventLink.js),
                            recordings with their length and chapters and the archive
                            (recordings.js, chapters.js, recordingRoutes.js, chapterRoutes.js)
+  src/profiles/            member profiles (docs/AUTH.md): schema, store, routes under
+                           /api/members and /api/profile, the admin's clears
   src/polls/               polls (docs/POLLS.md): schema, store (votes, results as each viewer
                            may see them), routes under /api/polls
   src/push/                web push when a call starts (docs/CALLS.md): schema, store, config

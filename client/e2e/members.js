@@ -51,6 +51,8 @@ const MEMBERS = [
   'callpoll',
   'pollroom',
   'pollphone',
+  'profileone',
+  'profiletwo',
   'narrowsend',
   'narrowrecip',
   'narrowposter',

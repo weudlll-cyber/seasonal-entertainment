@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: Guards that the listen address comes from the environment at start time, and
 //              how the BOT_ADMIN_EMBEDDED switch is read (1 on; 0 or unset off; else an error),
-//              the read limit per address (API_READS_PER_MINUTE, 1200 unless set) and where the
+//              the read limits per address (API_READS_PER_MINUTE, 1200 unless set;
+//              BOT_READS_PER_MINUTE, 120 unless set) and where the
 //              deletion journal lies (beside the database unless DELETION_JOURNAL is set).
 // ============================================================
 
@@ -39,6 +40,12 @@ describe('readConfig', () => {
     expect(readConfig({}).rateLimits.apiRead).toEqual({ windowMs: 60_000, max: 1200 });
     expect(readConfig({ API_READS_PER_MINUTE: '100000' }).rateLimits.apiRead.max).toBe(100000);
     expect(() => readConfig({ API_READS_PER_MINUTE: '10' })).toThrow(/API_READS_PER_MINUTE/);
+  });
+
+  it("reads the bots' read limit per address, 120 a minute unless set", () => {
+    expect(readConfig({}).rateLimits.botRead).toEqual({ windowMs: 60_000, max: 120 });
+    expect(readConfig({ BOT_READS_PER_MINUTE: '100000' }).rateLimits.botRead.max).toBe(100000);
+    expect(() => readConfig({ BOT_READS_PER_MINUTE: '5' })).toThrow(/BOT_READS_PER_MINUTE/);
   });
 
   it('keeps the deletion journal beside the database unless set', () => {

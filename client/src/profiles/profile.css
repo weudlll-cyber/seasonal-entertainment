@@ -1,0 +1,87 @@
+/* ============================================================
+   File:        profile.css
+   Path:        client/src/profiles/profile.css
+   Project:     Seasonal Entertainment
+   Description: A member's profile page (MemberProfilePage.jsx; docs/DESIGN.md, "Member
+                profile") and the account page's profile section (ProfileSettings.jsx): the
+                round picture beside the name, the role and "Member since", About me keeping
+                its line breaks and wrapping long words, the buttons in one wrapping row. Picture
+                and name wrap onto two lines where the width is too narrow for both. A name in
+                a call that links to the profile keeps its colour (ProfileName.jsx).
+   ============================================================ */
+
+.member-profile__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.member-profile__head h1 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.member-profile__picture {
+  flex: none;
+  width: 7rem;
+  height: 7rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+}
+
+/* Without a picture: the name's first letter, as a call's speaker tile shows it. */
+.member-profile__picture--none {
+  display: grid;
+  place-items: center;
+  font-size: 2.5rem;
+  font-weight: var(--font-weight-heading);
+  color: var(--color-text-muted);
+}
+
+.member-profile__role {
+  margin: 0.25rem 0 0;
+  font-weight: var(--font-weight-strong);
+}
+
+.member-profile__since {
+  margin: 0.25rem 0 0;
+  color: var(--color-text-muted);
+}
+
+/* Plain text as written: its own line breaks, long words broken instead of overflowing. */
+.member-profile__about {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.member-profile__empty {
+  color: var(--color-text-muted);
+}
+
+.member-profile__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+/* The account page's preview of one's own picture. */
+.profile-settings__picture {
+  width: 5rem;
+  height: 5rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+}
+
+/* A name in a call linking to the profile (ProfileName.jsx): the text's own colour on the stage
+   and in the listener chips, marked by a thin underline. */
+.profile-name {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}

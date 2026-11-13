@@ -52,6 +52,7 @@ const CallPage = lazyPage(() => import('../pages/CallPage.jsx'));
 const DiscordSignupPage = lazyPage(() => import('../pages/DiscordSignupPage.jsx'));
 const RecordingsPage = lazyPage(() => import('../pages/RecordingsPage.jsx'));
 const PollsPage = lazyPage(() => import('../pages/PollsPage.jsx'));
+const MemberProfilePage = lazyPage(() => import('../profiles/MemberProfilePage.jsx'));
 const RecordingPage = lazyPage(() => import('../pages/RecordingPage.jsx'));
 const StartPage = lazyPage(() => import('../pages/StartPage.jsx'));
 const EmbedChatPage = lazyPage(() => import('../embed/EmbedChatPage.jsx'));
@@ -119,6 +120,15 @@ export default function App() {
                 element={
                   <RequireUser>
                     <AccountPage />
+                  </RequireUser>
+                }
+              />
+              {/* Member profiles: signed-in members only (docs/AUTH.md, "Member profiles"). */}
+              <Route
+                path="members/:username"
+                element={
+                  <RequireUser>
+                    <MemberProfilePage />
                   </RequireUser>
                 }
               />

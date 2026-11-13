@@ -69,6 +69,9 @@ const serverEnv = {
   // whole suite makes about 1300 in a minute, and the last tests were refused (the call
   // tests' hang on CI, 2026-10-23; docs/AUTH.md).
   API_READS_PER_MINUTE: '100000',
+  // And for the price and bot-event reads (120 a minute per address): a full run on CI met
+  // it on the prices page, whose history answer became "Too many attempts" (2026-11-12).
+  BOT_READS_PER_MINUTE: '100000',
   BCRYPT_COST: '4',
   COOKIE_SECURE: 'false',
   PUBLIC_ORIGIN: '',

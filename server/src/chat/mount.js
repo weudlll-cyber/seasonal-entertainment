@@ -22,7 +22,8 @@ import { FetchRefused, safeFetch } from '../previews/safeFetch.js';
 // The real internet as the guarded fetch reaches it, for a development network that answers
 // one fake host itself and hands every other one on (games/statusFixture.js, through index.js).
 export { realNetwork as internetNetwork } from '../previews/safeFetch.js';
-import { imageMaxPixels } from '../settings/derived.js';
+import { imageMaxPixels, uploadLimits } from '../settings/derived.js';
+import { IMAGE_TYPES, processUpload } from '../uploads/process.js';
 import { getSetting } from '../settings/store.js';
 import { directFileRoutes } from '../directFiles/routes.js';
 import { directPreviewRoutes } from '../previews/directPreview.js';
@@ -158,6 +159,26 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
       },
       remove: (file) => deleteMediaFile(config, file),
       iconLimit: { bytes: ICON_MAX_BYTES, message: ICON_TOO_LARGE },
+      // A member's profile picture (profiles/routes.js) by the chat images' rules (image types,
+      // the size and megapixel settings) and stored like them: { ok, stored } (processUpload's
+      // row: file, thumbFile, mime) or { ok: false, message }. pictureMaxBytes: the size setting
+      // now, the upload body's limit.
+      async storePicture(buffer) {
+        const limits = { maxBytes: uploadLimits(db).maxBytes, maxPixels: imageMaxPixels(db) };
+        try {
+          return {
+            ok: true,
+            stored: await processUpload(buffer, 'picture', config, {
+              ...limits,
+              types: IMAGE_TYPES,
+            }),
+          };
+        } catch (err) {
+          if (!(err instanceof ImageRejected)) throw err;
+          return { ok: false, message: err.message };
+        }
+      },
+      pictureMaxBytes: () => uploadLimits(db).maxBytes,
     },
     // For account code: open chat sockets follow logouts and account changes.
     sessions: {
