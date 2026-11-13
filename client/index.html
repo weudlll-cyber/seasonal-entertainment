@@ -3,7 +3,9 @@
   Path:        client/index.html
   Project:     Seasonal Entertainment
   Description: HTML shell for the React client; Vite injects the bundled script and styles.
-               public/theme-init.js sets the theme before the first paint.
+               public/theme-init.js sets the theme before the first paint. The web app
+               manifest and its icons make the site installable (public/manifest.webmanifest,
+               public/icons/; docs/DESIGN.md, "Installable site").
 -->
 <!doctype html>
 <html lang="en">
@@ -11,7 +13,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Games, community and everything around Seasonal Tokens." />
+    <meta name="theme-color" content="#0c1538" />
     <link rel="icon" type="image/svg+xml" href="/src/assets/seasonal-tokens.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <!-- Before anything is painted: the theme on <html> (no flash of the wrong theme). External
          and synchronous on purpose: the CSP allows no inline script. -->
     <script src="/theme-init.js"></script>

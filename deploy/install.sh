@@ -53,6 +53,8 @@ source "$LIB/bot-admin.sh"
 source "$LIB/discord.sh"
 # shellcheck source=install/lib/games.sh
 source "$LIB/games.sh"
+# shellcheck source=install/lib/push.sh
+source "$LIB/push.sh"
 
 # Any command failing where no step expected it still stops with a message and the rollback.
 trap 'die "unexpected failure (line $LINENO: $BASH_COMMAND)"' ERR

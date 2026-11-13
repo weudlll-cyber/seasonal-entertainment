@@ -3,8 +3,9 @@
 // Path:        client/src/main.jsx
 // Project:     Seasonal Entertainment
 // Description: Client entry point: loads the global styles, reloads once when a page part's
-//              files are gone after an update (staleChunks.js) and mounts the app in the
-//              browser router.
+//              files are gone after an update (staleChunks.js), registers the service worker
+//              (serviceWorker.js: installing, web push) and mounts the app in the browser
+//              router.
 // ============================================================
 
 import { StrictMode } from 'react';
@@ -15,9 +16,11 @@ import './styles/tokens.css';
 import './styles/base.css';
 import './styles/forms.css';
 import App from './app/App.jsx';
+import { registerServiceWorker } from './app/serviceWorker.js';
 import { reloadOnPreloadError } from './app/staleChunks.js';
 
 reloadOnPreloadError();
+registerServiceWorker();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

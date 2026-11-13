@@ -89,7 +89,8 @@ test('a member with a step: the badge, its tooltip, the name menu', async () => 
   await message.getByRole('button', { name: 'stepwhale', exact: true }).click();
   const menu = other.getByRole('menu', { name: 'stepwhale' });
   await expect(menu).toContainText('Gilded · Holder');
-  await expect(menu.getByRole('menuitem', { name: 'Send private message' })).toBeFocused();
+  // The menu's first entry takes the focus: "View profile" (docs/AUTH.md, "Member profiles").
+  await expect(menu.getByRole('menuitem', { name: 'View profile' })).toBeFocused();
   await other.keyboard.press('Escape');
 });
 

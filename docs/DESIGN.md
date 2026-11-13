@@ -82,6 +82,25 @@ these files and which quarter belongs to which section. The font stays Luxora Gr
 in Bold, `--font-weight-heading` 700, decided 2026-10-21; Heavy before), and the
 CSP is unchanged (all images are the site's own).
 
+## Installable site
+
+The site can be installed as an app (decided 2026-11-10): `client/public/manifest.webmanifest`
+(name "Seasonal Entertainment", short name "Seasonal", start `/`, standalone, theme colour
+`#0c1538` (the night blue, also `<meta name="theme-color">`), background `#fbfaf6`
+(`--color-background`)), linked from `client/index.html` with the Apple touch icon. The icons
+are made from the emblem by `scripts/build-app-icons.mjs` into `client/public/icons/`:
+
+| File                    | What                                                |
+| ----------------------- | --------------------------------------------------- |
+| `icon-192.png`          | the emblem, transparent around it                   |
+| `icon-512.png`          | the same, larger (scaled up from the 420 px emblem) |
+| `icon-maskable-512.png` | the emblem in the 80 % safe zone on night blue      |
+| `apple-touch-icon.png`  | 180 px on the page background (iOS shows no alpha)  |
+
+The service worker (`client/public/sw.js`) is there only for installing and the one web push
+(docs/CALLS.md, "Push when a call starts"): it caches nothing, so every page and answer still
+comes from the network and an update reaches visitors as before ("Speed").
+
 ## Speed
 
 Measured on the production build, and kept by `client/e2e/speed.spec.js` and
@@ -383,6 +402,19 @@ the coin cards wrap in rows; from 1100px the fair price table and the converter 
 side — the table's column at least as wide as the table, the converter taking the rest — below
 that stacked. Every table cell stays on one line, so all rows have the same height; narrower, the
 table scrolls inside its section, never the page.
+
+**Member profile** (`/members/<name>`, `client/src/profiles/`, 2026-11-11; docs/AUTH.md,
+"Member profiles"): a page like the account page. At its head the round picture (7rem, cover
+fit; without one the name's first letter on the second surface, as a call's speaker tile shows
+it) beside the name (h1), the role (Admin, Organiser) and "Member since" in muted text; picture
+and name wrap onto two lines where the width is too narrow for both. Below: the Discord steps
+with their names, "About me" (its own line breaks kept, long words broken, never a link) or
+"Nothing here yet." in muted text, and the buttons in one wrapping row ("Send message"
+primary; "Edit my profile", and for admins "Clear About me" and "Remove picture", secondary).
+On the account page the "Profile" section has About me with a "n / 300 characters" hint, and the
+picture (5rem, round) with "Choose a picture" and "Remove picture". In a call a member's name
+links to the profile with a thin underline in the text's own colour. Checked at 360 and 390 px
+(`client/e2e/profiles.spec.js`).
 
 **Login and registration**: the card shows the full logo in light mode and the emblem in dark
 mode (`client/src/brand/FormLogo.jsx`; the dark lettering would vanish on night blue), but not

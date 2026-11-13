@@ -89,6 +89,7 @@ commit, which the client build carries for the update notice):
 | `CHAT_MAX_CONNECTIONS_PER_MEMBER`   | `5`                                           | default of "Open connections per member" (docs/SETTINGS.md)               |
 | `CHAT_MAX_GUEST_CONNECTIONS_PER_IP` | `20`                                          | default of "Open connections per guest address" (docs/SETTINGS.md)        |
 | `API_READS_PER_MINUTE`              | `1200`                                        | `GET` under `/api`, `/recordings/<id>` per address and minute (AUTH.md)   |
+| `BOT_READS_PER_MINUTE`              | `120`                                         | price and bot-event reads per address and minute (AUTH.md)                |
 | `MEDIA_DIR`                         | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`                |
 | `DELETION_JOURNAL`                  | `account-deletions.jsonl` beside the database | deleted accounts for a restore, 30 days (DEPLOYMENT.md, "Restoring")      |
 | `LINK_PREVIEWS`                     | `true`                                        | default of both link-preview settings (docs/SETTINGS.md)                  |
@@ -108,6 +109,8 @@ commit, which the client build carries for the update notice):
 | `GAMES_EMBEDDED`                    | (unset: none)                                 | the embedded games, slugs `bingo`, `mini-games`, `race` (docs/AUTH.md)    |
 | `GAMES_BINGO_EMBEDDED`              | (unset: off; `1` on)                          | also puts `bingo` in that list (installs from before it)                  |
 | `GAMES_SYNC_TOKEN`                  | (unset: the feed refuses everyone)            | the embedded games' token for their account-changes feed                  |
+| `VAPID_PUBLIC_KEY`                  | (unset: no web push)                          | with `VAPID_PRIVATE_KEY`: the web push key pair (docs/CALLS.md)           |
+| `VAPID_PRIVATE_KEY`                 | (unset: no web push)                          | made once by the installer, never printed (docs/DEPLOYMENT.md)            |
 | `DISCORD_CLIENT_ID`                 | (unset: Discord login off)                    | the Discord application's client id (docs/AUTH.md, "Discord")             |
 | `DISCORD_GUILD_ID`                  | (unset: Discord login off)                    | the Seasonal Tokens Discord server whose roles are read                   |
 | `DISCORD_CLIENT_SECRET`             | (unset: Discord login off)                    | the application's client secret (or the file below)                       |
@@ -475,6 +478,8 @@ client/                    React + Vite client
                            recording question, a recording with its player and chapters
                            (RecordingItem, RecordingChapters; the archive page is
                            pages/RecordingsPage.jsx)
+  src/profiles/            member profiles (docs/AUTH.md): the profile page, the account page's
+                           Profile section, a name linking to it in a call, its address
   src/polls/               polls (docs/POLLS.md): a poll's card, vote form, results, the
                            create form, usePolls (the list kept live)
   src/keys/                a member's key pair in the browser: provider, device copy
@@ -554,8 +559,12 @@ server/
                            the reminder job, the link to a bot event (eventLink.js),
                            recordings with their length and chapters and the archive
                            (recordings.js, chapters.js, recordingRoutes.js, chapterRoutes.js)
+  src/profiles/            member profiles (docs/AUTH.md): schema, store, routes under
+                           /api/members and /api/profile, the admin's clears
   src/polls/               polls (docs/POLLS.md): schema, store (votes, results as each viewer
                            may see them), routes under /api/polls
+  src/push/                web push when a call starts (docs/CALLS.md): schema, store, config
+                           (VAPID keys, the push services), routes under /api/push, send
   src/settings/            admin-editable site settings (docs/SETTINGS.md): kinds, groups/,
                            definitions, store, admin routes, the organisers' banner routes
                            (bannerRoutes.js), one change with its audit entry (change.js)

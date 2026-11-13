@@ -396,6 +396,69 @@ Organisers and admins start a poll from a live call's page; it shows under the s
 countdown (1, 2 or 5 minutes, or by hand) and ends with the call at the latest (docs/POLLS.md,
 "Polls in a call"; decided 2026-11-10).
 
+## Push when a call starts
+
+One web push, decided 2026-11-10: when a call goes live (started at once, or a planned call
+started), every member who turned it on for a device gets "<call title> has started" there,
+also while the site and the browser are closed; a click opens the call's page.
+
+- **The switch**: "When a call starts (on this device, also while the site is closed)" in the
+  account page's Notifications section (`client/src/notify/PushSwitch.jsx`), off until the
+  member turns it on, per device: turning it on asks the browser's permission and subscribes
+  this browser; each device is turned on by itself. Members only; guests never have it. Not
+  shown while the site has no push keys; where the browser cannot receive push, a line says so
+  instead.
+- **No waiting** (decided 2026-11-13): a click shows the switch on at once. The browser's
+  registration and the server request finish in the background
+  (`client/src/notify/pushPending.js`), with "Finishing in the background…" under the switch
+  meanwhile and the rest of the page usable. Going to another page of the site keeps it
+  running; a page closed or reloaded meanwhile leaves a mark in the browser's storage, and the
+  next page load of the site finishes it (`useResumePush`, `client/src/app/Layout.jsx`). The
+  background part has 90 s (`SUBSCRIBE_MS`, `client/src/notify/push.js`).
+- **Why Chrome can take a minute** (measured 2026-11-13 on the owner's PC with
+  `chrome://gcm-internals`): Chrome's push client connects to its service (`mtalk.google.com`)
+  at once, but a profile's first registration requests go out before its device check-in has
+  finished, are answered "DEVICE_REGISTRATION_ERROR" or "UNKNOWN_ERROR", and Chrome waits its
+  own retry delay (23–42 s) before the next one succeeds: 23–62 s in all. Once Chrome's push
+  client is ready, a registration takes about 2 s (1.6 s measured). This happens in Chrome,
+  roughly once per browser profile; the network was fine (ports 5228 and 443 answer in about
+  35 ms, no proxy, no firewall rule against Chrome).
+- **Never a silent failure** (decided 2026-11-12, after the switch stayed off without a word in
+  Chrome on the PC): only a final failure turns the switch back off, with a line under it saying
+  why and what to do (`client/src/notify/pushFailure.js`): notifications blocked for the site
+  (allow them in the site settings), the permission question closed or not shown, the browser's
+  push service not answering in time, the browser's own refusal (its reason in brackets), or the
+  server's refusal (its message). A failure while the account page was not open is shown there
+  next time. Tests: `client/src/notify/pushSwitch.test.jsx`.
+- **Only this**: chat, rooms, polls and everything else still notify only while a tab of the
+  site is open (docs/CHAT.md, "Notifications").
+- **Sending** (`server/src/push/`): the start route hands the call over without waiting
+  (`wentLive`, `server/src/app.js`), so a slow or failing push service never delays or fails
+  the start. The library `web-push` (3.6.7, MPL-2.0, pinned) signs each message with the
+  site's VAPID keys and encrypts it for the device; Node's `fetch` delivers it. A message lives
+  15 minutes at the push service; a subscription it answers 404 or 410 for is dropped.
+- **Who gets it**: every subscribed device of an unlocked account (calls are shown to
+  everyone). Locking an account removes its subscriptions (unlocking does not bring them back);
+  deleting it takes them with it.
+- **What is stored** (`push_subscriptions`): per account and device the browser's push
+  address, its two keys and which site key it was made for (one made for other keys, after a
+  restore onto a server with new ones, is dropped, never sent to). The push address lies at the
+  browser maker's push service (Google, Mozilla, Apple, Microsoft), which carries the encrypted
+  message; only those services are accepted as addresses, so no member can make the site call
+  an address of their choosing. The privacy page says this for members, with every way a
+  device's entry is removed (`server/src/info/seed/privacy.md`, "Notifications when a call
+  starts", and the account deletion list; 2026-11-13).
+- **Routes** (`/api/push`, members only, one limit per account, 30 a minute): `GET /` (the
+  public key, null while off), `POST /status`, `POST /subscriptions`, `DELETE /subscriptions`
+  (the device's address in the body, so it is in no log line).
+- **Keys**: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` in `site.env`, made once by the installer
+  (docs/DEPLOYMENT.md, "Web push"). Without them push is off.
+- **Trying it**: push needs a secure page: the live site (https), or `http://localhost` on the
+  computer running the site. On a phone, the site over plain `http://<PC address>` cannot
+  subscribe; on an iPhone, only after the site was added to the home screen (Safari's rule).
+- Tests: `server/test/push.test.js`, `client/src/notify/pushSwitch.test.jsx`,
+  `client/e2e/push.spec.js`, `deploy/test/push.test.sh`.
+
 ## Recording
 
 Call recording, video and audio (decided 2026-10-22). It is **off unless set up**:

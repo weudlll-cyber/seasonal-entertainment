@@ -17,7 +17,8 @@
 //              Members' call reminders show at the top of the main column (CallNotices); a
 //              new device's request for the key asks on an unlocked one (DeviceRequestPrompt);
 //              mentions and direct messages become browser notifications while no tab of the
-//              site is visible (useSystemNotifications, notify/).
+//              site is visible (useSystemNotifications, notify/); a "When a call starts" turn-on
+//              that a closed or reloaded page left unfinished is finished (useResumePush).
 // ============================================================
 
 import { roleAtLeast } from '@seasonal-entertainment/shared/accountRules.js';
@@ -25,6 +26,7 @@ import { Link, Outlet, useLocation } from 'react-router';
 import CallNotices from '../calls/CallNotices.jsx';
 import DeviceRequestPrompt from '../keys/DeviceRequestPrompt.jsx';
 import { useKeys } from '../keys/KeyContext.jsx';
+import { useResumePush } from '../notify/pushPending.js';
 import { useSystemNotifications } from '../notify/useSystemNotifications.js';
 import RecoveryOffer from '../keys/RecoveryOffer.jsx';
 import { inEmbedLoginFlow } from '../session/nextPage.js';
@@ -43,6 +45,7 @@ export default function Layout() {
   const { offerRecovery } = useKeys();
   const { pathname, search } = useLocation();
   useSystemNotifications();
+  useResumePush(user);
   // The full chat page and a call page (its own chat) have the chat already; the admin area
   // and Manage events (the bot's page, whose own buttons the chat button would cover) keep the
   // screen to themselves; the login popup is a small window for one step.

@@ -19,6 +19,14 @@ This list describes what the website's software actually stores.
   your account" below). The
   confirmation that you are at least 14 is required to register but is not stored, and no date
   of birth is asked for.
+- **Your profile** (members, if you fill it in): an optional "About me" of at most 300
+  characters and an optional profile picture (stored like chat images: re-encoded, without
+  metadata such as location). Your profile page shows your username, Admin or Organiser if you
+  are one, your Discord steps, the date your account was created ("Member since"), your About me
+  and your picture, **only to signed-in members**: never to guests, never to search engines. A
+  locked account's profile is not shown. You change or remove both on your account page; admins
+  can clear them (each clear goes into the admin log, without the text). Deleted with your
+  account.
 - **Discord login** (if you log in with Discord or link your account to it): your Discord user
   id and Discord username, and the ids of your roles on the Seasonal Tokens Discord server, read
   with your consent when you log in and once a day. From them the site shows your steps (Holder,
@@ -135,6 +143,17 @@ This list describes what the website's software actually stores.
     contact address in the Imprint ([TO BE FILLED BY OWNER: contact email for these requests]).
     You can also lodge a complaint with a data protection authority; in Austria that is the
     Datenschutzbehörde.
+- **Notifications when a call starts** (members, only on a device where you turn "When a call
+  starts" on, on your account page): for each such device, the address your browser's push
+  service gave it, two keys with which the site encrypts the message for that device, which of
+  the site's own keys it was made for, and when you turned it on. Used only to send the call's
+  title with "has started" when a call goes live. The message goes encrypted through the push service
+  of your browser's maker (for example Google for Chrome, Mozilla for Firefox, Apple for Safari,
+  Microsoft for Edge), which delivers it to your device and cannot read it; the site sends that
+  service nothing else about you. Removed when you turn the switch off on that device, when the
+  push service says the address is no longer valid, when the site's own keys change, when your
+  account is locked, and with your account. Your browser keeps its side of it until you turn
+  the switch off or take back the site's permission for notifications.
 - **Protection against abuse**: to limit repeated login attempts and similar, the server keeps
   your IP address in its memory for up to one hour. It is not written to the database.
 
@@ -161,7 +180,8 @@ once and cannot be undone. It deletes:
   about you, with their copies and shared files;
 - mutes and bans of your account;
 - the logins of your account for the chat on other websites (embed tokens);
-- which calls you joined, and your call reminders.
+- which calls you joined, and your call reminders;
+- the devices you turned "When a call starts" on for (their push addresses and keys).
 
 It does not delete:
 

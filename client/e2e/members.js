@@ -51,9 +51,12 @@ const MEMBERS = [
   'callpoll',
   'pollroom',
   'pollphone',
+  'profileone',
+  'profiletwo',
   'narrowsend',
   'narrowrecip',
   'narrowposter',
+  'pushmember',
 ];
 
 async function insertMember(db, username) {

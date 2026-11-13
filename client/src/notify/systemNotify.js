@@ -8,8 +8,9 @@
 //              visible right now (each tab notes its own visibility in browser storage, renewed
 //              while visible, so a closed tab's note fades), and showing one notification per
 //              event across tabs (the first tab to claim the event shows it, like the call
-//              notices; the tag also lets the browser replace a double). No web push: with no
-//              tab of the site open, there are none.
+//              notices; the tag also lets the browser replace a double). With no tab of the
+//              site open there are none; the one web push, when a call starts, comes from the
+//              service worker instead (public/sw.js, push.js).
 // ============================================================
 
 import { readStored, writeStored } from '../app/storage.js';

@@ -6,13 +6,15 @@
 //              "Turn on notifications" asks the browser for permission (only on this press,
 //              never on page load); when the browser blocks them, how to allow them there; and
 //              the three switches, off until the member turns them on: mentions, new direct
-//              messages (never their text), and the weekly recap being out (Mondays). Only
-//              while the site is open in a tab.
+//              messages (never their text), and the weekly recap being out (Mondays), only
+//              while the site is open in a tab; and, where the site has push keys, "When a call
+//              starts" for this device also while the site is closed (PushSwitch.jsx, web push).
 // ============================================================
 
 import { useState } from 'react';
 import { FormMessage } from '../components/FormField.jsx';
 import { useSession } from '../session/SessionContext.jsx';
+import PushSwitch from './PushSwitch.jsx';
 import { notificationsSupported, permission } from './systemNotify.js';
 import { saveNotificationSwitches, turnOnNotifications } from './turnOn.js';
 
@@ -93,6 +95,7 @@ export default function NotificationSettings() {
         />
         <span>Weekly recap</span>
       </label>
+      <PushSwitch run={run} busy={busy} onPermission={setAllowed} />
       <p className="form-field__hint">
         A direct message&apos;s notification says only who wrote, never the message.
       </p>

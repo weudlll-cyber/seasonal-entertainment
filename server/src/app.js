@@ -18,8 +18,10 @@
 //              reads; /api/bot-admin/authorize lets staff through to the event bot's admin page
 //              (bots/adminAuthorizeRoutes.js, only with BOT_ADMIN_EMBEDDED=1);
 //              /api/games/<slug>/authorize and the account-changes feed serve the embedded
-//              games, Bingo and Mini Games (games/embeddedRoutes.js, each only while in
-//              GAMES_EMBEDDED). Discord login and
+//              games, Bingo, Mini Games and the race (games/embeddedRoutes.js, each only while
+//              in GAMES_EMBEDDED); /api/push is a member's web push switch, and a call going
+//              live sends "has started" (push/, only with VAPID keys); /api/members and
+//              /api/profile are the member profiles (profiles/). Discord login and
 //              roles (discord/) only while set up; app.locals.discord.start() runs the daily
 //              role read; app.locals.games.start() reads the games' open sign-ups every minute
 //              (games/openRounds.js).
@@ -42,6 +44,10 @@ import { sendCallReminders, startCallReminders } from './calls/reminders.js';
 import { callEventRoutes } from './calls/eventRoutes.js';
 import { callRecordingRoutes } from './calls/recordingRoutes.js';
 import { pollRoutes } from './polls/routes.js';
+import { pushRoutes } from './push/routes.js';
+import { pushSender } from './push/send.js';
+import { adminProfileRoutes } from './profiles/adminRoutes.js';
+import { memberProfileRoutes, ownProfileRoutes } from './profiles/routes.js';
 import { startPollJobs } from './polls/store.js';
 import { recordingSharePage } from './calls/recordingShare.js';
 import { resumeRecordingStarts } from './calls/recordingStart.js';
@@ -161,6 +167,10 @@ export function createApp({
   api.use('/2fa', twoFactorRoutes(db, config, chat.sessions));
   api.use('/keys', keyRoutes(db, config));
   api.use('/admin/users', adminUserRoutes(db, config, chat, discord));
+  // Member profiles (profiles/, docs/AUTH.md "Member profiles"): members only.
+  api.use('/admin/users', adminProfileRoutes(db, chat));
+  api.use('/members', memberProfileRoutes(db, config, chat));
+  api.use('/profile', ownProfileRoutes(db, config, chat));
   api.use('/admin/audit', adminAuditRoutes(db));
   api.use('/info', infoRoutes(db));
   api.use('/admin/info', adminInfoRoutes(db));
@@ -189,13 +199,20 @@ export function createApp({
   const notifyMember = chat.notify.member;
   // A new device asks the member's unlocked ones for the key (keys/handover.js).
   api.use('/keys', keyHandoverRoutes(db, config, notifyMember));
-  const remindNow = () => sendCallReminders(db, notifyMember);
+  // Web push when a call starts (push/, docs/CALLS.md); none while no VAPID keys are set.
+  api.use('/push', pushRoutes(db, config));
+  const pusher = config.push ? pushSender(db, config.push) : null;
+  // Not awaited: the call's start answers at once; push/send.js never throws.
+  const wentLive = (call) => {
+    sendCallReminders(db, notifyMember);
+    pusher?.callStarted(call);
+  };
   // Before callRoutes: its /:id would take /bot-occurrences.
   api.use('/calls', callEventRoutes(db, config, callService, chat));
   // Before callRoutes too: its /:id would take /recordings (the archive).
   api.use('/calls', callRecordingRoutes(db, config, callService));
   api.use('/calls', chapterRoutes(db, config, callService));
-  api.use('/calls', callRoutes(db, config, callService, chat, remindNow));
+  api.use('/calls', callRoutes(db, config, callService, chat, wentLive));
   api.use('/calls', callReminderRoutes(db, config, callService));
   api.use('/calls', callJoinRoutes(db, config, callService, chat));
   api.use('/calls', callStageRoutes(db, config, callService, chat));

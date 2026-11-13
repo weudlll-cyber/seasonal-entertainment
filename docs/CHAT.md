@@ -82,7 +82,9 @@ marks) and the embed state (`client/src/embed/embedAuth.js`, which imports only 
 `useFileLinks.js`) and the Discord ladders' names (`@seasonal-entertainment/shared/discordLadders.js`,
 since 2026-11-04, for the step badge) and, for polls in a room (docs/POLLS.md; since 2026-11-11),
 a poll's card (`client/src/polls/ChatPollCard.jsx`) and the poll form
-(`client/src/polls/PollForm.jsx`), which use only the chat's `index.js` in return;
+(`client/src/polls/PollForm.jsx`), which use only the chat's `index.js` in return, and a member
+profile's address (`client/src/profiles/profilePath.js`, a leaf file; since 2026-11-11, for "View
+profile" in a name's menu and the member search; docs/AUTH.md, "Member profiles");
 `client/src/chat/chatModule.test.js` fails on any other import, and on any page
 importing a file of the module other than `index.js`.
 
@@ -592,9 +594,9 @@ Browser notifications while the site is open (decided 2026-10-22; `client/src/no
   off until the member turns them on (`users.notify_mentions`, `notify_direct`,
   `notify_recap`; `PUT /api/auth/notifications`). "Turn on notifications" turns on the first
   two only.
-- **Not while the site is closed**: no web push. With no tab of the site open there are no
-  notifications (backlog part one: "Notifications when the browser is closed (web push) — not
-  built").
+- **Not while the site is closed**: with no tab of the site open these notifications do not
+  come. The one exception is a web push when a call starts, its own switch (docs/CALLS.md,
+  "Push when a call starts"; decided 2026-11-10).
 - Tests: `client/src/notify/notifications.test.jsx`, `server/test/notifyEvents.test.js`.
 
 ## Reporting a direct message
@@ -718,6 +720,10 @@ const chat = mountChat({ app, api, db, config, sessionParser, previewNetwork, em
 //                                                from a link, discord/iconLink.js)
 // chat.images.iconLimit                          { bytes, message }: the icon limit (256 KB)
 //                                                and the upload's answer beyond it
+// chat.images.storePicture(buffer)               a member's profile picture by the chat
+//                                                images' rules, stored like them: { ok, stored }
+//                                                or { ok: false, message } (profiles/routes.js)
+// chat.images.pictureMaxBytes()                  the size setting now, its upload's limit
 // chat.attach(httpServer)                        the WebSocket, once the server listens
 // await chat.start()                             first-start rooms, the embedded games' rooms
 //                                                where missing, media, retention job
