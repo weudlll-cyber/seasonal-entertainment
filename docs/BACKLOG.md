@@ -87,6 +87,10 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **The share page and a `$` in a call title** — closed on `night/2026-11-13` (security review
+  of 2026-11-13, L1; decided 2026-11-13; not merged yet): the preview tags go into the page
+  through a replacer function (`server/src/calls/recordingShare.js`), so `$'`, `` $` `` or `$&` in
+  a title stay text instead of pasting parts of the page into the tags. docs/CALLS.md.
 - **Web push: at most 10 devices per account, sent a few at a time** — closed on
   `night/2026-11-13` (security review of 2026-11-13, M1; decided 2026-11-13; not merged yet):
   an account's 11th device replaces the one used least recently (`used_at`: turned on, checked

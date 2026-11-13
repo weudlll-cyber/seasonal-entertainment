@@ -79,10 +79,11 @@ export function recordingSharePage(db, config, service) {
     const found = dir ? findListedRecording(db, id, dir) : null;
     res.set('Cache-Control', 'no-cache');
     if (!found) return res.status(404).type('html').send(html);
-    // The page's own <title> gives way to the recording's.
+    // The page's own <title> gives way to the recording's. A function as the replacement, so
+    // a "$'" or "$&" in a title is text, never a replacement pattern.
     const tagged = html
       .replace(/<title>[^<]*<\/title>/, '')
-      .replace('</head>', `  ${shareTags(found, selfOrigin(req, config))}\n  </head>`);
+      .replace('</head>', () => `  ${shareTags(found, selfOrigin(req, config))}\n  </head>`);
     res.type('html').send(tagged);
   };
 }
