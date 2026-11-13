@@ -157,6 +157,22 @@ describe('voting', () => {
     ]);
   });
 
+  it('a ballot of the wrong shape answers 400 and stores nothing', async () => {
+    const { olga, mia } = await setup();
+    const textPoll = await create(olga, { ...CHOICE, kind: 'text', options: [] });
+    const choice = await create(olga, { ...CHOICE, otherText: true });
+    // An answer of the choice poll: foreign to the text poll.
+    const answer = optionIds(choice)[0];
+    for (const [id, ballot] of [
+      [textPoll.id, { options: {}, text: 'Fine' }],
+      [textPoll.id, { options: [answer], text: 'Fine' }],
+      [choice.id, { options: [answer], text: 5 }],
+    ]) {
+      expect((await vote(mia, id, ballot)).status).toBe(400);
+    }
+    expect(t.db.prepare('SELECT COUNT(*) AS n FROM poll_ballots').get().n).toBe(0);
+  });
+
   it('an "Other answer" goes with a choice only where the poll has one', async () => {
     const { olga, mia } = await setup();
     const plain = await create(olga, CHOICE);

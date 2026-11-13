@@ -180,11 +180,15 @@ checked the same way in the form.
 | `GET /summary`        | everyone           | `{ unvoted, newest }`: the sidebar's dot and the home box                                                                |
 | `GET /:id`            | who may see it     | `{ canManage, canDelete, poll }`: one poll (a room poll's card)                                                          |
 | `POST /`              | organisers, admins | creates one (`callId`: in that live call; `room`: in that chat room); 400 with the rule's sentence when a rule is broken |
-| `POST /:id/vote`      | members            | `{ options, text }`; 409 `already_voted`, `poll_ended`; 403 `not_allowed`                                                |
+| `POST /:id/vote`      | members            | `{ options, text }`; 400 for a ballot of the wrong shape; 409 `already_voted`, `poll_ended`; 403 `not_allowed`           |
 | `POST /:id/end`       | organisers, admins | ends it now (409 when ended)                                                                                             |
 | `POST /:id/extend`    | organisers, admins | `{ endsAt }`, later than the current end and now                                                                         |
 | `POST /:id/anonymous` | organisers, admins | `{ anonymous }`; 409 `poll_has_votes` after the first vote                                                               |
 | `DELETE /:id`         | admins             | deletes it with its votes                                                                                                |
+
+A ballot is checked for its shape too (`validateVote`, 2026-11-13): `options` a list of this
+poll's answer ids (none in a text poll), `text` a string; either may be left out. Anything else
+answers 400 and stores nothing.
 
 `GET /` also gives organisers and admins `steps` (`{ id, ladder, name }`) for the create form.
 A poll as listed: its fields, `options`, `steps` (the names of a step poll's steps), `mayVote`,

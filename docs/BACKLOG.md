@@ -87,6 +87,10 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Votes of the wrong shape** — closed on `night/2026-11-13` (security review of 2026-11-13,
+  L3; decided 2026-11-13; not merged yet): `validateVote` (`shared/pollRules.js`) refuses answers
+  that are not a list, answers in a text poll and a text that is not a string, so the vote route
+  answers 400 instead of 500 and never stores another poll's answer ids. docs/POLLS.md, "API".
 - **The notification click's path check** — closed on `night/2026-11-13` (security review of
   2026-11-13, L2; decided 2026-11-13; not merged yet): the service worker checks the click's
   target with `shared/localPath.js` (no `//`, no backslash), put in front of it as `/sw.js` by
