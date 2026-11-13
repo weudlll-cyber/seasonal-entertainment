@@ -12,16 +12,6 @@ entry waits for.
 - **Real sites to approve for the chat embed** — which game sites go on Admin → Embedding once
   the site is live (only exact `https://` origins).
 
-### Built, waiting for the merge
-
-- **Installable site and a "call started" web push** — built on `feat/push-call-started`
-  (decided 2026-11-10; replaces "Notifications when the browser is closed (web push) — not
-  built" of 2026-10-22): a web app manifest with icons from the emblem and a service worker that
-  caches nothing; one push only, "<call title> has started" when a call goes live, to members
-  who turned "When a call starts" on for a device (account page, Notifications); VAPID keys made
-  once by the installer (docs/CALLS.md, "Push when a call starts"; docs/DEPLOYMENT.md, "Web
-  push").
-
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
@@ -76,6 +66,14 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Installable site and a "call started" web push** — closed by `feat/push-call-started`
+  (PR #67, merged 2026-11-13; decided 2026-11-10; replaces "Notifications when the browser is
+  closed (web push) — not built" of 2026-10-22): a web app manifest with icons from the emblem
+  and a service worker that caches nothing; one push only, "<call title> has started" when a
+  call goes live, to members who turned "When a call starts" on for a device (account page,
+  Notifications), on at once with the rest finished in the background and never a silent
+  failure; VAPID keys made once by the installer; the privacy page says what is stored per
+  device (docs/CALLS.md, "Push when a call starts"; docs/DEPLOYMENT.md, "Web push").
 - **Member profile pages** — closed by `feat/member-profiles` (PR #66, merged 2026-11-12;
   decided 2026-11-11): `/members/<name>` for signed-in members (name, role, Discord steps,
   member since, About me up to 300 characters as plain text, a picture by the chat images'
