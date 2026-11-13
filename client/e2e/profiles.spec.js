@@ -24,7 +24,7 @@ test('a profile: written on the account page, reached from chat, a message from 
   const { page: two } = await memberPage(browser, 'profiletwo');
 
   // profileone writes About me and uploads a picture, then says hello in General.
-  await one.goto('/account');
+  await one.goto('/account#profile');
   await one.getByRole('textbox', { name: /About me/ }).fill(ABOUT);
   await one.getByRole('button', { name: 'Save About me' }).click();
   await expect(one.getByText('Saved.')).toBeVisible();

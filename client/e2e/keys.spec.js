@@ -10,6 +10,7 @@
 // ============================================================
 
 import { expect, test } from '@playwright/test';
+import { openSection } from './accountSections.js';
 import { MEMBER_PASSWORD } from './members.js';
 import { recordRequests } from './requestLog.js';
 
@@ -39,7 +40,11 @@ async function logIn(page, username) {
   await main.getByRole('button', { name: 'Log in' }).click();
 }
 
-const privateMessages = (page) => page.getByRole('region', { name: 'Private messages' });
+// The section, opened first (closed until opened, or remembered open in this browser).
+async function privateMessages(page) {
+  await openSection(page, 'Private messages');
+  return page.getByRole('region', { name: 'Private messages' });
+}
 
 test('first login offers a recovery code; "Skip" leaves none', async ({ page }) => {
   await logIn(page, 'keyskip');
@@ -47,9 +52,9 @@ test('first login offers a recovery code; "Skip" leaves none', async ({ page }) 
   await expect(offer).toContainText('Without a recovery code, your private messages are lost');
   await offer.getByRole('button', { name: 'Skip' }).click();
   await expect(offer).toBeHidden();
-  await expect(privateMessages(page)).toContainText('unlocked on this device');
+  await expect(await privateMessages(page)).toContainText('unlocked on this device');
   await expect(
-    privateMessages(page).getByRole('button', { name: 'Create recovery code' })
+    (await privateMessages(page)).getByRole('button', { name: 'Create recovery code' })
   ).toBeVisible();
 });
 
@@ -65,19 +70,19 @@ test('the recovery code is shown once and never sent; logout removes the device 
   await offer.getByLabel('I have saved my recovery code').check();
   await offer.getByRole('button', { name: 'Done' }).click();
   await expect(offer).toBeHidden();
-  await expect(privateMessages(page)).toContainText('You have a recovery code.');
+  await expect(await privateMessages(page)).toContainText('You have a recovery code.');
   expect(await deviceKeyStored(page)).toBe(true);
 
   // A reload keeps the device unlocked.
   await page.reload();
-  await expect(privateMessages(page)).toContainText('unlocked on this device');
+  await expect(await privateMessages(page)).toContainText('unlocked on this device');
 
   await page.getByRole('button', { name: 'Log out' }).click();
   await expect.poll(() => deviceKeyStored(page)).toBe(false);
 
   // Logging in again opens the key with the password; no new key, no new offer.
   await logIn(page, 'keycode');
-  await expect(privateMessages(page)).toContainText('You have a recovery code.');
+  await expect(await privateMessages(page)).toContainText('You have a recovery code.');
   await expect(offer).toBeHidden();
   expect(await deviceKeyStored(page)).toBe(true);
 

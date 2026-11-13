@@ -24,6 +24,7 @@ import {
 } from '@seasonal-entertainment/shared/crypto.js';
 import App from '../app/App.jsx';
 import { PASSWORDS_DIFFER } from '../components/RepeatPasswordField.jsx';
+import { openSection } from '../test/accountSections.js';
 import { deviceEntry, resetDevice } from '../test/memoryDeviceKey.js';
 import { mockApi, signedIn, withFeatures } from '../test/mockApi.js';
 
@@ -53,7 +54,11 @@ const renderAt = (path) =>
     </MemoryRouter>
   );
 // The account page's "Private messages" section (the page has another "Set a password").
-const privateMessages = () => screen.findByRole('region', { name: 'Private messages' });
+// Opened as a member does where the test came by another section's link.
+const privateMessages = async () => {
+  await openSection('Private messages');
+  return screen.findByRole('region', { name: 'Private messages' });
+};
 
 // The keys routes for an account without a password: no auth key asked (the server checks the
 // Discord proof). state.key: what GET /keys/me returns.
@@ -81,11 +86,11 @@ describe('before the first private message', () => {
   it('asks to confirm with Discord first when the proof is missing', async () => {
     const server = keys();
     mockApi({ ...weudlll({ discordProofUntil: null }), ...server.answers });
-    renderAt('/account');
+    renderAt('/account#private-messages');
     const confirm = await screen.findAllByRole('link', { name: 'Confirm with Discord' });
     expect(confirm[0]).toHaveAttribute(
       'href',
-      '/api/auth/discord/start?intent=confirm&next=%2Faccount'
+      '/api/auth/discord/start?intent=confirm&next=%2Faccount%23private-messages'
     );
     expect(screen.queryByRole('button', { name: 'Save a recovery code' })).toBeNull();
   });
@@ -114,7 +119,7 @@ describe('before the first private message', () => {
   it('"Save a recovery code": the key sealed by the code alone, the code shown once', async () => {
     const server = keys();
     mockApi({ ...weudlll(), ...server.answers });
-    renderAt('/account');
+    renderAt('/account#private-messages');
     const section = await privateMessages();
     fireEvent.click(await within(section).findByRole('button', { name: 'Save a recovery code' }));
     const dialog = await screen.findByRole(
@@ -146,7 +151,7 @@ describe('before the first private message', () => {
         return { body: { ok: true } };
       },
     });
-    renderAt('/account');
+    renderAt('/account#password');
     const section = await privateMessages();
     const button = await within(section).findByRole('button', { name: 'Set a password' });
     const form = button.closest('form');
@@ -192,7 +197,7 @@ describe('the first password, typed twice', () => {
     '%s: a typo in the repeat sends nothing and says so at the field',
     async (where) => {
       const calls = mockApi({ ...weudlll(), ...keys().answers });
-      renderAt('/account');
+      renderAt(where === 'account page' ? '/account#password' : '/account#private-messages');
       const form = await firstPasswordForm(where);
       fill(form, 'a-new-password-1', 'a-new-password-2');
       expect(await within(form).findByText(PASSWORDS_DIFFER)).toBeInTheDocument();
@@ -215,7 +220,7 @@ describe('the first password, typed twice', () => {
         return { body: { ok: true } };
       },
     });
-    renderAt('/account');
+    renderAt('/account#password');
     fill(await firstPasswordForm('account page'), 'a-new-password-1', 'a-new-password-1');
     await vi.waitFor(() => expect(first).toBeDefined(), { timeout: 20_000 });
     expect(Object.keys(first).sort()).toEqual(['authKey', 'salt']);
@@ -235,7 +240,7 @@ describe('on a device without the key', () => {
       recovery: { salt, sealed },
     });
     const calls = mockApi({ ...weudlll(), ...server.answers });
-    renderAt('/account');
+    renderAt('/account#private-messages');
     const section = await privateMessages();
     fireEvent.change(await within(section).findByLabelText('Recovery code'), {
       target: { value: code },

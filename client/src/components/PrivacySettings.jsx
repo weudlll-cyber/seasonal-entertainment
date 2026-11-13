@@ -6,7 +6,8 @@
 //              "Show when I'm online" (off: others see this member as offline everywhere in
 //              the chat; the server enforces it; the member's own view of others does not
 //              change) and "Link previews in direct messages" (off: this browser asks for no
-//              preview at all while the member writes a direct message; docs/CHAT.md).
+//              preview at all while the member writes a direct message; docs/CHAT.md). The
+//              heading is the account page's (Disclosure.jsx).
 // ============================================================
 
 import { useState } from 'react';
@@ -34,8 +35,7 @@ export default function PrivacySettings() {
   };
 
   return (
-    <section aria-labelledby="privacy">
-      <h2 id="privacy">Privacy</h2>
+    <>
       <label className="form-check">
         <input
           type="checkbox"
@@ -66,6 +66,6 @@ export default function PrivacySettings() {
         never contacts the linked site. When this is off, no preview is asked for.
       </p>
       <FormMessage error={error} />
-    </section>
+    </>
   );
 }

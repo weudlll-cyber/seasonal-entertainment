@@ -22,9 +22,10 @@ test('a member deletes their own account with the password', async ({ browser })
   await postInChat(page);
   expect(stored(name)).toEqual({ accounts: 1, messages: 1 });
 
-  await page.goto('/account');
-  const button = page.getByRole('button', { name: 'Delete my account' });
-  const section = page.locator('form').filter({ has: button });
+  await page.goto('/account#delete-account');
+  // The form inside the section, and its button (the section's heading has the same name).
+  const section = page.getByRole('region', { name: 'Delete my account' }).locator('form');
+  const button = section.getByRole('button', { name: 'Delete my account' });
   await expect(page.getByText(/cannot be undone/)).toBeVisible();
   await section.getByLabel('Password').fill(MEMBER_PASSWORD);
   await section.getByRole('checkbox').check();

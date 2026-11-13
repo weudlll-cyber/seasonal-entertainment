@@ -41,7 +41,7 @@ async function accountPage(key) {
   const server = keyServer(current.authKey, key);
   const calls = mockApi({ ...signedIn(anna), ...PRELOGIN, ...server.answers });
   render(
-    <MemoryRouter initialEntries={['/account']}>
+    <MemoryRouter initialEntries={['/account#private-messages']}>
       <App />
     </MemoryRouter>
   );

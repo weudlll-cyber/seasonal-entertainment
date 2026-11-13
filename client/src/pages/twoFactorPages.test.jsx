@@ -12,6 +12,7 @@ import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { deriveAccountKeys } from '@seasonal-entertainment/shared/crypto.js';
 import App from '../app/App.jsx';
+import { openSection } from '../test/accountSections.js';
 import { GUEST, PRELOGIN, PRELOGIN_SALT, mockApi, signedIn } from '../test/mockApi.js';
 
 const anna = { id: 1, username: 'anna', role: 'member', twoFactorEnabled: false };
@@ -76,10 +77,11 @@ describe('2FA setup on the account page', () => {
       },
       'POST /2fa/enable': { body: { ok: true, recoveryCodes: ['aaaa-bbbb', 'cccc-dddd'] } },
     });
-    renderAt('/account');
+    renderAt('/account#two-factor');
     const start = await screen.findByRole('button', { name: 'Set up two-factor authentication' });
     // The 2FA form's own field: the page's "Private messages" section has a password field too
     // (shown once the key state is known; waited for, so this never depends on timing).
+    await openSection('Private messages');
     await screen.findByRole('button', { name: 'Unlock private messages' });
     fireEvent.change(within(start.closest('form')).getByLabelText('Password'), {
       target: { value: 'correct-horse-1' },

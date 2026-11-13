@@ -59,7 +59,7 @@ async function accountPage() {
   const server = keyServer(authKey, key);
   const answers = { ...signedIn(anna), ...PRELOGIN, ...server.answers };
   const calls = mockApi(answers);
-  renderAt('/account');
+  renderAt('/account#private-messages');
   return { answers, calls, server };
 }
 
@@ -87,7 +87,7 @@ describe('a sign-in that ended on the server', () => {
     await unlockWith(PASSWORD);
     expect(await screen.findByText(SESSION_ENDED)).toBeInTheDocument();
     await screen.findByRole('button', { name: 'Log in' });
-    expect(where()).toBe('/login?next=%2Faccount');
+    expect(where()).toBe('/login?next=%2Faccount%23private-messages'); // back to the open section
     // Already on the login page: no link to it.
     expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull();
 

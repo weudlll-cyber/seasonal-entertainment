@@ -6,7 +6,9 @@
 //              2026-11-11): About me (at most 300 characters, counted as shown, the same rule as
 //              the server's: shared/profileRules.js) and the profile picture (JPG, PNG, WebP or
 //              GIF by the chat images' rules; a new one replaces the old; Remove takes it away).
-//              What other members see is one link away (MemberProfilePage.jsx).
+//              What other members see is one link away (MemberProfilePage.jsx). The heading
+//              is the account page's (Disclosure.jsx); onStatus(hasPicture) tells it whether a
+//              picture is set, from this section's own load.
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -24,7 +26,7 @@ import './profile.css';
 
 const PICTURE_TYPES = 'image/jpeg,image/png,image/webp,image/gif';
 
-export default function ProfileSettings() {
+export default function ProfileSettings({ onStatus }) {
   const { user } = useSession();
   const ownPath = profilePath(user.username); // the page, and its data under /api
   const [about, setAbout] = useState('');
@@ -38,8 +40,9 @@ export default function ProfileSettings() {
       api(ownPath).then(({ profile }) => {
         setAbout(profile.about);
         setPicture(profile.picture);
+        onStatus?.(Boolean(profile.picture));
       }),
-    [ownPath]
+    [ownPath, onStatus]
   );
   useEffect(() => {
     load().catch((err) => setMessage({ error: err.message }));
@@ -83,8 +86,7 @@ export default function ProfileSettings() {
 
   const count = aboutLength(about);
   return (
-    <section aria-labelledby="profile">
-      <h2 id="profile">Profile</h2>
+    <>
       <p>
         Other signed-in members see your profile: your name, role, Discord steps, when you joined,
         and what you add here. <Link to={ownPath}>View my profile</Link>
@@ -136,6 +138,6 @@ export default function ProfileSettings() {
       </p>
       <p className="form-field__hint">JPG, PNG, WebP or GIF, by the same rules as chat images.</p>
       <FormMessage error={message.error} notice={message.notice} />
-    </section>
+    </>
   );
 }

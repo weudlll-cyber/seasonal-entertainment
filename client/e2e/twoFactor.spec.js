@@ -9,6 +9,7 @@
 // ============================================================
 
 import { expect, test } from '@playwright/test';
+import { openSection } from './accountSections.js';
 import { codeForStep, stepAt } from '../../server/src/twofa/totp.js';
 import { recordRequests } from './requestLog.js';
 
@@ -32,6 +33,7 @@ test('turn on 2FA and log in with a code', async ({ page }) => {
   // own form: the account page also has "Current password", "New password" and the "Password"
   // of "Delete my account".
   await expect(page.getByRole('heading', { name: 'Account', exact: true })).toBeVisible();
+  await openSection(page, 'Sign-in & security');
   const setUp = page.getByRole('button', { name: 'Set up two-factor authentication' });
   await page
     .locator('form')

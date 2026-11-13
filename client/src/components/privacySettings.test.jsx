@@ -36,7 +36,7 @@ it('the switch is on by default, and off once switched off', async () => {
     },
   });
   render(
-    <MemoryRouter initialEntries={['/account']}>
+    <MemoryRouter initialEntries={['/account#privacy']}>
       <App />
     </MemoryRouter>
   );
@@ -59,7 +59,7 @@ it('"Link previews in direct messages" is on by default, and off once switched o
     },
   });
   render(
-    <MemoryRouter initialEntries={['/account']}>
+    <MemoryRouter initialEntries={['/account#privacy']}>
       <App />
     </MemoryRouter>
   );

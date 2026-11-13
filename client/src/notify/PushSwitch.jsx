@@ -13,7 +13,8 @@
 //              of the page usable. Only a final failure turns it back off, with a line saying
 //              why and what to do (pushFailure.js; never a silent failure, decided 2026-11-12).
 //              The permission's answer also goes to onPermission, so the section shows how to
-//              unblock it.
+//              unblock it. onStatus(on) tells the account page whether it is on for this device,
+//              once that is known (never a guess while the browser is still asked).
 // ============================================================
 
 import { useEffect, useState } from 'react';
@@ -29,10 +30,11 @@ export const PUSH_UNSUPPORTED =
   'When a call starts: this browser cannot receive push notifications, so this is not available here.';
 
 // run, busy: the section's (one change at a time, its error line), for turning it off.
-export default function PushSwitch({ run, busy, onPermission }) {
+export default function PushSwitch({ run, busy, onPermission, onStatus }) {
   const { user } = useSession();
   const [key, setKey] = useState(null);
-  const [on, setOn] = useState(false);
+  // null until the browser has answered whether this device is on.
+  const [on, setOn] = useState(null);
   const { finishing, failure } = usePushProgress(user.id);
   // A turn-on that ends while this page shows (started here or resumed after a reload): on
   // unless it failed.
@@ -59,6 +61,11 @@ export default function PushSwitch({ run, busy, onPermission }) {
     };
   }, []);
 
+  const shown = finishing || on;
+  useEffect(() => {
+    if (on !== null || finishing) onStatus?.(Boolean(shown));
+  }, [on, finishing, shown, onStatus]);
+
   if (!key) return null;
   if (!pushSupported()) return <p className="form-field__hint">{PUSH_UNSUPPORTED}</p>;
 
@@ -80,7 +87,7 @@ export default function PushSwitch({ run, busy, onPermission }) {
         <input
           type="checkbox"
           role="switch"
-          checked={finishing || on}
+          checked={Boolean(shown)}
           disabled={busy || finishing}
           onChange={change}
         />

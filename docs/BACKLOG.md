@@ -12,6 +12,16 @@ entry waits for.
 - **Real sites to approve for the chat embed** — which game sites go on Admin → Embedding once
   the site is live (only exact `https://` origins).
 
+### Built, waiting for the merge
+
+- **A short account page** — built on `feat/account-sections` (decided 2026-11-13): a summary
+  (username, role, email) with "Log out", then six collapsible sections, all closed by default
+  (Profile; Sign-in & security; Private messages; Privacy; Notifications; Delete my account, set
+  apart), each closed heading with a short status the page already knows; several open at once,
+  remembered in the browser; every link to a section or a part of one opens it, and a waiting
+  notice (two-factor required, a Discord answer, a push failure) opens its section. Only the
+  arrangement changed (docs/DESIGN.md, "Account page").
+
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):

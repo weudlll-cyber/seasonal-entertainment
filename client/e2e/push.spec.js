@@ -40,7 +40,7 @@ test('the service worker registers for the whole site', async ({ page, request }
 
 test('a member has "When a call starts"; a guest does not reach it', async ({ browser, page }) => {
   const { page: member } = await memberPage(browser, 'pushmember');
-  await member.goto('/account');
+  await member.goto('/account#notifications');
   const toggle = member.getByRole('switch', { name: /When a call starts/ });
   await expect(toggle).toBeVisible();
   await expect(toggle).not.toBeChecked();

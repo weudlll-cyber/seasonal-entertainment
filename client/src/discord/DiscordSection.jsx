@@ -10,7 +10,8 @@
 //              none: not on the server, or the link needs a Discord login again), when they
 //              were last read, and "Unlink Discord" (with the password; an account without one
 //              is told to set one first, as it could not log in otherwise). Steps never give
-//              rights on this site.
+//              rights on this site. A part of the account page's "Sign-in & security"
+//              (AccountSecurity.jsx), so its heading is an h3.
 // ============================================================
 
 import { useState } from 'react';
@@ -97,7 +98,7 @@ export default function DiscordSection() {
   const link = user.discord;
   return (
     <section aria-labelledby="discord">
-      <h2 id="discord">Discord</h2>
+      <h3 id="discord">Discord</h3>
       <DiscordReason />
       {!link ? (
         <>

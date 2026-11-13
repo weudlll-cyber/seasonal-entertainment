@@ -12,6 +12,7 @@
 // ============================================================
 
 import { expect, test } from '@playwright/test';
+import { openSection } from './accountSections.js';
 import { SERVER_PORT } from './ports.js';
 import { recordRequests } from './requestLog.js';
 
@@ -43,6 +44,7 @@ test('register, log out and log in again', async ({ page }) => {
   const shell = page.getByRole('banner');
   await expect(shell.getByRole('link', { name: `${name} (Member), your account` })).toBeVisible();
 
+  await openSection(page, 'Sign-in & security');
   await page.getByLabel('Current password').fill('correct-horse-1');
   await page.getByLabel('New password').fill('battery-staple-2');
   await page.getByLabel('Repeat password').fill('battery-staple-2');
