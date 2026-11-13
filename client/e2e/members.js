@@ -56,6 +56,7 @@ const MEMBERS = [
   'narrowsend',
   'narrowrecip',
   'narrowposter',
+  'pushmember',
 ];
 
 async function insertMember(db, username) {

@@ -49,6 +49,11 @@ export default [
     files: ['client/public/**/*.js'],
     languageOptions: { globals: globals.browser, sourceType: 'script' },
   },
+  // The service worker runs in its own scope (self, clients, registration).
+  {
+    files: ['client/public/sw.js'],
+    languageOptions: { globals: globals.serviceworker },
+  },
   // Playwright specs run in Node; their page.evaluate callbacks run in the browser.
   {
     files: ['client/e2e/**/*.js'],

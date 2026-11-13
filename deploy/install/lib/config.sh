@@ -83,6 +83,8 @@ write_site_env() {
   discord_site_env "$file"
   # The embedded games (games.sh): their list and the sync token, or neither.
   games_site_env "$file"
+  # Web push (push.sh): the key pair, made once.
+  push_site_env "$file"
   # The site shows the bot's admin page and answers nginx's question about it only when on.
   if bot_admin_on; then kv_set "$file" BOT_ADMIN_EMBEDDED 1; else kv_unset "$file" BOT_ADMIN_EMBEDDED; fi
 }

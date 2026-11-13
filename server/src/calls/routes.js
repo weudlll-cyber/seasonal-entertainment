@@ -9,7 +9,8 @@
 //              makes the chat read-only); for admins alone, delete an ended call completely
 //              (deleteCall.js: the call, its chat and recordings). Every management action is
 //              audited and rate-limited per account. The listing names a member's reminded calls (reminders.js); a call
-//              going live starts a reminder round at once (remindNow). A new call may be linked
+//              going live starts a reminder round and the "has started" web push at once
+//              (wentLive). A new call may be linked
 //              to an upcoming event bot occurrence (botOccurrenceId; eventLink.js), and one
 //              call's answer names that occurrence while it still exists (event). Calls say
 //              whether a recording runs (recording) and how far it is (recordingState: starting
@@ -96,8 +97,10 @@ const NOT_ENDED = {
 };
 
 // service: the call service (service.js) or null when not configured; chat: mountChat's handle;
-// remindNow(): one reminder round (reminders.js), so "is live now" arrives without waiting.
-export function callRoutes(db, config, service, chat, remindNow) {
+// wentLive(call): what follows a call going live, without waiting and without holding up the
+// answer (app.js): a reminder round (reminders.js), so "is live now" arrives at once, and the
+// web push "has started" (push/send.js).
+export function callRoutes(db, config, service, chat, wentLive) {
   const router = express.Router();
   const perUser = makeLimiter(config.rateLimits.callManage, {
     keyGenerator: (req) => `user:${req.user.id}`,
@@ -221,7 +224,7 @@ export function callRoutes(db, config, service, chat, remindNow) {
       return sendError(res, 409, 'wrong_status', 'Only a scheduled call can be started.');
     }
     audit(req, 'call.start', req.call);
-    remindNow();
+    wentLive(req.call);
     if (req.call.recordFromStart && recordingAllowed()) await recordFromStart(req);
     res.json({ ok: true, call: shown(findCall(db, req.call.id), chat) });
   });

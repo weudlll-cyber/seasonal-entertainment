@@ -1,5 +1,5 @@
 {
-  "description": "SHA-256 (hex) of every earlier text of a seed page (the body as readSeedPage in server/src/info/seed.js reads it: without the title line, trimmed, one final newline), by slug. On start, refreshSeedPages() gives a stored page whose body is still exactly one of these the current seed text; an edited page is left alone. When a seed page listed here changes, add the hash of its text before the change. privacy: every version from its first (ac4d1c8) to 27b5550, before account deletion was described (2026-11-01); and the text of 2026-11-01 to 2026-11-02, before the 30-day deletion note was described; and the text of 2026-11-02 before the Discord login was described (SE-DISCORD-1); and for imprint and privacy the text before \"needs legal review\" became \"Fill in before going live\" (2026-11-04; imprint: its one text since ac4d1c8); and the privacy text before member profiles were described (2026-11-11).",
+  "description": "SHA-256 (hex) of every earlier text of a seed page (the body as readSeedPage in server/src/info/seed.js reads it: without the title line, trimmed, one final newline), by slug. On start, refreshSeedPages() gives a stored page whose body is still exactly one of these the current seed text; an edited page is left alone. When a seed page listed here changes, add the hash of its text before the change. privacy: every version from its first (ac4d1c8) to 27b5550, before account deletion was described (2026-11-01); and the text of 2026-11-01 to 2026-11-02, before the 30-day deletion note was described; and the text of 2026-11-02 before the Discord login was described (SE-DISCORD-1); and for imprint and privacy the text before \"needs legal review\" became \"Fill in before going live\" (2026-11-04; imprint: its one text since ac4d1c8); and the privacy text before member profiles were described (2026-11-11); and the privacy text before web push was described (2026-11-13).",
   "privacy": [
     "eb0907c59d95a51e9e959501dfe1b094b75be782c4c919d15bb0c8bf0a9ec0e5",
     "5a8fbc5bb85ec73ab72b0d938e15eb5edc28542d218a6bb05f01ee0f79dc25d9",
@@ -24,7 +24,8 @@
     "8411a80640666d797af98f76405397c648b3c4131453d87f6d48b46bffad2c67",
     "bf241f7c1e2d8585a9b1da56db5058dad9d2affba32d47115aaab0ff04564f07",
     "720771d269661fba49d253b4eec038dcb56c6b0995c1e063dcc6482d63bb79d3",
-    "cd60b4a9ff0ae9c01d1f47705c32677a15b59df76fdf03e4aa9989cf91af9bac"
+    "cd60b4a9ff0ae9c01d1f47705c32677a15b59df76fdf03e4aa9989cf91af9bac",
+    "42185b5c02e9bf7affa476bf724c128edb73f0f1ace20d7278834ee09f9dfe95"
   ],
   "imprint": ["4be65b5dc9de2717addcc936e7ab4e1ca9cbe9c26ff286eb23979d3721b042fd"]
 }

@@ -594,9 +594,9 @@ Browser notifications while the site is open (decided 2026-10-22; `client/src/no
   off until the member turns them on (`users.notify_mentions`, `notify_direct`,
   `notify_recap`; `PUT /api/auth/notifications`). "Turn on notifications" turns on the first
   two only.
-- **Not while the site is closed**: no web push. With no tab of the site open there are no
-  notifications (backlog part one: "Notifications when the browser is closed (web push) — not
-  built").
+- **Not while the site is closed**: with no tab of the site open these notifications do not
+  come. The one exception is a web push when a call starts, its own switch (docs/CALLS.md,
+  "Push when a call starts"; decided 2026-11-10).
 - Tests: `client/src/notify/notifications.test.jsx`, `server/test/notifyEvents.test.js`.
 
 ## Reporting a direct message

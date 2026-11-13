@@ -82,6 +82,25 @@ these files and which quarter belongs to which section. The font stays Luxora Gr
 in Bold, `--font-weight-heading` 700, decided 2026-10-21; Heavy before), and the
 CSP is unchanged (all images are the site's own).
 
+## Installable site
+
+The site can be installed as an app (decided 2026-11-10): `client/public/manifest.webmanifest`
+(name "Seasonal Entertainment", short name "Seasonal", start `/`, standalone, theme colour
+`#0c1538` (the night blue, also `<meta name="theme-color">`), background `#fbfaf6`
+(`--color-background`)), linked from `client/index.html` with the Apple touch icon. The icons
+are made from the emblem by `scripts/build-app-icons.mjs` into `client/public/icons/`:
+
+| File                    | What                                                |
+| ----------------------- | --------------------------------------------------- |
+| `icon-192.png`          | the emblem, transparent around it                   |
+| `icon-512.png`          | the same, larger (scaled up from the 420 px emblem) |
+| `icon-maskable-512.png` | the emblem in the 80 % safe zone on night blue      |
+| `apple-touch-icon.png`  | 180 px on the page background (iOS shows no alpha)  |
+
+The service worker (`client/public/sw.js`) is there only for installing and the one web push
+(docs/CALLS.md, "Push when a call starts"): it caches nothing, so every page and answer still
+comes from the network and an update reaches visitors as before ("Speed").
+
 ## Speed
 
 Measured on the production build, and kept by `client/e2e/speed.spec.js` and

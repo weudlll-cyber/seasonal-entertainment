@@ -5,8 +5,9 @@
 // Description: Per-browser memory that never throws: storage can be blocked (privacy
 //              settings, some embedded views) or full. Then nothing is remembered and the site
 //              works as on a first visit. Used for the theme and the chat drawer
-//              (localStorage), and for the one reload after an update (sessionStorage, this tab
-//              only; staleChunks.js).
+//              (localStorage), a push turn-on still finishing and its failure
+//              (notify/pushPending.js, localStorage), and for the one reload after an update
+//              (sessionStorage, this tab only; staleChunks.js).
 // ============================================================
 
 // `area` is 'localStorage' or 'sessionStorage'; reading window[area] can itself throw.
