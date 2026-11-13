@@ -87,6 +87,12 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Web push: at most 10 devices per account, sent a few at a time** — closed on
+  `night/2026-11-13` (security review of 2026-11-13, M1; decided 2026-11-13; not merged yet):
+  an account's 11th device replaces the one used least recently (`used_at`: turned on, checked
+  by its device, delivered to; `server/src/push/store.js`), and a call start sends at most 8
+  messages at once, after the start has its answer (`server/src/push/send.js`). The privacy
+  page says so. docs/CALLS.md, "Push when a call starts".
 - **Voters' names in polls only for signed-in members, and polls on the privacy page** — closed
   on `night/2026-11-13` (security review of 2026-11-13, M2; decided 2026-11-13; not merged
   yet): in a poll that is not anonymous the names per answer go to signed-in members only;

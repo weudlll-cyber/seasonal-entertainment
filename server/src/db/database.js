@@ -23,7 +23,7 @@ import { KEYS_SCHEMA } from '../keys/schema.js';
 import { MEDIA_SCHEMA } from '../media/schema.js';
 import { PREVIEW_SCHEMA } from '../previews/schema.js';
 import { POLLS_SCHEMA, migratePolls } from '../polls/schema.js';
-import { PUSH_SCHEMA } from '../push/schema.js';
+import { PUSH_SCHEMA, migratePush } from '../push/schema.js';
 import { PROFILES_SCHEMA } from '../profiles/schema.js';
 import { REFERENCE_SCHEMA } from '../reference/schema.js';
 import { SETTINGS_SCHEMA } from '../settings/schema.js';
@@ -71,5 +71,6 @@ export function openDatabase(databasePath) {
   migrateCalls(db);
   migratePolls(db);
   migrateGames(db);
+  migratePush(db);
   return db;
 }

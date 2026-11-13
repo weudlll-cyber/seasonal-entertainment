@@ -10,13 +10,19 @@
 //              on 127.0.0.1 receives it) without holding up the start; a subscription the
 //              service answers 404 or 410 for is dropped, others stay; a locked member's
 //              subscriptions go and nothing is sent to them, a deleted member's go with the
-//              account; one made for other keys is dropped, never sent to; the per-account
-//              limit; and the keys' configuration.
+//              account; one made for other keys is dropped, never sent to; at most 10 devices
+//              per account, an 11th replacing the one used least recently (turned on, checked
+//              by its device, delivered to), and a table from before brought up; sending with
+//              a bounded number in flight; the per-account limit; and the keys' configuration.
 // ============================================================
 
+import { mkdtempSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import webpush from 'web-push';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { openDatabase } from '../src/db/database.js';
 import { PUSH_SERVICE_HOSTS as realHosts, readPushConfig } from '../src/push/config.js';
 import { callApp, liveCall, organiser } from './helpers/calls.js';
 import { makeStaff, registerUser } from './helpers/testApp.js';
@@ -133,6 +139,60 @@ describe('the push switch', () => {
   });
 });
 
+describe('at most 10 devices per account', () => {
+  const endpoints = () => rows().map((r) => r.endpoint.slice(base().length));
+  // Each row used at its own time, oldest first (the order they were made in).
+  const usedInOrder = () =>
+    t.db
+      .prepare("UPDATE push_subscriptions SET used_at = '2026-01-01T00:00:' || printf('%02d', id)")
+      .run();
+
+  it("an 11th replaces the one used least recently; another account's are not counted", async () => {
+    ({ t } = callApp(pushApp()));
+    const { agent: mia } = await registerUser(t, 'mia');
+    const { agent: tom } = await registerUser(t, 'tom');
+    await subscribe(tom, '/tom');
+    for (let i = 1; i <= 10; i += 1) await subscribe(mia, `/mia-${i}`);
+    expect(rows()).toHaveLength(11);
+    usedInOrder();
+    // Mia's first device asks whether it is on (the account page): used now.
+    expect(await status(mia, '/mia-1')).toBe(true);
+    expect((await subscribe(mia, '/mia-11')).status).toBe(201);
+    expect(endpoints()).toHaveLength(11);
+    expect(endpoints()).toContain('/tom');
+    expect(endpoints()).toContain('/mia-1');
+    expect(endpoints()).not.toContain('/mia-2');
+    // The same device again is no new one: nothing replaced.
+    await subscribe(mia, '/mia-11');
+    expect(endpoints()).toContain('/mia-3');
+  });
+
+  it('a delivered message counts as use', async () => {
+    ({ t } = callApp(pushApp()));
+    const { agent } = await registerUser(t, 'mia');
+    for (let i = 1; i <= 10; i += 1) await subscribe(agent, `/mia-${i}`);
+    usedInOrder();
+    // The first device's message is refused (500), the others are delivered.
+    t.db
+      .prepare("UPDATE push_subscriptions SET endpoint = ? WHERE endpoint LIKE '%/mia-2'")
+      .run(`${base()}/broken`);
+    await liveCall(await organiser(t), 'Call');
+    await settle(10);
+    await expect
+      .poll(
+        () =>
+          t.db
+            .prepare(
+              "SELECT COUNT(*) AS n FROM push_subscriptions WHERE used_at LIKE '2026-01-01%'"
+            )
+            .get().n
+      )
+      .toBe(1);
+    await subscribe(agent, '/new');
+    expect(endpoints()).not.toContain('/broken');
+  });
+});
+
 describe('sending when a call starts', () => {
   it('each subscribed device gets "<title> has started", signed and encrypted', async () => {
     ({ t } = callApp(pushApp()));
@@ -203,6 +263,34 @@ describe('sending when a call starts', () => {
     expect(received[0].path).toBe('/ann');
   });
 
+  it('sends in a bounded number at once, every device still reached', async () => {
+    // A push service that holds each request a moment and counts how many are open together.
+    const open = { now: 0, most: 0, done: 0 };
+    const busy = createServer((req, res) => {
+      open.now += 1;
+      open.most = Math.max(open.most, open.now);
+      req.resume();
+      setTimeout(() => {
+        open.now -= 1;
+        open.done += 1;
+        res.writeHead(201).end();
+      }, 40);
+    });
+    await new Promise((resolve) => busy.listen(0, '127.0.0.1', resolve));
+    ({ t } = callApp({ push: { ...pushConfig(), sendInFlight: 3 } }));
+    for (const name of ['mia', 'tom']) {
+      const { agent } = await registerUser(t, name);
+      for (let i = 0; i < 6; i += 1) {
+        const endpoint = `http://127.0.0.1:${busy.address().port}/${name}-${i}`;
+        await agent.post('/api/push/subscriptions').send({ ...subscription('/x'), endpoint });
+      }
+    }
+    await liveCall(await organiser(t), 'Call');
+    await expect.poll(() => open.done, { timeout: 5000 }).toBe(12);
+    expect(open.most).toBe(3);
+    await new Promise((resolve) => busy.close(resolve));
+  });
+
   it('a subscription made for other keys is dropped, never sent to', async () => {
     ({ t } = callApp(pushApp()));
     const { agent } = await registerUser(t, 'mia');
@@ -218,6 +306,28 @@ describe('sending when a call starts', () => {
     expect(received[0].path).toBe('/new');
     expect(rows().map((r) => r.endpoint)).toEqual([`${base()}/new`]);
   });
+});
+
+it('a table from before the cap gets used_at, each row as used when it was turned on', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'se-push-'));
+  const file = path.join(dir, 'old.db');
+  try {
+    let db = openDatabase(file);
+    db.exec(`DROP TABLE push_subscriptions;
+      CREATE TABLE push_subscriptions (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL,
+        endpoint TEXT NOT NULL UNIQUE, p256dh TEXT NOT NULL, auth TEXT NOT NULL,
+        vapid_key TEXT NOT NULL, created_at TEXT NOT NULL);
+      INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, vapid_key, created_at)
+        VALUES (1, 'https://push.example/a', 'p', 'a', 'k', '2026-11-12T08:00:00.000Z');`);
+    db.close();
+    db = openDatabase(file);
+    expect(db.prepare('SELECT used_at FROM push_subscriptions').get().used_at).toBe(
+      '2026-11-12T08:00:00.000Z'
+    );
+    db.close();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 describe('the push keys', () => {

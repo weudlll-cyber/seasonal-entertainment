@@ -171,6 +171,9 @@ This list describes what the website's software actually stores.
   push service says the address is no longer valid, when the site's own keys change, when your
   account is locked, and with your account. Your browser keeps its side of it until you turn
   the switch off or take back the site's permission for notifications.
+  At most 10 devices per account: turning it on for an 11th removes the one used least recently
+  (turned on, checked on the account page on that device, or sent a message), so the site also
+  stores when each was last used.
 - **Protection against abuse**: to limit repeated login attempts and similar, the server keeps
   your IP address in its memory for up to one hour. It is not written to the database.
 

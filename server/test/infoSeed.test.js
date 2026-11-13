@@ -18,8 +18,9 @@
 //              signed-in members only, written answers to staff, the anonymous links and the
 //              backups, what a deletion keeps). A stored page still holding an earlier seed text
 //              gets the current one on start (Imprint and Privacy from before "Fill in before
-//              going live", Privacy from before member profiles, from before web push and from
-//              before polls too); an edited one is left alone.
+//              going live", Privacy from before member profiles, from before web push, from
+//              before polls and from before the cap of 10 push devices too); an edited one is
+//              left alone.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -232,7 +233,8 @@ describe('refreshing unedited seed pages', () => {
 
   // What a seed page gained since 2026-11-04: the privacy page's "Your profile" (2026-11-11),
   // its web push entry and that line in the account deletion list, then its polls entry and
-  // those lines in the deletion lists (both 2026-11-13).
+  // those lines in the deletion lists, then the push entry's cap of 10 devices (all
+  // 2026-11-13).
   const between = (from, to) => {
     const body = readSeedPage('privacy').body;
     const start = body.indexOf(from);
@@ -244,14 +246,14 @@ describe('refreshing unedited seed pages', () => {
   const pollsEntry = () => between('- **Polls**', '- **Notifications when a call starts**');
   const POLLS_DELETED = between('- that you voted in a poll', '- the devices you turned');
   const POLLS_KEPT = between('- your ballots in anonymous polls', '- the backups (next');
+  const PUSH_CAP = between('  At most 10 devices per account', '- **Protection against abuse**');
+  const withoutCap = () => readSeedPage('privacy').body.replace(PUSH_CAP, '');
   const withoutPolls = () =>
-    readSeedPage('privacy')
-      .body.replace(pollsEntry(), '')
-      .replace(POLLS_DELETED, '')
-      .replace(POLLS_KEPT, '');
+    withoutCap().replace(pollsEntry(), '').replace(POLLS_DELETED, '').replace(POLLS_KEPT, '');
   const PUSH_DELETED =
     ';\n- the devices you turned "When a call starts" on for (their push addresses and keys).';
-  const withoutPush = () => withoutPolls().replace(pushEntry(), '').replace(PUSH_DELETED, '.');
+  const withoutPush = () =>
+    withoutPolls().replace(pushEntry().replace(PUSH_CAP, ''), '').replace(PUSH_DELETED, '.');
   const withoutLater = (slug) =>
     slug === 'privacy' ? withoutPush().replace(profileEntry(), '') : readSeedPage(slug).body;
   // The texts before 2026-11-04, as a site seeded then still holds them where nobody edited them.
@@ -279,6 +281,17 @@ describe('refreshing unedited seed pages', () => {
     seedInfoPages(t.db);
     expect(readSeedPage('privacy').body).toContain(PUSH_DELETED);
     t.db.prepare("UPDATE info_pages SET body = ? WHERE slug = 'privacy'").run(withoutPush());
+    expect(refreshSeedPages(t.db)).toBe(1);
+    expect(t.db.prepare("SELECT body FROM info_pages WHERE slug = 'privacy'").get().body).toBe(
+      readSeedPage('privacy').body
+    );
+  });
+
+  it('gives a never-edited privacy from before the cap of 10 push devices the current text', () => {
+    t = makeTestApp();
+    seedInfoPages(t.db);
+    expect(PUSH_CAP).toMatch(/an 11th removes the one used least recently/);
+    t.db.prepare("UPDATE info_pages SET body = ? WHERE slug = 'privacy'").run(withoutCap());
     expect(refreshSeedPages(t.db)).toBe(1);
     expect(t.db.prepare("SELECT body FROM info_pages WHERE slug = 'privacy'").get().body).toBe(
       readSeedPage('privacy').body

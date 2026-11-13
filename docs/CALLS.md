@@ -437,14 +437,20 @@ also while the site and the browser are closed; a click opens the call's page.
 - **Sending** (`server/src/push/`): the start route hands the call over without waiting
   (`wentLive`, `server/src/app.js`), so a slow or failing push service never delays or fails
   the start. The library `web-push` (3.6.7, MPL-2.0, pinned) signs each message with the
-  site's VAPID keys and encrypts it for the device; Node's `fetch` delivers it. A message lives
-  15 minutes at the push service; a subscription it answers 404 or 410 for is dropped.
+  site's VAPID keys and encrypts it for the device; Node's `fetch` delivers it, at most 8 at
+  once (`sendInFlight`, `server/src/push/config.js`; the others wait their turn), all of it
+  after the start's request has its answer (decided 2026-11-13). A message lives 15 minutes at
+  the push service; a subscription it answers 404 or 410 for is dropped.
 - **Who gets it**: every subscribed device of an unlocked account (calls are shown to
   everyone). Locking an account removes its subscriptions (unlocking does not bring them back);
   deleting it takes them with it.
 - **What is stored** (`push_subscriptions`): per account and device the browser's push
   address, its two keys and which site key it was made for (one made for other keys, after a
-  restore onto a server with new ones, is dropped, never sent to). The push address lies at the
+  restore onto a server with new ones, is dropped, never sent to), and when it was last used
+  (`used_at`: turned on, checked by its device's account page, or a message delivered). **At
+  most 10 devices per account** (`MAX_PER_ACCOUNT`, `server/src/push/store.js`; decided
+  2026-11-13): an 11th replaces the one used least recently, so no account makes a call start
+  send more than 10 messages. The push address lies at the
   browser maker's push service (Google, Mozilla, Apple, Microsoft), which carries the encrypted
   message; only those services are accepted as addresses, so no member can make the site call
   an address of their choosing. The privacy page says this for members, with every way a
