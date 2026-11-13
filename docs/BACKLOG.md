@@ -66,6 +66,13 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **A sign-in that ended on the server** — closed by `fix/session-ended` (PR #68, merged
+  2026-11-13): the first `401 not_authenticated` while the page shows a member, or coming back
+  to the site's tab or window when the server says nobody is signed in (decided 2026-11-13),
+  drops the member once, says "Your sign-in has ended. Please sign in again." and leads to the
+  login page, which returns to the page afterwards (docs/AUTH.md, "Sessions"). Seen 2026-11-12
+  as "Please log in." when unlocking private messages; on pages with only public data the
+  notice had come only after several clicks.
 - **Installable site and a "call started" web push** — closed by `feat/push-call-started`
   (PR #67, merged 2026-11-13; decided 2026-11-10; replaces "Notifications when the browser is
   closed (web push) — not built" of 2026-10-22): a web app manifest with icons from the emblem

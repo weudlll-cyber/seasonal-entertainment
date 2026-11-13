@@ -11,12 +11,17 @@
 //              embedded on an approved foreign site also sends its embed token
 //              (embed/embedAuth.js), and drops it when the server refuses it; for a guest there
 //              it names the site and sends the guest's token, and keeps a new one it is given.
+//              Any answer "not_authenticated" (the server no longer knows this browser's
+//              sign-in), and the return check's "nobody" (session/returnCheck.js), goes through
+//              reportSessionEnded to onSessionEnded's listeners (session/SessionContext.jsx),
+//              except in that foreign embed, whose token has its own rule.
 // ============================================================
 
 import {
   dropEmbedToken,
   embedHeaders,
   embedToken,
+  isForeignEmbed,
   keepEmbedGuestToken,
 } from '../embed/embedAuth.js';
 
@@ -35,6 +40,20 @@ export const NO_ANSWER = 'The server did not answer. Please try again in a momen
 // 502 from the dev proxy).
 const PROXY_FAILURES = new Set([502, 503, 504]);
 
+const sessionEndedListeners = new Set();
+
+// Returns the function that stops listening.
+export function onSessionEnded(listener) {
+  sessionEndedListeners.add(listener);
+  return () => sessionEndedListeners.delete(listener);
+}
+
+// The one way to say the server no longer knows this browser's sign-in.
+export function reportSessionEnded() {
+  if (isForeignEmbed()) return;
+  for (const listener of sessionEndedListeners) listener();
+}
+
 async function call(path, init) {
   const headers = { ...init.headers, ...embedHeaders() };
   let res;
@@ -49,6 +68,8 @@ async function call(path, init) {
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     if (data?.error === 'embed_token_invalid') dropEmbedToken();
+    // One place for every page: whoever believes a member is signed in learns it has ended.
+    if (data?.error === 'not_authenticated') reportSessionEnded();
     // The server's own message always wins; without one, a reply the site did not write.
     if (data?.message) throw new ApiError(res.status, data.error ?? 'error', data.message, data);
     if (!data || PROXY_FAILURES.has(res.status))

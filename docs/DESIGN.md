@@ -198,7 +198,10 @@ taller. `client/e2e/layout.spec.js` checks this on every main page at 1440 x 900
    Calls end in a 10px dot in the colour of their quarter of the logo: Games Spring `#AFB84E`,
    Events Summer `#E06E22`, Chat Autumn `#F9A825`, Calls Winter `#04AAF7` (`dot` in
    `navigation.js`).
-2. **Main column**: a column (2026-10-23): first the banners — the **update notice**
+2. **Main column**: a column (2026-10-23): first the banners — the **sign-in ended** notice
+   (2026-11-12, `SessionEndedNotice.jsx`: "Your sign-in has ended. Please sign in again." with a
+   primary **Sign in** link, except on the login page itself, in the site banner's info style,
+   `role="alert"`; docs/AUTH.md, "Sessions"), the **update notice**
    (2026-11-01, `UpdateNotice.jsx`: "A new version of this site is available." with a primary
    **Reload** button, in the site banner's info style, `role="status"`, no Dismiss; shown once the
    server reports another commit than the page's build, docs/DEPLOYMENT.md, "Updating"), the
