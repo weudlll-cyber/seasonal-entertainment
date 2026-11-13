@@ -12,12 +12,15 @@
 //              When the server answers "not_authenticated" while a member is signed in here
 //              (the session ended on the server: idle limit, password change, a sign-out in
 //              another tab), the member is dropped once and sessionEnded stays true until the
-//              next sign-in (SessionEndedNotice.jsx; docs/AUTH.md, "Sessions").
+//              next sign-in (SessionEndedNotice.jsx; docs/AUTH.md, "Sessions"). Coming back to
+//              the tab or window asks the server again (returnCheck.js), so a page that loads
+//              only public data learns it too.
 // ============================================================
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { PUBLIC_SETTING_DEFAULTS } from '@seasonal-entertainment/shared/siteSettings.js';
 import { api, onSessionEnded } from '../api/http.js';
+import { useReturnCheck } from './returnCheck.js';
 
 const SessionContext = createContext(null);
 // Optional server features: all off until the session answer names them.
@@ -60,6 +63,7 @@ export function SessionProvider({ children }) {
       setSessionEnded(true);
     });
   }, [user]);
+  useReturnCheck(Boolean(user));
 
   const logout = useCallback(async () => {
     await api('/auth/logout', { method: 'POST' });

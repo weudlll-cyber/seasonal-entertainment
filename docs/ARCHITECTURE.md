@@ -437,7 +437,8 @@ client/                    React + Vite client
                            part whose file is gone (staleChunks, LazyBoundary)
   src/api/http.js          the one fetch wrapper (JSON, ApiError, NO_ANSWER)
   src/session/             session context (who is signed in; drops a member whose session
-                           ended on the server, with SessionEndedNotice), RequireUser guard, credentials
+                           ended on the server, with SessionEndedNotice; asks again on a return
+                           to the tab, returnCheck), RequireUser guard, credentials
                            (password -> auth key and wrapping key, docs/AUTH.md) and the
                            password-hashing Web Worker that derives them off the main thread
   src/components/          shared UI pieces (form fields, forms, the busy submit button)

@@ -164,12 +164,17 @@ rate limit, the lockout, locked accounts, the session epoch.
   ("Deleting an account" below).
 - **When the page still shows a member whose session ended** (decided 2026-11-12; any of the
   reasons above, for example a logout in another tab of the same browser, or 7 days without a
-  request while a tab stayed open): the page learns who is signed in only when it loads
-  (`GET /api/auth/session`), so the first request the server refuses with
-  `401 not_authenticated` tells it. One place handles this for every page:
+  request while a tab stayed open): the page asks who is signed in when it loads
+  (`GET /api/auth/session`). Two things tell it later that the session has ended: the first
+  request the server refuses with `401 not_authenticated`, and coming back to the site's tab
+  or window (decided 2026-11-13, because a page that loads only public data never gets a 401).
+  While the page shows a member, the tab becoming visible again or the window regaining focus
+  asks `GET /api/auth/session` once (`client/src/session/returnCheck.js`): one request at a
+  time and none within 5 s of the last, so fast switching asks once; no answer at all is not
+  taken as "nobody". One place handles both for every page: `reportSessionEnded` in
   `client/src/api/http.js` tells `onSessionEnded`'s listeners, and the session state
   (`client/src/session/SessionContext.jsx`) drops the member once. It listens only while a
-  member is signed in, so nothing loops or asks again, and keeps `sessionEnded` until the next
+  member is signed in, so nothing loops, and keeps `sessionEnded` until the next
   sign-in. As on a logout, the browser then forgets its unlocked key for private messages. The
   shell shows "Your sign-in has ended. Please sign in again." (`SessionEndedNotice.jsx`): a page
   for members only goes to the login page by itself (`RequireUser`), any other page offers

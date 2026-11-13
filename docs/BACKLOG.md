@@ -18,7 +18,8 @@ entry waits for.
   `401 not_authenticated` while the page shows a member drops the member once, says "Your
   sign-in has ended. Please sign in again." and leads to the login page, which returns to the
   page afterwards (docs/AUTH.md, "Sessions"). Seen 2026-11-12 as "Please log in." when unlocking
-  private messages.
+  private messages. Since 2026-11-13 also when the member comes back to the site's tab or
+  window: on pages with only public data the notice had come only after several clicks.
 
 ### To try on the live server
 

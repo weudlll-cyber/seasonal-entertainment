@@ -8,7 +8,9 @@
 //              "Your sign-in has ended. Please sign in again." and leads to the login page,
 //              which returns to the page afterwards; on a page for everyone the notice offers
 //              "Sign in" with the way back. It happens once: no request is repeated. A wrong
-//              password still says only that.
+//              password still says only that. Coming back to the tab or window (returnCheck.js):
+//              a session that ended elsewhere shows the notice at once, a live one shows
+//              nothing, and fast switching asks the server once.
 // ============================================================
 
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -19,7 +21,7 @@ import { api } from '../api/http.js';
 import App from '../app/App.jsx';
 import { browserKey, keyServer } from '../test/keyServer.js';
 import { resetDevice } from '../test/memoryDeviceKey.js';
-import { PRELOGIN, PRELOGIN_SALT, mockApi, signedIn } from '../test/mockApi.js';
+import { GUEST, PRELOGIN, PRELOGIN_SALT, mockApi, signedIn } from '../test/mockApi.js';
 import { SESSION_ENDED } from './SessionEndedNotice.jsx';
 
 vi.mock('../keys/deviceKey.js', () => import('../test/memoryDeviceKey.js'));
@@ -133,5 +135,69 @@ describe('a sign-in that ended on the server', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('The password is wrong.');
     expect(screen.queryByText(SESSION_ENDED)).toBeNull();
     expect(where()).toBe('/account');
+  });
+});
+
+// The member leaves the site's tab and comes back: hidden, visible again, the window focused.
+function leaveAndReturn() {
+  const set = (state) => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
+    document.dispatchEvent(new Event('visibilitychange'));
+  };
+  set('hidden');
+  set('visible');
+  window.dispatchEvent(new Event('focus'));
+}
+
+// The shell's account card: the page shows anna as signed in.
+const MEMBER_SHOWN = 'anna (Member), your account';
+
+describe('coming back to the tab or window', () => {
+  // A page that loads only public data: it never gets a 401 by itself.
+  async function gamesPage() {
+    const answers = { ...signedIn(anna), 'GET /games': { body: { ok: true, games: [] } } };
+    const calls = mockApi(answers);
+    renderAt('/games');
+    await screen.findByRole('link', { name: MEMBER_SHOWN });
+    expect(count(calls, 'GET /auth/session')).toBe(1);
+    return { answers, calls };
+  }
+
+  // The card can show before React has attached the page's listeners (seen under load), so the
+  // first return is repeated until it is heard; the gap keeps that to one request.
+  const returnUntilAsked = (calls) =>
+    waitFor(() => {
+      leaveAndReturn();
+      expect(count(calls, 'GET /auth/session')).toBe(2);
+    });
+
+  it('after the session ended elsewhere, the notice shows at once', async () => {
+    const { answers, calls } = await gamesPage();
+    answers['GET /auth/session'] = GUEST['GET /auth/session']; // signed out in another tab
+    await returnUntilAsked(calls);
+    const notice = (await screen.findByText(SESSION_ENDED)).closest('p');
+    expect(within(notice).getByRole('link', { name: 'Sign in' })).toHaveAttribute(
+      'href',
+      '/login?next=%2Fgames'
+    );
+    expect(count(calls, 'GET /auth/session')).toBe(2);
+  });
+
+  it('while still signed in, nothing shows', async () => {
+    const { calls } = await gamesPage();
+    await returnUntilAsked(calls);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(screen.queryByText(SESSION_ENDED)).toBeNull();
+    expect(screen.getByRole('link', { name: MEMBER_SHOWN })).toBeInTheDocument();
+  });
+
+  it('fast switching asks the server once', async () => {
+    const { calls } = await gamesPage();
+    await returnUntilAsked(calls);
+    for (let i = 0; i < 5; i += 1) leaveAndReturn();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    leaveAndReturn(); // also after the first answer came back
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(count(calls, 'GET /auth/session')).toBe(2);
   });
 });
