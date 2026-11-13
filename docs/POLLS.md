@@ -85,7 +85,11 @@ Decided 2026-11-11:
   beside the composer (`client/src/chat/ChatPanel.jsx` passes it to the composer's new
   `actions` slot; the direct conversations use the composer without it). It opens the same
   poll form above the composer; the poll is created with the room (`room`: its slug), in a
-  room the creator may write in (403 `room_not_allowed` otherwise).
+  room the creator may write in (403 `room_not_allowed` otherwise). The card is a message, so
+  it is checked as one (the chat handle's `polls.refused`, decided 2026-11-13): a creator muted
+  or banned in the chat is refused (403 `muted` / `banned`, the chat's own answer), and the card
+  counts against their message limit (429 `too_many_messages`). A poll outside any room is not a
+  chat matter and goes as before.
 - The poll appears as a **card in the room's timeline**: a chat message of its creator whose
   `poll_id` names it (`chat_messages.poll_id`, added by `migratePolls`; the card goes with its
   poll), posted, pushed and counted for unread exactly as a member's post (the chat handle's

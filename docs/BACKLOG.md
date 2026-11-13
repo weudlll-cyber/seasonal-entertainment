@@ -87,6 +87,11 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Room poll cards and chat mutes, bans and the message limit** — closed on
+  `night/2026-11-13` (security review of 2026-11-13, L8; decided 2026-11-13; not merged yet): a
+  room poll's card is checked as a message (`polls.refused`, `server/src/chat/mount.js`): a
+  muted or banned organiser is refused with the chat's answer, and the card counts against the
+  sender's message limit. docs/POLLS.md.
 - **Web push and logging out** — closed on `night/2026-11-13` (security review of 2026-11-13,
   L7; decided 2026-11-13; not merged yet): logging out turns this device's push off on the
   server and in the browser first and drops an unfinished turn-on's mark

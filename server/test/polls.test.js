@@ -27,6 +27,7 @@ import { auditActions } from './helpers/chat.js';
 import { connect, cookieOf, listeningChat, stopServer } from './helpers/chatSocket.js';
 import { seedTestSteps } from './helpers/steps.js';
 import { dropEndedLinks } from '../src/polls/store.js';
+import { setSetting } from '../src/settings/store.js';
 import { makeStaff, registerUser } from './helpers/testApp.js';
 
 let t;
@@ -423,6 +424,40 @@ describe('polls in a call', () => {
 describe('polls in chat rooms', () => {
   const roomMessages = async (agent, slug) =>
     (await agent.get(`/api/chat/rooms/${slug}/messages`)).body.messages;
+
+  const sanction = (kind, username) =>
+    t.db
+      .prepare(
+        `INSERT INTO chat_sanctions (kind, user_id, target, created_by, created_at)
+         SELECT ?, id, username, 'mona', 'now' FROM users WHERE username = ?`
+      )
+      .run(kind, username);
+  const polls = () => t.db.prepare('SELECT COUNT(*) AS n FROM polls').get().n;
+
+  it.each([
+    ['mute', 'muted'],
+    ['ban', 'banned'],
+  ])('a %s in the chat stops room polls as it stops messages', async (kind, error) => {
+    const { olga } = await setup();
+    sanction(kind, 'olga');
+    const refused = await olga.post('/api/polls').send({ ...CHOICE, room: 'general' });
+    expect(refused.status).toBe(403);
+    expect(refused.body.error).toBe(error);
+    expect(polls()).toBe(0);
+    // Not a chat matter: a poll outside any room still goes.
+    expect((await olga.post('/api/polls').send(CHOICE)).status).toBe(201);
+  });
+
+  it("a room poll's card counts against the sender's message limit", async () => {
+    const { olga } = await setup();
+    setSetting(t.db, 'chat.memberMessages', 1);
+    expect((await olga.post('/api/chat/rooms/general/messages').send({ body: 'hi' })).status).toBe(
+      201
+    );
+    const refused = await olga.post('/api/polls').send({ ...CHOICE, room: 'general' });
+    expect(refused.status).toBe(429);
+    expect(polls()).toBe(0);
+  });
 
   it("a card in the room's timeline; seen by everyone who may read the room", async () => {
     const { olga, mia } = await setup();
