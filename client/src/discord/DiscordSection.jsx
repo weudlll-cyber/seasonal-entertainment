@@ -11,7 +11,8 @@
 //              were last read, and "Unlink Discord" (with the password; an account without one
 //              is told to set one first, as it could not log in otherwise). Steps never give
 //              rights on this site. A part of the account page's "Sign-in & security"
-//              (AccountSecurity.jsx), so its heading is an h3.
+//              (AccountSecurity.jsx), so its heading is an h3; Discord brings the member back
+//              to it (/account#discord, which opens it).
 // ============================================================
 
 import { useState } from 'react';
@@ -33,6 +34,9 @@ const STATUS_TEXT = {
   needs_login:
     'Discord no longer accepts the link (it ends when unused for long, or when you remove the app in Discord). Log in with Discord again to show your steps.',
 };
+
+// Where Discord sends the member back: this section, opened (the account page's #discord).
+const BACK_HERE = '/account#discord';
 
 // A Discord change proven with the password: run(authKey) once its keys are derived (never the
 // password itself).
@@ -113,7 +117,7 @@ export default function DiscordSection() {
             button="Link Discord"
             run={async (authKey) => {
               await api('/auth/discord/link', { method: 'POST', body: { authKey } });
-              goToDiscord('link', '/account');
+              goToDiscord('link', BACK_HERE);
             }}
           />
         </>
@@ -134,7 +138,7 @@ export default function DiscordSection() {
           )}
           <div className="discord-section__actions">
             {link.status === 'needs_login' && (
-              <DiscordButton intent="confirm" next="/account">
+              <DiscordButton intent="confirm" next={BACK_HERE}>
                 Log in with Discord again
               </DiscordButton>
             )}

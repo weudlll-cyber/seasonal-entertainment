@@ -457,7 +457,8 @@ scan; only the arrangement changed, every setting, form and text inside the sect
     `#notifications`, `#delete-account`) and the parts of Sign-in & security (`#password`,
     `#two-factor`, `#discord`), also a link followed while on the page (the 2FA banner's), and
     scrolled into view;
-  - a login on the way keeps the anchor (`RequireUser`);
+  - a login on the way keeps the anchor and any `?query` (`RequireUser`), and Discord brings
+    the member back to `#discord`;
   - a notice waiting in a section opens it: two-factor the site requires but is off, a Discord
     login's answer (`?discord=`) or a link that needs a Discord login again (Sign-in &
     security), a push failure kept for the page (Notifications).

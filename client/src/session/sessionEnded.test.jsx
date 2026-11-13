@@ -106,11 +106,11 @@ describe('a sign-in that ended on the server', () => {
   it('on a page for everyone it offers "Sign in" with the way back, and asks nothing again', async () => {
     const answers = { ...signedIn(anna), 'GET /games': NOT_AUTHENTICATED };
     const calls = mockApi(answers);
-    renderAt('/games?season=spring');
+    renderAt('/games?season=spring#calendar');
     const notice = (await screen.findByText(SESSION_ENDED)).closest('p');
     expect(within(notice).getByRole('link', { name: 'Sign in' })).toHaveAttribute(
       'href',
-      '/login?next=%2Fgames%3Fseason%3Dspring'
+      '/login?next=%2Fgames%3Fseason%3Dspring%23calendar'
     );
     expect(where()).toBe('/games?season=spring');
     expect(screen.getByRole('link', { name: 'Log in' })).toBeInTheDocument();

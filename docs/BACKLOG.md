@@ -18,6 +18,11 @@ entry waits for.
   seen 2026-11-13 as an empty white box with only its title): the column says "This call's chat
   is closed." and, without messages, "No messages in this call." inside its box; with messages
   it shows them read-only (docs/CALLS.md, "Call chat").
+- **The login keeps the whole link** — built on `night/2026-11-13` (piece 2; the `?query` was
+  dropped on the way, noted 2026-11-13): a page for members, and the "Sign in" of the
+  sign-in-ended notice, hand the login the path, `?query` and `#anchor` (`herePath`,
+  `client/src/session/nextPage.js`); still only paths on this site. The account page's Discord
+  section comes back to `/account#discord` (docs/AUTH.md, "Sessions" and "Discord").
 
 ### To try on the live server
 
