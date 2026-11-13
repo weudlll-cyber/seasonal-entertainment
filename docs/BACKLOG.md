@@ -12,6 +12,13 @@ entry waits for.
 - **Real sites to approve for the chat embed** — which game sites go on Admin → Embedding once
   the site is live (only exact `https://` origins).
 
+### Built, waiting for the merge
+
+- **An ended call's chat column without a blank box** — built on `night/2026-11-13` (piece 1;
+  seen 2026-11-13 as an empty white box with only its title): the column says "This call's chat
+  is closed." and, without messages, "No messages in this call." inside its box; with messages
+  it shows them read-only (docs/CALLS.md, "Call chat").
+
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):

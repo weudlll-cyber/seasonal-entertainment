@@ -25,6 +25,8 @@ import { ChatPanel } from '../chat/index.js';
 | `roomNote`               | string                  | `null`           | a host's line about its room, shown until the reader picks another       |
 | `files`                  | boolean                 | `true`           | offer members "Attach file"; `false` where uploads are refused           |
 | `guestPrompt`            | React node              | `null`           | shown to a guest instead of the composer (e.g. a login offer)            |
+| `emptyText`              | string                  | `null`           | said inside the list once loaded with no message (an ended call)         |
+| `readOnlyNote`           | string                  | `null`           | the host's words where the reader cannot write, for the general line     |
 | `--chat-list-max-height` | CSS custom property     | `60vh` / `18rem` | cap of the message list; `none` lets it fill a container of fixed height |
 | account                  | from `SessionProvider`  | —                | who is signed in (`client/src/session`); a guest if no                   |
 

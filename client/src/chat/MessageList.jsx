@@ -6,13 +6,22 @@
 //              newest message while the reader is at the bottom (useScrollPin), with a
 //              "New messages" button when they have scrolled up and something new arrives.
 //              Whenever the newest message is in view, onSeen(its id) moves the read marker.
+//              emptyText, when given and there is no message, is said inside the list's box.
 // ============================================================
 
 import { useEffect, useRef } from 'react';
 import ChatMessage from './ChatMessage.jsx';
 import { useScrollPin } from './useScrollPin.js';
 
-export default function MessageList({ room, roomName, messages, moderator, onAction, onSeen }) {
+export default function MessageList({
+  room,
+  roomName,
+  messages,
+  emptyText,
+  moderator,
+  onAction,
+  onSeen,
+}) {
   const list = useRef(null);
   const { onScroll, unseen, showNewest } = useScrollPin(list, room, messages);
   const newestId = messages.at(-1)?.id;
@@ -32,6 +41,9 @@ export default function MessageList({ room, roomName, messages, moderator, onAct
           <ChatMessage key={m.id} message={m} moderator={moderator} onAction={onAction} />
         ))}
       </ol>
+      {emptyText && messages.length === 0 && (
+        <p className="chat-note chat-messages-empty">{emptyText}</p>
+      )}
       {unseen && (
         <button type="button" className="chat-new-messages" onClick={showNewest}>
           New messages

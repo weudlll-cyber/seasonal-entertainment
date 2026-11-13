@@ -6,7 +6,8 @@
 //              call's unlisted room, and a collapse button. Collapsed, it is a slim vertical
 //              tab with how many messages arrived meanwhile (useNewMessageCount); this browser
 //              remembers the choice (app/storage.js, never throws). Below 1000px the chat is a
-//              drawer instead, opened from the page header (callPage.css).
+//              drawer instead, opened from the page header (callPage.css). After the call
+//              the chat says it is closed, and "No messages in this call." when it is empty.
 // ============================================================
 
 import { useState } from 'react';
@@ -15,6 +16,12 @@ import { readStored, writeStored } from '../app/storage.js';
 import { ChatPanel, useNewMessageCount } from '../chat/index.js';
 
 export const COLLAPSED_KEY = 'se.callChat.collapsed';
+// After the call its chat is read-only (server: endCall.js): said plainly, and an empty one
+// says so instead of showing a blank box (seen 2026-11-13).
+const ENDED_CHAT = {
+  emptyText: 'No messages in this call.',
+  readOnlyNote: "This call's chat is closed.",
+};
 
 // room: the chat room's slug; status: the call's status (a new one reloads the chat: it is
 // read-only once the call ended); onCollapse(collapsed): tells the page, which narrows its
@@ -57,7 +64,13 @@ export default function CallChat({ room, status, collapsed, onCollapse }) {
       >
         <Icon name="chevron" size={18} />
       </button>
-      <ChatPanel key={status} room={room} variant="compact" unlisted />
+      <ChatPanel
+        key={status}
+        room={room}
+        variant="compact"
+        unlisted
+        {...(status === 'ended' && ENDED_CHAT)}
+      />
     </aside>
   );
 }

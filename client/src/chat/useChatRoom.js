@@ -9,6 +9,7 @@
 //              the shared connection reconnects as the new reader. Nothing sent meanwhile is
 //              lost: a load is merged with what was pushed while it ran, and every time the
 //              server confirms the room's subscription the panel fetches what it missed.
+//              loaded: the current room's messages have arrived (an empty list is then empty).
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -70,6 +71,9 @@ export function useChatRoom(roomInput, user, unlisted = false) {
   const [messages, setMessages] = useState([]);
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
+  // The room and reader whose messages have been loaded: until then an empty list means
+  // "not known yet", not "no messages".
+  const [loadedFor, setLoadedFor] = useState(null);
   const moderator = useRef(false);
   const seen = useRef({ room: null, id: 0 }); // the read marker already sent for this room
   const latest = useRef(0); // the newest message id in the list: where a catch-up starts
@@ -77,6 +81,7 @@ export function useChatRoom(roomInput, user, unlisted = false) {
   // undefined while the account is still loading: wait, so rooms and messages are fetched once
   // for the right reader (a second fetch would replace live updates that arrived meanwhile).
   const known = user !== undefined;
+  const loadKey = `${room}:${userId}`;
   moderator.current = Boolean(info?.me.moderator);
   latest.current = messages.at(-1)?.id ?? 0;
 
@@ -85,7 +90,11 @@ export function useChatRoom(roomInput, user, unlisted = false) {
     let current = true; // a load for an earlier room or reader must not land in this list
     setMessages([]);
     api(`/chat/rooms/${room}/messages`)
-      .then((data) => current && setMessages((list) => mergeMessages(list, data.messages)))
+      .then((data) => {
+        if (!current) return;
+        setMessages((list) => mergeMessages(list, data.messages));
+        setLoadedFor(`${room}:${userId}`);
+      })
       .catch((err) => current && setError(err.message));
     return () => {
       current = false;
@@ -178,6 +187,7 @@ export function useChatRoom(roomInput, user, unlisted = false) {
     setRoom,
     current,
     messages,
+    loaded: loadedFor === loadKey,
     error: error ?? rooms.error,
     notice,
     send,

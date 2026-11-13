@@ -102,8 +102,10 @@ Generate a production pair on the call server with
 - **Call chat**: every call gets a chat room of the existing chat module (`call-<id>`,
   `shared/callRoom.js`, "Call: <title>"), readable and writable by everyone; guests may write there when they may in General
   at the moment the call is created (decided 2026-10-18). It is **unlisted** (not in the room
-  lists or the unread counters) and becomes **read-only** when the call ends; its messages
-  follow the normal retention (docs/CHAT.md, "Server"). Links into it lead to the call's page:
+  lists or the unread counters) and becomes **read-only** when the call ends; its column then
+  says "This call's chat is closed." and, without messages, "No messages in this call." inside
+  its box (never a blank box, seen 2026-11-13; `CallChat.jsx`). Its messages follow the normal
+  retention (docs/CHAT.md, "Server"). Links into it lead to the call's page:
   a mention's notification opens `/calls/<id>` (docs/CHAT.md, "Notifications").
 - **Deleting a call** (decided 2026-11-04: a technical test call leaves nothing visible):
   `DELETE /api/calls/:id`, **admins only** (with their 2FA set up; `allow('admin')`, organisers
