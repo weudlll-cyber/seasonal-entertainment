@@ -100,13 +100,17 @@ async function page({ publicKey = KEY, known = false, saved = SAVED } = {}) {
     'DELETE /push/subscriptions': { body: { ok: true } },
   });
   render(
-    <MemoryRouter initialEntries={['/account']}>
+    <MemoryRouter initialEntries={['/account#notifications']}>
       <App />
     </MemoryRouter>
   );
-  await screen.findByRole('heading', { name: 'Notifications' });
+  await screen.findByRole('heading', { name: /^Notifications/ }); // its status line may follow
   return calls;
 }
+
+// The account page's closed heading for the section: its status line, or null.
+const pushStatus = () =>
+  document.querySelector('#notifications .disclosure__status')?.textContent ?? null;
 
 it('hidden where the site has no push keys', async () => {
   const calls = await page({ publicKey: null });
@@ -121,12 +125,20 @@ it('where the browser cannot receive push, a line says so instead of the switch'
   expect(await screen.findByText(PUSH_UNSUPPORTED)).toBeInTheDocument();
   expect(screen.queryByRole('switch', SWITCH)).toBeNull();
   expect(calls.some((c) => c.key === 'POST /push/status')).toBe(false);
+  expect(pushStatus()).toBeNull(); // not available here: no line
 });
 
 it("off for another account's subscription in this browser", async () => {
   browserSub = subscriptionFor(KEY);
   await page({ known: false });
   expect(await screen.findByRole('switch', SWITCH)).not.toBeChecked();
+});
+
+it('the section heading says whether push is on for this device, once known', async () => {
+  await page({ known: false });
+  await vi.waitFor(() => expect(pushStatus()).toBe('Push on this device: off'));
+  fireEvent.click(screen.getByRole('switch', SWITCH));
+  await vi.waitFor(() => expect(pushStatus()).toBe('Push on this device: on'));
 });
 
 it('on for a device the server knows for this account', async () => {

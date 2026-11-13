@@ -54,7 +54,7 @@ async function newDevice(answer) {
     'GET /keys/handover/h1': async () => answer(sentPublicKey, privateKey),
   });
   render(
-    <MemoryRouter initialEntries={['/account']}>
+    <MemoryRouter initialEntries={['/account#private-messages']}>
       <App />
     </MemoryRouter>
   );
@@ -127,7 +127,7 @@ describe('the unlocked device', () => {
       'GET /chat/unread': { body: { ok: true, rooms: [], direct: [] } },
     });
     render(
-      <MemoryRouter initialEntries={['/account']}>
+      <MemoryRouter initialEntries={['/account#private-messages']}>
         <App />
       </MemoryRouter>
     );
@@ -191,7 +191,7 @@ describe('the unlocked device', () => {
       'GET /chat/unread': { body: { ok: true, rooms: [], direct: [] } },
     });
     render(
-      <MemoryRouter initialEntries={['/account']}>
+      <MemoryRouter initialEntries={['/account#private-messages']}>
         <App />
       </MemoryRouter>
     );

@@ -3,7 +3,8 @@
 // Path:        client/src/session/RequireUser.jsx
 // Project:     Seasonal Entertainment
 // Description: Route guard: renders its page for signed-in users (with at least `role`, if
-//              given), sends guests to /login (and back here afterwards), and shows a "not
+//              given), sends guests to /login (and back here afterwards, with the link's #anchor),
+//              and shows a "not
 //              allowed" page to users whose role is too low. The server checks again on every
 //              request; this only keeps people from seeing pages that would fail.
 // ============================================================
@@ -17,7 +18,8 @@ export default function RequireUser({ role, children }) {
   const location = useLocation();
   if (user === undefined) return null; // session still loading
   if (!user) {
-    const next = encodeURIComponent(location.pathname);
+    // The #anchor comes back too: a link to an account section opens it after the login.
+    const next = encodeURIComponent(location.pathname + location.hash);
     return <Navigate to={`/login?next=${next}`} replace />;
   }
   if (role && !roleAtLeast(user.role, role)) {

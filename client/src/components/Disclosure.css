@@ -1,0 +1,70 @@
+/* ============================================================
+   File:        Disclosure.css
+   Path:        client/src/components/Disclosure.css
+   Project:     Seasonal Entertainment
+   Description: The collapsible section (Disclosure.jsx): one row per section between hairlines,
+                the whole heading row the button (at least the hit target tall), the title with
+                its status line in muted text under it, the chevron turned while open. Tokens
+                only, so both themes follow.
+   ============================================================ */
+
+.disclosure {
+  border-bottom: 1px solid var(--color-border);
+  /* A deep link (#id) lands with the heading in view, not under the phone's top bar. */
+  scroll-margin-top: var(--space-4);
+}
+
+.disclosure__heading {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.disclosure__button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--hit-target);
+  padding: var(--space-2) 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.disclosure__text {
+  display: grid;
+  gap: 0.25rem;
+  /* A long status wraps instead of pushing the chevron out at 360px. */
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.disclosure__status {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body);
+  font-weight: normal;
+  line-height: 1.4;
+}
+
+.disclosure__button .icon {
+  flex: none;
+  transition: transform 0.15s ease;
+}
+
+.disclosure__button[aria-expanded='true'] .icon {
+  transform: rotate(180deg);
+}
+
+.disclosure__panel {
+  padding-bottom: var(--space-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disclosure__button .icon {
+    transition: none;
+  }
+}

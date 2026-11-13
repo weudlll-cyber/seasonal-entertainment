@@ -8,7 +8,8 @@
 //              working) and "Remove recovery code" when there is one. All of these need the
 //              key unlocked here (the code seals the private key, which only this browser has)
 //              and the current password, which the server asks for (as its auth key), typed in
-//              a form card like the page's other password fields.
+//              a form card like the page's other password fields. The heading is the account
+//              page's (Disclosure.jsx).
 // ============================================================
 
 import { useState } from 'react';
@@ -94,10 +95,5 @@ export default function PrivateMessagesSection() {
     );
   }
 
-  return (
-    <section aria-labelledby="private-messages">
-      <h2 id="private-messages">Private messages</h2>
-      {body}
-    </section>
-  );
+  return body;
 }

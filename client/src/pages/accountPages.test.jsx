@@ -209,7 +209,7 @@ describe('Account page', () => {
       ...NO_KEY,
       'POST /auth/password': { body: { ok: true } },
     });
-    renderAt('/account');
+    renderAt('/account#password');
     expect(await screen.findByText('anna@example.org')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'anna (Member), your account' })).toHaveAttribute(
       'href',

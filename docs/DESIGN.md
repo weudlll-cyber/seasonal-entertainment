@@ -416,6 +416,55 @@ picture (5rem, round) with "Choose a picture" and "Remove picture". In a call a 
 links to the profile with a thin underline in the text's own colour. Checked at 360 and 390 px
 (`client/e2e/profiles.spec.js`).
 
+**Account page** (`client/src/pages/AccountPage.jsx`, decided 2026-11-13): short and easy to
+scan; only the arrangement changed, every setting, form and text inside the sections stays.
+
+- **Fits a desktop window with every section closed** (owner decision 2026-11-13), the home
+  page's yardstick: from 1000px wide, with the chat drawer closed, no vertical scrollbar at
+  1280 x 720, 1440 x 900, 1915 x 913 and 1920 x 1080, light and dark, for a member and for an
+  admin (`client/e2e/accountDesktop.spec.js`). From 1000px the page tightens its own spacing,
+  text sizes unchanged: a closed heading's status stands beside its title (under it when too
+  long), the rows are slimmer (0.75rem above and below, still 44px targets), and "Delete my
+  account" is set apart by 1.5rem. Below 1000px it scrolls as before. Opened sections may make
+  it scroll.
+- **Summary** at the top, on a card: username, role (as the sidebar's account card shows it,
+  "Member": `roleName`, `AccountCard.jsx`) and email ("none (signed up with Discord)"
+  for an account made with Discord), with "Log out" (secondary) right after them; below them
+  where the width is too narrow. Not pushed to the card's far edge, where the open chat drawer
+  would cover it.
+- **Six collapsible sections**, all closed by default, in this order: Profile; Sign-in &
+  security (the password change or "Set a password", two-factor authentication, Discord, each
+  an h3: `AccountSecurity.jsx`); Private messages; Privacy; Notifications (with the push
+  switch); Delete my account, set apart below the others.
+- **The disclosure** (`client/src/components/Disclosure.jsx`, reusable): one row per section
+  between hairlines; the whole heading row is a real button (`aria-expanded`,
+  `aria-controls`, at least 44px tall, the global focus ring) with the title (1.25rem) and the
+  chevron, which turns while open (at once under reduced motion). A closed panel stays mounted
+  but hidden, so its forms keep what was typed and load as before.
+- **Status line** under a closed heading's title (beside it from 1000px), in muted text, only
+  from what the page already has (never a new request), and no line where it is not known:
+  - Profile: "Picture set" / "No picture";
+  - Sign-in & security: "Two-factor on" / "Two-factor off" (or "No password yet"), and while
+    Discord login is set up "Discord linked" / "Discord not linked";
+  - Private messages: "Unlocked on this device" / "Locked on this device" / "Not set up yet";
+  - Privacy: "Online status shown/hidden · link previews on/off";
+  - Notifications: "Push on this device: on/off", once the browser has said.
+- **Open sections**: several at once. The member's own opening and closing is remembered in this
+  browser (`se.accountSections`, `client/src/components/useOpenSections.js`; blocked storage
+  only means nothing is remembered).
+- **Links and notices** open their section from the first render, not remembered:
+  - every section's anchor (`#profile`, `#sign-in`, `#private-messages`, `#privacy`,
+    `#notifications`, `#delete-account`) and the parts of Sign-in & security (`#password`,
+    `#two-factor`, `#discord`), also a link followed while on the page (the 2FA banner's), and
+    scrolled into view;
+  - a login on the way keeps the anchor (`RequireUser`);
+  - a notice waiting in a section opens it: two-factor the site requires but is off, a Discord
+    login's answer (`?discord=`) or a link that needs a Discord login again (Sign-in &
+    security), a push failure kept for the page (Notifications).
+- Checked at 360 and 390 px, light and dark, all closed and all open
+  (`client/e2e/accountNarrow.spec.js`); the arrangement in
+  `client/src/pages/accountSections.test.jsx`.
+
 **Login and registration**: the card shows the full logo in light mode and the emblem in dark
 mode (`client/src/brand/FormLogo.jsx`; the dark lettering would vanish on night blue), but not
 in the chat's small login popup.

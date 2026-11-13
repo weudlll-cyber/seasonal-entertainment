@@ -1,0 +1,56 @@
+/* ============================================================
+   File:        AccountPage.css
+   Path:        client/src/pages/AccountPage.css
+   Project:     Seasonal Entertainment
+   Description: The account page's own layout (AccountPage.jsx; docs/DESIGN.md "Account page"):
+                the summary card with "Log out" right after the details (below them when too
+                narrow; never pushed to the far edge, where the open chat drawer would cover it),
+                and "Delete my account" set apart from the other sections. The sections
+                themselves are Disclosure.css; from 1000px wide this page tightens them, so with
+                all closed it fits a desktop window without scrolling (decided 2026-11-13):
+                status beside the title, slimmer rows.
+   ============================================================ */
+
+.account-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-2);
+}
+
+.account-summary .details {
+  margin: 0;
+  min-width: 0;
+}
+
+/* A long email address breaks instead of widening the page at 360px. */
+.account-summary dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.account-page__delete {
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+/* From 1000px wide (the home page's yardstick, docs/DESIGN.md): all six closed fit 1280 x 720.
+   The status goes beside its title (wrapping under it if too long) and the closed rows are
+   slimmer; the text keeps its sizes and every row stays a 44px target. */
+@media (min-width: 1000px) {
+  .account-page .disclosure__text {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: var(--space-2);
+  }
+
+  .account-page .disclosure__button {
+    padding-block: 0.75rem;
+  }
+
+  .account-page__delete {
+    margin-top: var(--space-3);
+  }
+}

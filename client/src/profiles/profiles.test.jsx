@@ -150,7 +150,7 @@ describe("the account page's Profile section", () => {
       ...signedIn({ username: 'mia', role: 'member' }),
       'PUT /profile/about': { body: { ok: true } },
     });
-    renderAt('/account');
+    renderAt('/account#profile');
     const field = await screen.findByRole('textbox', { name: /About me/ });
     fireEvent.change(field, { target: { value: 'a'.repeat(301) } });
     expect(screen.getByText(/301 \/ 300 characters/)).toBeInTheDocument();
@@ -172,7 +172,7 @@ describe("the account page's Profile section", () => {
       ...signedIn({ username: 'mia', role: 'member' }),
       'POST /profile/picture?': { status: 201, body: { ok: true } },
     });
-    renderAt('/account');
+    renderAt('/account#profile');
     const input = await screen.findByLabelText('Profile picture file');
     const file = new File(['png'], 'me.png', { type: 'image/png' });
     fireEvent.change(input, { target: { files: [file] } });

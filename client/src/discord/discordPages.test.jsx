@@ -119,7 +119,7 @@ describe('the account page', () => {
         ...PRELOGIN,
         'POST /auth/discord/link': { body: { ok: true } },
       });
-      renderAt('/account');
+      renderAt('/account#discord');
       fireEvent.change(await screen.findByLabelText('Password to link Discord'), {
         target: { value: 'correct-horse-1' },
       });
@@ -141,7 +141,7 @@ describe('the account page', () => {
       ...PRELOGIN,
       'DELETE /auth/discord': { body: { ok: true } },
     });
-    renderAt('/account');
+    renderAt('/account#discord');
     expect(await screen.findByText('Ultimate-Dragon Whale')).toBeTruthy();
     expect(screen.getByText('Level 4')).toBeTruthy();
     fireEvent.change(screen.getByLabelText('Password to unlink Discord'), {
@@ -164,7 +164,7 @@ describe('the account page', () => {
       ),
       ...NO_KEY,
     });
-    renderAt('/account');
+    renderAt('/account#discord');
     expect(await screen.findByText(/To unlink Discord, set a password first/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Unlink Discord' })).toBeNull();
     expect(screen.getByRole('heading', { name: 'Set a password' })).toBeTruthy();

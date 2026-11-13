@@ -66,6 +66,15 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **A short account page** — closed by `feat/account-sections` (PR #69, merged
+  2026-11-13; decided 2026-11-13): a summary (username, role as the sidebar shows it, email)
+  with "Log out", then six collapsible sections, all closed by default (Profile; Sign-in &
+  security; Private messages; Privacy; Notifications; Delete my account, set apart), each closed
+  heading with a short status the page already knows; several open at once, remembered in the
+  browser; every link to a section or a part of one opens it, and a waiting notice (two-factor
+  required, a Discord answer, a push failure) opens its section. With every section closed it
+  fits a desktop window from 1000px wide. Only the arrangement changed (docs/DESIGN.md, "Account
+  page").
 - **A sign-in that ended on the server** — closed by `fix/session-ended` (PR #68, merged
   2026-11-13): the first `401 not_authenticated` while the page shows a member, or coming back
   to the site's tab or window when the server says nobody is signed in (decided 2026-11-13),

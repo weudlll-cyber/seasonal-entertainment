@@ -49,7 +49,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 // mia's page with her switches; returns the API calls.
-async function page(switches = {}, path = '/account') {
+async function page(switches = {}, path = '/account#notifications') {
   let user = { ...MIA, notifyMentions: false, notifyDirect: false, ...switches };
   const calls = mockApi({
     'GET /auth/session': () => ({ body: { ok: true, user } }),

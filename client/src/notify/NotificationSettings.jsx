@@ -8,7 +8,9 @@
 //              the three switches, off until the member turns them on: mentions, new direct
 //              messages (never their text), and the weekly recap being out (Mondays), only
 //              while the site is open in a tab; and, where the site has push keys, "When a call
-//              starts" for this device also while the site is closed (PushSwitch.jsx, web push).
+//              starts" for this device also while the site is closed (PushSwitch.jsx, web push;
+//              onPushStatus passes its on or off on). The heading is the account page's
+//              (Disclosure.jsx).
 // ============================================================
 
 import { useState } from 'react';
@@ -22,7 +24,7 @@ export const BLOCKED_HELP =
   'Your browser blocks notifications from this site. To allow them, open the site settings ' +
   '(the icon left of the address), set Notifications to Allow, and reload the page.';
 
-export default function NotificationSettings() {
+export default function NotificationSettings({ onPushStatus }) {
   const { user, refresh } = useSession();
   const [allowed, setAllowed] = useState(permission);
   const [error, setError] = useState(null);
@@ -46,8 +48,7 @@ export default function NotificationSettings() {
   };
 
   return (
-    <section aria-labelledby="notifications">
-      <h2 id="notifications">Notifications</h2>
+    <>
       <p>
         Your browser can tell you about a mention, a new direct message or the weekly recap while
         this site is open in a tab you are not looking at. Not when the browser or every tab of the
@@ -95,11 +96,11 @@ export default function NotificationSettings() {
         />
         <span>Weekly recap</span>
       </label>
-      <PushSwitch run={run} busy={busy} onPermission={setAllowed} />
+      <PushSwitch run={run} busy={busy} onPermission={setAllowed} onStatus={onPushStatus} />
       <p className="form-field__hint">
         A direct message&apos;s notification says only who wrote, never the message.
       </p>
       <FormMessage error={error} />
-    </section>
+    </>
   );
 }

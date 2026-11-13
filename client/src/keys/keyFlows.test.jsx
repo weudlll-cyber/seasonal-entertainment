@@ -18,6 +18,7 @@ import {
   openSealed,
 } from '@seasonal-entertainment/shared/crypto.js';
 import App from '../app/App.jsx';
+import { openSection } from '../test/accountSections.js';
 import { browserKey, keyServer } from '../test/keyServer.js';
 import { deviceEntry, resetDevice } from '../test/memoryDeviceKey.js';
 import { GUEST, PRELOGIN, PRELOGIN_SALT, mockApi, signedIn } from '../test/mockApi.js';
@@ -111,7 +112,7 @@ describe('a signed-in member with an unlocked key', () => {
     const server = keyServer(current.authKey, key);
     resetDevice({ userId: 1, keyId: key.keyId, privateKey });
     const calls = mockApi({ ...signedIn(anna), ...PRELOGIN, ...server.answers, ...extra });
-    renderAt('/account');
+    renderAt('/account#private-messages');
     await screen.findByText('Your private messages are unlocked on this device.');
     return { calls, privateKey };
   }
@@ -120,6 +121,7 @@ describe('a signed-in member with an unlocked key', () => {
     const { calls, privateKey } = await unlockedAccountPage({
       'POST /auth/password': { body: { ok: true } },
     });
+    await openSection('Sign-in & security');
     type('Current password', PASSWORD);
     type('New password', 'battery-staple-2');
     type('Repeat password', 'battery-staple-2');
