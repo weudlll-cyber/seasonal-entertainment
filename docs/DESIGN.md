@@ -456,7 +456,8 @@ scan; only the arrangement changed, every setting, form and text inside the sect
   - every section's anchor (`#profile`, `#sign-in`, `#private-messages`, `#privacy`,
     `#notifications`, `#delete-account`) and the parts of Sign-in & security (`#password`,
     `#two-factor`, `#discord`), also a link followed while on the page (the 2FA banner's), and
-    scrolled into view;
+    scrolled into view; a malformed anchor (`#%`) is ignored, the page shows with every section
+    as remembered (2026-11-13);
   - a login on the way keeps the anchor and any `?query` (`RequireUser`), and Discord brings
     the member back to `#discord`;
   - a notice waiting in a section opens it: two-factor the site requires but is off, a Discord

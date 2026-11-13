@@ -160,6 +160,15 @@ describe('the account page', () => {
     expect(stored()).toBeNull();
   });
 
+  it.each(['#%', '#%E0%A4%A'])(
+    'a malformed anchor (%s) is ignored: the page shows, every section closed',
+    async (hash) => {
+      renderAt(`/account${hash}`);
+      expect(await screen.findByText('anna@example.org')).toBeVisible();
+      expect(await openOnes()).toEqual([]);
+    }
+  );
+
   it('a link followed while on the page opens its section', async () => {
     renderAt('/account');
     expect(await openOnes()).toEqual([]);

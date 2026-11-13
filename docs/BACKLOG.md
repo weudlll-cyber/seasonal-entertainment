@@ -87,6 +87,10 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **A malformed anchor on the account page** — closed on `night/2026-11-13` (security review of
+  2026-11-13, L6; decided 2026-11-13; not merged yet): `/account#%` no longer blanks the page;
+  an anchor that does not decode is ignored (`anchorOf`, `client/src/pages/AccountPage.jsx`).
+  docs/DESIGN.md, "Account page".
 - **nginx's deny of the game feeds in any letter case** — closed on `night/2026-11-13`
   (security review of 2026-11-13, L5; decided 2026-11-13; not merged yet): the installer writes
   `location ~* ^/api/games/<slug>/account-changes` (`deploy/install/lib/games.sh`), so
