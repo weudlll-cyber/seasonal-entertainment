@@ -413,6 +413,12 @@ path of this site: the service worker (`client/src/app/sw.js`) checks it with th
   this browser; each device is turned on by itself. Members only; guests never have it. Not
   shown while the site has no push keys; where the browser cannot receive push, a line says so
   instead.
+- **Logging out** turns it off for this device (decided 2026-11-13): before the logout itself,
+  the device's subscription is removed on the server and in the browser (`pushOffForLogout`,
+  `client/src/notify/pushPending.js`, at most 3 s), and an unfinished turn-on's mark goes. A
+  turn-on still running hands the server its subscription only after asking who is signed in:
+  if it is no longer its own account, it undoes the browser's part instead, so it never
+  finishes under the next account in the same tab.
 - **No waiting** (decided 2026-11-13): a click shows the switch on at once. The browser's
   registration and the server request finish in the background
   (`client/src/notify/pushPending.js`), with "Finishing in the background…" under the switch

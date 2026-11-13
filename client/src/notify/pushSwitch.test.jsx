@@ -92,8 +92,15 @@ afterEach(() => {
 // server's answer to a new subscription.
 const SAVED = { status: 201, body: { ok: true } };
 async function page({ publicKey = KEY, known = false, saved = SAVED } = {}) {
+  const mia = signedIn({ username: 'mia', role: 'member' });
   const calls = mockApi({
-    ...signedIn({ username: 'mia', role: 'member' }),
+    ...mia,
+    // Mia, until a test logs her out (logOutThen): then whoever it names.
+    'GET /auth/session': () =>
+      'signedInNow' in calls
+        ? { body: { ok: true, user: calls.signedInNow } }
+        : mia['GET /auth/session'],
+    'POST /auth/logout': { body: { ok: true } },
     'GET /push': { body: { ok: true, publicKey } },
     'POST /push/status': { body: { ok: true, subscribed: known } },
     'POST /push/subscriptions': saved,
@@ -289,6 +296,45 @@ it('a browser that never answers: back off after SUBSCRIBE_MS, with a line', asy
   } finally {
     vi.useRealTimers();
   }
+});
+
+// Logging out on the account page; the session answers whoever is signed in afterwards.
+async function logOutThen(calls, nextUser) {
+  calls.signedInNow = nextUser;
+  fireEvent.click(screen.getByRole('button', { name: 'Log out' }));
+  await vi.waitFor(() => expect(calls.some((c) => c.key === 'POST /auth/logout')).toBe(true));
+}
+
+it("logging out turns this device's push off on the server and in the browser", async () => {
+  browserSub = subscriptionFor(KEY);
+  const calls = await page({ known: true });
+  await vi.waitFor(() => expect(screen.getByRole('switch', SWITCH)).toBeChecked());
+  const held = browserSub;
+  await logOutThen(calls, null);
+  const keys = calls.map((c) => c.key);
+  // Before the logout itself, while the session still allows it.
+  expect(keys.indexOf('DELETE /push/subscriptions')).toBeGreaterThan(-1);
+  expect(keys.indexOf('DELETE /push/subscriptions')).toBeLessThan(
+    keys.indexOf('POST /auth/logout')
+  );
+  expect(calls.find((c) => c.key === 'DELETE /push/subscriptions').body).toEqual({
+    endpoint: ENDPOINT,
+  });
+  expect(held.unsubscribe).toHaveBeenCalledOnce();
+});
+
+it('a turn-on still finishing at logout never finishes, not under the next account', async () => {
+  const browser = slowBrowser();
+  const calls = await page();
+  fireEvent.click(await screen.findByRole('switch', SWITCH));
+  await vi.waitFor(() => expect(browser.answer).toBeTypeOf('function'));
+  await logOutThen(calls, { id: 2, username: 'tom', role: 'member' });
+  expect(localStorage.getItem(PENDING_KEY)).toBeNull();
+  // Tom signs in in this tab; then the browser answers mia's turn-on.
+  browser.answer();
+  await vi.waitFor(() => expect(pushManager.subscribe).toHaveBeenCalled());
+  await vi.waitFor(() => expect(browserSub).toBeNull());
+  expect(calls.some((c) => c.key === 'POST /push/subscriptions')).toBe(false);
 });
 
 it("the server's refusal turns it back off and says so", async () => {

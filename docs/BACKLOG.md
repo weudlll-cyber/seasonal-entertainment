@@ -87,6 +87,11 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Web push and logging out** — closed on `night/2026-11-13` (security review of 2026-11-13,
+  L7; decided 2026-11-13; not merged yet): logging out turns this device's push off on the
+  server and in the browser first and drops an unfinished turn-on's mark
+  (`pushOffForLogout`); a turn-on still running hands over its subscription only while its own
+  account is signed in, so it never finishes under the next one. docs/CALLS.md.
 - **A malformed anchor on the account page** — closed on `night/2026-11-13` (security review of
   2026-11-13, L6; decided 2026-11-13; not merged yet): `/account#%` no longer blanks the page;
   an anchor that does not decode is ignored (`anchorOf`, `client/src/pages/AccountPage.jsx`).

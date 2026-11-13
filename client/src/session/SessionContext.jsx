@@ -8,7 +8,8 @@
 //              page; features.discord: the Discord login; both off until the server says
 //              otherwise). Loads
 //              /api/auth/session on start; pages call setUser after login/registration,
-//              refresh() after changing the account (e.g. 2FA), and logout() to sign out.
+//              refresh() after changing the account (e.g. 2FA), and logout() to sign out
+//              (turning this device's web push off first, notify/pushPending.js).
 //              When the server answers "not_authenticated" while a member is signed in here
 //              (the session ended on the server: idle limit, password change, a sign-out in
 //              another tab), the member is dropped once and sessionEnded stays true until the
@@ -20,6 +21,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { PUBLIC_SETTING_DEFAULTS } from '@seasonal-entertainment/shared/siteSettings.js';
 import { api, onSessionEnded } from '../api/http.js';
+import { pushOffForLogout } from '../notify/pushPending.js';
 import { useReturnCheck } from './returnCheck.js';
 
 const SessionContext = createContext(null);
@@ -66,6 +68,8 @@ export function SessionProvider({ children }) {
   useReturnCheck(Boolean(user));
 
   const logout = useCallback(async () => {
+    // This device's web push goes with the sign-in (decided 2026-11-13).
+    await pushOffForLogout();
     await api('/auth/logout', { method: 'POST' });
     setUser(null);
   }, [setUser]);
