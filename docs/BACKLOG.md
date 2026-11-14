@@ -12,22 +12,6 @@ entry waits for.
 - **Real sites to approve for the chat embed** — which game sites go on Admin → Embedding once
   the site is live (only exact `https://` origins).
 
-### Built, waiting for the merge
-
-- **An ended call's chat column without a blank box** — built on `night/2026-11-13` (piece 1;
-  seen 2026-11-13 as an empty white box with only its title): the column says "This call's chat
-  is closed." and, without messages, "No messages in this call." inside its box; with messages
-  it shows them read-only (docs/CALLS.md, "Call chat").
-- **The login keeps the whole link** — built on `night/2026-11-13` (piece 2; the `?query` was
-  dropped on the way, noted 2026-11-13): a page for members, and the "Sign in" of the
-  sign-in-ended notice, hand the login the path, `?query` and `#anchor` (`herePath`,
-  `client/src/session/nextPage.js`); still only paths on this site. The account page's Discord
-  section comes back to `/account#discord` (docs/AUTH.md, "Sessions" and "Discord").
-- **The encrypted backup scripts' test under load** — built on `night/2026-11-13` (piece 3; it
-  timed out at 45 s twice in a full verify): measured, its time is four fresh node processes of
-  the real scripts (10–20 s alone, up to 56 s beside the full server suite), not its data; it has
-  a timeout of its own, 120 s (`server/test/backupEncrypted.test.js`).
-
 ### Proposals not decided
 
 - **A frame of the video as a recording's preview image** — the share card uses the site's logo
@@ -88,6 +72,19 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **An ended call's chat column without a blank box** — closed by `night/2026-11-13` (PR #70, merged
+  2026-11-14 as 1fac68e; piece 1; seen 2026-11-13 as an empty white box with only its title): the
+  column says "This call's chat is closed." and, without messages, "No messages in this call."
+  inside its box; with messages it shows them read-only (docs/CALLS.md, "Call chat").
+- **The login keeps the whole link** — closed by `night/2026-11-13` (PR #70, merged 2026-11-14 as
+  1fac68e; piece 2; the `?query` was dropped on the way, noted 2026-11-13): a page for members, and
+  the "Sign in" of the sign-in-ended notice, hand the login the path, `?query` and `#anchor`
+  (`herePath`, `client/src/session/nextPage.js`); still only paths on this site. The account page's
+  Discord section comes back to `/account#discord` (docs/AUTH.md, "Sessions" and "Discord").
+- **The encrypted backup scripts' test under load** — closed by `night/2026-11-13` (PR #70, merged
+  2026-11-14 as 1fac68e; piece 3; it timed out at 45 s twice in a full verify): measured, its time
+  is four fresh node processes of the real scripts (10–20 s alone, up to 56 s beside the full server
+  suite), not its data; it has a timeout of its own, 120 s (`server/test/backupEncrypted.test.js`).
 - **Trial restore of a live backup** — done on the PC on 2026-11-14 (decided 2026-11-03; it
   waited until the PC held the live backups): the newest nightly archive and the recordings'
   own backups, decrypted into a throwaway folder and put back with `scripts/restore.mjs`
@@ -655,17 +652,17 @@ entry waits for.
   certificate; the bots' files are mounted read-only and the bots kept running untouched; the
   first backup decrypts on the PC. Still untested: call media over UDP from outside.
 
-- **Admin-controlled settings (SE-SETTINGS-1)** — on `feat/se-settings-1` (not merged yet; owner
-  requests 2026-10-23): site settings admins change on Admin → Settings instead of code
-  changes, every default today's behaviour, every bound with its reason, every change audited
-  and in effect at once (docs/SETTINGS.md): chat (uploads, sizes, pixels, previews, files in
-  direct messages, connection and message limits, retention), calls (recording allowed,
-  reminder lead), accounts (sign-out days, registration open, 2FA for every member), home
-  (season clock, "Start here"), the weekly recap (on/off, day, hour, room) and a new site
-  banner. Env values that were the source are now only defaults (docs/DEPLOYMENT.md). The
-  finish (decided 2026-10-23): "Uploads on other sites" and "Images on other sites" are two
-  independent switches, each with its per-site rule; the site banner's info style shows as info
-  (it had lost to the shell's warning-looking `.banner`; a browser test now compares both).
+- **Admin-controlled settings (SE-SETTINGS-1)** — closed by `feat/se-settings-1` (PR #20, merged
+  2026-10-23; owner requests 2026-10-23): site settings admins change on Admin → Settings instead of
+  code changes, every default today's behaviour, every bound with its reason, every change audited
+  and in effect at once (docs/SETTINGS.md): chat (uploads, sizes, pixels, previews, files in direct
+  messages, connection and message limits, retention), calls (recording allowed, reminder lead),
+  accounts (sign-out days, registration open, 2FA for every member), home (season clock, "Start
+  here"), the weekly recap (on/off, day, hour, room) and a new site banner. Env values that were the
+  source are now only defaults (docs/DEPLOYMENT.md). The finish (decided 2026-10-23): "Uploads on
+  other sites" and "Images on other sites" are two independent switches, each with its per-site
+  rule; the site banner's info style shows as info (it had lost to the shell's warning-looking
+  `.banner`; a browser test now compares both).
 - **Uploads and uploaded images in the chat on other sites** — built behind switches, off by
   default (2026-10-23, `feat/se-settings-1`): "Uploads on other sites" (members upload there) and
   "Images on other sites" (members-only images through 5-minute signed links bound to the file and
@@ -810,9 +807,9 @@ entry waits for.
   the card (with a small inline image) travels inside the encrypted message, and the recipient's
   browser never contacts the linked site; account setting, on by default (docs/CHAT.md, "Link
   previews in direct messages").
-- **Linking calls to events** — closed by SE-NIGHT-5 piece 2 (`feat/se-night-5`, not merged
-  yet; owner decision 2026-10-22): an organiser links a planned call to one of the event bot's
-  next 30 days' occurrences; that event offers "Listen on this site" in "Up next" and on
+- **Linking calls to events** — closed by SE-NIGHT-5 piece 2 (`feat/se-night-5`, PR #15, merged
+  2026-10-22; owner decision 2026-10-22): an organiser links a planned call to one of the event
+  bot's next 30 days' occurrences; that event offers "Listen on this site" in "Up next" and on
   `/events` instead of a second entry, and the call's page names the event; a vanished or moved
   occurrence just loses the link (docs/CALLS.md, "Linked to a bot event").
 
@@ -827,23 +824,23 @@ entry waits for.
 - **SE-HOME-LIVE-1 part 1 — "Next call" box on the home page** — closed by `feat/se-home-live-1`
   (merged, PR #13; owner request 2026-10-21): a live call with Listen, else the next planned one
   with its time, else a friendly line; the calls quarter behind it (docs/DESIGN.md, "Home").
-- **SE-HOME-LIVE-1 part 2 — "Add to calendar"** — closed by `feat/se-home-live-1` (not merged
-  yet): an RFC 5545 file per planned call for everyone, on the Calls page and in the Next call
-  box (docs/CALLS.md, "Calendar file").
+- **SE-HOME-LIVE-1 part 2 — "Add to calendar"** — closed by `feat/se-home-live-1` (PR #13, merged
+  2026-10-21): an RFC 5545 file per planned call for everyone, on the Calls page and in the Next
+  call box (docs/CALLS.md, "Calendar file").
 - **SE-HOME-LIVE-1 part 3 — "Remind me on this site"** — closed by `feat/se-home-live-1` (merged, PR
   #13): members' reminders, notices 10 minutes before and when live on every open page, once per
   kind (docs/CALLS.md, "Reminders").
-- **SE-HOME-LIVE-1 part 4 — live Community box** — closed by `feat/se-home-live-1` (not merged
-  yet): the online count and the newest messages of General, live; the 24-hour rule (docs/CHAT.md,
-  "Community box").
+- **SE-HOME-LIVE-1 part 4 — live Community box** — closed by `feat/se-home-live-1` (PR #13, merged
+  2026-10-21): the online count and the newest messages of General, live; the 24-hour rule
+  (docs/CHAT.md, "Community box").
 - **SE-HOME-LIVE-1 part 5 — empty Calls lists and the wide prices page** — closed by
   `feat/se-home-live-1` (merged, PR #13): cards instead of "None."; the prices page in the wide
   column with fair price and converter side by side from 1100px (docs/DESIGN.md).
-- **SE-HOME-LIVE-1 follow-up (owner review 2026-10-21)** — on `feat/se-home-live-1` (not merged
-  yet): the Next call title wraps instead of being cut (full title as name and tooltip), the
-  zone stays with its time; the home's end clears the chat button and no box is cut (the home
-  scrolls when its content needs it); Fair price's marks in one row with the arrow beside the
-  title; the fair price table never sticks out, all rows equal, scrolling inside below 1100px.
+- **SE-HOME-LIVE-1 follow-up (owner review 2026-10-21)** — closed by `feat/se-home-live-1` (PR #13,
+  merged 2026-10-21): the Next call title wraps instead of being cut (full title as name and
+  tooltip), the zone stays with its time; the home's end clears the chat button and no box is cut
+  (the home scrolls when its content needs it); Fair price's marks in one row with the arrow beside
+  the title; the fair price table never sticks out, all rows equal, scrolling inside below 1100px.
 - **SE-HOME-LIVE-1 follow-up 2 (owner decision 2026-10-21)** — on `feat/se-home-live-1` (merged, PR
   #13): home fits the window again from 1280 x 720 (a lower banner, tighter spacing, the Next call
   buttons as icons in one row, its title in 2 lines), no box cut, nothing under the chat button; one
@@ -855,23 +852,23 @@ entry waits for.
   merged, PR #12): no known vulnerabilities (npm audit), react-router 8.4.0 → 8.5.0; salt
   requests and every `/api` read limited per IP; link-preview failures logged by host only.
   Design questions are on the morning sheet (reports/NIGHT-2026-10-21.md).
-- **Safety-number verification** — closed by SE-NIGHT-4 piece 3 (`feat/se-night-4`, not merged
-  yet): "Verify safety number" in a direct conversation's "…"; both members see the same 12
-  groups of 5 digits (BLAKE2b of the two sorted public keys); "Mark as verified" per device
-  with a "Verified" badge; trust on first use with a key-change notice that removes the mark,
-  sending never blocked (docs/CHAT.md, "Safety numbers").
-- **Speed and phone width** — closed by SE-NIGHT-4 piece 2 (`feat/se-night-4`, not merged
-  yet): pages loaded on first use (first JavaScript 293 → 113 KB gzip), hashed files cached for
-  a year, smaller brand images, lazy decoration, no layout shift while data arrives, 44px
-  touch targets on every page at phone width (docs/DESIGN.md, "Speed").
-- **SE-REDESIGN-1 — the SE style** — closed by SE-NIGHT-4 piece 1 (`feat/se-night-4`, not merged
-  yet; reference approved 2026-10-20, kept in `docs/design/se-style/`): new tokens (the four
-  token colours, glows over warm white or night blue, the seasons' sidebar gradient,
-  translucent cards, pills), the logo's emblem and quarters as brand images, the sidebar with
-  the emblem, solid current item and season dots, the home page as banner, featured game and
-  Up next, four season price tiles, Community and fair price, the sub pages' quarter headers
-  and faint quarters, the prices banner, the login card's logo (docs/DESIGN.md). The home
-  sparkline went with the old price card.
+- **Safety-number verification** — closed by SE-NIGHT-4 piece 3 (`feat/se-night-4`, PR #12, merged
+  2026-10-21): "Verify safety number" in a direct conversation's "…"; both members see the same 12
+  groups of 5 digits (BLAKE2b of the two sorted public keys); "Mark as verified" per device with a
+  "Verified" badge; trust on first use with a key-change notice that removes the mark, sending never
+  blocked (docs/CHAT.md, "Safety numbers").
+- **Speed and phone width** — closed by SE-NIGHT-4 piece 2 (`feat/se-night-4`, PR #12, merged
+  2026-10-21): pages loaded on first use (first JavaScript 293 → 113 KB gzip), hashed files cached
+  for a year, smaller brand images, lazy decoration, no layout shift while data arrives, 44px touch
+  targets on every page at phone width (docs/DESIGN.md, "Speed").
+- **SE-REDESIGN-1 — the SE style** — closed by SE-NIGHT-4 piece 1 (`feat/se-night-4`, PR #12, merged
+  2026-10-21; reference approved 2026-10-20, kept in `docs/design/se-style/`): new tokens (the four
+  token colours, glows over warm white or night blue, the seasons' sidebar gradient, translucent
+  cards, pills), the logo's emblem and quarters as brand images, the sidebar with the emblem, solid
+  current item and season dots, the home page as banner, featured game and Up next, four season
+  price tiles, Community and fair price, the sub pages' quarter headers and faint quarters, the
+  prices banner, the login card's logo (docs/DESIGN.md). The home sparkline went with the old price
+  card.
 
 - **Small prices cut to two decimals** — closed by SE-BOTS-2c (PR #11, `feat/se-bots-2`, merged
   2026-10-20; owner request 2026-10-20): POL showed $0.09 where the price bot shows 0.094195. One
