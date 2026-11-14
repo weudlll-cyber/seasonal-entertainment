@@ -20,11 +20,10 @@ import {
 } from '@seasonal-entertainment/shared/profileRules.js';
 import { api, upload } from '../api/http.js';
 import { FormMessage } from '../components/FormField.jsx';
+import { PICTURE_TYPES } from '../components/pictureTypes.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { profilePath } from './profilePath.js';
 import './profile.css';
-
-const PICTURE_TYPES = 'image/jpeg,image/png,image/webp,image/gif';
 
 export default function ProfileSettings({ onStatus }) {
   const { user } = useSession();

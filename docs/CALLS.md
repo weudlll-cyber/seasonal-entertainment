@@ -597,9 +597,9 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
     (`call_recordings.seconds`). It is never computed from the start and stop times, which
     include the egress's start-up (a 33-second file once showed as 0:36). While it is unknown
     (the file not complete, or not an MP4), no length is shown rather than a wrong one.
-  - **Deleting**: organisers and admins delete a recording, file and row
-    (`DELETE /api/calls/:id/recordings/:rid`, audited `call.recording_delete`). Nothing is
-    deleted automatically.
+  - **Deleting**: organisers and admins delete a recording, file and row, and its chosen
+    preview image's files (`DELETE /api/calls/:id/recordings/:rid`, audited
+    `call.recording_delete`). Nothing is deleted automatically.
   - **Chapters** (2026-10-23): marks under the player, each a time and a title; a click seeks
     the player there (`RecordingChapters.jsx`). Organisers and admins add, change and delete
     them (`POST`, `PUT`, `DELETE /api/calls/:id/recordings/:rid/chapters[/:cid]`, audited
@@ -627,7 +627,8 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
     "(recording)"), `og:description` (the date in UTC, labelled "UTC": `UTC_ZONE` in
     `shared/localWeek.js`, as the weekly recap's text, since one card is read in every zone
     (decided 2026-11-11); and the length), `og:url`, `og:type`
-    `video.other`, `og:image` (the site's logo, `/brand/logo.webp`), `og:video` and
+    `video.other`, `og:image` and `twitter:image` (the recording's chosen preview image, below,
+    or else the site's logo, `/brand/logo.webp`), `og:video` and
     `og:video:secure_url` (the public video URL), `og:video:type` `video/mp4`,
     `og:video:width`/`height` (1280 x 720, the recording's size), and `twitter:card`
     `summary_large_image` (a "player" card would need an embeddable player page of its own).
@@ -643,9 +644,32 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
     touch screen with a share sheet (`navigator.share`) the sheet opens with the link; elsewhere
     the link is copied and "Link copied" shows. Without a clipboard the link is shown to copy
     by hand.
-  - Tests: `server/test/recordingShare.test.js`, `client/src/calls/recordingShare.test.jsx`,
-    `client/e2e/recordingShare.spec.js` (the browser tests run with `CALLS_RECORDINGS_DIR` set;
-    no egress runs there, so the spec stores its recording in the database).
+  - **A recording's preview image** (decided 2026-11-14): organisers and admins (the same who
+    delete recordings) choose the picture the card shows, on the recording's own page
+    (`calls/RecordingPreviewPicker.jsx`): a slider through the video and **"Use this frame"**
+    (the browser draws the shown frame into a JPEG, `calls/captureFrame.js`, and uploads it;
+    the video comes from this site, so the canvas may be read), or **"Upload an image"**. Both
+    go to `POST /api/calls/:id/recordings/:rid/preview` (the image as the raw body) and take
+    the chat images' rules: JPG, PNG, WebP or GIF, the upload size and megapixel settings,
+    re-encoded without metadata, through the chat's own picture path
+    (`chat.images.storePicture`, as profile pictures). **"Back to the logo"** is
+    `DELETE` on the same address. Without a choice the logo stays. The image and its
+    thumbnail are files in the media folder (`uploads/`), so the nightly backups hold them like
+    other media; the row keeps their names and when it was chosen
+    (`call_recordings.preview_*`, `calls/recordingPreview.js`). A new image replaces the old,
+    whose files go; deleting the recording or its call deletes them too. Setting and removing
+    are audited (`call.recording_preview_set`, `call.recording_preview_remove`, with the call's
+    title and the recording's id). Everyone may load it, as the recordings themselves:
+    `GET /api/calls/recordings/:rid/preview/full|thumb`, the time it was chosen in the address
+    (`?v=`), so a new image is a new address and one address may be kept a day. Every list's
+    player shows it before it plays (`poster`, `RecordingItem.jsx`): the lists show no other
+    thumbnail.
+  - Tests: `server/test/recordingShare.test.js`, `server/test/recordingPreview.test.js`,
+    `client/src/calls/recordingShare.test.jsx`, `client/src/calls/recordingPreview.test.jsx`,
+    `client/e2e/recordingShare.spec.js` and `client/e2e/recordingPreview.spec.js` (the picker
+    at 1280 and 390 pixels with a short VP9 test video, `client/e2e/fixtures/frames.mp4`; the
+    browser tests run with `CALLS_RECORDINGS_DIR` set; no egress runs there, so the specs store
+    their recordings in the database).
 - **Tested for real on the owner's PC** (2026-10-22): LiveKit v1.13.10 with egress v1.15.0 and
   Redis in Docker. A browser with a fake camera and microphone was recorded through the
   site's own service code: a playable MP4, 1280 x 720, 15 frames a second, H.264 Main at about

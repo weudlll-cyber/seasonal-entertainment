@@ -6,7 +6,8 @@
 //              pages/RecordingsPage.jsx; docs/CALLS.md, "Recording"): in the archive its call's
 //              title linking to the call; its date in the site's format, its length (the
 //              file's own; none while unknown) and a player (the video streams from this site;
-//              seeking asks for parts of it); a "Share" button with its stable link
+//              seeking asks for parts of it; before it plays it shows the recording's chosen
+//              preview image, RecordingPreviewPicker); a "Share" button with its stable link
 //              (ShareRecording); its chapters (RecordingChapters); organisers and admins delete
 //              it (file and row), after a question; onDeleted, when given, instead of a reload
 //              (the recording's own page leaves for the archive).
@@ -22,7 +23,7 @@ import RecordingChapters from './RecordingChapters.jsx';
 import ShareRecording from './ShareRecording.jsx';
 import './recordings.css';
 
-// recording: { id, startedAt, seconds, chapters }; title: the call's (archive) or none;
+// recording: { id, startedAt, seconds, chapters, preview }; title: the call's (archive) or none;
 // onChanged: reload after a change; onDeleted: after the delete instead (default onChanged).
 export default function RecordingItem({
   callId,
@@ -62,6 +63,7 @@ export default function RecordingItem({
         ref={video}
         controls
         preload="metadata"
+        poster={recording.preview?.full}
         src={`/api/calls/${callId}/recordings/${recording.id}/video`}
         aria-label={`Recording of ${when}`}
       />

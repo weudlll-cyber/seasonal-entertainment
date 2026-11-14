@@ -52,6 +52,7 @@ import { startPollJobs } from './polls/store.js';
 import { recordingSharePage } from './calls/recordingShare.js';
 import { resumeRecordingStarts } from './calls/recordingStart.js';
 import { chapterRoutes } from './calls/chapterRoutes.js';
+import { recordingPreviewRoutes } from './calls/recordingPreviewRoutes.js';
 import { callRoutes } from './calls/routes.js';
 import { callSpotlightRoutes } from './calls/spotlightRoutes.js';
 import { callStageRoutes } from './calls/stageRoutes.js';
@@ -212,6 +213,7 @@ export function createApp({
   // Before callRoutes too: its /:id would take /recordings (the archive).
   api.use('/calls', callRecordingRoutes(db, config, callService));
   api.use('/calls', chapterRoutes(db, config, callService));
+  api.use('/calls', recordingPreviewRoutes(db, config, callService, chat));
   api.use('/calls', callRoutes(db, config, callService, chat, wentLive));
   api.use('/calls', callReminderRoutes(db, config, callService));
   api.use('/calls', callJoinRoutes(db, config, callService, chat));

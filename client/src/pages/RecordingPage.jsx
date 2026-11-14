@@ -6,7 +6,9 @@
 //              recording"): only that recording, for everyone: its call's title, a link to the
 //              call, and the recording as in a list (RecordingItem: date, length, player,
 //              "Share", chapters; organisers and admins edit and delete, and after a delete the
-//              page goes to the archive). A recording that does not exist (or no longer) shows
+//              page goes to the archive), and for organisers and admins the choice of its
+//              preview image (RecordingPreviewPicker). A recording that does not exist (or no
+//              longer) shows
 //              the normal "Page not found". The preview card's meta tags come from the server
 //              (server/src/calls/recordingShare.js), not from this page.
 // ============================================================
@@ -16,6 +18,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { api } from '../api/http.js';
 import PageHeader from '../brand/PageHeader.jsx';
 import RecordingItem from '../calls/RecordingItem.jsx';
+import RecordingPreviewPicker from '../calls/RecordingPreviewPicker.jsx';
 import { FormMessage } from '../components/FormField.jsx';
 import NotFoundPage from './NotFoundPage.jsx';
 
@@ -57,6 +60,13 @@ export default function RecordingPage() {
               onDeleted={() => navigate('/calls/recordings')}
             />
           </ul>
+          {answer.canManage && (
+            <RecordingPreviewPicker
+              callId={recording.callId}
+              recording={recording}
+              onChanged={load}
+            />
+          )}
         </>
       )}
     </section>

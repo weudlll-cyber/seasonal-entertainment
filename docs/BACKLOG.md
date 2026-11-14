@@ -12,11 +12,17 @@ entry waits for.
 - **Real sites to approve for the chat embed** — which game sites go on Admin → Embedding once
   the site is live (only exact `https://` origins).
 
+### Built, waiting for the merge
+
+- **A recording's preview image** — built on `night/2026-11-14` (piece 1; decided 2026-11-14;
+  until then the share card used the site's logo): on the recording's page organisers and
+  admins pick a frame with a slider ("Use this frame", taken in the browser) or upload an image
+  (the chat images' rules), or go "Back to the logo"; it becomes the share card's image and the
+  players' still image, is deleted with the recording or call, backed up as media, and audited
+  (docs/CALLS.md, "A recording's preview image").
+
 ### Proposals not decided
 
-- **A frame of the video as a recording's preview image** — the share card uses the site's logo
-  (2026-11-10); a picture taken from the recording itself would need new image tooling on the
-  server (an idea, not planned).
 - **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
   login is not planned, decided 2026-11-02).
 - **Each vote reloads the poll summary on every member's open page** — security review of

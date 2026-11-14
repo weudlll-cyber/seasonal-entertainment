@@ -11,7 +11,9 @@
 //              recorded from its start (record_from_start) and when its last recording failed to
 //              start (recordingStart.js). Recordings (recordings.js): one row
 //              per recording of a call, its file in the recordings folder, whether it was started
-//              with the call (from_start), while starting (no active_at yet), running and after, and its length once read from the file; deleted by an
+//              with the call (from_start), while starting (no active_at yet), running and after, its
+//              length once read from the file, and its chosen preview image (recordingPreview.js:
+//              the files in the media folder, their type and when it was chosen); deleted by an
 //              organiser, or with its whole call by an admin (deleteCall.js: every table here goes
 //              with the call row, by cascade). Its chapter marks (chapters.js: a time and a title, set by organisers and
 //              admins; a new table, so CREATE TABLE IF NOT EXISTS adds it to an older database,
@@ -22,7 +24,7 @@
 //              up (columns that came later: the spotlight, SE-CALLS-2; room_missing_since,
 //              SE-NIGHT-2; the bot occurrence link and a recording's length, SE-NIGHT-5; when a
 //              recording became active, a failed start and recording from the start,
-//              2026-11-07).
+//              2026-11-07; a recording's preview image, 2026-11-14).
 // ============================================================
 
 import { addMissingColumns } from '../db/addColumns.js';
@@ -83,7 +85,11 @@ CREATE TABLE IF NOT EXISTS call_recordings (
   started_by TEXT    NOT NULL,
   seconds    INTEGER,
   active_at  TEXT,
-  from_start INTEGER NOT NULL DEFAULT 0 CHECK (from_start IN (0, 1))
+  from_start INTEGER NOT NULL DEFAULT 0 CHECK (from_start IN (0, 1)),
+  preview_file  TEXT,
+  preview_thumb TEXT,
+  preview_mime  TEXT,
+  preview_at    TEXT
 );
 CREATE INDEX IF NOT EXISTS call_recordings_by_call ON call_recordings (call_id);
 CREATE TABLE IF NOT EXISTS call_recording_chapters (
@@ -116,5 +122,9 @@ export function migrateCalls(db) {
       'INTEGER NOT NULL DEFAULT 0 CHECK (record_from_start IN (0, 1))',
     ],
     ['call_recordings', 'from_start', 'INTEGER NOT NULL DEFAULT 0 CHECK (from_start IN (0, 1))'],
+    ['call_recordings', 'preview_file', 'TEXT'],
+    ['call_recordings', 'preview_thumb', 'TEXT'],
+    ['call_recordings', 'preview_mime', 'TEXT'],
+    ['call_recordings', 'preview_at', 'TEXT'],
   ]);
 }
