@@ -448,6 +448,50 @@ it on (docs/CALLS.md, "Push when a call starts"; decided 2026-11-10). Nothing to
   restored subscriptions are dropped at the next call start and members turn the switch on
   again.
 - No firewall change: the site posts to the browsers' push services over https, outbound only.
+
+### An e-mail when the site is down
+
+Built on `night/2026-11-14`, not merged yet (decided 2026-11-14). A watchdog on the server
+sends one e-mail when the site or the call service stops answering, and one when both answer
+again:
+
+- **The watchdog** (`deploy/site/watchdog/seasonal-watchdog.sh`) runs on the host, every 2
+  minutes (`seasonal-watchdog.timer`, installed and enabled by every installer run, removed by
+  `--uninstall`), not in a container and not tied to Docker, so it also works while the site or
+  Docker is down. It asks `https://<site>/api/health` and, with calls set up,
+  `https://<calls domain>/`, both through this server's own web server (`curl --resolve` to
+  127.0.0.1; DNS is not asked). After **2 failed checks in a row** (2 to 4 minutes: a restart
+  or one slow answer sends nothing) it sends one "Down" e-mail naming what failed; once both
+  answer again, one "Back up" e-mail; nothing in between. A mail that cannot be sent is tried
+  again on the next run. Its state is in `/var/lib/seasonal-watchdog/` (root, 700); its log is
+  the journal (`journalctl -u seasonal-watchdog.service`), never with the password.
+- **The recipient**: Admin → Settings → **Alerts → "Outage alert address"** (one address;
+  empty: no e-mails). The site writes it into `outage-alert-address` in its data volume
+  (`/data` in the container; on the host the volume's folder, which the watchdog reads while
+  the site is down; `server/src/alerts/`). **"Send a test e-mail"** under it asks the watchdog
+  for one: it goes out on the next run, within 2 minutes, and the page shows whether it was
+  sent or why not ("Check again").
+- **The mail account** that sends: the installer asks once, optionally, for the SMTP server
+  (e.g. `smtp.gmail.com`; Enter: no e-mails, not asked again), its port (587, STARTTLS; 465 for
+  TLS), the user (the full address for Gmail) and the password (typed, not shown; in an answers
+  file `OUTAGE_SMTP_PASSWORD_FILE`, a file holding it). They go into
+  `/etc/seasonal/outage-smtp` (root, mode 600, never printed or logged; `SMTP_TLS=none` there
+  only for a relay on this server), kept on every later run and `--update`;
+  `sudo ./deploy/install.sh --outage-mail` asks again. The site never sees the password: only
+  the watchdog sends, with `curl` (no other package), the password handed to it on its
+  standard input, never on a command line.
+- **A Google app password** (for a Gmail address such as the site's admin address): sign in
+  to that Google account, turn on 2-Step Verification (Google account → Security), then open
+  Google account → Security → **App passwords**, name it e.g. "Seasonal outage alerts" and
+  create it. Google shows 16 letters once: type them at the installer's password question
+  (spaces do not matter to Google, but type it without them). Revoking it there stops the
+  e-mails; make a new one and run `--outage-mail`.
+- **What it cannot report**: when the whole server is down (switched off, no network, the
+  provider's outage), the watchdog is down with it and no e-mail comes. For that a monitor
+  outside the server is needed, for example a free uptime service that checks
+  `https://<site>/api/health` every few minutes and e-mails you.
+- Nothing about members is stored for this: the address is the admins' own setting, the test
+  request and its answer are times in two small files.
 - Tests: `bash deploy/test/push.test.sh` (CI too).
 
 ### What you still do yourself
@@ -951,6 +995,7 @@ the restored database). What the steps above do not show:
 | "no terminal: the first admin was not created"        | run `sudo ./deploy/install.sh --admin` on a terminal                                                                                                    |
 | "the event bot does not answer on …/bot-admin/health" | the bot's env file needs `STANNOUNCEBOT_WEB_EMBEDDED=1` and `STANNOUNCEBOT_WEB_BASE_PATH=/bot-admin`, then a bot restart ("The event bot's admin page") |
 | a run stopped half-way                                | fix the cause and run the installer again (it continues), or `--rollback` the printed snapshot                                                          |
+| no outage e-mail, or "could not be sent" on the test  | `journalctl -u seasonal-watchdog.service` (the reason, never the password); the address in Admin → Settings → Alerts; `--outage-mail` for the account   |
 
 Logs:
 

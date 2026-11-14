@@ -5,7 +5,9 @@
 // Description: /api/admin/settings (admins only, with 2FA as every admin route): every site
 //              setting with its group, rules and current value, and changing one after its
 //              kind's check (types.js). Each change writes one audit entry with the old and
-//              new value (change.js). Organisers change the site banner on their own route
+//              new value (change.js), then onChanged(key, value) for an area that follows a
+//              setting outside the database (the outage watchdog's recipient file,
+//              alerts/routes.js). Organisers change the site banner on their own route
 //              (bannerRoutes.js).
 // ============================================================
 
@@ -16,7 +18,7 @@ import { changeSetting } from './change.js';
 import { GROUPS, SETTINGS } from './definitions.js';
 import { checkSetting, listSettings } from './store.js';
 
-export function adminSettingRoutes(db) {
+export function adminSettingRoutes(db, onChanged = () => {}) {
   const router = express.Router();
 
   router.get('/', allow('admin'), (_req, res) => {
@@ -29,6 +31,7 @@ export function adminSettingRoutes(db) {
     const problem = checkSetting(db, req.params.key, value);
     if (problem) return sendError(res, 400, 'invalid_input', problem);
     changeSetting(db, req.user, req.params.key, value);
+    onChanged(req.params.key, value);
     res.json({ ok: true, groups: GROUPS, settings: listSettings(db) });
   });
 

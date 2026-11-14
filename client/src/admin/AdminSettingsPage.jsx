@@ -4,12 +4,14 @@
 // Project:     Seasonal Entertainment
 // Description: Admin site settings (/admin/settings): every setting the server defines, in
 //              its group (Chat, Other sites, Calls, …, in the server's order), each saved on
-//              its own (SettingForm.jsx; every change is audited).
+//              its own (SettingForm.jsx; every change is audited). Under Alerts, "Send a test
+//              e-mail" for the outage watchdog (OutageTestMail.jsx).
 // ============================================================
 
 import { useEffect, useState } from 'react';
 import { api } from '../api/http.js';
 import { FormMessage } from '../components/FormField.jsx';
+import OutageTestMail from './OutageTestMail.jsx';
 import SettingForm from './SettingForm.jsx';
 
 export default function AdminSettingsPage() {
@@ -51,6 +53,11 @@ export default function AdminSettingsPage() {
               />
             ))}
           </div>
+          {group.name === 'Alerts' && (
+            <OutageTestMail
+              address={group.settings.find((s) => s.key === 'alerts.outageAddress')?.value ?? ''}
+            />
+          )}
         </section>
       ))}
     </>

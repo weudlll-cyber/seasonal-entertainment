@@ -83,6 +83,7 @@ import { makeLimiter } from './http/rateLimit.js';
 import { securityHeaders } from './http/securityHeaders.js';
 import { currentUser, sessionMiddleware } from './http/session.js';
 import { adminSettingRoutes } from './settings/adminRoutes.js';
+import { outageAddressChanged, outageAlertRoutes } from './alerts/routes.js';
 import { bannerSettingRoutes } from './settings/bannerRoutes.js';
 import { bindSettingsConfig } from './settings/store.js';
 import { twoFactorGate } from './twofa/gate.js';
@@ -192,7 +193,8 @@ export function createApp({
   api.use('/games', gameRoutes(db, openRounds));
   api.use('/admin/games', adminGameRoutes(db, openRounds));
   app.locals.games = { start: () => (config.backgroundJobs ? openRounds.start() : null) };
-  api.use('/admin/settings', adminSettingRoutes(db));
+  api.use('/admin/settings', adminSettingRoutes(db, outageAddressChanged(config)));
+  api.use('/admin/outage-alert', outageAlertRoutes(db, config));
   // Organisers change the site banner, and only it (docs/SETTINGS.md, "Who").
   api.use('/banner', bannerSettingRoutes(db));
   api.use('/embed', embedRoutes(db, config, embedOrigins, chat.sessions));

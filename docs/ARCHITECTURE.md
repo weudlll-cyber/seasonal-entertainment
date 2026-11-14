@@ -520,6 +520,9 @@ server/
                            an icon from a link: iconLink.js), the handle app.js builds (index.js)
   src/keys/                members' keys: public keys, sealed private keys, recovery seal
   src/audit/               audit log: schema and the one recordAudit helper
+  src/alerts/              the outage e-mails' site side: the recipient file and the test
+                           e-mail request the host's watchdog reads (docs/DEPLOYMENT.md, "An
+                           e-mail when the site is down")
   src/admin/               /api/admin routes (users, audit); areas add their own editors
   src/info/                info pages: schema, store, public and admin routes, seed (+ seed/*.md,
                            seed/earlier-seeds.json)
@@ -527,7 +530,8 @@ server/
                            open sign-ups (openRounds.js, docs/OPEN-ROUNDS.md); the embedded
                            games, Bingo, Mini Games and the race: their list (embedded.js), sign-in
                            (authorize) and account-changes feed (embeddedRoutes.js; docs/AUTH.md,
-                           "Embedded games")
+                           "Embedded games"); a member's results from the games for their
+                           profile (memberSummary.js; docs/GAME-INTEGRATION.md, section 7)
   src/chat/                chat area, mounted by mount.js (the only entry for the rest of the
                            server): schema, store, messages and what may be sent, viewer rules,
                            routes, moderation, WebSocket endpoint (socket.js) and hub, sender
@@ -611,7 +615,8 @@ deploy/install.sh          the one-command installer for a server (deploy/instal
 deploy/test/               the installer's end-to-end tests: run.sh (systemd Ubuntu containers,
                            Pebble, test DNS); not part of npm run verify or CI
 deploy/site/               the site for a server: Dockerfile, docker-compose.yml (site + Caddy),
-                           Caddyfile, systemd timers (docs/DEPLOYMENT.md)
+                           Caddyfile, systemd timers (docs/DEPLOYMENT.md), the outage watchdog
+                           run on the host (watchdog/seasonal-watchdog.sh)
 deploy/pc/                 the owner's PC: fetches the encrypted backups over sftp (PowerShell on
                            Windows, a POSIX sh script on Linux and macOS)
 deploy/calls/              the call service for a server: livekit.yaml, docker-compose.yml,

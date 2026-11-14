@@ -27,6 +27,13 @@ entry waits for.
   docs/GAME-INTEGRATION.md, section 7. Nothing shows until a game answers it, and the
   installer does not yet set `GAMES_LOCAL_ORIGINS` nor give the site's container a way to the
   host (needs the owner's word).
+- **An e-mail when the site is down** — built on `night/2026-11-14` (piece 3; decided
+  2026-11-14): a watchdog on the host (systemd timer, every 2 minutes, outside the site's
+  container) checks the site and the call service; after 2 failed checks one "down" e-mail,
+  then one "back up" e-mail. The recipient is Admin → Settings → Alerts (with "Send a test
+  e-mail"), the mail account (e.g. Gmail with a Google app password) an optional installer
+  question into a root-only file, kept on `--update` (docs/DEPLOYMENT.md, "An e-mail when the
+  site is down"). A whole-server outage needs a monitor outside the server.
 
 ### Proposals not decided
 

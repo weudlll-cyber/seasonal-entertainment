@@ -102,7 +102,7 @@ uninstall() {
   [[ "$MODE" == nginx ]] && remove_nginx_files
   remove_bot_admin
   close_ports
-  for unit in seasonal-backup seasonal-calls-cert; do
+  for unit in seasonal-backup seasonal-calls-cert seasonal-watchdog; do
     systemctl disable --now "$unit.timer" >/dev/null 2>&1 || true
     rm -f "/etc/systemd/system/$unit.timer" "/etc/systemd/system/$unit.service"
   done
@@ -111,7 +111,7 @@ uninstall() {
     purge_data
   else
     say "kept: the site's data (Docker volume seasonal-site_site-data), backups in $BACKUP_HOST_DIR,"
-    say "kept: secrets ($SITE_DIR_REL/site.env, $STATE_DIR), certificates; installing again reuses them"
+    say "kept: secrets ($SITE_DIR_REL/site.env, $STATE_DIR, the outage mail account), certificates; installing again reuses them"
   fi
   say "uninstalled"
 }

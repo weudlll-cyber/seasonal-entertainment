@@ -178,10 +178,13 @@ livekit_bind() {
   if [[ "${MODE:-}" == caddy ]]; then echo 0.0.0.0; else echo 127.0.0.1; fi
 }
 
+# The site's data folder (its /data) as the host sees it: the outage watchdog reads it there.
+site_data_host_dir() {
+  docker volume inspect seasonal-site_site-data --format '{{ .Mountpoint }}' 2>/dev/null ||
+    die "the site's data volume does not exist yet"
+}
+
 # The site's media/recordings folder as the host sees it (the egress writes there).
 recordings_host_dir() {
-  local mount
-  mount="$(docker volume inspect seasonal-site_site-data --format '{{ .Mountpoint }}' 2>/dev/null)" ||
-    die "the site's data volume does not exist yet"
-  echo "$mount/media/recordings"
+  echo "$(site_data_host_dir)/media/recordings"
 }
