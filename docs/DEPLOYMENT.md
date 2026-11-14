@@ -894,7 +894,41 @@ Then delete `restore.tar` and `restore-recordings` on the PC too.
   `VAPID_PRIVATE_KEY` ("Web push"); otherwise members turn "When a call starts" on again.
 - A restore drill now and then is the only proof a backup works: the archive, and the
   recordings with `--recordings`, until the restore reports no MISSING recording. CI decrypts one made by the
-  real image with the real age tool and runs the restore check on it.
+  real image with the real age tool and runs the restore check on it. On the PC, without
+  touching the live site: below.
+
+#### A restore drill on the PC
+
+The live site stays untouched: the backup goes into a throwaway folder and is started there as
+a throwaway site (first done on 2026-11-14, in Git Bash on Windows; about 17 s from decrypting to
+the restored database). What the steps above do not show:
+
+1. **A checkout without `.env`**: `scripts/restore.mjs` and `server/src/index.js` read
+   `<checkout>/.env` for every variable not set already, so a development checkout would bring
+   its own settings. Clone `master` into the throwaway folder. On Windows without Visual
+   Studio's C++ tools, install with `npm ci --ignore-scripts`: a plain `npm ci` stops at
+   `better-sqlite3`'s native build, and `better-sqlite3` and `bcrypt` load their bundled
+   prebuilt binaries without it.
+2. **Every path inside the throwaway folder**: `DATABASE_PATH`, `MEDIA_DIR` and
+   `DELETION_JOURNAL` (there is no journal there, so the restore says no account was deleted
+   after the backup), and `TEMP`/`TMP` too: given a `.tar`, the restore unpacks the decrypted
+   backup into the system's temporary folder first.
+3. **Decrypt** the archive and the recordings with `age -d` as above, but into the throwaway
+   folder.
+4. **Unpack the `.tar` yourself** (in its folder: `mkdir unpacked`, then
+   `tar -xf restore.tar -C unpacked`) and give the restore the one folder inside: given the
+   `.tar` itself, Git Bash's GNU tar read the throwaway folder's absolute path as escapes
+   (`\14…`) and the restore stopped with "is not a backup archive".
+5. `node scripts/restore.mjs <that folder> --check`, then
+   `node scripts/restore.mjs <that folder> --recordings <the decrypted recordings>`, without
+   `--force` (the new paths are empty). Both should end with exit code 0, the second with
+   "0 MISSING". A recording backup the database no longer names (deleted on the site; the PC
+   keeps every one) is simply not used.
+6. **Start it**: `HOST=127.0.0.1`, an unused `PORT`, a fresh `SESSION_SECRET` and
+   `SECRET_ENCRYPTION_KEY` (never the live ones; the log then says the stored 2FA secrets do not
+   open, as expected), `NODE_ENV` unset, then `node server/src/index.js`.
+   `GET /api/health` should answer `"ok":true`.
+7. **Stop it and delete the whole throwaway folder**, decrypted data included.
 
 ## Troubleshooting
 
