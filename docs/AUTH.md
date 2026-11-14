@@ -643,7 +643,9 @@ Decided 2026-11-11: each member has a profile page at `/members/<name>`
 - **What it shows**: the name; Admin or Organiser where that is the role; the Discord steps
   with their names (as in the chat, `StepList`); "Member since", the account's `created_at`
   as a date in the viewer's own time zone (`client/src/app/dates.js`); an optional "About me" and
-  an optional picture. No links field, no games section. About me is plain text: the page
+  an optional picture; below About me, the member's results from the embedded games (one card
+  per game that answers, built on `night/2026-11-14`: docs/GAME-INTEGRATION.md, section 7),
+  unless they switched "Show my game results" off. No links field. About me is plain text: the page
   writes it as text, so nothing in it ever becomes a link.
 - **About me**: at most 300 characters, counted as shown (an emoji is one), line breaks
   allowed, no other control characters (`shared/profileRules.js`, the same check in the form and
@@ -657,8 +659,9 @@ Decided 2026-11-11: each member has a profile page at `/members/<name>`
   members (`GET /api/members/<name>/picture/<full|thumb>`), never cached; shown on the profile
   page only, not beside chat messages.
 - **Editing**: the account page's "Profile" section (`client/src/profiles/ProfileSettings.jsx`):
-  `PUT /api/profile/about`, `POST` and `DELETE /api/profile/picture`, one limit per account
-  (`profileEdit`, 30 a minute).
+  `PUT /api/profile/about`, `POST` and `DELETE /api/profile/picture`,
+  `PUT /api/profile/game-results` (`{ "show": true|false }`, stored as
+  `member_profiles.hide_game_results`), one limit per account (`profileEdit`, 30 a minute).
 - **Reaching it**: "View profile" first in a name's menu in a chat room (in the embedded chat it
   opens in a new tab); a profile button beside each result of "Find a member" (choosing a result
   still opens the conversation); a member's name in a call (speaker tiles, listener panel)

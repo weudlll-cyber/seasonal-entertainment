@@ -10,7 +10,8 @@
 //              text: React writes it as text, so nothing in it ever becomes a link. "Send
 //              message" opens a direct message (directView.js: the chat drawer brings its Direct
 //              tab forward), not on one's own profile nor where they cannot receive one. Admins
-//              can clear About me and remove the picture.
+//              can clear About me and remove the picture. Below About me, their results from
+//              the site's games (GameResults), unless they switched them off.
 // ============================================================
 
 import { useCallback, useEffect, useState } from 'react';
@@ -20,6 +21,7 @@ import { formatDate } from '../app/dates.js';
 import { StepList, requestDirect } from '../chat/index.js';
 import { FormMessage } from '../components/FormField.jsx';
 import { useSession } from '../session/SessionContext.jsx';
+import GameResults from './GameResults.jsx';
 import './profile.css';
 
 const ROLE_LABEL = { admin: 'Admin', organiser: 'Organiser' };
@@ -93,6 +95,8 @@ export default function MemberProfilePage() {
       ) : (
         <p className="member-profile__empty">Nothing here yet.</p>
       )}
+      {/* Keyed by the name: another member's page starts without the last one's cards. */}
+      <GameResults key={profile.username} username={profile.username} />
       <div className="member-profile__actions">
         {!profile.own && profile.canReceive && (
           <button

@@ -5,7 +5,9 @@
 // Description: The account page's "Profile" section (docs/AUTH.md, "Member profiles"; decided
 //              2026-11-11): About me (at most 300 characters, counted as shown, the same rule as
 //              the server's: shared/profileRules.js) and the profile picture (JPG, PNG, WebP or
-//              GIF by the chat images' rules; a new one replaces the old; Remove takes it away).
+//              GIF by the chat images' rules; a new one replaces the old; Remove takes it away),
+//              and "Show my game results" (on by default; off hides the games' cards on the
+//              profile, GameResults.jsx, decided 2026-11-14).
 //              What other members see is one link away (MemberProfilePage.jsx). The heading
 //              is the account page's (Disclosure.jsx); onStatus(hasPicture) tells it whether a
 //              picture is set, from this section's own load.
@@ -30,6 +32,7 @@ export default function ProfileSettings({ onStatus }) {
   const ownPath = profilePath(user.username); // the page, and its data under /api
   const [about, setAbout] = useState('');
   const [picture, setPicture] = useState(null);
+  const [showGames, setShowGames] = useState(true);
   const [message, setMessage] = useState({});
   const [busy, setBusy] = useState(false);
   const fileInput = useRef(null);
@@ -39,6 +42,7 @@ export default function ProfileSettings({ onStatus }) {
       api(ownPath).then(({ profile }) => {
         setAbout(profile.about);
         setPicture(profile.picture);
+        setShowGames(profile.showGameResults !== false);
         onStatus?.(Boolean(profile.picture));
       }),
     [ownPath, onStatus]
@@ -82,6 +86,14 @@ export default function ProfileSettings({ onStatus }) {
       await api('/profile/picture', { method: 'DELETE' });
       await load();
     }, 'Picture removed.');
+
+  const switchGames = (event) => {
+    const show = event.target.checked;
+    run(async () => {
+      await api('/profile/game-results', { method: 'PUT', body: { show } });
+      setShowGames(show);
+    }, 'Saved.');
+  };
 
   const count = aboutLength(about);
   return (
@@ -136,6 +148,21 @@ export default function ProfileSettings({ onStatus }) {
         )}
       </p>
       <p className="form-field__hint">JPG, PNG, WebP or GIF, by the same rules as chat images.</p>
+      <h3>Games</h3>
+      <label className="form-check">
+        <input
+          type="checkbox"
+          role="switch"
+          checked={showGames}
+          disabled={busy}
+          onChange={switchGames}
+        />
+        <span>Show my game results</span>
+      </label>
+      <p className="form-field__hint">
+        Your results from the site&apos;s games, as each game reports them, on your profile for
+        signed-in members. When this is off, the games are not asked.
+      </p>
       <FormMessage error={message.error} notice={message.notice} />
     </>
   );

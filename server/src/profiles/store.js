@@ -5,7 +5,7 @@
 // Description: Data access for member profiles (profiles/schema.js): one account's profile by
 //              name (with its account's name, role, lock and creation time), setting About me,
 //              putting or taking away the picture (returning the files that go, for the caller
-//              to delete once the change is written).
+//              to delete once the change is written), and the "Show my game results" switch.
 // ============================================================
 
 const now = () => new Date().toISOString();
@@ -19,7 +19,7 @@ export function findProfile(db, username) {
         `SELECT u.id, u.username, u.role, u.locked, u.created_at AS createdAt,
                 COALESCE(p.about, '') AS about, p.picture_file AS pictureFile,
                 p.picture_thumb AS pictureThumb, p.picture_mime AS pictureMime,
-                p.picture_at AS pictureAt
+                p.picture_at AS pictureAt, COALESCE(p.hide_game_results, 0) AS hideGameResults
          FROM users u LEFT JOIN member_profiles p ON p.user_id = u.id
          WHERE u.username = ?`
       )
@@ -42,6 +42,14 @@ export function setAbout(db, userId, about) {
     now(),
     userId
   );
+}
+
+// "Show my game results" (games/memberSummary.js): shown true or false.
+export function setGameResultsShown(db, userId, shown) {
+  ensureRow(db, userId);
+  db.prepare(
+    'UPDATE member_profiles SET hide_game_results = ?, updated_at = ? WHERE user_id = ?'
+  ).run(shown ? 0 : 1, now(), userId);
 }
 
 // The picture's files now, as media paths (none: []).

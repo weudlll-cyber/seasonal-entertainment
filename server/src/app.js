@@ -48,6 +48,7 @@ import { pushRoutes } from './push/routes.js';
 import { pushSender } from './push/send.js';
 import { adminProfileRoutes } from './profiles/adminRoutes.js';
 import { memberProfileRoutes, ownProfileRoutes } from './profiles/routes.js';
+import { createGameResults } from './games/memberSummary.js';
 import { startPollJobs } from './polls/store.js';
 import { recordingSharePage } from './calls/recordingShare.js';
 import { resumeRecordingStarts } from './calls/recordingStart.js';
@@ -170,7 +171,7 @@ export function createApp({
   api.use('/admin/users', adminUserRoutes(db, config, chat, discord));
   // Member profiles (profiles/, docs/AUTH.md "Member profiles"): members only.
   api.use('/admin/users', adminProfileRoutes(db, chat));
-  api.use('/members', memberProfileRoutes(db, config, chat));
+  api.use('/members', memberProfileRoutes(db, config, chat, createGameResults(config.games)));
   api.use('/profile', ownProfileRoutes(db, config, chat));
   api.use('/admin/audit', adminAuditRoutes(db));
   api.use('/info', infoRoutes(db));

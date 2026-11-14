@@ -407,6 +407,11 @@ game's installer writes its own route file and never edits this site's files.
   routes then answer 404. `GAMES_BINGO_EMBEDDED`, written by installs from before the list, is
   removed (the site still reads it as "bingo is in the list"). Each game's installer reads the
   token from that file and sends it as `X-Games-Sync-Token` to the account-changes feed.
+- **A member's results on their profile** (optional, built on `night/2026-11-14`): the site asks
+  each game at `GAMES_LOCAL_ORIGINS` in `site.env` (e.g. `bingo=http://host.docker.internal:4310`)
+  with the same token (docs/GAME-INTEGRATION.md, section 7). The installer neither asks for it
+  nor gives the site container a way to the host yet; without it no game is asked and no card
+  shows.
 - **nginx mode**: the site's server block (its domain's, on 443) holds exactly
   `include /etc/seasonal/routes/*.conf;`, and the folder `/etc/seasonal/routes/` (root, 755) is made
   on every run if missing. Each game's installer puts its file there (it holds a proxy secret,

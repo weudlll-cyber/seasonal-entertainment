@@ -20,6 +20,13 @@ entry waits for.
   (the chat images' rules), or go "Back to the logo"; it becomes the share card's image and the
   players' still image, is deleted with the recording or call, backed up as media, and audited
   (docs/CALLS.md, "A recording's preview image").
+- **Game results on member profiles** — built on `night/2026-11-14` (piece 2; decided
+  2026-11-14): a card per embedded game on a member's profile (up to four values the game names,
+  "Last played", a link into the game), for signed-in members; "Show my game results" on the
+  account page (on by default) hides them; the contract the games implement is
+  docs/GAME-INTEGRATION.md, section 7. Nothing shows until a game answers it, and the
+  installer does not yet set `GAMES_LOCAL_ORIGINS` nor give the site's container a way to the
+  host (needs the owner's word).
 
 ### Proposals not decided
 

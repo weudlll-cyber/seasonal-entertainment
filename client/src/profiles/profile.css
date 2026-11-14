@@ -7,7 +7,8 @@
                 round picture beside the name, the role and "Member since", About me keeping
                 its line breaks and wrapping long words, the buttons in one wrapping row. Picture
                 and name wrap onto two lines where the width is too narrow for both. A name in
-                a call that links to the profile keeps its colour (ProfileName.jsx).
+                a call that links to the profile keeps its colour (ProfileName.jsx). The games'
+                result cards (GameResults.jsx).
    ============================================================ */
 
 .member-profile__head {
@@ -84,4 +85,46 @@
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
+}
+
+/* A member's game results (GameResults.jsx): one card per game, side by side while they fit,
+   each value's label above its number. */
+.game-results__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.game-results__card {
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.game-results__card h3 {
+  margin: 0 0 var(--space-1);
+}
+
+.game-results__card dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin: 0 0 var(--space-1);
+}
+
+.game-results__card dt {
+  font-size: 0.85em;
+}
+
+.game-results__card dd {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.game-results__last {
+  margin: 0 0 var(--space-1);
 }
