@@ -28,11 +28,6 @@ entry waits for.
   the real scripts (10–20 s alone, up to 56 s beside the full server suite), not its data; it has
   a timeout of its own, 120 s (`server/test/backupEncrypted.test.js`).
 
-### To try on the live server
-
-- **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
-  restore one nightly backup there once, as docs/DEPLOYMENT.md describes, and check the site.
-
 ### Proposals not decided
 
 - **A frame of the video as a recording's preview image** — the share card uses the site's logo
@@ -84,8 +79,23 @@ entry waits for.
   bind), 5 alone (26–32 s) and 5 started next to the full server suite (the first took 2.0 min
   and the second 52 s while the suite ran; the suite ended during the second, so the last three
   ran at 29–31 s on a quiet machine). All passed; the code stays as it is.
+- **A backup `.tar` given to the restore on Windows** — seen in the trial restore of 2026-11-14:
+  `openBackup` (`server/src/backup/archive.js`) hands `tar` the unpacking folder as an absolute
+  path, and Git Bash's GNU tar 1.35 read `\14…` in that path (a scratchpad folder) as an escape,
+  so the restore stopped with "is not a backup archive". Unpacking the `.tar` by hand and giving
+  the restore the folder works (docs/DEPLOYMENT.md, "A restore drill on the PC"). The server's
+  restore runs in the Linux container and is not affected; listed only.
 
 ## PART TWO — closed
+
+- **Trial restore of a live backup** — done on the PC on 2026-11-14 (decided 2026-11-03; it
+  waited until the PC held the live backups): the newest nightly archive and the recordings'
+  own backups, decrypted into a throwaway folder and put back with `scripts/restore.mjs`
+  and `--recordings` (`--check` and the restore both exit code 0, about 17 s from decrypting to
+  the restored database). The database's integrity is fine and every finished recording it names
+  came back (0 MISSING); a throwaway instance on that data started and `/api/health` answered
+  `ok`. The steps the restore section did not describe are in docs/DEPLOYMENT.md, "A restore
+  drill on the PC".
 
 - **Room poll cards and chat mutes, bans and the message limit** — closed by `night/2026-11-13` (PR
   #70, merged 2026-11-14; security review of 2026-11-13, L8; decided 2026-11-13): a room poll's card
