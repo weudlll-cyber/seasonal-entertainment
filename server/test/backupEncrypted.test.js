@@ -8,7 +8,7 @@
 //              that restores into a temporary location, sound — integrity check, the same rows,
 //              the same files. A private key or no key is refused before anything is written;
 //              old encrypted backups are pruned like plain ones; the scripts encrypt by default
-//              and restore from the decrypted .tar.
+//              and restore from the decrypted .tar (a timeout of their own, measured: SCRIPTS).
 // ============================================================
 
 import { execFileSync } from 'node:child_process';
@@ -137,32 +137,42 @@ it('prunes encrypted backups older than 14 days', async () => {
   ]);
 });
 
-it('the scripts: encrypted by default, a key required; restore from the decrypted .tar', async () => {
-  const data = await site();
-  const env = {
-    ...process.env,
-    NODE_ENV: 'development',
-    DATABASE_PATH: data.databasePath,
-    MEDIA_DIR: data.mediaDir,
-    BACKUP_DIR: backupRoot(),
-  };
-  delete env.BACKUP_ENCRYPTION;
-  const run = (script, args = [], extra = {}) =>
-    execFileSync(process.execPath, [path.join(repoRoot, 'scripts', script), ...args], {
-      cwd: work, // not the repository: its own .env must not be read
-      env: { ...env, ...extra },
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-  expect(() => run('backup.mjs')).toThrow(/BACKUP_RECIPIENT is not set/);
-  expect(run('backup.mjs', [], { BACKUP_RECIPIENT: recipient })).toMatch(
-    /\.tar\.age \(encrypted\)/
-  );
-  const [name] = readdirSync(backupRoot());
-  const tar = await decryptOnThePc(path.join(backupRoot(), name));
-  expect(run('restore.mjs', [tar, '--check'])).toMatch(/is sound/);
-  const restored = target();
-  const extra = { DATABASE_PATH: restored.databasePath, MEDIA_DIR: restored.mediaDir };
-  expect(run('restore.mjs', [tar], extra)).toMatch(/restored the backup/);
-  expect(usernames(restored.databasePath)).toEqual(['anna', 'ben']);
-});
+// Four runs of the real scripts, each a fresh node that loads part of the server first
+// (restore.mjs alone 1.1–1.3 s of imports, almost all deletionJournal.js). Measured
+// 2026-11-13: 10–20 s on a quiet machine, 38 s and up to 56 s next to the full server suite,
+// where the 45 s default timed out. The data is tiny already; the time is the processes'.
+const SCRIPTS = { timeout: 120_000 };
+
+it(
+  'the scripts: encrypted by default, a key required; restore from the decrypted .tar',
+  SCRIPTS,
+  async () => {
+    const data = await site();
+    const env = {
+      ...process.env,
+      NODE_ENV: 'development',
+      DATABASE_PATH: data.databasePath,
+      MEDIA_DIR: data.mediaDir,
+      BACKUP_DIR: backupRoot(),
+    };
+    delete env.BACKUP_ENCRYPTION;
+    const run = (script, args = [], extra = {}) =>
+      execFileSync(process.execPath, [path.join(repoRoot, 'scripts', script), ...args], {
+        cwd: work, // not the repository: its own .env must not be read
+        env: { ...env, ...extra },
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+    expect(() => run('backup.mjs')).toThrow(/BACKUP_RECIPIENT is not set/);
+    expect(run('backup.mjs', [], { BACKUP_RECIPIENT: recipient })).toMatch(
+      /\.tar\.age \(encrypted\)/
+    );
+    const [name] = readdirSync(backupRoot());
+    const tar = await decryptOnThePc(path.join(backupRoot(), name));
+    expect(run('restore.mjs', [tar, '--check'])).toMatch(/is sound/);
+    const restored = target();
+    const extra = { DATABASE_PATH: restored.databasePath, MEDIA_DIR: restored.mediaDir };
+    expect(run('restore.mjs', [tar], extra)).toMatch(/restored the backup/);
+    expect(usernames(restored.databasePath)).toEqual(['anna', 'ben']);
+  }
+);

@@ -7,8 +7,10 @@
 //              is off (no VAPID keys, push/config.js) GET says so and the rest answers 404.
 //              - GET /: { publicKey } (null: off; the account page then shows no switch).
 //              - POST /status { endpoint }: whether this account has this device's
-//                subscription (the switch's state; a body, so the endpoint is in no log line).
-//              - POST /subscriptions { endpoint, keys: { p256dh, auth } }: turn on.
+//                subscription (the switch's state; a body, so the endpoint is in no log line);
+//                asking marks the subscription used.
+//              - POST /subscriptions { endpoint, keys: { p256dh, auth } }: turn on (at most 10
+//                devices per account: an 11th replaces the one used least recently).
 //              - DELETE /subscriptions { endpoint }: turn off.
 //              The two writes and the status count against one limit per account.
 // ============================================================
@@ -18,7 +20,7 @@ import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { validBody } from '../http/validate.js';
-import { hasSubscription, removeSubscription, saveSubscription } from './store.js';
+import { checkSubscription, removeSubscription, saveSubscription } from './store.js';
 
 const MAX_ENDPOINT = 1024;
 const MAX_KEY = 256;
@@ -70,7 +72,7 @@ export function pushRoutes(db, config) {
     if (!input) return;
     res.json({
       ok: true,
-      subscribed: hasSubscription(db, req.user.id, input.endpoint, push.publicKey),
+      subscribed: checkSubscription(db, req.user.id, input.endpoint, push.publicKey),
     });
   });
 

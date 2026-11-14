@@ -38,6 +38,10 @@ import './ChatFavourites.css';
 // (it also goes while the "File uploads in rooms" setting is off).
 // guestPrompt: shown to a guest instead of the composer where a guest cannot write (the chat
 // embedded on another site: a guest name needs a cookie there); null keeps the guest composer.
+// emptyText: said inside the list once the room's messages have loaded and there are none
+// (a call's chat after the call); null leaves an empty list empty.
+// readOnlyNote: the host's own words where the reader cannot write (a call's chat after the
+// call: "This call's chat is closed."); null keeps the general line.
 export default function ChatPanel({
   room: roomInput,
   variant = 'full',
@@ -46,6 +50,8 @@ export default function ChatPanel({
   files = true,
   guestPrompt = null,
   roomNote = null,
+  emptyText = null,
+  readOnlyNote = null,
 }) {
   const { user, settings } = useSession();
   const chat = useChatRoom(roomInput, user, unlisted);
@@ -69,6 +75,7 @@ export default function ChatPanel({
             room={room}
             roomName={roomName}
             messages={chat.messages}
+            emptyText={chat.loaded ? emptyText : null}
             moderator={info?.me.moderator}
             onAction={chat.act}
             onSeen={chat.markSeen}
@@ -110,7 +117,11 @@ export default function ChatPanel({
               </>
             )
           ) : (
-            current && <p className="chat-note">You can read this room, but not write in it.</p>
+            current && (
+              <p className="chat-note">
+                {readOnlyNote ?? 'You can read this room, but not write in it.'}
+              </p>
+            )
           )}
         </div>
       </ChatVariant.Provider>

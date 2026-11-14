@@ -126,7 +126,9 @@ describe('the account page', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Link Discord' }));
       // The password's keys take a moment (Argon2), more while other tests run.
       await expect.poll(() => assign.mock.calls.length, { timeout: 20_000 }).toBe(1);
-      expect(assign).toHaveBeenCalledWith('/api/auth/discord/start?intent=link&next=%2Faccount');
+      expect(assign).toHaveBeenCalledWith(
+        '/api/auth/discord/start?intent=link&next=%2Faccount%23discord'
+      );
       const body = calls.find((c) => c.key === 'POST /auth/discord/link').body;
       expect(Object.keys(body)).toEqual(['authKey']);
     } finally {
@@ -154,6 +156,26 @@ describe('the account page', () => {
       .toBe(true);
     const body = calls.find((c) => c.key === 'DELETE /auth/discord').body;
     expect(Object.keys(body)).toEqual(['authKey']);
+  });
+
+  it('"Log in with Discord again" comes back to this section, open', async () => {
+    mockApi({
+      ...withFeatures(
+        signedIn({
+          username: 'anna',
+          role: 'member',
+          discord: { ...linked, status: 'needs_login' },
+        }),
+        DISCORD
+      ),
+      ...NO_KEY,
+    });
+    renderAt('/account');
+    const again = await screen.findByRole('link', { name: 'Log in with Discord again' });
+    expect(again).toHaveAttribute(
+      'href',
+      '/api/auth/discord/start?intent=confirm&next=%2Faccount%23discord'
+    );
   });
 
   it('tells an account without a password to set one before unlinking', async () => {

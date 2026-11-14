@@ -13,18 +13,18 @@
 
 import { expect, test } from '@playwright/test';
 import { ADMIN_STATE } from './adminState.js';
+import { memberPage } from './members.js';
 
 const STUB = '<!doctype html><title>Bot admin</title><h1>Stub bot admin page</h1>';
 
-// The page's session answer from the real server, with the feature on and, for `role`, that
-// role in place of the real one (a member without logging one in: the item is the client's).
-async function setUp(page, { role } = {}) {
+// The page's session answer from the real server, with the feature on. The account stays the
+// real one: a made-up member got 401 from the member routes, and since the sign-in-ended
+// handling (docs/AUTH.md, "Sessions") that dropped it again, a race the test lost now and then
+// (seen 2026-11-13).
+async function setUp(page) {
   await page.route('**/api/auth/session', async (route) => {
     const answer = await (await route.fetch()).json();
-    const user = role
-      ? { id: 999, username: 'e2erole', email: 'r@example.org', role }
-      : answer.user;
-    await route.fulfill({ json: { ...answer, user, features: { botAdmin: true } } });
+    await route.fulfill({ json: { ...answer, features: { botAdmin: true } } });
   });
 }
 
@@ -54,10 +54,11 @@ test('guests and members never see Manage events', async ({ page }) => {
   await expect(manageLink(page)).toHaveCount(0);
 });
 
-test('a member does not see it either, even when it is set up', async ({ page }) => {
-  await setUp(page, { role: 'member' });
+test('a member does not see it either, even when it is set up', async ({ browser }) => {
+  const { page } = await memberPage(browser, 'eventsmember');
+  await setUp(page);
   await page.goto('/games');
-  await expect(page.getByText('e2erole').first()).toBeVisible();
+  await expect(page.getByText('eventsmember').first()).toBeVisible();
   await expect(manageLink(page)).toHaveCount(0);
 });
 

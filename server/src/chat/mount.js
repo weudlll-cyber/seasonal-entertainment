@@ -53,6 +53,8 @@ import {
   findRoomBySlug,
 } from './store.js';
 import { findUserById } from '../accounts/userStore.js';
+import { sendError } from '../http/errors.js';
+import { refuseSanctioned } from './sanctionRefusal.js';
 import { accountViewer, canRead, canWrite, chatViewer } from './viewer.js';
 import { makeSenderLimit } from './senderLimit.js';
 import { attachChatSocket } from './socket.js';
@@ -239,15 +241,34 @@ export function mountChat({ app, api, db, config, sessionParser, previewNetwork,
       member: (userId, event) => hub.sendToUser(userId, event),
       members: (event) => hub.sendToMembers(event),
     },
-    // For polls in a room (polls/routes.js; docs/POLLS.md): the room's own read and write rules
-    // for a request (accounts and guests alike), and the poll's card posted as its creator's
-    // message, pushed and counted for unread exactly as a member's post (routes.js).
+    // For polls in a room (polls/routes.js; docs/POLLS.md): the room's own read rule for a
+    // request (accounts and guests alike); whether its organiser or admin may post the card,
+    // checked as a message (routes.js): the room's write rule, a chat mute or ban, the
+    // sender's message limit (decided 2026-11-13); and the card posted as its creator's
+    // message, pushed and counted for unread exactly as a member's post.
     polls: {
       readable: (req, roomId) => {
         const room = findRoom(db, roomId);
         return Boolean(room && canRead(room, chatViewer(req)));
       },
-      writable: (req, room) => canWrite(room, chatViewer(req)),
+      // true when refused, the answer already sent.
+      refused(req, res, room) {
+        const viewer = chatViewer(req);
+        if (!canWrite(room, viewer)) {
+          sendError(res, 403, 'room_not_allowed', 'You cannot start a poll in this room.');
+          return true;
+        }
+        const sanction = activeSanction(db, viewer);
+        if (sanction) {
+          refuseSanctioned(res, sanction);
+          return true;
+        }
+        if (!allowMessage(`user:${req.user.id}`, false)) {
+          sendError(res, 429, 'too_many_messages', 'You are sending messages too fast.');
+          return true;
+        }
+        return false;
+      },
       post(room, user, pollId) {
         const created = addMessage(db, room, { user, guest: null }, { kind: 'text', pollId });
         const { roomId, authorUserId, authorGuest, ...rest } = created;

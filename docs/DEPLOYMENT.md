@@ -413,7 +413,9 @@ game's installer writes its own route file and never edits this site's files.
   mode 600). This installer never reads, logs, copies, backs up or removes files in it; `nginx -t`
   passes with the folder empty, and a broken file there makes the usual check fail before a
   reload. The same server block denies every game's feed, `/api/games/bingo/account-changes`,
-  `/api/games/mini-games/account-changes` and `/api/games/race/account-changes` (`deny all`, 403), whether the game is on or not: a game
+  `/api/games/mini-games/account-changes` and `/api/games/race/account-changes` (`deny all`, 403), in any letter case
+  (`location ~* ^/api/games/<slug>/account-changes`: the site's router ignores letter case, so
+  `/api/games/race/Account-Changes` must be denied too; 2026-11-13), whether the game is on or not: a game
   reads its feed over the site's local port, `http://127.0.0.1:<port>`, the port in
   `/etc/seasonal/site-local-port` (root, 644; written on every run, 3800).
 - **Own-Caddy mode**: the site block of `deploy/site/Caddyfile` has

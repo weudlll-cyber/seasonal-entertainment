@@ -80,7 +80,10 @@ const count = (calls, key) => calls.filter((c) => c.key === key).length;
 describe('a sign-in that ended on the server', () => {
   it('drops the member, tells them, and signing in again returns to the page', async () => {
     const { answers, server } = await accountPage();
-    await section();
+    // The key has arrived (the section offers to unlock it) before the session ends: ended
+    // earlier, the key's own first load is refused and no unlock is ever offered (a race the
+    // test lost now and then under load, seen 2026-11-13).
+    await within(await section()).findByRole('button', { name: 'Unlock private messages' });
     const keyAnswer = answers['GET /keys/me'];
     answers['GET /keys/me'] = NOT_AUTHENTICATED; // the session ended meanwhile
 
@@ -106,11 +109,11 @@ describe('a sign-in that ended on the server', () => {
   it('on a page for everyone it offers "Sign in" with the way back, and asks nothing again', async () => {
     const answers = { ...signedIn(anna), 'GET /games': NOT_AUTHENTICATED };
     const calls = mockApi(answers);
-    renderAt('/games?season=spring');
+    renderAt('/games?season=spring#calendar');
     const notice = (await screen.findByText(SESSION_ENDED)).closest('p');
     expect(within(notice).getByRole('link', { name: 'Sign in' })).toHaveAttribute(
       'href',
-      '/login?next=%2Fgames%3Fseason%3Dspring'
+      '/login?next=%2Fgames%3Fseason%3Dspring%23calendar'
     );
     expect(where()).toBe('/games?season=spring');
     expect(screen.getByRole('link', { name: 'Log in' })).toBeInTheDocument();

@@ -10,6 +10,7 @@
 // ============================================================
 
 import { useLocation } from 'react-router';
+import { herePath } from '../session/nextPage.js';
 import { useSession } from '../session/SessionContext.jsx';
 import DiscordButton from './DiscordButton.jsx';
 import { needsDiscordConfirm } from './discordLinks.js';
@@ -17,7 +18,7 @@ import { needsDiscordConfirm } from './discordLinks.js';
 // what: the change, in words ("protect your private messages").
 export default function DiscordConfirmGate({ what, children }) {
   const { user } = useSession();
-  const { pathname, search, hash } = useLocation();
+  const location = useLocation();
   if (!needsDiscordConfirm(user)) return children;
   return (
     <div className="form">
@@ -25,7 +26,7 @@ export default function DiscordConfirmGate({ what, children }) {
         Your account has no password, so Discord confirms it is you: to {what}, log in with Discord
         once more. You come back here.
       </p>
-      <DiscordButton intent="confirm" next={`${pathname}${search}${hash}`}>
+      <DiscordButton intent="confirm" next={herePath(location)}>
         Confirm with Discord
       </DiscordButton>
     </div>

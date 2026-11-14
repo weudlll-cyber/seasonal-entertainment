@@ -11,7 +11,8 @@
 //              dot and the home card. A poll started in a live call (callId) is listed with
 //              ?call=<id> on its page; ending the call ends it (calls/endCall.js). A poll
 //              started in a chat room (room: its slug; organisers and admins who may write
-//              there) gets a card in the room's timeline (chat.polls.post) and is seen only by
+//              there, not muted or banned in the chat, within their message limit: the card is
+//              a message) gets a card in the room's timeline (chat.polls.post) and is seen only by
 //              those who may read the room; GET /:id gives one poll for that card.
 //              Creating, ending, extending and deleting are audited (poll.create, poll.end,
 //              poll.extend, poll.delete). Every change tells the members' open pages at once
@@ -121,9 +122,9 @@ export function pollRoutes(db, config, chat) {
     if (input.callId !== null && findCall(db, input.callId)?.status !== 'live') {
       return sendError(res, 409, 'call_not_live', 'A poll can be started only in a live call.');
     }
-    // A room poll: in a room this organiser or admin may write in (the room's own rules).
+    // A room poll: in a room that exists; whether its card may go there is checked last.
     const room = input.room === null ? null : chat.rooms.findBySlug(input.room);
-    if (input.room !== null && (!room || !chat.polls.writable(req, room))) {
+    if (input.room !== null && !room) {
       return sendError(res, 403, 'room_not_allowed', 'You cannot start a poll in this room.');
     }
     const known = new Set(listSteps(db).map((s) => s.id));
@@ -133,6 +134,9 @@ export function pollRoutes(db, config, chat) {
         ? 'Please choose among the Discord steps.'
         : null);
     if (problem) return sendError(res, 400, 'invalid_input', problem);
+    // As a message there (chat.polls.refused): write rule, mute or ban, then the message limit,
+    // so a poll refused for its input uses up none of it.
+    if (room && chat.polls.refused(req, res, room)) return;
     const poll = findPoll(db, createPoll(db, { ...input, roomId: room?.id ?? null }, req.user));
     if (room) chat.polls.post(room, req.user, poll.id);
     audit(req, 'poll.create', poll, poll.callId ? { callId: poll.callId } : {});

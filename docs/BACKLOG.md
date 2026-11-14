@@ -12,6 +12,22 @@ entry waits for.
 - **Real sites to approve for the chat embed** — which game sites go on Admin → Embedding once
   the site is live (only exact `https://` origins).
 
+### Built, waiting for the merge
+
+- **An ended call's chat column without a blank box** — built on `night/2026-11-13` (piece 1;
+  seen 2026-11-13 as an empty white box with only its title): the column says "This call's chat
+  is closed." and, without messages, "No messages in this call." inside its box; with messages
+  it shows them read-only (docs/CALLS.md, "Call chat").
+- **The login keeps the whole link** — built on `night/2026-11-13` (piece 2; the `?query` was
+  dropped on the way, noted 2026-11-13): a page for members, and the "Sign in" of the
+  sign-in-ended notice, hand the login the path, `?query` and `#anchor` (`herePath`,
+  `client/src/session/nextPage.js`); still only paths on this site. The account page's Discord
+  section comes back to `/account#discord` (docs/AUTH.md, "Sessions" and "Discord").
+- **The encrypted backup scripts' test under load** — built on `night/2026-11-13` (piece 3; it
+  timed out at 45 s twice in a full verify): measured, its time is four fresh node processes of
+  the real scripts (10–20 s alone, up to 56 s beside the full server suite), not its data; it has
+  a timeout of its own, 120 s (`server/test/backupEncrypted.test.js`).
+
 ### To try on the live server
 
 - **Trial restore of a live backup** — never done on the live site yet (decided 2026-11-03):
@@ -24,6 +40,11 @@ entry waits for.
   server (an idea, not planned).
 - **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
   login is not planned, decided 2026-11-02).
+- **Each vote reloads the poll summary on every member's open page** — security review of
+  2026-11-13, L4 (left for now, decided 2026-11-13): every vote tells every member's page, and
+  the sidebar then reads `GET /api/polls/summary`, which goes through every poll ever made. An
+  idea: tell the pages at most once a second, read only open polls for the summary, and page
+  the archive.
 - **Race-game connection** — the website's part is done (PR #64, 2026-11-11: the slug `race`,
   its routes, room and installer question). Open: the race's own side, in its own repository;
   then, once it is live, `RACE=yes` on the server and the /games card "Seasonal Race" switched
@@ -66,6 +87,52 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Room poll cards and chat mutes, bans and the message limit** — closed by `night/2026-11-13` (PR
+  #70, merged 2026-11-14; security review of 2026-11-13, L8; decided 2026-11-13): a room poll's card
+  is checked as a message (`polls.refused`, `server/src/chat/mount.js`): a muted or banned organiser
+  is refused with the chat's answer, and the card counts against the sender's message limit.
+  docs/POLLS.md.
+- **Web push and logging out** — closed by `night/2026-11-13` (PR #70, merged 2026-11-14; security
+  review of 2026-11-13, L7; decided 2026-11-13): logging out turns this device's push off on the
+  server and in the browser first and drops an unfinished turn-on's mark (`pushOffForLogout`); a
+  turn-on still running hands over its subscription only while its own account is signed in, so it
+  never finishes under the next one. docs/CALLS.md.
+- **A malformed anchor on the account page** — closed by `night/2026-11-13` (PR #70, merged
+  2026-11-14; security review of 2026-11-13, L6; decided 2026-11-13): `/account#%` no longer blanks
+  the page; an anchor that does not decode is ignored (`anchorOf`,
+  `client/src/pages/AccountPage.jsx`). docs/DESIGN.md, "Account page".
+- **nginx's deny of the game feeds in any letter case** — closed by `night/2026-11-13` (PR #70,
+  merged 2026-11-14; security review of 2026-11-13, L5; decided 2026-11-13): the installer writes
+  `location ~* ^/api/games/<slug>/account-changes` (`deploy/install/lib/games.sh`), so
+  `/api/games/race/Account-Changes`, which the site's router serves, is denied as well; the real
+  nginx in `deploy/test/games.test.sh` answers 403 for it. Caddy already did. docs/DEPLOYMENT.md.
+- **Votes of the wrong shape** — closed by `night/2026-11-13` (PR #70, merged 2026-11-14; security
+  review of 2026-11-13, L3; decided 2026-11-13): `validateVote` (`shared/pollRules.js`) refuses
+  answers that are not a list, answers in a text poll and a text that is not a string, so the vote
+  route answers 400 instead of 500 and never stores another poll's answer ids. docs/POLLS.md, "API".
+- **The notification click's path check** — closed by `night/2026-11-13` (PR #70, merged 2026-11-14;
+  security review of 2026-11-13, L2; decided 2026-11-13): the service worker checks the click's
+  target with `shared/localPath.js` (no `//`, no backslash), put in front of it as `/sw.js` by
+  `client/serviceWorkerPlugin.js`; it moved from `client/public/` to `client/src/app/sw.js`.
+  docs/CALLS.md.
+- **The share page and a `$` in a call title** — closed by `night/2026-11-13` (PR #70, merged
+  2026-11-14; security review of 2026-11-13, L1; decided 2026-11-13): the preview tags go into the
+  page through a replacer function (`server/src/calls/recordingShare.js`), so `$'`, `` $` `` or `$&`
+  in a title stay text instead of pasting parts of the page into the tags. docs/CALLS.md.
+- **Web push: at most 10 devices per account, sent a few at a time** — closed by `night/2026-11-13`
+  (PR #70, merged 2026-11-14; security review of 2026-11-13, M1; decided 2026-11-13): an account's
+  11th device replaces the one used least recently (`used_at`: turned on, checked by its device,
+  delivered to; `server/src/push/store.js`), and a call start sends at most 8 messages at once,
+  after the start has its answer (`server/src/push/send.js`). The privacy page says so.
+  docs/CALLS.md, "Push when a call starts".
+- **Voters' names in polls only for signed-in members, and polls on the privacy page** — closed by
+  `night/2026-11-13` (PR #70, merged 2026-11-14; security review of 2026-11-13, M2; decided
+  2026-11-13): in a poll that is not anonymous the names per answer go to signed-in members only;
+  guests get the counts, in every answer with results (`resultsOf`, `server/src/polls/store.js`).
+  The vote form and the home box say members see the name. The privacy page's new "Polls" entry says
+  who sees what, that an anonymous poll's link between ballot and account lasts only while it is
+  open (and in the backups taken meanwhile until they are deleted), and what an account's deletion
+  takes; an unedited privacy page gets the new text (`earlier-seeds.json`). docs/POLLS.md.
 - **A short account page** — closed by `feat/account-sections` (PR #69, merged
   2026-11-13; decided 2026-11-13): a summary (username, role as the sidebar shows it, email)
   with "Log out", then six collapsible sections, all closed by default (Profile; Sign-in &

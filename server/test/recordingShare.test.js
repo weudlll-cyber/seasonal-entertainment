@@ -92,6 +92,16 @@ it('answers the page with the preview card of that recording, values escaped', a
   expect(api.body.canManage).toBe(false);
 });
 
+it("a title with $' or $& is put in as written, never expanded", async () => {
+  app();
+  const olga = await organiser(t);
+  const { id } = await recorded(olga, "Win $' and $& and $` now", 60);
+  const html = (await t.client().get(`/recordings/${id}`)).text;
+  expect(meta(html, 'og:title')).toBe('Win $&#39; and $&amp; and $` now (recording)');
+  expect(html.match(/<div id="root">/g)).toHaveLength(1);
+  expect(html.match(/<\/head>/g)).toHaveLength(1);
+});
+
 it('answers 404 with the plain page for a missing, running, deleted or malformed one', async () => {
   app();
   const olga = await organiser(t);

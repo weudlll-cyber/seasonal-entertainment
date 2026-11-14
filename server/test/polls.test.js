@@ -27,6 +27,7 @@ import { auditActions } from './helpers/chat.js';
 import { connect, cookieOf, listeningChat, stopServer } from './helpers/chatSocket.js';
 import { seedTestSteps } from './helpers/steps.js';
 import { dropEndedLinks } from '../src/polls/store.js';
+import { setSetting } from '../src/settings/store.js';
 import { makeStaff, registerUser } from './helpers/testApp.js';
 
 let t;
@@ -125,6 +126,20 @@ describe('voting', () => {
     expect((await vote(mia, poll.id, { options: [friday] })).status).toBe(409);
   });
 
+  it('names per answer only for signed-in members; guests get the counts', async () => {
+    const { olga, mia, ben } = await setup();
+    const poll = await create(olga, { ...CHOICE, results: 'after_end' });
+    const [friday] = optionIds(poll);
+    await vote(mia, poll.id, { options: [friday] });
+    await vote(ben, poll.id, { options: [friday] });
+    await olga.post(`/api/polls/${poll.id}/end`);
+    expect((await shown(ben, poll.id)).results.options[0].voters).toEqual(['ben', 'mia']);
+    // The list and the one poll (a room card's source): counts, no names.
+    const guestList = (await shown(t.client(), poll.id)).results.options[0];
+    const guestOne = (await t.client().get(`/api/polls/${poll.id}`)).body.poll.results.options[0];
+    for (const option of [guestList, guestOne]) expect(option).toEqual({ id: friday, count: 2 });
+  });
+
   it('free text: at most 500 characters, the texts only for organisers and admins', async () => {
     const { olga, mia, ben } = await setup();
     const poll = await create(olga, { ...CHOICE, kind: 'text', options: [] });
@@ -141,6 +156,22 @@ describe('voting', () => {
       { text: 'Saturday evening, please', by: 'mia' },
       { text: 'Any day', by: 'ben' },
     ]);
+  });
+
+  it('a ballot of the wrong shape answers 400 and stores nothing', async () => {
+    const { olga, mia } = await setup();
+    const textPoll = await create(olga, { ...CHOICE, kind: 'text', options: [] });
+    const choice = await create(olga, { ...CHOICE, otherText: true });
+    // An answer of the choice poll: foreign to the text poll.
+    const answer = optionIds(choice)[0];
+    for (const [id, ballot] of [
+      [textPoll.id, { options: {}, text: 'Fine' }],
+      [textPoll.id, { options: [answer], text: 'Fine' }],
+      [choice.id, { options: [answer], text: 5 }],
+    ]) {
+      expect((await vote(mia, id, ballot)).status).toBe(400);
+    }
+    expect(t.db.prepare('SELECT COUNT(*) AS n FROM poll_ballots').get().n).toBe(0);
   });
 
   it('an "Other answer" goes with a choice only where the poll has one', async () => {
@@ -393,6 +424,40 @@ describe('polls in a call', () => {
 describe('polls in chat rooms', () => {
   const roomMessages = async (agent, slug) =>
     (await agent.get(`/api/chat/rooms/${slug}/messages`)).body.messages;
+
+  const sanction = (kind, username) =>
+    t.db
+      .prepare(
+        `INSERT INTO chat_sanctions (kind, user_id, target, created_by, created_at)
+         SELECT ?, id, username, 'mona', 'now' FROM users WHERE username = ?`
+      )
+      .run(kind, username);
+  const polls = () => t.db.prepare('SELECT COUNT(*) AS n FROM polls').get().n;
+
+  it.each([
+    ['mute', 'muted'],
+    ['ban', 'banned'],
+  ])('a %s in the chat stops room polls as it stops messages', async (kind, error) => {
+    const { olga } = await setup();
+    sanction(kind, 'olga');
+    const refused = await olga.post('/api/polls').send({ ...CHOICE, room: 'general' });
+    expect(refused.status).toBe(403);
+    expect(refused.body.error).toBe(error);
+    expect(polls()).toBe(0);
+    // Not a chat matter: a poll outside any room still goes.
+    expect((await olga.post('/api/polls').send(CHOICE)).status).toBe(201);
+  });
+
+  it("a room poll's card counts against the sender's message limit", async () => {
+    const { olga } = await setup();
+    setSetting(t.db, 'chat.memberMessages', 1);
+    expect((await olga.post('/api/chat/rooms/general/messages').send({ body: 'hi' })).status).toBe(
+      201
+    );
+    const refused = await olga.post('/api/polls').send({ ...CHOICE, room: 'general' });
+    expect(refused.status).toBe(429);
+    expect(polls()).toBe(0);
+  });
 
   it("a card in the room's timeline; seen by everyone who may read the room", async () => {
     const { olga, mia } = await setup();

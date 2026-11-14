@@ -143,6 +143,23 @@ This list describes what the website's software actually stores.
     contact address in the Imprint ([TO BE FILLED BY OWNER: contact email for these requests]).
     You can also lodge a complaint with a data protection authority; in Austria that is the
     Datenschutzbehörde.
+- **Polls** (members who vote): that you voted in a poll (so each account votes once), and
+  your ballot: the answers you chose and any answer you wrote. Who sees what:
+  - The results (how many chose each answer, and how many written answers there are): for
+    organisers and admins at once, for everyone else after their own vote or after the poll's
+    end, as the poll says. Guests see them after the end. A poll for organisers and admins only,
+    or one started in a chat room, is seen only by them, or by those who may read the room.
+  - In a poll that is **not anonymous** (the vote form says so before you vote), your ballot
+    names your account, and the results show who chose each answer, **only to signed-in
+    members**: never to guests, never to search engines. You see your own vote.
+  - Written answers (free text, or "Other answer") only to organisers and admins, with the name
+    when the poll is not anonymous; everyone else sees only how many there are.
+  - In an **anonymous** poll your ballot does not name you, and nobody, admins included, sees
+    who voted what. In an anonymous poll whose results show after the end, the site links your
+    account to your ballot while the poll is open, so you can change your vote, and deletes the
+    link the moment the poll ends; it is never shown to anyone. A nightly backup taken while the
+    poll was open still holds the link until that backup is deleted (after **14 days** on the
+    site's server; see "Backups" below).
 - **Notifications when a call starts** (members, only on a device where you turn "When a call
   starts" on, on your account page): for each such device, the address your browser's push
   service gave it, two keys with which the site encrypts the message for that device, which of
@@ -154,6 +171,9 @@ This list describes what the website's software actually stores.
   push service says the address is no longer valid, when the site's own keys change, when your
   account is locked, and with your account. Your browser keeps its side of it until you turn
   the switch off or take back the site's permission for notifications.
+  At most 10 devices per account: turning it on for an 11th removes the one used least recently
+  (turned on, checked on the account page on that device, or sent a message), so the site also
+  stores when each was last used.
 - **Protection against abuse**: to limit repeated login attempts and similar, the server keeps
   your IP address in its memory for up to one hour. It is not written to the database.
 
@@ -181,6 +201,9 @@ once and cannot be undone. It deletes:
 - mutes and bans of your account;
 - the logins of your account for the chat on other websites (embed tokens);
 - which calls you joined, and your call reminders;
+- that you voted in a poll, and your ballots in polls that are not anonymous; in an anonymous
+  poll that is still open and shows its results after the end, your ballot and written answer
+  too;
 - the devices you turned "When a call starts" on for (their push addresses and keys).
 
 It does not delete:
@@ -195,6 +218,8 @@ It does not delete:
 - for **30 days**, a note that your account was deleted: its number, your username and when,
   nothing else. It is kept apart from the backups, so that restoring an older backup after a
   failure deletes your account again instead of bringing it back; after 30 days it is deleted;
+- your ballots in anonymous polls (other than the case above): they never named you, and stay
+  in the poll's results; polls you started stay too, without your name;
 - the backups (next paragraph).
 
 **Backups**: every night the site makes an encrypted backup of its database and files. What a

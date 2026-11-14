@@ -148,6 +148,15 @@
   min-height: 0;
 }
 
+/* An empty list's line (MessageList emptyText), over the top of the list's box. */
+.se-chat .chat-messages-empty {
+  position: absolute;
+  top: var(--chat-space-2);
+  right: var(--chat-space-2);
+  left: var(--chat-space-2);
+  text-align: center;
+}
+
 .se-chat .chat-new-messages {
   position: absolute;
   bottom: var(--chat-space-1);

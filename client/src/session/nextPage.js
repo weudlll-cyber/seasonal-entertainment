@@ -9,7 +9,8 @@
 //              registering loses nothing. goToNext goes there: a path under /games/<slug>/ (an
 //              embedded game's own pages, docs/AUTH.md, "Embedded games") with a full page load,
 //              everything else inside the app. inEmbedLoginFlow tells the shell that such a page
-//              runs inside the chat's login popup.
+//              runs inside the chat's login popup. herePath is the `next` for the page the
+//              reader is on: path, ?query and #anchor.
 // ============================================================
 
 import { localPathOr } from '@seasonal-entertainment/shared/localPath.js';
@@ -33,6 +34,10 @@ export function goToNext(navigate, next) {
   if (GAME_PAGE.test(path)) window.location.replace(path);
   else navigate(path, { replace: true });
 }
+
+// Where the reader is, whole (path, ?query and #anchor): the `next` a page hands to the login, so
+// nothing of the link is lost on the way (react-router's location).
+export const herePath = ({ pathname, search, hash }) => `${pathname}${search}${hash}`;
 
 // A link to `page` (/login, /register) carrying `next` along when there is one.
 export const withNext = (page, next) => (next ? `${page}?next=${encodeURIComponent(next)}` : page);

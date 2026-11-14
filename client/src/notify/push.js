@@ -23,7 +23,8 @@ import { askPermission } from './systemNotify.js';
 export const SUBSCRIBE_MS = 90_000;
 
 // kind: 'blocked' (permission denied), 'not_asked' (the question was closed or never shown),
-// 'timeout' (no answer within SUBSCRIBE_MS) or 'refused' (the browser's own error, as cause).
+// 'timeout' (no answer within SUBSCRIBE_MS), 'refused' (the browser's own error, as cause) or
+// 'called_off' (no longer wanted: the member logged out meanwhile).
 export class PushFailure extends Error {
   constructor(kind, cause = undefined) {
     super(kind, { cause });
@@ -74,7 +75,9 @@ async function browserSubscription(key) {
 }
 
 // Resolves once the server has the subscription; otherwise throws (see the header).
-export async function turnPushOn(key) {
+// stillWanted(): asked once the browser has its subscription, before the server hears of it;
+// false undoes the browser's part, so the subscription never goes to another account.
+export async function turnPushOn(key, stillWanted = async () => true) {
   const answer = await askPermission();
   if (answer === 'denied') throw new PushFailure('blocked');
   if (answer !== 'granted') throw new PushFailure('not_asked');
@@ -89,6 +92,10 @@ export async function turnPushOn(key) {
     throw err instanceof PushFailure ? err : new PushFailure('refused', err);
   } finally {
     clearTimeout(timer);
+  }
+  if (!(await stillWanted())) {
+    await sub.unsubscribe();
+    throw new PushFailure('called_off');
   }
   const { endpoint, keys } = sub.toJSON();
   await api('/push/subscriptions', { method: 'POST', body: { endpoint, keys } });

@@ -43,8 +43,12 @@ everyone sees them. The page is `/polls` ("Polls" in the sidebar, after Calls).
   first vote, then it is fixed.
   - **Anonymous**: nobody, admins included, sees who voted what. Only what keeps it to one
     vote per account is stored.
-  - **Not anonymous**: everyone who may see the results sees the names per answer, and the
-    vote form says "This poll is not anonymous – your name will be shown".
+  - **Not anonymous**: signed-in members who may see the results see the names per answer;
+    guests get the counts only, in every answer that carries results (`GET /api/polls`,
+    `GET /api/polls/:id` behind a room's poll card, the home box's summary; decided
+    2026-11-13). The vote form says "This poll is not anonymous – your name will be shown to
+    signed-in members" before anyone votes. The privacy page's "Polls" entry says who sees
+    what.
 - **End**: a fixed end time or "end by hand". Organisers and admins end a poll early and
   extend it (a later end time, also for one that was to end by hand) while it is open. Ended
   polls stay on the page with their results, after the open ones (the archive). Open and ended
@@ -81,7 +85,11 @@ Decided 2026-11-11:
   beside the composer (`client/src/chat/ChatPanel.jsx` passes it to the composer's new
   `actions` slot; the direct conversations use the composer without it). It opens the same
   poll form above the composer; the poll is created with the room (`room`: its slug), in a
-  room the creator may write in (403 `room_not_allowed` otherwise).
+  room the creator may write in (403 `room_not_allowed` otherwise). The card is a message, so
+  it is checked as one (the chat handle's `polls.refused`, decided 2026-11-13): a creator muted
+  or banned in the chat is refused (403 `muted` / `banned`, the chat's own answer), and the card
+  counts against their message limit (429 `too_many_messages`). A poll outside any room is not a
+  chat matter and goes as before.
 - The poll appears as a **card in the room's timeline**: a chat message of its creator whose
   `poll_id` names it (`chat_messages.poll_id`, added by `migratePolls`; the card goes with its
   poll), posted, pushed and counted for unread exactly as a member's post (the chat handle's
@@ -116,7 +124,7 @@ a vote and answers in words at both sizes.
   newest open poll the viewer sees, in the top row beside "Up next", which then takes one column
   (it shows only the entries that fit). The question is clamped at 2 lines. A single-choice poll
   without a written answer is voted right in the box: a dropdown of the answers and "Vote" on
-  one line, with "Not anonymous: your name is shown." above when it is not anonymous. A poll
+  one line, with "Not anonymous: signed-in members see your name." above when it is not anonymous. A poll
   with several answers or a written answer links to the Polls page ("Vote"): its form would not
   fit the row, and the home page fits the window without scrolling (docs/DESIGN.md, "Home").
   Afterwards "You voted" with the count; guests a sign-in hint. No open poll: no box.
@@ -176,17 +184,22 @@ checked the same way in the form.
 | `GET /summary`        | everyone           | `{ unvoted, newest }`: the sidebar's dot and the home box                                                                |
 | `GET /:id`            | who may see it     | `{ canManage, canDelete, poll }`: one poll (a room poll's card)                                                          |
 | `POST /`              | organisers, admins | creates one (`callId`: in that live call; `room`: in that chat room); 400 with the rule's sentence when a rule is broken |
-| `POST /:id/vote`      | members            | `{ options, text }`; 409 `already_voted`, `poll_ended`; 403 `not_allowed`                                                |
+| `POST /:id/vote`      | members            | `{ options, text }`; 400 for a ballot of the wrong shape; 409 `already_voted`, `poll_ended`; 403 `not_allowed`           |
 | `POST /:id/end`       | organisers, admins | ends it now (409 when ended)                                                                                             |
 | `POST /:id/extend`    | organisers, admins | `{ endsAt }`, later than the current end and now                                                                         |
 | `POST /:id/anonymous` | organisers, admins | `{ anonymous }`; 409 `poll_has_votes` after the first vote                                                               |
 | `DELETE /:id`         | admins             | deletes it with its votes                                                                                                |
 
+A ballot is checked for its shape too (`validateVote`, 2026-11-13): `options` a list of this
+poll's answer ids (none in a text poll), `text` a string; either may be left out. Anything else
+answers 400 and stores nothing.
+
 `GET /` also gives organisers and admins `steps` (`{ id, ladder, name }`) for the create form.
 A poll as listed: its fields, `options`, `steps` (the names of a step poll's steps), `mayVote`,
 `open`, `votes` (ballots), `voted`, `canVote`, `myVote`
 (`{ options, text }`, not in an anonymous poll) and `results` (null while this viewer may not
-see them): per answer `count` and, when not anonymous, `voters`; `textCount`; for organisers
+see them): per answer `count` and, when not anonymous and the viewer is signed in, `voters`;
+`textCount`; for organisers
 and admins `texts` (`{ text, by }`, `by` only when not anonymous). Rate limits per account:
 `pollManage` and `pollVote` (30 a minute each).
 

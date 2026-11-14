@@ -63,7 +63,9 @@ export default function HomePollCard() {
       </h2>
       {poll.canVote && votesHere(poll) && (
         <form className="home__poll-vote" onSubmit={vote}>
-          {!poll.anonymous && <p className="home__poll-note">Not anonymous: your name is shown.</p>}
+          {!poll.anonymous && (
+            <p className="home__poll-note">Not anonymous: signed-in members see your name.</p>
+          )}
           <div className="home__poll-row">
             <select
               aria-label="Your answer"

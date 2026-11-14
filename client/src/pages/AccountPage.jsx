@@ -12,7 +12,7 @@
 //              says one short status where the page already knows it. Several may be open; the
 //              member's own choice is remembered in this browser (useOpenSections.js). A link to
 //              a section or to a part of one (#password, #two-factor, #discord) opens it and
-//              scrolls there, and a notice waiting in a section (two-factor required, a Discord
+//              scrolls there (a malformed anchor is ignored), and a notice waiting in a section (two-factor required, a Discord
 //              answer, a push failure) opens it.
 // ============================================================
 
@@ -46,8 +46,15 @@ const keyStatus = ({ status, hasKey }) =>
         : 'Not set up yet'
       : null;
 
-// The section a link's #anchor names, itself or by holding it.
-const anchorOf = (hash) => decodeURIComponent(hash.slice(1));
+// The section a link's #anchor names, itself or by holding it. A malformed one ("#%") names
+// nothing: decoding it would throw during render and blank the page.
+const anchorOf = (hash) => {
+  try {
+    return decodeURIComponent(hash.slice(1));
+  } catch {
+    return '';
+  }
+};
 const sectionOf = (anchor) => PART_OF[anchor] ?? anchor;
 
 export default function AccountPage() {

@@ -47,6 +47,8 @@ export function readPushConfig(env) {
     // A "has started" notice is stale after a while: the push service drops it then.
     ttlSeconds: 15 * 60,
     timeoutMs: 10_000,
+    // Deliveries open at once at a call start (decided 2026-11-13): the rest wait their turn.
+    sendInFlight: 8,
     // Tests point these at their own fake push service; not an env key.
     endpointHosts: PUSH_SERVICE_HOSTS,
     allowHttp: false,

@@ -9,7 +9,8 @@
 //              end; anonymous or not; who may vote (all members, Discord steps, or organisers
 //              and admins only); a fixed end time in the future or "end by hand".
 //              validatePoll answers the first problem as a sentence, or null; validateVote
-//              does the same for one ballot against its poll.
+//              does the same for one ballot against its poll, its shape included (answers a
+//              list of this poll's ids, none in a text poll; the text a string).
 // ============================================================
 
 export const QUESTION_MAX = 200;
@@ -69,12 +70,22 @@ export function validatePoll(input, now = Date.now()) {
 export const hasFreeText = (poll) => poll.kind === 'text' || Boolean(poll.otherText);
 
 // ballot: { options: [option ids], text } against poll: { kind, multiple, otherText,
-// options: [{ id }] }.
+// options: [{ id }] }. Either may be absent (null or undefined); anything else of the wrong
+// type is refused, so the server stores only this poll's answer ids and a text (security review
+// of 2026-11-13, L3).
 export function validateVote(poll, ballot) {
+  const given = (value) => value !== undefined && value !== null;
+  if (given(ballot.options) && !Array.isArray(ballot.options)) {
+    return 'Please choose among the answers.';
+  }
+  if (given(ballot.text) && !isText(ballot.text)) return 'Please write your answer as text.';
   const text = isText(ballot.text) ? ballot.text.trim() : '';
+  const chosen = ballot.options ?? [];
   if (text.length > TEXT_MAX) return `An answer has at most ${TEXT_MAX} characters.`;
-  if (poll.kind === 'text') return text ? null : 'Please write your answer.';
-  const chosen = Array.isArray(ballot.options) ? ballot.options : [];
+  if (poll.kind === 'text') {
+    if (chosen.length > 0) return 'Please choose among the answers.';
+    return text ? null : 'Please write your answer.';
+  }
   const known = new Set(poll.options.map((o) => o.id));
   if (!chosen.every((id) => known.has(id)) || new Set(chosen).size !== chosen.length) {
     return 'Please choose among the answers.';

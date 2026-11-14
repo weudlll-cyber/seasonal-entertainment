@@ -178,10 +178,13 @@ rate limit, the lockout, locked accounts, the session epoch.
   sign-in. As on a logout, the browser then forgets its unlocked key for private messages. The
   shell shows "Your sign-in has ended. Please sign in again." (`SessionEndedNotice.jsx`): a page
   for members only goes to the login page by itself (`RequireUser`), any other page offers
-  "Sign in"; both carry `?next=`, so signing in returns to the page. Other refusals keep their
+  "Sign in"; both carry `?next=` with the whole link (path, `?query` and `#anchor`,
+  `herePath` in `client/src/session/nextPage.js`; since 2026-11-13), so signing in returns to
+  the page as it was. Other refusals keep their
   own message (a wrong password stays "The password is wrong."). The chat embedded on another
   site is left out: its token has its own rule (`embed_token_invalid`, "Embed tokens" below).
-  Tests: `client/src/session/sessionEnded.test.jsx`, `client/src/api/http.test.js`.
+  Tests: `client/src/session/sessionEnded.test.jsx`, `client/src/session/returnPath.test.jsx`,
+  `client/src/api/http.test.js`.
 - **Open chat sockets follow the account:** logout closes that session's chat WebSocket; a role,
   lock or password change closes the account's sockets (except the session making its own
   change); and every push re-checks the account (`server/src/chat/hub.js`).
@@ -213,7 +216,9 @@ character: in the probe, invisible leading spaces in the portal broke it.
   scopes `identify` and `guilds.members.read` only: no `guilds` (it would list all of a member's
   servers) and no `email`. There is no bot on the server. `next` must be a path on this site
   (`shared/localPath.js`, the same rule as the login pages' `?next=` since 2026-11-04: one
-  leading `/`, no backslash, so neither `//host` nor `/\host` leaves the site).
+  leading `/`, no backslash, so neither `//host` nor `/\host` leaves the site). The account
+  page's Discord section starts `link` and `confirm` ("Log in with Discord again") with
+  `next=/account#discord`, so a successful one comes back to the section, open (2026-11-13).
 - `GET /api/auth/discord/callback` checks the state in constant time, once (the flow is deleted
   from the session before anything else), within 10 minutes and for the same account that
   started it. It trades the code with the verifier and reads `/users/@me`, keeping the id and the

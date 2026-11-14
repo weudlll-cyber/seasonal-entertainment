@@ -5,7 +5,9 @@
 // Description: The rules of a poll and a vote (pollRules.js; docs/POLLS.md), the same in the
 //              create form, the vote form and on the server: 2 to 10 different answers, an end
 //              in the future or none; one answer unless several may be chosen, an "Other
-//              answer" only where the poll has one, written answers of at most 500 characters.
+//              answer" only where the poll has one, written answers of at most 500 characters;
+//              a ballot of the wrong shape (answers not a list, answers in a text poll, a text
+//              that is not text) is refused.
 // ============================================================
 
 import { describe, expect, it } from 'vitest';
@@ -68,6 +70,22 @@ describe('validateVote', () => {
       'This poll has no other answer.'
     );
     expect(validateVote({ ...poll, multiple: true }, { options: [1, 2], text: 'x' })).toBeNull();
+  });
+
+  it('a ballot of the wrong shape is refused, never stored (security review L3)', () => {
+    const text = { kind: 'text', options: [] };
+    // A text poll takes no answers, not even another poll's.
+    expect(validateVote(text, { options: [7], text: 'Fine' })).toBe(
+      'Please choose among the answers.'
+    );
+    expect(validateVote(text, { options: {}, text: 'Fine' })).toBe(
+      'Please choose among the answers.'
+    );
+    expect(validateVote(poll, { options: { 0: 1 } })).toBe('Please choose among the answers.');
+    // The text, where given, is text.
+    expect(validateVote(poll, { options: [1], text: 5 })).toBe('Please write your answer as text.');
+    expect(validateVote(text, { text: ['Fine'] })).toBe('Please write your answer as text.');
+    expect(validateVote(poll, { options: [1], text: null })).toBeNull();
   });
 
   it('free text: required and at most 500 characters', () => {

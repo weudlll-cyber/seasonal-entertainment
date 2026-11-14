@@ -97,7 +97,7 @@ are made from the emblem by `scripts/build-app-icons.mjs` into `client/public/ic
 | `icon-maskable-512.png` | the emblem in the 80 % safe zone on night blue      |
 | `apple-touch-icon.png`  | 180 px on the page background (iOS shows no alpha)  |
 
-The service worker (`client/public/sw.js`) is there only for installing and the one web push
+The service worker (`client/src/app/sw.js`, served as `/sw.js` with the shared path rule by `client/serviceWorkerPlugin.js`) is there only for installing and the one web push
 (docs/CALLS.md, "Push when a call starts"): it caches nothing, so every page and answer still
 comes from the network and an update reaches visitors as before ("Speed").
 
@@ -456,8 +456,10 @@ scan; only the arrangement changed, every setting, form and text inside the sect
   - every section's anchor (`#profile`, `#sign-in`, `#private-messages`, `#privacy`,
     `#notifications`, `#delete-account`) and the parts of Sign-in & security (`#password`,
     `#two-factor`, `#discord`), also a link followed while on the page (the 2FA banner's), and
-    scrolled into view;
-  - a login on the way keeps the anchor (`RequireUser`);
+    scrolled into view; a malformed anchor (`#%`) is ignored, the page shows with every section
+    as remembered (2026-11-13);
+  - a login on the way keeps the anchor and any `?query` (`RequireUser`), and Discord brings
+    the member back to `#discord`;
   - a notice waiting in a section opens it: two-factor the site requires but is off, a Discord
     login's answer (`?discord=`) or a link that needs a Discord login again (Sign-in &
     security), a push failure kept for the page (Notifications).
