@@ -134,9 +134,13 @@ export default function UserRow({ user, games, onChanged }) {
             </button>
           </form>
         ) : (
-          <button className="link-button" type="button" onClick={() => setResetting(true)}>
-            Reset password
-          </button>
+          // The same box as "Delete" and the open form: one 44px line at the cell's top, so
+          // the Password and Account columns' links sit at one height.
+          <div className="admin-row-actions">
+            <button className="link-button" type="button" onClick={() => setResetting(true)}>
+              Reset password
+            </button>
+          </div>
         )}
       </td>
       <td>
