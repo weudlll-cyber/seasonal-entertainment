@@ -10,6 +10,7 @@
 //              who ended it.
 // ============================================================
 
+import { pollsChanged } from '../polls/changes.js';
 import { endCallPolls } from '../polls/store.js';
 import { recordAudit } from '../audit/auditLog.js';
 import { stopCallRecording } from './recordingRoutes.js';
@@ -30,7 +31,7 @@ export async function endCall(db, service, chat, call, actor) {
   if (call.chatRoomId) chat.rooms.close(call.chatRoomId);
   removeCallReminders(db, call.id);
   // Its polls end with it (docs/POLLS.md, "Polls in a call"); members' pages hear of it.
-  if (endCallPolls(db, call.id)) chat.notify.members({ type: 'polls' });
+  if (endCallPolls(db, call.id)) pollsChanged(chat);
   recordAudit(db, actor, {
     action: 'call.end',
     targetType: 'call',

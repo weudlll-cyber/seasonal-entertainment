@@ -3,7 +3,8 @@
 // Path:        server/src/polls/routes.js
 // Project:     Seasonal Entertainment
 // Description: The polls API under /api/polls (docs/POLLS.md, "API"; decided 2026-11-10):
-//              everyone lists the polls (each as the viewer may see it, store.js shownPoll);
+//              everyone lists the polls (each as the viewer may see it, store.js shownPoll;
+//              every open one, the ended ones 20 at a time: ?from=<id>, next);
 //              organisers and admins create, end early, extend and switch anonymous before the
 //              first vote; signed-in members vote, one vote per account, where the poll lets
 //              them (all members, Discord steps, or organisers and admins only; a team poll
@@ -15,8 +16,9 @@
 //              a message) gets a card in the room's timeline (chat.polls.post) and is seen only by
 //              those who may read the room; GET /:id gives one poll for that card.
 //              Creating, ending, extending and deleting are audited (poll.create, poll.end,
-//              poll.extend, poll.delete). Every change tells the members' open pages at once
-//              ("polls" over the chat's live connection); guests' pages reload on a timer.
+//              poll.extend, poll.delete). Every change tells the members' open pages within a
+//              second, one event for a burst of changes ("polls" over the chat's live
+//              connection, changes.js); guests' pages reload on a timer.
 // ============================================================
 
 import express from 'express';
@@ -29,6 +31,7 @@ import { sendError } from '../http/errors.js';
 import { loadById } from '../http/loadById.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { listSteps, stepsOfUser } from '../discord/steps.js';
+import { pollsChanged } from './changes.js';
 import {
   castVote,
   createPoll,
@@ -37,13 +40,12 @@ import {
   extendPoll,
   findPoll,
   isOpen,
-  listPolls,
   mayVoteIn,
-  pollSummary,
   seesPoll,
   setAnonymous,
   shownPoll,
 } from './store.js';
+import { callPolls, pollsPage, pollSummary } from './lists.js';
 
 // Only the fields a poll has, whatever else the body carries.
 const pollInput = (body = {}) => ({
@@ -62,7 +64,9 @@ const pollInput = (body = {}) => ({
   room: typeof body.room === 'string' ? body.room : null,
 });
 
-const queryCall = (req) => (/^\d+$/.test(req.query.call ?? '') ? Number(req.query.call) : null);
+// A whole-number query parameter (?call=<id>, ?from=<id>), else null.
+const queryId = (req, name) =>
+  /^\d+$/.test(req.query[name] ?? '') ? Number(req.query[name]) : null;
 
 // chat: mountChat's handle (notify.members: an event to every signed-in member's open pages).
 export function pollRoutes(db, config, chat) {
@@ -87,7 +91,7 @@ export function pollRoutes(db, config, chat) {
   const loadPoll = loadById((id) => findPoll(db, id), 'poll', 'poll');
   const visible = (req, res, next) =>
     seesPoll(req.poll, viewerOf(req)) ? next() : sendError(res, 404, 'not_found', 'No such poll.');
-  const changed = () => chat.notify.members({ type: 'polls' });
+  const changed = () => pollsChanged(chat);
   const audit = (req, action, poll, after = {}) =>
     recordAudit(db, req.user, {
       action,
@@ -99,12 +103,16 @@ export function pollRoutes(db, config, chat) {
     isOpen(req.poll) ? next() : sendError(res, 409, 'poll_ended', 'This poll has ended.');
 
   router.get('/', allow('public'), (req, res) => {
+    const callId = queryId(req, 'call');
     res.json({
       ok: true,
       canManage: canManage(req),
       canDelete: canDelete(req),
-      // ?call=<id>: that call's polls only (its page).
-      polls: listPolls(db, viewerOf(req), Date.now(), queryCall(req)),
+      // ?call=<id>: that call's polls only (its page), all of them. Otherwise every open poll
+      // and the ended ones from ?from=<id> up, or the newest page; next: the from for a page more.
+      ...(callId === null
+        ? pollsPage(db, viewerOf(req), Date.now(), queryId(req, 'from'))
+        : { polls: callPolls(db, viewerOf(req), callId) }),
       // The steps a poll can be limited to, for the create form.
       ...(canManage(req)
         ? { steps: listSteps(db).map(({ id, ladder, name }) => ({ id, ladder, name })) }

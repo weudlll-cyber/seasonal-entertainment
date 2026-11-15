@@ -3,8 +3,9 @@
 // Path:        client/src/pages/PollsPage.jsx
 // Project:     Seasonal Entertainment
 // Description: /polls (docs/POLLS.md; decided 2026-11-10): every poll for everyone, open ones
-//              first, then the ended ones with their results (the archive). Members vote right
-//              here; guests see a sign-in hint. Organisers and admins create polls here (the
+//              first, then the ended ones with their results (the archive, 20 at a time: "Show
+//              older" loads the next page and the page keeps it on every reload). Members vote
+//              right here; guests see a sign-in hint. Organisers and admins create polls here (the
 //              form opens on "New poll"). The list stays current by itself (polls/usePolls.js).
 //              Under the Community quarter, as the chat.
 // ============================================================
@@ -22,7 +23,9 @@ const LEAD = 'Have your say: open polls first, then the results of the ended one
 
 export default function PollsPage() {
   const { user } = useSession();
-  const { answer, error } = usePolls();
+  // The oldest ended poll loaded (usePolls); null: the newest page only.
+  const [from, setFrom] = useState(null);
+  const { answer, error } = usePolls(null, from);
   const [creating, setCreating] = useState(false);
   const polls = answer?.polls ?? [];
   const open = polls.filter((p) => p.open);
@@ -75,6 +78,17 @@ export default function PollsPage() {
                 {ended.map(card)}
               </ul>
             </>
+          )}
+          {Number.isInteger(answer.next) && (
+            <p>
+              <button
+                type="button"
+                className="button button--secondary"
+                onClick={() => setFrom(answer.next)}
+              >
+                Show older
+              </button>
+            </p>
           )}
         </>
       )}

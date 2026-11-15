@@ -2,9 +2,10 @@
 // File:        usePolls.js
 // Path:        client/src/polls/usePolls.js
 // Project:     Seasonal Entertainment
-// Description: The polls as this viewer may see them (GET /api/polls; docs/POLLS.md) and their
-//              summary for the sidebar's dot and the home card (GET /api/polls/summary), kept
-//              current the site's existing ways: a member's pages reload at once on the
+// Description: The polls as this viewer may see them (GET /api/polls; docs/POLLS.md: every
+//              open poll, the ended ones a page at a time from ?from=<id>, a call's all) and
+//              their summary for the sidebar's dot and the home card (GET /api/polls/summary),
+//              kept current the site's existing ways: a member's pages reload at once on the
 //              "polls" event of the chat's live connection (usePersonalEvents), every page
 //              after this page changed a poll (pollsChanged(), as callsChanged() does for
 //              calls), every minute for guests' pages (useCallsSummary's interval), and when
@@ -66,11 +67,13 @@ function useLivePolls(path, endsOf, every = POLL_MS) {
 
 const openEnds = (polls) => polls.filter((p) => p.open && p.endsAt).map((p) => p.endsAt);
 
-// { answer: { canManage, canDelete, steps (for the create form), polls } or null, error };
-// callId: only that call's polls (its page), asked every 10 seconds.
-export const usePolls = (callId = null) =>
+// { answer: { canManage, canDelete, steps (for the create form), polls, next } or null, error };
+// callId: only that call's polls (its page), asked every 10 seconds. from: the oldest ended poll
+// the polls page has loaded (every reload keeps it and all newer ones), null for the first page;
+// next: the from that loads a page more, or null.
+export const usePolls = (callId = null, from = null) =>
   useLivePolls(
-    callId === null ? '/polls' : `/polls?call=${callId}`,
+    callId !== null ? `/polls?call=${callId}` : from !== null ? `/polls?from=${from}` : '/polls',
     (answer) => openEnds(answer.polls),
     callId === null ? POLL_MS : CALL_POLL_MS
   );
