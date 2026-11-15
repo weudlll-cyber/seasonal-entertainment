@@ -8,9 +8,9 @@
 //              "Delete" still start on one line and the form's fields and "Set" are shown.
 // ============================================================
 
-import { expect, request as newRequest, test } from '@playwright/test';
-import { newAccountData } from './accountKeys.js';
+import { expect, test } from '@playwright/test';
 import { ADMIN_STATE } from './adminState.js';
+import { addMember } from './members.js';
 
 for (const [width, height] of [
   [1280, 800],
@@ -18,20 +18,12 @@ for (const [width, height] of [
 ]) {
   test(`the users list at ${width} px: Reset password and Delete line up`, async ({
     browser,
-    baseURL,
   }, testInfo) => {
-    // A member of its own, registered from an empty cookie jar (as admin.spec.js does), so the
-    // search shows exactly one row.
-    const other = await newRequest.newContext({
-      baseURL,
-      extraHTTPHeaders: { Origin: baseURL },
-      storageState: { cookies: [], origins: [] },
-    });
+    // A member of its own, so the search shows exactly one row; written straight into the
+    // run's database (members.js), as registering would use up the per-IP registrations other
+    // specs need.
     const member = `row${width}${Date.now().toString(36)}`;
-    await other.post('/api/auth/register', {
-      data: await newAccountData(member, 'correct-horse-1'),
-    });
-    await other.dispose();
+    await addMember(member);
 
     const context = await browser.newContext({
       storageState: ADMIN_STATE,
