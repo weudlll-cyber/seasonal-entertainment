@@ -104,7 +104,7 @@ for (const [width, height] of [
     await page.screenshot({ path: testInfo.outputPath(`picker-${width}.png`), fullPage: true });
 
     await picker.getByRole('button', { name: 'Back to the logo' }).click();
-    await expect(picker.getByText('The site’s logo')).toBeVisible();
+    await expect(picker.getByText('The site’s logo', { exact: true })).toBeVisible();
     expect(await ogImage(baseURL, id)).toMatch(/\/brand\/logo\.webp$/);
     await context.close();
   });
