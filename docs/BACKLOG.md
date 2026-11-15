@@ -70,15 +70,15 @@ entry waits for.
 
 ## PART TWO — closed
 
-- **Each vote reloads the poll summary on every member's open page** — closed by
-  `fix/poll-load` (security review of 2026-11-13, L4; decided 2026-11-15): the `polls` event
-  goes out at most once a second, one for a burst of changes, the last change still delivered
-  (`server/src/polls/changes.js`); the summary and the Polls page's open part read only the
-  polls open at that moment, in SQL (`server/src/polls/lists.js`); the archive comes 20 at a
-  time with "Show older", a reload keeping every page loaded, a call's own list whole
-  (docs/POLLS.md, "Live updates" and "API"). Measured on the PC with 1,000 ended polls, N = 200
-  each, background CPU about 40 %: `GET /api/polls/summary` median 585 ms (guest) and 614 ms
-  (member) before, 6.7 ms and 8.3 ms after.
+- **Each vote reloads the poll summary on every member's open page** — closed by `fix/poll-load` (PR
+  #75; security review of 2026-11-13, L4; decided 2026-11-15): the `polls` event goes out at most
+  once a second, one for a burst of changes, the last change still delivered
+  (`server/src/polls/changes.js`); the summary and the Polls page's open part read only the polls
+  open at that moment, in SQL (`server/src/polls/lists.js`); the archive comes 20 at a time with
+  "Show older", a reload keeping every page loaded, a call's own list whole (docs/POLLS.md, "Live
+  updates" and "API"). Measured on the PC with 1,000 ended polls, N = 200 each, background CPU about
+  40 %: `GET /api/polls/summary` median 585 ms (guest) and 614 ms (member) before, 6.7 ms and 8.3 ms
+  after.
 - **A recording's preview image** — closed by `night/2026-11-14` (PR #73, merged 2026-11-15; piece
   1; decided 2026-11-14; until then the share card used the site's logo): on the recording's page
   organisers and admins pick a frame with a slider ("Use this frame", taken in the browser) or
