@@ -35,10 +35,13 @@
   align-items: center;
 }
 
-/* The row's small text buttons (the info pages' ↑ and ↓): a full 44px target each. */
+/* The row's small text buttons (the info pages' ↑ and ↓, the users list's "Reset password" and
+   "Delete"): a full 44px target each, on one line, so buttons side by side in a row keep one
+   height; on a narrow screen the table scrolls sideways (.table-wrap) instead. */
 .admin-row-actions .link-button {
   min-width: var(--hit-target);
   min-height: var(--hit-target);
+  white-space: nowrap;
 }
 
 /* The users list's "May host" cell (UserRow.jsx): a game's name stays on its one line; on a
