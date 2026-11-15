@@ -214,7 +214,7 @@ export function createApp({
   // Before callRoutes: its /:id would take /bot-occurrences.
   api.use('/calls', callEventRoutes(db, config, callService, chat));
   // Before callRoutes too: its /:id would take /recordings (the archive).
-  api.use('/calls', callRecordingRoutes(db, config, callService));
+  api.use('/calls', callRecordingRoutes(db, config, callService, chat));
   api.use('/calls', chapterRoutes(db, config, callService));
   api.use('/calls', recordingPreviewRoutes(db, config, callService, chat));
   api.use('/calls', callRoutes(db, config, callService, chat, wentLive));

@@ -12,7 +12,7 @@
 //              allowed while it starts. Ending the call stops it (endCall.js). The recordings of a call are listed, and played
 //              (with range requests, so a player can seek), for the same audience as the call
 //              itself; organisers and admins delete one (file and row, and its preview image's
-//              files, recordingPreview.js). A start the recording
+//              files through mountChat's chat.images, recordingPreview.js). A start the recording
 //              service does not answer (timeout, unavailable) is 503 recording_unavailable, not a
 //              server error. Nothing is deleted
 //              automatically. The archive lists every finished recording with its call and
@@ -27,7 +27,6 @@ import express from 'express';
 import { recordAudit } from '../audit/auditLog.js';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
-import { deleteMediaFile } from '../media/files.js';
 import { getSetting } from '../settings/store.js';
 import { callSteps } from './middleware.js';
 import {
@@ -81,7 +80,7 @@ export function recordingSteps(db, config, service) {
   return { steps, recording, enabled, audit, manage, loadRecording };
 }
 
-export function callRecordingRoutes(db, config, service) {
+export function callRecordingRoutes(db, config, service, chat) {
   const router = express.Router();
   const { steps, recording, enabled, audit, manage, loadRecording } = recordingSteps(
     db,
@@ -172,8 +171,9 @@ export function callRecordingRoutes(db, config, service) {
   router.delete('/:id/recordings/:rid', ...manage, loadRecording, (req, res) => {
     rmSync(path.join(recording.dir, req.recording.file), { force: true });
     deleteRecordingRow(db, req.recording.id);
-    // Its chosen preview image goes with it (the row named its files).
-    for (const file of previewFiles(req.recording)) deleteMediaFile(config, file);
+    // Its chosen preview image goes with it (the row named its files), through the chat
+    // area's own removal: the media files are the chat's (chatBoundary.test.js).
+    for (const file of previewFiles(req.recording)) chat.images.remove(file);
     audit(req, 'call.recording_delete', req.call);
     res.json({ ok: true });
   });
