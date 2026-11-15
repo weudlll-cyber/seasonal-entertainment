@@ -568,7 +568,9 @@ server/
   src/profiles/            member profiles (docs/AUTH.md): schema, store, routes under
                            /api/members and /api/profile, the admin's clears
   src/polls/               polls (docs/POLLS.md): schema, store (votes, results as each viewer
-                           may see them), routes under /api/polls
+                           may see them), the lists (lists.js: the polls page with the
+                           archive's pages, a call's, the summary), routes under /api/polls, the
+                           "polls" event at most once a second (changes.js)
   src/push/                web push when a call starts (docs/CALLS.md): schema, store, config
                            (VAPID keys, the push services), routes under /api/push, send
   src/settings/            admin-editable site settings (docs/SETTINGS.md): kinds, groups/,

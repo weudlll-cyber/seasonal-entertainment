@@ -13,8 +13,8 @@
 //              answer only in a poll that is not anonymous, and only to signed-in members.
 //              Who may vote (seesPoll, mayVoteIn): all members, members with one of the chosen
 //              Discord steps or a higher one, or organisers and admins only, whose polls only
-//              they see; and the summary for the
-//              sidebar's dot and the home card (pollSummary). A poll started in a call names
+//              they see. The lists built from these (the polls page, a call's, the summary)
+//              are lists.js. A poll started in a call names
 //              it (callId, callTitle) and ends with it (endCallPolls); one started in a chat room
 //              names it (roomSlug, roomName) and is seen only by those who may read the room.
 // ============================================================
@@ -310,28 +310,4 @@ export function shownPoll(db, poll, viewer, at = Date.now()) {
     myVote: voted && !poll.anonymous ? ownBallot(db, poll, viewer.userId) : null,
     results: seesResults ? resultsOf(db, poll, viewer) : null,
   };
-}
-
-// Every poll as the viewer sees it: open ones first, then ended ones, each newest first.
-// callId: only that call's polls (its page), else all.
-export function listPolls(db, viewer, at = Date.now(), callId = null) {
-  dropEndedLinks(db, at);
-  const ids =
-    callId === null
-      ? db.prepare('SELECT id FROM polls ORDER BY id DESC').all()
-      : db.prepare('SELECT id FROM polls WHERE call_id = ? ORDER BY id DESC').all(callId);
-  const polls = ids
-    .map(({ id }) => findPoll(db, id))
-    .filter((poll) => seesPoll(poll, viewer))
-    .map((poll) => shownPoll(db, poll, viewer, at));
-  // Newest first in both parts (decided 2026-11-11): the ids come in that order.
-  return [...polls.filter((p) => p.open), ...polls.filter((p) => !p.open)];
-}
-
-// For the sidebar's dot and the home card: how many open polls this viewer may vote in and has
-// not yet, and the newest open poll they see (or null).
-export function pollSummary(db, viewer, at = Date.now()) {
-  const open = listPolls(db, viewer, at).filter((p) => p.open);
-  const newest = open.reduce((a, b) => (!a || b.id > a.id ? b : a), null);
-  return { unvoted: open.filter((p) => p.canVote && !p.voted).length, newest };
 }

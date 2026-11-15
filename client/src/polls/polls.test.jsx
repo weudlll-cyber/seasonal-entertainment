@@ -7,8 +7,8 @@
 //              form; a member's vote sends the chosen answer, the form says when a poll is not
 //              anonymous and checks the answer first; results with counts and names; organisers
 //              and admins read the written answers, create polls (a warning when free text is
-//              on, steps to choose) and end one early; the list reloads on the live "polls"
-//              event; who may vote ("Voting from …", team polls), the home box's dropdown
+//              on, steps to choose) and end one early; "Show older" loads the archive's next
+//              page, which a reload keeps; the list reloads on the live "polls" event; who may vote ("Voting from …", team polls), the home box's dropdown
 //              vote and the sidebar's dot with its spoken count.
 // ============================================================
 
@@ -159,6 +159,40 @@ describe('the Polls page', () => {
         endsAt: null,
       })
     );
+  });
+
+  it('"Show older" loads the next page of ended polls; a reload keeps it', async () => {
+    const open = { ...OPEN, canVote: false, results: null };
+    const older = { ...ENDED, id: 2, question: 'Best snack?' };
+    const calls = mockApi({
+      ...member,
+      ...listed([open, ENDED], { next: 2 }),
+      'GET /polls?from=2': {
+        body: {
+          ok: true,
+          canManage: false,
+          canDelete: false,
+          polls: [open, ENDED, older],
+          next: null,
+        },
+      },
+    });
+    await renderApp('/polls');
+    const ended = await screen.findByRole('list', { name: 'Ended polls' });
+    expect(within(ended).queryByRole('heading', { name: 'Best snack?' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Show older' }));
+    expect(await within(ended).findByRole('heading', { name: 'Best snack?' })).toBeInTheDocument();
+    expect(within(ended).getByRole('heading', { name: 'Best game?' })).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Open polls' })).toHaveTextContent('Which day?');
+    // Nothing older left: no button.
+    expect(screen.queryByRole('button', { name: 'Show older' })).toBeNull();
+
+    // The live event reloads what the page holds, not the first page alone.
+    const first = calls.filter((c) => c.key === 'GET /polls').length;
+    await waitFor(() => expect(FakeSocket.all.at(-1)?.readyState).toBe(1));
+    FakeSocket.all.at(-1).push({ type: 'polls' });
+    await waitFor(() => expect(calls.filter((c) => c.key === 'GET /polls?from=2').length).toBe(2));
+    expect(calls.filter((c) => c.key === 'GET /polls').length).toBe(first);
   });
 
   it('reloads on the live "polls" event', async () => {

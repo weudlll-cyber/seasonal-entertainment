@@ -52,7 +52,9 @@ everyone sees them. The page is `/polls` ("Polls" in the sidebar, after Calls).
 - **End**: a fixed end time or "end by hand". Organisers and admins end a poll early and
   extend it (a later end time, also for one that was to end by hand) while it is open. Ended
   polls stay on the page with their results, after the open ones (the archive). Open and ended
-  polls are each listed newest first (2026-11-11). **Only admins
+  polls are each listed newest first (2026-11-11). The open ones are all shown; the archive
+  comes 20 at a time, "Show older" under it loading the next 20 (decided 2026-11-15, security
+  review of 2026-11-13, L4). A call's own list on its page is not paged. **Only admins
   delete** a poll (with its votes), after a question.
 - **Audit**: `poll.create`, `poll.end`, `poll.extend`, `poll.delete` (with the question; an
   extension also with the new end). The anonymous switch is not audited.
@@ -137,10 +139,14 @@ a vote and answers in words at both sizes.
 
 The site's existing ways, as for calls and the chat:
 
-- Every change (a new poll, a vote, an end, an extension, the anonymous switch, a deletion)
-  sends `{ type: 'polls' }` to every signed-in member's open pages over the chat's live
-  connection (`chat.notify.members`, the hub's `sendToMembers`). The client takes it as a
-  personal event (`client/src/chat/connection.js`, `usePersonalEvents`) and reloads the list.
+- Every change (a new poll, a vote, an end, an extension, the anonymous switch, a deletion, a
+  call's end ending its polls) sends `{ type: 'polls' }` to every signed-in member's open pages
+  over the chat's live connection (`chat.notify.members`, the hub's `sendToMembers`), at most
+  once a second (`server/src/polls/changes.js`, decided 2026-11-15): the first change opens a
+  one-second window, every change inside it is folded in, and the window's end sends one event.
+  A burst of votes makes one reload per page, and the last change of a burst still arrives. The
+  client takes it as a personal event (`client/src/chat/connection.js`, `usePersonalEvents`) and
+  reloads what the page shows: on the Polls page the open polls and every archive page loaded.
 - Guests have no personal events: their page reloads every minute (the interval of
   `client/src/calls/useCallsSummary.js`). Every list also reloads when this page changed a poll
   (`pollsChanged()`, as `callsChanged()`) and right after the next open poll's end time.
@@ -178,17 +184,17 @@ carries it). Every row of a poll goes the moment it ends: by hand and with its c
 All under `/api/polls` (`server/src/polls/routes.js`); the rules are `shared/pollRules.js`,
 checked the same way in the form.
 
-| Route                 | Who                | Does                                                                                                                     |
-| --------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `GET /`               | everyone           | `{ canManage, canDelete, polls }`, each poll as this viewer may see it; `?call=<id>`: that call's only                   |
-| `GET /summary`        | everyone           | `{ unvoted, newest }`: the sidebar's dot and the home box                                                                |
-| `GET /:id`            | who may see it     | `{ canManage, canDelete, poll }`: one poll (a room poll's card)                                                          |
-| `POST /`              | organisers, admins | creates one (`callId`: in that live call; `room`: in that chat room); 400 with the rule's sentence when a rule is broken |
-| `POST /:id/vote`      | members            | `{ options, text }`; 400 for a ballot of the wrong shape; 409 `already_voted`, `poll_ended`; 403 `not_allowed`           |
-| `POST /:id/end`       | organisers, admins | ends it now (409 when ended)                                                                                             |
-| `POST /:id/extend`    | organisers, admins | `{ endsAt }`, later than the current end and now                                                                         |
-| `POST /:id/anonymous` | organisers, admins | `{ anonymous }`; 409 `poll_has_votes` after the first vote                                                               |
-| `DELETE /:id`         | admins             | deletes it with its votes                                                                                                |
+| Route                 | Who                | Does                                                                                                                                                                                                                                                                                   |
+| --------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /`               | everyone           | `{ canManage, canDelete, polls, next }`, each poll as this viewer may see it: every open one, then the newest 20 ended; `?from=<id>`: every ended one from that id up; `next`: the `from` for 20 more, null when none is left; `?call=<id>`: that call's polls, all of them, no `next` |
+| `GET /summary`        | everyone           | `{ unvoted, newest }`: the sidebar's dot and the home box; reads only the polls open at that moment                                                                                                                                                                                    |
+| `GET /:id`            | who may see it     | `{ canManage, canDelete, poll }`: one poll (a room poll's card)                                                                                                                                                                                                                        |
+| `POST /`              | organisers, admins | creates one (`callId`: in that live call; `room`: in that chat room); 400 with the rule's sentence when a rule is broken                                                                                                                                                               |
+| `POST /:id/vote`      | members            | `{ options, text }`; 400 for a ballot of the wrong shape; 409 `already_voted`, `poll_ended`; 403 `not_allowed`                                                                                                                                                                         |
+| `POST /:id/end`       | organisers, admins | ends it now (409 when ended)                                                                                                                                                                                                                                                           |
+| `POST /:id/extend`    | organisers, admins | `{ endsAt }`, later than the current end and now                                                                                                                                                                                                                                       |
+| `POST /:id/anonymous` | organisers, admins | `{ anonymous }`; 409 `poll_has_votes` after the first vote                                                                                                                                                                                                                             |
+| `DELETE /:id`         | admins             | deletes it with its votes                                                                                                                                                                                                                                                              |
 
 A ballot is checked for its shape too (`validateVote`, 2026-11-13): `options` a list of this
 poll's answer ids (none in a text poll), `text` a string; either may be left out. Anything else
@@ -213,6 +219,7 @@ poll's card), `aboveKeyboard.js`.
 
 ## Tests
 
-`server/test/polls.test.js`, `shared/pollRules.test.js`, `client/src/polls/polls.test.jsx`,
+`server/test/polls.test.js`, `server/test/pollLoad.test.js` (the event once a second, the
+summary over open polls only, the archive's pages), `shared/pollRules.test.js`, `client/src/polls/polls.test.jsx`,
 `client/src/calls/callPolls.test.jsx`, `client/src/polls/chatPolls.test.jsx`, `client/e2e/polls.spec.js`, `client/e2e/callPolls.spec.js`
 (two participants), the home layout cases in `client/e2e/layout.spec.js`.
