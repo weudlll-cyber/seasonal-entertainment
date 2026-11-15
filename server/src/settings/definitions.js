@@ -9,6 +9,7 @@
 // ============================================================
 
 import { ACCOUNT_SETTINGS } from './groups/accounts.js';
+import { ALERT_SETTINGS } from './groups/alerts.js';
 import { BANNER_SETTINGS } from './groups/banner.js';
 import { CALL_SETTINGS } from './groups/calls.js';
 import { CHAT_SETTINGS } from './groups/chat.js';
@@ -24,6 +25,7 @@ export const GROUPS = [
   'Home',
   'Weekly recap',
   'Site banner',
+  'Alerts',
 ];
 
 // group name -> that group's settings.
@@ -35,6 +37,7 @@ const BY_GROUP = {
   Home: HOME_SETTINGS,
   'Weekly recap': RECAP_SETTINGS,
   'Site banner': BANNER_SETTINGS,
+  Alerts: ALERT_SETTINGS,
 };
 
 export const SETTINGS = Object.fromEntries(

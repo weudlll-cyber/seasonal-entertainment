@@ -55,6 +55,8 @@ source "$LIB/discord.sh"
 source "$LIB/games.sh"
 # shellcheck source=install/lib/push.sh
 source "$LIB/push.sh"
+# shellcheck source=install/lib/outage.sh
+source "$LIB/outage.sh"
 
 # Any command failing where no step expected it still stops with a message and the rollback.
 trap 'die "unexpected failure (line $LINENO: $BASH_COMMAND)"' ERR
@@ -62,7 +64,8 @@ trap 'die "unexpected failure (line $LINENO: $BASH_COMMAND)"' ERR
 ANSWER_KEYS="SITE_DOMAIN WWW_REDIRECT CALLS_DOMAIN RECORDING ACME_EMAIL ADMIN_NAME ADMIN_EMAIL
 COINGECKO_API_KEY PRICE_BOT_DB PRICE_BOT_MINING_RATES EVENT_BOT_DB BACKUP_RECIPIENT ACME_SERVER
 ACME_CA_BUNDLE BOT_ADMIN_URL BOT_ADMIN_TOKEN_FILE BOT_ADMIN_TOKEN_KEY DISCORD_CLIENT_ID
-DISCORD_GUILD_ID DISCORD_CLIENT_SECRET_FILE BINGO MINI_GAMES RACE"
+DISCORD_GUILD_ID DISCORD_CLIENT_SECRET_FILE BINGO MINI_GAMES RACE OUTAGE_SMTP_HOST OUTAGE_SMTP_PORT
+OUTAGE_SMTP_USER OUTAGE_SMTP_PASSWORD_FILE"
 
 usage() {
   cat <<'EOF'
@@ -83,6 +86,8 @@ Usage: sudo ./deploy/install.sh [options]
   --bingo                ask again whether Seasonal Bingo Royale is embedded at /games/bingo
   --mini-games           ask again whether Seasonal Mini Games is embedded at /games/mini-games
   --race                 ask again whether Seasonal Race is embedded at /games/race
+  --outage-mail          ask again for the mail account of the outage e-mails (SMTP server,
+                         port, user, password); Enter at the server switches them off
   --commit REF           check out REF (a commit, tag or branch) first, then install it
   --admin                create the first admin (password asked on the terminal)
   --backups              set up or change the encrypted backups (asks for the age public key)
@@ -110,6 +115,7 @@ ASK_DISCORD=no
 ASK_BINGO=no
 ASK_MINI_GAMES=no
 ASK_RACE=no
+ASK_OUTAGE_MAIL=no
 ROLLBACK_DIR=""
 while (($#)); do
   case "$1" in
@@ -123,6 +129,7 @@ while (($#)); do
     --bingo) ASK_BINGO=yes ;;
     --mini-games) ASK_MINI_GAMES=yes ;;
     --race) ASK_RACE=yes ;;
+    --outage-mail) ASK_OUTAGE_MAIL=yes ;;
     --admin) ACTION='admin' ;;
     --backups) ACTION=backups ;;
     --status) ACTION=status ;;
@@ -208,6 +215,7 @@ gather_answers() {
   ask_coingecko
   ask_discord
   ask_games
+  ask_outage_mail
   : "${ACME_SERVER:=}" "${ACME_CA_BUNDLE:=}" "${ADMIN_DONE:=no}"
 }
 
@@ -260,6 +268,7 @@ install_all() {
     docker ps --format '{{.Names}}' | grep -qx seasonal-site-site-1 ||
     die "port $SITE_LOCAL_PORT is taken on this server; the site needs it on 127.0.0.1"
   write_site_env
+  write_outage_smtp
   write_site_compose_env
   write_install_compose
   write_caddy_sites
@@ -271,6 +280,7 @@ install_all() {
   start_calls
   install_admin
   install_backups
+  install_watchdog "$(site_data_host_dir)"
   save_state
   say "done: https://$SITE_DOMAIN"
   # Once, at the end of the first install that finishes (write_site_env made the key and set

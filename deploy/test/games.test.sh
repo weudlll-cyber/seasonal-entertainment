@@ -100,7 +100,7 @@ run_ask
 ASK_RACE=no
 if [[ "$(asked_now)" == "$RACE_Q" && "$RACE" == yes && "$BINGO" == yes && "$MINI_GAMES" == no ]]; then ok '--race asks that question again, only it'; else bad "--race: $(asked_now)"; fi
 answer_keys="$(sed -n '/^ANSWER_KEYS="/,/"$/p' "$DEPLOY/install.sh")"
-if [[ " $answer_keys " =~ [[:space:]\"]BINGO[[:space:]\"] && " $answer_keys " =~ [[:space:]]MINI_GAMES[[:space:]] && "$answer_keys" =~ [[:space:]]RACE\" && " $STATE_KEYS " == *" MINI_GAMES "* && " $STATE_KEYS " == *" BINGO "* && " $STATE_KEYS " == *" RACE "* ]]; then ok 'every answer read from an answers file and remembered'; else bad 'answer or state keys'; fi
+if [[ " $answer_keys " =~ [[:space:]\"]BINGO[[:space:]\"] && " $answer_keys " =~ [[:space:]]MINI_GAMES[[:space:]] && "$answer_keys" =~ [[:space:]]RACE[[:space:]\"] && " $STATE_KEYS " == *" MINI_GAMES "* && " $STATE_KEYS " == *" BINGO "* && " $STATE_KEYS " == *" RACE "* ]]; then ok 'every answer read from an answers file and remembered'; else bad 'answer or state keys'; fi
 if grep -q '^RACE=$' "$DEPLOY/install/answers.example"; then ok 'the answers example names RACE'; else bad 'answers example without RACE'; fi
 BINGO=yes MINI_GAMES=no RACE=no
 run_ask

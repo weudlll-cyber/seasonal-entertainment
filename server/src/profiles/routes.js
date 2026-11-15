@@ -9,6 +9,11 @@
 //                chat, chat/authorSteps.js) and whether a direct message to them is possible.
 //                A locked account is not found (404) like one that does not exist.
 //              - GET /api/members/:username/picture/:variant: thumb or full, never cached.
+//              - GET /api/members/:username/games: their cards from the embedded games
+//                (games/memberSummary.js; docs/GAME-INTEGRATION.md, "A member's results on
+//                their profile"), asked only while they show them; a game that fails is left
+//                out. Its own request, so the profile never waits for a game.
+//              - PUT /api/profile/game-results ({ show }): "Show my game results", one's own.
 //              - PUT /api/profile/about, POST and DELETE /api/profile/picture: one's own. The
 //                picture takes the chat images' rules (type, size and megapixels: site settings)
 //                and storage (media files under uploads/), through the chat handle
@@ -26,7 +31,7 @@ import { rawBody } from '../http/bodies.js';
 import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { currentKeyId } from '../keys/store.js';
-import { findProfile, removePicture, setAbout, setPicture } from './store.js';
+import { findProfile, removePicture, setAbout, setGameResultsShown, setPicture } from './store.js';
 
 const VARIANTS = { full: 'pictureFile', thumb: 'pictureThumb' };
 
@@ -48,14 +53,17 @@ function profileView(db, profile, viewer, urlOf) {
     steps: shownSteps(stepsOfUser(db, profile.id), urlOf),
     canReceive: currentKeyId(db, profile.id) !== null,
     own: profile.id === viewer.id,
+    // Only one's own: whether "Show my game results" is on (the account page's switch).
+    ...(profile.id === viewer.id && { showGameResults: !profile.hideGameResults }),
   };
 }
 
 // The files a change took away, deleted once it is written (through the chat handle).
 export const deleteFiles = (chat, files) => files.forEach((file) => chat.images.remove(file));
 
-// chat: mountChat()'s handle (chat/mount.js), the only way into the chat area.
-export function memberProfileRoutes(db, config, chat) {
+// chat: mountChat()'s handle (chat/mount.js), the only way into the chat area; gameResults:
+// games/memberSummary.js's createGameResults.
+export function memberProfileRoutes(db, config, chat, gameResults) {
   const router = express.Router();
   const shown = (req, res, next) => {
     const profile = findProfile(db, req.params.username);
@@ -66,6 +74,13 @@ export function memberProfileRoutes(db, config, chat) {
 
   router.get('/:username', allow('member'), shown, (req, res) => {
     res.json({ ok: true, profile: profileView(db, req.profile, req.user, chat.images.url) });
+  });
+
+  router.get('/:username/games', allow('member'), shown, async (req, res) => {
+    // Switched off: the games are not even asked.
+    const games = req.profile.hideGameResults ? [] : await gameResults.cardsFor(req.profile.id);
+    res.set('Cache-Control', 'private, no-store');
+    res.json({ ok: true, games });
   });
 
   router.get('/:username/picture/:variant', allow('member'), shown, (req, res) => {
@@ -94,6 +109,14 @@ export function ownProfileRoutes(db, config, chat) {
     const problem = validateAbout(about);
     if (problem) return sendError(res, 400, 'invalid_input', problem);
     setAbout(db, req.user.id, cleanAbout(about));
+    res.json({ ok: true });
+  });
+
+  router.put('/game-results', allow('member'), perUser, (req, res) => {
+    if (typeof req.body?.show !== 'boolean') {
+      return sendError(res, 400, 'invalid_input', 'show must be true or false.');
+    }
+    setGameResultsShown(db, req.user.id, req.body.show);
     res.json({ ok: true });
   });
 

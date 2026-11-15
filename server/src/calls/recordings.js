@@ -6,8 +6,9 @@
 //              a call (at most one; "starting" until the egress reports it active, then
 //              "active"), adding, activating and stopping its row, the rows still starting, a
 //              failed start's time on the call, a call's recordings and
-//              every recording (the archive), with their length and chapters, one recording,
-//              and deleting one (the file goes with it). Nothing
+//              every recording (the archive), with their length, chapters and preview image
+//              (recordingPreview.js), one recording, and deleting one (the file goes with it).
+//              Nothing
 //              is deleted automatically. The length is the file's own (mp4Duration.js), read
 //              once the file is complete and then kept; never computed from the start and stop
 //              times, which include the egress's start-up. Unknown: null (no length shown).
@@ -16,11 +17,13 @@
 import path from 'node:path';
 import { chaptersOf } from './chapters.js';
 import { mp4Duration } from './mp4Duration.js';
+import { previewView } from './recordingPreview.js';
 
 const now = () => new Date().toISOString();
 const COLUMNS = `id, call_id AS callId, egress_id AS egressId, file, started_at AS startedAt,
   stopped_at AS stoppedAt, started_by AS startedBy, seconds, active_at AS activeAt,
-  from_start AS fromStart`;
+  from_start AS fromStart, preview_file AS previewFile, preview_thumb AS previewThumb,
+  preview_mime AS previewMime, preview_at AS previewAt`;
 
 export function activeRecording(db, callId) {
   return db
@@ -119,7 +122,8 @@ export function recordingLength(db, recording, dir) {
   return seconds;
 }
 
-// Finished recordings as listed: with their length and their chapters.
+// Finished recordings as listed: with their length, their chapters and their preview image's
+// addresses (null: the site's logo).
 function asListed(db, rows, dir) {
   const chapters = chaptersOf(
     db,
@@ -130,6 +134,7 @@ function asListed(db, rows, dir) {
     startedAt: r.startedAt,
     seconds: recordingLength(db, r, dir),
     chapters: chapters.get(r.id),
+    preview: previewView(r),
   }));
 }
 
@@ -149,7 +154,8 @@ export function listRecordings(db, callId, dir) {
 export function listAllRecordings(db, dir) {
   const rows = db
     .prepare(
-      `SELECT r.id, r.call_id AS callId, r.file, r.started_at AS startedAt, r.seconds, c.title
+      `SELECT r.id, r.call_id AS callId, r.file, r.started_at AS startedAt, r.seconds, c.title,
+              r.preview_file AS previewFile, r.preview_at AS previewAt
        FROM call_recordings r JOIN calls c ON c.id = r.call_id
        WHERE r.stopped_at IS NOT NULL ORDER BY r.started_at DESC, r.id DESC`
     )
@@ -163,7 +169,8 @@ export function listAllRecordings(db, dir) {
 export function findListedRecording(db, id, dir) {
   const row = db
     .prepare(
-      `SELECT r.id, r.call_id AS callId, r.file, r.started_at AS startedAt, r.seconds, c.title
+      `SELECT r.id, r.call_id AS callId, r.file, r.started_at AS startedAt, r.seconds, c.title,
+              r.preview_file AS previewFile, r.preview_at AS previewAt
        FROM call_recordings r JOIN calls c ON c.id = r.call_id
        WHERE r.id = ? AND r.stopped_at IS NOT NULL`
     )

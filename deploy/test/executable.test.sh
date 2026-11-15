@@ -18,7 +18,7 @@ failures=0
 
 # docs/DEPLOYMENT.md, docs/CALLS.md ("Load test") and the timers and hooks the installer sets up.
 for script in deploy/install.sh deploy/calls/loadtest.sh deploy/site/calls-cert.sh \
-  deploy/install/certbot-hook.sh deploy/pc/get-seasonal-backups.sh; do
+  deploy/install/certbot-hook.sh deploy/pc/get-seasonal-backups.sh   deploy/site/watchdog/seasonal-watchdog.sh; do
   mode="$(git -C "$ROOT" ls-files -s -- "$script" | cut -d' ' -f1)"
   if [[ "$mode" == 100755 ]]; then
     echo "ok   $script is executable"

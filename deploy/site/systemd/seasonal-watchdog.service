@@ -1,0 +1,20 @@
+# ============================================================
+# File:        seasonal-watchdog.service
+# Path:        deploy/site/systemd/seasonal-watchdog.service
+# Project:     Seasonal Entertainment
+# Description: One run of the outage watchdog (deploy/site/watchdog/seasonal-watchdog.sh;
+#              docs/DEPLOYMENT.md, "An e-mail when the site is down"): checks the site and the
+#              call service, sends a "down" or "back up" e-mail when that changes, and a test
+#              e-mail when the admin page asked for one. On the host, not in a container, and
+#              not tied to docker.service, so it runs while the site or Docker is down. Started
+#              every 2 minutes by seasonal-watchdog.timer; the installer writes both into
+#              /etc/systemd/system with its own paths (outage.sh).
+# ============================================================
+
+[Unit]
+Description=Seasonal Entertainment outage watchdog
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/seasonal/watchdog.env
+ExecStart=/opt/seasonal-entertainment/deploy/site/watchdog/seasonal-watchdog.sh

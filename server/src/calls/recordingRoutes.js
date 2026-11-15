@@ -11,13 +11,14 @@
 //              (recordingStart.js watches it; a start that does not come is dropped). Stopping is
 //              allowed while it starts. Ending the call stops it (endCall.js). The recordings of a call are listed, and played
 //              (with range requests, so a player can seek), for the same audience as the call
-//              itself; organisers and admins delete one (file and row). A start the recording
+//              itself; organisers and admins delete one (file and row, and its preview image's
+//              files through mountChat's chat.images, recordingPreview.js). A start the recording
 //              service does not answer (timeout, unavailable) is 503 recording_unavailable, not a
 //              server error. Nothing is deleted
 //              automatically. The archive lists every finished recording with its call and
 //              chapters (GET /api/calls/recordings), and one of them for its share page
 //              (GET /api/calls/recordings/:rid, recordingShare.js); the chapter routes are
-//              chapterRoutes.js.
+//              chapterRoutes.js, the preview image's recordingPreviewRoutes.js.
 // ============================================================
 
 import { mkdirSync, rmSync } from 'node:fs';
@@ -38,6 +39,7 @@ import {
   listRecordings,
   markRecordingStopped,
 } from './recordings.js';
+import { previewFiles } from './recordingPreview.js';
 import { publishRoomState } from './roomState.js';
 import { canManage } from './routes.js';
 import { startCallRecording } from './recordingStart.js';
@@ -78,7 +80,7 @@ export function recordingSteps(db, config, service) {
   return { steps, recording, enabled, audit, manage, loadRecording };
 }
 
-export function callRecordingRoutes(db, config, service) {
+export function callRecordingRoutes(db, config, service, chat) {
   const router = express.Router();
   const { steps, recording, enabled, audit, manage, loadRecording } = recordingSteps(
     db,
@@ -169,6 +171,9 @@ export function callRecordingRoutes(db, config, service) {
   router.delete('/:id/recordings/:rid', ...manage, loadRecording, (req, res) => {
     rmSync(path.join(recording.dir, req.recording.file), { force: true });
     deleteRecordingRow(db, req.recording.id);
+    // Its chosen preview image goes with it (the row named its files), through the chat
+    // area's own removal: the media files are the chat's (chatBoundary.test.js).
+    for (const file of previewFiles(req.recording)) chat.images.remove(file);
     audit(req, 'call.recording_delete', req.call);
     res.json({ ok: true });
   });

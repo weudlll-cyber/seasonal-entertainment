@@ -48,10 +48,12 @@ import { pushRoutes } from './push/routes.js';
 import { pushSender } from './push/send.js';
 import { adminProfileRoutes } from './profiles/adminRoutes.js';
 import { memberProfileRoutes, ownProfileRoutes } from './profiles/routes.js';
+import { createGameResults } from './games/memberSummary.js';
 import { startPollJobs } from './polls/store.js';
 import { recordingSharePage } from './calls/recordingShare.js';
 import { resumeRecordingStarts } from './calls/recordingStart.js';
 import { chapterRoutes } from './calls/chapterRoutes.js';
+import { recordingPreviewRoutes } from './calls/recordingPreviewRoutes.js';
 import { callRoutes } from './calls/routes.js';
 import { callSpotlightRoutes } from './calls/spotlightRoutes.js';
 import { callStageRoutes } from './calls/stageRoutes.js';
@@ -81,6 +83,7 @@ import { makeLimiter } from './http/rateLimit.js';
 import { securityHeaders } from './http/securityHeaders.js';
 import { currentUser, sessionMiddleware } from './http/session.js';
 import { adminSettingRoutes } from './settings/adminRoutes.js';
+import { outageAddressChanged, outageAlertRoutes } from './alerts/routes.js';
 import { bannerSettingRoutes } from './settings/bannerRoutes.js';
 import { bindSettingsConfig } from './settings/store.js';
 import { twoFactorGate } from './twofa/gate.js';
@@ -169,7 +172,7 @@ export function createApp({
   api.use('/admin/users', adminUserRoutes(db, config, chat, discord));
   // Member profiles (profiles/, docs/AUTH.md "Member profiles"): members only.
   api.use('/admin/users', adminProfileRoutes(db, chat));
-  api.use('/members', memberProfileRoutes(db, config, chat));
+  api.use('/members', memberProfileRoutes(db, config, chat, createGameResults(config.games)));
   api.use('/profile', ownProfileRoutes(db, config, chat));
   api.use('/admin/audit', adminAuditRoutes(db));
   api.use('/info', infoRoutes(db));
@@ -190,7 +193,8 @@ export function createApp({
   api.use('/games', gameRoutes(db, openRounds));
   api.use('/admin/games', adminGameRoutes(db, openRounds));
   app.locals.games = { start: () => (config.backgroundJobs ? openRounds.start() : null) };
-  api.use('/admin/settings', adminSettingRoutes(db));
+  api.use('/admin/settings', adminSettingRoutes(db, outageAddressChanged(config)));
+  api.use('/admin/outage-alert', outageAlertRoutes(db, config));
   // Organisers change the site banner, and only it (docs/SETTINGS.md, "Who").
   api.use('/banner', bannerSettingRoutes(db));
   api.use('/embed', embedRoutes(db, config, embedOrigins, chat.sessions));
@@ -210,8 +214,9 @@ export function createApp({
   // Before callRoutes: its /:id would take /bot-occurrences.
   api.use('/calls', callEventRoutes(db, config, callService, chat));
   // Before callRoutes too: its /:id would take /recordings (the archive).
-  api.use('/calls', callRecordingRoutes(db, config, callService));
+  api.use('/calls', callRecordingRoutes(db, config, callService, chat));
   api.use('/calls', chapterRoutes(db, config, callService));
+  api.use('/calls', recordingPreviewRoutes(db, config, callService, chat));
   api.use('/calls', callRoutes(db, config, callService, chat, wentLive));
   api.use('/calls', callReminderRoutes(db, config, callService));
   api.use('/calls', callJoinRoutes(db, config, callService, chat));

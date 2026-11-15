@@ -45,6 +45,14 @@ DISCORD_CLIENT_SECRET_FILE=
 BINGO=
 MINI_GAMES=
 RACE=
+# The outage e-mails (docs/DEPLOYMENT.md, "An e-mail when the site is down"): the mail account
+# that sends them (e.g. smtp.gmail.com, 587, the Gmail address) and a file holding its password
+# (for Gmail a Google app password; the password itself never goes into this file). Empty
+# server: no e-mails
+OUTAGE_SMTP_HOST=
+OUTAGE_SMTP_PORT=587
+OUTAGE_SMTP_USER=
+OUTAGE_SMTP_PASSWORD_FILE=
 # The age public key the nightly backups are encrypted to (age1…); empty: set up later
 BACKUP_RECIPIENT=
 # Only for a staging or test certificate authority instead of Let's Encrypt: its ACME directory

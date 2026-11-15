@@ -1,0 +1,18 @@
+# ============================================================
+# File:        seasonal-watchdog.timer
+# Path:        deploy/site/systemd/seasonal-watchdog.timer
+# Project:     Seasonal Entertainment
+# Description: Runs seasonal-watchdog.service every 2 minutes, from 2 minutes after the boot
+#              on (docs/DEPLOYMENT.md, "An e-mail when the site is down").
+# ============================================================
+
+[Unit]
+Description=Seasonal Entertainment outage watchdog, every 2 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=2min
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target

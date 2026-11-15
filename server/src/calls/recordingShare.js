@@ -7,8 +7,9 @@
 //              that shows a preview card where it is posted). The server answers the path with
 //              the client's index.html plus Open Graph and Twitter meta tags for that recording
 //              (the call's title, the date in UTC, labelled "UTC" (UTC_ZONE, as the weekly
-//              recap) and the length, the page's URL, the site's logo
-//              as the image, the public video as og:video), every value HTML-escaped; the client
+//              recap) and the length, the page's URL, as the image the one organisers chose
+//              (recordingPreview.js) or else the site's logo, the public video as og:video),
+//              every value HTML-escaped; the client
 //              then shows the page (pages/RecordingPage.jsx). A missing, deleted or unfinished
 //              recording, or calls or recording not set up, answer 404 with the plain
 //              index.html, so the client shows its normal "not found". Only where the built
@@ -24,8 +25,8 @@ import { findListedRecording } from './recordings.js';
 import { RECORDING_ENCODING } from './service.js';
 
 const SITE_NAME = 'Seasonal Entertainment';
-// The site's own brand image (client/public/brand), no picture made per recording.
-const IMAGE_PATH = '/brand/logo.webp';
+// The site's own brand image (client/public/brand), while no image was chosen for a recording.
+const LOGO_PATH = '/brand/logo.webp';
 
 const escapeHtml = (value) =>
   String(value).replace(
@@ -42,13 +43,14 @@ export function shareTags(recording, origin) {
   const length = recording.seconds === null ? '' : ` · ${formatDuration(recording.seconds)}`;
   const title = `${recording.title} (recording)`;
   const description = `Community call recording, ${when}${length}.`;
+  const image = `${origin}${recording.preview?.full ?? LOGO_PATH}`;
   const tags = [
     ['property', 'og:site_name', SITE_NAME],
     ['property', 'og:type', 'video.other'],
     ['property', 'og:title', title],
     ['property', 'og:description', description],
     ['property', 'og:url', url],
-    ['property', 'og:image', `${origin}${IMAGE_PATH}`],
+    ['property', 'og:image', image],
     ['property', 'og:video', video],
     ['property', 'og:video:secure_url', video],
     ['property', 'og:video:type', 'video/mp4'],
@@ -58,7 +60,7 @@ export function shareTags(recording, origin) {
     ['name', 'twitter:card', 'summary_large_image'],
     ['name', 'twitter:title', title],
     ['name', 'twitter:description', description],
-    ['name', 'twitter:image', `${origin}${IMAGE_PATH}`],
+    ['name', 'twitter:image', image],
   ];
   return [
     `<title>${escapeHtml(`${title} · ${SITE_NAME}`)}</title>`,

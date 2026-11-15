@@ -17,7 +17,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readCallsConfig } from './calls/config.js';
 import { readDiscordConfig } from './discord/config.js';
-import { readEmbeddedGames } from './games/embedded.js';
+import { readEmbeddedGames, readLocalOrigins } from './games/embedded.js';
 import { readPushConfig } from './push/config.js';
 import { checkProduction } from './productionConfig.js';
 import { readSecretKey } from './secretKey.js';
@@ -189,12 +189,15 @@ export function readConfig(env = process.env) {
     // /etc/seasonal/games-sync-token, passed in site.env; null: the feed refuses everyone).
     // embedded: the switched-on slugs (GAMES_EMBEDDED; GAMES_BINGO_EMBEDDED=1 still adds bingo,
     // so a Bingo-only install keeps working); a game not in it: both routes answer 404.
+    // localOrigins: where the site asks a game for a member's results, with the same token
+    // (GAMES_LOCAL_ORIGINS; games/memberSummary.js); a game without one shows none.
     games: {
       embedded: readEmbeddedGames(
         env.GAMES_EMBEDDED,
         readOnOff(env.GAMES_BINGO_EMBEDDED, 'GAMES_BINGO_EMBEDDED')
       ),
       syncToken: readSyncToken(env.GAMES_SYNC_TOKEN),
+      localOrigins: readLocalOrigins(env.GAMES_LOCAL_ORIGINS),
     },
     // Web push when a call starts (push/config.js, docs/CALLS.md); null: off, no switch.
     push: readPushConfig(env),

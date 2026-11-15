@@ -14,13 +14,16 @@
 #              it also decrypts an encrypted backup with the real age tool, runs the PC-side
 #              tests (deploy/pc/: PowerShell for Windows, POSIX sh for Linux and macOS), the
 #              installer's token, Discord, update-copy, backup-listing, hardening,
-#              embedded-games and web push key tests and the call load test's plan
+#              embedded-games, web push key and outage e-mail tests, the outage watchdog with a
+#              stand-in mail server, and the call load test's plan
 #              (deploy/test/bot-admin-token.test.sh, deploy/test/discord.test.sh,
 #              deploy/test/update-copy.test.sh, deploy/test/backup-listing.test.sh,
 #              deploy/test/server-hardening.test.sh, deploy/test/games.test.sh,
-#              deploy/test/push.test.sh, deploy/test/loadtest.test.sh) and shellcheck over the installer, its tests, the
-#              load test and the PC-side shell scripts (deploy/install.sh, deploy/install/,
-#              deploy/test/, deploy/calls/loadtest.sh, deploy/pc/), and that the scripts the
+#              deploy/test/push.test.sh, deploy/test/outage.test.sh, deploy/test/watchdog.test.sh,
+#              deploy/test/loadtest.test.sh) and shellcheck over the installer, its tests, the
+#              watchdog, the load test and the PC-side shell scripts (deploy/install.sh,
+#              deploy/install/, deploy/test/, deploy/site/watchdog/, deploy/calls/loadtest.sh,
+#              deploy/pc/), and that the scripts the
 #              docs say to run directly are executable in git, and that Renovate's configuration
 #              still finds the pins it updates (deploy/test/renovate.test.sh).
 #              A third job, "security", scans as the game repositories do (2026-11-10): gitleaks
@@ -149,6 +152,12 @@ jobs:
       - name: The installer makes the web push keys once and keeps them (never shown)
         run: bash deploy/test/push.test.sh
 
+      - name: The installer's outage e-mails (questions, the root-only account, kept, the timer)
+        run: bash deploy/test/outage.test.sh
+
+      - name: The outage watchdog (down after 2 failures, one mail, back up, test e-mail)
+        run: bash deploy/test/watchdog.test.sh
+
       - name: The call load test's plan (steps, limits, keys never shown)
         run: bash deploy/test/loadtest.test.sh
 
@@ -205,7 +214,8 @@ jobs:
           deploy/test/checks-bot-admin.sh deploy/test/bot-admin-token.test.sh
           deploy/test/discord.test.sh deploy/test/update-copy.test.sh
           deploy/test/backup-listing.test.sh deploy/test/server-hardening.test.sh deploy/test/games.test.sh
-          deploy/test/push.test.sh
+          deploy/test/push.test.sh deploy/test/outage.test.sh deploy/test/watchdog.test.sh
+          deploy/site/watchdog/seasonal-watchdog.sh
           deploy/calls/loadtest.sh deploy/test/loadtest.test.sh deploy/test/executable.test.sh
           deploy/test/renovate.test.sh
           deploy/test/prepare-nginx.sh deploy/test/prepare-ufw.sh

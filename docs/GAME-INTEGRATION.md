@@ -44,6 +44,7 @@ The website's contracts:
 | The chat inside a game, its room, postMessage    | [EMBED.md](EMBED.md#the-embedded-games-rooms), [snippet](EMBED.md#the-snippet) |
 | Installing: questions, routes folder, token      | [DEPLOYMENT.md, "Embedded games"](DEPLOYMENT.md#embedded-games)                |
 | Optional open sign-ups listing                   | [OPEN-ROUNDS.md](OPEN-ROUNDS.md)                                               |
+| Optional: a member's results on their profile    | [Section 7](#7-a-members-results-on-their-profile) below                       |
 
 ## 1. Architecture and deployment profile
 
@@ -226,7 +227,72 @@ Optional: the [open-rounds contract](OPEN-ROUNDS.md), its HTTPS status URL in th
 "Sign-up status URL". Current: Bingo provides `/games/bingo/api/public/open-rounds`; Mini Games
 does not expose it.
 
-## 7. Other profiles and proposals
+## 7. A member's results on their profile
+
+**Built on `night/2026-11-14`, not merged yet** (decided 2026-11-14). **Optional for a game**:
+until a game answers, its card simply does not show. The website asks; the game answers.
+
+On a member's profile (`/members/<name>`, signed-in members only) the website shows one card
+per embedded game: up to four values the game names itself (label and value, for example
+"Played 12", "Wins 3", "Best place 2"), "Last played <date>" and a link into the game
+(`/games/<slug>`). The member can hide their cards with "Show my game results" on the account
+page (on by default); while it is off, the games are not asked at all.
+
+**The request** (server to server, never through the public web server):
+
+```text
+GET <local origin>/games/<slug>/api/website/member-summary?user=<website user id>
+X-Games-Sync-Token: <the games' sync token>
+Accept: application/json
+```
+
+- `<local origin>`: the game server's own address, set on the website per game in
+  `GAMES_LOCAL_ORIGINS` (`site.env`, a comma list such as `bingo=http://host.docker.internal:4310`;
+  only known slugs and plain `http(s)://host:port` origins). A game without an entry is not
+  asked. The site runs in its container, where `127.0.0.1` is the container itself: the
+  address must be one the container reaches (for example the host through
+  `host.docker.internal`, which the site service would need as an `extra_hosts` entry, and a
+  game port open to the container's network). **Not wired by the installer yet**: neither that
+  entry nor a question for the origins (needs the owner's word, docs/reports/2026-11-14-night.md).
+- `X-Games-Sync-Token`: the same token the game already uses for the account-changes feed
+  (one for all games, `/etc/seasonal/games-sync-token`), so no new secret. Required: compare
+  it in constant time and answer `401` without it. Required: do **not** expose this route
+  through the public proxy route; only the website reaches it.
+- `user`: the website user id, the second half of the game's account key
+  ([section 3](#3-account-mapping-rights-and-sessions)).
+
+**The answer** (`200`, `application/json`, at most **4096 bytes**):
+
+```json
+{
+  "values": [
+    { "label": "Played", "value": 12 },
+    { "label": "Wins", "value": 3 },
+    { "label": "Best place", "value": "2nd" }
+  ],
+  "lastPlayedAt": "2026-11-13T19:00:00Z"
+}
+```
+
+- `values`: **1 to 4** items, shown in this order. `label`: text of 1 to **24** characters;
+  `value`: a whole number from 0 to 999 999 999, or text of 1 to **16** characters. Texts are
+  trimmed; control characters are refused. Both are shown as plain text, never as markup.
+- `lastPlayedAt`: an ISO 8601 time, or `null` / absent. Shown as a date in the viewer's zone.
+- **No data**: `{"noData": true}`, or `404` for a player the game does not know. No card.
+- Anything else (another status, a redirect, more than 4096 bytes, broken JSON, more than four
+  values, a longer text, more than **1.5 seconds**) leaves that game's card out. The website
+  never shows an error for it and never lets a game hold up the profile: the cards load in a
+  request of their own (`GET /api/members/<name>/games`).
+- **Cache**: the website keeps an answer (a card or "no data") **5 minutes** per member and
+  game, and a failure **1 minute**. A game sees at most one request per member and 5 minutes
+  from profile views.
+
+Website side: `server/src/games/memberSummary.js` (the contract check, the request, the cache),
+the route in `server/src/profiles/routes.js`, the cards `client/src/profiles/GameResults.jsx`.
+Tests: `server/test/gameResults.test.js` with the stand-in game `server/test/helpers/fakeGame.js`
+(a small local server answering this contract), `client/src/profiles/gameResults.test.jsx`.
+
+## 8. Other profiles and proposals
 
 **Not the current website login:** Mini Games also implements a third-party game iframe loader
 and JWT handoff; Bingo's loader is a placeholder; OIDC is not implemented. Do not copy them as
@@ -244,7 +310,7 @@ popup and embed token, which authorizes website chat, not a game ([EMBED.md](EMB
 | One registration list for server, installer and proxy               | Proposed                                                                |
 | A separate-origin profile (e.g. OIDC with PKCE) for untrusted games | Proposed; needed only for a game not run by the owner                   |
 
-## 8. Copyable task brief for a game repository
+## 9. Copyable task brief for a game repository
 
 Use this with the chosen slug and repository. It is an implementation brief, not a claim that
 the website already knows arbitrary slugs.
@@ -272,12 +338,13 @@ Make assets, APIs, WebSockets, redirects and cookies work under the base path.
 
 Provide an installer-owned nginx/Caddy route that strips the website's cookies, and document
 configuration without secrets. Coordinate website slug registration, activation, feed
-protection and catalogue setup. Optionally implement docs/OPEN-ROUNDS.md. Do not assume OIDC,
+protection and catalogue setup. Optionally implement docs/OPEN-ROUNDS.md and the member
+summary of docs/GAME-INTEGRATION.md section 7 (local only, the sync token). Do not assume OIDC,
 a website JWT issuer, a season feed, embedded calls or per-match website chat rooms.
 Use the acceptance checklist below; report remaining gaps explicitly.
 ```
 
-## 9. Acceptance checklist
+## 10. Acceptance checklist
 
 Add game-specific automated checks and exercise the real proxy path before deployment.
 
@@ -305,8 +372,10 @@ Add game-specific automated checks and exercise the real proxy path before deplo
 - [ ] Proxy config validation/rollback and separate catalogue setup work.
 - [ ] Optional status feed meets exact field/size/origin rules and excludes closed/private
       rounds.
+- [ ] Optional member summary: only with the sync token, not reachable through the public
+      route, within the limits of section 7, `noData` or `404` for an unknown player.
 
-## 10. Source map and maintenance
+## 11. Source map and maintenance
 
 Website code:
 
@@ -319,8 +388,11 @@ Website code:
 - Login return navigation: `client/src/session/nextPage.js`
 - Installation: `deploy/install/lib/games.sh`, `deploy/site/Caddyfile`
 - Catalogue/status: `server/src/games/adminRoutes.js`, `seed.js`, `openRoundsContract.js`
+- A member's results: `server/src/games/memberSummary.js`, `GAMES_LOCAL_ORIGINS` in
+  `embedded.js`, the route in `server/src/profiles/routes.js`
 - Website tests: `server/test/embeddedGames.test.js`, `embeddedFeed.test.js`,
-  `gameHosts.test.js`, `gameRooms.test.js`, `openRounds.test.js`; chat browser cases in
+  `gameHosts.test.js`, `gameRooms.test.js`, `openRounds.test.js`, `gameResults.test.js`; chat
+  browser cases in
   `client/e2e/embed*.spec.js`; installer checks in `deploy/test/games.test.sh`
 
 Game-side reference implementations at the verified commits:

@@ -34,9 +34,12 @@ is the site's usual behaviour, so nothing changes until an admin changes it (dec
   this mechanism; the approved embedding sites and the weekly recap's last week share the table
   under their own keys.
 - **The page**: one section per group (Chat, Other sites, Calls, Accounts, Home, Weekly recap,
-  Site banner; empty groups are left out), one card per setting with its explanation, bounds and
-  default, saved on its own (`client/src/admin/AdminSettingsPage.jsx`, `SettingForm.jsx`; the
-  organisers' Site banner page reuses its fields).
+  Site banner, Alerts; empty groups are left out), one card per setting with its explanation,
+  bounds and default, saved on its own (`client/src/admin/AdminSettingsPage.jsx`,
+  `SettingForm.jsx`; the organisers' Site banner page reuses its fields). Under Alerts, "Send a
+  test e-mail" (`OutageTestMail.jsx`). A setting that something outside the database follows
+  (the outage watchdog's recipient file) is passed on after its change (`onChanged`,
+  `server/src/settings/adminRoutes.js`).
 
 ## The settings
 
@@ -75,6 +78,7 @@ is the site's usual behaviour, so nothing changes until an admin changes it (dec
 | Site banner  | Banner text (`banner.text`)                                          | short text   | empty                                    | one line, at most 200 characters        | plain text: HTML and Markdown show as typed                                                                                                                                                   |
 | Site banner  | Banner link (`banner.link`)                                          | short text   | empty                                    | a path on this site (one leading /)     | "Read more"                                                                                                                                                                                   |
 | Site banner  | Banner style (`banner.style`)                                        | choice       | Info                                     | Info, Warning                           | warning: announced at once, red edge                                                                                                                                                          |
+| Alerts       | Outage alert address (`alerts.outageAddress`)                        | short text   | empty                                    | one e-mail address, at most 254         | where the server's watchdog sends "down" and "back up" e-mails (docs/DEPLOYMENT.md, "An e-mail when the site is down"); written to a file the watchdog reads; empty: none                     |
 
 ## Admin → Games
 
