@@ -12,29 +12,6 @@ entry waits for.
 - **Real sites to approve for the chat embed** — which game sites go on Admin → Embedding once
   the site is live (only exact `https://` origins).
 
-### Built, waiting for the merge
-
-- **A recording's preview image** — built on `night/2026-11-14` (piece 1; decided 2026-11-14;
-  until then the share card used the site's logo): on the recording's page organisers and
-  admins pick a frame with a slider ("Use this frame", taken in the browser) or upload an image
-  (the chat images' rules), or go "Back to the logo"; it becomes the share card's image and the
-  players' still image, is deleted with the recording or call, backed up as media, and audited
-  (docs/CALLS.md, "A recording's preview image").
-- **Game results on member profiles** — built on `night/2026-11-14` (piece 2; decided
-  2026-11-14): a card per embedded game on a member's profile (up to four values the game names,
-  "Last played", a link into the game), for signed-in members; "Show my game results" on the
-  account page (on by default) hides them; the contract the games implement is
-  docs/GAME-INTEGRATION.md, section 7. Nothing shows until a game answers it, and the
-  installer does not yet set `GAMES_LOCAL_ORIGINS` nor give the site's container a way to the
-  host (needs the owner's word).
-- **An e-mail when the site is down** — built on `night/2026-11-14` (piece 3; decided
-  2026-11-14): a watchdog on the host (systemd timer, every 2 minutes, outside the site's
-  container) checks the site and the call service; after 2 failed checks one "down" e-mail,
-  then one "back up" e-mail. The recipient is Admin → Settings → Alerts (with "Send a test
-  e-mail"), the mail account (e.g. Gmail with a Google app password) an optional installer
-  question into a root-only file, kept on `--update` (docs/DEPLOYMENT.md, "An e-mail when the
-  site is down"). A whole-server outage needs a monitor outside the server.
-
 ### Proposals not decided
 
 - **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
@@ -51,6 +28,12 @@ entry waits for.
 
 ### Known limits
 
+- **Game results need each game's address** — the site asks each embedded game for a member's
+  results at the origin named in `GAMES_LOCAL_ORIGINS` (docs/GAME-INTEGRATION.md, section 7);
+  the installer does not set it, and in production the site's container cannot reach
+  `127.0.0.1` on the host. To be wired when the games implement the member-summary contract,
+  each game's own installer registering where it is reachable for the site (decided
+  2026-11-15).
 - **Only the owner's own games are embedded** — if a game not run by the owner is ever embedded,
   revisit proposals C (keep the website's cookies from it: a separate origin), D (per-game
   capabilities beyond hosting) and E (a sync token per game) of docs/PROJECT-LEAD-REVIEW.md. Not
@@ -92,6 +75,25 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **A recording's preview image** — closed by `night/2026-11-14` (PR #73, merged 2026-11-15; piece
+  1; decided 2026-11-14; until then the share card used the site's logo): on the recording's page
+  organisers and admins pick a frame with a slider ("Use this frame", taken in the browser) or
+  upload an image (the chat images' rules), or go "Back to the logo"; it becomes the share card's
+  image and the players' still image, is deleted with the recording or call, backed up as media, and
+  audited (docs/CALLS.md, "A recording's preview image").
+- **Game results on member profiles** — closed by `night/2026-11-14` (PR #73, merged 2026-11-15;
+  piece 2; decided 2026-11-14): a card per embedded game on a member's profile (up to four values
+  the game names, "Last played", a link into the game), for signed-in members; "Show my game
+  results" on the account page (on by default) hides them; the contract the games implement is
+  docs/GAME-INTEGRATION.md, section 7. Nothing shows until a game answers it; where the site reaches
+  each game is in part one ("Game results need each game's address").
+- **An e-mail when the site is down** — closed by `night/2026-11-14` (PR #73, merged 2026-11-15;
+  piece 3; decided 2026-11-14): a watchdog on the host (systemd timer, every 2 minutes, outside the
+  site's container) checks the site and the call service; after 2 failed checks one "down" e-mail,
+  then one "back up" e-mail. The recipient is Admin → Settings → Alerts (with "Send a test e-mail"),
+  the mail account (e.g. Gmail with a Google app password) an optional installer question into a
+  root-only file, kept on `--update` (docs/DEPLOYMENT.md, "An e-mail when the site is down"). A
+  whole-server outage needs a monitor outside the server.
 - **An ended call's chat column without a blank box** — closed by `night/2026-11-13` (PR #70, merged
   2026-11-14 as 1fac68e; piece 1; seen 2026-11-13 as an empty white box with only its title): the
   column says "This call's chat is closed." and, without messages, "No messages in this call."
