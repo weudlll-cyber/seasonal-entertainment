@@ -7,10 +7,11 @@
 //              e-mails come from the server's own watchdog, not from the site, so a test goes
 //              out on its next run (at most 2 minutes): the button asks for one, and the panel
 //              says what the watchdog answered, or that it has not yet ("Check again"). Only
-//              with a saved address.
+//              with a saved address. A load that was under way when a send started is ignored:
+//              the send's answer is newer (the panel opening and a quick click raced, 2026-11-17).
 // ============================================================
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api/http.js';
 import { formatWhen } from '../app/dates.js';
 import { FormMessage } from '../components/FormField.jsx';
@@ -30,19 +31,22 @@ export default function OutageTestMail({ address }) {
   const [test, setTest] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  // Sends started so far: a load answers for the moment it started, so it is used only when no
+  // send started since (else it would overwrite the send's newer answer).
+  const sends = useRef(0);
 
-  const load = useCallback(
-    () =>
-      api('/admin/outage-alert')
-        .then((answer) => setTest(answer.test))
-        .catch((err) => setError(err.message)),
-    []
-  );
+  const load = useCallback(() => {
+    const at = sends.current;
+    return api('/admin/outage-alert')
+      .then((answer) => sends.current === at && setTest(answer.test))
+      .catch((err) => sends.current === at && setError(err.message));
+  }, []);
   useEffect(() => {
     load();
   }, [load]);
 
   async function send() {
+    sends.current += 1;
     setBusy(true);
     setError(null);
     try {
