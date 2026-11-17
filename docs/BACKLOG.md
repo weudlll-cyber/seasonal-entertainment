@@ -12,6 +12,14 @@ entry waits for.
 - **Real sites to approve for the chat embed** — which game sites go on Admin → Embedding once
   the site is live (only exact `https://` origins).
 
+### Waiting for the games
+
+- **Way back from a game to the website** — contract written 2026-11-17
+  (docs/GAME-INTEGRATION.md, section 8; decided 2026-11-17): in website mode every screen of an
+  embedded game shows a small "← Seasonal Entertainment" link at the top left to `/games`,
+  same tab; not in standalone mode; a screen without room is reported to the owner. Waiting for
+  Bingo, Mini Games and the race to build it, each in its own repository.
+
 ### Proposals not decided
 
 - **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
