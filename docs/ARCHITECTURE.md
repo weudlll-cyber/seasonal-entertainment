@@ -37,6 +37,15 @@ advisory (GHSA-g3hv-75wg-m249); npm's own fix would have downgraded ESLint to 9.
 only: `npm audit --omit=dev` was clean before and after. Remove the override once
 `@eslint/config-array` asks for `minimatch` 11 itself.
 
+`osv-scanner.toml` excepts one advisory from the CI job "security" until 2026-12-01 (decided
+2026-11-17): picomatch 4.0.7, GHSA-fc5q-39xc-vjpf (a slow pattern match on crafted extglob
+patterns, CVSS 8.7), which has no fixed release. Development only: Vite, Vitest, tinyglobby and
+fdir use it on the repository's own build and test globs, never on untrusted input, and it is
+not in the site image. The scanner reads the file by itself (it lies beside
+`package-lock.json`); the threshold (CVSS 7) and `npm audit` are unchanged. An entry stops
+applying on its `ignoreUntil` date and the job fails again: then picomatch is updated if a fixed
+version is out, else the owner decides again (docs/BACKLOG.md, part one).
+
 ## Data
 
 One SQLite file (`DATABASE_PATH`, default `data/seasonal.db`; `data/` is gitignored),
@@ -428,6 +437,8 @@ bytes, GHSA-27r3-jxmh-p828, fixed in body-parser 2.4.0, which the lockfile now h
                            deployment files; security (gitleaks, npm audit, osv-scanner)
 .github/workflows/codeql.yml  CodeQL scanning of the JavaScript (pushes, pull requests, weekly)
 .gitleaksignore            gitleaks findings checked and accepted, by fingerprint with a reason
+osv-scanner.toml           osv-scanner findings accepted for a while, each with a reason and an
+                           expiry date (ignoreUntil), as the game repositories keep them
 renovate.json              dependency update PRs by Renovate (docs/DEPLOYMENT.md, "Dependency
                            updates")
 .claude/settings.json      agent permissions for this repository

@@ -23,6 +23,10 @@ entry waits for.
 
 ### Known limits
 
+- **picomatch advisory GHSA-fc5q-39xc-vjpf excepted until 2026-12-01** — update picomatch when
+  a fixed version is out, else the owner decides again (decided 2026-11-17). picomatch 4.0.7 is
+  development only (Vite, Vitest, tinyglobby, fdir); the exception is `osv-scanner.toml`, and
+  the CI job "security" fails again on the finding from 2026-12-01 (docs/ARCHITECTURE.md).
 - **Game results need each game's address** — the site asks each embedded game for a member's
   results at the origin named in `GAMES_LOCAL_ORIGINS` (docs/GAME-INTEGRATION.md, section 7);
   the installer does not set it, and in production the site's container cannot reach

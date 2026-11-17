@@ -29,7 +29,9 @@
 #              A third job, "security", scans as the game repositories do (2026-11-10): gitleaks
 #              over the full history (accepted findings by fingerprint in .gitleaksignore), npm
 #              audit of the production dependencies (fails on high or critical) and osv-scanner
-#              on package-lock.json (fails from CVSS 7). CodeQL runs in codeql.yml.
+#              on package-lock.json (fails from CVSS 7; accepted findings, each with a reason and
+#              an expiry date, in osv-scanner.toml, which the scanner finds by itself beside the
+#              lockfile). CodeQL runs in codeql.yml.
 # ============================================================
 
 name: CI
