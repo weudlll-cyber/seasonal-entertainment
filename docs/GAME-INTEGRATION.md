@@ -45,6 +45,7 @@ The website's contracts:
 | Installing: questions, routes folder, token      | [DEPLOYMENT.md, "Embedded games"](DEPLOYMENT.md#embedded-games)                |
 | Optional open sign-ups listing                   | [OPEN-ROUNDS.md](OPEN-ROUNDS.md)                                               |
 | Optional: a member's results on their profile    | [Section 7](#7-a-members-results-on-their-profile) below                       |
+| Required: a way back to the website              | [Section 8](#8-a-way-back-to-the-website) below                                |
 
 ## 1. Architecture and deployment profile
 
@@ -292,7 +293,25 @@ the route in `server/src/profiles/routes.js`, the cards `client/src/profiles/Gam
 Tests: `server/test/gameResults.test.js` with the stand-in game `server/test/helpers/fakeGame.js`
 (a small local server answering this contract), `client/src/profiles/gameResults.test.jsx`.
 
-## 8. Other profiles and proposals
+## 8. A way back to the website
+
+**Required** for every embedded game (decided 2026-11-17). **Not yet implemented in any
+game.**
+
+- In website mode, every screen of the game shows a small link **"← Seasonal Entertainment"**
+  at the top left. It leads to the website's games page, **`/games`** (the website's route
+  `games` in `client/src/app/App.jsx`, the page `client/src/pages/GamesPage.jsx`). The game
+  runs under `/games/<slug>/` on the website's own origin, so the link is the root-relative
+  `/games`. Same tab, plain navigation (an ordinary link), no popup and no new window.
+- It stays small, so it takes no play area. It uses the game's own styling and works in light
+  and dark mode and at phone width.
+- In standalone mode (no website) the link is not shown.
+- If a game screen has no room at the top left, the game does not move the link elsewhere on
+  its own: it reports that screen to the owner, who decides.
+
+Current: Bingo, Mini Games and the race do not show the link yet (2026-11-17).
+
+## 9. Other profiles and proposals
 
 **Not the current website login:** Mini Games also implements a third-party game iframe loader
 and JWT handoff; Bingo's loader is a placeholder; OIDC is not implemented. Do not copy them as
@@ -310,7 +329,7 @@ popup and embed token, which authorizes website chat, not a game ([EMBED.md](EMB
 | One registration list for server, installer and proxy               | Proposed                                                                |
 | A separate-origin profile (e.g. OIDC with PKCE) for untrusted games | Proposed; needed only for a game not run by the owner                   |
 
-## 9. Copyable task brief for a game repository
+## 10. Copyable task brief for a game repository
 
 Use this with the chosen slug and repository. It is an implementation brief, not a claim that
 the website already knows arbitrary slugs.
@@ -344,7 +363,7 @@ a website JWT issuer, a season feed, embedded calls or per-match website chat ro
 Use the acceptance checklist below; report remaining gaps explicitly.
 ```
 
-## 10. Acceptance checklist
+## 11. Acceptance checklist
 
 Add game-specific automated checks and exercise the real proxy path before deployment.
 
@@ -372,10 +391,13 @@ Add game-specific automated checks and exercise the real proxy path before deplo
 - [ ] Proxy config validation/rollback and separate catalogue setup work.
 - [ ] Optional status feed meets exact field/size/origin rules and excludes closed/private
       rounds.
+- [ ] In website mode every screen shows "← Seasonal Entertainment" at the top left, leading to
+      `/games` in the same tab; small, in light and dark mode and at phone width; not shown
+      standalone; a screen without room reported to the owner (section 8).
 - [ ] Optional member summary: only with the sync token, not reachable through the public
       route, within the limits of section 7, `noData` or `404` for an unknown player.
 
-## 11. Source map and maintenance
+## 12. Source map and maintenance
 
 Website code:
 
@@ -388,6 +410,8 @@ Website code:
 - Login return navigation: `client/src/session/nextPage.js`
 - Installation: `deploy/install/lib/games.sh`, `deploy/site/Caddyfile`
 - Catalogue/status: `server/src/games/adminRoutes.js`, `seed.js`, `openRoundsContract.js`
+- The games page the way back leads to: `client/src/pages/GamesPage.jsx`, route `games` in
+  `client/src/app/App.jsx`
 - A member's results: `server/src/games/memberSummary.js`, `GAMES_LOCAL_ORIGINS` in
   `embedded.js`, the route in `server/src/profiles/routes.js`
 - Website tests: `server/test/embeddedGames.test.js`, `embeddedFeed.test.js`,
