@@ -6,10 +6,11 @@
 //              "An e-mail when the site is down"): the "Outage alert address" field in its
 //              group; "Send a test e-mail" only with a saved address; asking says the watchdog
 //              sends it within two minutes and offers "Check again"; the watchdog's answer,
-//              sent or not with its reason, is shown.
+//              sent or not with its reason, is shown; the panel's first load answering after a
+//              quick send does not overwrite the send's answer.
 // ============================================================
 
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import { formatWhen } from '../app/dates.js';
 import { mockApi, signedIn } from '../test/mockApi.js';
@@ -89,6 +90,28 @@ it('asking says the watchdog sends it, and "Check again" shows its answer', asyn
       `The test e-mail went out at ${formatWhen('2026-11-14T20:01:00Z')}.`
     )
   );
+});
+
+it("a send right after opening: the panel's first load, answering later, keeps the send's answer", async () => {
+  // The first load held back until the send has answered, then given the older state.
+  let release;
+  const held = new Promise((resolve) => {
+    release = resolve;
+  });
+  const { alerts } = await page('ops@example.org', null, {
+    'GET /admin/outage-alert': () => held,
+    'POST /admin/outage-alert/test': {
+      body: { ok: true, requestedAt: REQUESTED, test: { requestedAt: REQUESTED, result: null } },
+    },
+  });
+  fireEvent.click(alerts.getByRole('button', { name: 'Send a test e-mail' }));
+  const asked = `Asked at ${formatWhen(REQUESTED)}; the watchdog sends it within two minutes.`;
+  expect((await alerts.findByRole('status')).textContent).toBe(asked);
+  await act(async () => {
+    release({ body: { ok: true, test: { requestedAt: null, result: null } } });
+    await held;
+  });
+  expect(alerts.getByRole('status').textContent).toBe(asked);
 });
 
 it('a failed test shows the reason', async () => {
