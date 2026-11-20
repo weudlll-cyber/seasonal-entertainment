@@ -336,18 +336,31 @@ each point, the reasons and the file references are in
   public `GET /api/calls/<id>` and accepts only a scheduled or live call. When the call ends or
   is deleted, the frame posts `ended` (`reason`: `ended`, or `gone` for a deleted one); the game
   collapses or hides the slot and never ends its round because of the call.
-- **Sizes** (CSS px):
+- **Placement and sizes** (CSS px; they follow the games' layout, decided 2026-11-20):
 
-  | Where                  | Size                                              |
-  | ---------------------- | ------------------------------------------------- |
-  | Desktop, minimum       | 320 × 224 (16:9 picture 320 × 180, a 44 px strip) |
-  | Desktop, recommended   | 400 × 272 (16:9 picture 400 × 225, a 44 px strip) |
-  | Phone portrait         | full width × (width × 9/16 + 44), e.g. 390 × 263  |
-  | Audio-only strip (any) | the slot's full width × 48                        |
+  | Where                             | Slot                                            |
+  | --------------------------------- | ----------------------------------------------- |
+  | Desktop, normal window            | 338 × 190: the docked chat strip's height, 16:9 |
+  | Desktop, window under 760 px high | 267 × 150: the low strip, 16:9; the smallest    |
+  | Desktop, collapsed                | 48 × the strip's height: the audio-only form    |
+  | Phone portrait                    | full width × 48: the audio strip                |
+  - **Desktop: bottom right.** The view is its own box at the right end of the game's docked
+    chat strip, at the strip's full height; the chat sits beside it on the left. The 190 and
+    150 px are Seasonal Mini Games' strip, the reference layout.
+  - **No control bar below the picture.** The controls sit over the 16:9 picture, letterboxed as
+    on the call page:
+    - top left: the Recording mark;
+    - top right: Open the call page and Collapse;
+    - in the middle before listening: **Listen**;
+    - bottom right while listening: Mute and Leave;
+    - all of them 44 px.
+  - **Smaller than 267 × 150** the view shows only its collapsed form: a 48 px column with the
+    LIVE and recording marks, Listen or Mute (with a ring while someone talks) and Expand.
+  - **Phone:** the 48 px strip sits directly above the game's chat bar, in the layout, never over
+    the content. It holds the LIVE and recording marks, the speaker's name, Listen or Mute, and
+    Expand. Expand opens the picture (full width × width × 9/16) where the chat sheet opens.
 
-  On desktop the view sits above the docked chat, in the same column. On a phone the strip sits
-  at the top of the chat sheet and the picture opens on tap. No tabs. The picture area is 16:9,
-  letterboxed as on the call page.
+  The report's question 4 has the measurements behind each number.
 
 - **Sign-in**: the site's cookie session, exactly as the chat's
   ([section 5](#5-the-website-chat-inside-a-game)); guests listen as on the site. No embed
@@ -362,38 +375,41 @@ each point, the reasons and the file references are in
   checked as the chat's are ([EMBED.md](EMBED.md#the-postmessage-api): origin, window and
   `source`; never `'*'`). Nothing secret goes to the game: no token, no identities, no names.
 
-  | From the view | Fields                                                         | When                                                         |
-  | ------------- | -------------------------------------------------------------- | ------------------------------------------------------------ |
-  | `ready`       | `call` (id), `status` (`scheduled`/`live`/`ended`), `signedIn` | once the call is known; again when one changes               |
-  | `live`        | `listening` (bool)                                             | the call went live; the visitor started or stopped listening |
-  | `ended`       | `reason` (`ended`/`gone`)                                      | ended on the site, or deleted / not found                    |
-  | `speaking`    | `active` (bool)                                                | someone on the stage talks / silence                         |
-  | `resize`      | `height` (px), `mode` (`picture`/`strip`)                      | the content changed size                                     |
-  | `error`       | `code` (e.g. `call_full`, `banned`, `recording_consent`)       | joining failed; the view shows the text                      |
+  | From the view | Fields                                                         | When                                                                         |
+  | ------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+  | `ready`       | `call` (id), `status` (`scheduled`/`live`/`ended`), `signedIn` | once the call is known; again when one changes                               |
+  | `live`        | `listening` (bool)                                             | the call went live; the visitor started or stopped listening                 |
+  | `ended`       | `reason` (`ended`/`gone`)                                      | ended on the site, or deleted / not found                                    |
+  | `speaking`    | `active` (bool)                                                | someone on the stage talks / silence                                         |
+  | `resize`      | `mode` (`picture`/`collapsed`), `width`, `height` (px)         | the view asks for its other form (16:9 at the strip's height, or 48 px wide) |
+  | `error`       | `code` (e.g. `call_full`, `banned`, `recording_consent`)       | joining failed; the view shows the text                                      |
 
-  | To the view | Fields                            | Effect                                          |
-  | ----------- | --------------------------------- | ----------------------------------------------- |
-  | `mute`      | `muted` (bool)                    | silences the view's sound locally; stays joined |
-  | `collapse`  | `collapsed` (bool)                | picture or audio strip                          |
-  | `theme`     | `theme` (`light`, `dark`, `auto`) | as the chat's `theme`                           |
-  | `visible`   | `visible` (bool)                  | out of sight: the view stops receiving video    |
+  | To the view | Fields                            | Effect                                               |
+  | ----------- | --------------------------------- | ---------------------------------------------------- |
+  | `mute`      | `muted` (bool)                    | silences the view's sound locally; stays joined      |
+  | `collapse`  | `collapsed` (bool)                | the picture or the collapsed form (phone: the strip) |
+  | `theme`     | `theme` (`light`, `dark`, `auto`) | as the chat's `theme`                                |
+  | `visible`   | `visible` (bool)                  | out of sight: the view stops receiving video         |
 
-- **Sound**: the view has its own **Listen** button and connects only on that click inside the
-  frame: browsers start sound only after a click, and a click in the game page does not count
+- **Sound**: the view has its own **Listen** button, in the middle of the picture (in the
+  collapsed form and the phone strip, the 44 px Listen button, which becomes Mute). It connects
+  only on that click inside the frame: browsers start sound only after a click, and a click in the game page does not count
   for the frame. The game's own sound plays on beside it; the game may turn itself down while
   `speaking` is true. The view's mute button and the host's `mute` silence only the call's
   sound; the game's controls silence only the game; nothing in a game touches a speaker's
   microphone.
-- **Phone**: the view opens as the 48 px audio strip, the picture on tap. In the game's focus
-  mode it collapses to the strip (or is hidden with `visible: false`), and its sound keeps
-  playing until the visitor stops it. No picture-in-picture.
+- **Phone and focus mode**: on a phone the view opens as the 48 px audio strip, the picture on
+  tap. In the game's focus mode it shows its collapsed form (the 48 px column on a desktop, the
+  strip on a phone) or is hidden with `visible: false`; its sound keeps playing until the
+  visitor stops it. No picture-in-picture.
 - **Season colours**: `client/src/styles/tokens.css` stays the single source
   ([DESIGN.md, "Tokens"](DESIGN.md#tokens)): Spring `#AFB84E`, Summer `#E06E22`, Autumn
   `#F9A825`, Winter `#04AAF7`, and `#14171C` for text on them (`--color-on-season`). The games'
   shared UI kit keeps a copy of these five values; its CI compares the copy with `tokens.css`
   on the site's `master` and fails on a difference.
 
-**What a game may do today**: reserve the slot of the sizes above, **hidden while no call is
+**What a game may do today**: reserve the slot of the sizes above (bottom right in the chat
+strip on a desktop, the strip above the chat bar on a phone), **hidden while no call is
 linked**, and a call-id field for the host in a round or lobby, checked with
 `GET /api/calls/<id>`. Frame nothing in the slot until this section says the page is built.
 

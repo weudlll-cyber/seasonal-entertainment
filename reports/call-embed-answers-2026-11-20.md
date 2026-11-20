@@ -4,29 +4,59 @@ The games (Seasonal Mini Games, Seasonal Bingo Royale, Seasonal Party) want to r
 their shared UI kit for a small view of a website call, beside the website chat they already
 embed. Below, each question is answered from this repository's code and docs at `master`
 df90fcf. Where the site had no decision, the report recommended one option. All ten
-recommendations were made decisions on 2026-11-20. docs/GAME-INTEGRATION.md, section 9 "Call
-view inside a game", states them as the contract for games. Nothing of it is built on the site
+recommendations were made decisions on 2026-11-20, except question 4: its placement and sizes
+follow the games' layout (decided 2026-11-20; "Why the placement changed" below).
+docs/GAME-INTEGRATION.md, section 9 "Call view inside a game", states them as the contract for
+games. Nothing of it is built on the site
 yet; docs/BACKLOG.md lists it as waiting to be scheduled.
 
-| #   | Question                 | Answer in one line                                                                                                                   | Status                           |
-| --- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
-| 1   | Planned at all; how      | Was not planned. Decided: a reduced site page, `/embed/call/<id>`, framed like the chat.                                             | decided 2026-11-20               |
-| 2   | What the view offers     | Decided: listen only (sound, speakers or spotlight, recording notice); everything else on `/calls/<id>`.                             | decided 2026-11-20               |
-| 3   | Which call, who links it | Decided: the game host stores the site's call id; the frame reports live / ended / gone.                                             | decided 2026-11-20               |
-| 4   | Size                     | Decided: 320 × 224 px minimum, 400 × 272 px desktop, full width on phones, a 48 px audio strip.                                      | decided 2026-11-20               |
-| 5   | Sign-in, guests          | Same-site cookie session as the chat; the 12-hour embed token is refused for calls. Guests listen on the site.                       | decided 2026-11-20               |
-| 6   | Framing rules            | Only `/embed/` pages can be framed. Decided: only the games' own pages `/games/<slug>/` frame it.                                    | decided 2026-11-20               |
-| 7   | postMessage API          | No call messages exist. Decided: a `seasonal-call` protocol in the chat's style.                                                     | decided 2026-11-20               |
-| 8   | Sound                    | Sound starts only after a click. Decided: a Listen button inside the frame; game and call mute separately.                           | decided 2026-11-20               |
-| 9   | Phone                    | The site has no picture-in-picture. Decided: collapse to the audio strip; sound goes on in focus mode.                               | decided 2026-11-20               |
-| 10  | Season colours           | `client/src/styles/tokens.css:16-19` stays the single source; the kit copies it and checks it in CI.                                 | decided 2026-11-20               |
-| 11  | Order of work            | The site builds a reduced embed page, its protocol, docs and tests. The games may reserve the hidden slot and the call-id field now. | follows from 1–10; not scheduled |
+| #   | Question                 | Answer in one line                                                                                                                   | Status                                            |
+| --- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| 1   | Planned at all; how      | Was not planned. Decided: a reduced site page, `/embed/call/<id>`, framed like the chat.                                             | decided 2026-11-20 (site recommendation accepted) |
+| 2   | What the view offers     | Decided: listen only (sound, speakers or spotlight, recording notice); everything else on `/calls/<id>`.                             | decided 2026-11-20 (site recommendation accepted) |
+| 3   | Which call, who links it | Decided: the game host stores the site's call id; the frame reports live / ended / gone.                                             | decided 2026-11-20 (site recommendation accepted) |
+| 4   | Size and placement       | Desktop: bottom right in the docked chat strip, 16:9 at its height (338 × 190, 267 × 150). Phone: a 48 px audio strip.               | decided 2026-11-20 (games' layout)                |
+| 5   | Sign-in, guests          | Same-site cookie session as the chat; the 12-hour embed token is refused for calls. Guests listen on the site.                       | decided 2026-11-20 (site recommendation accepted) |
+| 6   | Framing rules            | Only `/embed/` pages can be framed. Decided: only the games' own pages `/games/<slug>/` frame it.                                    | decided 2026-11-20 (site recommendation accepted) |
+| 7   | postMessage API          | No call messages exist. Decided: a `seasonal-call` protocol in the chat's style.                                                     | decided 2026-11-20 (site recommendation accepted) |
+| 8   | Sound                    | Sound starts only after a click. Decided: a Listen button inside the frame; game and call mute separately.                           | decided 2026-11-20 (site recommendation accepted) |
+| 9   | Phone                    | The site has no picture-in-picture. Decided: the collapsed form in focus mode; the sound goes on.                                    | decided 2026-11-20 (site recommendation accepted) |
+| 10  | Season colours           | `client/src/styles/tokens.css:16-19` stays the single source; the kit copies it and checks it in CI.                                 | decided 2026-11-20 (site recommendation accepted) |
+| 11  | Order of work            | The site builds a reduced embed page, its protocol, docs and tests. The games may reserve the hidden slot and the call-id field now. | follows from 1–10; not scheduled                  |
+
+## Why the placement changed
+
+The report first placed the view above the chat at 320 × 224 or 400 × 272 px. On 2026-11-20 the
+games' layout was made the rule for the view's placement, and question 4 follows it. Seasonal
+Mini Games has laid out that room already. References are to `seasonal-mini-games` at `origin/master`
+93ed780 (2026-11-19), read only:
+
+- **O89** (2026-11-12, `docs/DECISIONS.md:97`): one screen without scrolling, with room beside
+  the chat for a later small call view.
+- **O97** (2026-11-15, `docs/DECISIONS.md:105`): on a desktop the match chat is docked **below**
+  the game, full width, at a fixed height that keeps the page within 1280 × 720 without a
+  scrollbar. On a phone it is a bar at the bottom that opens a sheet.
+- **T350** (2026-11-15, `docs/DECISIONS.md:429`): a later call view takes a slot at the **right
+  end** of the strip, with the chat beside it on the left.
+
+**Which strip height is current: 190 px**, and 150 px in a desktop window under 760 px high:
+
+- O99 (2026-11-15, `docs/DECISIONS.md:107`: "a little taller (190 px)");
+- the spec (`docs/spec/02e-game-mind-games.md:179`);
+- the code (`apps/web/src/match/chatDock.css:19` and `:24-28`; desktop from 900 px wide).
+
+**The two Mini Games documents differ.** T350 (`docs/DECISIONS.md:429`) still gives the strip
+as 180 px and the phone bar as 52 px. The spec's slot of "about 320 × 180 px, 16:9"
+(`docs/spec/02e-game-mind-games.md:182`) fits that older 180 px strip, not the current 190 px
+one. The same spec line cites the website's `docs/GAME-INTEGRATION.md` §8 for calls; since
+2026-11-20 the call view is §9 there, and §8 is the way back. Mini Games' planning can align
+them; nothing on this site depends on which is fixed first.
 
 ## 1. Is a call view inside a game planned?
 
 **Before 2026-11-20: no.** The task brief that games copy said not to assume "embedded calls"; it
 now says to reserve the call view only as a hidden slot until the site has built it
-(`docs/GAME-INTEGRATION.md:448-449`). The site's calls exist only on its own pages `/calls` and
+(`docs/GAME-INTEGRATION.md:464-465`). The site's calls exist only on its own pages `/calls` and
 `/calls/<id>` (`docs/CALLS.md:58-69`, `docs/CALLS.md:300-343`). No page under `/embed/` shows a
 call. An embed token is refused for the calls routes (`server/src/embed/auth.js:13`,
 `server/test/embedTokens.test.js:107`). This repository had no plan for a call view inside a
@@ -124,7 +154,7 @@ as a second step: it would also need the stage controls in the frame.
 - **What the game does:** it keeps the round running and collapses or hides the slot. It never
   ends the round because of the call, just as the site keeps a call when its event link goes.
 
-## 4. Size
+## 4. Size and placement
 
 **Facts on the site:**
 
@@ -132,27 +162,74 @@ as a second step: it would also need the stage controls in the frame.
   1000 px it becomes a drawer (`docs/DESIGN.md:509-515`).
 - Pictures are 16:9 until the camera reports its real shape (`docs/DESIGN.md:524-531`).
 - The smallest control is 44 × 44 px (`docs/DESIGN.md:47`, `docs/DESIGN.md:131`).
-- The chat snippet suggests a frame 32rem high (`docs/EMBED.md:216`). Its `resize` message
-  reports the content's height (`docs/EMBED.md:196`).
-- The shell's one breakpoint is 760 px (`docs/DESIGN.md:183`).
 
-**Sizes for the view: decided 2026-11-20**, so the games can reserve now:
+**Facts in Seasonal Mini Games** (`seasonal-mini-games` `origin/master` 93ed780, see "Why the placement
+changed"):
 
-| Where                    | Size (CSS px)                                                   | Made of                                    |
-| ------------------------ | --------------------------------------------------------------- | ------------------------------------------ |
-| Desktop, minimum         | **320 × 224**                                                   | 16:9 picture 320 × 180, plus a 44 px strip |
-| Desktop, recommended     | **400 × 272**                                                   | 16:9 picture 400 × 225, plus a 44 px strip |
-| Phone portrait (360–430) | **full width × (width × 9/16 + 44)**, e.g. 360 × 247, 390 × 263 | the same shape                             |
-| Audio-only strip (any)   | **full slot width × 48**                                        | Listen / mute, "LIVE", the speaker's name  |
+- **Desktop:** the docked chat is a full-width strip under the game, 190 px high, or 150 px in a
+  window under 760 px high (`docs/spec/02e-game-mind-games.md:179`;
+  `apps/web/src/match/chatDock.css:19`, `:24-28`).
+- **Phone:** the chat bar sits at the bottom, part of the layout, never over the content
+  (`docs/spec/02e-game-mind-games.md:180`). The winners, the cards and the countdown must show
+  above it without scrolling at 390 × 844 and 360 × 740 (`docs/spec/02e-game-mind-games.md:193`).
 
-- **Aspect ratio:** 16:9 for the picture area, letterboxed like the call page
-  (`docs/DESIGN.md:524-526`), plus the fixed strip.
-- **With the docked chat:** on desktop, stacked in the same column with the call above the chat.
-  On a phone, the 48 px audio strip sits at the top of the chat sheet and the picture opens on
-  tap. Tabs are not recommended: a tab that is not shown would hide the call's picture from the
-  person listening.
-- **The frame's `resize` message** (question 7) would let the view say when it switches between
-  the picture and the strip.
+**Decided 2026-11-20 (the games' layout):**
+
+| Where                             | Slot (CSS px)                                    | Notes                                                    |
+| --------------------------------- | ------------------------------------------------ | -------------------------------------------------------- |
+| Desktop, normal window            | **338 × 190**                                    | the strip's height at 16:9 (190 × 16/9 = 337.8)          |
+| Desktop, window under 760 px high | **267 × 150**                                    | the low strip at 16:9 (150 × 16/9 = 266.7); the smallest |
+| Desktop, collapsed                | **48 × the strip's height** (48 × 190, 48 × 150) | the audio-only form                                      |
+| Phone portrait                    | **full width × 48**, the audio strip             | the picture on tap: full width × width × 9/16            |
+
+**Desktop: bottom right.** The view sits at the right end of the docked chat strip (T350,
+`docs/DECISIONS.md:429`), with the chat card beside it on the left taking the rest of the width.
+
+- **Its own box, at the strip's full height.** It is not inside the chat card's 12 px padding
+  (`apps/web/src/match/chatDock.css:31-39`), so the picture fills the whole 190 or 150 px.
+- **No control bar below the picture.** Everything sits as an overlay inside the 16:9 picture,
+  on a dark translucent backing so text and icons keep 4.5:1:
+  - the picture: the spotlight speaker or the speakers, letterboxed like the call page
+    (`docs/DESIGN.md:524-526`);
+  - top left: the red **Recording** mark while a recording runs (`docs/CALLS.md:577-579`);
+  - top right: **Open the call page**, a 44 px icon link to `/calls/<id>`, and **Collapse**, 44 px;
+  - before listening: the **Listen** button in the middle, a pill 44 px high;
+  - while listening: **Mute** and **Leave** at the bottom right, 44 px each.
+- **The smallest size at which this works is 267 × 150**, the low-window strip. There, a top row
+  and a bottom row of 44 px controls with 8 px margins leave 46 px of free picture between them.
+  The top row needs about 210 px: the Recording mark, two 44 px buttons and the gaps. Smaller
+  than that, the view shows only the collapsed form.
+- **Collapsed** (the audio-only form): a 48 px wide column at the strip's right end, at the
+  strip's height, like the call page's collapsed chat tab (`docs/DESIGN.md:512-513`). Top to
+  bottom it holds:
+  - a LIVE dot, and a red dot while a recording runs;
+  - **Listen** or **Mute**, 44 px, with a ring while someone on the stage talks;
+  - **Expand**, 44 px.
+
+  In 150 px that is two 44 px buttons, the dots and the gaps. Leave is in the expanded view;
+  closing the slot also leaves. The chat card takes the width the picture gave up.
+
+**Phone: the 48 px audio strip stays.** Mini Games' phone layout does not contradict it.
+
+- **Where it sits:** directly above the chat bar, full width with the bar's 10 px side margins
+  (`apps/web/src/match/chatDock.css:58-60`). Like the bar, it is part of the layout and never
+  over the content (`docs/spec/02e-game-mind-games.md:180`).
+- **What it holds:**
+  - the LIVE and recording marks;
+  - the name of whoever is speaking;
+  - **Listen** or **Mute**, 44 px;
+  - **Expand**, 44 px.
+- **Expand** opens the picture, full width × width × 9/16 (390 → 219 px), at the top of the chat
+  sheet's place: the sheet lies between the round bar and the chat bar (T350,
+  `docs/DECISIONS.md:429`). Leave and Open the call page sit there.
+- **The chat bar is no longer 52 px.** T350 (`docs/DECISIONS.md:429`) gives 52 px, but that
+  was before O99 (`docs/DECISIONS.md:107`). Since O99 the bar holds two rows: the row "Chat ·
+  <newest message>", at least 44 px (`apps/web/src/match/chatDock.css:72-74`), and under it the
+  field with Send (`apps/web/src/match/chatDock.css:11-13`). The spec gives the bar no height
+  (`docs/spec/02e-game-mind-games.md:180`). The strip does not depend on the bar's height.
+- **What the games must check:** the strip takes 48 px more from the content. Mini Games'
+  planning must check that its 390 × 844 and 360 × 740 rule still holds while a call is linked
+  (`docs/spec/02e-game-mind-games.md:193`). With no call linked, the strip is not there.
 
 ## 5. Sign-in
 
@@ -214,21 +291,24 @@ never `*`, and nothing secret is sent (`docs/EMBED.md:173-203`;
 **Decided 2026-11-20**, in the chat's style: `source:
 'seasonal-call'` from the view and `'seasonal-call-host'` to it, with the same checks.
 
-| From the view | Fields                                                         | When                                              |
-| ------------- | -------------------------------------------------------------- | ------------------------------------------------- |
-| `ready`       | `call` (id), `status` (`scheduled`/`live`/`ended`), `signedIn` | once the call is known; again when either changes |
-| `live`        | `listening` (bool)                                             | the call went live; the visitor started/stopped   |
-| `ended`       | `reason` (`ended`/`gone`)                                      | ended on the site, or deleted / not found         |
-| `speaking`    | `active` (bool)                                                | someone on the stage talks / silence (no names)   |
-| `resize`      | `height` (px), `mode` (`picture`/`strip`)                      | the content changed size                          |
-| `error`       | `code` (e.g. `call_full`, `banned`, `recording_consent`)       | joining failed; the view shows the text itself    |
+| From the view | Fields                                                         | When                                                                                              |
+| ------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `ready`       | `call` (id), `status` (`scheduled`/`live`/`ended`), `signedIn` | once the call is known; again when either changes                                                 |
+| `live`        | `listening` (bool)                                             | the call went live; the visitor started/stopped                                                   |
+| `ended`       | `reason` (`ended`/`gone`)                                      | ended on the site, or deleted / not found                                                         |
+| `speaking`    | `active` (bool)                                                | someone on the stage talks / silence (no names)                                                   |
+| `resize`      | `mode` (`picture`/`collapsed`), `width`, `height` (px)         | the view wants the other form: 16:9 at the strip's height, or 48 px wide (phone: the 48 px strip) |
+| `error`       | `code` (e.g. `call_full`, `banned`, `recording_consent`)       | joining failed; the view shows the text itself                                                    |
 
-| To the view | Fields                            | Effect                                          |
-| ----------- | --------------------------------- | ----------------------------------------------- |
-| `mute`      | `muted` (bool)                    | silences the view's sound locally; stays joined |
-| `collapse`  | `collapsed` (bool)                | picture or audio strip                          |
-| `theme`     | `theme` (`light`, `dark`, `auto`) | as the chat's `theme`                           |
-| `visible`   | `visible` (bool)                  | out of sight: the view stops receiving video    |
+| To the view | Fields                            | Effect                                               |
+| ----------- | --------------------------------- | ---------------------------------------------------- |
+| `mute`      | `muted` (bool)                    | silences the view's sound locally; stays joined      |
+| `collapse`  | `collapsed` (bool)                | the picture or the collapsed form (phone: the strip) |
+| `theme`     | `theme` (`light`, `dark`, `auto`) | as the chat's `theme`                                |
+| `visible`   | `visible` (bool)                  | out of sight: the view stops receiving video         |
+
+The host sizes the frame from its own strip (question 4): the view reads its height from the
+frame and draws 16:9 within it. `resize` only asks for the other form.
 
 Like the chat, it sends nothing secret: no token, no identities, no participant names. The
 `error` codes are the join route's own (`docs/CALLS.md:227-231`, `docs/CALLS.md:584`).
@@ -243,7 +323,9 @@ are set to autoplay (`client/src/calls/TrackMedia.jsx:48`, `client/src/calls/Tra
 **For the view: decided 2026-11-20:**
 
 - **A Listen button inside the frame.** A click in the game page does not count as a click inside
-  the frame. The view connects only on that click, as the site's page does.
+  the frame. The view connects only on that click, as the site's page does. The button sits in the
+  middle of the picture before listening. In the collapsed form and in the phone strip it is
+  the 44 px Listen button, which then becomes Mute (question 4).
 - **The game's own sound** plays on beside it. The game may turn its own sound down while
   `speaking` is true; that is the game's choice.
 - **Who mutes what:**
@@ -262,9 +344,11 @@ are set to autoplay (`client/src/calls/TrackMedia.jsx:48`, `client/src/calls/Tra
 
 **For the view: decided 2026-11-20:**
 
-- On phones the view opens collapsed as the 48 px audio strip; the picture opens on tap.
-- In the game's focus mode it collapses to the strip, or hides with `visible: false`. Its sound
-  keeps playing until the visitor stops it.
+- On phones the view opens as the 48 px audio strip above the chat bar; the picture opens on tap
+  (question 4).
+- In the game's focus mode it shows its collapsed form: the 48 px column on a desktop, the strip
+  on a phone. It may also be hidden with `visible: false`. Its sound keeps playing until the
+  visitor stops it.
 - No picture-in-picture in the first version. Browser support differs, and the strip already
   keeps the sound going.
 
@@ -300,8 +384,8 @@ What the site would build, now that questions 1–10 are decided (2026-11-20):
 
 1. **Scheduling** by the owner (docs/BACKLOG.md, "Decided, waiting to be scheduled").
 2. **A reduced call page** under `/embed/`, for example `client/src/embed/EmbedCallPage.jsx`.
-   It would show the stage scaled down, the Listen button, the recording consent and the audio
-   strip, reusing `client/src/calls/useCallRoom.js`. Being under `/embed/`, it is already
+   It would show the stage scaled down with its controls over the picture, the Listen button,
+   the recording consent and the collapsed form, reusing `client/src/calls/useCallRoom.js`. Being under `/embed/`, it is already
    framable by the site's own pages (`server/src/http/securityHeaders.js:86`). No new join route
    is needed: same-site requests carry the cookie.
 3. **The `seasonal-call` messages** of question 7, next to `client/src/embed/embedProtocol.js`.
@@ -319,9 +403,10 @@ What the site would build, now that questions 1–10 are decided (2026-11-20):
 
 What the games can reserve now, without waiting:
 
-- **An empty slot** above the docked chat: 320 × 224 px minimum, 400 × 272 px recommended, full
-  width on phones (width × 9/16 + 44), able to collapse to a 48 px strip. It stays **hidden while
-  no call is linked**, so nothing changes for players today.
+- **An empty slot** at the right end of the docked chat strip on a desktop: 338 × 190 px, or
+  267 × 150 px in a window under 760 px high, able to collapse to 48 px wide. On a phone, a
+  48 px strip above the chat bar. It stays **hidden while no call is linked**, so nothing
+  changes for players today.
 - **A place for the call id** in the round or lobby (Bingo's `host_call_ref`). It is set only by
   the game's host and checked against `GET /api/calls/<id>`.
 - **Not yet:** framing any site page into the slot. Today no `/embed/` call page exists, and
