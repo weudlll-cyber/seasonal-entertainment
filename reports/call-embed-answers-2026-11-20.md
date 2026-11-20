@@ -3,36 +3,39 @@
 The games (Seasonal Mini Games, Seasonal Bingo Royale, Seasonal Party) want to reserve a slot in
 their shared UI kit for a small view of a website call, beside the website chat they already
 embed. Below, each question is answered from this repository's code and docs at `master`
-df90fcf. Nothing here is built or changed. Where the site has no decision, the answer says
-**NOT DECIDED — owner decision needed** and recommends one option.
+df90fcf. Where the site had no decision, the report recommended one option. All ten
+recommendations were made decisions on 2026-11-20. docs/GAME-INTEGRATION.md, section 9 "Call
+view inside a game", states them as the contract for games. Nothing of it is built on the site
+yet; docs/BACKLOG.md lists it as waiting to be scheduled.
 
-| #   | Question                 | Answer in one line                                                                                                   | Status                                                 |
-| --- | ------------------------ | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| 1   | Planned at all; how      | Not planned today; games are told not to assume it. Recommended: a reduced site page framed like the chat.           | not decided                                            |
-| 2   | What the view offers     | Recommended: listen only (sound, speakers or spotlight, recording notice); everything else on `/calls/<id>`.         | not decided                                            |
-| 3   | Which call, who links it | Recommended: the game host stores the site's call id; the frame reports live / ended / gone.                         | not decided                                            |
-| 4   | Size                     | Recommended: 320 × 224 px minimum, 400 × 272 px desktop, full width on phones, a 48 px audio strip.                  | not decided                                            |
-| 5   | Sign-in, guests          | Same-site cookie session as the chat; the 12-hour embed token is refused for calls. Guests listen on the site.       | decided for the site, not decided for the view         |
-| 6   | Framing rules            | Only `/embed/` pages can be framed, by this site and approved sites. Recommended: the games' own origin only.        | decided for `/embed/`, not decided for a call view     |
-| 7   | postMessage API          | No call messages exist. Recommended: a `seasonal-call` protocol in the chat's style.                                 | not decided                                            |
-| 8   | Sound                    | Sound starts only after a click. Recommended: a Listen button inside the frame; game and call mute separately.       | decided for the site page, not decided for the view    |
-| 9   | Phone                    | The site has no picture-in-picture. Recommended: collapse to the audio strip; sound goes on in focus mode.           | not decided                                            |
-| 10  | Season colours           | `client/src/styles/tokens.css:16-19` is the site's single source. A kit copy checked in CI is not decided.           | decided (source), not decided (the kit copy and check) |
-| 11  | Order of work            | The site builds a reduced embed page, its protocol, docs and tests. The games may reserve an empty, hidden slot now. | follows from 1–9                                       |
+| #   | Question                 | Answer in one line                                                                                                                   | Status                           |
+| --- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
+| 1   | Planned at all; how      | Was not planned. Decided: a reduced site page, `/embed/call/<id>`, framed like the chat.                                             | decided 2026-11-20               |
+| 2   | What the view offers     | Decided: listen only (sound, speakers or spotlight, recording notice); everything else on `/calls/<id>`.                             | decided 2026-11-20               |
+| 3   | Which call, who links it | Decided: the game host stores the site's call id; the frame reports live / ended / gone.                                             | decided 2026-11-20               |
+| 4   | Size                     | Decided: 320 × 224 px minimum, 400 × 272 px desktop, full width on phones, a 48 px audio strip.                                      | decided 2026-11-20               |
+| 5   | Sign-in, guests          | Same-site cookie session as the chat; the 12-hour embed token is refused for calls. Guests listen on the site.                       | decided 2026-11-20               |
+| 6   | Framing rules            | Only `/embed/` pages can be framed. Decided: only the games' own pages `/games/<slug>/` frame it.                                    | decided 2026-11-20               |
+| 7   | postMessage API          | No call messages exist. Decided: a `seasonal-call` protocol in the chat's style.                                                     | decided 2026-11-20               |
+| 8   | Sound                    | Sound starts only after a click. Decided: a Listen button inside the frame; game and call mute separately.                           | decided 2026-11-20               |
+| 9   | Phone                    | The site has no picture-in-picture. Decided: collapse to the audio strip; sound goes on in focus mode.                               | decided 2026-11-20               |
+| 10  | Season colours           | `client/src/styles/tokens.css:16-19` stays the single source; the kit copies it and checks it in CI.                                 | decided 2026-11-20               |
+| 11  | Order of work            | The site builds a reduced embed page, its protocol, docs and tests. The games may reserve the hidden slot and the call-id field now. | follows from 1–10; not scheduled |
 
 ## 1. Is a call view inside a game planned?
 
-**Today: no.** The task brief that games copy says not to assume "embedded calls"
-(`docs/GAME-INTEGRATION.md:361-362`). The site's calls exist only on its own pages `/calls` and
+**Before 2026-11-20: no.** The task brief that games copy said not to assume "embedded calls"; it
+now says to reserve the call view only as a hidden slot until the site has built it
+(`docs/GAME-INTEGRATION.md:448-449`). The site's calls exist only on its own pages `/calls` and
 `/calls/<id>` (`docs/CALLS.md:58-69`, `docs/CALLS.md:300-343`). No page under `/embed/` shows a
 call. An embed token is refused for the calls routes (`server/src/embed/auth.js:13`,
-`server/test/embedTokens.test.js:107`). This repository has no plan for a call view inside a
+`server/test/embedTokens.test.js:107`). This repository had no plan for a call view inside a
 game. Bingo's `host_call_ref` is in Bingo's own spec, not here.
 
-**How: NOT DECIDED — owner decision needed.**
+**How: decided 2026-11-20.**
 
-**Recommended: a reduced call page from the site, framed like the chat** (for example
-`/embed/call/<id>?theme=…`), not the game connecting to LiveKit itself. The reasons:
+**A reduced call page from the site, framed like the chat**
+(`/embed/call/<id>?theme=…`), not the game connecting to LiveKit itself. The reasons:
 
 - The site is the only authority in a call: who joins, what they may do, the spotlight, hands
   and ending (`docs/CALLS.md:18-23`).
@@ -47,7 +50,7 @@ game. Bingo's `host_call_ref` is in Bingo's own spec, not here.
 - A framed page under `/embed/` already gets the right headers: `frame-ancestors 'self'` and
   the call service in `connect-src` (`server/src/http/securityHeaders.js:51-57`,
   `server/src/http/securityHeaders.js:86`).
-- The games are on the site's own origin (`docs/GAME-INTEGRATION.md:52-65`), so a frame there
+- The games are on the site's own origin (`docs/GAME-INTEGRATION.md:53-66`), so a frame there
   works like the chat's, with nothing to approve (`docs/EMBED.md:66-68`).
 
 ## 2. What the in-game view offers
@@ -63,9 +66,9 @@ game. Bingo's `host_call_ref` is in Bingo's own spec, not here.
 Listeners never publish. Guests cannot raise a hand and are never given publishing
 (`docs/CALLS.md:237-243`, `docs/CALLS.md:248`).
 
-**For the view: NOT DECIDED — owner decision needed.**
+**For the view: decided 2026-11-20.**
 
-**Recommended: listen only to start with.** The view would show:
+**Listen only to start with.** The view would show:
 
 - the call's sound;
 - the spotlight speaker, or the speaker grid scaled down;
@@ -103,9 +106,7 @@ as a second step: it would also need the stage controls in the frame.
   the call loses the link with no error (`docs/CALLS.md:119`, `docs/CALLS.md:180-182`).
 - **Nothing links a call to a game round or lobby**; the site has no field for it.
 
-**Linking: NOT DECIDED — owner decision needed.**
-
-**Recommended:**
+**Linking: decided 2026-11-20.**
 
 - **What the game stores:** the site's numeric call id (Bingo's `host_call_ref`), entered as the
   id or pasted as the address `/calls/<id>`.
@@ -135,8 +136,7 @@ as a second step: it would also need the stage controls in the frame.
   reports the content's height (`docs/EMBED.md:196`).
 - The shell's one breakpoint is 760 px (`docs/DESIGN.md:183`).
 
-**Sizes for the view: NOT DECIDED — owner decision needed.** Recommended, so the games can
-reserve now:
+**Sizes for the view: decided 2026-11-20**, so the games can reserve now:
 
 | Where                    | Size (CSS px)                                                   | Made of                                    |
 | ------------------------ | --------------------------------------------------------------- | ------------------------------------------ |
@@ -159,7 +159,7 @@ reserve now:
 **Decided on the site:**
 
 - On the site's own pages, the chat frame uses the site's own session cookie
-  (`docs/EMBED.md:31-37`, `docs/GAME-INTEGRATION.md:193-195`). A call frame inside a game on the
+  (`docs/EMBED.md:31-37`, `docs/GAME-INTEGRATION.md:194-196`). A call frame inside a game on the
   same origin would get the same session with nothing more to do.
 - The **12-hour embed token** (`docs/EMBED.md:84-91`) is only for approved other sites. It is
   refused for calls (`docs/EMBED.md:94`, `docs/EMBED.md:273-276`, `server/src/embed/auth.js:13`).
@@ -167,7 +167,7 @@ reserve now:
   (`docs/CALLS.md:227-229`, `docs/CALLS.md:239`). They never publish and never raise a hand
   (`docs/CALLS.md:243`, `docs/CALLS.md:248`).
 
-**For the view: NOT DECIDED — owner decision needed.** Recommended:
+**For the view: decided 2026-11-20:**
 
 - the site's cookie session, exactly like the chat;
 - guests listen as on the site;
@@ -186,9 +186,9 @@ reserve now:
 display-capture=(self)` (`server/src/http/securityHeaders.js:40`,
   `server/src/http/securityHeaders.js:85`; `docs/CALLS.md:807-812`).
 - The game must already allow the chat frame in its own `frame-src` and keep a referrer
-  (`strict-origin`) (`docs/GAME-INTEGRATION.md:200-204`; `docs/EMBED.md:187-188`).
+  (`strict-origin`) (`docs/GAME-INTEGRATION.md:201-205`; `docs/EMBED.md:187-188`).
 
-**For a call view: NOT DECIDED — owner decision needed.** Recommended:
+**For a call view: decided 2026-11-20:**
 
 - **Who may frame it:** only this site's own pages, that is the games under `/games/<slug>/`.
   It would not use the chat's approval list: embed tokens refuse calls, so another site would
@@ -211,7 +211,7 @@ Both sides check the origin, the window and `source`. Messages go only to the ex
 never `*`, and nothing secret is sent (`docs/EMBED.md:173-203`;
 `client/src/embed/embedProtocol.js`). There are no call messages.
 
-**NOT DECIDED — owner decision needed.** Recommended, in the chat's style: `source:
+**Decided 2026-11-20**, in the chat's style: `source:
 'seasonal-call'` from the view and `'seasonal-call-host'` to it, with the same checks.
 
 | From the view | Fields                                                         | When                                              |
@@ -240,7 +240,7 @@ starts its sound, only on **Join call** (`docs/CALLS.md:306-308`;
 `client/src/calls/useCallRoom.js:111-112` with `connect`, then `startAudio`). The media elements
 are set to autoplay (`client/src/calls/TrackMedia.jsx:48`, `client/src/calls/TrackMedia.jsx:63`).
 
-**For the view: NOT DECIDED — owner decision needed.** Recommended:
+**For the view: decided 2026-11-20:**
 
 - **A Listen button inside the frame.** A click in the game page does not count as a click inside
   the frame. The view connects only on that click, as the site's page does.
@@ -260,7 +260,7 @@ are set to autoplay (`client/src/calls/TrackMedia.jsx:48`, `client/src/calls/Tra
 - Full screen is offered where the Fullscreen API exists (`docs/CALLS.md:322-324`).
 - There is no picture-in-picture in `client/src/calls/`.
 
-**For the view: NOT DECIDED — owner decision needed.** Recommended:
+**For the view: decided 2026-11-20:**
 
 - On phones the view opens collapsed as the 48 px audio strip; the picture opens on tap.
 - In the game's focus mode it collapses to the strip, or hides with `visible: false`. Its sound
@@ -286,19 +286,19 @@ are set to autoplay (`client/src/calls/TrackMedia.jsx:48`, `client/src/calls/Tra
 - Text on these colours is `#14171C` (`--color-on-season`, `client/src/styles/tokens.css:26`,
   `docs/DESIGN.md:39`).
 
-**The shared kit copying them and checking them in CI: NOT DECIDED — owner decision needed.**
-The site has no file or route that publishes them for other repositories.
+**The shared kit copying them and checking them in CI: decided 2026-11-20.** The site has no
+file or route that publishes them for other repositories, and needs none.
 
-**Recommended: yes.** The site stays the single source. The kit keeps a copy of the four values
+**Yes.** The site stays the single source. The kit keeps a copy of the four values
 plus `--color-on-season`, and its CI compares the copy with `client/src/styles/tokens.css` on the
 site's `master`, failing on a difference. A change on the site then shows up as a red kit build,
 not as a quiet drift. The site needs nothing new for this.
 
 ## 11. Order of work
 
-What the site would build, once questions 1–9 are decided:
+What the site would build, now that questions 1–10 are decided (2026-11-20):
 
-1. **Owner decisions** on questions 1–4 and 6. They decide the scope of everything below.
+1. **Scheduling** by the owner (docs/BACKLOG.md, "Decided, waiting to be scheduled").
 2. **A reduced call page** under `/embed/`, for example `client/src/embed/EmbedCallPage.jsx`.
    It would show the stage scaled down, the Listen button, the recording consent and the audio
    strip, reusing `client/src/calls/useCallRoom.js`. Being under `/embed/`, it is already
@@ -307,9 +307,9 @@ What the site would build, once questions 1–9 are decided:
 3. **The `seasonal-call` messages** of question 7, next to `client/src/embed/embedProtocol.js`.
 4. **Docs:**
    - in `docs/CALLS.md` and `docs/EMBED.md`, a section for the call view;
-   - in `docs/GAME-INTEGRATION.md`, a contract row, and the "embedded calls" clause at line 362
-     changed;
-   - in `docs/BACKLOG.md`, an entry.
+   - in `docs/GAME-INTEGRATION.md`, section 9 changed from "not built" to built (the section,
+     its contract row, checklist line and the brief's clause were written on 2026-11-20);
+   - in `docs/BACKLOG.md`, the entry moved to part two.
 5. **Tests:**
    - the frame's headers per route;
    - guests listening;

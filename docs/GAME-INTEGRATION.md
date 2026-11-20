@@ -46,6 +46,7 @@ The website's contracts:
 | Optional open sign-ups listing                   | [OPEN-ROUNDS.md](OPEN-ROUNDS.md)                                               |
 | Optional: a member's results on their profile    | [Section 7](#7-a-members-results-on-their-profile) below                       |
 | Required: a way back to the website              | [Section 8](#8-a-way-back-to-the-website) below                                |
+| Decided, not built: a call view beside the game  | [Section 9](#9-call-view-inside-a-game) below                                  |
 
 ## 1. Architecture and deployment profile
 
@@ -311,7 +312,92 @@ game.**
 
 Current: Bingo, Mini Games and the race do not show the link yet (2026-11-17).
 
-## 9. Other profiles and proposals
+## 9. Call view inside a game
+
+**Decided 2026-11-20. Not built on the site yet**: the site has no `/embed/call/<id>` page, and
+`/calls/<id>` cannot be framed (`frame-ancestors 'none'`, `server/src/http/securityHeaders.js`).
+This section is the contract games build against once the page exists. The questions behind
+each point, the reasons and the file references are in
+[the answers report](../reports/call-embed-answers-2026-11-20.md).
+
+- **The page**: the site serves a reduced call page, `/embed/call/<id>?theme=<light|dark|auto>`,
+  framed like the chat. A game never connects to the call service (LiveKit) itself and never
+  gets a call token of its own; the site stays the only authority in a call
+  ([CALLS.md](CALLS.md#architecture)).
+- **Listen only**: the view shows the call's sound, the spotlight speaker or the speakers, the
+  red "Recording" mark with the consent question before joining a recorded call, **Leave**, and
+  a link "Open the call page" to `/calls/<id>`. Raising a hand, the stage, microphone, camera,
+  screen share, the organisers' controls, polls, the listener list and the call's chat stay on
+  `/calls/<id>`.
+- **Which call**: the game's host (who holds `Can-Host` for this game,
+  [section 3](#3-account-mapping-rights-and-sessions)) links a round or lobby to a call by the
+  site's numeric call id, entered as the id or as the address `/calls/<id>` (Bingo's
+  `host_call_ref`). The game's server enforces who may link. The game checks the id with the
+  public `GET /api/calls/<id>` and accepts only a scheduled or live call. When the call ends or
+  is deleted, the frame posts `ended` (`reason`: `ended`, or `gone` for a deleted one); the game
+  collapses or hides the slot and never ends its round because of the call.
+- **Sizes** (CSS px):
+
+  | Where                  | Size                                              |
+  | ---------------------- | ------------------------------------------------- |
+  | Desktop, minimum       | 320 × 224 (16:9 picture 320 × 180, a 44 px strip) |
+  | Desktop, recommended   | 400 × 272 (16:9 picture 400 × 225, a 44 px strip) |
+  | Phone portrait         | full width × (width × 9/16 + 44), e.g. 390 × 263  |
+  | Audio-only strip (any) | the slot's full width × 48                        |
+
+  On desktop the view sits above the docked chat, in the same column. On a phone the strip sits
+  at the top of the chat sheet and the picture opens on tap. No tabs. The picture area is 16:9,
+  letterboxed as on the call page.
+
+- **Sign-in**: the site's cookie session, exactly as the chat's
+  ([section 5](#5-the-website-chat-inside-a-game)); guests listen as on the site. No embed
+  token: the 12-hour token of approved other sites stays refused for calls
+  ([EMBED.md](EMBED.md#on-an-approved-other-site)).
+- **Framing**: only by the site's own pages, the games under `/games/<slug>/`; not by the
+  chat's approved other sites. The game page keeps `frame-src 'self'`, sets no
+  `Permissions-Policy` of its own that turns off `autoplay` or `fullscreen`, and frames the
+  view with `<iframe allow="autoplay; fullscreen">`; no `microphone`, `camera` or
+  `display-capture`.
+- **postMessage**: `source: 'seasonal-call'` from the view, `'seasonal-call-host'` to it,
+  checked as the chat's are ([EMBED.md](EMBED.md#the-postmessage-api): origin, window and
+  `source`; never `'*'`). Nothing secret goes to the game: no token, no identities, no names.
+
+  | From the view | Fields                                                         | When                                                         |
+  | ------------- | -------------------------------------------------------------- | ------------------------------------------------------------ |
+  | `ready`       | `call` (id), `status` (`scheduled`/`live`/`ended`), `signedIn` | once the call is known; again when one changes               |
+  | `live`        | `listening` (bool)                                             | the call went live; the visitor started or stopped listening |
+  | `ended`       | `reason` (`ended`/`gone`)                                      | ended on the site, or deleted / not found                    |
+  | `speaking`    | `active` (bool)                                                | someone on the stage talks / silence                         |
+  | `resize`      | `height` (px), `mode` (`picture`/`strip`)                      | the content changed size                                     |
+  | `error`       | `code` (e.g. `call_full`, `banned`, `recording_consent`)       | joining failed; the view shows the text                      |
+
+  | To the view | Fields                            | Effect                                          |
+  | ----------- | --------------------------------- | ----------------------------------------------- |
+  | `mute`      | `muted` (bool)                    | silences the view's sound locally; stays joined |
+  | `collapse`  | `collapsed` (bool)                | picture or audio strip                          |
+  | `theme`     | `theme` (`light`, `dark`, `auto`) | as the chat's `theme`                           |
+  | `visible`   | `visible` (bool)                  | out of sight: the view stops receiving video    |
+
+- **Sound**: the view has its own **Listen** button and connects only on that click inside the
+  frame: browsers start sound only after a click, and a click in the game page does not count
+  for the frame. The game's own sound plays on beside it; the game may turn itself down while
+  `speaking` is true. The view's mute button and the host's `mute` silence only the call's
+  sound; the game's controls silence only the game; nothing in a game touches a speaker's
+  microphone.
+- **Phone**: the view opens as the 48 px audio strip, the picture on tap. In the game's focus
+  mode it collapses to the strip (or is hidden with `visible: false`), and its sound keeps
+  playing until the visitor stops it. No picture-in-picture.
+- **Season colours**: `client/src/styles/tokens.css` stays the single source
+  ([DESIGN.md, "Tokens"](DESIGN.md#tokens)): Spring `#AFB84E`, Summer `#E06E22`, Autumn
+  `#F9A825`, Winter `#04AAF7`, and `#14171C` for text on them (`--color-on-season`). The games'
+  shared UI kit keeps a copy of these five values; its CI compares the copy with `tokens.css`
+  on the site's `master` and fails on a difference.
+
+**What a game may do today**: reserve the slot of the sizes above, **hidden while no call is
+linked**, and a call-id field for the host in a round or lobby, checked with
+`GET /api/calls/<id>`. Frame nothing in the slot until this section says the page is built.
+
+## 10. Other profiles and proposals
 
 **Not the current website login:** Mini Games also implements a third-party game iframe loader
 and JWT handoff; Bingo's loader is a placeholder; OIDC is not implemented. Do not copy them as
@@ -329,7 +415,7 @@ popup and embed token, which authorizes website chat, not a game ([EMBED.md](EMB
 | One registration list for server, installer and proxy               | Proposed                                                                |
 | A separate-origin profile (e.g. OIDC with PKCE) for untrusted games | Proposed; needed only for a game not run by the owner                   |
 
-## 10. Copyable task brief for a game repository
+## 11. Copyable task brief for a game repository
 
 Use this with the chosen slug and repository. It is an implementation brief, not a claim that
 the website already knows arbitrary slugs.
@@ -359,11 +445,12 @@ Provide an installer-owned nginx/Caddy route that strips the website's cookies, 
 configuration without secrets. Coordinate website slug registration, activation, feed
 protection and catalogue setup. Optionally implement docs/OPEN-ROUNDS.md and the member
 summary of docs/GAME-INTEGRATION.md section 7 (local only, the sync token). Do not assume OIDC,
-a website JWT issuer, a season feed, embedded calls or per-match website chat rooms.
+a website JWT issuer, a season feed or per-match website chat rooms. Reserve the call view
+of section 9 only as a hidden slot until the website has built it.
 Use the acceptance checklist below; report remaining gaps explicitly.
 ```
 
-## 11. Acceptance checklist
+## 12. Acceptance checklist
 
 Add game-specific automated checks and exercise the real proxy path before deployment.
 
@@ -394,10 +481,12 @@ Add game-specific automated checks and exercise the real proxy path before deplo
 - [ ] In website mode every screen shows "← Seasonal Entertainment" at the top left, leading to
       `/games` in the same tab; small, in light and dark mode and at phone width; not shown
       standalone; a screen without room reported to the owner (section 8).
+- [ ] Optional call view (section 9): until the website builds `/embed/call/<id>`, only the
+      hidden slot and the host's call-id field; afterwards, the contract of section 9.
 - [ ] Optional member summary: only with the sync token, not reachable through the public
       route, within the limits of section 7, `noData` or `404` for an unknown player.
 
-## 12. Source map and maintenance
+## 13. Source map and maintenance
 
 Website code:
 
@@ -412,6 +501,8 @@ Website code:
 - Catalogue/status: `server/src/games/adminRoutes.js`, `seed.js`, `openRoundsContract.js`
 - The games page the way back leads to: `client/src/pages/GamesPage.jsx`, route `games` in
   `client/src/app/App.jsx`
+- The call view (decided, not built): the call page's parts in `client/src/calls/`, framing in
+  `server/src/http/securityHeaders.js`; details in `reports/call-embed-answers-2026-11-20.md`
 - A member's results: `server/src/games/memberSummary.js`, `GAMES_LOCAL_ORIGINS` in
   `embedded.js`, the route in `server/src/profiles/routes.js`
 - Website tests: `server/test/embeddedGames.test.js`, `embeddedFeed.test.js`,

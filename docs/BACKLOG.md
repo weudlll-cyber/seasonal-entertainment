@@ -20,6 +20,15 @@ entry waits for.
   same tab; not in standalone mode; a screen without room is reported to the owner. Waiting for
   Bingo, Mini Games and the race to build it, each in its own repository.
 
+### Decided, waiting to be scheduled
+
+- **Call view inside a game (`/embed/call/<id>`)** — decided 2026-11-20, not built; waiting for
+  the owner to schedule it. A reduced, listen-only call page the games frame beside their chat,
+  with the site's cookie session, framed only by `/games/<slug>/`, and its own `seasonal-call`
+  postMessage messages (docs/GAME-INTEGRATION.md, section 9; the details in
+  reports/call-embed-answers-2026-11-20.md). Meanwhile the games may reserve only the hidden
+  slot and the host's call-id field.
+
 ### Proposals not decided
 
 - **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
