@@ -5,11 +5,12 @@
 # Project:     Seasonal Entertainment
 # Description: The embedded games inside the site (docs/DEPLOYMENT.md, "Embedded games";
 #              docs/AUTH.md): Seasonal Bingo Royale at /games/bingo, Seasonal Mini Games at
-#              /games/mini-games and Seasonal Race at /games/race (2026-11-11), each its own
-#              project with its own installer (decided 2026-11-04). One question per game,
-#              whether it will be embedded (asked once on a terminal, default no, remembered as
-#              BINGO / MINI_GAMES / RACE in the state; --bingo, --mini-games and --race ask
-#              again; BINGO=yes|no, MINI_GAMES=yes|no and RACE=yes|no in an answers file;
+#              /games/mini-games, Seasonal Race at /games/race (2026-11-11) and Seasonal Cases at
+#              /games/cases (2026-11-21), each its own project with its own installer (decided
+#              2026-11-04). One question per game, whether it will be embedded (asked once on a
+#              terminal, default no, remembered as BINGO / MINI_GAMES / RACE / CASES in the
+#              state; --bingo, --mini-games, --race and --cases ask again; BINGO=yes|no,
+#              MINI_GAMES=yes|no, RACE=yes|no and CASES=yes|no in an answers file;
 #              an unattended run keeps what was remembered, no when nothing was). With any game
 #              on, the games' sync token made once in the root-only GAMES_SYNC_TOKEN_FILE (never
 #              printed) and passed to the site in site.env with the list GAMES_EMBEDDED. Always
@@ -30,6 +31,7 @@ EMBEDDED_GAMES=(
   "bingo BINGO Seasonal Bingo Royale"
   "mini-games MINI_GAMES Seasonal Mini Games"
   "race RACE Seasonal Race"
+  "cases CASES Seasonal Cases"
 )
 
 game_explanation() {

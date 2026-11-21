@@ -40,11 +40,13 @@ DISCORD_CLIENT_ID=
 DISCORD_GUILD_ID=902220302199689266
 DISCORD_CLIENT_SECRET_FILE=
 # The embedded games (docs/DEPLOYMENT.md, "Embedded games"): yes when Seasonal Bingo Royale will
-# run at /games/bingo, Seasonal Mini Games at /games/mini-games, and Seasonal Race at /games/race;
+# run at /games/bingo, Seasonal Mini Games at /games/mini-games, Seasonal Race at /games/race,
+# and Seasonal Cases at /games/cases;
 # each its own project. Empty: what this server remembered (no on a new install)
 BINGO=
 MINI_GAMES=
 RACE=
+CASES=
 # The outage e-mails (docs/DEPLOYMENT.md, "An e-mail when the site is down"): the mail account
 # that sends them (e.g. smtp.gmail.com, 587, the Gmail address) and a file holding its password
 # (for Gmail a Google app password; the password itself never goes into this file). Empty

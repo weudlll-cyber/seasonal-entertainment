@@ -4,12 +4,14 @@
 // Project:     Seasonal Entertainment
 // Description: The games that can run inside this site at /games/<slug>, each its own project
 //              with its own installer (docs/AUTH.md, "Embedded games"; decided 2026-11-04): a
-//              fixed allowlist, Seasonal Bingo Royale (bingo), Seasonal Mini Games (mini-games)
-//              and Seasonal Race (race; decided 2026-11-11). Which of them are switched on is
+//              fixed allowlist, Seasonal Bingo Royale (bingo), Seasonal Mini Games (mini-games),
+//              Seasonal Race (race; decided 2026-11-11) and Seasonal Cases (cases; decided
+//              2026-11-21). Which of them are switched on is
 //              GAMES_EMBEDDED, a comma list of slugs; GAMES_BINGO_EMBEDDED=1, the switch of the
 //              Bingo-only installer, still puts bingo in the list. Each game has the chat room
 //              of its slug (chat/seed.js, ensureGameRooms; decided 2026-11-04); the race's is
-//              the seeded "Seasonal Race" room, so it is there before the race is switched on.
+//              the seeded "Seasonal Race" room, so it is there before the race is switched on;
+//              Cases' is added like Bingo's and Mini Games'.
 //              The installer's list is the same (deploy/install/lib/games.sh). Where the site
 //              itself reaches a game, for a member's results on their profile
 //              (memberSummary.js; docs/GAME-INTEGRATION.md, "A member's results"):
@@ -21,6 +23,7 @@ export const EMBEDDED_GAMES = {
   bingo: { name: 'Seasonal Bingo Royale', roomName: 'Bingo' },
   'mini-games': { name: 'Seasonal Mini Games', roomName: 'Mini Games' },
   race: { name: 'Seasonal Race', roomName: 'Seasonal Race' },
+  cases: { name: 'Seasonal Cases', roomName: 'Seasonal Cases' },
 };
 
 // The switched-on slugs, in the allowlist's order. Unknown slugs stop the start, as every

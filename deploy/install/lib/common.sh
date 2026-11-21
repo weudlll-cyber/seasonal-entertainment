@@ -325,15 +325,15 @@ new_secret() {
 # COINGECKO is "none" once the CoinGecko key was declined (the key itself lives in site.env
 # only), DISCORD the same for the Discord login (discord.sh); KEY_NOTE is "pending" until the
 # KEEP SAFE note for the 2FA key was shown once.
-# BINGO, MINI_GAMES, RACE: whether Seasonal Bingo Royale, Seasonal Mini Games and Seasonal Race
-# are embedded, yes or no (games.sh). OUTAGE_MAIL: "none" once the outage e-mails' account was
+# BINGO, MINI_GAMES, RACE, CASES: whether Seasonal Bingo Royale, Seasonal Mini Games, Seasonal
+# Race and Seasonal Cases are embedded, yes or no (games.sh). OUTAGE_MAIL: "none" once the outage e-mails' account was
 # declined, "set" once given (the account itself lives in the root-only file, outage.sh).
 # BOT_ADMIN_URL is the event bot's admin page or "none" (bot-admin.sh); BOT_ADMIN_TOKEN_FILE and
 # BOT_ADMIN_TOKEN_KEY say where its token is read from, never the token itself.
 STATE_KEYS="MODE SITE_DOMAIN WWW_REDIRECT CALLS_DOMAIN RECORDING ACME_EMAIL ADMIN_NAME
 ADMIN_EMAIL PRICE_BOT_DB PRICE_BOT_MINING_RATES EVENT_BOT_DB BACKUP_RECIPIENT ACME_SERVER
 ACME_CA_BUNDLE ADMIN_DONE INSTALL_DIR NGINX_CONF_STYLE COINGECKO KEY_NOTE BOT_ADMIN_URL
-BOT_ADMIN_TOKEN_FILE BOT_ADMIN_TOKEN_KEY DISCORD BINGO MINI_GAMES RACE OUTAGE_MAIL"
+BOT_ADMIN_TOKEN_FILE BOT_ADMIN_TOKEN_KEY DISCORD BINGO MINI_GAMES RACE CASES OUTAGE_MAIL"
 
 save_state() {
   local key

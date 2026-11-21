@@ -7,8 +7,9 @@
 //              2026-11-11): members. Organisers: organisers and admins. Announcements: everyone
 //              reads, organisers and admins write. And the room of each switched-on embedded
 //              game (games/embedded.js; decided 2026-11-04), created on any start where its slug
-//              is missing: guests read, members write (docs/CHAT.md). The race's room is seeded
-//              here with its own rules, so its game finds it and leaves it as it is.
+//              is missing: guests read, members write (docs/CHAT.md); Bingo, Mini Games and
+//              Cases (2026-11-21) get theirs that way. The race's room is seeded here with its
+//              own rules, so its game finds it and leaves it as it is.
 // ============================================================
 
 import { EMBEDDED_GAMES } from '../games/embedded.js';

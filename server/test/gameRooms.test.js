@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: Guards the chat rooms of the embedded games (chat/seed.js ensureGameRooms, run by
 //              the chat's start; docs/EMBED.md, "The embedded games' rooms"): while a game is
-//              switched on its room exists (bingo "Bingo", mini-games "Mini Games"), guests
+//              switched on its room exists (bingo "Bingo", mini-games "Mini Games", cases
+//              "Seasonal Cases"), guests
 //              read, members write; created once, never recreated or changed after an admin
 //              edited it, kept with its messages when the game is switched off; the first-start
 //              rooms still come on an empty database. The race's room is the first-start room
@@ -24,7 +25,7 @@ import { ORIGIN, makeStaff, makeTestApp, registerUser } from './helpers/testApp.
 let t;
 afterEach(() => t?.close());
 
-const NAMES = { bingo: 'Bingo', 'mini-games': 'Mini Games' };
+const NAMES = { bingo: 'Bingo', 'mini-games': 'Mini Games', cases: 'Seasonal Cases' };
 // The games whose room the start adds; the race's comes with the first-start rooms.
 const ADDED = GAMES.filter((slug) => slug !== 'race');
 const roomOf = (slug) => t.db.prepare('SELECT * FROM chat_rooms WHERE slug = ?').get(slug);

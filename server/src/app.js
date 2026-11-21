@@ -18,7 +18,7 @@
 //              reads; /api/bot-admin/authorize lets staff through to the event bot's admin page
 //              (bots/adminAuthorizeRoutes.js, only with BOT_ADMIN_EMBEDDED=1);
 //              /api/games/<slug>/authorize and the account-changes feed serve the embedded
-//              games, Bingo, Mini Games and the race (games/embeddedRoutes.js, each only while
+//              games, Bingo, Mini Games, the race and Cases (games/embeddedRoutes.js, each only while
 //              in GAMES_EMBEDDED); /api/push is a member's web push switch, and a call going
 //              live sends "has started" (push/, only with VAPID keys); /api/members and
 //              /api/profile are the member profiles (profiles/). Discord login and

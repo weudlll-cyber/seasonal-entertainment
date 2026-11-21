@@ -753,7 +753,7 @@ docs/EMBED.md.
 
 - **On this site's own pages** (the games under the main domain; SE-NIGHT-2 part 6): the site's
   login cookie and device unlock, exactly as on the site. The embedded games have rooms of their
-  own, `bingo` and `mini-games`, made by the site while the game is switched on (guests read,
+  own, `bingo`, `mini-games` and `cases`, made by the site while the game is switched on (guests read,
   members write; afterwards an ordinary room an admin edits; never deleted by switching the
   game off; docs/EMBED.md, "The embedded games' rooms"; decided 2026-11-04), and `race`, the
   first-start room "Seasonal Race" with its own rules, members read and write (its slug was
