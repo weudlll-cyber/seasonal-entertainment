@@ -43,7 +43,12 @@ it('the old flag becomes a grant for every game of the allowlist, then goes', ()
   db.close();
 
   db = openDatabase(file);
-  expect(grants(db)).toEqual(Object.keys(EMBEDDED_GAMES).map((game) => ({ id: host, game })));
+  // grants() sorts by slug, the allowlist is in the order the games came: compare sorted.
+  expect(grants(db)).toEqual(
+    Object.keys(EMBEDDED_GAMES)
+      .sort()
+      .map((game) => ({ id: host, game }))
+  );
   expect(grants(db).some((g) => g.id === plain)).toBe(false);
   const columns = db
     .prepare('PRAGMA table_info(users)')

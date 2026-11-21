@@ -32,8 +32,16 @@ part is built: the slug in the allowlist, its authorize route and account-change
 Caddy, and its chat room `race` (the first-start room "Seasonal Race", members read and
 write; one race room, decided 2026-11-11). The race's own side is built in its own
 repository and was not verified here; nothing on this site changes visibly until the race is
-switched on, and its /games card stays "coming soon" until the race is live. The game-side
-facts in this guide are Bingo's and Mini Games'.
+switched on, and its /games card stays "coming soon" until the race is live.
+
+**Seasonal Cases** (`cases`) is the fourth embedded game (decided 2026-11-21). The website's
+part is built the same way: the slug in the allowlist, its authorize route and account-changes
+feed, its "May host" box, the installer's `CASES` question and `--cases`, its feed denied by
+nginx and Caddy, and its chat room `cases` ("Seasonal Cases"), added like Bingo's and Mini
+Games' while the game is switched on. Cases' own side (sign-in at `/games/cases/auth/website`,
+the feed, open rounds) is built in its own repository and was not verified here; it has no
+member summary and no installer or route file yet. The game-side facts in this guide are
+Bingo's and Mini Games'.
 
 The website's contracts:
 
@@ -59,6 +67,7 @@ Browser -> website nginx / Caddy
              /games/bingo/*                  -> Bingo server
              /games/mini-games/*             -> Mini Games server
              /games/race/*                   -> race server (its own repository)
+             /games/cases/*                  -> Cases server (its own repository)
 ```
 
 The browser navigates to the game's own application under `/games/<slug>/`. The website
@@ -112,7 +121,7 @@ Required trust checks: read identity headers only in website mode and only on th
 sign-in route. Check the actual TCP peer against the configured trusted proxy
 addresses/CIDRs, not a browser-supplied forwarding header, and a game-specific proxy secret
 in constant time; without either, refuse sign-in. Current secret headers: Bingo
-`X-Sbr-Proxy-Secret`, Mini Games `X-Smg-Proxy-Secret`. The proxy overwrites or clears the
+`X-Sbr-Proxy-Secret`, Mini Games `X-Smg-Proxy-Secret`, Cases `X-Sc-Proxy-Secret`. The proxy overwrites or clears the
 identity and secret headers clients send; the secret is added after authorization, never sent
 to the website. Keep secrets out of source control, browser responses, status output and logs.
 
@@ -214,10 +223,11 @@ Three separate steps, not one switch (details in
 [DEPLOYMENT.md, "Embedded games"](DEPLOYMENT.md#embedded-games)):
 
 1. **Register and enable the integration.** The slugs are a fixed list
-   (`server/src/games/embedded.js`: `bingo`, `mini-games`, `race`); the installer's question switches a
+   (`server/src/games/embedded.js`: `bingo`, `mini-games`, `race`, `cases`); the installer's question switches a
    game on (`GAMES_EMBEDDED`). A new game also needs its entry in `deploy/install/lib/games.sh`
    and its feed denied in `deploy/site/Caddyfile`, with docs and tests; an environment value or
-   a game card alone is not enough.
+   a game card alone is not enough. Every file and step for a new game, in this repository and
+   by hand: [ADDING-A-GAME.md](ADDING-A-GAME.md).
 2. **Install the game.** Its installer writes its own route file into the website's prepared
    routes folder (nginx `/etc/seasonal/routes/*.conf`, or `/etc/caddy/routes/*.caddy`), keeps
    files holding secrets 0600, validates the proxy configuration before a reload and restores
@@ -226,8 +236,8 @@ Three separate steps, not one switch (details in
    Card visibility and maintenance status are presentation, not route authorization.
 
 Optional: the [open-rounds contract](OPEN-ROUNDS.md), its HTTPS status URL in the card's
-"Sign-up status URL". Current: Bingo provides `/games/bingo/api/public/open-rounds`; Mini Games
-does not expose it.
+"Sign-up status URL". Current: Bingo provides `/games/bingo/api/public/open-rounds`, and Cases
+`/games/cases/api/public/open-rounds` (version 1); Mini Games does not expose it.
 
 ## 7. A member's results on their profile
 

@@ -34,7 +34,8 @@ build rules in [CLAUDE.md](CLAUDE.md).
 Start with [docs/GAME-INTEGRATION.md](docs/GAME-INTEGRATION.md): the shared website login,
 chat and account-sync contracts, setup steps, a copyable task brief and an acceptance checklist
 for new games and existing standalone games. Current behavior and proposed improvements are
-marked separately.
+marked separately. What this site needs to embed a further game, file by file:
+[docs/ADDING-A-GAME.md](docs/ADDING-A-GAME.md).
 
 For an independent review of proposed account synchronization, logout, isolation and
 permission improvements, see [docs/PROJECT-LEAD-REVIEW.md](docs/PROJECT-LEAD-REVIEW.md).

@@ -50,6 +50,7 @@ describe('goToNext', () => {
   it.each([
     '/games/mini-games/',
     '/games/race/',
+    '/games/cases/',
     '/games/bingo/',
     '/games/bingo/auth/website?next=%2Fgames%2Fbingo%2F',
   ])('loads the game page %s fully', (next) => {

@@ -106,6 +106,7 @@ describe('user changes', () => {
       { slug: 'bingo', name: 'Seasonal Bingo Royale' },
       { slug: 'mini-games', name: 'Seasonal Mini Games' },
       { slug: 'race', name: 'Seasonal Race' },
+      { slug: 'cases', name: 'Seasonal Cases' },
     ]);
   });
 

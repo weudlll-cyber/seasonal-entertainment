@@ -56,21 +56,21 @@ run (see "Rollback").
 
 ### What it asks
 
-| Question                         | Answers-file key                                                      | Notes                                                                                                  |
-| -------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| The site's domain                | `SITE_DOMAIN`                                                         | e.g. `example.org`                                                                                     |
-| Should www redirect to it?       | `WWW_REDIRECT`                                                        | `yes`/`no`; `www.example.org` then needs its own A record                                              |
-| The call service's domain        | `CALLS_DOMAIN`                                                        | e.g. `calls.example.org`; empty: no calls (explained below)                                            |
-| Record calls?                    | `RECORDING`                                                           | `yes`/`no`; only with calls (explained below; docs/CALLS.md, "Recording")                              |
-| Email for Let's Encrypt          | `ACME_EMAIL`                                                          | certificate notices                                                                                    |
-| The bots' files                  | `PRICE_BOT_DB`, `PRICE_BOT_MINING_RATES`, `EVENT_BOT_DB`              | paths on this server; empty: that data source stays off (docs/BOTS.md)                                 |
-| The age public key for backups   | `BACKUP_RECIPIENT`                                                    | `age1…`; empty: add later with `--backups` (see "Backups")                                             |
-| CoinGecko Demo API key           | —                                                                     | hidden, on a terminal, once; empty: no prices; later with `--coingecko`                                |
-| Discord login                    | `DISCORD_CLIENT_ID`, `DISCORD_GUILD_ID`, `DISCORD_CLIENT_SECRET_FILE` | once; the secret from a file or typed hidden; empty: none; later with `--discord` ("Discord login")    |
-| The event bot's admin page       | `BOT_ADMIN_URL`, `BOT_ADMIN_TOKEN_FILE`, `BOT_ADMIN_TOKEN_KEY`        | nginx mode only; empty: none, not asked again; later with `--bot-admin` ("The event bot's admin page") |
-| Embedded games                   | `BINGO`, `MINI_GAMES`, `RACE` (yes/no)                                | default no; each asked once; later with `--bingo`, `--mini-games`, `--race` ("Embedded games")         |
-| The first admin's name and email | `ADMIN_NAME`, `ADMIN_EMAIL`                                           | asked at the end                                                                                       |
-| The first admin's password       | —                                                                     | **always** typed on the terminal, shown as `*`; never from a file or flag                              |
+| Question                         | Answers-file key                                                      | Notes                                                                                                     |
+| -------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| The site's domain                | `SITE_DOMAIN`                                                         | e.g. `example.org`                                                                                        |
+| Should www redirect to it?       | `WWW_REDIRECT`                                                        | `yes`/`no`; `www.example.org` then needs its own A record                                                 |
+| The call service's domain        | `CALLS_DOMAIN`                                                        | e.g. `calls.example.org`; empty: no calls (explained below)                                               |
+| Record calls?                    | `RECORDING`                                                           | `yes`/`no`; only with calls (explained below; docs/CALLS.md, "Recording")                                 |
+| Email for Let's Encrypt          | `ACME_EMAIL`                                                          | certificate notices                                                                                       |
+| The bots' files                  | `PRICE_BOT_DB`, `PRICE_BOT_MINING_RATES`, `EVENT_BOT_DB`              | paths on this server; empty: that data source stays off (docs/BOTS.md)                                    |
+| The age public key for backups   | `BACKUP_RECIPIENT`                                                    | `age1…`; empty: add later with `--backups` (see "Backups")                                                |
+| CoinGecko Demo API key           | —                                                                     | hidden, on a terminal, once; empty: no prices; later with `--coingecko`                                   |
+| Discord login                    | `DISCORD_CLIENT_ID`, `DISCORD_GUILD_ID`, `DISCORD_CLIENT_SECRET_FILE` | once; the secret from a file or typed hidden; empty: none; later with `--discord` ("Discord login")       |
+| The event bot's admin page       | `BOT_ADMIN_URL`, `BOT_ADMIN_TOKEN_FILE`, `BOT_ADMIN_TOKEN_KEY`        | nginx mode only; empty: none, not asked again; later with `--bot-admin` ("The event bot's admin page")    |
+| Embedded games                   | `BINGO`, `MINI_GAMES`, `RACE`, `CASES` (yes/no)                       | default no; each asked once; later with `--bingo`, `--mini-games`, `--race`, `--cases` ("Embedded games") |
+| The first admin's name and email | `ADMIN_NAME`, `ADMIN_EMAIL`                                           | asked at the end                                                                                          |
+| The first admin's password       | —                                                                     | **always** typed on the terminal, shown as `*`; never from a file or flag                                 |
 
 Before the calls question, the installer explains on the terminal what calls are (voice and
 video rooms on the site: a stage with up to 10 speakers and up to 200 listeners), what they need
@@ -375,10 +375,11 @@ repository.
 Game developers: [GAME-INTEGRATION.md](GAME-INTEGRATION.md) brings together the website
 contracts, game-side requirements and acceptance checklist.
 
-Three games can run inside this site, each its own project with its own installer (decided
-2026-11-04; the race 2026-11-11): Seasonal Bingo Royale at `https://<site domain>/games/bingo`,
-Seasonal Mini Games at `https://<site domain>/games/mini-games` and Seasonal Race at
-`https://<site domain>/games/race`. Players sign in there with this site's login
+Four games can run inside this site, each its own project with its own installer (decided
+2026-11-04; the race 2026-11-11, Cases 2026-11-21): Seasonal Bingo Royale at
+`https://<site domain>/games/bingo`, Seasonal Mini Games at `https://<site domain>/games/mini-games`,
+Seasonal Race at `https://<site domain>/games/race` and Seasonal Cases at
+`https://<site domain>/games/cases`. Adding a further game: docs/ADDING-A-GAME.md. Players sign in there with this site's login
 (docs/AUTH.md, "Embedded games"), and each game shows this site's chat in its own room
 (docs/EMBED.md). This installer only prepares the site (`deploy/install/lib/games.sh`); each
 game's installer writes its own route file and never edits this site's files.
@@ -391,15 +392,18 @@ game's installer writes its own route file and never edits this site's files.
   | "Will Seasonal Bingo Royale be embedded at /games/bingo?"    | `BINGO`      | `--bingo`      |
   | "Will Seasonal Mini Games be embedded at /games/mini-games?" | `MINI_GAMES` | `--mini-games` |
   | "Will Seasonal Race be embedded at /games/race?"             | `RACE`       | `--race`       |
+  | "Will Seasonal Cases be embedded at /games/cases?"           | `CASES`      | `--cases`      |
 
-  `sudo ./deploy/install.sh --bingo`, `--mini-games` or `--race` asks that one again, also with
-  `--update` (not with `--yes`); `BINGO=yes|no`, `MINI_GAMES=yes|no` and `RACE=yes|no` in an
-  answers file. An unattended run never asks and keeps what was remembered (no when nothing was).
+  `sudo ./deploy/install.sh --bingo`, `--mini-games`, `--race` or `--cases` asks that one again,
+  also with `--update` (not with `--yes`); `BINGO=yes|no`, `MINI_GAMES=yes|no`, `RACE=yes|no`
+  and `CASES=yes|no` in an answers file. An unattended run never asks and keeps what was remembered (no when nothing was).
 
 - **An install from before Mini Games** (`BINGO` remembered, no `MINI_GAMES`): `--update` on a
   terminal asks the Mini Games question once; an unattended one keeps Bingo as it was and
   remembers Mini Games as no. Nothing else to do. An install from before the race (no `RACE`)
-  is the same: asked once on a terminal, no when unattended.
+  or before Cases (no `CASES`) is the same: asked once on a terminal, no when unattended.
+- **A game's chat room** appears on the site's next start once its slug is in `GAMES_EMBEDDED`
+  (for example `cases`, room "Seasonal Cases"; docs/EMBED.md, "The embedded games' rooms").
 - **With any game yes**: the games' sync token is made once, 64 hex characters, in
   `/etc/seasonal/games-sync-token` (root, mode 600, never printed or logged; kept on every later
   run; one token for all games), and `site.env` gets `GAMES_EMBEDDED` (the games answered yes,
@@ -418,7 +422,8 @@ game's installer writes its own route file and never edits this site's files.
   mode 600). This installer never reads, logs, copies, backs up or removes files in it; `nginx -t`
   passes with the folder empty, and a broken file there makes the usual check fail before a
   reload. The same server block denies every game's feed, `/api/games/bingo/account-changes`,
-  `/api/games/mini-games/account-changes` and `/api/games/race/account-changes` (`deny all`, 403), in any letter case
+  `/api/games/mini-games/account-changes`, `/api/games/race/account-changes` and
+  `/api/games/cases/account-changes` (`deny all`, 403), in any letter case
   (`location ~* ^/api/games/<slug>/account-changes`: the site's router ignores letter case, so
   `/api/games/race/Account-Changes` must be denied too; 2026-11-13), whether the game is on or not: a game
   reads its feed over the site's local port, `http://127.0.0.1:<port>`, the port in

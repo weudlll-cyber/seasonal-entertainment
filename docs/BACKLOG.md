@@ -19,6 +19,13 @@ entry waits for.
   embedded game shows a small "← Seasonal Entertainment" link at the top left to `/games`,
   same tab; not in standalone mode; a screen without room is reported to the owner. Waiting for
   Bingo, Mini Games and the race to build it, each in its own repository.
+- **Cases' results on a member's profile** — the site's side is built (docs/GAME-INTEGRATION.md,
+  section 7); waiting for Seasonal Cases to offer the member-summary route, then its local
+  origin in `GAMES_LOCAL_ORIGINS` (see "Game results need each game's address" below).
+- **Cases' installer and route file** — the site is prepared for `cases` (2026-11-21); Seasonal
+  Cases has no installer yet that writes its route file into the routes folder
+  (docs/DEPLOYMENT.md, "Embedded games"). Until then `CASES=yes` switches on only the site's
+  part.
 
 ### Decided, waiting to be scheduled
 
@@ -53,7 +60,7 @@ entry waits for.
 - **Only the owner's own games are embedded** — if a game not run by the owner is ever embedded,
   revisit proposals C (keep the website's cookies from it: a separate origin), D (per-game
   capabilities beyond hosting) and E (a sync token per game) of docs/PROJECT-LEAD-REVIEW.md. Not
-  needed while both games are the owner's own on the same server (decided 2026-11-09).
+  needed while the games are the owner's own on the same server (decided 2026-11-09).
 - **A call recorded from its start blocks a second recording meanwhile** — while it waits for
   its first speaker, the egress keeps its Chrome and its 2.0-CPU share, so a recording started in
   a second call at the same time is declined ("did not start"). Accepted by the owner on
@@ -90,6 +97,15 @@ entry waits for.
   restore runs in the Linux container and is not affected; listed only.
 
 ## PART TWO — closed
+
+- **Cases as the fourth embedded game, the website's part** — closed by `feat/cases-slug`
+  (decided 2026-11-21): `cases` (Seasonal Cases) in the allowlist, so `/api/games/cases/authorize`,
+  `/api/games/cases/account-changes`, its "May host" box and the games list follow; its chat
+  room `cases` ("Seasonal Cases") added on the next start while it is switched on; the
+  installer's `CASES` question (default no), `--cases` and its `--update` pass-through; its feed
+  denied by nginx and Caddy. Nothing visible changes while Cases is off. With it,
+  docs/ADDING-A-GAME.md: everything a further game needs on this site's side
+  (docs/GAME-INTEGRATION.md, docs/AUTH.md, "Embedded games", docs/EMBED.md).
 
 - **Each vote reloads the poll summary on every member's open page** — closed by `fix/poll-load` (PR
   #75; security review of 2026-11-13, L4; decided 2026-11-15): the `polls` event goes out at most

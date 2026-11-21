@@ -39,14 +39,15 @@ header, sidebar or footer (`client/src/embed/EmbedChatPage.jsx`): the room, and 
 ### The embedded games' rooms
 
 Each embedded game (docs/AUTH.md, "Embedded games") shows this site's chat through this same-site
-embed, in a room of its own (decided 2026-11-04 for Bingo and Mini Games, 2026-11-11 for the race; Bingo
+embed, in a room of its own (decided 2026-11-04 for Bingo and Mini Games, 2026-11-11 for the race, 2026-11-21 for Cases; Bingo
 uses one room of this site's chat as its chat, decided 2026-10-19):
 
-| Game                  | Room slug    | Room name       | Embed URL inside the game                |
-| --------------------- | ------------ | --------------- | ---------------------------------------- |
-| Seasonal Bingo Royale | `bingo`      | "Bingo"         | `/embed/chat?room=bingo&theme=auto`      |
-| Seasonal Mini Games   | `mini-games` | "Mini Games"    | `/embed/chat?room=mini-games&theme=auto` |
-| Seasonal Race         | `race`       | "Seasonal Race" | `/embed/chat?room=race&theme=auto`       |
+| Game                  | Room slug    | Room name        | Embed URL inside the game                |
+| --------------------- | ------------ | ---------------- | ---------------------------------------- |
+| Seasonal Bingo Royale | `bingo`      | "Bingo"          | `/embed/chat?room=bingo&theme=auto`      |
+| Seasonal Mini Games   | `mini-games` | "Mini Games"     | `/embed/chat?room=mini-games&theme=auto` |
+| Seasonal Race         | `race`       | "Seasonal Race"  | `/embed/chat?room=race&theme=auto`       |
+| Seasonal Cases        | `cases`      | "Seasonal Cases" | `/embed/chat?room=cases&theme=auto`      |
 
 `theme` may also be `light` or `dark` ("The embed page" above).
 
