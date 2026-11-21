@@ -68,6 +68,9 @@ allowlist.
 - `server/test/gameRooms.test.js`: the room's name in `NAMES`. The loops over `GAMES` then cover
   the room, its rules and the framed chat.
 - `server/test/adminUsers.test.js`: the games list `GET /api/admin/users` answers.
+- `server/test/gameHosts.test.js`: the old "may start games" flag becomes a grant for every
+  game. It reads `EMBEDDED_GAMES` itself, so it needs no new line, but it compares in slug
+  order (it went red for Cases until it sorted).
 - `server/test/discordLogin.test.js`: the return to the game's sign-in route after Discord.
 - `client/src/admin/adminPages.test.jsx`: one "May host <name>" box per game.
 - `client/src/pages/loginNext.test.jsx` and `client/src/session/nextPage.test.js`: the way back
