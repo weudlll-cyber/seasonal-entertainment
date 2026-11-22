@@ -18,6 +18,8 @@
 //              (no key; the addresses taken from the official site at that moment, stored
 //              nowhere). "In season" is the token with the highest current reward, the
 //              official "produced at the fastest rate". Pure functions; times in Unix seconds.
+//              inSeasonSince: when the token in season took the lead, for the site's season
+//              feed (server/src/season/routes.js; docs/GAME-INTEGRATION.md, "Season feed").
 // ============================================================
 
 const DAY = 24 * 60 * 60;
@@ -58,11 +60,22 @@ export function halvingsUntil(until) {
   }).sort((a, b) => a.at - b.at);
 }
 
+// The token with the highest reward at `time`; a tie goes to the earlier season.
+const leaderAt = (time) =>
+  SEASON_CONTRACTS.reduce((best, c) => (rewardAt(c, time) > rewardAt(best, time) ? c : best)).token;
+
+// When the token in season at `time` took the lead: the most recent halving that changed the
+// leader. Before the first such halving, the first token led from the last contract's creation.
+export function inSeasonSince(time) {
+  const changes = halvingsUntil(time).filter((h) => leaderAt(h.at - 1) !== leaderAt(h.at));
+  return changes.length
+    ? changes[changes.length - 1].at
+    : Math.max(...SEASON_CONTRACTS.map((c) => c.created));
+}
+
 // At `time`: the token in season (highest reward) and the next halving of any token.
 export function seasonClock(time) {
-  const inSeason = SEASON_CONTRACTS.reduce((best, c) =>
-    rewardAt(c, time) > rewardAt(best, time) ? c : best
-  ).token;
+  const inSeason = leaderAt(time);
   const next = SEASON_CONTRACTS.map((c) => ({ token: c.token, at: nextHalvingOf(c, time) })).sort(
     (a, b) => a.at - b.at
   )[0];

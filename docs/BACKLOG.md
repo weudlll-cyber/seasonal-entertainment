@@ -98,6 +98,12 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **The season feed for the games** — closed by `night/2026-11-22`, piece 1 (decided
+  2026-11-21): `GET /api/public/season`, public and cacheable for 60 seconds, gives the token
+  in season, since when it leads and the halving days from 30 days ago to two years ahead, all
+  from the season clock (docs/GAME-INTEGRATION.md, "Season feed"; the shape Mini Games
+  proposed).
+
 - **Cases as the fourth embedded game, the website's part** — closed by `feat/cases-slug`
   (decided 2026-11-21): `cases` (Seasonal Cases) in the allowlist, so `/api/games/cases/authorize`,
   `/api/games/cases/account-changes`, its "May host" box and the games list follow; its chat

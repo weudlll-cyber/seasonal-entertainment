@@ -231,7 +231,9 @@ Royale at `/games/bingo`, Seasonal Mini Games at `/games/mini-games`, Seasonal R
 `/games/race` (the site's part since 2026-11-11) and Seasonal Cases at `/games/cases` (the site's
 part since 2026-11-21), signed in through this site's login and fed
 its account changes (`server/src/games/embedded.js`, `embeddedRoutes.js`;
-docs/AUTH.md, "Embedded games"), each with its chat room (docs/EMBED.md).
+docs/AUTH.md, "Embedded games"), each with its chat room (docs/EMBED.md). The games read
+the token in season and the halving days from the site's season feed, `/api/public/season`
+(decided 2026-11-21; docs/GAME-INTEGRATION.md, "Season feed").
 
 ## Chat
 
@@ -544,6 +546,8 @@ server/
                            (authorize) and account-changes feed (embeddedRoutes.js; docs/AUTH.md,
                            "Embedded games"); a member's results from the games for their
                            profile (memberSummary.js; docs/GAME-INTEGRATION.md, section 7)
+  src/season/              the games' season feed GET /api/public/season, from the season
+                           clock (docs/GAME-INTEGRATION.md, "Season feed")
   src/chat/                chat area, mounted by mount.js (the only entry for the rest of the
                            server): schema, store, messages and what may be sent, viewer rules,
                            routes, moderation, WebSocket endpoint (socket.js) and hub, sender

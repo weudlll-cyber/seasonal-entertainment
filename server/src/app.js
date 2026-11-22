@@ -24,7 +24,8 @@
 //              /api/profile are the member profiles (profiles/). Discord login and
 //              roles (discord/) only while set up; app.locals.discord.start() runs the daily
 //              role read; app.locals.games.start() reads the games' open sign-ups every minute
-//              (games/openRounds.js).
+//              (games/openRounds.js); /api/public/season is the games' season feed
+//              (season/routes.js).
 // ============================================================
 
 import { existsSync } from 'node:fs';
@@ -75,6 +76,7 @@ import { gameRoutes } from './games/routes.js';
 import { allow } from './http/access.js';
 import { adminInfoRoutes } from './info/adminRoutes.js';
 import { infoRoutes } from './info/routes.js';
+import { seasonRoutes } from './season/routes.js';
 import { keyHandoverRoutes } from './keys/handover.js';
 import { keyRoutes } from './keys/routes.js';
 import { csrfGuard } from './http/csrf.js';
@@ -176,6 +178,8 @@ export function createApp({
   api.use('/profile', ownProfileRoutes(db, config, chat));
   api.use('/admin/audit', adminAuditRoutes(db));
   api.use('/info', infoRoutes(db));
+  // The season in play and the halving days, for the games (season/routes.js).
+  api.use('/public', seasonRoutes());
   api.use('/admin/info', adminInfoRoutes(db));
   const bots = botRoutes(config, chat.images, botImageNetwork);
   api.use('/prices', bots.prices);

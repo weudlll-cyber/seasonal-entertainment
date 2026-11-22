@@ -52,6 +52,7 @@ The website's contracts:
 | The chat inside a game, its room, postMessage    | [EMBED.md](EMBED.md#the-embedded-games-rooms), [snippet](EMBED.md#the-snippet) |
 | Installing: questions, routes folder, token      | [DEPLOYMENT.md, "Embedded games"](DEPLOYMENT.md#embedded-games)                |
 | Optional open sign-ups listing                   | [OPEN-ROUNDS.md](OPEN-ROUNDS.md)                                               |
+| Optional: the season in play, the halving days   | [Section 6, "Season feed"](#season-feed) below                                 |
 | Optional: a member's results on their profile    | [Section 7](#7-a-members-results-on-their-profile) below                       |
 | Required: a way back to the website              | [Section 8](#8-a-way-back-to-the-website) below                                |
 | Decided, not built: a call view beside the game  | [Section 9](#9-call-view-inside-a-game) below                                  |
@@ -238,6 +239,33 @@ Three separate steps, not one switch (details in
 Optional: the [open-rounds contract](OPEN-ROUNDS.md), its HTTPS status URL in the card's
 "Sign-up status URL". Current: Bingo provides `/games/bingo/api/public/open-rounds`, and Cases
 `/games/cases/api/public/open-rounds` (version 1); Mini Games does not expose it.
+
+### Season feed
+
+Built (decided 2026-11-21): the site publishes the token in season and the halving days, so a
+game need not compute the season itself. `GET https://<site domain>/api/public/season`: public,
+no login, JSON, `Cache-Control: public, max-age=60` (`server/src/season/routes.js`). Every value
+comes from the site's season clock (`shared/seasonClock.js`), the one the home banner shows.
+
+```jsonc
+{
+  "v": 1,
+  "inSeason": { "season": "autumn", "token": "AUTUMN", "since": "2026-03-05T22:32:17Z" },
+  "halvingDays": [{ "day": "2026-12-04", "token": "AUTUMN" }],
+}
+```
+
+- `inSeason.season` is the token with the highest current reward in lower case (`spring`,
+  `summer`, `autumn`, `winter`); `token` is the same in upper case.
+- `since` (ISO 8601, UTC) is the halving that made it the leader: the most recent halving that
+  changed which token pays most.
+- `halvingDays` lists every halving from 30 days ago to two years ahead, oldest first, as UTC
+  dates with the token that halves.
+- A new field may be added within version 1; a game ignores fields it does not know. A changed
+  meaning gets `v: 2`.
+
+The shape is the one Mini Games proposed (its `docs/spec/07-integration.md`, §5). A game on
+this site reads it server to server, never from a season passed in by the embedding page.
 
 ## 7. A member's results on their profile
 
@@ -470,8 +498,9 @@ Make assets, APIs, WebSockets, redirects and cookies work under the base path.
 Provide an installer-owned nginx/Caddy route that strips the website's cookies, and document
 configuration without secrets. Coordinate website slug registration, activation, feed
 protection and catalogue setup. Optionally implement docs/OPEN-ROUNDS.md and the member
-summary of docs/GAME-INTEGRATION.md section 7 (local only, the sync token). Do not assume OIDC,
-a website JWT issuer, a season feed or per-match website chat rooms. Reserve the call view
+summary of docs/GAME-INTEGRATION.md section 7 (local only, the sync token), and the season
+feed of section 6 (/api/public/season). Do not assume OIDC, a website JWT issuer or per-match
+website chat rooms. Reserve the call view
 of section 9 only as a hidden slot until the website has built it.
 Use the acceptance checklist below; report remaining gaps explicitly.
 ```
