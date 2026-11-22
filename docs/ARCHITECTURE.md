@@ -69,57 +69,58 @@ The race game uses 5173 and 4173; this project stays clear of them.
 Read from the environment when the process starts, never baked into a build (except the
 commit, which the client build carries for the update notice):
 
-| Variable                            | Default                                       | Used by                                                                         |
-| ----------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------- |
-| `HOST`                              | `127.0.0.1`                                   | server listen address                                                           |
-| `PORT`                              | `3800`                                        | server listen port                                                              |
-| `CLIENT_DIST`                       | `client/dist`                                 | folder of the built client the server serves (`assets/` cached a year)          |
-| `COMMIT_SHA`                        | output of `git rev-parse`                     | commit of `/api/health` and of the client build (`npm run build`)               |
-| `SE_DEV_BUILD_COMMIT`               | (unset)                                       | `npm run dev`: a pretended client build commit (DEPLOYMENT.md)                  |
-| `CLIENT_PORT`                       | `5380`                                        | Vite dev server port                                                            |
-| `API_ORIGIN`                        | `http://127.0.0.1:3800`                       | where the Vite dev server forwards `/api` and `/ws`                             |
-| `NODE_ENV`                          | (unset)                                       | `production`: Secure cookies, no dev defaults (DEPLOYMENT.md)                   |
-| `DATABASE_PATH`                     | `data/seasonal.db`                            | SQLite file                                                                     |
-| `SESSION_SECRET`                    | random per start (dev)                        | signs session cookies; required in production                                   |
-| `SECRET_ENCRYPTION_KEY`             | public development key (dev)                  | encrypts 2FA secrets at rest; required in production (AUTH.md)                  |
-| `BOOTSTRAP_TOKEN`                   | (unset)                                       | one-time first-admin creation (AUTH.md)                                         |
-| `PUBLIC_ORIGIN`                     | from the Host header (required in production) | own origin for CSRF/WebSocket origin checks                                     |
-| `TRUST_PROXY`                       | `0` (must be set explicitly in production)    | number of reverse proxies in front                                              |
-| `COOKIE_SECURE`                     | `true` in production                          | Secure session cookie                                                           |
-| `CSRF_STRICT`                       | `true`                                        | refuse state changes without Origin/Referer                                     |
-| `BCRYPT_COST`                       | `12`                                          | password hashing cost (4–15)                                                    |
-| `REQUIRE_STAFF_2FA`                 | `true`                                        | organisers/admins must use 2FA; `false` only outside production                 |
-| `CHAT_RETENTION_DAYS`               | `90`                                          | default of the "Keep messages" setting (docs/SETTINGS.md)                       |
-| `CHAT_MAX_CONNECTIONS_PER_MEMBER`   | `5`                                           | default of "Open connections per member" (docs/SETTINGS.md)                     |
-| `CHAT_MAX_GUEST_CONNECTIONS_PER_IP` | `20`                                          | default of "Open connections per guest address" (docs/SETTINGS.md)              |
-| `API_READS_PER_MINUTE`              | `1200`                                        | `GET` under `/api`, `/recordings/<id>` per address and minute (AUTH.md)         |
-| `BOT_READS_PER_MINUTE`              | `120`                                         | price and bot-event reads per address and minute (AUTH.md)                      |
-| `MEDIA_DIR`                         | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`                      |
-| `DELETION_JOURNAL`                  | `account-deletions.jsonl` beside the database | deleted accounts for a restore, 30 days (DEPLOYMENT.md, "Restoring")            |
-| `LINK_PREVIEWS`                     | `true`                                        | default of both link-preview settings (docs/SETTINGS.md)                        |
-| `CALLS_URL`                         | (unset: Calls off)                            | call service origin, `wss://...` (docs/CALLS.md)                                |
-| `CALLS_API_KEY`                     | (unset)                                       | call service API key; set with the other two or none                            |
-| `CALLS_API_SECRET`                  | (unset)                                       | call service API secret; production: no dev pair, 32+ chars                     |
-| `CALLS_RECORDINGS_DIR`              | (unset: recording off)                        | the folder call recordings land in (docs/CALLS.md, "Recording")                 |
-| `CALLS_EGRESS_OUTPUT_DIR`           | the same as `CALLS_RECORDINGS_DIR`            | that folder as the egress service sees it                                       |
-| `BACKUP_DIR`                        | (unset)                                       | where `scripts/backup.mjs` writes backups (DEPLOYMENT.md)                       |
-| `BACKUP_ENCRYPTION`                 | `on`                                          | encrypt backups with age (`off`: plain folders)                                 |
-| `BACKUP_RECIPIENT`                  | (unset; required while encryption is on)      | the owner's age public key (`age1…`) the backups are for                        |
-| `PRICE_BOT_DB`                      | (unset: prices off)                           | the price bot's `snapshots.db`, read-only (docs/BOTS.md)                        |
-| `EVENT_BOT_DB`                      | (unset: bot events off)                       | the event bot's database, read-only (docs/BOTS.md)                              |
-| `PRICE_BOT_MINING_RATES`            | (unset: no fair price, no mining times)       | the price bot's `mining_rates.json`, read-only (docs/BOTS.md)                   |
-| `COINGECKO_API_KEY`                 | (unset: ETH, POL, BTC not connected)          | CoinGecko Demo key: the server fetches ETH/POL/BTC history (docs/BOTS.md)       |
-| `BOT_ADMIN_EMBEDDED`                | (unset: off; `1` on)                          | embeds the event bot's admin page at `/bot-admin/` (docs/BOTS.md)               |
-| `GAMES_EMBEDDED`                    | (unset: none)                                 | the embedded games, slugs `bingo`, `mini-games`, `race`, `cases` (docs/AUTH.md) |
-| `GAMES_BINGO_EMBEDDED`              | (unset: off; `1` on)                          | also puts `bingo` in that list (installs from before it)                        |
-| `GAMES_SYNC_TOKEN`                  | (unset: the feed refuses everyone)            | the embedded games' token for their account-changes feed                        |
-| `VAPID_PUBLIC_KEY`                  | (unset: no web push)                          | with `VAPID_PRIVATE_KEY`: the web push key pair (docs/CALLS.md)                 |
-| `VAPID_PRIVATE_KEY`                 | (unset: no web push)                          | made once by the installer, never printed (docs/DEPLOYMENT.md)                  |
-| `DISCORD_CLIENT_ID`                 | (unset: Discord login off)                    | the Discord application's client id (docs/AUTH.md, "Discord")                   |
-| `DISCORD_GUILD_ID`                  | (unset: Discord login off)                    | the Seasonal Tokens Discord server whose roles are read                         |
-| `DISCORD_CLIENT_SECRET`             | (unset: Discord login off)                    | the application's client secret (or the file below)                             |
-| `DISCORD_CLIENT_SECRET_FILE`        | (unset)                                       | a file holding the client secret (the installer's way)                          |
-| `DISCORD_REDIRECT_URI`              | `PUBLIC_ORIGIN/api/auth/discord/callback`     | the callback registered at Discord, exactly                                     |
+| Variable                            | Default                                       | Used by                                                                              |
+| ----------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `HOST`                              | `127.0.0.1`                                   | server listen address                                                                |
+| `PORT`                              | `3800`                                        | server listen port                                                                   |
+| `CLIENT_DIST`                       | `client/dist`                                 | folder of the built client the server serves (`assets/` cached a year)               |
+| `COMMIT_SHA`                        | output of `git rev-parse`                     | commit of `/api/health` and of the client build (`npm run build`)                    |
+| `SE_DEV_BUILD_COMMIT`               | (unset)                                       | `npm run dev`: a pretended client build commit (DEPLOYMENT.md)                       |
+| `CLIENT_PORT`                       | `5380`                                        | Vite dev server port                                                                 |
+| `API_ORIGIN`                        | `http://127.0.0.1:3800`                       | where the Vite dev server forwards `/api` and `/ws`                                  |
+| `NODE_ENV`                          | (unset)                                       | `production`: Secure cookies, no dev defaults (DEPLOYMENT.md)                        |
+| `DATABASE_PATH`                     | `data/seasonal.db`                            | SQLite file                                                                          |
+| `SESSION_SECRET`                    | random per start (dev)                        | signs session cookies; required in production                                        |
+| `SECRET_ENCRYPTION_KEY`             | public development key (dev)                  | encrypts 2FA secrets at rest; required in production (AUTH.md)                       |
+| `RECOVERY_CODE_KEY`                 | public development key (dev)                  | keys the 2FA recovery codes' hashes (HMAC-SHA-256); required in production (AUTH.md) |
+| `BOOTSTRAP_TOKEN`                   | (unset)                                       | one-time first-admin creation (AUTH.md)                                              |
+| `PUBLIC_ORIGIN`                     | from the Host header (required in production) | own origin for CSRF/WebSocket origin checks                                          |
+| `TRUST_PROXY`                       | `0` (must be set explicitly in production)    | number of reverse proxies in front                                                   |
+| `COOKIE_SECURE`                     | `true` in production                          | Secure session cookie                                                                |
+| `CSRF_STRICT`                       | `true`                                        | refuse state changes without Origin/Referer                                          |
+| `BCRYPT_COST`                       | `12`                                          | password hashing cost (4–15)                                                         |
+| `REQUIRE_STAFF_2FA`                 | `true`                                        | organisers/admins must use 2FA; `false` only outside production                      |
+| `CHAT_RETENTION_DAYS`               | `90`                                          | default of the "Keep messages" setting (docs/SETTINGS.md)                            |
+| `CHAT_MAX_CONNECTIONS_PER_MEMBER`   | `5`                                           | default of "Open connections per member" (docs/SETTINGS.md)                          |
+| `CHAT_MAX_GUEST_CONNECTIONS_PER_IP` | `20`                                          | default of "Open connections per guest address" (docs/SETTINGS.md)                   |
+| `API_READS_PER_MINUTE`              | `1200`                                        | `GET` under `/api`, `/recordings/<id>` per address and minute (AUTH.md)              |
+| `BOT_READS_PER_MINUTE`              | `120`                                         | price and bot-event reads per address and minute (AUTH.md)                           |
+| `MEDIA_DIR`                         | `data/media`                                  | chat stickers, GIFs and preview images, served at `/media`                           |
+| `DELETION_JOURNAL`                  | `account-deletions.jsonl` beside the database | deleted accounts for a restore, 30 days (DEPLOYMENT.md, "Restoring")                 |
+| `LINK_PREVIEWS`                     | `true`                                        | default of both link-preview settings (docs/SETTINGS.md)                             |
+| `CALLS_URL`                         | (unset: Calls off)                            | call service origin, `wss://...` (docs/CALLS.md)                                     |
+| `CALLS_API_KEY`                     | (unset)                                       | call service API key; set with the other two or none                                 |
+| `CALLS_API_SECRET`                  | (unset)                                       | call service API secret; production: no dev pair, 32+ chars                          |
+| `CALLS_RECORDINGS_DIR`              | (unset: recording off)                        | the folder call recordings land in (docs/CALLS.md, "Recording")                      |
+| `CALLS_EGRESS_OUTPUT_DIR`           | the same as `CALLS_RECORDINGS_DIR`            | that folder as the egress service sees it                                            |
+| `BACKUP_DIR`                        | (unset)                                       | where `scripts/backup.mjs` writes backups (DEPLOYMENT.md)                            |
+| `BACKUP_ENCRYPTION`                 | `on`                                          | encrypt backups with age (`off`: plain folders)                                      |
+| `BACKUP_RECIPIENT`                  | (unset; required while encryption is on)      | the owner's age public key (`age1…`) the backups are for                             |
+| `PRICE_BOT_DB`                      | (unset: prices off)                           | the price bot's `snapshots.db`, read-only (docs/BOTS.md)                             |
+| `EVENT_BOT_DB`                      | (unset: bot events off)                       | the event bot's database, read-only (docs/BOTS.md)                                   |
+| `PRICE_BOT_MINING_RATES`            | (unset: no fair price, no mining times)       | the price bot's `mining_rates.json`, read-only (docs/BOTS.md)                        |
+| `COINGECKO_API_KEY`                 | (unset: ETH, POL, BTC not connected)          | CoinGecko Demo key: the server fetches ETH/POL/BTC history (docs/BOTS.md)            |
+| `BOT_ADMIN_EMBEDDED`                | (unset: off; `1` on)                          | embeds the event bot's admin page at `/bot-admin/` (docs/BOTS.md)                    |
+| `GAMES_EMBEDDED`                    | (unset: none)                                 | the embedded games, slugs `bingo`, `mini-games`, `race`, `cases` (docs/AUTH.md)      |
+| `GAMES_BINGO_EMBEDDED`              | (unset: off; `1` on)                          | also puts `bingo` in that list (installs from before it)                             |
+| `GAMES_SYNC_TOKEN`                  | (unset: the feed refuses everyone)            | the embedded games' token for their account-changes feed                             |
+| `VAPID_PUBLIC_KEY`                  | (unset: no web push)                          | with `VAPID_PRIVATE_KEY`: the web push key pair (docs/CALLS.md)                      |
+| `VAPID_PRIVATE_KEY`                 | (unset: no web push)                          | made once by the installer, never printed (docs/DEPLOYMENT.md)                       |
+| `DISCORD_CLIENT_ID`                 | (unset: Discord login off)                    | the Discord application's client id (docs/AUTH.md, "Discord")                        |
+| `DISCORD_GUILD_ID`                  | (unset: Discord login off)                    | the Seasonal Tokens Discord server whose roles are read                              |
+| `DISCORD_CLIENT_SECRET`             | (unset: Discord login off)                    | the application's client secret (or the file below)                                  |
+| `DISCORD_CLIENT_SECRET_FILE`        | (unset)                                       | a file holding the client secret (the installer's way)                               |
+| `DISCORD_REDIRECT_URI`              | `PUBLIC_ORIGIN/api/auth/discord/callback`     | the callback registered at Discord, exactly                                          |
 
 Four of these are only the start of a site setting since 2026-10-23 (`CHAT_RETENTION_DAYS`,
 `CHAT_MAX_CONNECTIONS_PER_MEMBER`, `CHAT_MAX_GUEST_CONNECTIONS_PER_IP`, `LINK_PREVIEWS`): an
@@ -568,7 +569,8 @@ server/
                            chatSocket.js: a listening server and WebSocket clients)
   src/config.js            environment configuration
   src/productionConfig.js  what production refuses to start with (docs/DEPLOYMENT.md)
-  src/secretKey.js         the key that encrypts 2FA secrets at rest (SECRET_ENCRYPTION_KEY)
+  src/secretKey.js         the two 2FA keys: SECRET_ENCRYPTION_KEY (2FA secrets at rest) and
+                           RECOVERY_CODE_KEY (the recovery codes' hashes)
   src/calls/               community calls (docs/CALLS.md): call service configuration, the
                            call service adapter, schema, store, participants, grants and join
                            tokens, spotlight rule, routes (management, join, stage, spotlight,

@@ -21,7 +21,13 @@ import { DEV_SECRET_KEY, readSecretKey } from '../src/secretKey.js';
 import { sealSecret, sealStoredSecrets } from '../src/twofa/secretBox.js';
 import { codeForStep, stepAt } from '../src/twofa/totp.js';
 import { logIn, proof } from './helpers/accountKeys.js';
-import { ORIGIN, TEST_SECRET_KEY, makeTestApp, registerUser } from './helpers/testApp.js';
+import {
+  ORIGIN,
+  TEST_RECOVERY_CODE_KEY,
+  TEST_SECRET_KEY,
+  makeTestApp,
+  registerUser,
+} from './helpers/testApp.js';
 
 let t;
 afterEach(() => {
@@ -159,6 +165,7 @@ describe('SECRET_ENCRYPTION_KEY', () => {
     SESSION_SECRET: 's'.repeat(32),
     TRUST_PROXY: '1',
     PUBLIC_ORIGIN: 'https://se.example',
+    RECOVERY_CODE_KEY: TEST_RECOVERY_CODE_KEY,
   };
 
   it('is required in production and must not be the development key', () => {

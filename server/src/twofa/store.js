@@ -4,20 +4,27 @@
 // Project:     Seasonal Entertainment
 // Description: Data access for two-factor authentication: pending/enabled TOTP secrets
 //              (stored encrypted, secretBox.js; this module gets and gives them sealed), the
-//              replay guard, recovery codes (stored as SHA-256 hashes, each usable once), and
-//              the check of a second factor during login or disabling.
+//              replay guard, recovery codes (stored as keyed hashes, each usable once; codes
+//              issued before 2026-11-22 as plain SHA-256), and the check of a second factor
+//              during login or disabling.
 // ============================================================
 
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { openSecret } from './secretBox.js';
 import { base32Encode, matchStep } from './totp.js';
 
 const RECOVERY_CODE_COUNT = 10;
 const now = () => new Date().toISOString();
 
-// Recovery codes are random (40 bits each), so a fast hash is enough; shown as "abcd-efgh".
-const normalise = (code) => String(code).replace(/[\s-]/g, '').toLowerCase();
-const hashCode = (code) => createHash('sha256').update(normalise(code)).digest('hex');
+// Recovery codes are random (40 bits each), shown as "abcd-efgh" and hashed in a cleaned form
+// (spaces and dashes out, lower case). The scheme and its names are seasonal-kit's
+// (src/server/recoveryCodes.ts, its "hex" style; decided 2026-11-22): new codes are stored as
+// recoveryHash, HMAC-SHA-256 under RECOVERY_CODE_KEY, so a stolen database alone gives nothing
+// to brute-force; codes issued before stay legacyHash, plain SHA-256, and keep working once
+// each without an end date (decided 2026-11-22). The row's scheme column says which.
+const formOf = (code) => String(code).replace(/[\s-]/g, '').toLowerCase();
+const recoveryHash = (code, key) => createHmac('sha256', key).update(formOf(code)).digest();
+const legacyHash = (code) => createHash('sha256').update(formOf(code)).digest();
 
 export function getTwoFactor(db, userId) {
   const row = db
@@ -40,8 +47,9 @@ export function savePendingSecret(db, userId, sealedSecret) {
   ).run(userId, sealedSecret);
 }
 
-// Enables 2FA and issues fresh recovery codes (returned in plain text, this one time only).
-export function enableTwoFactor(db, userId, step) {
+// Enables 2FA and issues fresh recovery codes (returned in plain text, this one time only),
+// stored keyed with recoveryCodeKey (RECOVERY_CODE_KEY's bytes).
+export function enableTwoFactor(db, recoveryCodeKey, userId, step) {
   const codes = Array.from({ length: RECOVERY_CODE_COUNT }, () => {
     const raw = base32Encode(randomBytes(5)).toLowerCase();
     return `${raw.slice(0, 4)}-${raw.slice(4)}`;
@@ -53,8 +61,12 @@ export function enableTwoFactor(db, userId, step) {
       userId
     );
     db.prepare('DELETE FROM recovery_codes WHERE user_id = ?').run(userId);
-    const insert = db.prepare('INSERT INTO recovery_codes (user_id, code_hash) VALUES (?, ?)');
-    for (const code of codes) insert.run(userId, hashCode(code));
+    const insert = db.prepare(
+      "INSERT INTO recovery_codes (user_id, code_hash, scheme) VALUES (?, ?, 'hmac')"
+    );
+    for (const code of codes) {
+      insert.run(userId, recoveryHash(code, recoveryCodeKey).toString('hex'));
+    }
   })();
   return codes;
 }
@@ -66,13 +78,37 @@ export function disableTwoFactor(db, userId) {
   })();
 }
 
-// Checks a TOTP code or a recovery code for an enabled account. Accepting marks it used in
-// the same statement (step moves forward / code gets used_at), so it cannot be used twice.
-// key: SECRET_ENCRYPTION_KEY's bytes; a secret that does not open with it accepts no code.
-// Recovery codes are hashed, not encrypted: they work whatever the key.
+// Marks the account's unused recovery code that matches `code` used. Every unused code is
+// compared, in constant time, against the typed code's hash in that row's scheme; the update
+// takes a code only while it is unused, so two requests at once cannot both use it.
+function useRecoveryCode(db, recoveryCodeKey, userId, code) {
+  const typed = { hmac: recoveryHash(code, recoveryCodeKey), legacy: legacyHash(code) };
+  const rows = db
+    .prepare(
+      'SELECT id, code_hash, scheme FROM recovery_codes WHERE user_id = ? AND used_at IS NULL'
+    )
+    .all(userId);
+  // filter, not find: every row is compared, whichever one matches.
+  const [match] = rows.filter(({ code_hash: hash, scheme }) => {
+    const stored = Buffer.from(hash, 'hex');
+    return stored.length === typed[scheme].length && timingSafeEqual(stored, typed[scheme]);
+  });
+  if (!match) return false;
+  const { changes } = db
+    .prepare('UPDATE recovery_codes SET used_at = ? WHERE id = ? AND used_at IS NULL')
+    .run(now(), match.id);
+  return changes === 1;
+}
+
+// Checks a TOTP code or a recovery code for an enabled account. Accepting marks it used at once
+// (step moves forward / code gets used_at), so it cannot be used twice.
+// keys: the config's secretKey (SECRET_ENCRYPTION_KEY's bytes; a secret that does not open with
+// it accepts no code) and recoveryCodeKey (RECOVERY_CODE_KEY's bytes). Recovery codes are
+// hashed, not encrypted: they work whatever SECRET_ENCRYPTION_KEY is, but a code issued since
+// 2026-11-22 only under the RECOVERY_CODE_KEY it was stored with.
 export async function acceptSecondFactor(
   db,
-  key,
+  { secretKey, recoveryCodeKey },
   userId,
   { code, recoveryCode },
   timeMs = Date.now()
@@ -80,7 +116,7 @@ export async function acceptSecondFactor(
   const factor = getTwoFactor(db, userId);
   if (!factor?.enabled) return false;
   if (code) {
-    const secret = await openSecret(factor.secret, key, userId);
+    const secret = await openSecret(factor.secret, secretKey, userId);
     if (secret === null) return false;
     const step = matchStep(secret, code, timeMs);
     if (step === null) return false;
@@ -89,13 +125,6 @@ export async function acceptSecondFactor(
       .run(step, userId, step);
     return changes === 1;
   }
-  if (recoveryCode) {
-    const { changes } = db
-      .prepare(
-        'UPDATE recovery_codes SET used_at = ? WHERE user_id = ? AND code_hash = ? AND used_at IS NULL'
-      )
-      .run(now(), userId, hashCode(recoveryCode));
-    return changes === 1;
-  }
+  if (recoveryCode) return useRecoveryCode(db, recoveryCodeKey, userId, recoveryCode);
   return false;
 }

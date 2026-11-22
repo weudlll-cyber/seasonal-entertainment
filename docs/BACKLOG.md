@@ -39,13 +39,6 @@ entry waits for.
 
 ### Proposals not decided
 
-- **Recovery codes keyed like the kit's** — the site stores its 2FA recovery codes as plain
-  SHA-256 hashes (`server/src/twofa/store.js`); the game kit (`seasonal-kit`, its
-  DECISIONS K20) stores its games' codes as an HMAC-SHA-256 keyed with `RECOVERY_CODE_KEY`,
-  the old hashes still accepted. Doing the same here needs its own key in `site.env` and the
-  installer, a production check like `SECRET_ENCRYPTION_KEY`'s, and the AUTH.md text the kit
-  wrote for it (its docs/NIGHT-2026-11-22.md, A5). Noted 2026-11-22; not decided.
-
 - **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
   login is not planned, decided 2026-11-02).
 - **Race-game connection** — the website's part is done (PR #64, 2026-11-11: the slug `race`,
@@ -109,6 +102,14 @@ entry waits for.
   restore runs in the Linux container and is not affected; listed only.
 
 ## PART TWO — closed
+
+- **Recovery codes keyed like the kit's** — closed by `fix/recovery-code-hmac` (decided
+  2026-11-22): new 2FA recovery codes are stored as HMAC-SHA-256 under `RECOVERY_CODE_KEY`,
+  the scheme of `seasonal-kit`'s `recoveryCodes.ts`; codes stored before as plain SHA-256 stay
+  valid once each without an end date, each row marked with its scheme. Production refuses to
+  start without the key; the installer makes it on install and on `--update` when missing,
+  keeps an existing one, never prints it and keeps a root-only copy for the KEEP SAFE note
+  (docs/AUTH.md, "Two-factor authentication"; docs/DEPLOYMENT.md).
 
 - **The call view's unit test "a full call says error" could fail** — closed by PR #82
   (`fix/embed-call-error-wait`, 2026-11-22): the test waits for the `error` message, which goes

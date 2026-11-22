@@ -21,6 +21,10 @@ import { registration } from './accountKeys.js';
 export const ORIGIN = 'http://se.test';
 // The tests' SECRET_ENCRYPTION_KEY (32 bytes as base64), so no development-key warning.
 export const TEST_SECRET_KEY = Buffer.from('a-test-key-for-2fa-secrets-32-by').toString('base64');
+// The tests' RECOVERY_CODE_KEY, likewise (32 bytes as base64).
+export const TEST_RECOVERY_CODE_KEY = Buffer.from('a-test-key-for-recovery-codes-32').toString(
+  'base64'
+);
 const ROOMY = { windowMs: 60_000, max: 1000 };
 // Tests never reach the real internet: without a pretend one, every lookup fails.
 const OFFLINE = {
@@ -45,6 +49,7 @@ export function makeTestApp(
     SESSION_SECRET: 'test-secret',
     BCRYPT_COST: '4',
     SECRET_ENCRYPTION_KEY: TEST_SECRET_KEY,
+    RECOVERY_CODE_KEY: TEST_RECOVERY_CODE_KEY,
   });
   const config = {
     ...base,

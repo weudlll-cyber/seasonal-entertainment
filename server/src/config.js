@@ -115,6 +115,9 @@ export function readConfig(env = process.env) {
     sessionSecret: readSessionSecret(env, isProduction),
     // Encrypts 2FA secrets at rest (secretKey.js, twofa/secretBox.js).
     secretKey: readSecretKey(env.SECRET_ENCRYPTION_KEY, isProduction),
+    // Keys the hashes of new 2FA recovery codes (twofa/store.js; decided 2026-11-22). Its own
+    // key, never the one above: losing that one leaves the recovery codes as the way back in.
+    recoveryCodeKey: readSecretKey(env.RECOVERY_CODE_KEY, isProduction, 'RECOVERY_CODE_KEY'),
     cookieSecure: readBool(env, 'COOKIE_SECURE', isProduction),
     // Strict: a state-changing request without Origin/Referer is refused. Stricter than the
     // race game (strict there only in production); curl users send an Origin header.

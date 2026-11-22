@@ -127,14 +127,14 @@ case "$check" in
     pass "the first admin exists and BOOTSTRAP_TOKEN is gone"
     ;;
   modes)
-    for file in "$SITE_DIR/site.env" "$SITE_DIR/.env" /etc/seasonal/secret-encryption-key "$@"; do
+    for file in "$SITE_DIR/site.env" "$SITE_DIR/.env" /etc/seasonal/secret-encryption-key /etc/seasonal/recovery-code-key "$@"; do
       [[ "$(stat -c %a "$file")" == 600 ]] || fail modes "$file is mode $(stat -c %a "$file")"
     done
     pass "secret files are mode 600"
     ;;
   secrets-hash)
     # One hash over the secret values: equal before and after a re-run means they were kept.
-    grep -E '^(SESSION_SECRET|SECRET_ENCRYPTION_KEY|CALLS_API_SECRET)=' "$SITE_DIR/site.env" | sort | sha256sum | cut -c1-16
+    grep -E '^(SESSION_SECRET|SECRET_ENCRYPTION_KEY|RECOVERY_CODE_KEY|CALLS_API_SECRET)=' "$SITE_DIR/site.env" | sort | sha256sum | cut -c1-16
     ;;
   backup)
     newest="$(find /var/backups/seasonal -name '*.tar.age' -printf '%T@ %p\n' | sort -n | tail -n 1 | cut -d' ' -f2)"

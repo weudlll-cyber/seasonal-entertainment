@@ -16,7 +16,13 @@ import { allow } from '../src/http/access.js';
 import { twoFactorGate } from '../src/twofa/gate.js';
 import { codeForStep, stepAt } from '../src/twofa/totp.js';
 import { logIn, proof } from './helpers/accountKeys.js';
-import { TEST_SECRET_KEY, makeTestApp, registerUser, setRole } from './helpers/testApp.js';
+import {
+  TEST_RECOVERY_CODE_KEY,
+  TEST_SECRET_KEY,
+  makeTestApp,
+  registerUser,
+  setRole,
+} from './helpers/testApp.js';
 
 let t;
 afterEach(() => t?.close());
@@ -187,6 +193,7 @@ describe('staff requirement', () => {
         NODE_ENV: 'production',
         SESSION_SECRET: 's'.repeat(32),
         SECRET_ENCRYPTION_KEY: TEST_SECRET_KEY,
+        RECOVERY_CODE_KEY: TEST_RECOVERY_CODE_KEY,
         REQUIRE_STAFF_2FA: 'false',
       })
     ).toThrow(/not allowed in production/);

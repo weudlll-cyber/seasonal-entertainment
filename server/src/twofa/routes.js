@@ -9,7 +9,8 @@
 //              still meet a limit). Turning 2FA
 //              on or off ends every other session of the account (session epoch) and closes its
 //              other chat sockets. beginSecondFactor() is called by the password login. The
-//              secret is stored encrypted (secretBox.js) under SECRET_ENCRYPTION_KEY.
+//              secret is stored encrypted (secretBox.js) under SECRET_ENCRYPTION_KEY, the
+//              recovery codes keyed with RECOVERY_CODE_KEY (store.js).
 // ============================================================
 
 import express from 'express';
@@ -102,7 +103,7 @@ export function twoFactorRoutes(db, config, chatSessions) {
     const step =
       secret === null ? null : matchStep(secret, secondFactor(req.body).code, Date.now());
     if (step === null) return sendError(res, 400, 'invalid_code', 'That code is not valid.');
-    const recoveryCodes = enableTwoFactor(db, req.user.id, step);
+    const recoveryCodes = enableTwoFactor(db, config.recoveryCodeKey, req.user.id, step);
     await endOtherSessions(req);
     res.json({ ok: true, recoveryCodes });
   });
@@ -112,7 +113,7 @@ export function twoFactorRoutes(db, config, chatSessions) {
     if (!input) return;
     const passwordOk = await passwordMatches(req, input.authKey);
     const factor = secondFactor(req.body);
-    if (!passwordOk || !(await acceptSecondFactor(db, config.secretKey, req.user.id, factor))) {
+    if (!passwordOk || !(await acceptSecondFactor(db, config, req.user.id, factor))) {
       return sendError(res, 401, 'invalid_credentials', 'Password or code is wrong.');
     }
     disableTwoFactor(db, req.user.id);
@@ -134,7 +135,7 @@ export function twoFactorRoutes(db, config, chatSessions) {
         return sendError(res, 401, 'login_expired', 'Please log in again.');
       }
       const accepted =
-        user && (await acceptSecondFactor(db, config.secretKey, user.id, secondFactor(req.body)));
+        user && (await acceptSecondFactor(db, config, user.id, secondFactor(req.body)));
       if (!user || user.locked || !accepted) {
         return sendError(res, 401, 'invalid_code', 'That code is not valid.');
       }

@@ -14,12 +14,14 @@
 #              it also decrypts an encrypted backup with the real age tool, runs the PC-side
 #              tests (deploy/pc/: PowerShell for Windows, POSIX sh for Linux and macOS), the
 #              installer's token, Discord, update-copy, backup-listing, hardening,
-#              embedded-games, web push key and outage e-mail tests, the outage watchdog with a
+#              embedded-games, web push key, 2FA recovery key and outage e-mail tests, the
+#              outage watchdog with a
 #              stand-in mail server, and the call load test's plan
 #              (deploy/test/bot-admin-token.test.sh, deploy/test/discord.test.sh,
 #              deploy/test/update-copy.test.sh, deploy/test/backup-listing.test.sh,
 #              deploy/test/server-hardening.test.sh, deploy/test/games.test.sh,
-#              deploy/test/push.test.sh, deploy/test/outage.test.sh, deploy/test/watchdog.test.sh,
+#              deploy/test/push.test.sh, deploy/test/recovery-key.test.sh,
+#              deploy/test/outage.test.sh, deploy/test/watchdog.test.sh,
 #              deploy/test/loadtest.test.sh) and shellcheck over the installer, its tests, the
 #              watchdog, the load test and the PC-side shell scripts (deploy/install.sh,
 #              deploy/install/, deploy/test/, deploy/site/watchdog/, deploy/calls/loadtest.sh,
@@ -103,6 +105,7 @@ jobs:
           docker run -d --name site -p 127.0.0.1:3800:3800 \
             -e SESSION_SECRET="$(openssl rand -hex 32)" -e TRUST_PROXY=1 \
             -e SECRET_ENCRYPTION_KEY="$(openssl rand -base64 32)" \
+            -e RECOVERY_CODE_KEY="$(openssl rand -base64 32)" \
             -e PUBLIC_ORIGIN=https://site.example seasonal-site:ci
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:3800/api/health && exit 0; sleep 1; done
           docker logs site
@@ -151,6 +154,9 @@ jobs:
 
       - name: The installer makes the web push keys once and keeps them (never shown)
         run: bash deploy/test/push.test.sh
+
+      - name: The installer makes the 2FA recovery key once and keeps it (never shown)
+        run: bash deploy/test/recovery-key.test.sh
 
       - name: The installer's outage e-mails (questions, the root-only account, kept, the timer)
         run: bash deploy/test/outage.test.sh
@@ -214,8 +220,8 @@ jobs:
           deploy/test/checks-bot-admin.sh deploy/test/bot-admin-token.test.sh
           deploy/test/discord.test.sh deploy/test/update-copy.test.sh
           deploy/test/backup-listing.test.sh deploy/test/server-hardening.test.sh deploy/test/games.test.sh
-          deploy/test/push.test.sh deploy/test/outage.test.sh deploy/test/watchdog.test.sh
-          deploy/site/watchdog/seasonal-watchdog.sh
+          deploy/test/push.test.sh deploy/test/recovery-key.test.sh deploy/test/outage.test.sh
+          deploy/test/watchdog.test.sh deploy/site/watchdog/seasonal-watchdog.sh
           deploy/calls/loadtest.sh deploy/test/loadtest.test.sh deploy/test/executable.test.sh
           deploy/test/renovate.test.sh
           deploy/test/prepare-nginx.sh deploy/test/prepare-ufw.sh
