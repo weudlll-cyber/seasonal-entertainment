@@ -236,9 +236,11 @@ Three separate steps, not one switch (details in
 3. **Create the catalogue card** in Admin → Games (path `/games/<slug>`, no trailing slash).
    Card visibility and maintenance status are presentation, not route authorization.
 
-Optional: the [open-rounds contract](OPEN-ROUNDS.md), its HTTPS status URL in the card's
-"Sign-up status URL". Current: Bingo provides `/games/bingo/api/public/open-rounds`, and Cases
-`/games/cases/api/public/open-rounds` (version 1); Mini Games does not expose it.
+Optional: the [open-rounds contract](OPEN-ROUNDS.md) at `/games/<slug>/api/public/open-rounds`.
+The site reads that path by itself for a switched-on embedded game whose card leaves "Sign-up
+status URL" empty; an entered URL still wins (decided 2026-11-21). Current (checked 2026-11-22):
+Bingo serves it on `master`; Mini Games on its branch `feat/open-rounds`, and Cases on its
+branch `proto/cases-v1`, neither merged yet (version 1).
 
 ### Season feed
 

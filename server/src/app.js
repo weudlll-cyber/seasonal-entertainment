@@ -193,6 +193,8 @@ export function createApp({
   const openRounds = createOpenRounds(db, {
     download: chat.images.download,
     network: gameStatusNetwork,
+    siteOrigin: config.publicOrigin,
+    embedded: config.games.embedded,
   });
   api.use('/games', gameRoutes(db, openRounds));
   api.use('/admin/games', adminGameRoutes(db, openRounds));

@@ -4,7 +4,7 @@
 // Project:     Seasonal Entertainment
 // Description: Form for one game card: name, description, image, status, path, visibility,
 //              and the optional sign-up status URL (https; where the game lists its open
-//              sign-ups, docs/OPEN-ROUNDS.md).
+//              sign-ups, docs/OPEN-ROUNDS.md; left empty, an embedded game's own path is read).
 // ============================================================
 
 import { useState } from 'react';
@@ -94,7 +94,7 @@ export default function GameForm({ initial, onSave, onCancel, error }) {
         type="url"
         value={game.statusUrl ?? ''}
         onChange={(e) => set('statusUrl')(e.target.value)}
-        hint="Where the game lists its open sign-ups (https://…); the site shows them on the home page and the games page."
+        hint="Where the game lists its open sign-ups (https://…); the site shows them on the home page and the games page. Leave it empty for a game running inside this site: its /games/<name>/api/public/open-rounds is read by itself."
       />
       <FormMessage error={error} />
       <div className="admin-row-actions">

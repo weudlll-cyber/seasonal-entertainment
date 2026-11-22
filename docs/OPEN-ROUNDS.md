@@ -40,7 +40,21 @@ shows what the game lists. The bingo repository holds the same contract (decided
 - **Where**: Admin → Games, the optional field "Sign-up status URL" per game (https only, at most
   300 characters, no credentials in it; audited like the other game fields, docs/SETTINGS.md). It
   never leaves the admin pages: the public games listing does not carry it.
-- **When**: every 60 seconds for every game with a status URL (every game is visible to someone;
+- **Derived for the embedded games** (decided 2026-11-21): a card whose path is `/games/<slug>`
+  of a switched-on embedded game (`GAMES_EMBEDDED`, `server/src/games/embedded.js`) and whose
+  field is empty is read at `<PUBLIC_ORIGIN>/games/<slug>/api/public/open-rounds`, the path every
+  embedded game serves (`statusUrlOf`, `server/src/games/openRounds.js`). An entered URL still
+  wins. A switched-off game and a card that is no embedded game are not read; a switched-on
+  game that does not answer yet (for example the race) is shown without rounds and logged once,
+  not on every poll. The same guard reads it: the site's own domain resolves to a public address
+  in production. Without an `https://` `PUBLIC_ORIGIN` (development) nothing is derived; locally
+  the fake host below is entered by hand, and the tests give the poller a pretend site origin.
+- **Checked on 2026-11-22 (read-only)** that the games serve that path: Bingo at
+  `/games/bingo/api/public/open-rounds` (`master`, `a43209a`); Mini Games at
+  `/games/mini-games/api/public/open-rounds` (its branch `feat/open-rounds`, `3648a15`, not yet
+  merged); Cases at `/games/cases/api/public/open-rounds` only on its branch `proto/cases-v1`
+  (`b88b11b`), not on its `master` (`2bf720c`); the race not checked (no repository here).
+- **When**: every 60 seconds for every game with a status URL, entered or derived (every game is visible to someone;
   the rounds travel only with the cards a viewer may see), and at once after an admin saves a game
   (`server/src/games/openRounds.js`; on while the server's background jobs are).
 - **How**: through the link previews' guarded fetch (`server/src/previews/safeFetch.js`: https on
@@ -59,7 +73,8 @@ shows what the game lists. The bingo repository holds the same contract (decided
 - **Tests**: `server/test/openRounds.test.js` (a pretend internet: valid, invalid fields, too
   large, too slow, not the contract, a redirect, a foreign joinUrl, a host that does not
   resolve failing for its own game alone, stale after 3 minutes, the log, the API and the admin
-  field) and `client/e2e/openRounds.spec.js` (a real browser: the fake host below, the box
+  field; the derived URL, the entered one winning, a switched-off game and a card that is no
+  embedded game not read, a game that does not answer logged once) and `client/e2e/openRounds.spec.js` (a real browser: the fake host below, the box
   leading with the open sign-up and moving on after 8 seconds, again after a mouse click on
   "Next game" once the pointer left, held by keyboard focus, the games page's badge);
   `client/e2e/layout.spec.js` fits the home page with the tallest box.

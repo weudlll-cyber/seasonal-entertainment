@@ -98,6 +98,11 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **Derived sign-up status URLs** — closed by `night/2026-11-22`, piece 1 (decided
+  2026-11-21): a switched-on embedded game whose card has no "Sign-up status URL" is read at
+  `/games/<slug>/api/public/open-rounds` on the site's own origin; an entered URL still wins
+  (docs/OPEN-ROUNDS.md).
+
 - **The season feed for the games** — closed by `night/2026-11-22`, piece 1 (decided
   2026-11-21): `GET /api/public/season`, public and cacheable for 60 seconds, gives the token
   in season, since when it leads and the halving days from 30 days ago to two years ahead, all

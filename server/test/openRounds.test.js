@@ -11,7 +11,11 @@
 //              counts until it is 3 minutes old; a failing game is logged once per change,
 //              never with the body. Through the API: GET /api/games carries each game's open
 //              rounds to everyone and never the status URL; Admin → Games takes an https status
-//              URL only, audits it, and reads it at once.
+//              URL only, audits it, and reads it at once. Derived URLs (decided 2026-11-21): a
+//              switched-on embedded game without an entered URL is read at
+//              <PUBLIC_ORIGIN>/games/<slug>/api/public/open-rounds; an entered URL wins; a
+//              switched-off game and a card that is no embedded game are not read; one that does
+//              not answer is logged once, not on every poll.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -218,5 +222,92 @@ describe('through the API', () => {
     await expect
       .poll(async () => (await t.client().get('/api/games')).body.games[0].openRounds)
       .toEqual([]);
+  });
+});
+
+describe('derived status URLs', () => {
+  const SITE = 'https://site.test';
+  const derived = (slug) => `site.test/games/${slug}/api/public/open-rounds`;
+
+  // The site itself answers Bingo's and Cases' derived paths; the race is switched on but
+  // serves nothing (404); Cases is switched off; "Lobby" is no embedded game.
+  async function derivedSetup({ embedded, siteOrigin = SITE }) {
+    const asked = [];
+    const answer = (body) => (req, res) => {
+      asked.push(req.url);
+      json(body)(req, res);
+    };
+    internet = await previewInternet(
+      {
+        [derived('bingo')]: answer({
+          version: 1,
+          rounds: [{ ...ROUND, joinUrl: `${SITE}/games/bingo/r1` }],
+        }),
+        [derived('cases')]: answer({ version: 1, rounds: [] }),
+        [derived('lobby')]: answer({ version: 1, rounds: [] }),
+        'bingo.test/api/open-rounds': answer({ version: 1, rounds: [ROUND] }),
+      },
+      { 'site.test': [PUBLIC_IP], 'bingo.test': [PUBLIC_IP] }
+    );
+    t = makeTestApp();
+    const insert = t.db.prepare(
+      `INSERT INTO games (name, image, status, path, visibility, status_url)
+       VALUES (?, 'winter', 'available', ?, 'everyone', ?)`
+    );
+    const id = (name, path, url = null) => Number(insert.run(name, path, url).lastInsertRowid);
+    const games = {
+      bingo: id('Bingo', '/games/bingo'),
+      race: id('Race', '/games/race'),
+      cases: id('Cases', '/games/cases'),
+      lobby: id('Lobby', '/games/lobby'),
+    };
+    const logged = [];
+    const rounds = createOpenRounds(t.db, {
+      download: t.app.locals.chat.images.download,
+      network: internet.network,
+      log: (line) => logged.push(line),
+      siteOrigin,
+      embedded,
+    });
+    return { rounds, games, logged, asked };
+  }
+
+  it('reads a switched-on game without a URL at its own path on the site', async () => {
+    const { rounds, games, asked } = await derivedSetup({ embedded: ['bingo', 'race'] });
+    await rounds.pollAll();
+    expect(rounds.roundsFor(games.bingo).map((r) => r.id)).toEqual(['r1']);
+    // Cases is switched off and "Lobby" is no embedded game: neither is asked.
+    expect(asked).toEqual(['/games/bingo/api/public/open-rounds']);
+  });
+
+  it('an entered URL still wins over the derived one', async () => {
+    const { rounds, games, asked } = await derivedSetup({ embedded: ['bingo'] });
+    t.db.prepare('UPDATE games SET status_url = ? WHERE id = ?').run(STATUS, games.bingo);
+    await rounds.pollAll();
+    expect(asked).toEqual(['/api/open-rounds']);
+    expect(rounds.roundsFor(games.bingo)).toEqual([ROUND]);
+    // And an admin's save reads the entered one too (adminRoutes.js: refresh).
+    await rounds.refresh({ id: games.bingo, path: '/games/bingo', statusUrl: STATUS });
+    expect(asked).toEqual(['/api/open-rounds', '/api/open-rounds']);
+  });
+
+  it('a switched-on game that does not answer: no rounds, logged once, not per poll', async () => {
+    const { rounds, games, logged } = await derivedSetup({ embedded: ['race'] });
+    await rounds.pollAll();
+    await rounds.pollAll();
+    await rounds.pollAll();
+    expect(rounds.roundsFor(games.race)).toEqual([]);
+    // The 404 has no JSON content type: the guarded fetch refuses it as such.
+    expect(logged).toHaveLength(1);
+    expect(logged[0]).toContain(`[games] the sign-up status of game ${games.race} failed: `);
+  });
+
+  it('without a public https origin (development) nothing is derived', async () => {
+    const { rounds, asked } = await derivedSetup({
+      embedded: ['bingo'],
+      siteOrigin: 'http://localhost:5380',
+    });
+    await rounds.pollAll();
+    expect(asked).toEqual([]);
   });
 });
