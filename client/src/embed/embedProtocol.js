@@ -11,6 +11,8 @@
 //              are ignored. Nothing secret ever goes to the host: no token, no key, no message
 //              text. Embed -> host: ready, unread, resize. Host -> embed: visible, theme.
 //              The login popup's message (LOGIN_SOURCE) goes popup -> embed, same origin only.
+//              The call view inside a game (EmbedCallPage.jsx) talks the same way under its own
+//              sources (callView.js: seasonal-call, seasonal-call-host).
 // ============================================================
 
 import { api } from '../api/http.js';
@@ -48,22 +50,24 @@ export async function verifyHost(origin) {
   return origin;
 }
 
-// host: the verified origin (null: say nothing at all).
-export function toHost(host, type, data = {}) {
-  if (host && framed()) window.parent.postMessage({ source: EMBED_SOURCE, type, ...data }, host);
+// host: the verified origin (null: say nothing at all); source: who speaks (the chat's by
+// default).
+export function toHost(host, type, data = {}, source = EMBED_SOURCE) {
+  if (host && framed()) window.parent.postMessage({ source, type, ...data }, host);
 }
 
-const fromHost = (host, event) =>
+const fromHost = (host, event, hostSource) =>
   Boolean(host) &&
   framed() &&
   event.origin === host &&
   event.source === window.parent &&
-  event.data?.source === HOST_SOURCE;
+  event.data?.source === hostSource;
 
-// Calls onMessage(data) for each host message; returns the function that stops listening.
-export function onHostMessage(host, onMessage) {
+// Calls onMessage(data) for each host message that carries hostSource (the chat host's by
+// default); returns the function that stops listening.
+export function onHostMessage(host, onMessage, hostSource = HOST_SOURCE) {
   const listener = (event) => {
-    if (fromHost(host, event)) onMessage(event.data);
+    if (fromHost(host, event, hostSource)) onMessage(event.data);
   };
   window.addEventListener('message', listener);
   return () => window.removeEventListener('message', listener);

@@ -7,7 +7,8 @@
 //              wildcards, paths or this site itself; every change audited. The CSP of /embed/*
 //              lists exactly 'self' and the approved sites, follows a change on the very next
 //              request, and every other page stays unframeable. The public check answers per
-//              origin without revealing the list.
+//              origin without revealing the list. The call view inside a game (/embed/call/<id>)
+//              is framed by this site only, never an approved site, and may capture nothing.
 // ============================================================
 
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -126,6 +127,19 @@ describe('framing', () => {
     for (const url of ['/', '/chat', '/embedded', '/api/health']) {
       expect(await ancestors(url)).toBe("frame-ancestors 'none'");
     }
+  });
+
+  it('the call view inside a game: only this site frames it, never an approved site', async () => {
+    await approveSite(t);
+    expect(await ancestors('/embed/call/7?theme=dark')).toBe("frame-ancestors 'self'");
+    const res = await t.client().get('/embed/call/7');
+    // Listen only: nothing may be captured there, not even by this origin.
+    expect(res.headers['permissions-policy']).toBe('camera=(), microphone=(), display-capture=()');
+    // The chat keeps the approved site, and the site's pages their own permissions.
+    expect(await ancestors('/embed/chat')).toBe(`frame-ancestors 'self' ${SITE}`);
+    expect((await t.client().get('/embed/chat')).headers['permissions-policy']).toBe(
+      'camera=(self), microphone=(self), display-capture=(self)'
+    );
   });
 
   it('the login popup stays reachable from its opener, and cannot be framed', async () => {

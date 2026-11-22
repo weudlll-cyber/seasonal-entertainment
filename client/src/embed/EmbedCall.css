@@ -1,0 +1,199 @@
+/* ============================================================
+   File:        EmbedCall.css
+   Path:        client/src/embed/EmbedCall.css
+   Project:     Seasonal Entertainment
+   Description: The call view inside a game (/embed/call/<id>, EmbedCallView.jsx;
+                docs/GAME-INTEGRATION.md section 9): it fills its frame. The picture is the
+                call page's stage, letterboxed 16:9 on black, without the stage's own chips and
+                full-screen button (its controls sit over it here: top row, the Listen pill in
+                the middle, bottom row; a dark translucent backing keeps text and icons at
+                4.5:1). The collapsed 48 px column and the phone's 48 px strip. Every control is
+                44 px. Tokens only, so both themes work.
+   ============================================================ */
+
+.embed-call {
+  position: relative;
+  box-sizing: border-box;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+.embed-call--refused {
+  display: grid;
+  place-content: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  text-align: center;
+}
+
+.embed-call__button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.embed-call__button:hover {
+  background: var(--color-surface-2);
+}
+
+.embed-call__button[aria-pressed='true'] {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+/* Someone on the stage talks: a ring, as the speaker tiles show it. */
+.embed-call__button--talking {
+  box-shadow: 0 0 0 3px var(--color-accent);
+}
+
+/* The picture: 16:9 inside the frame, letterboxed, the controls over it. */
+.embed-call--picture {
+  display: grid;
+  place-items: center;
+  background: #000;
+}
+
+.embed-call__picture {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  background: var(--color-surface-2);
+}
+
+.embed-call__picture > .stage {
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+}
+
+/* The view's own controls replace the stage's chips and full-screen button. */
+.embed-call__picture .stage__chips,
+.embed-call__picture .stage__fullscreen {
+  display: none;
+}
+
+.embed-call__top,
+.embed-call__bottom {
+  position: absolute;
+  right: 8px;
+  left: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.embed-call__top {
+  top: 8px;
+}
+
+.embed-call__bottom {
+  bottom: 8px;
+  justify-content: flex-end;
+}
+
+.embed-call__top .call-recording-mark {
+  margin: 0;
+}
+
+.embed-call__gap {
+  flex: 1;
+}
+
+.embed-call__middle {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-1);
+  pointer-events: none;
+}
+
+.embed-call__middle > * {
+  pointer-events: auto;
+}
+
+.embed-call__middle p {
+  margin: 0;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 70%);
+  color: #fff;
+}
+
+.embed-call__listen {
+  display: inline-flex;
+  gap: 0.375rem;
+  align-items: center;
+  min-height: 44px;
+}
+
+/* The collapsed column (desktop) and the phone's strip. */
+.embed-call__bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 2px;
+}
+
+.embed-call__bar--column {
+  flex-direction: column;
+}
+
+.embed-call__bar--strip {
+  justify-content: flex-start;
+  padding: 2px 8px;
+}
+
+.embed-call__marks {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.embed-call__bar--column .embed-call__marks {
+  flex-direction: column;
+}
+
+.embed-call__dot {
+  display: inline-grid;
+  color: var(--color-danger);
+}
+
+.embed-call__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.embed-call__hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The recording question fits the small frame: it scrolls instead of overflowing. */
+.embed-call .modal {
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+}

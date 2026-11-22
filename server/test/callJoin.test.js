@@ -6,7 +6,8 @@
 //              role (listener: receive only; organiser: on the stage while it has room), short
 //              lifetime, members by account and guests by their chat identity (never able to
 //              publish), "A listener" for members who hide their online status, refusals
-//              (not live, banned, call full), and raising hands (members only).
+//              (not live, banned, call full), raising hands (members only), and listenOnly (the
+//              call view inside a game): a listener's token for an organiser too.
 // ============================================================
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -83,6 +84,24 @@ describe('join tokens', () => {
     setSetting(t.db, 'calls.maxSpeakers', 1);
     const second = await join(await organiser(t, 'otto'), service, call);
     expect(second.claims.video).toMatchObject(LISTENER_GRANT);
+  });
+
+  it('listenOnly: an organiser gets a listener token and keeps no stage place', async () => {
+    ({ t, service } = callApp());
+    const olga = await organiser(t);
+    const call = await liveCall(olga);
+    const listening = await join(olga, service, call, { listenOnly: true });
+    expect(listening.kind).toBe('host');
+    expect(listening.claims.video).toEqual({
+      ...LISTENER_GRANT,
+      room: listening.claims.video.room,
+    });
+    // Not put on the stage by it: the call page's ordinary join still starts on the stage.
+    const onPage = await join(olga, service, call);
+    expect(onPage.claims.video).toMatchObject({ canPublish: true });
+    // And once on the stage, listenOnly still listens only.
+    const again = await join(olga, service, call, { listenOnly: true });
+    expect(again.claims.video).toMatchObject(LISTENER_GRANT);
   });
 
   it('a member who hides their online status listens as "A listener"', async () => {

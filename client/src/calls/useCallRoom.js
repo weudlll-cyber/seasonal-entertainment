@@ -14,7 +14,9 @@
 //              is being recorded" (consent); a recording that starts during the call shows its
 //              banner once (recordingNotice). How far it is (recordingState: starting until the
 //              egress records, then active) and when its last start failed (recordingFailedAt)
-//              come from the room's metadata too.
+//              come from the room's metadata too. listenOnly (the call view inside a game,
+//              embed/EmbedCallPage.jsx): the server gives a listener's token, organisers too.
+//              errorCode: the server's code of a failed join (call_full, banned, ...).
 // ============================================================
 
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
@@ -60,10 +62,11 @@ const SHARE_OPTIONS = {
 };
 
 // status: 'idle' | 'joining' | 'joined' | 'left' | 'ended' | 'error'.
-export function useCallRoom(callId) {
+export function useCallRoom(callId, { listenOnly = false } = {}) {
   const room = useRef(null);
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
+  const [errorCode, setErrorCode] = useState(null);
   const [notice, setNotice] = useState(null);
   const [kind, setKind] = useState(null);
   // A step waiting for "I understand this call is being recorded": { run } or null.
@@ -84,8 +87,13 @@ export function useCallRoom(callId) {
     const confirmed = agreed === true;
     setStatus('joining');
     setError(null);
+    setErrorCode(null);
+    const body = {
+      ...(confirmed && { recordingConsent: true }),
+      ...(listenOnly && { listenOnly: true }),
+    };
     try {
-      const joined = await post('join', confirmed ? { recordingConsent: true } : undefined);
+      const joined = await post('join', Object.keys(body).length ? body : undefined);
       if (confirmed) consented.current = true;
       const next = new Room({
         adaptiveStream: true,
@@ -121,6 +129,7 @@ export function useCallRoom(callId) {
         return;
       }
       setError(err.message);
+      setErrorCode(err instanceof ApiError ? err.code : null);
       setStatus('error');
     }
   }
@@ -229,6 +238,7 @@ export function useCallRoom(callId) {
   return {
     status,
     error,
+    errorCode,
     notice,
     kind,
     room: current,

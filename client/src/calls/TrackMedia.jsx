@@ -4,7 +4,8 @@
 // Project:     Seasonal Entertainment
 // Description: Showing a call's media: a video element for one camera or screen track, and
 //              the call's sound — every remote microphone and shared-screen sound, each in its
-//              own audio element (one's own is never played back). Plus finding a person's
+//              own audio element (one's own is never played back), silenced on this page alone
+//              while muted (the call view inside a game). Plus finding a person's
 //              LiveKit participant, their tracks by source and a camera's aspect ratio.
 // ============================================================
 
@@ -53,24 +54,29 @@ export function TrackVideo({ track, label, className = '', fit = 'cover' }) {
   );
 }
 
-function AudioTrack({ track }) {
+function AudioTrack({ track, muted }) {
   const element = useRef(null);
   useEffect(() => {
     const node = element.current;
     track.attach(node);
     return () => track.detach(node);
   }, [track]);
+  // The property, not the attribute: React sets the attribute only on the first render.
+  useEffect(() => {
+    element.current.muted = muted;
+  }, [muted]);
   return <audio ref={element} autoPlay />;
 }
 
-export function RoomAudio({ room }) {
+// muted: silences the call's sound here only; the connection stays.
+export function RoomAudio({ room, muted = false }) {
   const tracks = [...room.remoteParticipants.values()]
     .flatMap((p) => [...p.audioTrackPublications.values()])
     .filter((publication) => publication.track);
   return (
     <div hidden>
       {tracks.map((publication) => (
-        <AudioTrack key={publication.trackSid} track={publication.track} />
+        <AudioTrack key={publication.trackSid} track={publication.track} muted={muted} />
       ))}
     </div>
   );
