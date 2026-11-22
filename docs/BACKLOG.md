@@ -55,6 +55,11 @@ entry waits for.
 
 ### Known limits
 
+- **The call view's unit test "a full call says error" can fail on `master`** — it checked the
+  `error` message right after the text appeared, but the message goes out in an effect after
+  that render (CI on the merge of PR #81, 2026-11-22). Fixed on `fix/embed-call-error-wait`,
+  which waits for it as the other message checks do; open until merged.
+
 - **Game results need each game's address** — the site asks each embedded game for a member's
   results at the origin named in `GAMES_LOCAL_ORIGINS` (docs/GAME-INTEGRATION.md, section 7);
   the installer does not set it, and in production the site's container cannot reach
