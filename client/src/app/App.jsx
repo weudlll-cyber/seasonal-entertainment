@@ -4,11 +4,13 @@
 // Project:     Seasonal Entertainment
 // Description: The client's route table inside the session provider. Every page renders
 //              inside Layout, except the embedded chat (/embed/chat, no site shell, for an
-//              iframe) and its login popup (/embed-login; docs/EMBED.md); unknown paths show
+//              iframe), its login popup (/embed-login; docs/EMBED.md) and the call view inside
+//              a game (/embed/call/:id; docs/GAME-INTEGRATION.md section 9); unknown paths show
 //              the 404 page. Heavier pages are loaded on first use (lazyPage: reloads once when
 //              the file is gone after an update). The router itself is supplied by main.jsx (or
 //              a test). Development builds also route the test pages (devPages/), the fake game
-//              of npm run dev:game-status among them.
+//              of npm run dev:game-status and the call view's test game (/games/call-test/)
+//              among them.
 // ============================================================
 
 import { DEV_TEST_GAME } from '@seasonal-entertainment/shared/gameRules.js';
@@ -57,6 +59,7 @@ const RecordingPage = lazyPage(() => import('../pages/RecordingPage.jsx'));
 const StartPage = lazyPage(() => import('../pages/StartPage.jsx'));
 const EmbedChatPage = lazyPage(() => import('../embed/EmbedChatPage.jsx'));
 const EmbedLoginPage = lazyPage(() => import('../embed/EmbedLoginPage.jsx'));
+const EmbedCallPage = lazyPage(() => import('../embed/EmbedCallPage.jsx'));
 const InfoEditorPage = lazyPage(() => import('../admin/InfoEditorPage.jsx'));
 const InfoPage = lazyPage(() => import('../pages/InfoPage.jsx'));
 const ManageEventsPage = lazyPage(() => import('../pages/ManageEventsPage.jsx'));
@@ -72,6 +75,9 @@ const EmbedDemoPage = import.meta.env.DEV
   : null;
 const TestGamePage = import.meta.env.DEV
   ? lazyPage(() => import('../devPages/TestGamePage.jsx'))
+  : null;
+const GameCallTestPage = import.meta.env.DEV
+  ? lazyPage(() => import('../devPages/GameCallTestPage.jsx'))
   : null;
 
 export default function App() {
@@ -97,6 +103,25 @@ export default function App() {
                 </LazyBoundary>
               }
             />
+            <Route
+              path="embed/call/:id"
+              element={
+                <LazyBoundary>
+                  <EmbedCallPage />
+                </LazyBoundary>
+              }
+            />
+            {/* A pretend game, outside the shell as a game is. */}
+            {GameCallTestPage && (
+              <Route
+                path="games/call-test"
+                element={
+                  <LazyBoundary>
+                    <GameCallTestPage />
+                  </LazyBoundary>
+                }
+              />
+            )}
             <Route element={<Layout />}>
               <Route index element={<LandingPage />} />
               <Route path="info" element={<InfoIndexPage />} />

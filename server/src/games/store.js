@@ -3,7 +3,8 @@
 // Path:        server/src/games/store.js
 // Project:     Seasonal Entertainment
 // Description: Data access for the games hub: the cards a viewer may see (never a game's
-//              sign-up status URL: only admins and the poller read it, openRounds.js), all for
+//              sign-up status URL: only admins and the poller read it, openRounds.js; the poller's
+//              list, gameStatusSources, carries every game's path for the derived URLs), all for
 //              admins, create/update/delete.
 // ============================================================
 
@@ -40,11 +41,10 @@ export function findGame(db, id) {
   return db.prepare(`SELECT ${ADMIN_COLUMNS} FROM games WHERE id = ?`).get(id);
 }
 
-// The games whose open sign-ups the poller reads: { id, statusUrl }.
-export function gamesWithStatusUrl(db) {
-  return db
-    .prepare(`SELECT id, status_url AS statusUrl FROM games WHERE status_url IS NOT NULL ${ORDER}`)
-    .all();
+// Every game as the open-rounds poller needs it: { id, path, statusUrl } (openRounds.js decides
+// which to read: an entered URL, or one derived for a switched-on embedded game).
+export function gameStatusSources(db) {
+  return db.prepare(`SELECT id, path, status_url AS statusUrl FROM games ${ORDER}`).all();
 }
 
 function unique(run) {

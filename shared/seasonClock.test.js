@@ -5,7 +5,8 @@
 // Description: Guards the season clock against the known past halvings (Spring June 2022,
 //              Summer March 2023, Autumn December 2023, Winter September 2024, Spring June
 //              2025, Summer March 2026), the contracts' era boundary to the second, the
-//              rewards and the token in season, and the next halving.
+//              rewards and the token in season, the next halving, and since when the token in
+//              season leads (both sides of a halving that changed the leader).
 // ============================================================
 
 import { describe, expect, it } from 'vitest';
@@ -13,6 +14,7 @@ import {
   DURATION_OF_ERA,
   SEASON_CONTRACTS,
   halvingsUntil,
+  inSeasonSince,
   rewardAt,
   rewardEra,
   seasonClock,
@@ -57,5 +59,28 @@ describe('the clock', () => {
     const { next } = seasonClock(at('2026-10-23T00:00:00Z'));
     expect(next.token).toBe('autumn');
     expect(month(next.at)).toBe('2026-12');
+  });
+});
+
+describe('since when the token in season leads', () => {
+  // Summer's halving of 2026-03-05 (70 -> 35) handed the lead to Autumn (60).
+  const summer2026 = halvingsUntil(at('2026-04-01T00:00:00Z')).at(-1);
+
+  it('is the halving that made it the leader, from that second on', () => {
+    expect(summer2026.token).toBe('summer');
+    expect(seasonClock(summer2026.at).inSeason).toBe('autumn');
+    expect(inSeasonSince(summer2026.at)).toBe(summer2026.at);
+    expect(inSeasonSince(at('2026-11-22T00:00:00Z'))).toBe(summer2026.at);
+  });
+
+  it("one second before, it is the earlier leader's halving", () => {
+    expect(seasonClock(summer2026.at - 1).inSeason).toBe('summer');
+    // Spring's halving of 2025-06-05 (84 -> 42) had made Summer (70) the leader.
+    expect(month(inSeasonSince(summer2026.at - 1))).toBe('2025-06');
+  });
+
+  it("before any halving, Spring led from the contracts' creation", () => {
+    const created = Math.max(...SEASON_CONTRACTS.map((c) => c.created));
+    expect(inSeasonSince(at('2022-01-01T00:00:00Z'))).toBe(created);
   });
 });

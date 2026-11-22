@@ -137,8 +137,8 @@ export async function liveCall(agent, title) {
 
 // Joins through the route and "connects" with the token, as a browser would. Returns the
 // response body plus the decoded claims.
-export async function join(agent, service, call) {
-  const res = await agent.post(`/api/calls/${call.id}/join`);
+export async function join(agent, service, call, body = undefined) {
+  const res = await agent.post(`/api/calls/${call.id}/join`).send(body);
   if (res.status !== 200) return res;
   const claims = await claimsOf(res.body.token);
   service.connected.set(res.body.identity, {

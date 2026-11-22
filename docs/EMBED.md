@@ -10,6 +10,10 @@ The chat can be placed as an iframe of `/embed/chat` on:
 - **other sites an admin has approved** (owner decision 2026-10-19), with direct messages
   working there too. Built in the SE-NIGHT-2 follow-up, part A.
 
+The call view inside a game, `/embed/call/<id>`, is a separate embed with its own rules (only
+this site's games frame it, listen only, its own `seasonal-call` messages): its contract is
+[GAME-INTEGRATION.md, section 9](GAME-INTEGRATION.md#9-call-view-inside-a-game).
+
 ## The embed page
 
 `/embed/chat?room=<slug>&theme=<light|dark|auto>` shows only the chat, compact, with no site
@@ -155,7 +159,9 @@ sites" (`uploads`) and "Images on other sites" (`images`). Each works without th
 The server sends, for every path under `/embed/`, `frame-ancestors 'self'` followed by exactly
 the approved sites, read per request from the list (kept in memory, replaced on every change).
 Everything else keeps `frame-ancestors 'none'` (`server/src/http/securityHeaders.js`); the rest
-of the policy is identical. The login popup `/embed-login` cannot be framed by anyone, and it is
+of the policy is identical. The one exception under `/embed/` is the call view,
+`/embed/call/<id>`: `frame-ancestors 'self'` only, never the approved sites, and a
+`Permissions-Policy` that lets nothing capture camera, microphone or screen there. The login popup `/embed-login` cannot be framed by anyone, and it is
 the one page without `Cross-Origin-Opener-Policy`: with it, the browser would cut the popup off
 from the frame that opened it on the other site's page.
 
@@ -285,6 +291,10 @@ different sites to the browser.
   message; a site's own rule beats the global one for each.
 - `server/test/embedSocket.test.js`: the WebSocket with a token (subprotocol), refused for an
   unknown token, closed at once on revocation, the member's own cookie socket untouched.
+- The call view inside a game: `server/test/embedOrigins.test.js` (framed by this site only,
+  nothing captured), `server/test/callJoin.test.js` (`listenOnly`),
+  `client/src/embed/callView.test.js`, `client/src/embed/embedCall.test.jsx` and
+  `client/e2e/callEmbed.spec.js` (GAME-INTEGRATION.md, section 9).
 - `server/test/gameRooms.test.js`: the embedded games' rooms (created once with their defaults,
   an admin's edit kept, kept when the game is off; the race's the seeded room with its rules) and
   `/embed/chat?room=<slug>` framed from `/games/<slug>/` for every game.

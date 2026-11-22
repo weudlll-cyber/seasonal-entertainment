@@ -15,6 +15,10 @@
 //              embed's login popup (/embed-login) keeps every rule but one: no
 //              Cross-Origin-Opener-Policy, or the browser would cut it off from the embed that
 //              opened it on another site's page (its opener), and the hand-over could not arrive.
+//              The call view inside a game (/embed/call/<id>, docs/GAME-INTEGRATION.md section 9)
+//              may be framed by this site's own pages only (frame-ancestors 'self', never the
+//              approved sites; the page itself checks that its parent is a game under
+//              /games/<slug>/), and asks for no camera, microphone or screen at all.
 // ============================================================
 
 import helmet from 'helmet';
@@ -38,10 +42,13 @@ const CSP_BASE = {
 };
 
 const PERMISSIONS_POLICY = 'camera=(self), microphone=(self), display-capture=(self)';
+// The call view only listens: not even this origin may capture anything there.
+const CALL_VIEW_PERMISSIONS = 'camera=(), microphone=(), display-capture=()';
 
 // The embedded chat's pages (client/src/embed/), and its login popup (not frameable at all).
 const EMBED_PREFIX = '/embed/';
 const EMBED_LOGIN_PATH = '/embed-login';
+const CALL_VIEW_PREFIX = '/embed/call/';
 
 // calls: config.calls or null. The call service is reached over its WebSocket (signalling)
 // and over https at the same host (livekit-client's connection check after a failed
@@ -74,6 +81,8 @@ export function securityHeaders(config, embedOrigins) {
       crossOriginOpenerPolicy: opener ? false : { policy: 'same-origin' },
     });
   const site = headersFor(undefined);
+  // frame-ancestors 'self' only; X-Frame-Options would say the same.
+  const callView = headersFor([]);
   const loginPopup = headersFor(undefined, { opener: true });
   let embed = { list: null, headers: null };
   const embedHeaders = () => {
@@ -82,6 +91,10 @@ export function securityHeaders(config, embedOrigins) {
     return embed.headers;
   };
   return (req, res, next) => {
+    if (req.path.startsWith(CALL_VIEW_PREFIX)) {
+      res.setHeader('Permissions-Policy', CALL_VIEW_PERMISSIONS);
+      return callView(req, res, next);
+    }
     res.setHeader('Permissions-Policy', PERMISSIONS_POLICY);
     if (req.path.startsWith(EMBED_PREFIX)) return embedHeaders()(req, res, next);
     (req.path === EMBED_LOGIN_PATH ? loginPopup : site)(req, res, next);

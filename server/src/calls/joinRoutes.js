@@ -9,8 +9,11 @@
 //              Refused for calls that are not live, chat bans and when the participant cap is
 //              reached. While a recording runs, only someone who confirmed it (recordingConsent:
 //              true) gets a token (docs/CALLS.md, "Recording"); without that, 409 recording_consent
-//              and no connection. Hands (members only) are stored here and set as the participant's
-//              attributes on the call service, so every client sees one truth.
+//              and no connection. listenOnly: true (the call view inside a game, /embed/call/<id>,
+//              docs/GAME-INTEGRATION.md section 9) gets a listener's token whoever asks, organisers
+//              and speakers too, and leaves their place on the stage as it was. Hands (members
+//              only) are stored here and set as the participant's attributes on the call service,
+//              so every client sees one truth.
 // ============================================================
 
 import express from 'express';
@@ -56,9 +59,16 @@ export function callJoinRoutes(db, config, service, chat) {
       if (!present && inRoom.length >= getSetting(db, 'calls.maxParticipants')) {
         return sendError(res, 403, 'call_full', 'This call is full.');
       }
+      // The call view inside a game only listens: no publishing, whoever asks.
+      const listenOnly = req.body?.listenOnly === true;
       // Organisers and admins start on the stage while it has room; everyone else listens.
-      let onStage = me.onStage;
-      if (who.staff && !onStage && countSpeakers(inRoom) < getSetting(db, 'calls.maxSpeakers')) {
+      let onStage = me.onStage && !listenOnly;
+      if (
+        who.staff &&
+        !listenOnly &&
+        !onStage &&
+        countSpeakers(inRoom) < getSetting(db, 'calls.maxSpeakers')
+      ) {
         setOnStage(db, call.id, me.identity, true);
         onStage = true;
       }

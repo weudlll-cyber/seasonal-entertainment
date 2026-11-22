@@ -85,7 +85,9 @@ is the site's usual behaviour, so nothing changes until an admin changes it (dec
 The games hub's cards are not site settings but have their own admin page (`/admin/games`,
 `server/src/games/adminRoutes.js`): name, description, image, status, path, who may see it, and
 (since 2026-11-04) an optional **Sign-up status URL**: where the game lists its open sign-ups
-(docs/OPEN-ROUNDS.md). https only, at most 300 characters, no credentials in it; empty for none.
+(docs/OPEN-ROUNDS.md). https only, at most 300 characters, no credentials in it; empty for none, except that a
+switched-on embedded game is then read at its own `/games/<slug>/api/public/open-rounds`
+(decided 2026-11-21).
 Every change is audited (`game.create`, `game.edit` with the fields that changed, the status URL
 among them, `game.delete`); a saved URL is read at once.
 

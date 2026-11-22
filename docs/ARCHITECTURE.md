@@ -37,14 +37,9 @@ advisory (GHSA-g3hv-75wg-m249); npm's own fix would have downgraded ESLint to 9.
 only: `npm audit --omit=dev` was clean before and after. Remove the override once
 `@eslint/config-array` asks for `minimatch` 11 itself.
 
-`osv-scanner.toml` excepts one advisory from the CI job "security" until 2026-12-01 (decided
-2026-11-17): picomatch 4.0.7, GHSA-fc5q-39xc-vjpf (a slow pattern match on crafted extglob
-patterns, CVSS 8.7), which has no fixed release. Development only: Vite, Vitest, tinyglobby and
-fdir use it on the repository's own build and test globs, never on untrusted input, and it is
-not in the site image. The scanner reads the file by itself (it lies beside
-`package-lock.json`); the threshold (CVSS 7) and `npm audit` are unchanged. An entry stops
-applying on its `ignoreUntil` date and the job fails again: then picomatch is updated if a fixed
-version is out, else the owner decides again (docs/BACKLOG.md, part one).
+The CI job "security" excepts no osv-scanner finding. The picomatch advisory
+GHSA-fc5q-39xc-vjpf, excepted from 2026-11-17, was withdrawn upstream on 2026-11-18, and its
+exception was removed on 2026-11-22 together with the file that held it.
 
 ## Data
 
@@ -231,7 +226,9 @@ Royale at `/games/bingo`, Seasonal Mini Games at `/games/mini-games`, Seasonal R
 `/games/race` (the site's part since 2026-11-11) and Seasonal Cases at `/games/cases` (the site's
 part since 2026-11-21), signed in through this site's login and fed
 its account changes (`server/src/games/embedded.js`, `embeddedRoutes.js`;
-docs/AUTH.md, "Embedded games"), each with its chat room (docs/EMBED.md).
+docs/AUTH.md, "Embedded games"), each with its chat room (docs/EMBED.md). The games read
+the token in season and the halving days from the site's season feed, `/api/public/season`
+(decided 2026-11-21; docs/GAME-INTEGRATION.md, "Season feed").
 
 ## Chat
 
@@ -438,8 +435,6 @@ bytes, GHSA-27r3-jxmh-p828, fixed in body-parser 2.4.0, which the lockfile now h
                            deployment files; security (gitleaks, npm audit, osv-scanner)
 .github/workflows/codeql.yml  CodeQL scanning of the JavaScript (pushes, pull requests, weekly)
 .gitleaksignore            gitleaks findings checked and accepted, by fingerprint with a reason
-osv-scanner.toml           osv-scanner findings accepted for a while, each with a reason and an
-                           expiry date (ignoreUntil), as the game repositories keep them
 renovate.json              dependency update PRs by Renovate (docs/DEPLOYMENT.md, "Dependency
                            updates")
 .claude/settings.json      agent permissions for this repository
@@ -460,10 +455,12 @@ client/                    React + Vite client
   src/chat/                the chat module: <ChatPanel> (index.js is its only entry), live
                            connection, composer, picker, messages, styles (docs/CHAT.md)
   src/devPages/            test-only pages, routed by the Vite dev server only (chat panels,
-                           the embedded chat's demo)
+                           the embedded chat's demo, the call view's test game)
   src/embed/               the embedded chat for iframes (/embed/chat) on this site and on
                            approved other sites, its postMessage API, the login popup
-                           (/embed-login) and the in-memory embed token (docs/EMBED.md)
+                           (/embed-login) and the in-memory embed token (docs/EMBED.md); the
+                           call view inside a game (/embed/call/<id>, callView.js;
+                           docs/GAME-INTEGRATION.md section 9)
   src/prices/              coin prices (the price bot, CoinGecko via the server): the /info/prices
                            page, the hand-built SVG chart for one coin or several, the coin
                            choice, fair price, converter, formats (docs/BOTS.md)
@@ -544,6 +541,8 @@ server/
                            (authorize) and account-changes feed (embeddedRoutes.js; docs/AUTH.md,
                            "Embedded games"); a member's results from the games for their
                            profile (memberSummary.js; docs/GAME-INTEGRATION.md, section 7)
+  src/season/              the games' season feed GET /api/public/season, from the season
+                           clock (docs/GAME-INTEGRATION.md, "Season feed")
   src/chat/                chat area, mounted by mount.js (the only entry for the rest of the
                            server): schema, store, messages and what may be sent, viewer rules,
                            routes, moderation, WebSocket endpoint (socket.js) and hub, sender

@@ -17,8 +17,9 @@ entry waits for.
 - **Way back from a game to the website** — contract written 2026-11-17
   (docs/GAME-INTEGRATION.md, section 8; decided 2026-11-17): in website mode every screen of an
   embedded game shows a small "← Seasonal Entertainment" link at the top left to `/games`,
-  same tab; not in standalone mode; a screen without room is reported to the owner. Waiting for
-  Bingo, Mini Games and the race to build it, each in its own repository.
+  same tab; not in standalone mode; a screen without room is reported to the owner. Bingo has
+  it since its PR #51 (merged 2026-11-19); waiting for Mini Games and the race to build it, each
+  in its own repository.
 - **Cases' results on a member's profile** — the site's side is built (docs/GAME-INTEGRATION.md,
   section 7); waiting for Seasonal Cases to offer the member-summary route, then its local
   origin in `GAMES_LOCAL_ORIGINS` (see "Game results need each game's address" below).
@@ -27,16 +28,23 @@ entry waits for.
   (docs/DEPLOYMENT.md, "Embedded games"). Until then `CASES=yes` switches on only the site's
   part.
 
+- **The call view in the games' slots** — the site's `/embed/call/<id>` is built
+  (`night/2026-11-22`; docs/GAME-INTEGRATION.md, section 9). Waiting for Bingo, Mini Games,
+  the race and Cases to frame it in their slot and give the host the call-id field, each in its
+  own repository.
+
 ### Decided, waiting to be scheduled
 
-- **Call view inside a game (`/embed/call/<id>`)** — decided 2026-11-20, not built; waiting for
-  the owner to schedule it. A reduced, listen-only call page the games frame beside their chat,
-  with the site's cookie session, framed only by `/games/<slug>/`, and its own `seasonal-call`
-  postMessage messages (docs/GAME-INTEGRATION.md, section 9; the details in
-  reports/call-embed-answers-2026-11-20.md). Meanwhile the games may reserve only the hidden
-  slot and the host's call-id field.
+- Nothing at the moment.
 
 ### Proposals not decided
+
+- **Recovery codes keyed like the kit's** — the site stores its 2FA recovery codes as plain
+  SHA-256 hashes (`server/src/twofa/store.js`); the game kit (`seasonal-kit`, its
+  DECISIONS K20) stores its games' codes as an HMAC-SHA-256 keyed with `RECOVERY_CODE_KEY`,
+  the old hashes still accepted. Doing the same here needs its own key in `site.env` and the
+  installer, a production check like `SECRET_ENCRYPTION_KEY`'s, and the AUTH.md text the kit
+  wrote for it (its docs/NIGHT-2026-11-22.md, A5). Noted 2026-11-22; not decided.
 
 - **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
   login is not planned, decided 2026-11-02).
@@ -47,10 +55,6 @@ entry waits for.
 
 ### Known limits
 
-- **picomatch advisory GHSA-fc5q-39xc-vjpf excepted until 2026-12-01** — update picomatch when
-  a fixed version is out, else the owner decides again (decided 2026-11-17). picomatch 4.0.7 is
-  development only (Vite, Vitest, tinyglobby, fdir); the exception is `osv-scanner.toml`, and
-  the CI job "security" fails again on the finding from 2026-12-01 (docs/ARCHITECTURE.md).
 - **Game results need each game's address** — the site asks each embedded game for a member's
   results at the origin named in `GAMES_LOCAL_ORIGINS` (docs/GAME-INTEGRATION.md, section 7);
   the installer does not set it, and in production the site's container cannot reach
@@ -88,7 +92,15 @@ entry waits for.
   2026-11-09): 10 runs, each with its own fresh servers (so the 5 registrations an hour never
   bind), 5 alone (26–32 s) and 5 started next to the full server suite (the first took 2.0 min
   and the second 52 s while the suite ran; the suite ended during the second, so the last three
-  ran at 29–31 s on a quiet machine). All passed; the code stays as it is.
+  ran at 29–31 s on a quiet machine). All passed; the code stays as it is. Not found on
+  `night/2026-11-22` (piece 5, one hour) either. Two causes were tested and ruled out: the per-address guest limits
+  (`chatNewGuest`, 20 new guest names an hour; `chatGuestPost`, 20 messages a minute), which
+  the e2e server does not raise: a full run (203 passed) made only 6 guest names and 3 guest
+  messages, its database kept for the count; and a dev-server dependency reload of the open
+  page, which Vite logs to stdout, which Playwright drops by default (so "none was logged"
+  above could not have seen one): with Vite's log shown and an empty dependency cache, the
+  dev-proxy specs alone and all five together gave no "optimized dependencies" reload. The
+  spec passed in that full run too.
 - **A backup `.tar` given to the restore on Windows** — seen in the trial restore of 2026-11-14:
   `openBackup` (`server/src/backup/archive.js`) hands `tar` the unpacking folder as an absolute
   path, and Git Bash's GNU tar 1.35 read `\14…` in that path (a scratchpad folder) as an escape,
@@ -97,6 +109,28 @@ entry waits for.
   restore runs in the Linux container and is not affected; listed only.
 
 ## PART TWO — closed
+
+- **picomatch advisory GHSA-fc5q-39xc-vjpf** — closed by `night/2026-11-22`: advisory withdrawn
+  upstream 2026-11-18; exception removed 2026-11-22. It had been excepted from the CI job
+  "security" since 2026-11-17 (picomatch 4.0.7, development only). `osv-scanner.toml`, which held
+  only that entry, is deleted (docs/ARCHITECTURE.md).
+
+- **Call view inside a game (`/embed/call/<id>`)** — closed by `night/2026-11-22`, piece 4
+  (decided 2026-11-20): the reduced, listen-only call page the games frame beside their chat,
+  with the site's cookie session, used only inside `/games/<slug>/`, framed by this site only,
+  and its own `seasonal-call` messages (docs/GAME-INTEGRATION.md, section 9). The games can now
+  frame it in their slot; that is their own work.
+
+- **Derived sign-up status URLs** — closed by `night/2026-11-22`, piece 1 (decided
+  2026-11-21): a switched-on embedded game whose card has no "Sign-up status URL" is read at
+  `/games/<slug>/api/public/open-rounds` on the site's own origin; an entered URL still wins
+  (docs/OPEN-ROUNDS.md).
+
+- **The season feed for the games** — closed by `night/2026-11-22`, piece 1 (decided
+  2026-11-21): `GET /api/public/season`, public and cacheable for 60 seconds, gives the token
+  in season, since when it leads and the halving days from 30 days ago to two years ahead, all
+  from the season clock (docs/GAME-INTEGRATION.md, "Season feed"; the shape Mini Games
+  proposed).
 
 - **Cases as the fourth embedded game, the website's part** — closed by `feat/cases-slug`
   (decided 2026-11-21): `cases` (Seasonal Cases) in the allowlist, so `/api/games/cases/authorize`,

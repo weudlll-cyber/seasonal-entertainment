@@ -9,21 +9,22 @@ the race (commit `6d5c25f`, 2026-11-11) and Cases (`feat/cases-slug`, 2026-11-21
 
 Agree these with the game's project before anything changes here.
 
-| Item                        | What                                                                                             | Example (Cases)                                  |
-| --------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| Slug                        | lower case, digits and single hyphens (`GAME_PATH_PATTERN`, `shared/gameRules.js`)               | `cases`                                          |
-| Name                        | shown in Admin → Users ("May host <name>") and the installer's question                          | "Seasonal Cases"                                 |
-| Room name                   | the name of its chat room, whose slug is the game's                                              | "Seasonal Cases"                                 |
-| Base path                   | `/games/<slug>/`; every asset, API, WebSocket, redirect and cookie under it                      | `/games/cases/`                                  |
-| Sign-in route and login hop | `/games/<slug>/auth/website` and `/games/<slug>/auth/website/login` (GAME-INTEGRATION §2)        | `/games/cases/auth/website`                      |
-| Proxy secret header         | its own, listed in GAME-INTEGRATION §2 ("Current secret headers")                                | `X-Sc-Proxy-Secret`                              |
-| Account-changes feed        | it reads `/api/games/<slug>/account-changes` with the sync token (GAME-INTEGRATION §4)           | as AUTH.md                                       |
-| Deleted accounts, renames   | a deleted account becomes "Deleted player", a rename shows from the next sign-in (AUTH.md)       | as every game                                    |
-| Open rounds (optional)      | a status URL by [OPEN-ROUNDS.md](OPEN-ROUNDS.md); the admin field takes `https://` only          | `/games/cases/api/public/open-rounds`, version 1 |
-| Member summary (optional)   | a member's results for the profile (GAME-INTEGRATION §7)                                         | not yet                                          |
-| Way back (required)         | "← Seasonal Entertainment" to `/games` on every screen (GAME-INTEGRATION §8)                     | as every game                                    |
-| Call view slot              | only the hidden slot and the host's call-id field until the site builds it (GAME-INTEGRATION §9) | as every game                                    |
-| Its own installer           | writes its route file into the routes folder this site prepares (section 4 below)                | not yet                                          |
+| Item                        | What                                                                                                                                             | Example (Cases)                                  |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| Slug                        | lower case, digits and single hyphens (`GAME_PATH_PATTERN`, `shared/gameRules.js`)                                                               | `cases`                                          |
+| Name                        | shown in Admin → Users ("May host <name>") and the installer's question                                                                          | "Seasonal Cases"                                 |
+| Room name                   | the name of its chat room, whose slug is the game's                                                                                              | "Seasonal Cases"                                 |
+| Base path                   | `/games/<slug>/`; every asset, API, WebSocket, redirect and cookie under it                                                                      | `/games/cases/`                                  |
+| Sign-in route and login hop | `/games/<slug>/auth/website` and `/games/<slug>/auth/website/login` (GAME-INTEGRATION §2)                                                        | `/games/cases/auth/website`                      |
+| Proxy secret header         | its own, listed in GAME-INTEGRATION §2 ("Current secret headers")                                                                                | `X-Sc-Proxy-Secret`                              |
+| Account-changes feed        | it reads `/api/games/<slug>/account-changes` with the sync token (GAME-INTEGRATION §4)                                                           | as AUTH.md                                       |
+| Deleted accounts, renames   | a deleted account becomes "Deleted player", a rename shows from the next sign-in (AUTH.md)                                                       | as every game                                    |
+| Open rounds (optional)      | `/games/<slug>/api/public/open-rounds` by [OPEN-ROUNDS.md](OPEN-ROUNDS.md); read by the site itself while the game is on (decided 2026-11-21)    | `/games/cases/api/public/open-rounds`, version 1 |
+| Season feed (optional)      | it reads `/api/public/season` for the token in season and the halving days (GAME-INTEGRATION §6, [Season feed](GAME-INTEGRATION.md#season-feed)) | nothing to set up                                |
+| Member summary (optional)   | a member's results for the profile (GAME-INTEGRATION §7)                                                                                         | not yet                                          |
+| Way back (required)         | "← Seasonal Entertainment" to `/games` on every screen (GAME-INTEGRATION §8)                                                                     | as every game                                    |
+| Call view slot              | only the hidden slot and the host's call-id field until the site builds it (GAME-INTEGRATION §9)                                                 | as every game                                    |
+| Its own installer           | writes its route file into the routes folder this site prepares (section 4 below)                                                                | not yet                                          |
 
 ## 2. What changes in this repository
 
@@ -111,8 +112,9 @@ allowlist.
   - who may see it;
   - an image from the fixed list `GAME_IMAGES` in `shared/gameRules.js`: `seasonal-tokens`,
     `spring`, `summer`, `autumn` or `winter`;
-  - optionally the "Sign-up status URL", `https://` only (`server/src/games/adminRoutes.js`),
-    for example `https://<site domain>/games/cases/api/public/open-rounds`.
+  - the "Sign-up status URL" stays empty: for a switched-on embedded game the site reads
+    `/games/<slug>/api/public/open-rounds` on its own domain (docs/OPEN-ROUNDS.md). Enter one
+    (`https://` only, `server/src/games/adminRoutes.js`) only to read it elsewhere; it wins.
 
   The card is presentation only; the routes follow `GAMES_EMBEDDED`.
 
@@ -159,5 +161,4 @@ From DEPLOYMENT.md, "Embedded games"; this site's installer only prepares the se
 - [ ] Admin → Games card; Admin → Users "May host" boxes; Admin → Embedding only for another
       origin
 - [ ] The game's installer writes its route file; its sign-in works through the real proxy
-- [ ] Optional: the sign-up status URL; `GAMES_LOCAL_ORIGINS` once the game offers its member
-      summary
+- [ ] Optional: `GAMES_LOCAL_ORIGINS` once the game offers its member summary
