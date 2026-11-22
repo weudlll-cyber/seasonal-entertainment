@@ -261,5 +261,8 @@ it('a full call says error with its code', async () => {
   renderView();
   fireEvent.click(await screen.findByRole('button', { name: 'Listen' }));
   expect(await screen.findByText('This call is full.')).toBeTruthy();
-  expect(sentOf('error')).toEqual([expect.objectContaining({ code: 'call_full' })]);
+  // The message goes out in an effect after the text is shown: wait for it (CI, 2026-11-22).
+  await waitFor(() =>
+    expect(sentOf('error')).toEqual([expect.objectContaining({ code: 'call_full' })])
+  );
 });

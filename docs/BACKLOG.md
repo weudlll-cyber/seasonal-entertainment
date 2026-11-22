@@ -110,6 +110,11 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **The call view's unit test "a full call says error" could fail** — closed by PR #82
+  (`fix/embed-call-error-wait`, 2026-11-22): the test waits for the `error` message, which goes
+  out in an effect after the text is shown, as the other message checks do. It had failed once
+  in CI on the merge of PR #81.
+
 - **picomatch advisory GHSA-fc5q-39xc-vjpf** — closed by `night/2026-11-22`: advisory withdrawn
   upstream 2026-11-18; exception removed 2026-11-22. It had been excepted from the CI job
   "security" since 2026-11-17 (picomatch 4.0.7, development only). `osv-scanner.toml`, which held
