@@ -55,10 +55,6 @@ entry waits for.
 
 ### Known limits
 
-- **picomatch advisory GHSA-fc5q-39xc-vjpf excepted until 2026-12-01** — update picomatch when
-  a fixed version is out, else the owner decides again (decided 2026-11-17). picomatch 4.0.7 is
-  development only (Vite, Vitest, tinyglobby, fdir); the exception is `osv-scanner.toml`, and
-  the CI job "security" fails again on the finding from 2026-12-01 (docs/ARCHITECTURE.md).
 - **Game results need each game's address** — the site asks each embedded game for a member's
   results at the origin named in `GAMES_LOCAL_ORIGINS` (docs/GAME-INTEGRATION.md, section 7);
   the installer does not set it, and in production the site's container cannot reach
@@ -113,6 +109,11 @@ entry waits for.
   restore runs in the Linux container and is not affected; listed only.
 
 ## PART TWO — closed
+
+- **picomatch advisory GHSA-fc5q-39xc-vjpf** — closed by `night/2026-11-22`: advisory withdrawn
+  upstream 2026-11-18; exception removed 2026-11-22. It had been excepted from the CI job
+  "security" since 2026-11-17 (picomatch 4.0.7, development only). `osv-scanner.toml`, which held
+  only that entry, is deleted (docs/ARCHITECTURE.md).
 
 - **Call view inside a game (`/embed/call/<id>`)** — closed by `night/2026-11-22`, piece 4
   (decided 2026-11-20): the reduced, listen-only call page the games frame beside their chat,
