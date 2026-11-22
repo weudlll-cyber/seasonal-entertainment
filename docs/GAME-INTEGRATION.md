@@ -55,7 +55,7 @@ The website's contracts:
 | Optional: the season in play, the halving days   | [Section 6, "Season feed"](#season-feed) below                                 |
 | Optional: a member's results on their profile    | [Section 7](#7-a-members-results-on-their-profile) below                       |
 | Required: a way back to the website              | [Section 8](#8-a-way-back-to-the-website) below                                |
-| Decided, not built: a call view beside the game  | [Section 9](#9-call-view-inside-a-game) below                                  |
+| Optional: a call view beside the game            | [Section 9](#9-call-view-inside-a-game) below                                  |
 
 ## 1. Architecture and deployment profile
 
@@ -357,11 +357,30 @@ Current (checked 2026-11-22): Bingo shows it since its PR #51 (merged 2026-11-19
 
 ## 9. Call view inside a game
 
-**Decided 2026-11-20. Not built on the site yet**: the site has no `/embed/call/<id>` page, and
-`/calls/<id>` cannot be framed (`frame-ancestors 'none'`, `server/src/http/securityHeaders.js`).
-This section is the contract games build against once the page exists. The questions behind
-each point, the reasons and the file references are in
-[the answers report](../reports/call-embed-answers-2026-11-20.md).
+**Decided 2026-11-20. Built** on `night/2026-11-22` (piece 4): `/embed/call/<id>`
+(`client/src/embed/EmbedCallPage.jsx`, `EmbedCallView.jsx`, the rules in `callView.js`).
+`/calls/<id>` itself still cannot be framed (`frame-ancestors 'none'`,
+`server/src/http/securityHeaders.js`). The questions behind each point, the reasons and the
+file references are in [the answers report](../reports/call-embed-answers-2026-11-20.md).
+
+How the site does it:
+
+- It reuses the call page's join (`useCallRoom`), stage (`Stage`), sound (`RoomAudio`), recording
+  question (`RecordingConsent`) and LIVE badge. It joins with `listenOnly: true`, so the server
+  gives a listener's token whoever asks, organisers too ([CALLS.md](CALLS.md), "Joining").
+- `/embed/call/` is framed by this site only (`frame-ancestors 'self'`, never the chat's approved
+  sites), and its `Permissions-Policy` lets nothing capture camera, microphone or screen. The
+  page itself reads its parent's address (same origin) and shows the view only under
+  `/games/<slug>/`; anywhere else it shows only the link to the call page.
+- While not joined it reads the call again every 5 seconds, so a start, an end or a deletion
+  shows.
+- "Open the call page" opens `/calls/<id>` in a new tab, so the game keeps running.
+- The form follows the frame's size: the picture from 267 × 150; the 48 px column when smaller
+  or collapsed; the strip when the frame is wider than tall and under 96 px high. Whether the
+  game is laid out for a phone, for the size it asks for in `resize`, is read from the game's
+  window: under 760 px wide, the site's own breakpoint.
+- Out of sight (`visible: false`) the picture is left out, so LiveKit's adaptive stream receives
+  no video; the sound plays on.
 
 - **The page**: the site serves a reduced call page, `/embed/call/<id>?theme=<light|dark|auto>`,
   framed like the chat. A game never connects to the call service (LiveKit) itself and never
@@ -451,10 +470,22 @@ each point, the reasons and the file references are in
   shared UI kit keeps a copy of these five values; its CI compares the copy with `tokens.css`
   on the site's `master` and fails on a difference.
 
-**What a game may do today**: reserve the slot of the sizes above (bottom right in the chat
-strip on a desktop, the strip above the chat bar on a phone), **hidden while no call is
-linked**, and a call-id field for the host in a round or lobby, checked with
-`GET /api/calls/<id>`. Frame nothing in the slot until this section says the page is built.
+**What a game does**: the slot of the sizes above (bottom right in the chat strip on a
+desktop, the strip above the chat bar on a phone), **hidden while no call is linked**, a
+call-id field for the host in a round or lobby, checked with `GET /api/calls/<id>`, and in the
+slot `<iframe src="/embed/call/<id>?theme=<light|dark|auto>" allow="autoplay; fullscreen">`,
+sized as the view's `resize` asks.
+
+**Trying it locally**: with `npm run dev`, `/games/call-test/?call=<id>`
+(`client/src/devPages/GameCallTestPage.jsx`, development builds only) is a pretend game: it
+frames the view in each of the sizes above, follows `resize`, lists the view's messages and
+sends `mute`, `collapse`, `visible` and `theme`.
+
+Tests: `client/src/embed/callView.test.js` (who may frame it, the forms, the sizes),
+`client/src/embed/embedCall.test.jsx` (the messages, Listen, mute, collapse, leave, the end, a
+recorded or full call), `server/test/callJoin.test.js` (`listenOnly`),
+`server/test/embedOrigins.test.js` (the headers), and `client/e2e/callEmbed.spec.js` (a real
+browser and LiveKit: listen, mute, collapse, leave, the end; framing refused elsewhere).
 
 ## 10. Other profiles and proposals
 
@@ -505,8 +536,8 @@ configuration without secrets. Coordinate website slug registration, activation,
 protection and catalogue setup. Optionally implement docs/OPEN-ROUNDS.md and the member
 summary of docs/GAME-INTEGRATION.md section 7 (local only, the sync token), and the season
 feed of section 6 (/api/public/season). Do not assume OIDC, a website JWT issuer or per-match
-website chat rooms. Reserve the call view
-of section 9 only as a hidden slot until the website has built it.
+website chat rooms. The call view of section 9 is built: frame /embed/call/<id> in a slot
+that stays hidden while no call is linked.
 Use the acceptance checklist below; report remaining gaps explicitly.
 ```
 
@@ -541,8 +572,8 @@ Add game-specific automated checks and exercise the real proxy path before deplo
 - [ ] In website mode every screen shows "← Seasonal Entertainment" at the top left, leading to
       `/games` in the same tab; small, in light and dark mode and at phone width; not shown
       standalone; a screen without room reported to the owner (section 8).
-- [ ] Optional call view (section 9): until the website builds `/embed/call/<id>`, only the
-      hidden slot and the host's call-id field; afterwards, the contract of section 9.
+- [ ] Optional call view (section 9): the slot hidden while no call is linked, the host's
+      call-id field, and `/embed/call/<id>` framed in it by the contract of section 9.
 - [ ] Optional member summary: only with the sync token, not reachable through the public
       route, within the limits of section 7, `noData` or `404` for an unknown player.
 
@@ -561,8 +592,10 @@ Website code:
 - Catalogue/status: `server/src/games/adminRoutes.js`, `seed.js`, `openRoundsContract.js`
 - The games page the way back leads to: `client/src/pages/GamesPage.jsx`, route `games` in
   `client/src/app/App.jsx`
-- The call view (decided, not built): the call page's parts in `client/src/calls/`, framing in
-  `server/src/http/securityHeaders.js`; details in `reports/call-embed-answers-2026-11-20.md`
+- The call view: `client/src/embed/EmbedCallPage.jsx`, `EmbedCallView.jsx`, `callView.js`, the
+  call page's parts in `client/src/calls/`, framing in `server/src/http/securityHeaders.js`,
+  `listenOnly` in `server/src/calls/joinRoutes.js`; details in
+  `reports/call-embed-answers-2026-11-20.md`
 - A member's results: `server/src/games/memberSummary.js`, `GAMES_LOCAL_ORIGINS` in
   `embedded.js`, the route in `server/src/profiles/routes.js`
 - Website tests: `server/test/embeddedGames.test.js`, `embeddedFeed.test.js`,

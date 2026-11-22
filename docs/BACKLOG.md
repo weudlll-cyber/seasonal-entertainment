@@ -28,14 +28,14 @@ entry waits for.
   (docs/DEPLOYMENT.md, "Embedded games"). Until then `CASES=yes` switches on only the site's
   part.
 
+- **The call view in the games' slots** — the site's `/embed/call/<id>` is built
+  (`night/2026-11-22`; docs/GAME-INTEGRATION.md, section 9). Waiting for Bingo, Mini Games,
+  the race and Cases to frame it in their slot and give the host the call-id field, each in its
+  own repository.
+
 ### Decided, waiting to be scheduled
 
-- **Call view inside a game (`/embed/call/<id>`)** — decided 2026-11-20, not built; waiting for
-  the owner to schedule it. A reduced, listen-only call page the games frame beside their chat,
-  with the site's cookie session, framed only by `/games/<slug>/`, and its own `seasonal-call`
-  postMessage messages (docs/GAME-INTEGRATION.md, section 9; the details in
-  reports/call-embed-answers-2026-11-20.md). Meanwhile the games may reserve only the hidden
-  slot and the host's call-id field.
+- Nothing at the moment.
 
 ### Proposals not decided
 
@@ -105,6 +105,12 @@ entry waits for.
   restore runs in the Linux container and is not affected; listed only.
 
 ## PART TWO — closed
+
+- **Call view inside a game (`/embed/call/<id>`)** — closed by `night/2026-11-22`, piece 4
+  (decided 2026-11-20): the reduced, listen-only call page the games frame beside their chat,
+  with the site's cookie session, used only inside `/games/<slug>/`, framed by this site only,
+  and its own `seasonal-call` messages (docs/GAME-INTEGRATION.md, section 9). The games can now
+  frame it in their slot; that is their own work.
 
 - **Derived sign-up status URLs** — closed by `night/2026-11-22`, piece 1 (decided
   2026-11-21): a switched-on embedded game whose card has no "Sign-up status URL" is read at

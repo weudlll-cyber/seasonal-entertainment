@@ -240,7 +240,9 @@ running connection):
 | speaker (invited; or organiser) | yes            | yes          | microphone, camera, screen share, screen share audio | no               | no                     |
 
 Organisers and admins (2FA in order) join on the stage while it has room, otherwise as
-listeners. Guests are never given publishing. The token also carries the name others see — a
+listeners. A join with `listenOnly: true` (the call view inside a game, `/embed/call/<id>`,
+docs/GAME-INTEGRATION.md section 9) always gets a listener's token, an organiser's or a
+speaker's too, and leaves their place on the stage as it was. Guests are never given publishing. The token also carries the name others see — a
 member's username, a guest's guest name; a member who hides their online status listens as
 **"A listener"** (counted, not named; on the stage everyone is named) — and attributes every
 client reads: `kind` (`host`, `member`, `guest`), `hand` and `handAt`.

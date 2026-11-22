@@ -462,10 +462,12 @@ client/                    React + Vite client
   src/chat/                the chat module: <ChatPanel> (index.js is its only entry), live
                            connection, composer, picker, messages, styles (docs/CHAT.md)
   src/devPages/            test-only pages, routed by the Vite dev server only (chat panels,
-                           the embedded chat's demo)
+                           the embedded chat's demo, the call view's test game)
   src/embed/               the embedded chat for iframes (/embed/chat) on this site and on
                            approved other sites, its postMessage API, the login popup
-                           (/embed-login) and the in-memory embed token (docs/EMBED.md)
+                           (/embed-login) and the in-memory embed token (docs/EMBED.md); the
+                           call view inside a game (/embed/call/<id>, callView.js;
+                           docs/GAME-INTEGRATION.md section 9)
   src/prices/              coin prices (the price bot, CoinGecko via the server): the /info/prices
                            page, the hand-built SVG chart for one coin or several, the coin
                            choice, fair price, converter, formats (docs/BOTS.md)
