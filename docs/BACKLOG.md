@@ -55,11 +55,6 @@ entry waits for.
 
 ### Known limits
 
-- **The call view's unit test "a full call says error" can fail on `master`** — it checked the
-  `error` message right after the text appeared, but the message goes out in an effect after
-  that render (CI on the merge of PR #81, 2026-11-22). Fixed on `fix/embed-call-error-wait`,
-  which waits for it as the other message checks do; open until merged.
-
 - **Game results need each game's address** — the site asks each embedded game for a member's
   results at the origin named in `GAMES_LOCAL_ORIGINS` (docs/GAME-INTEGRATION.md, section 7);
   the installer does not set it, and in production the site's container cannot reach
@@ -114,6 +109,11 @@ entry waits for.
   restore runs in the Linux container and is not affected; listed only.
 
 ## PART TWO — closed
+
+- **The call view's unit test "a full call says error" could fail** — closed by PR #82
+  (`fix/embed-call-error-wait`, 2026-11-22): the test waits for the `error` message, which goes
+  out in an effect after the text is shown, as the other message checks do. It had failed once
+  in CI on the merge of PR #81.
 
 - **picomatch advisory GHSA-fc5q-39xc-vjpf** — closed by `night/2026-11-22`: advisory withdrawn
   upstream 2026-11-18; exception removed 2026-11-22. It had been excepted from the CI job
