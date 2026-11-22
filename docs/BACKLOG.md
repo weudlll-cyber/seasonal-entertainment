@@ -17,8 +17,9 @@ entry waits for.
 - **Way back from a game to the website** — contract written 2026-11-17
   (docs/GAME-INTEGRATION.md, section 8; decided 2026-11-17): in website mode every screen of an
   embedded game shows a small "← Seasonal Entertainment" link at the top left to `/games`,
-  same tab; not in standalone mode; a screen without room is reported to the owner. Waiting for
-  Bingo, Mini Games and the race to build it, each in its own repository.
+  same tab; not in standalone mode; a screen without room is reported to the owner. Bingo has
+  it since its PR #51 (merged 2026-11-19); waiting for Mini Games and the race to build it, each
+  in its own repository.
 - **Cases' results on a member's profile** — the site's side is built (docs/GAME-INTEGRATION.md,
   section 7); waiting for Seasonal Cases to offer the member-summary route, then its local
   origin in `GAMES_LOCAL_ORIGINS` (see "Game results need each game's address" below).
@@ -37,6 +38,13 @@ entry waits for.
   slot and the host's call-id field.
 
 ### Proposals not decided
+
+- **Recovery codes keyed like the kit's** — the site stores its 2FA recovery codes as plain
+  SHA-256 hashes (`server/src/twofa/store.js`); the game kit (`seasonal-kit`, its
+  DECISIONS K20) stores its games' codes as an HMAC-SHA-256 keyed with `RECOVERY_CODE_KEY`,
+  the old hashes still accepted. Doing the same here needs its own key in `site.env` and the
+  installer, a production check like `SECRET_ENCRYPTION_KEY`'s, and the AUTH.md text the kit
+  wrote for it (its docs/NIGHT-2026-11-22.md, A5). Noted 2026-11-22; not decided.
 
 - **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
   login is not planned, decided 2026-11-02).

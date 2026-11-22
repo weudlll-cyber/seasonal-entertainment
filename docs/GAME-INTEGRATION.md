@@ -215,7 +215,9 @@ used; send only to the chat's explicit origin, never `'*'`; re-send the current 
 `ready`, and keep the iframe mounted while hidden if it must count arrivals.
 
 Current: Bingo embeds the chat and follows theme changes but does not use the unread and
-visibility messages; Mini Games uses them behind the round view's Chat button. Both keep game
+visibility messages; Mini Games uses them behind the round view's Chat button. Checked
+2026-11-22: Mini Games' frame sets `referrerPolicy="strict-origin"` and a sandbox; Bingo's
+frame on its `master` sets neither yet (the shared game kit sets both). Both keep game
 announcements in their own UI; neither posts winners into the website room.
 
 ## 6. Website setup and the optional open-rounds listing
@@ -336,8 +338,8 @@ Tests: `server/test/gameResults.test.js` with the stand-in game `server/test/hel
 
 ## 8. A way back to the website
 
-**Required** for every embedded game (decided 2026-11-17). **Not yet implemented in any
-game.**
+**Required** for every embedded game (decided 2026-11-17). Implemented in Bingo; not yet in
+Mini Games or the race.
 
 - In website mode, every screen of the game shows a small link **"← Seasonal Entertainment"**
   at the top left. It leads to the website's games page, **`/games`** (the website's route
@@ -350,7 +352,8 @@ game.**
 - If a game screen has no room at the top left, the game does not move the link elsewhere on
   its own: it reports that screen to the owner, who decides.
 
-Current: Bingo, Mini Games and the race do not show the link yet (2026-11-17).
+Current (checked 2026-11-22): Bingo shows it since its PR #51 (merged 2026-11-19,
+`apps/web/src/shell/AppShell.tsx`); Mini Games (`master`, `66743d9`) and the race do not yet.
 
 ## 9. Call view inside a game
 
@@ -371,9 +374,9 @@ each point, the reasons and the file references are in
   `/calls/<id>`.
 - **Which call**: the game's host (who holds `Can-Host` for this game,
   [section 3](#3-account-mapping-rights-and-sessions)) links a round or lobby to a call by the
-  site's numeric call id, entered as the id or as the address `/calls/<id>` (Bingo's
-  `host_call_ref`). The game's server enforces who may link. The game checks the id with the
-  public `GET /api/calls/<id>` and accepts only a scheduled or live call. When the call ends or
+  site's numeric call id, entered as the id or as the address `/calls/<id>` (in Bingo's spec
+  `matches.host_call_ref`; checked 2026-11-22, not yet in Bingo's code on its `master`). The
+  game's server enforces who may link. The game checks the id with the public `GET /api/calls/<id>` and accepts only a scheduled or live call. When the call ends or
   is deleted, the frame posts `ended` (`reason`: `ended`, or `gone` for a deleted one); the game
   collapses or hides the slot and never ends its round because of the call.
 - **Placement and sizes** (CSS px; they follow the games' layout, decided 2026-11-20):

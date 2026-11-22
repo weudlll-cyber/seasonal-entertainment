@@ -451,7 +451,11 @@ member with an **embed token** instead (`server/src/embed/`; SE-NIGHT-2 follow-u
   per-account 2FA limit) and returns a new secret, its `otpauth://` link and a QR code (PNG
   data URL); calling it again replaces a pending secret, with the password again.
   `POST /api/2fa/enable` with a first valid code turns 2FA on and returns **ten recovery codes,
-  shown once**; only their SHA-256 hashes are stored.
+  shown once**; only their SHA-256 hashes are stored (`hashCode`, `server/src/twofa/store.js`),
+  unkeyed. The shared game kit (`seasonal-kit`, its DECISIONS K20) stores its games' codes as an
+  HMAC-SHA-256 with a key of their own (`RECOVERY_CODE_KEY`), so a copy of the table cannot be
+  searched for codes without the key; this site does not yet (docs/BACKLOG.md, "Recovery codes
+  keyed like the kit's").
 - **Login** for an account with 2FA has two steps: the password answers
   `{ twoFactorRequired: true }` and marks the session as half-way (not logged in; valid
   5 minutes, and only while the account's session epoch is unchanged, so a password reset in
@@ -497,8 +501,8 @@ member with an **embed token** instead (`server/src/embed/`; SE-NIGHT-2 follow-u
     same way, with the same answer (401 "That code is not valid.", never a 500) and the log line
     "the 2FA secret of user <id> cannot be used: it decrypts, but not to a TOTP secret"
     (`openSecret`, `server/src/twofa/secretBox.js`).
-  - Recovery codes stay SHA-256 hashes and work whatever the key, so they remain the way back
-    in.
+  - Recovery codes stay SHA-256 hashes, independent of `SECRET_ENCRYPTION_KEY`, and work
+    whatever that key, so they remain the way back in.
   - **Losing the key** makes every stored 2FA secret unreadable: those accounts sign in with a
     recovery code or need 2FA reset by an admin. Keep the key with the other secrets, not with
     the database backups.
@@ -897,6 +901,11 @@ afterwards.
   | `X-Acting-User-Email-Verified` | `true` (decision 2026-11-04; the name is the game's)             |
   | `X-Acting-User-Can-Host`       | `true` for an admin, or a member granted this game; else `false` |
   | `X-Acting-User-Steps`          | base64url of compact JSON: the account's Discord steps           |
+
+  The username is sent as it is: usernames are ASCII only (`USERNAME_PATTERN`,
+  `shared/accountRules.js`). Should names ever allow other characters, they must be sent as
+  UTF-8 bytes, which the shared game kit decodes (Node's `setHeader` refuses characters above
+  U+00FF; noted from the kit's audit of 2026-11-22).
 
   The steps are what this site shows next to the name: an array of at most three
   `{"ladder":"holder|farmer|investor","name":"<step name>","icon":"<site-relative URL or null>"}`,
