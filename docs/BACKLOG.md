@@ -96,7 +96,15 @@ entry waits for.
   2026-11-09): 10 runs, each with its own fresh servers (so the 5 registrations an hour never
   bind), 5 alone (26–32 s) and 5 started next to the full server suite (the first took 2.0 min
   and the second 52 s while the suite ran; the suite ended during the second, so the last three
-  ran at 29–31 s on a quiet machine). All passed; the code stays as it is.
+  ran at 29–31 s on a quiet machine). All passed; the code stays as it is. Not found on
+  `night/2026-11-22` (piece 5, one hour) either. Two causes were tested and ruled out: the per-address guest limits
+  (`chatNewGuest`, 20 new guest names an hour; `chatGuestPost`, 20 messages a minute), which
+  the e2e server does not raise: a full run (203 passed) made only 6 guest names and 3 guest
+  messages, its database kept for the count; and a dev-server dependency reload of the open
+  page, which Vite logs to stdout, which Playwright drops by default (so "none was logged"
+  above could not have seen one): with Vite's log shown and an empty dependency cache, the
+  dev-proxy specs alone and all five together gave no "optimized dependencies" reload. The
+  spec passed in that full run too.
 - **A backup `.tar` given to the restore on Windows** — seen in the trial restore of 2026-11-14:
   `openBackup` (`server/src/backup/archive.js`) hands `tar` the unpacking folder as an absolute
   path, and Git Bash's GNU tar 1.35 read `\14…` in that path (a scratchpad folder) as an escape,
