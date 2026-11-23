@@ -15,20 +15,20 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const LIVEKIT_VERSION = '1.13.10';
-// From the release's checksums (github.com/livekit/livekit/releases/tag/v1.13.10).
+export const LIVEKIT_VERSION = '1.13.11';
+// From the release's checksums (github.com/livekit/livekit/releases/tag/v1.13.11).
 const ARCHIVES = {
   'win32-x64': {
     file: `livekit_${LIVEKIT_VERSION}_windows_amd64.zip`,
-    sha256: 'fd4b7c2c3c1e4c71adaa4f6a046ad1c0abaaaf1e09fae904b35bf231ffae11d2',
+    sha256: '5d071ea43339f0140d24a66f0b2ff8a7bf6c4d0dceb19b30abca835670213667',
   },
   'linux-x64': {
     file: `livekit_${LIVEKIT_VERSION}_linux_amd64.tar.gz`,
-    sha256: 'c25a3e45fb922e9a93c6443d10c0ed041ba64342097e38632331736630283165',
+    sha256: '1e9ee90ca301e1842b2887fc77cb122759756a9c8aeb4334ee91de3325ec43fb',
   },
   'linux-arm64': {
     file: `livekit_${LIVEKIT_VERSION}_linux_arm64.tar.gz`,
-    sha256: 'ff60607e1931ff078576882fa11c087aa5821d635ac0c47f56ff77e203e32006',
+    sha256: '2af6ce091d6b3c79d1677f8ff1bbb91a8007f40b2325c059b52d38383c0830b6',
   },
 };
 

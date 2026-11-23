@@ -53,7 +53,7 @@ The site reads three environment keys (`server/src/calls/config.js`, listed in `
   (`devkey` / `secret`) and secrets shorter than 32 characters.
 
 Generate a production pair on the call server with
-`docker run --rm livekit/livekit-server:v1.13.10 generate-keys`.
+`docker run --rm livekit/livekit-server:v1.13.11 generate-keys`.
 
 ## Calls on the site
 
@@ -688,7 +688,7 @@ Call recording, video and audio (decided 2026-10-22). It is **off unless set up*
 
 - `livekit.yaml` — LiveKit's configuration, no secrets: ports, the UDP range, TURN, room
   defaults.
-- `docker-compose.yml` — only the LiveKit service, pinned to v1.13.10 by tag and image digest;
+- `docker-compose.yml` — only the LiveKit service, pinned to v1.13.11 by tag and image digest;
   host networking (WebRTC needs the real ports and address).
 - `.env.example` — what `deploy/calls/.env` (never committed) holds: `LIVEKIT_KEYS`
   (`"<key>: <secret>"`, the same pair as the site's `CALLS_API_KEY` / `CALLS_API_SECRET`),
@@ -791,7 +791,7 @@ Live calls are cut off by the move; do it when no call is live.
 
 ## Development
 
-`npm run dev:calls` starts the pinned LiveKit server (v1.13.10) in development mode on
+`npm run dev:calls` starts the pinned LiveKit server (v1.13.11) in development mode on
 `ws://127.0.0.1:7880` with LiveKit's development pair `devkey` / `secret`
 (`scripts/calls-dev.mjs`). The first run downloads the release archive for this platform into
 `.calls-bin/` (gitignored) and checks its SHA-256 against the value pinned in
@@ -802,7 +802,7 @@ own on 7890).
 
 Pinned binaries exist for Windows x64 and Linux x64/arm64. **macOS** has no release binary:
 install it by hand (`brew install livekit`, then check `livekit-server --version` shows
-1.13.10) and run `livekit-server --dev --bind 127.0.0.1`.
+1.13.11) and run `livekit-server --dev --bind 127.0.0.1`.
 
 ## Security headers
 
