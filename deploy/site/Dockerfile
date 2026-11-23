@@ -15,7 +15,7 @@
 
 # node 24.22.0 on Debian 12 (glibc: the prebuilt better-sqlite3, bcrypt and sharp binaries
 # fit), pinned by digest so a moved tag cannot change the image.
-ARG NODE_IMAGE=node:24.22.0-bookworm-slim@sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5
+ARG NODE_IMAGE=node:24.22.3-bookworm-slim@sha256:dc26ae92c9fb15cf6b1d63e20f0944b2efe0f115b20e00be48fb23fceb061c54
 
 FROM ${NODE_IMAGE} AS build
 WORKDIR /app

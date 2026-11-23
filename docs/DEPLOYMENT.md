@@ -597,7 +597,9 @@ Nothing reaches the server by itself: every update PR needs the owner's approval
   (`prBodyNotes`, decided 2026-11-23): update the checksums from the release's `checksums.txt`
   and the docs naming the version (`docs/CALLS.md`) before merging.
 - `deploy/test/renovate.test.sh` (CI) checks that the configuration still finds those pins and
-  keeps that note.
+  keeps that note, and that `vitest` and `@vitest/coverage-v8` have one version in every
+  `package.json`: the first pinning PR (#84, 2026-11-23) moved vitest to 5.1.1 but pinned the
+  coverage plugin at 5.0.5, so a second vitest was installed and a client test failed.
 - Not covered: the load test's `livekit-cli` image (`deploy/calls/loadtest.sh`), pinned by digest
   only; it is updated by hand when needed.
 
