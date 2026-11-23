@@ -7,7 +7,8 @@
 //              group; "Send a test e-mail" only with a saved address; asking says the watchdog
 //              sends it within two minutes and offers "Check again"; the watchdog's answer,
 //              sent or not with its reason, is shown; the panel's first load answering after a
-//              quick send does not overwrite the send's answer.
+//              quick send does not overwrite the send's answer, nor does "Check again" asked for
+//              while a send waits.
 // ============================================================
 
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
@@ -112,6 +113,29 @@ it("a send right after opening: the panel's first load, answering later, keeps t
     await held;
   });
   expect(alerts.getByRole('status').textContent).toBe(asked);
+});
+
+it("a load asked for while a send waits never overwrites the send's answer", async () => {
+  // An older request is pending, so "Check again" shows. Send, and "Check again" while the
+  // send waits; both held, the load (if one was made) answering last with the older state.
+  const older = { requestedAt: '2026-11-14T19:00:00.000Z', result: null };
+  const holds = {};
+  const held = (name) => new Promise((resolve) => (holds[name] = resolve));
+  let loads = 0;
+  const { alerts } = await page('ops@example.org', null, {
+    'GET /admin/outage-alert': () =>
+      (loads += 1) === 1 ? { body: { ok: true, test: older } } : held('load'),
+    'POST /admin/outage-alert/test': () => held('send'),
+  });
+  const again = await alerts.findByRole('button', { name: 'Check again' });
+  fireEvent.click(alerts.getByRole('button', { name: 'Send a test e-mail' }));
+  fireEvent.click(again);
+  const pending = { requestedAt: REQUESTED, result: null };
+  await act(async () => holds.send({ body: { ok: true, requestedAt: REQUESTED, test: pending } }));
+  await act(async () => holds.load?.({ body: { ok: true, test: older } }));
+  expect(alerts.getByRole('status').textContent).toBe(
+    `Asked at ${formatWhen(REQUESTED)}; the watchdog sends it within two minutes.`
+  );
 });
 
 it('a failed test shows the reason', async () => {

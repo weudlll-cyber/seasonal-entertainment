@@ -103,6 +103,12 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **The outage test e-mail's answer could be overwritten** — closed by
+  `fix/outage-test-mail-race` (2026-11-23): a click on "Send a test e-mail" before the panel's
+  first load had started let that load, answering last, put back the older state (the client
+  test "asking says the watchdog sends it" failed in CI on PR #86, about 1 run in 15 locally).
+  No load starts now while a send waits; a new test holds both requests to prove it.
+
 - **Recovery codes keyed like the kit's** — closed by `fix/recovery-code-hmac` (decided
   2026-11-22): new 2FA recovery codes are stored as HMAC-SHA-256 under `RECOVERY_CODE_KEY`,
   the scheme of `seasonal-kit`'s `recoveryCodes.ts`; codes stored before as plain SHA-256 stay
