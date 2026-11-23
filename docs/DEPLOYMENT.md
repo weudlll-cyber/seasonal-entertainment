@@ -593,8 +593,11 @@ Nothing reaches the server by itself: every update PR needs the owner's approval
 - **LiveKit** comes as its own PR, "LiveKit server": the server image and the browser tests'
   binary move together. Renovate changes the binary's version but cannot know its SHA-256
   values, so that PR's CI fails until the three checksums in `scripts/calls-binary.mjs` are
-  updated from LiveKit's release (the download is checked against them).
-- `deploy/test/renovate.test.sh` (CI) checks that the configuration still finds those pins.
+  updated from LiveKit's release (the download is checked against them). The PR's text says so
+  (`prBodyNotes`, decided 2026-11-23): update the checksums from the release's `checksums.txt`
+  and the docs naming the version (`docs/CALLS.md`) before merging.
+- `deploy/test/renovate.test.sh` (CI) checks that the configuration still finds those pins and
+  keeps that note.
 - Not covered: the load test's `livekit-cli` image (`deploy/calls/loadtest.sh`), pinned by digest
   only; it is updated by hand when needed.
 

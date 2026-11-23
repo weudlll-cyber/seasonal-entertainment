@@ -8,7 +8,8 @@
 #              CI's scanner images with tag and digest, the shellcheck image, the LiveKit binary's
 #              version), so a reworded line cannot silently drop out of the updates; and the
 #              LiveKit binary of the browser tests is the same version as the server image in
-#              deploy/calls, as the "LiveKit server" group keeps them. Uses Node to apply the
+#              deploy/calls, as the "LiveKit server" group keeps them; and the binary's PR carries
+#              the note to update its checksums and docs by hand. Uses Node to apply the
 #              regexes exactly as written. Plain checks, no framework.
 #              Run: bash deploy/test/renovate.test.sh; CI runs it. Exit code 1 on any failure.
 # ============================================================
@@ -66,6 +67,16 @@ check(
       ['livekit/livekit-server', 'livekit/livekit'].every((n) => r.matchPackageNames.includes(n))
   ),
   'the LiveKit binary and server image are one group'
+);
+// Renovate bumps only LIVEKIT_VERSION; the checksums and docs stay by hand (PR #85).
+check(
+  config.packageRules.some(
+    (r) =>
+      r.matchPackageNames?.includes('livekit/livekit') &&
+      r.matchFileNames?.includes('scripts/calls-binary.mjs') &&
+      r.prBodyNotes?.some((n) => n.includes('checksums.txt'))
+  ),
+  "the LiveKit binary's PR asks for its checksums and docs"
 );
 
 console.log(failures ? `${failures} failed` : 'all passed');

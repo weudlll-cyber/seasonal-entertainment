@@ -19,6 +19,14 @@
       "description": "The LiveKit server image (deploy/calls) and the binary the browser tests run (scripts/calls-binary.mjs) move together, in their own PR: the binary's three SHA-256 values must be updated by hand in that PR, its CI fails until they are.",
       "matchPackageNames": ["livekit/livekit-server", "livekit/livekit"],
       "groupName": "LiveKit server"
+    },
+    {
+      "description": "The LiveKit binary's version in scripts/calls-binary.mjs: Renovate changes only the version, so its PR says what to do by hand (decided 2026-11-23, after PR #85).",
+      "matchPackageNames": ["livekit/livekit"],
+      "matchFileNames": ["scripts/calls-binary.mjs"],
+      "prBodyNotes": [
+        "Update the SHA-256 checksums from the release's checksums.txt and the docs before merging."
+      ]
     }
   ],
   "customManagers": [
