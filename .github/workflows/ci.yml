@@ -63,7 +63,7 @@ jobs:
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24
+          node-version: 24.22.3
           cache: npm
 
       - name: Install dependencies
@@ -214,7 +214,7 @@ jobs:
       # docs/DEPLOYMENT.md), and the PC side of the backups for Linux and macOS (deploy/pc/).
       - name: Installer scripts pass shellcheck
         run: >-
-          docker run --rm -v "$PWD:/mnt" -w /mnt koalaman/shellcheck:v0.10.0 -x
+          docker run --rm -v "$PWD:/mnt" -w /mnt koalaman/shellcheck:v0.11.0 -x
           deploy/install.sh deploy/install/lib/*.sh deploy/install/certbot-hook.sh
           deploy/site/calls-cert.sh deploy/test/run.sh deploy/test/checks.sh
           deploy/test/checks-bot-admin.sh deploy/test/bot-admin-token.test.sh
@@ -239,7 +239,7 @@ jobs:
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24
+          node-version: 24.22.3
 
       - name: gitleaks (full history)
         run: docker run --rm -v "$PWD:/repo" "$GITLEAKS_IMAGE" git /repo --redact --no-banner --exit-code 1

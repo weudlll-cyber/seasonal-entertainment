@@ -6,7 +6,7 @@
   "description": "Seasonal Entertainment website: React + Vite client and Node + Express server in one repository.",
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": "v26.13.1"
   },
   "workspaces": [
     "shared",
@@ -34,17 +34,17 @@
     "dev:game-status": "node scripts/dev-game-status.mjs"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.64.1",
-    "@vitest/coverage-v8": "^5.0.5",
-    "eslint": "^10.13.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "globals": "^17.13.0",
-    "prettier": "^3.9.10",
-    "svgo": "^4.1.0"
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.1",
+    "@vitest/coverage-v8": "5.0.5",
+    "eslint": "10.13.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.13.0",
+    "prettier": "3.9.10",
+    "svgo": "4.1.0"
   },
   "overrides": {
-    "minimatch": "^11.0.5"
+    "minimatch": "11.0.5"
   }
 }

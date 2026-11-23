@@ -24,7 +24,7 @@ services:
       REDIS_HOST: 127.0.0.1:6379
 
   redis:
-    image: redis:7.4.11-alpine@sha256:892022f9f18c26c92c30e15194d132f90044af87b94a491a75429bbc3982eab1
+    image: redis:7.4.12-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe
     restart: unless-stopped
     network_mode: host
     # Only this machine: nothing outside talks to Redis.
