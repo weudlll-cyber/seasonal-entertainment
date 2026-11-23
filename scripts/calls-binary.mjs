@@ -15,7 +15,7 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const LIVEKIT_VERSION = '1.13.10';
+export const LIVEKIT_VERSION = '1.13.11';
 // From the release's checksums (github.com/livekit/livekit/releases/tag/v1.13.10).
 const ARCHIVES = {
   'win32-x64': {
