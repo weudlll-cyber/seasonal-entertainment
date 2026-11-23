@@ -6,9 +6,11 @@
 #              (Let's Encrypt) for SITE_DOMAIN, http redirected to https, everything forwarded
 #              to the site container (pages, /api, the chat WebSocket /ws/chat, /media).
 #              Security headers come from the app (helmet, server/src/http/securityHeaders.js)
-#              and pass through unchanged; Caddy adds none of its own. Its logs leave out the
-#              embed token's headers (X-Embed-Token, the WebSocket protocol header). Further site
-#              blocks (the calls domain, the www redirect) come from the folder mounted at
+#              and pass through unchanged; Caddy adds one only where an answer has none:
+#              Strict-Transport-Security, as the app sends it, so the games' routes carry it too
+#              (decided 2026-11-23). Its logs leave out the embed token's headers (X-Embed-Token,
+#              the WebSocket protocol header). Further site blocks (the calls domain, the www
+#              redirect) come from the folder mounted at
 #              /etc/caddy/sites (./caddy/, or the installer's CADDY_SITES_DIR). ACME_CA picks
 #              another certificate authority (a staging or test one); empty: Let's Encrypt.
 # ============================================================
@@ -31,6 +33,11 @@
 
 {$SITE_DOMAIN} {
 	encode zstd gzip
+	# HSTS for every route of the host, the imported game routes and the 404 below included.
+	# The ? sets it only where the answer has no Strict-Transport-Security of its own (the
+	# site's pages come with it from helmet), so it is never sent twice. The value is
+	# helmet's: one year and subdomains, no preload (deploy/test/games.test.sh compares).
+	header ?Strict-Transport-Security "max-age=31536000; includeSubDomains"
 	# Caddy replaces any X-Forwarded-For a visitor sends with the visitor's real address;
 	# the site trusts exactly this one proxy (TRUST_PROXY=1).
 	reverse_proxy site:3800

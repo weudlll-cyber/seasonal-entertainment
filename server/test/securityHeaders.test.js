@@ -2,7 +2,8 @@
 // File:        securityHeaders.test.js
 // Path:        server/test/securityHeaders.test.js
 // Project:     Seasonal Entertainment
-// Description: Guards the security headers on API and page responses, who may frame what
+// Description: Guards the security headers on API and page responses (HSTS's value among
+//              them: the site's proxies send the same one for the games' routes), who may frame what
 //              (frame-ancestors 'self' for the embedded chat under /embed/ only, 'none'
 //              elsewhere), the client-route fallback that serves index.html for deep links, and
 //              the caching of the built client: hashed assets/ for a year, the rest checked.
@@ -49,6 +50,9 @@ describe('security headers', () => {
     expect(res.headers['x-content-type-options']).toBe('nosniff');
     expect(res.headers['referrer-policy']).toBe('same-origin');
     expect(res.headers['x-powered-by']).toBeUndefined();
+    // HSTS as the proxies send it for the games' routes too (HSTS_VALUE in
+    // deploy/install/lib/nginx.sh, the Caddyfile; deploy/test/games.test.sh): helmet's default.
+    expect(res.headers['strict-transport-security']).toBe('max-age=31536000; includeSubDomains');
   });
 
   it('sends them on page responses too', async () => {

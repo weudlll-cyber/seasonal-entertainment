@@ -16,7 +16,9 @@
 #              none neither; a Bingo-only install comes out of an unattended --update with Bingo
 #              on and Mini Games, the race and Cases off. With Docker (always in CI): the real nginx -t
 #              and nginx denying every game's feed while a game's route file answers, and the
-#              site's own Caddy answering every feed 404. Paths point into a folder of the test
+#              site's own Caddy answering every feed 404; and, in both, the site's HSTS header on a
+#              game's route, a denied feed and a page of the site, once each, the site's own
+#              kept where it sends one (decided 2026-11-23). Paths point into a folder of the test
 #              and install's owners are recorded, so no root is needed. Plain checks, no
 #              framework. Run: bash deploy/test/games.test.sh; CI runs it. Exit code 1 on any
 #              failure.
@@ -185,6 +187,12 @@ if [[ -z "$(asked_now)" && "$BINGO" == yes && "$MINI_GAMES" == no ]]; then ok 'B
 if [[ "$(kv_get "$env" GAMES_EMBEDDED)" == bingo && "$(kv_get "$env" GAMES_SYNC_TOKEN)" == "$token" && -z "$(kv_get "$env" GAMES_BINGO_EMBEDDED)" ]]; then ok 'its site.env: the list says bingo, the same token, the old switch gone'; else bad "bingo-only site.env: $(cat "$env")"; fi
 if [[ "$(kv_get "$STATE_FILE" BINGO)" == yes && "$(kv_get "$STATE_FILE" MINI_GAMES)" == no && "$(kv_get "$STATE_FILE" RACE)" == no && "$(kv_get "$STATE_FILE" CASES)" == no ]]; then ok 'its state: BINGO=yes, MINI_GAMES=no, RACE=no, CASES=no remembered'; else bad 'bingo-only state'; fi
 
+# --- HSTS for the whole host: one value in both proxies (helmet's, pinned in
+# server/test/securityHeaders.test.js), the nginx lines once in the TLS server, none before it ---
+if grep -qF "header ?Strict-Transport-Security \"$HSTS_VALUE\"" "$DEPLOY/site/Caddyfile"; then ok "Caddy's HSTS value is nginx's"; else bad "the Caddyfile's HSTS value differs from HSTS_VALUE ($HSTS_VALUE)"; fi
+if [[ "$(nginx_site_conf yes | grep -cF "$HSTS_ADD_HEADER")" == 1 && "$(nginx_site_conf yes | grep -cF "\"\" \"$HSTS_VALUE\";")" == 1 ]]; then ok "the site's TLS server has the HSTS header and its map once"; else bad 'nginx HSTS lines'; fi
+if ! nginx_site_conf no | grep -qi 'strict-transport' && ! nginx_calls_conf yes | grep -qi 'strict-transport'; then ok 'port 80 and the calls server send none'; else bad 'HSTS where it is not meant'; fi
+
 # --- the real nginx and Caddy, in Docker (always in CI; a PC without Docker skips them) ---
 if command -v docker >/dev/null && docker info >/dev/null 2>&1; then
   # Docker on Windows (Git Bash) takes Windows paths for its volumes; elsewhere they are as is.
@@ -196,7 +204,22 @@ if command -v docker >/dev/null && docker info >/dev/null 2>&1; then
   # The feed in other letter cases too: the site's router does not mind them.
   paths='/api/games/bingo/account-changes?since=0 /api/games/mini-games/account-changes /api/games/mini-games/authorize /games/mini-games/ /api/games/race/account-changes?since=0 /api/games/race/Account-Changes /API/Games/Bingo/ACCOUNT-CHANGES /api/games/cases/account-changes?since=0 /api/games/Cases/account-changes'
 
-  # nginx: the site's routes lines in a server block, a game's route file in the folder.
+  # The answer's Strict-Transport-Security lines of each path, as "path header|header|": a raw
+  # request, since wget shows no headers of an error answer. The sleep keeps the connection
+  # open until the answer is in (a proxied one is cancelled when the client has gone).
+  # shellcheck disable=SC2016 # expanded inside the container
+  hsts_probe='for p in $HSTS_PATHS; do printf "%s %s\n" "$p" "$( (printf "GET $p HTTP/1.0\r\nHost: localhost\r\n\r\n"; sleep 1) | nc $HSTS_HOST 8080 | tr -d "\r" | grep -i "^strict-transport-security: " | tr "\n" "|")"; done'
+  # A game's route, a denied feed, a page of the site that sends its own header (helmet's, here
+  # a stand-in with another value), and one that sends none.
+  hsts_paths='/games/mini-games/x /api/games/bingo/account-changes?since=0 /app/x /plain'
+  ours="Strict-Transport-Security: $HSTS_VALUE|"
+  want_hsts="/games/mini-games/x $ours
+/api/games/bingo/account-changes?since=0 $ours
+/app/x Strict-Transport-Security: max-age=1|
+/plain $ours"
+
+  # nginx: the site's routes lines in a server block, a game's route file in the folder, the
+  # site's HSTS lines as the installer writes them; a second server stands in for the site.
   conf="$work/nginx"
   mkdir -p "$conf/routes"
   printf 'location ^~ /games/mini-games/ { return 204; }\n' >"$conf/routes/mini-games.conf"
@@ -205,17 +228,28 @@ if command -v docker >/dev/null && docker info >/dev/null 2>&1; then
     echo 'events {}'
     echo 'http {'
     echo '  access_log off;'
+    nginx_hsts_map
+    echo '  server {'
+    echo '    listen 8081;'
+    echo '    location /app/ { add_header Strict-Transport-Security "max-age=1" always; return 200; }'
+    echo '    location / { return 200; }'
+    echo '  }'
     echo '  server {'
     echo '    listen 8080;'
+    echo "    $HSTS_ADD_HEADER"
     ROUTES_DIR=/etc/seasonal/routes nginx_routes_lines
+    echo '    location /app/ { proxy_pass http://127.0.0.1:8081; }'
     echo '    location / { return 200; }'
     echo '  }'
     echo '}'
   } >"$conf/nginx.conf"
   got="$(MSYS_NO_PATHCONV=1 docker run --rm -e PATHS="$paths" -e BASE=http://127.0.0.1:8080 \
+    -e HSTS_PATHS="$hsts_paths" -e HSTS_HOST=127.0.0.1 \
     -v "$(host_path "$conf/nginx.conf"):/etc/nginx/nginx.conf:ro" \
     -v "$(host_path "$conf/routes"):/etc/seasonal/routes:ro" nginx:1.27.5-alpine \
-    sh -c "nginx -t 2>&1 | tail -1 && nginx && $probe")"
+    sh -c "nginx -t 2>&1 | tail -1 && nginx && $probe && echo --hsts && $hsts_probe")"
+  got_hsts="${got#*--hsts$'\n'}"
+  got="${got%%$'\n'--hsts*}"
   want="nginx: configuration file /etc/nginx/nginx.conf test is successful
 /api/games/bingo/account-changes?since=0 403
 /api/games/mini-games/account-changes 403
@@ -227,6 +261,7 @@ if command -v docker >/dev/null && docker info >/dev/null 2>&1; then
 /api/games/cases/account-changes?since=0 403
 /api/games/Cases/account-changes 403"
   if [[ "$got" == "$want" ]]; then ok 'nginx -t passes; nginx denies every feed, the rest and a game route answer'; else bad "nginx: $got"; fi
+  if [[ "$got_hsts" == "$want_hsts" ]]; then ok "nginx sends HSTS once on a game route, a denied feed and the site's pages, the site's own kept"; else bad "nginx hsts: $got_hsts"; fi
 
   # The site's own Caddy (its pinned image): every feed 404, the rest goes to the site (absent
   # here: 502).
@@ -244,6 +279,19 @@ if command -v docker >/dev/null && docker info >/dev/null 2>&1; then
 /api/games/cases/account-changes?since=0 404
 /api/games/Cases/account-changes 404"
   if [[ "$got" == "$want" ]]; then ok "the site's Caddy answers every feed 404"; else bad "caddy: $got"; fi
+
+  # HSTS in the site's Caddy: a game's route file (as the games' installers write them), the
+  # denied feed, and a stand-in for the site on site:3800 that sends its own header on /app/ only.
+  mkdir -p "$work/caddy-routes"
+  printf 'handle /games/mini-games/* {\n\trespond "game" 200\n}\n' >"$work/caddy-routes/mini-games.caddy"
+  printf '{\n\tadmin off\n}\n:3800 {\n\thandle /app/* {\n\t\theader Strict-Transport-Security "max-age=1"\n\t\trespond "app"\n\t}\n\trespond "plain"\n}\n' >"$work/caddy-site.caddy"
+  got_hsts="$(MSYS_NO_PATHCONV=1 docker run --rm -e HSTS_PATHS="$hsts_paths" -e HSTS_HOST=localhost \
+    -e SITE_DOMAIN=http://localhost:8080 -e ACME_EMAIL=ops@site.example --add-host site:127.0.0.1 \
+    -v "$(host_path "$DEPLOY/site/Caddyfile"):/etc/caddy/Caddyfile:ro" \
+    -v "$(host_path "$work/caddy-routes"):/etc/caddy/routes:ro" \
+    -v "$(host_path "$work/caddy-site.caddy"):/etc/caddy/site.caddy:ro" \
+    "$image" sh -c "caddy start --config /etc/caddy/site.caddy --adapter caddyfile >/dev/null 2>&1 && caddy start --config /etc/caddy/Caddyfile >/dev/null 2>&1 && sleep 1 && $hsts_probe")"
+  if [[ "$got_hsts" == "$want_hsts" ]]; then ok "the site's Caddy sends HSTS once on a game route, a denied feed and the site's pages, the site's own kept"; else bad "caddy hsts: $got_hsts"; fi
 elif [[ -n "${CI:-}" ]]; then
   bad 'Docker is needed in CI for the nginx and Caddy checks'
 else

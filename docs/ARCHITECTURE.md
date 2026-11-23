@@ -416,7 +416,10 @@ style, no JavaScript `eval`. `script-src` also has `'wasm-unsafe-eval'` (added a
 owner 2026-10-18): it allows
 compiling WebAssembly only, which the browser's cryptography needs (libsodium, `shared/crypto.js`,
 docs/AUTH.md); the module itself is a same-origin file.
-Plus `nosniff`, `Referrer-Policy: same-origin` and helmet's other defaults. The browser smoke
+Plus `nosniff`, `Referrer-Policy: same-origin` and helmet's other defaults, among them
+`Strict-Transport-Security: max-age=31536000; includeSubDomains`; the site's proxy sends that one
+for the games' routes too, once (since 2026-11-23; docs/DEPLOYMENT.md, "HSTS for the whole
+host"). The browser smoke
 test fails on any console error, which is where a CSP violation shows up.
 With calls configured, `connect-src` also holds the call service's origin (`CALLS_URL` and the
 same host over https) and nothing else; `Permissions-Policy` allows camera, microphone and
