@@ -9,7 +9,9 @@
 #              version), so a reworded line cannot silently drop out of the updates; and the
 #              LiveKit binary of the browser tests is the same version as the server image in
 #              deploy/calls, as the "LiveKit server" group keeps them; and the binary's PR carries
-#              the note to update its checksums and docs by hand. Uses Node to apply the
+#              the note to update its checksums and docs by hand; and vitest and
+#              @vitest/coverage-v8 have one version in every package.json (two copies in one run
+#              broke a client test, PR #84, 2026-11-23). Uses Node to apply the
 #              regexes exactly as written. Plain checks, no framework.
 #              Run: bash deploy/test/renovate.test.sh; CI runs it. Exit code 1 on any failure.
 # ============================================================
@@ -77,6 +79,17 @@ check(
       r.prBodyNotes?.some((n) => n.includes('checksums.txt'))
   ),
   "the LiveKit binary's PR asks for its checksums and docs"
+);
+// vitest and its coverage plugin must move together: different pins install a second vitest,
+// which jest-dom then loads instead of the tests' own; a client test failed that way (PR #84).
+const vitestPins = ['package.json', 'client/package.json', 'server/package.json'].flatMap((f) => {
+  const { dependencies = {}, devDependencies = {} } = JSON.parse(readFileSync(f, 'utf8'));
+  const deps = { ...dependencies, ...devDependencies };
+  return ['vitest', '@vitest/coverage-v8'].filter((n) => deps[n]).map((n) => deps[n]);
+});
+check(
+  vitestPins.length >= 2 && new Set(vitestPins).size === 1,
+  `vitest and @vitest/coverage-v8 have one version (${[...new Set(vitestPins)].join(', ')})`
 );
 
 console.log(failures ? `${failures} failed` : 'all passed');
