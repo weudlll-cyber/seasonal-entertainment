@@ -48,7 +48,7 @@ export function accountDeleteRoutes(
     const factorOk =
       passwordOk &&
       (!isTwoFactorEnabled(db, user.id) ||
-        (await acceptSecondFactor(db, config.secretKey, user.id, secondFactor(req.body))));
+        (await acceptSecondFactor(db, config, user.id, secondFactor(req.body))));
     if (!factorOk) sendError(res, 401, 'invalid_credentials', 'Password or code is wrong.');
     return factorOk;
   }

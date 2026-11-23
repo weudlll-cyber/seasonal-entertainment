@@ -28,7 +28,7 @@ import { PROFILES_SCHEMA, migrateProfiles } from '../profiles/schema.js';
 import { REFERENCE_SCHEMA } from '../reference/schema.js';
 import { SETTINGS_SCHEMA } from '../settings/schema.js';
 import { UPLOAD_SCHEMA } from '../uploads/schema.js';
-import { TWO_FACTOR_SCHEMA } from '../twofa/schema.js';
+import { migrateTwoFactor, TWO_FACTOR_SCHEMA } from '../twofa/schema.js';
 
 // Order matters only for foreign keys: an area's tables come after those it references.
 const SCHEMAS = [
@@ -73,5 +73,6 @@ export function openDatabase(databasePath) {
   migrateGames(db);
   migratePush(db);
   migrateProfiles(db);
+  migrateTwoFactor(db);
   return db;
 }

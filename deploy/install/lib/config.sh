@@ -6,8 +6,10 @@
 # Description: The installer's configuration files (docs/DEPLOYMENT.md): deploy/site/site.env
 #              (the app), deploy/site/.env and deploy/calls/.env (compose), all mode 600, with
 #              every secret made here and never printed; a secret already there is kept, so a
-#              re-run changes nothing that works (the KEEP SAFE note for the 2FA key is due only
-#              when the key is made here). Also the installer's compose file
+#              re-run changes nothing that works. The two 2FA keys (SECRET_ENCRYPTION_KEY,
+#              RECOVERY_CODE_KEY) also get a root-only copy in /etc/seasonal, and the KEEP SAFE
+#              note is due only when one of them is made here (on --update too, for a key that
+#              is new since the last run). Also the installer's compose file
 #              (deploy/site/docker-compose.install.yml, chosen through COMPOSE_FILE) and the
 #              extra Caddy site files (www redirect, calls domain) in /etc/seasonal/caddy-sites.
 # ============================================================
@@ -17,6 +19,7 @@ CALLS_DIR_REL=deploy/calls
 CALLS_CERT_DIR="$STATE_DIR/calls-cert"
 CADDY_SITES_DIR="$STATE_DIR/caddy-sites"
 KEY_COPY="$STATE_DIR/secret-encryption-key"
+RECOVERY_KEY_COPY="$STATE_DIR/recovery-code-key"
 SITE_LOCAL_PORT=3800
 BACKUP_HOST_DIR=/var/backups/seasonal
 # The calls API key name (the secret beside it is random); LiveKit and the site share the pair.
@@ -33,6 +36,20 @@ kv_keep() {
   [[ -n "$(kv_get "$file" "$key")" ]] || kv_set "$file" "$key" "$("$@")"
 }
 
+# keep_key FILE KEY COPY: a 2FA key (32 random bytes as base64) kept in FILE, made only when it
+# has no value yet, and its root-only copy at COPY (mode 600, in a mode 700 folder). A key made
+# now must be copied off the server: install_all says so once (KEY_NOTE, state). Prints nothing.
+keep_key() {
+  local file="$1" key="$2" copy="$3"
+  # shellcheck disable=SC2034 # read by install_all (install.sh) and save_state
+  [[ -n "$(kv_get "$file" "$key")" ]] || KEY_NOTE=pending
+  kv_keep "$file" "$key" new_secret base64
+  install -d -m 700 "$(dirname "$copy")"
+  install -m 600 /dev/null "$copy.tmp"
+  kv_get "$file" "$key" >"$copy.tmp"
+  mv "$copy.tmp" "$copy"
+}
+
 commit_sha() {
   git_here rev-parse HEAD 2>/dev/null || echo unknown
 }
@@ -42,15 +59,11 @@ write_site_env() {
   file="$(site_env)"
   say "writing $SITE_DIR_REL/site.env (mode 600; secrets generated here, never shown)"
   kv_keep "$file" SESSION_SECRET new_secret hex
-  # A key made now must be copied off the server: install_all says so once (KEY_NOTE, state).
-  # shellcheck disable=SC2034 # read by install_all (install.sh) and save_state
-  [[ -n "$(kv_get "$file" SECRET_ENCRYPTION_KEY)" ]] || KEY_NOTE=pending
-  kv_keep "$file" SECRET_ENCRYPTION_KEY new_secret base64
-  # A root-only copy of the key that encrypts 2FA secrets: losing it locks every 2FA login.
-  install -d -m 700 "$STATE_DIR"
-  install -m 600 /dev/null "$KEY_COPY.tmp"
-  kv_get "$file" SECRET_ENCRYPTION_KEY >"$KEY_COPY.tmp"
-  mv "$KEY_COPY.tmp" "$KEY_COPY"
+  # The key that encrypts 2FA secrets: losing it locks every 2FA login.
+  keep_key "$file" SECRET_ENCRYPTION_KEY "$KEY_COPY"
+  # The key of the recovery codes' hashes (decided 2026-11-22): losing it voids the codes
+  # issued since then. Made on the first --update after that, too.
+  keep_key "$file" RECOVERY_CODE_KEY "$RECOVERY_KEY_COPY"
   # Only until the first admin exists (install_admin removes it).
   [[ "${ADMIN_DONE:-no}" == yes ]] || kv_keep "$file" BOOTSTRAP_TOKEN new_secret hex
   if [[ -n "${CALLS_DOMAIN:-}" ]]; then

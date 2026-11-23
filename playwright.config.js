@@ -58,6 +58,8 @@ const serverEnv = {
   SESSION_SECRET: 'e2e-session-secret',
   // 2FA secrets at rest (docs/AUTH.md): a fixed test key, so no development-key warning.
   SECRET_ENCRYPTION_KEY: 'ZTJlLW9ubHktc2VjcmV0LWVuY3J5cHRpb24ta2V5ISE=',
+  // The recovery codes' key (docs/AUTH.md), likewise: 32 bytes as base64.
+  RECOVERY_CODE_KEY: Buffer.from('e2e-only-recovery-code-key-32-by').toString('base64'),
   // A token only test runs know: the admin spec creates its admin through the real
   // bootstrap route. Not a secret: it only ever unlocks this throw-away database.
   BOOTSTRAP_TOKEN: 'e2e-bootstrap-token',

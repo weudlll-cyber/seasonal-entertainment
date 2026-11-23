@@ -98,9 +98,11 @@ Usage: sudo ./deploy/install.sh [options]
   --rollback DIR         undo a run, back to the snapshot DIR it printed
   -h, --help             this text
 
-KEEP SAFE: /etc/seasonal/secret-encryption-key is the key that encrypts 2FA secrets. Copy it
-off this server and keep it apart from the backups; without it, 2FA logins cannot be restored:
+KEEP SAFE: /etc/seasonal/secret-encryption-key is the key that encrypts 2FA secrets, and
+/etc/seasonal/recovery-code-key the key of the 2FA recovery codes. Copy both off this server
+and keep them apart from the backups; without them, 2FA logins cannot be restored:
   scp root@<this server>:/etc/seasonal/secret-encryption-key ./seasonal-secret-encryption-key
+  scp root@<this server>:/etc/seasonal/recovery-code-key ./seasonal-recovery-code-key
 EOF
 }
 
@@ -288,13 +290,14 @@ install_all() {
   install_watchdog "$(site_data_host_dir)"
   save_state
   say "done: https://$SITE_DOMAIN"
-  # Once, at the end of the first install that finishes (write_site_env made the key and set
-  # KEY_NOTE=pending; a first run that stopped earlier shows it on the next run); --help and
-  # docs/DEPLOYMENT.md keep saying it.
+  # Once, at the end of the first run that finishes after write_site_env made a 2FA key and set
+  # KEY_NOTE=pending (the first install, or the --update that adds RECOVERY_CODE_KEY; a run that
+  # stopped earlier shows it on the next one); --help and docs/DEPLOYMENT.md keep saying it.
   if [[ "${KEY_NOTE:-}" == pending ]]; then
-    say "KEEP SAFE: copy the key that encrypts 2FA secrets off this server now, e.g. from your PC:"
+    say "KEEP SAFE: copy the two 2FA keys off this server now, e.g. from your PC:"
     say "  scp root@<this server>:$KEY_COPY ./seasonal-secret-encryption-key"
-    say "  (and keep it apart from the backups; without it, 2FA logins cannot be restored)"
+    say "  scp root@<this server>:$RECOVERY_KEY_COPY ./seasonal-recovery-code-key"
+    say "  (and keep them apart from the backups; without them, 2FA logins cannot be restored)"
     KEY_NOTE=shown
     save_state
   fi

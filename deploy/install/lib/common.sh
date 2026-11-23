@@ -324,7 +324,7 @@ new_secret() {
 # The answers the installer remembers (no secrets): written after every successful step.
 # COINGECKO is "none" once the CoinGecko key was declined (the key itself lives in site.env
 # only), DISCORD the same for the Discord login (discord.sh); KEY_NOTE is "pending" until the
-# KEEP SAFE note for the 2FA key was shown once.
+# KEEP SAFE note for the 2FA keys was shown once (again "pending" when a run makes one, config.sh).
 # BINGO, MINI_GAMES, RACE, CASES: whether Seasonal Bingo Royale, Seasonal Mini Games, Seasonal
 # Race and Seasonal Cases are embedded, yes or no (games.sh). OUTAGE_MAIL: "none" once the outage e-mails' account was
 # declined, "set" once given (the account itself lives in the root-only file, outage.sh).

@@ -131,12 +131,17 @@ admin page").
    install (shown as "still working"), but only lists what would need a restart and never asks
    or restarts another service (another site's nginx, ssh) during the run; `sudo needrestart`
    shows the list later.
-4. Makes every secret on the server: the session secret, the key that encrypts 2FA secrets, the
-   bootstrap token, and the call service's key pair. Secrets are never printed. They are written
-   to `deploy/site/site.env`, `deploy/site/.env` and `deploy/calls/.env` (mode 600, never
-   committed). A secret that already exists is kept. When the key that encrypts 2FA secrets is
-   made, the end of that run says once "KEEP SAFE" and how to copy it off the server (see "What
-   you still do yourself"); later runs do not repeat it (`--help` always says it).
+4. Makes every secret on the server: the session secret, the key that encrypts 2FA secrets
+   (`SECRET_ENCRYPTION_KEY`), the key of the 2FA recovery codes (`RECOVERY_CODE_KEY`, decided
+   2026-11-22), the bootstrap token, and the call service's key pair. Secrets are never printed.
+   They are written to `deploy/site/site.env`, `deploy/site/.env` and `deploy/calls/.env` (mode
+   600, never committed). A secret that already exists is kept; one that is missing is made on
+   a re-run or `--update` too (so the first `--update` after 2026-11-22 adds
+   `RECOVERY_CODE_KEY` to a running site). Each of the two 2FA keys also gets a root-only copy,
+   `/etc/seasonal/secret-encryption-key` and `/etc/seasonal/recovery-code-key`. When either key
+   is made, the end of that run says once "KEEP SAFE" and how to copy both off the server (see
+   "What you still do yourself"); later runs do not repeat it (`--help` always says it). Tests:
+   `bash deploy/test/recovery-key.test.sh` (CI too).
 5. Firewall: if **ufw is active**, it adds only the rules the chosen features need **and no
    existing rule allows yet**, and lists them in `/etc/seasonal/ufw-added`. An existing rule
    counts when it lets the port in from anywhere: also a combined rule (`80,443/tcp`), a range
@@ -504,16 +509,18 @@ again:
 - **DNS records** (see "Requirements").
 - **A provider firewall**, if your host has one in front of the server: open the same ports
   there. The installer prints them.
-- **Copy the 2FA encryption key off the server**, right after the first run (its end says
-  "KEEP SAFE" once; `sudo ./deploy/install.sh --help` says it any time). Store it apart from
-  the backups: without it, 2FA logins cannot be restored onto a new server (docs/AUTH.md). From
-  your PC:
+- **Copy the two 2FA keys off the server**, right after the first run, and again after the run
+  that adds one (its end says "KEEP SAFE" once; `sudo ./deploy/install.sh --help` says it any
+  time). Store them apart from the backups: without the encryption key, 2FA logins cannot be
+  restored onto a new server; without the recovery code key, the recovery codes issued since
+  2026-11-22 no longer work there (docs/AUTH.md). From your PC:
 
   ```sh
   scp root@<server>:/etc/seasonal/secret-encryption-key ./seasonal-secret-encryption-key
+  scp root@<server>:/etc/seasonal/recovery-code-key ./seasonal-recovery-code-key
   ```
 
-  On Linux or macOS, keep it readable for you only (step 5 of "Linux and macOS" below).
+  On Linux or macOS, keep them readable for you only (step 5 of "Linux and macOS" below).
 
 - **Keep the age private key safe.** It is the only way to read the backups. Keep it on your PC
   plus one offline copy, and never on the server ("Backups to your PC").
@@ -694,8 +701,9 @@ Every night at 03:30 `seasonal-backup.timer` runs `scripts/backup.mjs` inside th
   group is the read-only backup user's below (`seasonal-backup`) when that user exists, otherwise
   root's. Nobody else may even list it. A backup user made after the installer ran: run the
   installer again (or `sudo chgrp seasonal-backup /var/backups/seasonal`).
-- The backups hold the whole database (2FA secrets encrypted with `SECRET_ENCRYPTION_KEY`, which
-  is **not** in them; direct messages only as ciphertext).
+- The backups hold the whole database (2FA secrets encrypted with `SECRET_ENCRYPTION_KEY`, and
+  recovery codes hashed with `RECOVERY_CODE_KEY`, neither key in them; direct messages only as
+  ciphertext). The keys stay in `site.env` on the server, which a restore there does not touch.
 
 To set up or change the key later: `sudo ./deploy/install.sh --backups`. The installer asks for
 the `age1…` key, enables the timer, runs one backup and checks it.
@@ -832,13 +840,14 @@ newest="$(ls ~/SeasonalBackups/*.tar.age | tail -n 1)"
 age -d -i ~/SeasonalBackupKey/backup-key.txt "$newest" | tar -tf - | grep '/seasonal.db$'
 ```
 
-**5. The 2FA encryption key** ("What you still do yourself"), readable for you only and apart
-from the backups:
+**5. The two 2FA keys** ("What you still do yourself"), readable for you only and apart from
+the backups:
 
 ```sh
 mkdir -p ~/SeasonalSecrets && chmod 700 ~/SeasonalSecrets
 scp root@example.org:/etc/seasonal/secret-encryption-key ~/SeasonalSecrets/secret-encryption-key
-chmod 600 ~/SeasonalSecrets/secret-encryption-key
+scp root@example.org:/etc/seasonal/recovery-code-key ~/SeasonalSecrets/recovery-code-key
+chmod 600 ~/SeasonalSecrets/secret-encryption-key ~/SeasonalSecrets/recovery-code-key
 ```
 
 **6. The daily run.** On **Linux**, with cron (`crontab -e`, one line):
@@ -942,9 +951,11 @@ Then delete `restore.tar` and `restore-recordings` on the PC too.
   start creates the starting content. With `--force` the current database and media are moved
   aside to `….before-restore-<time>` in the volume, never deleted. Delete those once the restored
   site looks right.
-- **On a new server**, put the old `SECRET_ENCRYPTION_KEY` (the copy you took off the old
-  server) into `deploy/site/site.env` before the restore and restart the site. Otherwise 2FA
-  users must sign in with recovery codes. The same for `VAPID_PUBLIC_KEY` and
+- **On a new server**, put the old `SECRET_ENCRYPTION_KEY` and `RECOVERY_CODE_KEY` (the
+  copies you took off the old server) into `deploy/site/site.env` before the restore and
+  restart the site. Without the first, 2FA users must sign in with recovery codes; without the
+  second, the recovery codes issued since 2026-11-22 do not work (the older ones still do).
+  The same for `VAPID_PUBLIC_KEY` and
   `VAPID_PRIVATE_KEY` ("Web push"); otherwise members turn "When a call starts" on again.
 - A restore drill now and then is the only proof a backup works: the archive, and the
   recordings with `--recordings`, until the restore reports no MISSING recording. CI decrypts one made by the
@@ -978,9 +989,10 @@ the restored database). What the steps above do not show:
    `--force` (the new paths are empty). Both should end with exit code 0, the second with
    "0 MISSING". A recording backup the database no longer names (deleted on the site; the PC
    keeps every one) is simply not used.
-6. **Start it**: `HOST=127.0.0.1`, an unused `PORT`, a fresh `SESSION_SECRET` and
-   `SECRET_ENCRYPTION_KEY` (never the live ones; the log then says the stored 2FA secrets do not
-   open, as expected), `NODE_ENV` unset, then `node server/src/index.js`.
+6. **Start it**: `HOST=127.0.0.1`, an unused `PORT`, a fresh `SESSION_SECRET`,
+   `SECRET_ENCRYPTION_KEY` and `RECOVERY_CODE_KEY` (never the live ones; the log then says the
+   stored 2FA secrets do not open, as expected), `NODE_ENV` unset, then
+   `node server/src/index.js`.
    `GET /api/health` should answer `"ok":true`.
 7. **Stop it and delete the whole throwaway folder**, decrypted data included.
 
@@ -1148,18 +1160,19 @@ chmod 600 .env site.env
 
 In **`site.env`**:
 
-| Key                     | Value                                                                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SESSION_SECRET`        | `openssl rand -hex 32` (production refuses less than 32 characters)                                                                           |
-| `BOOTSTRAP_TOKEN`       | `openssl rand -hex 32`, only until the first admin exists                                                                                     |
-| `SECRET_ENCRYPTION_KEY` | `openssl rand -base64 32`: encrypts 2FA secrets; **keep a copy off the server**, apart from the backups (losing it locks 2FA: docs/AUTH.md)   |
-| `CALLS_URL`             | `wss://<CALLS_DOMAIN>`                                                                                                                        |
-| `CALLS_API_KEY`         | a key name, e.g. `seasonal`                                                                                                                   |
-| `CALLS_API_SECRET`      | `openssl rand -hex 32` (the same pair goes into `deploy/calls/.env` as `LIVEKIT_KEYS="<key>: <secret>"`)                                      |
-| `COINGECKO_API_KEY`     | a free CoinGecko Demo key: ETH, POL and BTC prices on `/info/prices`; empty: "not connected" (docs/BOTS.md)                                   |
-| `BACKUP_RECIPIENT`      | the `age1…` public key ("Backups")                                                                                                            |
-| `VAPID_PUBLIC_KEY`      | with `VAPID_PRIVATE_KEY`: the web push key pair, base64url (P-256); `npx web-push generate-vapid-keys` makes one; empty: no push ("Web push") |
-| everything else         | empty: the defaults fit (docs/ARCHITECTURE.md, "Runtime configuration"); chat limits and link previews are admin settings (docs/SETTINGS.md)  |
+| Key                     | Value                                                                                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SESSION_SECRET`        | `openssl rand -hex 32` (production refuses less than 32 characters)                                                                                                 |
+| `BOOTSTRAP_TOKEN`       | `openssl rand -hex 32`, only until the first admin exists                                                                                                           |
+| `SECRET_ENCRYPTION_KEY` | `openssl rand -base64 32`: encrypts 2FA secrets; **keep a copy off the server**, apart from the backups (losing it locks 2FA: docs/AUTH.md)                         |
+| `RECOVERY_CODE_KEY`     | `openssl rand -base64 32`, never the key above: keys the 2FA recovery codes; **keep a copy off the server** too (losing it voids the codes issued since 2026-11-22) |
+| `CALLS_URL`             | `wss://<CALLS_DOMAIN>`                                                                                                                                              |
+| `CALLS_API_KEY`         | a key name, e.g. `seasonal`                                                                                                                                         |
+| `CALLS_API_SECRET`      | `openssl rand -hex 32` (the same pair goes into `deploy/calls/.env` as `LIVEKIT_KEYS="<key>: <secret>"`)                                                            |
+| `COINGECKO_API_KEY`     | a free CoinGecko Demo key: ETH, POL and BTC prices on `/info/prices`; empty: "not connected" (docs/BOTS.md)                                                         |
+| `BACKUP_RECIPIENT`      | the `age1…` public key ("Backups")                                                                                                                                  |
+| `VAPID_PUBLIC_KEY`      | with `VAPID_PRIVATE_KEY`: the web push key pair, base64url (P-256); `npx web-push generate-vapid-keys` makes one; empty: no push ("Web push")                       |
+| everything else         | empty: the defaults fit (docs/ARCHITECTURE.md, "Runtime configuration"); chat limits and link previews are admin settings (docs/SETTINGS.md)                        |
 
 Set by `docker-compose.yml`, never in `site.env` (it would be overruled): `NODE_ENV=production`,
 `HOST`, `PORT`, `TRUST_PROXY=1` (exactly one proxy in front), `PUBLIC_ORIGIN=https://<SITE_DOMAIN>`,
@@ -1169,7 +1182,7 @@ Production **refuses to start** with development defaults (`server/src/productio
 `server/src/secretKey.js`, `server/src/calls/config.js`):
 
 - a missing or short `SESSION_SECRET`;
-- a missing `SECRET_ENCRYPTION_KEY`, or the development one;
+- a missing `SECRET_ENCRYPTION_KEY` or `RECOVERY_CODE_KEY`, or a development one;
 - an `http://` origin;
 - `COOKIE_SECURE=false` or `CSRF_STRICT=false`;
 - a short `BOOTSTRAP_TOKEN`;

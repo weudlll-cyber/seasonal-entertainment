@@ -12,7 +12,12 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { readConfig } from '../src/config.js';
 import { logIn } from './helpers/accountKeys.js';
-import { TEST_SECRET_KEY, makeTestApp, registerUser } from './helpers/testApp.js';
+import {
+  TEST_RECOVERY_CODE_KEY,
+  TEST_SECRET_KEY,
+  makeTestApp,
+  registerUser,
+} from './helpers/testApp.js';
 
 let t;
 afterEach(() => t?.close());
@@ -22,6 +27,7 @@ describe('production start', () => {
     NODE_ENV: 'production',
     SESSION_SECRET: 's'.repeat(32),
     SECRET_ENCRYPTION_KEY: TEST_SECRET_KEY,
+    RECOVERY_CODE_KEY: TEST_RECOVERY_CODE_KEY,
   };
 
   it('refuses to start without TRUST_PROXY or a valid PUBLIC_ORIGIN', () => {

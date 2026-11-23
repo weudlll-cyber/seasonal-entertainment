@@ -42,7 +42,7 @@ const currentCode = () => codeForStep(STAFF_TOTP_SECRET, stepAt(Date.now()));
 // Turns 2FA on for an account as the setup does; returns its recovery codes.
 async function withTwoFactor(userId) {
   savePendingSecret(t.db, userId, await sealSecret(STAFF_TOTP_SECRET, t.config.secretKey));
-  return enableTwoFactor(t.db, userId, 0);
+  return enableTwoFactor(t.db, t.config.recoveryCodeKey, userId, 0);
 }
 
 describe('deleting your own account', () => {
@@ -102,7 +102,7 @@ describe('deleting your own account', () => {
     t = makeTestApp();
     const { agent, user } = await makeStaff(t, 'ada', 'admin');
     // A code is used up by each attempt (no reuse): one recovery code per attempt.
-    const codes = enableTwoFactor(t.db, user.id, 0);
+    const codes = enableTwoFactor(t.db, t.config.recoveryCodeKey, user.id, 0);
     const refused = await deleteOwn(agent, { recoveryCode: codes[0] });
     expect(refused.status).toBe(409);
     expect(refused.body.error).toBe('last_admin');

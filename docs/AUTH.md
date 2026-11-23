@@ -451,18 +451,32 @@ member with an **embed token** instead (`server/src/embed/`; SE-NIGHT-2 follow-u
   per-account 2FA limit) and returns a new secret, its `otpauth://` link and a QR code (PNG
   data URL); calling it again replaces a pending secret, with the password again.
   `POST /api/2fa/enable` with a first valid code turns 2FA on and returns **ten recovery codes,
-  shown once**; only their SHA-256 hashes are stored (`hashCode`, `server/src/twofa/store.js`),
-  unkeyed. The shared game kit (`seasonal-kit`, its DECISIONS K20) stores its games' codes as an
-  HMAC-SHA-256 with a key of their own (`RECOVERY_CODE_KEY`), so a copy of the table cannot be
-  searched for codes without the key; this site does not yet (docs/BACKLOG.md, "Recovery codes
-  keyed like the kit's").
+  shown once**. Only their hashes are stored, keyed (decided 2026-11-22): HMAC-SHA-256 under
+  the server key `RECOVERY_CODE_KEY` (`recoveryHash`, `server/src/twofa/store.js`), of the
+  code with spaces and dashes taken out, in lower case. This is the scheme of the shared game kit
+  (`seasonal-kit`, `src/server/recoveryCodes.ts`, its DECISIONS K20), so a copy of the table
+  alone cannot be searched for the codes (about 40 bits each) without the key.
+  - Each row records its scheme (`recovery_codes.scheme`): `hmac` for codes issued since
+    2026-11-22, `legacy` for those issued before, which were stored as plain SHA-256
+    (`legacyHash`). Legacy codes stay valid, once each, without an end date (decided
+    2026-11-22); turning 2FA off and on again issues keyed ones. Until every legacy code is used
+    or replaced, those rows could still be searched from a stolen database.
+  - A typed code is compared with every unused code of the account in constant time
+    (`timingSafeEqual`), each in its own row's scheme.
+  - `RECOVERY_CODE_KEY` is 32 random bytes as base64, its own key, never
+    `SECRET_ENCRYPTION_KEY`. Production refuses to start without it or with the development key
+    (`server/src/secretKey.js`); development without it uses a fixed, public development key
+    and says so, so development codes keep working across restarts. **Losing it** voids every
+    keyed code (the legacy ones still work); those accounts sign in with their authenticator or
+    need 2FA reset by an admin.
 - **Login** for an account with 2FA has two steps: the password answers
   `{ twoFactorRequired: true }` and marks the session as half-way (not logged in; valid
   5 minutes, and only while the account's session epoch is unchanged, so a password reset in
   between voids it); `POST /api/2fa/login` with `code` or `recoveryCode` finishes it with a
   fresh session id.
 - **No reuse:** each accepted 30-second step is remembered, and that code or an earlier one is
-  refused afterwards. A recovery code is marked used in the same statement that accepts it.
+  refused afterwards. An accepted recovery code is marked used by an update that takes it only
+  while it is still unused, so two requests at once cannot both use it.
 - **Off:** `POST /api/2fa/disable` needs the password and a valid code or recovery code.
 - **Turning 2FA on or off ends every other session** of the account (the same session-epoch
   bump as a password change, `bumpSessionEpoch` in `server/src/accounts/userStore.js`) and
@@ -501,8 +515,9 @@ member with an **embed token** instead (`server/src/embed/`; SE-NIGHT-2 follow-u
     same way, with the same answer (401 "That code is not valid.", never a 500) and the log line
     "the 2FA secret of user <id> cannot be used: it decrypts, but not to a TOTP secret"
     (`openSecret`, `server/src/twofa/secretBox.js`).
-  - Recovery codes stay SHA-256 hashes, independent of `SECRET_ENCRYPTION_KEY`, and work
-    whatever that key, so they remain the way back in.
+  - Recovery codes are hashes keyed with `RECOVERY_CODE_KEY` (or plain SHA-256 for legacy
+    ones), independent of `SECRET_ENCRYPTION_KEY`, and work whatever that key, so they remain
+    the way back in.
   - **Losing the key** makes every stored 2FA secret unreadable: those accounts sign in with a
     recovery code or need 2FA reset by an admin. Keep the key with the other secrets, not with
     the database backups.
