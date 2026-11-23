@@ -7,8 +7,9 @@
 //              e-mails come from the server's own watchdog, not from the site, so a test goes
 //              out on its next run (at most 2 minutes): the button asks for one, and the panel
 //              says what the watchdog answered, or that it has not yet ("Check again"). Only
-//              with a saved address. A load that was under way when a send started is ignored:
-//              the send's answer is newer (the panel opening and a quick click raced, 2026-11-17).
+//              with a saved address. A load that was under way when a send started is ignored,
+//              and none starts while a send waits: the send's answer is newer (the panel opening
+//              and a quick click raced, 2026-11-17; the click before the first load, 2026-11-23).
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -31,13 +32,17 @@ export default function OutageTestMail({ address }) {
   const [test, setTest] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
-  // Sends started so far: a load answers for the moment it started, so it is used only when no
-  // send started since (else it would overwrite the send's newer answer).
+  // Sends started so far, and whether one still waits for its answer. A load answers for the
+  // moment it started, so it is used only when no send started since; and none starts while a
+  // send waits, since it could answer after the send with the older state (the panel's first
+  // load did, when a click came before its effect ran; CI, 2026-11-23).
   const sends = useRef(0);
+  const sending = useRef(false);
 
   const load = useCallback(() => {
+    if (sending.current) return; // the send's answer is on its way
     const at = sends.current;
-    return api('/admin/outage-alert')
+    api('/admin/outage-alert')
       .then((answer) => sends.current === at && setTest(answer.test))
       .catch((err) => sends.current === at && setError(err.message));
   }, []);
@@ -47,6 +52,7 @@ export default function OutageTestMail({ address }) {
 
   async function send() {
     sends.current += 1;
+    sending.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -54,6 +60,7 @@ export default function OutageTestMail({ address }) {
     } catch (err) {
       setError(err.message);
     }
+    sending.current = false;
     setBusy(false);
   }
 
