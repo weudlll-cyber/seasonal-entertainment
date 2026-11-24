@@ -6,7 +6,7 @@
 # Description: Tests of the installer's hardening of 2026-11-04 (docs/DEPLOYMENT.md): the event
 #              bot's admin page answers with the site's nosniff, referrer and framing headers
 #              (each once, always, no script or style policy, and every add_header of the site's
-#              server block repeated there); the Discord callback and file links are logged
+#              server block repeated there, HSTS among them); the Discord callback and file links are logged
 #              without their query, nothing else's logging changed; LiveKit's signalling port
 #              listens on 127.0.0.1 (every address only in Caddy mode); the installer refuses a
 #              checkout that anyone but root could change; the backup folder is 750, its writer
@@ -65,12 +65,16 @@ for header in 'X-Content-Type-Options nosniff' 'Referrer-Policy same-origin' \
 done
 if grep -qE 'script-src|style-src|default-src' <<<"$bot"; then bad 'a script or style policy on the bot page'; else ok 'no script or style policy on the bot page'; fi
 # Every add_header of the server block itself (outside any location) is repeated in the bot's.
-server_headers="$(awk '/^    location / { in_loc = 1 } in_loc && /^    }$/ { in_loc = 0; next } !in_loc && /add_header/' <<<"$conf")"
+# A location written on one line (port 80's) opens nothing that needs closing.
+server_headers="$(awk '/^    location / && !/}$/ { in_loc = 1 } in_loc && /^    }$/ { in_loc = 0; next } !in_loc && /add_header/' <<<"$conf")"
 missing=0
 while read -r line; do
   [[ -z "$line" ]] || grep -qF "$line" <<<"$bot" || missing=1
 done <<<"$server_headers"
 if [[ "$missing" == 0 ]]; then ok "the server block's headers are in the bot's location too"; else bad 'a server header is missing in the bot location'; fi
+# The server block's one header is HSTS (nginx.sh): in the bot's location once, and the bot's own
+# answer is not hidden (the map reads it), so a header the bot sends is not sent twice.
+if [[ "$(grep -cF "$HSTS_ADD_HEADER" <<<"$bot")" == 1 && -n "$server_headers" ]] && ! grep -qi 'proxy_hide_header Strict-Transport' <<<"$bot"; then ok "HSTS: once in the bot's location, the bot's own not hidden"; else bad "HSTS in the bot's location"; fi
 
 # --- Logs without the query for the two secret-carrying paths, nothing else changed ---
 if grep -q "^log_format seasonal_no_query .*\$request_method \$uri \$server_protocol" <<<"$conf" &&

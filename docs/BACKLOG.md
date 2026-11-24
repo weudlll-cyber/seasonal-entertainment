@@ -103,6 +103,13 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **HSTS on the games' routes** — closed by `feat/host-hsts` (decided 2026-11-23): the site's
+  proxy sends `Strict-Transport-Security` for every route of the host, in Caddy and nginx mode,
+  with the value the app sends (`max-age=31536000; includeSubDomains`, no `preload`), never
+  twice (only where the answer has none), so a visitor who opens a game first gets it too. The
+  game repositories are unchanged. It reaches a server with its next installer `--update`
+  (docs/DEPLOYMENT.md, "HSTS for the whole host").
+
 - **The outage test e-mail's answer could be overwritten** — closed by
   `fix/outage-test-mail-race` (2026-11-23): a click on "Send a test e-mail" before the panel's
   first load had started let that load, answering last, put back the older state (the client

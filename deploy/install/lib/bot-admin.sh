@@ -222,9 +222,10 @@ nginx_bot_admin_locations() {
 
 # The bot's page runs on the site's origin: it gets the site's framing and type rules, whatever
 # the bot sends of these (hidden first, so no header comes twice). No script or style policy:
-# that could break the bot's page. The site's server block has no add_header of its own: nginx
-# would drop those in this location (it has its own), so one added there must be added here too
-# (deploy/test/proxy-config.test.sh checks it).
+# that could break the bot's page. The site's server block has one add_header of its own, HSTS
+# (nginx.sh): nginx drops a server's in a location that has its own, so every one added there
+# must be added here too (deploy/test/server-hardening.test.sh checks it). HSTS is not hidden
+# first: the map behind it reads the bot's answer, so the bot's own header, if any, stays.
 BOT_ADMIN_HEADERS=(
   "X-Content-Type-Options nosniff"
   "Referrer-Policy same-origin"
@@ -239,6 +240,7 @@ bot_admin_headers() {
   for header in "${BOT_ADMIN_HEADERS[@]}"; do
     echo "        add_header $header always;"
   done
+  echo "        $HSTS_ADD_HEADER"
 }
 
 # --rollback, after the snapshot's nginx files are back: the include and site.env's

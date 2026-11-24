@@ -355,9 +355,10 @@ only while the page is set up (`deploy/install/lib/bot-admin.sh`):
   `X-Frame-Options: SAMEORIGIN` and `Content-Security-Policy: frame-ancestors 'self'`, each
   `always` (error answers too). The page runs on the site's origin, so only the site's own pages
   may frame it, as `/manage-events` does. No script or style policy: that could break the bot's
-  page. The site's server block has no `add_header` of its own; one added there must be added to
-  this location too, since nginx drops a server's `add_header` in a location that has its own
-  (`deploy/test/server-hardening.test.sh` checks it).
+  page. The site's server block has one `add_header` of its own, HSTS (see "HSTS for the whole
+  host"); it, and any added later, must be added to this location too, since nginx drops a
+  server's `add_header` in a location that has its own (`deploy/test/server-hardening.test.sh`
+  checks it). The bot's own HSTS header, if it sends one, is kept, not hidden.
 
 Every change runs through the usual `nginx -t`, load-order check, reload and comparison of the
 answer for unknown names; a re-run keeps both locations. nginx logs no request headers with its
@@ -440,6 +441,36 @@ game's installer writes its own route file and never edits this site's files.
   feed only from the site's Docker network (`http://site:3800`).
 - Tests: `bash deploy/test/games.test.sh` (CI too; with Docker it also runs the real nginx and
   the site's Caddy).
+
+### HSTS for the whole host
+
+`Strict-Transport-Security` tells a browser to use https only for the site's name. The app sends
+it on its own pages (helmet, `server/src/http/securityHeaders.js`: `max-age=31536000;
+includeSubDomains`, a year, no `preload`). The games' routes the proxy imports (`/games/<game>/…`
+and the games' own API paths) are answered by the games, which leave HSTS to the website, so a
+visitor who opened a game first got none until a page of the site. Since 2026-11-23 the site's
+proxy sends it for every route of the host, in both modes, with the same value, and **never
+twice**: only where the answer has none of its own.
+
+- **Caddy** (`deploy/site/Caddyfile`): `header ?Strict-Transport-Security "…"` in the site's
+  block; the `?` sets it only where no handler has set it, so the site's pages keep helmet's and
+  the imported game routes and the denied feeds get Caddy's.
+- **nginx** (`nginx.sh`, the site's file `zz-seasonal-site.conf`): a `map` of the upstream's
+  `Strict-Transport-Security` that is empty where the upstream sent one, and a server-level
+  `add_header Strict-Transport-Security $seasonal_hsts always;`. nginx adds no header with an
+  empty value, so the same rule holds, error answers included. Two things follow from it: a
+  game's route file must not define `add_header` itself (nginx would then drop the server's
+  header in that location; the game's own installer would have to repeat the line), and the
+  event bot's admin location repeats it (`bot-admin.sh`).
+- Not changed: the calls domain and the `www` redirect are other hosts and send none of their
+  own; the plain-http port only redirects (browsers ignore the header there).
+- `deploy/test/games.test.sh` runs the real nginx and the site's Caddy (Docker) with a game's
+  route file and checks the header on that route, on a denied feed, on a page of the site that
+  sends its own (kept, once) and on one that sends none. `server/test/securityHeaders.test.js`
+  pins the app's value, which both proxies must equal.
+
+It takes effect on a server at its next `--update`; nothing is changed by hand. The game
+repositories are not changed.
 
 ### Web push
 

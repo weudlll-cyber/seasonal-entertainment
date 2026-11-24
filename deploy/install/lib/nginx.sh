@@ -15,12 +15,30 @@
 #              service on 127.0.0.1:7880, WebSockets included; the Discord callback and file
 #              links logged without their query (secrets); other projects' route files included
 #              from /etc/seasonal/routes/ and the games' account feeds denied (games.sh); with the
-#              event bot's admin page, its locations in the site's server (bot-admin.sh).
+#              event bot's admin page, its locations in the site's server (bot-admin.sh);
+#              Strict-Transport-Security on every route of the site's server (decided 2026-11-23),
+#              the game routes included, sent once: only where the answer has none of its own.
 # ============================================================
 
 ACME_WEBROOT=/var/www/seasonal-acme
 CERT_LIVE=/etc/letsencrypt/live
 CERTBOT_HOOK=/etc/letsencrypt/renewal-hooks/deploy/seasonal.sh
+
+# The site's HSTS header: the value helmet sends (one year, subdomains, no preload;
+# server/src/http/securityHeaders.js; deploy/test/games.test.sh compares them). The map (http
+# level) is empty where the upstream's answer already has the header, and nginx adds no header
+# with an empty value: so the site's pages keep helmet's, and every other answer (a game's
+# route, a denied feed, an error) gets this one, never two. A location with its own header
+# lines needs this line too (nginx drops a server's then): HSTS_ADD_HEADER.
+HSTS_VALUE="max-age=31536000; includeSubDomains"
+# shellcheck disable=SC2016 # nginx's variable, not the shell's
+HSTS_ADD_HEADER='add_header Strict-Transport-Security $seasonal_hsts always;'
+nginx_hsts_map() {
+  echo "map \$upstream_http_strict_transport_security \$seasonal_hsts {"
+  echo "    default \"\";"
+  echo "    \"\" \"$HSTS_VALUE\";"
+  echo "}"
+}
 
 # The installer's file for NAME (site, calls). nginx reads a folder in name order and gives
 # unknown names to the first server it loaded: "zz-" puts ours after the other sites' files.
@@ -205,9 +223,11 @@ nginx_site_conf() {
     echo "}"
   fi
   nginx_no_query_log_format
+  nginx_hsts_map
   echo "server {"
   tls_lines seasonal-site
   echo "    server_name $SITE_DOMAIN;"
+  echo "    $HSTS_ADD_HEADER"
   echo "    # Uploads: 25 MB at most (the \"Largest file\" setting's bound), plus encryption overhead."
   echo "    client_max_body_size 30m;"
   nginx_routes_lines
