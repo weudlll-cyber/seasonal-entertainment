@@ -40,12 +40,15 @@ entry waits for.
   call number entered; usually one game runs at a time, nothing restricts it; inside a game a
   member only watches and listens; a member in a call on the website can open a game and keep
   listening (a short interruption is acceptable); after a game the player sees the result first
-  and goes back with "Back to the call"; a member already in the call with the same account
-  gets the picture without sound in the game's call view, with a note, and the sound starts
-  by itself when they leave the call page. Not built. Measurements and design:
-  [concepts/shared-call.md](concepts/shared-call.md). The last point cannot work with the
-  member's own identity (the later connection drops the earlier, measured); the note proposes a
-  separate viewer identity.
+  and goes back with "Back to the call". Decided 2026-11-25: a member already in the call with
+  the same account (another tab or device) sees in the game's view only a note that they are in
+  the call, no picture, so the call keeps one identity per person; the sound starts in the game
+  by itself when they leave the call page; there is only ever one shared call, and sharing a
+  second asks to replace the first; every organiser and every admin may share or unshare.
+  The website's part is being built on `feat/shared-call` (not merged). Measurements and
+  design: [concepts/shared-call.md](concepts/shared-call.md); the contract:
+  [GAME-INTEGRATION.md](GAME-INTEGRATION.md), section 9. Proposal only, not decided: a "Games
+  with sign-up open" list on the call page (the note's section 5).
 
 ### Proposals not decided
 

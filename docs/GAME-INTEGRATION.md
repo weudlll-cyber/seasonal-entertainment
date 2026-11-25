@@ -477,6 +477,29 @@ call-id field for the host in a round or lobby, checked with `GET /api/calls/<id
 slot `<iframe src="/embed/call/<id>?theme=<light|dark|auto>" allow="autoplay; fullscreen">`,
 sized as the view's `resize` asks.
 
+### The shared call
+
+**Decided 2026-11-24 and 2026-11-25. Contract written 2026-11-26, being built on
+`feat/shared-call`** (measurements: [concepts/shared-call.md](concepts/shared-call.md)). An
+organiser or admin marks one call as shared with the games; a game's slot frames that call
+without knowing its number. The games' shared UI kit builds its slot against these five points:
+
+1. `GET /embed/call/shared?theme=<light|dark|auto>` (no call number) frames the view of
+   whichever call is shared now.
+2. While nothing is shared the view posts no `ready`. When a call is shared it posts
+   `ready { call, status, signedIn }` with that call's id, and again whenever the shared call's
+   id, its status or the sign-in changes, from the same loaded frame (a newly shared call after
+   an earlier one ended included).
+3. When the shared call ends the view posts `ended { reason: 'ended' }`; when it stops being
+   shared (unshared or replaced) it posts `ended { reason: 'unshared' }`. Either way it keeps
+   watching for the next one. `unshared` is a reason only the shared view sends.
+4. `visible: false` means no picture is drawn and no video is received.
+5. Every other message stays as this section has it (`source: 'seasonal-call'`).
+
+A member who is in the call already (another tab or device) sees in the view only a note saying
+so, no picture; the sound starts in the game by itself once they leave the call page (where the
+browser does not allow that, the view shows **Listen**).
+
 **Trying it locally**: with `npm run dev`, `/games/call-test/?call=<id>`
 (`client/src/devPages/GameCallTestPage.jsx`, development builds only) is a pretend game: it
 frames the view in each of the sizes above, follows `resize`, lists the view's messages and

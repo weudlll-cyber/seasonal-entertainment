@@ -25,8 +25,21 @@ Decided 2026-11-24 (the owner's decisions, as facts):
   picture without sound in the game's call view, with a note that the sound plays there, and the
   sound starts in the game by itself when they leave the call page.
 
-Status: **not built.** This note measures what the decisions rest on and proposes the design.
-Nothing in `client/` or `server/` was changed for it.
+Decided 2026-11-25 (after the measurements; where these differ from the list above or from the
+proposal below, these hold):
+
+- A member who is already in the call with the same account (another tab or device) sees in the
+  game's view only a **note** that they are in the call, **no picture**. There is no viewer
+  identity: the call keeps one identity per person (the fallback of section 2).
+- There is only ever **one** shared call. Sharing a second one asks to replace the first.
+- **Every organiser and every admin** may share or unshare, not only the call's creator.
+- When the member leaves the call page, the sound starts in the game by itself (as 2026-11-24).
+- The list of games with open sign-ups on the call page (section 5) is a proposal only, not
+  decided and not built.
+
+Status at the time of the measurements: not built. This note measures what the decisions rest on
+and proposes the design; the website's part follows it on `feat/shared-call`, and the contract
+as built is in [GAME-INTEGRATION.md](../GAME-INTEGRATION.md), section 9.
 
 ## Summary
 
@@ -100,6 +113,8 @@ answer this, and this is said plainly rather than assumed:
   check by the owner or on a device lab is the open item (risk 1).
 
 ## 2. The same account twice
+
+**Decided 2026-11-25:** the fallback below — a note, no picture, no viewer identity.
 
 The listener token uses the **same identity** as the member's speaker or listener token on the
 call page: `participantFor` stores one random `p-…` identity per call and account
@@ -268,17 +283,19 @@ where the result is shown. No call number, no polling, no token, no LiveKit.
    after the member's click on the call page; Safari and Firefox probably show **Listen**. The
    design handles both, but the claim "no second click" is not proven. One manual check in each
    browser settles it.
-2. **The viewer identity is a change to the call's model.** Counts, the listener list, hand
+2. **The viewer identity is a change to the call's model.** _Not built (decided 2026-11-25),
+   so this risk and risk 3 fall away._ As found: Counts, the listener list, hand
    raising, recordings' participant lists and the call's limit all assume one identity per
    person. Each of them needs a test; the recording's "who was there" in particular.
 3. **A viewer connection per open game page** is one more LiveKit participant per member in a
    game, while the member also holds the call page's one. With the call limit counted once per
    member this is fine; the media cost is the listener's own (audio, and video only while the
    slot is visible, `visible: false` otherwise).
-4. **Several shared calls at once.** The rule "the first one live" is arbitrary; an organiser
+4. **Several shared calls at once.** _Decided 2026-11-25: one shared call only; sharing a
+   second one asks to replace the first._ As found: The rule "the first one live" is arbitrary; an organiser
    may expect their own call to show. Needs the owner's word, or a single-shared-call rule
    (sharing a second one asks to replace the first).
-5. **Who may share.** The decision names the call's organiser or an admin. Today any organiser
+5. **Who may share.** _Decided 2026-11-25: every organiser and every admin._ As found: The decision names the call's organiser or an admin. Today any organiser
    manages any call, so the narrower rule is new and must be tested for the other organisers.
 6. **The network-cut case** keeps the sound off for about 80 s on the second device; documented,
    not fixable without the call server's own settings.
