@@ -46,6 +46,11 @@ on:
 permissions:
   contents: read
 
+# A newer push to a work branch cancels the run it replaces; every run on master finishes.
+concurrency:
+  group: ci-${{ github.ref == 'refs/heads/master' && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 # Scanner images pinned by digest, like the actions by commit SHA (the same pins as the game
 # repositories' CI).
 env:
