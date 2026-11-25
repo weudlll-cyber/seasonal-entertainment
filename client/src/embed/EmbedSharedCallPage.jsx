@@ -92,5 +92,5 @@ export default function EmbedSharedCallPage() {
       </main>
     );
   }
-  return <CallInFrame key={id} id={String(id)} frame={{ ...frame, say: sayOnce }} />;
+  return <CallInFrame key={id} id={String(id)} frame={{ ...frame, say: sayOnce }} shared />;
 }

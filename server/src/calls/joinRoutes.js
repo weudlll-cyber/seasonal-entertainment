@@ -11,7 +11,10 @@
 //              true) gets a token (docs/CALLS.md, "Recording"); without that, 409 recording_consent
 //              and no connection. listenOnly: true (the call view inside a game, /embed/call/<id>,
 //              docs/GAME-INTEGRATION.md section 9) gets a listener's token whoever asks, organisers
-//              and speakers too, and leaves their place on the stage as it was. Hands (members
+//              and speakers too, and leaves their place on the stage as it was. shared: true (the
+//              view of the call shared with the games) is refused with 409 in_call_elsewhere
+//              while the member is in the call already (another tab or device): a second join
+//              with their identity would drop that connection. Hands (members
 //              only) are stored here and set as the participant's attributes on the call service,
 //              so every client sees one truth.
 // ============================================================
@@ -22,7 +25,7 @@ import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
 import { getSetting } from '../settings/store.js';
 import { callSteps } from './middleware.js';
-import { participantFor, setHand, setOnStage } from './participants.js';
+import { findParticipantOfUser, participantFor, setHand, setOnStage } from './participants.js';
 import { activeRecording } from './recordings.js';
 import { countSpeakers, handAttributes, kindOf, shownName } from './people.js';
 
@@ -31,6 +34,26 @@ export function callJoinRoutes(db, config, service, chat) {
   const steps = callSteps(db, config, service);
   // Per address: guests have no account to count by.
   const joinLimit = makeLimiter(config.rateLimits.callJoin);
+  // The shared view of a member who is in the call elsewhere asks every few seconds: counted
+  // by account, before the address's limit, so waiting uses up nobody else's joins.
+  const waitLimit = makeLimiter(config.rateLimits.callJoin, {
+    keyGenerator: (req) => `user:${req.user.id}`,
+  });
+  const fromSharedView = (req) => req.body?.shared === true && Boolean(req.user);
+  const waitingLimit = (req, res, next) =>
+    fromSharedView(req) ? waitLimit(req, res, next) : next();
+
+  // The shared view never takes over the member's own connection: no token while their
+  // identity is in the call.
+  async function notElsewhere(req, res, next) {
+    if (!fromSharedView(req)) return next();
+    const known = findParticipantOfUser(db, req.call.id, req.user.id);
+    const inRoom = known ? await service.listParticipants(req.call.roomName) : [];
+    if (inRoom.some((p) => p.identity === known.identity)) {
+      return sendError(res, 409, 'in_call_elsewhere', 'You are in this call already.');
+    }
+    next();
+  }
 
   router.post(
     '/:id/join',
@@ -38,6 +61,8 @@ export function callJoinRoutes(db, config, service, chat) {
     steps.configured,
     steps.loadCall,
     steps.live,
+    waitingLimit,
+    notElsewhere,
     joinLimit,
     async (req, res) => {
       const who = await chat.people.identify(req, res);

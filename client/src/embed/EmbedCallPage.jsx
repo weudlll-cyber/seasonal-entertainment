@@ -15,12 +15,15 @@
 //              seasonal-call-host): ready, live, ended, speaking, resize, error; it takes mute,
 //              collapse, theme and visible. Nothing secret, no names, goes to the game.
 //              useEmbedFrame (what the game and the frame set) and CallInFrame (one call in it)
-//              are the shared call view's too (EmbedSharedCallPage.jsx).
+//              are the shared call view's too (EmbedSharedCallPage.jsx). A member who is in
+//              the shared call elsewhere sees a note instead, and the view asks again until
+//              they have left (leftCall.js useAskAgain).
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router';
 import { ApiError, api } from '../api/http.js';
+import { useAskAgain } from '../calls/leftCall.js';
 import { useCallRoom } from '../calls/useCallRoom.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
@@ -94,7 +97,8 @@ export function useEmbedFrame() {
 }
 
 // One call in the frame: its join and state, what the game hears about it, and the view.
-export function CallInFrame({ id, frame }) {
+// shared: the view of the call shared with the games.
+export function CallInFrame({ id, frame, shared = false }) {
   const { game, say, size, visible, collapsed, setCollapsed, muted, setMuted } = frame;
   const [declined, setDeclined] = useState(false);
   // GET /api/calls/:id's call; gone: deleted or never there.
@@ -102,7 +106,7 @@ export function CallInFrame({ id, frame }) {
   const [gone, setGone] = useState(false);
   const [round, setRound] = useState(0);
   const { user } = useSession();
-  const live = useCallRoom(id, { listenOnly: true });
+  const live = useCallRoom(id, { listenOnly: true, shared });
   const joined = live.status === 'joined';
 
   // The call, read again while not joined and not over (in the call its own events say it).
@@ -124,6 +128,12 @@ export function CallInFrame({ id, frame }) {
 
   const status = gone || live.status === 'ended' ? 'ended' : call?.status;
   const signedIn = user === undefined ? undefined : Boolean(user);
+  useAskAgain(
+    id,
+    live.status === 'elsewhere' && status === 'live',
+    () => live.controls.join(),
+    POLL_MS
+  );
   // ready: once the call and the account are known, again when either changes.
   const readyKey = status && signedIn !== undefined ? `${status}|${signedIn}` : undefined;
   useOnChange(
@@ -184,8 +194,10 @@ export function CallInFrame({ id, frame }) {
       visible={visible}
       muted={muted}
       onListen={() => {
+        // Joined already: the browser held the sound back until this click.
+        if (joined) return live.controls.startAudio();
         setDeclined(false);
-        live.controls.join();
+        return live.controls.join();
       }}
       onDecline={() => {
         setDeclined(true);

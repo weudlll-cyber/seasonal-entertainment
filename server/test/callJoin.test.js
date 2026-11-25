@@ -191,3 +191,54 @@ describe('raising a hand', () => {
     expect((await olga.post(`/api/calls/${call.id}/hand`).send({ raised: true })).status).toBe(409);
   });
 });
+
+describe('the shared view while the member is in the call already', () => {
+  const asView = { listenOnly: true, shared: true };
+
+  it('answers 409 in_call_elsewhere without a token, until the member has left', async () => {
+    ({ t, service } = callApp());
+    const olga = await organiser(t);
+    const call = await liveCall(olga);
+    const mia = (await registerUser(t, 'mia')).agent;
+    // Not in the call yet: the view gets a listener's token like any view.
+    expect((await join(mia, service, call, asView)).claims.video.canPublish).toBe(false);
+    service.connected.clear();
+    // Now on the call page.
+    const page = await join(mia, service, call);
+    const refused = await join(mia, service, call, asView);
+    expect(refused.status).toBe(409);
+    expect(refused.body.error).toBe('in_call_elsewhere');
+    expect(refused.body.token).toBeUndefined();
+    expect([...service.connected.keys()]).toEqual([page.identity]);
+    // The organiser's view is refused the same way while on the stage.
+    await join(olga, service, call);
+    expect((await join(olga, service, call, asView)).status).toBe(409);
+    service.connected.delete(page.identity);
+    expect((await join(mia, service, call, asView)).identity).toBe(page.identity);
+  });
+
+  it('concerns the shared view of members only', async () => {
+    ({ t, service } = callApp());
+    const call = await liveCall(await organiser(t));
+    const mia = (await registerUser(t, 'mia')).agent;
+    await join(mia, service, call);
+    // The view of one named call joins as before.
+    expect((await join(mia, service, call, { listenOnly: true })).claims).toBeTruthy();
+    const guest = t.client();
+    await join(guest, service, call);
+    expect((await join(guest, service, call, asView)).claims).toBeTruthy();
+  });
+
+  it('counts a waiting view against its account, not the address', async () => {
+    ({ t, service } = callApp({ rateLimits: { callJoin: { windowMs: 60_000, max: 3 } } }));
+    const call = await liveCall(await organiser(t));
+    const mia = (await registerUser(t, 'mia')).agent;
+    const ben = (await registerUser(t, 'ben')).agent;
+    await join(mia, service, call); // the address's first
+    for (let i = 0; i < 3; i += 1) {
+      expect((await join(mia, service, call, asView)).status).toBe(409);
+    }
+    expect((await join(mia, service, call, asView)).status).toBe(429);
+    expect((await join(ben, service, call)).claims).toBeTruthy();
+  });
+});

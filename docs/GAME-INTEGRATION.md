@@ -506,9 +506,14 @@ leaves the page and returns).
 Code: `client/src/embed/EmbedSharedCallPage.jsx` with the per-call view's parts
 (`EmbedCallPage.jsx`, `EmbedCallView.jsx`); tests `embedSharedCall.test.jsx`.
 
-A member who is in the call already (another tab or device) sees in the view only a note saying
-so, no picture; the sound starts in the game by itself once they leave the call page (where the
-browser does not allow that, the view shows **Listen**).
+A member who is in the call already (another tab or device) and clicks **Listen** sees in the
+view only the call's title and the note "You are in this call in another tab or on another
+device. The sound plays there.", no picture; no `error` goes to the game. The sound starts in
+the game by itself once they leave the call page: at once in the same browser, else within 5
+seconds (about 80 seconds after a connection that was cut off). Where the browser holds the
+sound back, the view shows **Listen**. A view that is playing when the member joins on the call
+page is dropped and waits the same way ([CALLS.md](CALLS.md), "Joining"). The view
+does not connect by itself when it is first loaded: it starts on **Listen**, as every call view.
 
 **Trying it locally**: with `npm run dev`, `/games/call-test/?call=<id>`
 (`client/src/devPages/GameCallTestPage.jsx`, development builds only) is a pretend game: it

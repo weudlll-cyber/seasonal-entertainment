@@ -61,7 +61,7 @@ export const RoomEvent = new Proxy(
   {},
   { get: (_t, name) => name.charAt(0).toLowerCase() + name.slice(1) }
 );
-export const DisconnectReason = { ROOM_DELETED: 5 };
+export const DisconnectReason = { DUPLICATE_IDENTITY: 2, ROOM_DELETED: 5 };
 export const Track = {
   Source: {
     Camera: 'camera',

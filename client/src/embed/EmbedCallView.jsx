@@ -11,7 +11,9 @@
 //              on the stage talks, Expand); the phone's 48 px strip (the same, with the name of
 //              who speaks). The call's sound plays in every form while listening, out of sight
 //              too; the picture is left out while the game says the view is out of sight, so
-//              no video is received. "Open the call page" opens a new tab: the game stays.
+//              no video is received. "Open the call page" opens a new tab: the game stays. A
+//              member who is in the shared call elsewhere sees its title and a note, no
+//              picture and no Listen. Sound the browser holds back after joining: Listen again.
 // ============================================================
 
 import Icon from '../app/icons.jsx';
@@ -58,12 +60,16 @@ function OpenCallPage({ id }) {
   );
 }
 
-// What the view says instead of the call: not started, over, joining, left.
+const ELSEWHERE =
+  'You are in this call in another tab or on another device. The sound plays there.';
+
+// What the view says instead of the call: not started, over, joining, in it elsewhere, left.
 function stateText(status, gone, liveStatus) {
   if (gone) return 'This call no longer exists.';
   if (status === 'ended') return 'The call has ended.';
   if (status === 'scheduled') return 'Not started yet';
   if (liveStatus === 'joining') return 'Joining…';
+  if (liveStatus === 'elsewhere') return ELSEWHERE;
   if (liveStatus === 'left') return 'You left the call.';
   return null;
 }
@@ -102,19 +108,24 @@ export default function EmbedCallView({
   const recordingState = joined ? live.recordingState : call?.recordingState;
   const speakers = live.people.filter((p) => p.speaker);
   const talking = speakers.filter((p) => live.activeSpeakers.has(p.identity));
-  const canListen = status === 'live' && !joined && live.status !== 'joining';
+  // Joined, but the browser plays no sound until a click.
+  const blocked = joined && live.room?.canPlaybackAudio === false;
+  const elsewhere = status === 'live' && live.status === 'elsewhere';
+  const canListen =
+    blocked || (status === 'live' && !joined && !elsewhere && live.status !== 'joining');
   const form = formOf({ ...size, collapsed });
-  const listenOrMute = joined ? (
-    <ViewButton
-      icon={muted ? 'volumeOff' : 'volume'}
-      label={muted ? 'Unmute the call' : 'Mute the call'}
-      pressed={muted}
-      talking={talking.length > 0}
-      onClick={onMute}
-    />
-  ) : canListen ? (
-    <ViewButton icon="volume" label="Listen" onClick={onListen} />
-  ) : null;
+  const listenOrMute =
+    joined && !blocked ? (
+      <ViewButton
+        icon={muted ? 'volumeOff' : 'volume'}
+        label={muted ? 'Unmute the call' : 'Mute the call'}
+        pressed={muted}
+        talking={talking.length > 0}
+        onClick={onMute}
+      />
+    ) : canListen ? (
+      <ViewButton icon="volume" label="Listen" onClick={onListen} />
+    ) : null;
   const marks = (
     <>
       {status === 'live' && <LiveBadge />}
@@ -160,12 +171,17 @@ export default function EmbedCallView({
               <Icon name="volume" size={20} /> Listen
             </button>
           )}
+          {elsewhere && (
+            <p>
+              <strong>{call?.title}</strong>
+            </p>
+          )}
           {text && <p role="status">{text}</p>}
           <FormMessage error={live.error} />
         </div>
         {joined && (
           <div className="embed-call__bottom">
-            {listenOrMute}
+            {!blocked && listenOrMute}
             <ViewButton icon="leave" label="Leave" onClick={live.controls.leave} />
           </div>
         )}
@@ -176,7 +192,9 @@ export default function EmbedCallView({
       <div className={`embed-call__bar embed-call__bar--${form}`}>
         <span className="embed-call__marks">{marks}</span>
         {form === 'strip' && (
-          <span className="embed-call__name">{joined ? speaking?.name : text}</span>
+          <span className="embed-call__name" title={joined ? undefined : (text ?? undefined)}>
+            {joined ? speaking?.name : text}
+          </span>
         )}
         {form === 'column' && text && <span className="embed-call__hidden">{text}</span>}
         {listenOrMute}

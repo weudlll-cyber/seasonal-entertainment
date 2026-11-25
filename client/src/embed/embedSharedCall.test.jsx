@@ -8,7 +8,9 @@
 //              ready with the call's id; the end, an unshare and a replacement post ended with
 //              their reason, once, and the view keeps watching; ready names a newly shared call;
 //              a sign-out posts ready again; a view leaving a speaking call says so; outside a
-//              game nothing is asked.
+//              game nothing is asked. A member in the call elsewhere sees the note, and the
+//              view joins after the leave (by its poll, or at once on the call page's word);
+//              held-back sound is offered on Listen.
 // ============================================================
 
 import { act, fireEvent, render, screen } from '@testing-library/react';
@@ -66,8 +68,15 @@ function view(session = GUEST) {
     }),
     'GET /calls/7': callAnswer(7),
     'GET /calls/8': callAnswer(8),
-    'POST /calls/7/join': {
-      body: { ok: true, url: 'wss://calls.test', token: 'tok', identity: 'p-me' },
+    'POST /calls/7/join': () => {
+      if (site.broken) return { status: 503, body: {} };
+      if (site.elsewhere) {
+        return {
+          status: 409,
+          body: { ok: false, error: 'in_call_elsewhere', message: 'You are in this call.' },
+        };
+      }
+      return { body: { ok: true, url: 'wss://calls.test', token: 'tok', identity: 'p-me' } };
     },
   });
   render(
@@ -211,4 +220,115 @@ it('outside a game: the way to the calls only, and nothing asked', async () => {
   await polls(2);
   expect(calls.some((c) => c.key.includes('shared-call'))).toBe(false);
   expect(sent()).toEqual([]);
+});
+
+// The member is in the call elsewhere until site.elsewhere is false.
+async function waiting() {
+  site.shared = 7;
+  site.elsewhere = true;
+  const calls = view(signedIn({ username: 'mia' }));
+  await polls();
+  fireEvent.click(screen.getByRole('button', { name: 'Listen' }));
+  await screen.findByText(NOTE);
+  return calls;
+}
+const NOTE = 'You are in this call in another tab or on another device. The sound plays there.';
+const joins = (calls) => calls.filter((c) => c.key === 'POST /calls/7/join');
+
+it('in the call elsewhere: a note with the title, no picture, and it asks again', async () => {
+  const calls = await waiting();
+  expect(joins(calls)[0].body).toEqual({ listenOnly: true, shared: true });
+  expect(screen.getByText('Call 7')).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Listen' })).toBeNull();
+  expect(screen.queryByRole('region', { name: 'Stage' })).toBeNull();
+  const before = joins(calls).length;
+  await polls(2);
+  expect(joins(calls).length).toBeGreaterThanOrEqual(before + 2);
+  // The note stays while it asks; the game hears no error; nothing was connected.
+  expect(screen.getByText(NOTE)).toBeTruthy();
+  expect(heard('error')).toEqual([]);
+  expect(rooms).toHaveLength(0);
+  // A server that does not answer changes nothing.
+  site.broken = true;
+  await polls();
+  expect(screen.getByText(NOTE)).toBeTruthy();
+  site.broken = false;
+  // Left on the other device: the next question joins, and the sound starts.
+  site.elsewhere = false;
+  await polls();
+  await screen.findByRole('button', { name: 'Leave' });
+  expect(rooms).toHaveLength(1);
+  expect(rooms[0].startAudio).toHaveBeenCalled();
+  expect(heard('live').at(-1)).toEqual({ type: 'live', listening: true });
+});
+
+it("the call page's word in this browser: asks at once, for its own call only", async () => {
+  const calls = await waiting();
+  const say = async (call) => {
+    const channel = new BroadcastChannel('seasonal-call-left');
+    channel.postMessage({ call });
+    channel.close();
+    // Delivery takes a real turn of the event loop; far less than a poll.
+    await act(() => vi.advanceTimersByTimeAsync(100));
+  };
+  const before = joins(calls).length;
+  await say(8);
+  expect(joins(calls)).toHaveLength(before);
+  site.elsewhere = false;
+  await say(7);
+  // At once: no poll was due yet.
+  expect(joins(calls)).toHaveLength(before + 1);
+  await screen.findByRole('button', { name: 'Leave' });
+});
+
+it('stops asking when the call ends while waiting', async () => {
+  const calls = await waiting();
+  // Ended, with the public read still naming it (a cache holds it for a few seconds).
+  site.status[7] = 'ended';
+  await polls(2);
+  const asked = joins(calls).length;
+  await polls(2);
+  expect(joins(calls)).toHaveLength(asked);
+  expect(heard('ended')).toEqual([{ type: 'ended', reason: 'ended' }]);
+});
+
+it('sound the browser holds back: Listen once more, which starts it', async () => {
+  site.shared = 7;
+  view();
+  await polls();
+  const { Room } = await import('../test/fakeLiveKit.js');
+  vi.spyOn(Room.prototype, 'on').mockImplementationOnce(function (event, handler) {
+    // The first handler is registered before the connection: the room starts blocked.
+    this.canPlaybackAudio = false;
+    (this.handlers[event] ??= []).push(handler);
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Listen' }));
+  await screen.findByRole('button', { name: 'Leave' });
+  expect(screen.queryByRole('button', { name: 'Mute the call' })).toBeNull();
+  rooms[0].startAudio.mockImplementation(async () => {
+    rooms[0].canPlaybackAudio = true;
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Listen' }));
+  await screen.findByRole('button', { name: 'Mute the call' });
+  expect(screen.queryByRole('button', { name: 'Listen' })).toBeNull();
+});
+
+it('the call page joining takes over: the note, and the sound again after the leave', async () => {
+  site.shared = 7;
+  const calls = view(signedIn({ username: 'mia' }));
+  await polls();
+  fireEvent.click(screen.getByRole('button', { name: 'Listen' }));
+  await screen.findByRole('button', { name: 'Leave' });
+  // The member joins on the call page: the call service drops this view's connection.
+  site.elsewhere = true;
+  await act(async () => rooms[0].emit('disconnected', 2)); // DisconnectReason.DUPLICATE_IDENTITY
+  expect(screen.getByText(NOTE)).toBeTruthy();
+  const before = joins(calls).length;
+  await polls();
+  expect(joins(calls).length).toBeGreaterThan(before);
+  expect(rooms).toHaveLength(1);
+  site.elsewhere = false;
+  await polls();
+  await screen.findByRole('button', { name: 'Leave' });
+  expect(rooms).toHaveLength(2);
 });
