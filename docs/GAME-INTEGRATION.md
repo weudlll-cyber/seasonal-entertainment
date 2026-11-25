@@ -459,7 +459,8 @@ How the site does it:
   for the frame. The game's own sound plays on beside it; the game may turn itself down while
   `speaking` is true. The view's mute button and the host's `mute` silence only the call's
   sound; the game's controls silence only the game; nothing in a game touches a speaker's
-  microphone.
+  microphone. Checked by ear 2026-11-24: the owner heard the call's audio in the call view at
+  `/games/call-test` (call 3) after one click on Listen.
 - **Phone and focus mode**: on a phone the view opens as the 48 px audio strip, the picture on
   tap. In the game's focus mode it shows its collapsed form (the 48 px column on a desktop, the
   strip on a phone) or is hidden with `visible: false`; its sound keeps playing until the
