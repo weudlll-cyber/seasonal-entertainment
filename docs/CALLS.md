@@ -243,7 +243,7 @@ The server is the only authority over what anyone may do in a call; the browser 
 holds a token the server signed. Routes: `server/src/calls/joinRoutes.js`, `stageRoutes.js`,
 `spotlightRoutes.js`; grants: `grants.js`.
 
-**Joining** (`POST /api/calls/:id/join`, everyone; limit `callJoin` per address): only a live
+**Joining** (`POST /api/calls/:id/join`, everyone; limit `callJoin` per address, the shared view's per account): only a live
 call (scheduled: 409 `not_started`, ended: 410 `call_ended`). Members join by account, guests by
 their chat guest identity (given now if they have none, docs/CHAT.md). Refused for anyone banned
 in the chat (403 `banned`) and when the call already has as many participants as the setting
@@ -254,8 +254,8 @@ one random identity per call (`p-…`, `call_participants`), which says nothing 
 2026-11-25). The call service keeps one connection per identity, so a second join drops the
 first (measured: [concepts/shared-call.md](concepts/shared-call.md), section 2). A join with
 `shared: true` (the view of the call shared with the games) by a member whose identity for the
-call is in the room answers 409 `in_call_elsewhere` and mints no token; these joins are
-limited per account (the `callJoin` numbers) before the address's limit, so a waiting view
+call is in the room answers 409 `in_call_elsewhere` and mints no token; the shared view's joins
+are limited per account (the `callJoin` numbers) instead of per address, so a waiting view
 uses up nobody else's joins. The view shows a note and asks again every 5 seconds; **Leave
 call** on the call page also tells this browser's other pages over a `BroadcastChannel`
 (`calls/leftCall.js`), so there the view asks at once. A view that is connected already when

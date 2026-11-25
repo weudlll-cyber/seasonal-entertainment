@@ -20,6 +20,7 @@
 // ============================================================
 
 import express from 'express';
+import { ipKeyGenerator } from 'express-rate-limit';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
@@ -32,16 +33,13 @@ import { countSpeakers, handAttributes, kindOf, shownName } from './people.js';
 export function callJoinRoutes(db, config, service, chat) {
   const router = express.Router();
   const steps = callSteps(db, config, service);
-  // Per address: guests have no account to count by.
-  const joinLimit = makeLimiter(config.rateLimits.callJoin);
-  // The shared view of a member who is in the call elsewhere asks every few seconds: counted
-  // by account, before the address's limit, so waiting uses up nobody else's joins.
-  const waitLimit = makeLimiter(config.rateLimits.callJoin, {
-    keyGenerator: (req) => `user:${req.user.id}`,
-  });
   const fromSharedView = (req) => req.body?.shared === true && Boolean(req.user);
-  const waitingLimit = (req, res, next) =>
-    fromSharedView(req) ? waitLimit(req, res, next) : next();
+  // Per address: guests have no account to count by. The shared view of a member counts
+  // against their account instead: while they are in the call elsewhere it asks every few
+  // seconds, which must use up nobody else's joins.
+  const joinLimit = makeLimiter(config.rateLimits.callJoin, {
+    keyGenerator: (req) => (fromSharedView(req) ? `user:${req.user.id}` : ipKeyGenerator(req.ip)),
+  });
 
   // The shared view never takes over the member's own connection: no token while their
   // identity is in the call.
@@ -61,9 +59,8 @@ export function callJoinRoutes(db, config, service, chat) {
     steps.configured,
     steps.loadCall,
     steps.live,
-    waitingLimit,
-    notElsewhere,
     joinLimit,
+    notElsewhere,
     async (req, res) => {
       const who = await chat.people.identify(req, res);
       if (!who) return;
