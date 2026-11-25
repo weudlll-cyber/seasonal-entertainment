@@ -14,6 +14,8 @@
 //              game through embedProtocol.js under its own sources (seasonal-call,
 //              seasonal-call-host): ready, live, ended, speaking, resize, error; it takes mute,
 //              collapse, theme and visible. Nothing secret, no names, goes to the game.
+//              useEmbedFrame (what the game and the frame set) and CallInFrame (one call in it)
+//              are the shared call view's too (EmbedSharedCallPage.jsx).
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -53,8 +55,9 @@ function useOnChange(value, send) {
   }, [value, send]);
 }
 
-export default function EmbedCallPage() {
-  const { id } = useParams();
+// What belongs to the frame, not to a call: the game around it, how to talk to it, what it
+// asked for (theme, visible, collapse, mute) and the frame's size.
+export function useEmbedFrame() {
   const [params] = useSearchParams();
   // Decided once: a game of this site frames the view, or nobody may use it here.
   const [game] = useState(() => framingGame());
@@ -64,21 +67,43 @@ export default function EmbedCallPage() {
   const [visible, setVisible] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
   const [muted, setMuted] = useState(false);
-  const [declined, setDeclined] = useState(false);
-  // GET /api/calls/:id's call; gone: deleted or never there.
-  const [call, setCall] = useState(null);
-  const [gone, setGone] = useState(false);
-  const [round, setRound] = useState(0);
   const size = useFrameSize();
-  const { user } = useSession();
   const { force } = useTheme();
-  const live = useCallRoom(id, { listenOnly: true });
-  const joined = live.status === 'joined';
 
   useEffect(() => {
     force(theme === 'auto' ? null : theme);
     return () => force(null);
   }, [theme, force]);
+
+  useEffect(
+    () =>
+      onHostMessage(
+        host,
+        (message) => {
+          if (message.type === 'mute') setMuted(message.muted === true);
+          if (message.type === 'collapse') setCollapsed(message.collapsed === true);
+          if (message.type === 'theme') setTheme(themeOf(message.theme));
+          if (message.type === 'visible') setVisible(message.visible !== false);
+        },
+        CALL_HOST_SOURCE
+      ),
+    [host]
+  );
+
+  return { game, say, size, visible, collapsed, setCollapsed, muted, setMuted };
+}
+
+// One call in the frame: its join and state, what the game hears about it, and the view.
+export function CallInFrame({ id, frame }) {
+  const { game, say, size, visible, collapsed, setCollapsed, muted, setMuted } = frame;
+  const [declined, setDeclined] = useState(false);
+  // GET /api/calls/:id's call; gone: deleted or never there.
+  const [call, setCall] = useState(null);
+  const [gone, setGone] = useState(false);
+  const [round, setRound] = useState(0);
+  const { user } = useSession();
+  const live = useCallRoom(id, { listenOnly: true });
+  const joined = live.status === 'joined';
 
   // The call, read again while not joined and not over (in the call its own events say it).
   const over = gone || live.status === 'ended' || call?.status === 'ended';
@@ -96,21 +121,6 @@ export default function EmbedCallPage() {
       clearTimeout(again);
     };
   }, [game, id, joined, over, round]);
-
-  useEffect(
-    () =>
-      onHostMessage(
-        host,
-        (message) => {
-          if (message.type === 'mute') setMuted(message.muted === true);
-          if (message.type === 'collapse') setCollapsed(message.collapsed === true);
-          if (message.type === 'theme') setTheme(themeOf(message.theme));
-          if (message.type === 'visible') setVisible(message.visible !== false);
-        },
-        CALL_HOST_SOURCE
-      ),
-    [host]
-  );
 
   const status = gone || live.status === 'ended' ? 'ended' : call?.status;
   const signedIn = user === undefined ? undefined : Boolean(user);
@@ -142,6 +152,13 @@ export default function EmbedCallPage() {
     joined ? active : undefined,
     useCallback((value, first) => (value || !first) && say('speaking', { active: value }), [say])
   );
+  // A view that leaves this call mid-sentence (the shared view, another call) says so, or the
+  // game would keep its own sound turned down.
+  const talking = useRef(false);
+  useEffect(() => {
+    talking.current = active;
+  }, [active]);
+  useEffect(() => () => talking.current && say('speaking', { active: false }), [say]);
   const errorCode = declined ? 'recording_consent' : live.errorCode;
   useOnChange(
     errorCode ?? undefined,
@@ -178,4 +195,10 @@ export default function EmbedCallPage() {
       onCollapse={switchForm}
     />
   );
+}
+
+export default function EmbedCallPage() {
+  const { id } = useParams();
+  const frame = useEmbedFrame();
+  return <CallInFrame id={id} frame={frame} />;
 }

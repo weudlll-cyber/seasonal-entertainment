@@ -18,14 +18,16 @@ Branch `feat/shared-call` from `master` (`cc743b9`). Draft PR; nothing is merged
 - **Piece 2, server:** `calls.shared_with_games` with a one-shared-call index,
   `PUT /api/calls/:id/shared`, `sharedWithGames` on create, `GET /api/public/shared-call`,
   cleared on end, audited (`CALLS.md`, "Calls on the site"). 9 tests, all seen red once.
+- **Piece 3, the shared view:** `/embed/call/shared` (`EmbedSharedCallPage.jsx`, reusing the
+  per-call view). Measured first: a hidden view already receives no video (0 KB, N=5), so nothing
+  was changed for `visible`. 7 tests, all seen red once; the 52 embed tests pass.
 
 ## Running
 
-- Piece 3, the shared view.
+- Piece 4, "already in the call" and the sound start.
 
 ## Open
 
-- Piece 4, "already in the call" and the sound start.
 - Piece 5, the call page.
 - Piece 6, docs and the browser spec (the one to drop when short of time).
 

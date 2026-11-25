@@ -68,6 +68,18 @@ function stateText(status, gone, liveStatus) {
   return null;
 }
 
+// Outside a game of this site: only the way to the call page (the calls, for the shared view).
+export function RefusedView({ href }) {
+  return (
+    <main className="embed-call embed-call--refused">
+      <p>This call view opens inside the site&apos;s games.</p>
+      <a href={href} target="_top">
+        Open the call page
+      </a>
+    </main>
+  );
+}
+
 export default function EmbedCallView({
   id,
   allowed,
@@ -84,16 +96,7 @@ export default function EmbedCallView({
   onMute,
   onCollapse,
 }) {
-  if (!allowed) {
-    return (
-      <main className="embed-call embed-call--refused">
-        <p>This call view opens inside the site&apos;s games.</p>
-        <a href={`/calls/${id}`} target="_top">
-          Open the call page
-        </a>
-      </main>
-    );
-  }
+  if (!allowed) return <RefusedView href={`/calls/${id}`} />;
   const joined = live.status === 'joined';
   const recording = joined ? live.recording : Boolean(call?.recording);
   const recordingState = joined ? live.recordingState : call?.recordingState;

@@ -5,7 +5,8 @@
 // Description: The client's route table inside the session provider. Every page renders
 //              inside Layout, except the embedded chat (/embed/chat, no site shell, for an
 //              iframe), its login popup (/embed-login; docs/EMBED.md) and the call view inside
-//              a game (/embed/call/:id; docs/GAME-INTEGRATION.md section 9); unknown paths show
+//              a game (/embed/call/:id, and /embed/call/shared for the call shared with the games;
+//              docs/GAME-INTEGRATION.md section 9); unknown paths show
 //              the 404 page. Heavier pages are loaded on first use (lazyPage: reloads once when
 //              the file is gone after an update). The router itself is supplied by main.jsx (or
 //              a test). Development builds also route the test pages (devPages/), the fake game
@@ -60,6 +61,7 @@ const StartPage = lazyPage(() => import('../pages/StartPage.jsx'));
 const EmbedChatPage = lazyPage(() => import('../embed/EmbedChatPage.jsx'));
 const EmbedLoginPage = lazyPage(() => import('../embed/EmbedLoginPage.jsx'));
 const EmbedCallPage = lazyPage(() => import('../embed/EmbedCallPage.jsx'));
+const EmbedSharedCallPage = lazyPage(() => import('../embed/EmbedSharedCallPage.jsx'));
 const InfoEditorPage = lazyPage(() => import('../admin/InfoEditorPage.jsx'));
 const InfoPage = lazyPage(() => import('../pages/InfoPage.jsx'));
 const ManageEventsPage = lazyPage(() => import('../pages/ManageEventsPage.jsx'));
@@ -100,6 +102,15 @@ export default function App() {
               element={
                 <LazyBoundary>
                   <EmbedLoginPage />
+                </LazyBoundary>
+              }
+            />
+            {/* Ahead of :id, which would take "shared" for a call number. */}
+            <Route
+              path="embed/call/shared"
+              element={
+                <LazyBoundary>
+                  <EmbedSharedCallPage />
                 </LazyBoundary>
               }
             />

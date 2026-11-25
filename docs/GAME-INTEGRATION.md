@@ -380,7 +380,10 @@ How the site does it:
   game is laid out for a phone, for the size it asks for in `resize`, is read from the game's
   window: under 760 px wide, the site's own breakpoint.
 - Out of sight (`visible: false`) the picture is left out, so LiveKit's adaptive stream receives
-  no video; the sound plays on.
+  no video; the sound plays on. Measured 2026-11-26 on the dev servers (N=5, 10 s windows, one
+  speaker with a camera): shown, the view received 153 to 176 KB of video and 173 to 203 frames;
+  out of sight 0 KB and 0 frames every time, with the audio unchanged (89 to 96 KB shown, 89 to
+  93 KB hidden). So no unsubscribing is needed.
 
 - **The page**: the site serves a reduced call page, `/embed/call/<id>?theme=<light|dark|auto>`,
   framed like the chat. A game never connects to the call service (LiveKit) itself and never
@@ -495,6 +498,13 @@ without knowing its number. The games' shared UI kit builds its slot against the
    watching for the next one. `unshared` is a reason only the shared view sends.
 4. `visible: false` means no picture is drawn and no video is received.
 5. Every other message stays as this section has it (`source: 'seasonal-call'`).
+
+A sign-in change is noticed as the view notices one anywhere: a sign-out when the tab comes
+back or a request is refused, a sign-in when the frame is loaded again (the games' sign-in
+leaves the page and returns).
+
+Code: `client/src/embed/EmbedSharedCallPage.jsx` with the per-call view's parts
+(`EmbedCallPage.jsx`, `EmbedCallView.jsx`); tests `embedSharedCall.test.jsx`.
 
 A member who is in the call already (another tab or device) sees in the view only a note saying
 so, no picture; the sound starts in the game by itself once they leave the call page (where the
