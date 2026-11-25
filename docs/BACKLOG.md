@@ -35,7 +35,17 @@ entry waits for.
 
 ### Decided, waiting to be scheduled
 
-- Nothing at the moment.
+- **A call shared with the games** — decided 2026-11-24: a call's organiser or an admin can mark
+  a call as shared with the games; while it is live every game's call slot shows it, with no
+  call number entered; usually one game runs at a time, nothing restricts it; inside a game a
+  member only watches and listens; a member in a call on the website can open a game and keep
+  listening (a short interruption is acceptable); after a game the player sees the result first
+  and goes back with "Back to the call"; a member already in the call with the same account
+  gets the picture without sound in the game's call view, with a note, and the sound starts
+  by itself when they leave the call page. Not built. Measurements and design:
+  [concepts/shared-call.md](concepts/shared-call.md). The last point cannot work with the
+  member's own identity (the later connection drops the earlier, measured); the note proposes a
+  separate viewer identity.
 
 ### Proposals not decided
 
