@@ -3,7 +3,8 @@
 // Path:        server/src/http/validate.js
 // Project:     Seasonal Entertainment
 // Description: Request-body validation: runs one validator per field (validators return an
-//              error sentence or null) and answers 400 with the first error; queryId, the one
+//              error sentence or null) and answers 400 with the first error, with the common
+//              ones (required, mustBeTrue, optionalYesNo, positiveInteger); queryId, the one
 //              reading of a paging id from the query string (?before=, ?after=); and isControl,
 //              the one test for a control character.
 // ============================================================
@@ -32,6 +33,9 @@ export const required = (label, max) => (value) =>
     : `${label} is required (at most ${max} characters).`;
 
 export const mustBeTrue = (message) => (value) => (value === true ? null : message);
+
+export const optionalYesNo = (label) => (value) =>
+  value === undefined || typeof value === 'boolean' ? null : `${label} is yes or no.`;
 
 // A paging id from the query string: a whole number, or undefined when absent or not one
 // (a bad value means "no paging", never an error).

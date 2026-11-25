@@ -25,7 +25,8 @@
 //              roles (discord/) only while set up; app.locals.discord.start() runs the daily
 //              role read; app.locals.games.start() reads the games' open sign-ups every minute
 //              (games/openRounds.js); /api/public/season is the games' season feed
-//              (season/routes.js).
+//              (season/routes.js), /api/public/shared-call which call is shared with the games
+//              (calls/sharedRoutes.js).
 // ============================================================
 
 import { existsSync } from 'node:fs';
@@ -56,6 +57,7 @@ import { resumeRecordingStarts } from './calls/recordingStart.js';
 import { chapterRoutes } from './calls/chapterRoutes.js';
 import { recordingPreviewRoutes } from './calls/recordingPreviewRoutes.js';
 import { callRoutes } from './calls/routes.js';
+import { callShareRoutes, publicSharedCallRoutes } from './calls/sharedRoutes.js';
 import { callSpotlightRoutes } from './calls/spotlightRoutes.js';
 import { callStageRoutes } from './calls/stageRoutes.js';
 import { createCallService } from './calls/service.js';
@@ -228,6 +230,9 @@ export function createApp({
   api.use('/calls', callJoinRoutes(db, config, callService, chat));
   api.use('/calls', callStageRoutes(db, config, callService, chat));
   api.use('/calls', callSpotlightRoutes(db, config, callService));
+  api.use('/calls', callShareRoutes(db, config, callService, chat));
+  // Which call is shared with the games now (calls/sharedRoutes.js).
+  api.use('/public', publicSharedCallRoutes(db, callService));
   // start() returns the function that stops both jobs, or null when neither runs.
   app.locals.calls = {
     start: (log) => {

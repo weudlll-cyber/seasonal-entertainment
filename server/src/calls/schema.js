@@ -24,7 +24,8 @@
 //              up (columns that came later: the spotlight, SE-CALLS-2; room_missing_since,
 //              SE-NIGHT-2; the bot occurrence link and a recording's length, SE-NIGHT-5; when a
 //              recording became active, a failed start and recording from the start,
-//              2026-11-07; a recording's preview image, 2026-11-14).
+//              2026-11-07; a recording's preview image, 2026-11-14; shared with the games,
+//              shared.js, 2026-11-26) and makes the index that allows only one shared call.
 // ============================================================
 
 import { addMissingColumns } from '../db/addColumns.js';
@@ -49,7 +50,8 @@ CREATE TABLE IF NOT EXISTS calls (
   bot_occurrence_id    INTEGER,
   bot_occurrence_start INTEGER,
   recording_failed_at  TEXT,
-  record_from_start    INTEGER NOT NULL DEFAULT 0 CHECK (record_from_start IN (0, 1))
+  record_from_start    INTEGER NOT NULL DEFAULT 0 CHECK (record_from_start IN (0, 1)),
+  shared_with_games    INTEGER NOT NULL DEFAULT 0 CHECK (shared_with_games IN (0, 1))
 );
 CREATE INDEX IF NOT EXISTS calls_by_status ON calls (status);
 CREATE TABLE IF NOT EXISTS call_participants (
@@ -126,5 +128,16 @@ export function migrateCalls(db) {
     ['call_recordings', 'preview_thumb', 'TEXT'],
     ['call_recordings', 'preview_mime', 'TEXT'],
     ['call_recordings', 'preview_at', 'TEXT'],
+    [
+      'calls',
+      'shared_with_games',
+      'INTEGER NOT NULL DEFAULT 0 CHECK (shared_with_games IN (0, 1))',
+    ],
   ]);
+  // Only one call is ever shared with the games (shared.js). Made here, after the column: the
+  // schema above runs before an older table has it.
+  db.exec(
+    `CREATE UNIQUE INDEX IF NOT EXISTS calls_one_shared
+       ON calls (shared_with_games) WHERE shared_with_games = 1`
+  );
 }

@@ -19,7 +19,9 @@
 //              from its start (recordFromStart, offered while recording is set up and allowed:
 //              recordingEnabled): starting it starts the recording too (recordingStart.js); a
 //              recording that does not start leaves the call running, with the organisers'
-//              notice.
+//              notice. A new call may be shared with the games at once (sharedWithGames; replace
+//              takes the flag from the call that has it, else 409 shared_elsewhere;
+//              shared.js), and every call says whether it is.
 // ============================================================
 
 import express from 'express';
@@ -29,7 +31,7 @@ import { recordAudit } from '../audit/auditLog.js';
 import { allow } from '../http/access.js';
 import { sendError } from '../http/errors.js';
 import { makeLimiter } from '../http/rateLimit.js';
-import { required, validBody } from '../http/validate.js';
+import { optionalYesNo, required, validBody } from '../http/validate.js';
 import { getSetting } from '../settings/store.js';
 import { reminderCallIds } from './reminders.js';
 import { deleteCall } from './deleteCall.js';
@@ -45,6 +47,7 @@ import {
 } from './recordings.js';
 import { startCallRecording } from './recordingStart.js';
 import { publishRoomState } from './roomState.js';
+import { answerSharedElsewhere, shareCall, sharedElsewhere } from './shared.js';
 import {
   createCall,
   findCall,
@@ -68,16 +71,19 @@ const CALL_FIELDS = {
       : 'Planned start must be a date and time.',
   botOccurrenceId: occurrenceIdField,
   // Record it from its start (decided 2026-11-07); off unless asked for.
-  recordFromStart: (v) =>
-    v === undefined || typeof v === 'boolean' ? null : 'Record from the start is yes or no.',
+  recordFromStart: optionalYesNo('Record from the start'),
+  // Shared with the games (decided 2026-11-24); replace: also if another call is shared now.
+  sharedWithGames: optionalYesNo('Share with the games'),
+  replace: optionalYesNo('Replace the shared call'),
 };
 
 // What the browser sees of a call: never the call service's room name.
 export const shown = (call, chat) => {
-  const { roomName, chatRoomId, recordFromStart, ...rest } = call;
+  const { roomName, chatRoomId, recordFromStart, sharedWithGames, ...rest } = call;
   return {
     ...rest,
     recordFromStart: Boolean(recordFromStart),
+    sharedWithGames: Boolean(sharedWithGames),
     chatRoom: chatRoomId ? (chat.rooms.find(chatRoomId)?.slug ?? null) : null,
   };
 };
@@ -195,6 +201,9 @@ export function callRoutes(db, config, service, chat, wentLive) {
     if (occurrence === undefined) {
       return sendError(res, 400, 'unknown_event', 'Pick one of the upcoming bot events.');
     }
+    // Asked before anything is created: a refused share leaves no call behind.
+    const other = input.sharedWithGames ? sharedElsewhere(db) : null;
+    if (other && !input.replace) return answerSharedElsewhere(res, other);
     // Guests may write in the call's chat when they may in General (decided 2026-10-18).
     const general = chat.rooms.findBySlug('general');
     const id = db.transaction(() => {
@@ -210,8 +219,9 @@ export function callRoutes(db, config, service, chat, wentLive) {
       setCallEvent(db, callId, occurrence);
       return callId;
     })();
+    audit(req, 'call.create', findCall(db, id));
+    if (input.sharedWithGames) shareCall(db, req.user, findCall(db, id), other);
     const call = findCall(db, id);
-    audit(req, 'call.create', call);
     res.status(201).json({ ok: true, call: shown(call, chat) });
   });
 

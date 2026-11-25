@@ -15,18 +15,25 @@ Branch `feat/shared-call` from `master` (`cc743b9`). Draft PR; nothing is merged
 
 - **Piece 1, docs:** the decisions of 2026-11-25 in the BACKLOG and the concept note; the shared
   view's contract in `GAME-INTEGRATION.md`, section 9.
+- **Piece 2, server:** `calls.shared_with_games` with a one-shared-call index,
+  `PUT /api/calls/:id/shared`, `sharedWithGames` on create, `GET /api/public/shared-call`,
+  cleared on end, audited (`CALLS.md`, "Calls on the site"). 9 tests, all seen red once.
 
 ## Running
 
-- Piece 2, the flag and the routes (server).
+- Piece 3, the shared view.
 
 ## Open
 
-- Piece 3, the shared view.
 - Piece 4, "already in the call" and the sound start.
 - Piece 5, the call page.
 - Piece 6, docs and the browser spec (the one to drop when short of time).
 
 ## Needs the owner
 
-- Nothing yet.
+- To confirm (chosen as the contract of section 9 reads): a **scheduled** call that is shared is
+  published too, with `ready { status: 'scheduled' }`; the 2026-11-24 wording speaks of a live
+  one. A game that wants live only can wait for `status: 'live'`.
+- Noticed: `server/test/botImages.test.js` ("over 50 megapixels") timed out after 60 s once in
+  a full local server run on this loaded PC (931 other tests passed), and passed in the next,
+  targeted run. Not touched by this branch.
