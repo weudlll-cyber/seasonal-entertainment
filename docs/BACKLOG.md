@@ -45,7 +45,8 @@ entry waits for.
   the call, no picture, so the call keeps one identity per person; the sound starts in the game
   by itself when they leave the call page; there is only ever one shared call, and sharing a
   second asks to replace the first; every organiser and every admin may share or unshare.
-  The website's part is being built on `feat/shared-call` (not merged). Measurements and
+  The website's part is built on `feat/shared-call` (2026-11-26), waiting for review and merge;
+  the kit's slot and the games' part follow in their own repositories. Measurements and
   design: [concepts/shared-call.md](concepts/shared-call.md); the contract:
   [GAME-INTEGRATION.md](GAME-INTEGRATION.md), section 9. Proposal only, not decided: a "Games
   with sign-up open" list on the call page (the note's section 5).

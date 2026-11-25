@@ -10,8 +10,8 @@ The chat can be placed as an iframe of `/embed/chat` on:
 - **other sites an admin has approved** (owner decision 2026-10-19), with direct messages
   working there too. Built in the SE-NIGHT-2 follow-up, part A.
 
-The call view inside a game, `/embed/call/<id>`, is a separate embed with its own rules (only
-this site's games frame it, listen only, its own `seasonal-call` messages): its contract is
+The call view inside a game, `/embed/call/<id>` and `/embed/call/shared` (the call shared with
+the games), is a separate embed with its own rules (only this site's games frame it, listen only, its own `seasonal-call` messages): its contract is
 [GAME-INTEGRATION.md, section 9](GAME-INTEGRATION.md#9-call-view-inside-a-game).
 
 ## The embed page

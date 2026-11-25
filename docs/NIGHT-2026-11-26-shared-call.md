@@ -32,9 +32,14 @@ Branch `feat/shared-call` from `master` (`cc743b9`). Draft PR; nothing is merged
   shared call" on the call-test page. 5 new tests seen red once; `client/src/calls`, `embed`
   and `pages`: 317 tests, the one stale expectation fixed.
 
+- **Piece 6, docs and the browser spec:** `client/e2e/callShared.spec.js` (runs in CI only;
+  not seen red, since it was not to be run locally), the call-view helpers moved to
+  `client/e2e/embeddedCall.js`, docs. The BACKLOG entry stays in part one until the merge (its
+  own rule); there is no `OPEN.md` in this repository.
+
 ## Running
 
-- Piece 6, docs and the browser spec.
+- CI on the PR.
 
 ## Open
 

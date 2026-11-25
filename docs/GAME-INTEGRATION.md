@@ -444,7 +444,7 @@ How the site does it:
   | ------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
   | `ready`       | `call` (id), `status` (`scheduled`/`live`/`ended`), `signedIn` | once the call is known; again when one changes                               |
   | `live`        | `listening` (bool)                                             | the call went live; the visitor started or stopped listening                 |
-  | `ended`       | `reason` (`ended`/`gone`)                                      | ended on the site, or deleted / not found                                    |
+  | `ended`       | `reason` (`ended`/`gone`; shared view also `unshared`)         | ended on the site, deleted / not found, or no longer the shared call         |
   | `speaking`    | `active` (bool)                                                | someone on the stage talks / silence                                         |
   | `resize`      | `mode` (`picture`/`collapsed`), `width`, `height` (px)         | the view asks for its other form (16:9 at the strip's height, or 48 px wide) |
   | `error`       | `code` (e.g. `call_full`, `banned`, `recording_consent`)       | joining failed; the view shows the text                                      |
@@ -482,8 +482,8 @@ sized as the view's `resize` asks.
 
 ### The shared call
 
-**Decided 2026-11-24 and 2026-11-25. Contract written 2026-11-26, being built on
-`feat/shared-call`** (measurements: [concepts/shared-call.md](concepts/shared-call.md)). An
+**Decided 2026-11-24 and 2026-11-25. Built on `feat/shared-call` (2026-11-26), not merged
+yet** (measurements: [concepts/shared-call.md](concepts/shared-call.md)). An
 organiser or admin marks one call as shared with the games; a game's slot frames that call
 without knowing its number. The games' shared UI kit builds its slot against these five points:
 
@@ -504,7 +504,14 @@ back or a request is refused, a sign-in when the frame is loaded again (the game
 leaves the page and returns).
 
 Code: `client/src/embed/EmbedSharedCallPage.jsx` with the per-call view's parts
-(`EmbedCallPage.jsx`, `EmbedCallView.jsx`); tests `embedSharedCall.test.jsx`.
+(`EmbedCallPage.jsx`, `EmbedCallView.jsx`), the server's `calls/shared.js` and
+`calls/sharedRoutes.js`; tests `embedSharedCall.test.jsx`, `server/test/callShared.test.js`,
+`callJoin.test.js` and `client/e2e/callShared.spec.js` (a real browser and LiveKit).
+
+**What a game does for the shared call**: the same slot, with
+`<iframe src="/embed/call/shared?theme=…">` instead of a numbered view: hidden until a
+`ready`, hidden again on `ended`; no call-id field and no check of its own. The `ready`
+message's `status` can be `scheduled` (a call shared before it starts).
 
 A member who is in the call already (another tab or device) and clicks **Listen** sees in the
 view only the call's title and the note "You are in this call in another tab or on another

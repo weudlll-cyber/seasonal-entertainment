@@ -463,8 +463,9 @@ client/                    React + Vite client
   src/embed/               the embedded chat for iframes (/embed/chat) on this site and on
                            approved other sites, its postMessage API, the login popup
                            (/embed-login) and the in-memory embed token (docs/EMBED.md); the
-                           call view inside a game (/embed/call/<id>, callView.js;
-                           docs/GAME-INTEGRATION.md section 9)
+                           call view inside a game (/embed/call/<id>, and
+                           /embed/call/shared for the call shared with the games;
+                           callView.js; docs/GAME-INTEGRATION.md section 9)
   src/prices/              coin prices (the price bot, CoinGecko via the server): the /info/prices
                            page, the hand-built SVG chart for one coin or several, the coin
                            choice, fair price, converter, formats (docs/BOTS.md)
@@ -488,7 +489,8 @@ client/                    React + Vite client
                            file, reminder), the members' reminder notices; the call page's parts (stage, speaker
                            tiles, listeners, controls, media), its live connection
                            (useCallRoom, livekit-client) and its rules (stageModel); the
-                           recording question, a recording with its player and chapters
+                           recording question, "Share with the games" (ShareSwitch), the leave message between
+                           pages (leftCall.js), a recording with its player and chapters
                            (RecordingItem, RecordingChapters; the archive page is
                            pages/RecordingsPage.jsx)
   src/profiles/            member profiles (docs/AUTH.md): the profile page, the account page's
@@ -577,7 +579,8 @@ server/
   src/calls/               community calls (docs/CALLS.md): call service configuration, the
                            call service adapter, schema, store, participants, grants and join
                            tokens, spotlight rule, routes (management, join, stage, spotlight,
-                           calendar file and reminders), ending a call, the stale-call job and
+                           calendar file and reminders), the call shared with the games (shared.js,
+                           sharedRoutes.js), ending a call, the stale-call job and
                            the reminder job, the link to a bot event (eventLink.js),
                            recordings with their length and chapters and the archive
                            (recordings.js, chapters.js, recordingRoutes.js, chapterRoutes.js)

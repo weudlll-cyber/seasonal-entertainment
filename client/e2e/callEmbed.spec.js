@@ -12,10 +12,10 @@
 // ============================================================
 
 import { expect, request as newRequest, test } from '@playwright/test';
-import { RoomServiceClient } from 'livekit-server-sdk';
 import { ADMIN_STATE } from './adminState.js';
+import { frameView, messages, participant } from './embeddedCall.js';
 import { refused } from './frames.js';
-import { CALLS_PORT, DEV_PROXY_URL, SERVER_PORT } from './ports.js';
+import { DEV_PROXY_URL, SERVER_PORT } from './ports.js';
 
 // As calls.spec.js: the fake media UI also lets Chrome offer its real local addresses (else
 // hidden behind mDNS names), which the run's local LiveKit needs to reach the browser. The view
@@ -25,53 +25,6 @@ test.use({
     args: ['--use-fake-ui-for-media-stream', '--autoplay-policy=no-user-gesture-required'],
   },
 });
-
-const callServer = new RoomServiceClient(`http://127.0.0.1:${CALLS_PORT}`, 'devkey', 'secret');
-// The call server's own record of one participant (any room).
-const participant = async (identity) => {
-  const rooms = await callServer.listRooms();
-  const people = (await Promise.all(rooms.map((r) => callServer.listParticipants(r.name)))).flat();
-  return people.find((p) => p.identity === identity);
-};
-
-// Frames `src` in the current page at the slot's desktop size, as a game does, and keeps
-// every message from the view in window.callMessages.
-async function frameView(page, src) {
-  await page.evaluate((url) => {
-    window.callMessages = [];
-    window.addEventListener('message', (event) => {
-      if (event.data?.source === 'seasonal-call') window.callMessages.push(event.data);
-    });
-    const frame = document.createElement('iframe');
-    frame.src = url;
-    frame.title = 'call view';
-    frame.allow = 'autoplay; fullscreen';
-    Object.assign(frame.style, {
-      position: 'fixed',
-      right: '0',
-      bottom: '0',
-      width: '338px',
-      height: '190px',
-      border: '0',
-      zIndex: '100',
-    });
-    document.body.append(frame);
-    // A game sizes its slot as the view asks.
-    window.addEventListener('message', (event) => {
-      if (event.data?.source === 'seasonal-call' && event.data.type === 'resize') {
-        frame.style.width = `${event.data.width}px`;
-        frame.style.height = `${event.data.height}px`;
-      }
-    });
-  }, src);
-  const element = page.locator('iframe[title="call view"]');
-  await expect(element).toBeAttached();
-  const frame = await (await element.elementHandle()).contentFrame();
-  await frame.waitForLoadState();
-  return { frame, element };
-}
-const messages = (page, type) =>
-  page.evaluate((t) => window.callMessages.filter((m) => m.type === t), type);
 
 test('a game frames the view: listen, mute, collapse, leave, the end', async ({
   browser,

@@ -60,6 +60,7 @@ const MEMBERS = [
   'accountphone',
   'accountdesk',
   'eventsmember',
+  'sharedmember',
 ];
 
 async function insertMember(db, username) {
