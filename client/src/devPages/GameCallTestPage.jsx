@@ -8,7 +8,8 @@
 //              (docs/GAME-INTEGRATION.md section 9): the slot in the sizes of the contract
 //              (desktop 338 x 190, the low strip 267 x 150, collapsed 48 px; the phone's strip
 //              and its picture), resized when the view asks (resize), the view's messages in a
-//              list, and buttons that send it mute, collapse, theme and visible.
+//              list, and buttons that send it mute, collapse, theme and visible. ?call=shared
+//              ("Frame the shared call") frames /embed/call/shared, whichever call that is.
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
@@ -61,10 +62,17 @@ export default function GameCallTestPage() {
         }}
       >
         <label>
-          Call id <input name="call" defaultValue={callId} inputMode="numeric" />
+          Call id <input name="call" key={callId} defaultValue={callId} />
         </label>{' '}
         <button type="submit" className="button button--secondary">
           Frame it
+        </button>{' '}
+        <button
+          type="button"
+          className="button button--secondary"
+          onClick={() => setParams({ call: 'shared' })}
+        >
+          Frame the shared call
         </button>
       </form>
       <p>

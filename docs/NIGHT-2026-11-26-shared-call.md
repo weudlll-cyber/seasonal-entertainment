@@ -27,13 +27,18 @@ Branch `feat/shared-call` from `master` (`cc743b9`). Draft PR; nothing is merged
   view dropped by a call-page join waits the same way. Server and client tests seen red once;
   the 160 tests of `client/src/embed` and `client/src/calls` pass.
 
+- **Piece 5, the call page:** the "Share with the games" switch on the call's card and page
+  and in the New call form, the replace question, "Shared with the games", and "Frame the
+  shared call" on the call-test page. 5 new tests seen red once; `client/src/calls`, `embed`
+  and `pages`: 317 tests, the one stale expectation fixed.
+
 ## Running
 
-- Piece 5, the call page.
+- Piece 6, docs and the browser spec.
 
 ## Open
 
-- Piece 6, docs and the browser spec (the one to drop when short of time).
+- Nothing else.
 
 ## Needs the owner
 
@@ -45,6 +50,8 @@ Branch `feat/shared-call` from `master` (`cc743b9`). Draft PR; nothing is merged
   of the pieces asks for it).
 - To decide: the view of one named call (`/embed/call/<id>`) and a guest with two tabs still
   drop the other connection (the pieces cover members and the shared view).
+- There is no form that edits a call: "the edit form" is the call's card and page, where the
+  switch is.
 - Noticed: `server/test/botImages.test.js` ("over 50 megapixels") timed out after 60 s once in
   a full local server run on this loaded PC (931 other tests passed), and passed in the next,
   targeted run. Not touched by this branch.

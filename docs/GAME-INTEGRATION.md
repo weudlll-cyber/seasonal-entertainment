@@ -517,7 +517,8 @@ does not connect by itself when it is first loaded: it starts on **Listen**, as 
 
 **Trying it locally**: with `npm run dev`, `/games/call-test/?call=<id>`
 (`client/src/devPages/GameCallTestPage.jsx`, development builds only) is a pretend game: it
-frames the view in each of the sizes above, follows `resize`, lists the view's messages and
+frames the view (of one call, or with "Frame the shared call" of the shared one,
+`?call=shared`) in each of the sizes above, follows `resize`, lists the view's messages and
 sends `mute`, `collapse`, `visible` and `theme`.
 
 Tests: `client/src/embed/callView.test.js` (who may frame it, the forms, the sizes),

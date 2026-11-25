@@ -80,6 +80,12 @@ Generate a production pair on the call server with
   `{v: 1, call: {id, title}}` or `{v: 1, call: null}` (also while calls are not set up),
   `Cache-Control: public, max-age=5`, under the per-address read limit. Code: `calls/shared.js`,
   `calls/sharedRoutes.js`; tests `server/test/callShared.test.js`.
+  On the site, organisers and admins have a **Share with the games** switch on a planned or live
+  call's card and page (`calls/ShareSwitch.jsx`) and in the **New call** form (there is no
+  form that edits a call); while another call is shared they are asked whether to replace it,
+  by its title, and "no" changes nothing (the new call is then not created and the form keeps
+  its fields). The shared call's card and page say **Shared with the games** to everyone. Tests:
+  `client/src/calls/shareSwitch.test.jsx`.
 - **Starting a call** (decided 2026-11-06): in the "New call" form the button reads **Start call
   now** while "Planned start (optional)" is empty and **Create call** once a time is set, as the
   field changes. "Start call now" makes the two calls an organiser would (`POST /api/calls`,

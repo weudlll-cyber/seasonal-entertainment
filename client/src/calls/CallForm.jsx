@@ -9,19 +9,26 @@
 //              it, docs/CALLS.md, "Starting a call"); with one, "Create call". It switches as the
 //              field changes. While recording is set up and allowed (canRecord), "Record from the
 //              start" (off by default): starting the call starts its recording too (docs/CALLS.md,
-//              "Recording").
+//              "Recording"). "Share with the games" (off by default) makes it the shared call.
 // ============================================================
 
 import { useState } from 'react';
 import { FormField, FormMessage } from '../components/FormField.jsx';
 import EventSelect from './EventSelect.jsx';
 
-const EMPTY = { title: '', description: '', when: '', event: null, recordFromStart: false };
+const EMPTY = {
+  title: '',
+  description: '',
+  when: '',
+  event: null,
+  recordFromStart: false,
+  sharedWithGames: false,
+};
 
-// onCreate({ title, description, scheduledFor, botOccurrenceId, recordFromStart }) resolves when
-// saved (and, with
-// no scheduledFor, started), throws on an error. events: the bot's upcoming occurrences for the
-// picker.
+// onCreate({ title, description, scheduledFor, botOccurrenceId, recordFromStart,
+// sharedWithGames }) resolves when saved (and, with no scheduledFor, started) — to false when
+// nothing was created, which keeps the fields — and throws on an error. events: the bot's
+// upcoming occurrences for the picker.
 export default function CallForm({ onCreate, events, canRecord }) {
   const [call, setCall] = useState(EMPTY);
   const [error, setError] = useState(null);
@@ -31,15 +38,16 @@ export default function CallForm({ onCreate, events, canRecord }) {
     event.preventDefault();
     setError(null);
     try {
-      await onCreate({
+      const created = await onCreate({
         title: call.title,
         description: call.description,
         // datetime-local has no time zone: the browser's own, turned into UTC here.
         scheduledFor: call.when ? new Date(call.when).toISOString() : null,
         botOccurrenceId: call.event,
         recordFromStart: canRecord && call.recordFromStart,
+        sharedWithGames: call.sharedWithGames,
       });
-      setCall(EMPTY);
+      if (created !== false) setCall(EMPTY);
     } catch (err) {
       setError(err.message);
     }
@@ -75,6 +83,14 @@ export default function CallForm({ onCreate, events, canRecord }) {
           <span>Record from the start</span>
         </label>
       )}
+      <label className="form-check">
+        <input
+          type="checkbox"
+          checked={call.sharedWithGames}
+          onChange={(event) => setCall({ ...call, sharedWithGames: event.target.checked })}
+        />
+        <span>Share with the games</span>
+      </label>
       <FormMessage error={error} />
       <button className="button" type="submit">
         {call.when ? 'Create call' : 'Start call now'}
