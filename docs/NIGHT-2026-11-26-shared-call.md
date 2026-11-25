@@ -37,13 +37,31 @@ Branch `feat/shared-call` from `master` (`cc743b9`). Draft PR; nothing is merged
   `client/e2e/embeddedCall.js`, docs. The BACKLOG entry stays in part one until the merge (its
   own rule); there is no `OPEN.md` in this repository.
 
+- **CI:** all checks green at `963be59` (`npm run verify` with 935 server tests, 759 client
+  tests and 206 browser tests, `callShared.spec.js` among them).
+
 ## Running
 
-- CI on the PR.
+- Nothing. The chain is finished; #90 is a draft, not merged.
 
 ## Open
 
 - Nothing else.
+
+## For the owner to look at
+
+The dev server runs this branch (LiveKit on 7880, the site on http://localhost:5380; the dev
+admin's sign-in is in `data/DEV-ADMIN.txt`).
+
+1. http://localhost:5380/calls — sign in as the dev admin, fill in **New call**, tick **Share
+   with the games**, **Start call now**. The call's page has the switch in its header.
+2. http://localhost:5380/games/call-test/?call=shared — the shared view as a game frames it.
+   With the call page open in another tab and joined, **Listen** there shows the note; **Leave
+   call** starts the sound.
+
+## Proposals only (not decided, not built)
+
+- A "Games with sign-up open" list on the call page (the concept note, section 5).
 
 ## Needs the owner
 
