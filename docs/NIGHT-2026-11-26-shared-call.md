@@ -37,16 +37,23 @@ Branch `feat/shared-call` from `master` (`cc743b9`). Draft PR; nothing is merged
   `client/e2e/embeddedCall.js`, docs. The BACKLOG entry stays in part one until the merge (its
   own rule); there is no `OPEN.md` in this repository.
 
-- **CI:** all checks green at `963be59` (`npm run verify` with 935 server tests, 759 client
-  tests and 206 browser tests, `callShared.spec.js` among them).
+- **CI:** the workflows were green at `963be59` (`npm run verify` with 935 server tests, 759
+  client tests and 206 browser tests, `callShared.spec.js` among them).
+- **Correction (2026-11-27):** this sheet first said "all checks green at `963be59`", which did
+  not hold for CodeQL. Its alert `js/missing-token-validation` is a false positive: `csrfGuard`
+  (`server/src/http/csrf.js`) is mounted at `server/src/app.js:134`, before the session
+  middleware and every `/api` route. The owner dismissed the alert on 2026-11-27.
+- **After the owner's look (2026-11-27):** the note of piece 4 reads "You're in this call in
+  another tab or on another device. The call plays there."; #90 is to be merged once its checks
+  are green.
 
 ## Running
 
-- Nothing. The chain is finished; #90 is a draft, not merged.
+- Nothing. The chain is finished.
 
 ## Open
 
-- Nothing else.
+- The games' side of the shared call (`BACKLOG.md`, part one).
 
 ## For the owner to look at
 

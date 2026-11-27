@@ -482,10 +482,10 @@ sized as the view's `resize` asks.
 
 ### The shared call
 
-**Decided 2026-11-24 and 2026-11-25. Built on `feat/shared-call` (2026-11-26), not merged
-yet** (measurements: [concepts/shared-call.md](concepts/shared-call.md)). An
-organiser or admin marks one call as shared with the games; a game's slot frames that call
-without knowing its number. The games' shared UI kit builds its slot against these five points:
+**Decided 2026-11-24 and 2026-11-25; the website's part merged 2026-11-27** (measurements:
+[concepts/shared-call.md](concepts/shared-call.md)). An organiser or admin marks one call as
+shared with the games; a game's slot frames that call without knowing its number. The games'
+shared UI kit builds its slot against these five points:
 
 1. `GET /embed/call/shared?theme=<light|dark|auto>` (no call number) frames the view of
    whichever call is shared now.
@@ -514,13 +514,14 @@ Code: `client/src/embed/EmbedSharedCallPage.jsx` with the per-call view's parts
 message's `status` can be `scheduled` (a call shared before it starts).
 
 A member who is in the call already (another tab or device) and clicks **Listen** sees in the
-view only the call's title and the note "You are in this call in another tab or on another
-device. The sound plays there.", no picture; no `error` goes to the game. The sound starts in
-the game by itself once they leave the call page: at once in the same browser, else within 5
-seconds (about 80 seconds after a connection that was cut off). Where the browser holds the
-sound back, the view shows **Listen**. A view that is playing when the member joins on the call
-page is dropped and waits the same way ([CALLS.md](CALLS.md), "Joining"). The view
-does not connect by itself when it is first loaded: it starts on **Listen**, as every call view.
+view only the call's title and the note "You're in this call in another tab or on another
+device. The call plays there." (decided 2026-11-27), no picture; no `error` goes to the game.
+The sound starts in the game by itself once they leave the call page: at once in the same
+browser, else within 5 seconds (about 80 seconds after a connection that was cut off). Where
+the browser holds the sound back, the view shows **Listen**. A view that is playing when the
+member joins on the call page is dropped and waits the same way ([CALLS.md](CALLS.md),
+"Joining"). The view does not connect by itself when it is first loaded: it starts on
+**Listen**, as every call view.
 
 **Trying it locally**: with `npm run dev`, `/games/call-test/?call=<id>`
 (`client/src/devPages/GameCallTestPage.jsx`, development builds only) is a pretend game: it

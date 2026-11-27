@@ -25,7 +25,7 @@ test.use({
   },
 });
 
-const NOTE = 'You are in this call in another tab or on another device. The sound plays there.';
+const NOTE = "You're in this call in another tab or on another device. The call plays there.";
 
 test('the shared view follows what is shared and leaves a member on the call page alone', async ({
   browser,

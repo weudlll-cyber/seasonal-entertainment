@@ -232,7 +232,7 @@ async function waiting() {
   await screen.findByText(NOTE);
   return calls;
 }
-const NOTE = 'You are in this call in another tab or on another device. The sound plays there.';
+const NOTE = "You're in this call in another tab or on another device. The call plays there.";
 const joins = (calls) => calls.filter((c) => c.key === 'POST /calls/7/join');
 
 it('in the call elsewhere: a note with the title, no picture, and it asks again', async () => {

@@ -33,26 +33,15 @@ entry waits for.
   the race and Cases to frame it in their slot and give the host the call-id field, each in its
   own repository.
 
-### Decided, waiting to be scheduled
-
-- **A call shared with the games** — decided 2026-11-24: a call's organiser or an admin can mark
-  a call as shared with the games; while it is live every game's call slot shows it, with no
-  call number entered; usually one game runs at a time, nothing restricts it; inside a game a
-  member only watches and listens; a member in a call on the website can open a game and keep
-  listening (a short interruption is acceptable); after a game the player sees the result first
-  and goes back with "Back to the call". Decided 2026-11-25: a member already in the call with
-  the same account (another tab or device) sees in the game's view only a note that they are in
-  the call, no picture, so the call keeps one identity per person; the sound starts in the game
-  by itself when they leave the call page; there is only ever one shared call, and sharing a
-  second asks to replace the first; every organiser and every admin may share or unshare.
-  The website's part is built on `feat/shared-call` (2026-11-26), waiting for review and merge;
-  the kit's slot and the games' part follow in their own repositories. Measurements and
-  design: [concepts/shared-call.md](concepts/shared-call.md); the contract:
-  [GAME-INTEGRATION.md](GAME-INTEGRATION.md), section 9. Proposal only, not decided: a "Games
-  with sign-up open" list on the call page (the note's section 5).
+- **The shared call in the games' slots** — the site's `/embed/call/shared` is built and merged
+  (2026-11-27; docs/GAME-INTEGRATION.md, section 9, "The shared call"). Waiting for the games'
+  kit to build the slot and "Back to the call", and for each game to switch it on, each in its
+  own repository.
 
 ### Proposals not decided
 
+- **A "Games with sign-up open" list on the call page** — not decided
+  (docs/concepts/shared-call.md, section 5).
 - **Group roles from Telegram** — steps or rooms tied to Telegram groups are not built (Telegram
   login is not planned, decided 2026-11-02).
 - **Race-game connection** — the website's part is done (PR #64, 2026-11-11: the slug `race`,
@@ -116,6 +105,21 @@ entry waits for.
   restore runs in the Linux container and is not affected; listed only.
 
 ## PART TWO — closed
+
+- **A call shared with the games, the website's part** — closed by `feat/shared-call` (PR #90,
+  merged 2026-11-27). Decided 2026-11-24: a call's organiser or an admin can mark a call as
+  shared with the games; while it is live every game's call slot shows it, with no call number
+  entered; usually one game runs at a time, nothing restricts it; inside a game a member only
+  watches and listens; a member in a call on the website can open a game and keep listening (a
+  short interruption is acceptable); after a game the player sees the result first and goes back
+  with "Back to the call". Decided 2026-11-25: a member already in the call with the same
+  account (another tab or device) sees in the game's view only a note that they are in the call,
+  no picture, so the call keeps one identity per person; the sound starts in the game by itself
+  when they leave the call page; there is only ever one shared call, and sharing a second asks
+  to replace the first; every organiser and every admin may share or unshare. Decided
+  2026-11-27: the note's wording. The slot and "Back to the call" are the games' side (part one).
+  Measurements and design: [concepts/shared-call.md](concepts/shared-call.md); the contract:
+  [GAME-INTEGRATION.md](GAME-INTEGRATION.md), section 9.
 
 - **HSTS on the games' routes** — closed by `feat/host-hsts` (decided 2026-11-23): the site's
   proxy sends `Strict-Transport-Security` for every route of the host, in Caddy and nginx mode,

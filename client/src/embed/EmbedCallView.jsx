@@ -60,8 +60,7 @@ function OpenCallPage({ id }) {
   );
 }
 
-const ELSEWHERE =
-  'You are in this call in another tab or on another device. The sound plays there.';
+const ELSEWHERE = "You're in this call in another tab or on another device. The call plays there.";
 
 // What the view says instead of the call: not started, over, joining, in it elsewhere, left.
 function stateText(status, gone, liveStatus) {

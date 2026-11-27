@@ -37,8 +37,11 @@ proposal below, these hold):
 - The list of games with open sign-ups on the call page (section 5) is a proposal only, not
   decided and not built.
 
+Decided 2026-11-27: the note reads "You're in this call in another tab or on another device.
+The call plays there.", since picture and sound both play there.
+
 Status at the time of the measurements: not built. This note measures what the decisions rest on
-and proposes the design; the website's part follows it on `feat/shared-call`, and the contract
+and proposes the design; the website's part followed it (merged 2026-11-27), and the contract
 as built is in [GAME-INTEGRATION.md](../GAME-INTEGRATION.md), section 9.
 
 ## Summary
