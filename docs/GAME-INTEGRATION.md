@@ -380,7 +380,10 @@ How the site does it:
   game is laid out for a phone, for the size it asks for in `resize`, is read from the game's
   window: under 760 px wide, the site's own breakpoint.
 - Out of sight (`visible: false`) the picture is left out, so LiveKit's adaptive stream receives
-  no video; the sound plays on.
+  no video; the sound plays on. Measured 2026-11-26 on the dev servers (N=5, 10 s windows, one
+  speaker with a camera): shown, the view received 153 to 176 KB of video and 173 to 203 frames;
+  out of sight 0 KB and 0 frames every time, with the audio unchanged (89 to 96 KB shown, 89 to
+  93 KB hidden). So no unsubscribing is needed.
 
 - **The page**: the site serves a reduced call page, `/embed/call/<id>?theme=<light|dark|auto>`,
   framed like the chat. A game never connects to the call service (LiveKit) itself and never
@@ -441,7 +444,7 @@ How the site does it:
   | ------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
   | `ready`       | `call` (id), `status` (`scheduled`/`live`/`ended`), `signedIn` | once the call is known; again when one changes                               |
   | `live`        | `listening` (bool)                                             | the call went live; the visitor started or stopped listening                 |
-  | `ended`       | `reason` (`ended`/`gone`)                                      | ended on the site, or deleted / not found                                    |
+  | `ended`       | `reason` (`ended`/`gone`; shared view also `unshared`)         | ended on the site, deleted / not found, or no longer the shared call         |
   | `speaking`    | `active` (bool)                                                | someone on the stage talks / silence                                         |
   | `resize`      | `mode` (`picture`/`collapsed`), `width`, `height` (px)         | the view asks for its other form (16:9 at the strip's height, or 48 px wide) |
   | `error`       | `code` (e.g. `call_full`, `banned`, `recording_consent`)       | joining failed; the view shows the text                                      |
@@ -477,9 +480,53 @@ call-id field for the host in a round or lobby, checked with `GET /api/calls/<id
 slot `<iframe src="/embed/call/<id>?theme=<light|dark|auto>" allow="autoplay; fullscreen">`,
 sized as the view's `resize` asks.
 
+### The shared call
+
+**Decided 2026-11-24 and 2026-11-25; the website's part merged 2026-11-27** (measurements:
+[concepts/shared-call.md](concepts/shared-call.md)). An organiser or admin marks one call as
+shared with the games; a game's slot frames that call without knowing its number. The games'
+shared UI kit builds its slot against these five points:
+
+1. `GET /embed/call/shared?theme=<light|dark|auto>` (no call number) frames the view of
+   whichever call is shared now.
+2. While nothing is shared the view posts no `ready`. When a call is shared it posts
+   `ready { call, status, signedIn }` with that call's id, and again whenever the shared call's
+   id, its status or the sign-in changes, from the same loaded frame (a newly shared call after
+   an earlier one ended included).
+3. When the shared call ends the view posts `ended { reason: 'ended' }`; when it stops being
+   shared (unshared or replaced) it posts `ended { reason: 'unshared' }`. Either way it keeps
+   watching for the next one. `unshared` is a reason only the shared view sends.
+4. `visible: false` means no picture is drawn and no video is received.
+5. Every other message stays as this section has it (`source: 'seasonal-call'`).
+
+A sign-in change is noticed as the view notices one anywhere: a sign-out when the tab comes
+back or a request is refused, a sign-in when the frame is loaded again (the games' sign-in
+leaves the page and returns).
+
+Code: `client/src/embed/EmbedSharedCallPage.jsx` with the per-call view's parts
+(`EmbedCallPage.jsx`, `EmbedCallView.jsx`), the server's `calls/shared.js` and
+`calls/sharedRoutes.js`; tests `embedSharedCall.test.jsx`, `server/test/callShared.test.js`,
+`callJoin.test.js` and `client/e2e/callShared.spec.js` (a real browser and LiveKit).
+
+**What a game does for the shared call**: the same slot, with
+`<iframe src="/embed/call/shared?theme=…">` instead of a numbered view: hidden until a
+`ready`, hidden again on `ended`; no call-id field and no check of its own. The `ready`
+message's `status` can be `scheduled` (a call shared before it starts).
+
+A member who is in the call already (another tab or device) and clicks **Listen** sees in the
+view only the call's title and the note "You're in this call in another tab or on another
+device. The call plays there." (decided 2026-11-27), no picture; no `error` goes to the game.
+The sound starts in the game by itself once they leave the call page: at once in the same
+browser, else within 5 seconds (about 80 seconds after a connection that was cut off). Where
+the browser holds the sound back, the view shows **Listen**. A view that is playing when the
+member joins on the call page is dropped and waits the same way ([CALLS.md](CALLS.md),
+"Joining"). The view does not connect by itself when it is first loaded: it starts on
+**Listen**, as every call view.
+
 **Trying it locally**: with `npm run dev`, `/games/call-test/?call=<id>`
 (`client/src/devPages/GameCallTestPage.jsx`, development builds only) is a pretend game: it
-frames the view in each of the sizes above, follows `resize`, lists the view's messages and
+frames the view (of one call, or with "Frame the shared call" of the shared one,
+`?call=shared`) in each of the sizes above, follows `resize`, lists the view's messages and
 sends `mute`, `collapse`, `visible` and `theme`.
 
 Tests: `client/src/embed/callView.test.js` (who may frame it, the forms, the sizes),

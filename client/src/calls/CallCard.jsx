@@ -9,7 +9,9 @@
 //              End button its status allows and, on a planned call, its event bot occurrence
 //              (EventSelect.jsx); for admins, on an ended call, "Delete <title>"
 //              (calls/deleteCall.js). A call whose recording runs says "Being recorded", or
-//              "Recording starts…" until the egress records.
+//              "Recording starts…" until the egress records. The shared call says "Shared with
+//              the games"; organisers and admins have the switch on a planned or live call
+//              (ShareSwitch.jsx).
 // ============================================================
 
 import { Link } from 'react-router';
@@ -18,6 +20,7 @@ import CallActions from './CallActions.jsx';
 import EventSelect from './EventSelect.jsx';
 import LiveBadge from './LiveBadge.jsx';
 import { recordingLabel } from './recordingLabel.js';
+import ShareSwitch from './ShareSwitch.jsx';
 
 function timeLine(call) {
   if (call.status === 'live') return `Started ${formatWhen(call.startedAt)}`;
@@ -27,8 +30,10 @@ function timeLine(call) {
 
 // reminded: this member has a reminder for it; onAction(call, 'start' | 'end') and
 // onLink(call, occurrenceId | null): only passed to organisers and admins, with events (the
-// bot's upcoming occurrences); onDelete(call): only passed to admins.
-export default function CallCard({ call, reminded, onAction, onLink, onDelete, events }) {
+// bot's upcoming occurrences); onDelete(call): only passed to admins; onShared(): only passed
+// to organisers and admins, after their switch changed what is shared.
+export default function CallCard(props) {
+  const { call, reminded, onAction, onLink, onDelete, onShared, events } = props;
   return (
     <li className={`call-card call-card--${call.status}`}>
       <h3 className="call-card__title">
@@ -41,6 +46,7 @@ export default function CallCard({ call, reminded, onAction, onLink, onDelete, e
         </p>
       )}
       <p className="call-card__time">{timeLine(call)}</p>
+      {call.sharedWithGames && <p>Shared with the games</p>}
       {call.description && <p>{call.description}</p>}
       {call.createdBy && <p className="call-card__by">Created by {call.createdBy}</p>}
       <p>
@@ -59,6 +65,7 @@ export default function CallCard({ call, reminded, onAction, onLink, onDelete, e
           occurrences={events}
         />
       )}
+      {onShared && call.status !== 'ended' && <ShareSwitch call={call} onChanged={onShared} />}
       {onDelete && call.status === 'ended' && (
         <div className="call-card__actions">
           <button className="button button--secondary" type="button" onClick={() => onDelete(call)}>

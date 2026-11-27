@@ -216,3 +216,24 @@ it('"no such call" is not asked again', async () => {
     vi.useRealTimers();
   }
 });
+
+it('leaving says so to the other pages of this browser, once disconnected', async () => {
+  mockApi({ ...signedIn({ username: 'mia', role: 'member' }), ...answers('live') });
+  const heard = [];
+  const channel = new BroadcastChannel('seasonal-call-left');
+  channel.onmessage = ({ data }) => heard.push(data);
+  const page = await renderApp('/calls/7');
+  fireEvent.click(await screen.findByRole('button', { name: 'Join call' }));
+  const leave = await screen.findByRole('button', { name: 'Leave call' });
+  expect(heard).toEqual([]);
+  fireEvent.click(leave);
+  await vi.waitFor(() => expect(heard).toEqual([{ call: 7 }]));
+  expect(rooms[0].disconnect).toHaveBeenCalled();
+  // Closing the page after a join (another way of leaving) says it as well.
+  fireEvent.click(screen.getByRole('button', { name: 'Join call' }));
+  await screen.findByRole('button', { name: 'Leave call' });
+  const before = heard.length;
+  page.unmount();
+  await vi.waitFor(() => expect(heard.length).toBeGreaterThan(before));
+  channel.close();
+});

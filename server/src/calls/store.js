@@ -8,7 +8,8 @@
 //              the expected status, so two organisers acting at once cannot both succeed.
 //              Also the call's spotlight state, the live calls with since when their room
 //              has been missing (the stale-call job, staleCalls.js), and the call's link to an
-//              event bot occurrence (eventLink.js).
+//              event bot occurrence (eventLink.js). An ended call loses its "shared with the
+//              games" flag (shared.js).
 // ============================================================
 
 import { randomBytes } from 'node:crypto';
@@ -20,7 +21,7 @@ const COLUMNS = `c.id, c.title, c.description, c.status, c.scheduled_for AS sche
   c.created_at AS createdAt, c.started_at AS startedAt, c.ended_at AS endedAt,
   c.chat_room_id AS chatRoomId, c.room_name AS roomName, u.username AS createdBy,
   c.bot_occurrence_id AS botOccurrenceId, c.bot_occurrence_start AS botOccurrenceStart,
-  c.record_from_start AS recordFromStart`;
+  c.record_from_start AS recordFromStart, c.shared_with_games AS sharedWithGames`;
 const FROM = 'calls c LEFT JOIN users u ON u.id = c.created_by';
 
 export function findCall(db, id) {
@@ -121,11 +122,15 @@ export function markLive(db, id) {
   );
 }
 
-// true when the call was scheduled or live and is ended now.
+// true when the call was scheduled or live and is ended now. An ended call is no longer shared
+// with the games.
 export function markEnded(db, id) {
   return (
     db
-      .prepare("UPDATE calls SET status = 'ended', ended_at = ? WHERE id = ? AND status != 'ended'")
+      .prepare(
+        `UPDATE calls SET status = 'ended', ended_at = ?, shared_with_games = 0
+         WHERE id = ? AND status != 'ended'`
+      )
       .run(now(), id).changes === 1
   );
 }

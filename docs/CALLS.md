@@ -67,6 +67,25 @@ Generate a production pair on the call server with
   limit `callManage` per account, an audit entry `call.create` / `call.start` / `call.end`
   each). Admins alone delete an ended call ("Deleting a call" below). Everyone may see the list
   and a call.
+- **Shared with the games** (decided 2026-11-24 and 2026-11-25): one call at most can be
+  shared; the games' call slot shows it without its number
+  ([GAME-INTEGRATION.md](GAME-INTEGRATION.md), section 9). Every organiser and admin may share or
+  unshare a scheduled or live call: `PUT /api/calls/:id/shared {shared, replace?}` (limit
+  `callManage`; 409 `wrong_status` for an ended call), or `sharedWithGames` on
+  `POST /api/calls`. While another call is shared both answer 409 `shared_elsewhere` with that
+  call (`{id, title}`) and change nothing, unless `replace` is true; then the other one is
+  unshared in the same transaction. Audited `call.share` (with `replaced`) and `call.unshare`
+  (with `replacedBy`). Ending a call, by an organiser or the stale-call job, clears the flag.
+  A call says `sharedWithGames`. Public, no login: `GET /api/public/shared-call` →
+  `{v: 1, call: {id, title}}` or `{v: 1, call: null}` (also while calls are not set up),
+  `Cache-Control: public, max-age=5`, under the per-address read limit. Code: `calls/shared.js`,
+  `calls/sharedRoutes.js`; tests `server/test/callShared.test.js`.
+  On the site, organisers and admins have a **Share with the games** switch on a planned or live
+  call's card and page (`calls/ShareSwitch.jsx`) and in the **New call** form (there is no
+  form that edits a call); while another call is shared they are asked whether to replace it,
+  by its title, and "no" changes nothing (the new call is then not created and the form keeps
+  its fields). The shared call's card and page say **Shared with the games** to everyone. Tests:
+  `client/src/calls/shareSwitch.test.jsx`.
 - **Starting a call** (decided 2026-11-06): in the "New call" form the button reads **Start call
   now** while "Planned start (optional)" is empty and **Create call** once a time is set, as the
   field changes. "Start call now" makes the two calls an organiser would (`POST /api/calls`,
@@ -231,6 +250,18 @@ in the chat (403 `banned`) and when the call already has as many participants as
 allows (403 `call_full`; someone already in it may rejoin). A locked account is logged out on
 its next request, so it can only come back as an anonymous guest listener. Every person gets
 one random identity per call (`p-…`, `call_participants`), which says nothing about the account.
+**The shared view and a member who is in the call already** (decided 2026-11-24 and
+2026-11-25). The call service keeps one connection per identity, so a second join drops the
+first (measured: [concepts/shared-call.md](concepts/shared-call.md), section 2). A join with
+`shared: true` (the view of the call shared with the games) by a member whose identity for the
+call is in the room answers 409 `in_call_elsewhere` and mints no token; these joins are
+limited per account (the `callJoin` numbers) before the address's limit, so a waiting view
+uses up nobody else's joins. The view shows a note and asks again every 5 seconds; **Leave
+call** on the call page also tells this browser's other pages over a `BroadcastChannel`
+(`calls/leftCall.js`), so there the view asks at once. A view that is connected already when
+the member joins on the call page is dropped by the call service and waits the same way. A
+view of one named call (`/embed/call/<id>`) and guests join as before.
+
 The answer is the call service URL and a token valid for 10 minutes (LiveKit renews it for a
 running connection):
 

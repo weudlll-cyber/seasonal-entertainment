@@ -15,13 +15,19 @@
 //              banner once (recordingNotice). How far it is (recordingState: starting until the
 //              egress records, then active) and when its last start failed (recordingFailedAt)
 //              come from the room's metadata too. listenOnly (the call view inside a game,
-//              embed/EmbedCallPage.jsx): the server gives a listener's token, organisers too.
-//              errorCode: the server's code of a failed join (call_full, banned, ...).
+//              embed/EmbedCallPage.jsx): the server gives a listener's token, organisers too;
+//              shared (the view of the call shared with the games) is refused while the member
+//              is in the call elsewhere, or dropped when they join there: status 'elsewhere',
+//              kept while it asks again. Sound the
+//              browser holds back does not fail a join (controls.startAudio asks again on a
+//              click). Leaving the call page is announced to this browser's other pages
+//              (leftCall.js). errorCode: the server's code of a failed join (call_full, ...).
 // ============================================================
 
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { DisconnectReason, Room, RoomEvent, Track } from 'livekit-client';
 import { ApiError, api } from '../api/http.js';
+import { announceLeft } from './leftCall.js';
 import {
   isChromium,
   personOf,
@@ -61,8 +67,21 @@ const SHARE_OPTIONS = {
   surfaceSwitching: 'include',
 };
 
-// status: 'idle' | 'joining' | 'joined' | 'left' | 'ended' | 'error'.
-export function useCallRoom(callId, { listenOnly = false } = {}) {
+// A failure that says nothing about the call: no answer, too many requests, the server's own.
+const passing = (err) =>
+  err instanceof ApiError && (err.status === 0 || err.status === 429 || err.status >= 500);
+
+// What the view shows once its connection is gone. The call service keeps one connection per
+// person: the call page joining drops the shared view's, which then waits as for any member
+// who is in the call elsewhere.
+function afterDisconnect(reason, shared) {
+  if (reason === DisconnectReason.ROOM_DELETED) return 'ended';
+  if (shared && reason === DisconnectReason.DUPLICATE_IDENTITY) return 'elsewhere';
+  return 'left';
+}
+
+// status: 'idle' | 'joining' | 'joined' | 'elsewhere' | 'left' | 'ended' | 'error'.
+export function useCallRoom(callId, { listenOnly = false, shared = false } = {}) {
   const room = useRef(null);
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
@@ -79,18 +98,33 @@ export function useCallRoom(callId, { listenOnly = false } = {}) {
     [callId]
   );
 
-  useEffect(() => () => room.current?.disconnect(), []);
+  // Disconnects; the call page (never a view, which only listens) then says that its member
+  // left, once the call server has been told.
+  const disconnect = useCallback(async () => {
+    if (!room.current) return;
+    await room.current.disconnect();
+    if (!listenOnly) announceLeft(callId);
+  }, [callId, listenOnly]);
+
+  useEffect(
+    () => () => {
+      disconnect();
+    },
+    [disconnect]
+  );
 
   // agreed: true only when the member confirmed the recording (the server asks for it while
   // one runs); anything else, a click event included, is no.
   async function join(agreed = false) {
     const confirmed = agreed === true;
-    setStatus('joining');
+    // Asking again while elsewhere keeps the note on the screen.
+    setStatus((was) => (was === 'elsewhere' ? was : 'joining'));
     setError(null);
     setErrorCode(null);
     const body = {
       ...(confirmed && { recordingConsent: true }),
       ...(listenOnly && { listenOnly: true }),
+      ...(shared && { shared: true }),
     };
     try {
       const joined = await post('join', Object.keys(body).length ? body : undefined);
@@ -101,9 +135,7 @@ export function useCallRoom(callId, { listenOnly = false } = {}) {
         publishDefaults: { simulcast: true },
       });
       REDRAW.forEach((event) => next.on(event, redraw));
-      next.on(RoomEvent.Disconnected, (reason) =>
-        setStatus(reason === DisconnectReason.ROOM_DELETED ? 'ended' : 'left')
-      );
+      next.on(RoomEvent.Disconnected, (reason) => setStatus(afterDisconnect(reason, shared)));
       // The server keeps the spotlight; this client reports its own screen share.
       next.on(RoomEvent.LocalTrackPublished, (publication) => {
         if (publication.source === Track.Source.ScreenShare) {
@@ -117,7 +149,9 @@ export function useCallRoom(callId, { listenOnly = false } = {}) {
         }
       });
       await next.connect(joined.url, joined.token);
-      await next.startAudio();
+      // A browser may hold sound back until a click: the room then says so, and the view
+      // offers one.
+      await next.startAudio().catch(() => {});
       room.current = next;
       setKind(joined.kind);
       setStatus('joined');
@@ -128,6 +162,12 @@ export function useCallRoom(callId, { listenOnly = false } = {}) {
         setConsent({ run: () => join(true) });
         return;
       }
+      if (err instanceof ApiError && err.code === 'in_call_elsewhere') {
+        setStatus('elsewhere');
+        return;
+      }
+      // Asking again while elsewhere: no answer, a busy or failing server changes nothing.
+      if (status === 'elsewhere' && passing(err)) return;
       setError(err.message);
       setErrorCode(err instanceof ApiError ? err.code : null);
       setStatus('error');
@@ -170,8 +210,12 @@ export function useCallRoom(callId, { listenOnly = false } = {}) {
 
   const controls = {
     join,
+    startAudio: act(async () => {
+      await room.current?.startAudio();
+      redraw();
+    }),
     leave: act(async () => {
-      await room.current?.disconnect();
+      await disconnect();
       setStatus('left');
     }),
     toggleMicrophone: act(() => {

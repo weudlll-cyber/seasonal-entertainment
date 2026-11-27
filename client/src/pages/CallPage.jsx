@@ -17,7 +17,8 @@
 //              again." after a start that did not come; and joining or sending asks first
 //              (RecordingConsent); the recordings are listed with a player (CallRecordings);
 //              the call's polls under the stage, started here by organisers and admins
-//              (CallPolls; docs/POLLS.md).
+//              (CallPolls; docs/POLLS.md). A call shared with the games says so; organisers and
+//              admins share and unshare a planned or live one here (ShareSwitch).
 //              Admins delete an ended call here ("Delete call", calls/deleteCall.js), and land on
 //              the calls list. Sent here by starting a call (calls/callIntent.js), it joins once
 //              by itself through the same join as the button, or shows why the start failed; a
@@ -40,6 +41,7 @@ import CallStage from '../calls/CallStage.jsx';
 import { confirmAndDeleteCall } from '../calls/deleteCall.js';
 import LiveBadge from '../calls/LiveBadge.jsx';
 import RecordingConsent from '../calls/RecordingConsent.jsx';
+import ShareSwitch from '../calls/ShareSwitch.jsx';
 import { useCallRoom } from '../calls/useCallRoom.js';
 import { callsChanged } from '../calls/useCallsSummary.js';
 import { formatWhen } from '../app/dates.js';
@@ -70,7 +72,7 @@ export default function CallPage() {
   const micAfterStart = useRef(false);
   // GET /api/calls/:id: { call, canManage, recordingEnabled }.
   const [answer, setAnswer] = useState(null);
-  const [version, setVersion] = useState(0); // after a recording starts or stops
+  const [version, setVersion] = useState(0); // after a recording or the share changes
   const [attempt, setAttempt] = useState(0); // a load refused for the moment, asked again
   const [loadError, setLoadError] = useState(null);
   const [pollForm, setPollForm] = useState(false); // "Start a poll" opened (CallPolls)
@@ -177,6 +179,7 @@ export default function CallPage() {
           {info.status === 'scheduled' && 'This call has not started yet.'}
           {info.status === 'ended' && 'This call has ended.'}
           {info.event && ` · Event: ${info.event.name}`}
+          {info.sharedWithGames && ' · Shared with the games'}
           {!joined && recording && ` · ${recordingLabel(recordingState, 'Being recorded')}`}
           {joined && ` · ${speakers} speaking · ${live.people.length - speakers} listening`}
         </p>
@@ -193,6 +196,9 @@ export default function CallPage() {
           >
             Start a poll
           </button>
+        )}
+        {answer.canManage && info.status !== 'ended' && (
+          <ShareSwitch call={info} onChanged={() => setVersion((v) => v + 1)} />
         )}
         {answer.canDelete && info.status === 'ended' && (
           <button type="button" className="button button--secondary" onClick={removeCall}>

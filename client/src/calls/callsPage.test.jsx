@@ -204,6 +204,7 @@ it('organisers create, start and end calls', async () => {
     scheduledFor: new Date('2026-10-20T19:30').toISOString(),
     botOccurrenceId: null,
     recordFromStart: false,
+    sharedWithGames: false,
   });
 
   fireEvent.click(screen.getByRole('button', { name: 'Start Race night' }));

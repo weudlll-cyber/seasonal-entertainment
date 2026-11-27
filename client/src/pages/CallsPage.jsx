@@ -12,7 +12,8 @@
 //              link a planned call to an event bot occurrence (docs/CALLS.md). "All recordings"
 //              leads to the archive (/calls/recordings). A call made without a planned start is
 //              started at once, and starting a call leads to its page, joined there
-//              (calls/callIntent.js; docs/CALLS.md, "Starting a call").
+//              (calls/callIntent.js; docs/CALLS.md, "Starting a call"). Organisers share a call
+//              with the games here, on its card or as they create it (calls/ShareSwitch.jsx).
 // ============================================================
 
 import { useEffect, useState } from 'react';
@@ -22,6 +23,7 @@ import CallCard from '../calls/CallCard.jsx';
 import CallForm from '../calls/CallForm.jsx';
 import { goToCall } from '../calls/callIntent.js';
 import { confirmAndDeleteCall } from '../calls/deleteCall.js';
+import { replacingIfAsked } from '../calls/shareWithGames.js';
 import PageHeader from '../brand/PageHeader.jsx';
 import { callsChanged } from '../calls/useCallsSummary.js';
 import { FormMessage } from '../components/FormField.jsx';
@@ -107,9 +109,14 @@ export default function CallsPage() {
 
   // Without a planned start, "Start call now": the two calls an organiser would make (create,
   // then start), then its page, joined there. A start that fails leaves the call planned and
-  // shows why on its page.
+  // shows why on its page. false: another call is shared and stays so; nothing was created.
   async function create(call) {
-    const { call: created } = await api('/calls', { method: 'POST', body: call });
+    let created;
+    const sent = await replacingIfAsked(async (replace) => {
+      const body = { ...call, ...(replace && { replace }) };
+      ({ call: created } = await api('/calls', { method: 'POST', body }));
+    });
+    if (!sent) return false;
     changed();
     if (call.scheduledFor) return;
     try {
@@ -160,6 +167,7 @@ export default function CallsPage() {
                     onAction={canManage ? act : null}
                     onLink={canManage ? link : null}
                     onDelete={canDelete ? remove : null}
+                    onShared={canManage ? changed : null}
                     events={events}
                   />
                 ))}
