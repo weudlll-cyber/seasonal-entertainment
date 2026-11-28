@@ -19,36 +19,38 @@ export const participant = async (identity) => {
   return people.find((p) => p.identity === identity);
 };
 
-// Frames `src` in the current page at the slot's desktop size, as a game does, and keeps
-// every message from the view in window.callMessages.
-export async function frameView(page, src) {
-  await page.evaluate((url) => {
-    window.callMessages = [];
-    window.addEventListener('message', (event) => {
-      if (event.data?.source === 'seasonal-call') window.callMessages.push(event.data);
-    });
-    const frame = document.createElement('iframe');
-    frame.src = url;
-    frame.title = 'call view';
-    frame.allow = 'autoplay; fullscreen';
-    Object.assign(frame.style, {
-      position: 'fixed',
-      right: '0',
-      bottom: '0',
-      width: '338px',
-      height: '190px',
-      border: '0',
-      zIndex: '100',
-    });
-    document.body.append(frame);
-    // A game sizes its slot as the view asks.
-    window.addEventListener('message', (event) => {
-      if (event.data?.source === 'seasonal-call' && event.data.type === 'resize') {
-        frame.style.width = `${event.data.width}px`;
-        frame.style.height = `${event.data.height}px`;
-      }
-    });
-  }, src);
+// Frames `src` in the current page at the slot's desktop size (or `box`), as a game does, and
+// keeps every message from the view in window.callMessages.
+export async function frameView(page, src, box = { width: '338px', height: '190px' }) {
+  await page.evaluate(
+    ([url, size]) => {
+      window.callMessages = [];
+      window.addEventListener('message', (event) => {
+        if (event.data?.source === 'seasonal-call') window.callMessages.push(event.data);
+      });
+      const frame = document.createElement('iframe');
+      frame.src = url;
+      frame.title = 'call view';
+      frame.allow = 'autoplay; fullscreen';
+      Object.assign(frame.style, {
+        position: 'fixed',
+        right: '0',
+        bottom: '0',
+        ...size,
+        border: '0',
+        zIndex: '100',
+      });
+      document.body.append(frame);
+      // A game sizes its slot as the view asks.
+      window.addEventListener('message', (event) => {
+        if (event.data?.source === 'seasonal-call' && event.data.type === 'resize') {
+          frame.style.width = `${event.data.width}px`;
+          frame.style.height = `${event.data.height}px`;
+        }
+      });
+    },
+    [src, box]
+  );
   const element = page.locator('iframe[title="call view"]');
   await expect(element).toBeAttached();
   const frame = await (await element.elementHandle()).contentFrame();

@@ -66,8 +66,16 @@ describe('the form for its frame', () => {
   });
 
   it("the phone's 48 px strip", () => {
-    expect(formOf({ width: 390, height: 48 })).toBe('strip');
-    expect(formOf({ width: 390, height: 48, collapsed: true })).toBe('strip');
+    expect(formOf({ width: 390, height: 48, phone: true })).toBe('strip');
+    expect(formOf({ width: 390, height: 48, collapsed: true, phone: true })).toBe('strip');
+  });
+
+  it("a desktop's low row, wider than tall and under 96 px high", () => {
+    expect(formOf({ width: 267, height: 94 })).toBe('low');
+    expect(formOf({ width: 267, height: 95, collapsed: true })).toBe('low');
+    expect(formOf({ width: 267, height: 96 })).toBe('column');
+    // Narrower than tall: the column, as before.
+    expect(formOf({ width: 48, height: 94 })).toBe('column');
   });
 });
 

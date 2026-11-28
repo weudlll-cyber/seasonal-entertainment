@@ -376,9 +376,10 @@ How the site does it:
   shows.
 - "Open the call page" opens `/calls/<id>` in a new tab, so the game keeps running.
 - The form follows the frame's size: the picture from 267 × 150; the 48 px column when smaller
-  or collapsed; the strip when the frame is wider than tall and under 96 px high. Whether the
-  game is laid out for a phone, for the size it asks for in `resize`, is read from the game's
-  window: under 760 px wide, the site's own breakpoint.
+  or collapsed; in a frame wider than tall and under 96 px high the strip on a phone and the low
+  row on a desktop ("The low forms" below). Whether the game is laid out for a phone, for that
+  choice and for the size it asks for in `resize`, is read from the game's window: under 760 px
+  wide, the site's own breakpoint.
 - Out of sight (`visible: false`) the picture is left out, so LiveKit's adaptive stream receives
   no video; the sound plays on. Measured 2026-11-26 on the dev servers (N=5, 10 s windows, one
   speaker with a camera): shown, the view received 153 to 176 KB of video and 173 to 203 frames;
@@ -406,12 +407,12 @@ How the site does it:
   | Where                             | Slot                                            |
   | --------------------------------- | ----------------------------------------------- |
   | Desktop, normal window            | 338 × 190: the docked chat strip's height, 16:9 |
-  | Desktop, window under 760 px high | 267 × 150: the low strip, 16:9; the smallest    |
+  | Desktop, window under 760 px high | 267 × 100: the low strip; the frame 267 × 94    |
   | Desktop, collapsed                | 48 × the strip's height: the audio-only form    |
   | Phone portrait                    | full width × 48: the audio strip                |
   - **Desktop: bottom right.** The view is its own box at the right end of the game's docked
-    chat strip, at the strip's full height; the chat sits beside it on the left. The 190 and
-    150 px are Seasonal Mini Games' strip, the reference layout.
+    chat strip, at the strip's full height; the chat sits beside it on the left. The 190 px are
+    Seasonal Mini Games' strip, the reference layout; the low strip is under "The low strip".
   - **No control bar below the picture.** The controls sit over the 16:9 picture, letterboxed as
     on the call page:
     - top left: the Recording mark;
@@ -419,13 +420,41 @@ How the site does it:
     - in the middle before listening: **Listen**;
     - bottom right while listening: Mute and Leave;
     - all of them 44 px.
-  - **Smaller than 267 × 150** the view shows only its collapsed form: a 48 px column with the
-    LIVE and recording marks, Listen or Mute (with a ring while someone talks) and Expand.
+  - **Smaller than 267 × 150** (and at least 96 px high, or narrower than high) the view shows
+    only its collapsed form: a 48 px column with the LIVE and recording marks, Listen or Mute
+    (with a ring while someone talks) and Expand.
   - **Phone:** the 48 px strip sits directly above the game's chat bar, in the layout, never over
     the content. It holds the LIVE and recording marks, the speaker's name, Listen or Mute, and
     Expand. Expand opens the picture (full width × width × 9/16) where the chat sheet opens.
 
   The report's question 4 has the measurements behind each number.
+
+- **The low strip** (decided 2026-11-28): in a window under 760 px high a game's docked strip is
+  100 px high, the same for every game; it stays visible, is never folded, and shows the chat's
+  input with the last two or three messages. The call slot follows that height. The kit
+  (v0.41.0) gives the chat frame 90 px and the call frame 267 × 94.
+- **The low forms** are the site's, chosen by each frame's own height, so a game only sizes the
+  frames:
+  - **Chat** (`/embed/chat`), a frame under 120 px high: the newest messages, two or three whole
+    lines, and one row with a channel picker, **Open the chat page** (an icon, at least 24 px:
+    the shown room's chat page in a new tab, for members and guests, where scrolling back and
+    reporting are), the input and **Send**. Each message is one line (author, Guest or staff
+    badge, text), cut with an ellipsis, whole in its tooltip; scrolling, links, name menus, the
+    "…" menu, the picker for emojis, stickers and GIFs, "Attach file" and polls are for a taller
+    frame. Where two lines do not fit above the input (a 32 px root font), the messages stand
+    beside it. A signed-in member has no account line and no tabs: the picker lists the rooms
+    the reader may read and, for members, "Private messages", which shows a link that opens the
+    site's chat page in a new tab; a guest gets the rooms only. A guest on an approved other
+    site keeps the account line with **Log in**. The focus ring is drawn inside the controls, so
+    the frame's edge never cuts it. From 120 px on nothing differs.
+  - **Call view**, on a desktop a frame wider than high and under 96 px high: one row of the
+    LIVE and recording marks over one line of words (who speaks, the state or the error), then
+    **Listen** or Mute, **Leave** while listening and **Open the call page**, all 44 px; no
+    picture, no Collapse or Expand, and no `resize` message. From 96 px on nothing differs.
+  - **Confirmed 2026-11-28**: what the low chat leaves out, its one-line messages, private
+    messages opening the chat page, rooms only for guests, the **Log in** line on another site,
+    **Leave** and **Open the call page** in the call row, and the games hiding the shared call's
+    slot until `live` ("The shared call" below).
 
 - **Sign-in**: the site's cookie session, exactly as the chat's
   ([section 5](#5-the-website-chat-inside-a-game)); guests listen as on the site. No embed
@@ -509,9 +538,11 @@ Code: `client/src/embed/EmbedSharedCallPage.jsx` with the per-call view's parts
 `callJoin.test.js` and `client/e2e/callShared.spec.js` (a real browser and LiveKit).
 
 **What a game does for the shared call**: the same slot, with
-`<iframe src="/embed/call/shared?theme=…">` instead of a numbered view: hidden until a
-`ready`, hidden again on `ended`; no call-id field and no check of its own. The `ready`
-message's `status` can be `scheduled` (a call shared before it starts).
+`<iframe src="/embed/call/shared?theme=…">` instead of a numbered view, with no call-id field
+and no check of its own. **The shared call shows only while it is live** (decided 2026-11-27):
+the slot stays hidden until a `ready` with `status: 'live'` and is hidden again on `ended`. A
+call shared before it starts already sends `ready` with `status: 'scheduled'`; the game keeps
+the slot hidden until the next `ready` says `live`.
 
 A member who is in the call already (another tab or device) and clicks **Listen** sees in the
 view only the call's title and the note "You're in this call in another tab or on another
@@ -527,7 +558,13 @@ member joins on the call page is dropped and waits the same way ([CALLS.md](CALL
 (`client/src/devPages/GameCallTestPage.jsx`, development builds only) is a pretend game: it
 frames the view (of one call, or with "Frame the shared call" of the shared one,
 `?call=shared`) in each of the sizes above, follows `resize`, lists the view's messages and
-sends `mute`, `collapse`, `visible` and `theme`.
+sends `mute`, `collapse`, `visible` and `theme`. `/games/strip-test/` (`StripTestPage.jsx`)
+shows the chat and the shared call together in the 100 px docked strip of a 1278 × 629 window,
+at a 16 or 32 px font.
+
+The low forms' tests: `client/src/embed/embedChatLow.test.jsx`, `embedCallLow.test.jsx` and
+`client/e2e/embedLow.spec.js` (a real browser: both frames at the strip's sizes, at 16 and 32 px,
+with axe-core's WCAG 2.2 AA rules).
 
 Tests: `client/src/embed/callView.test.js` (who may frame it, the forms, the sizes),
 `client/src/embed/embedCall.test.jsx` (the messages, Listen, mute, collapse, leave, the end, a

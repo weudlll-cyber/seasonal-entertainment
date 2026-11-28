@@ -6,14 +6,16 @@
 //              docs/GAME-INTEGRATION.md section 9, decided 2026-11-20): who may frame it (a
 //              game of this site under /games/<slug>/, nothing else), which form it shows for
 //              the frame it gets (the 16:9 picture; the 48 px column below 267 x 150 or when
-//              collapsed; the 48 px phone strip), the size it asks for when it switches form,
-//              and the names of its postMessage sources. Pure, so the tests read them directly.
+//              collapsed; in a frame wider than tall and under 96 px high the phone's strip, or
+//              on a desktop the low row of a 100 px docked strip, decided 2026-11-28), the size
+//              it asks for when it switches form, and the names of its postMessage sources.
+//              Pure, so the tests read them directly.
 // ============================================================
 
 export const CALL_SOURCE = 'seasonal-call'; // on every message the view sends
 export const CALL_HOST_SOURCE = 'seasonal-call-host'; // required on every message the game sends
 
-// The smallest picture (the docked chat strip of a window under 760 px high, 16:9).
+// The smallest picture (16:9).
 export const SMALLEST = { width: 267, height: 150 };
 // The collapsed form's width on a desktop, and the phone strip's height.
 export const BAR = 48;
@@ -42,11 +44,11 @@ export function onPhone(win = window) {
   }
 }
 
-// The form for a frame of width x height: 'strip' (a phone's audio strip, wider than tall and
-// at most two bars high), 'column' (collapsed, or smaller than the smallest picture) or
-// 'picture'.
-export function formOf({ width, height, collapsed }) {
-  if (width > height && height < 2 * BAR) return 'strip';
+// The form for a frame of width x height: wider than tall and under two bars high, 'strip'
+// (a phone's audio strip) or 'low' (a desktop's low docked strip, where no other form can be
+// asked for); 'column' (collapsed, or smaller than the smallest picture) or 'picture'.
+export function formOf({ width, height, collapsed, phone = false }) {
+  if (width > height && height < 2 * BAR) return phone ? 'strip' : 'low';
   if (collapsed || width < SMALLEST.width || height < SMALLEST.height) return 'column';
   return 'picture';
 }

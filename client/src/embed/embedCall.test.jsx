@@ -131,7 +131,10 @@ it('says ready, connects only on Listen, as a listener, and says live', async ()
   expect(calls.find((c) => c.key === 'POST /calls/7/join').body).toEqual({ listenOnly: true });
   expect(rooms[0].connect).toHaveBeenCalledWith('wss://calls.test', 'tok');
   expect(rooms[0].startAudio).toHaveBeenCalled();
-  expect(sentOf('live')).toEqual([expect.objectContaining({ listening: true })]);
+  // The message goes out in an effect, after the buttons show.
+  await waitFor(() =>
+    expect(sentOf('live')).toEqual([expect.objectContaining({ listening: true })])
+  );
   // No microphone, camera or screen controls: it only listens.
   expect(screen.queryByRole('button', { name: /microphone|camera|share/i })).toBeNull();
 });

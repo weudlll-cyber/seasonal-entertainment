@@ -36,7 +36,7 @@ entry waits for.
 - **The shared call in the games' slots** — the site's `/embed/call/shared` is built and merged
   (2026-11-27; docs/GAME-INTEGRATION.md, section 9, "The shared call"). Waiting for the games'
   kit to build the slot and "Back to the call", and for each game to switch it on, each in its
-  own repository.
+  own repository. The slot shows only while the shared call is live (decided 2026-11-27).
 
 ### Proposals not decided
 
@@ -105,6 +105,11 @@ entry waits for.
   restore runs in the Linux container and is not affected; listed only.
 
 ## PART TWO — closed
+
+- **The call view's unit test "says ready, connects only on Listen" could fail** — closed by
+  `feat/embed-low` (2026-11-28): it read the `live` message as soon as **Leave** showed, but an
+  effect sends it after that; it now waits for the message. Seen failing once in a local run of
+  the embed tests.
 
 - **A call shared with the games, the website's part** — closed by `feat/shared-call` (PR #90,
   merged 2026-11-27). Decided 2026-11-24: a call's organiser or an admin can mark a call as

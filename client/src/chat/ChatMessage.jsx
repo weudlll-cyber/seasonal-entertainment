@@ -21,11 +21,8 @@ import { MessageMedia, MessageText } from './MessageParts.jsx';
 import NameMenu from './NameMenu.jsx';
 import PreviewCard from './PreviewCard.jsx';
 import StepBadge from './StepBadge.jsx';
+import { STAFF_BADGES } from './staffBadges.js';
 import './ChatMessage.css';
-
-// The staff badge after an admin's or organiser's name; the role comes from the server
-// (authorRole: the account's role now), never from the message itself.
-const STAFF = { admin: 'Admin', organiser: 'Organiser' };
 
 const time = (iso) =>
   new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -34,7 +31,7 @@ export default function ChatMessage({ message, moderator, onAction }) {
   const { user } = useSession();
   // A message mentioning the reader stands out for them.
   const mentionsMe = Boolean(user) && (message.mentions ?? []).some((m) => m.id === user.id);
-  const staff = STAFF[message.authorRole];
+  const staff = STAFF_BADGES[message.authorRole];
   return (
     <li
       className={`chat-message${message.hiddenAt ? ' chat-message--hidden' : ''}${mentionsMe ? ' chat-message--mention' : ''}`}

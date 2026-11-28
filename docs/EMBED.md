@@ -31,6 +31,9 @@ header, sidebar or footer (`client/src/embed/EmbedChatPage.jsx`): the room, and 
 - **After an update of the site** the frame shows "A new version of the chat is available." with
   a Reload button at its top, by the site's own rule (`client/src/app/UpdateNotice.jsx`;
   docs/DEPLOYMENT.md, "What visitors see"; since 2026-11-02). Reload reloads only the frame.
+- **Low form** (decided 2026-11-28): in a frame under 120 px high, as in a game's 100 px docked
+  strip, the chat is the newest two or three messages and the input
+  ([GAME-INTEGRATION.md](GAME-INTEGRATION.md#9-call-view-inside-a-game), "The low forms").
 
 ### On this site's own pages
 

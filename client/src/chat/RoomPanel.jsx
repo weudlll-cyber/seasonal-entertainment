@@ -28,7 +28,7 @@ export function NoRooms({ variant = 'compact', error = null }) {
 // room: the slug asked for, or null for the reader's first room; unlisted: it may be an
 // unlisted room (useRoomToShow); onRoom(slug | null): the room chosen, for a host that reports
 // it (the embed's messages to its page). The rest goes to ChatPanel (variant, showRoomTabs,
-// files, guestPrompt).
+// files, guestPrompt, low, lead).
 export default function RoomPanel({ room: asked, unlisted = false, onRoom, ...panel }) {
   const { room, unavailable, error } = useRoomToShow(asked, unlisted);
   useEffect(() => {

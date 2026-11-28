@@ -61,6 +61,7 @@ const MEMBERS = [
   'accountdesk',
   'eventsmember',
   'sharedmember',
+  'stripmember',
 ];
 
 async function insertMember(db, username) {

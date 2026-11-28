@@ -37,6 +37,90 @@
   min-height: 0;
 }
 
+/* The low form (under 120 px, useLowFrame.js): every pixel to the messages and the input
+   (the panel's own low rules: chat/ChatLow.css). Sizes in px, so a large root font takes
+   none of the room. */
+.embed-chat--low {
+  gap: 2px;
+  padding: 2px 4px;
+  overflow: hidden;
+}
+
+/* The update notice lies over the chat: it must not push the input out of the frame. */
+.embed-chat--low > .banner {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 4;
+  margin: 0;
+}
+
+/* The channel picker: 44 px high, 88 px wide, 32 px where the composer stands beside the
+   messages; never under the 24 px target minimum. */
+.embed-channel {
+  position: relative;
+  display: flex;
+}
+
+.embed-channel select {
+  box-sizing: border-box;
+  width: 88px;
+  min-width: 24px;
+  height: 44px;
+  padding: 0 2px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-overflow: ellipsis;
+}
+
+/* "Open the chat page", beside the picker: never under the 24 px target minimum. */
+.embed-chat-page {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 44px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+@container chat-low (height < calc(2.25rem + 46px)) {
+  .embed-channel select {
+    width: 32px;
+  }
+
+  .embed-chat-page {
+    width: 24px;
+  }
+}
+
+.embed-channel__counts {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  display: flex;
+  pointer-events: none;
+}
+
+.embed-chat__direct {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  align-content: center;
+  height: 100%;
+}
+
+.embed-chat__direct a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
 /* The popup: a small window of its own, the site's address visible above it. */
 .embed-login {
   max-width: 28rem;

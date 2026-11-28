@@ -1,0 +1,167 @@
+/* ============================================================
+   File:        ChatLow.css
+   Path:        client/src/chat/ChatLow.css
+   Project:     Seasonal Entertainment
+   Description: The low form of the compact chat panel (ChatPanel with low; under 120 px, a
+                game's docked strip): the newest messages one line each above a one-row composer
+                (the host's lead, the field, Send), all whole. Where two lines above the 44 px
+                field do not fit (a large root font), the messages stand beside the composer.
+                Notices and mention suggestions lie over the panel, so nothing grows the frame.
+   ============================================================ */
+
+/* The panel's own size decides the layout (container queries, whose rem follows the root
+   font). The doubled class outweighs the panel's base rules, loaded after this file. */
+.se-chat.se-chat--low {
+  container: chat-low / size;
+  flex: 1;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* The row ends 2 px above the frame's edge, which would cut the site's ring (outside the
+   control): drawn inside it, whole on every side. */
+.se-chat.se-chat--low :focus-visible {
+  outline-offset: -3px;
+}
+
+.se-chat.se-chat--low .chat-panel__title,
+.se-chat.se-chat--low .chat-poll-form {
+  display: none;
+}
+
+.se-chat.se-chat--low .chat-conversation {
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.se-chat.se-chat--low .chat-low-messages {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+}
+
+/* One fixed line per message, so a count of them is a height. */
+.se-chat.se-chat--low .chat-low-message {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  height: 1.125rem;
+  overflow: hidden;
+  font-size: 0.875rem;
+  line-height: 1.125rem;
+  white-space: nowrap;
+}
+
+.se-chat.se-chat--low .chat-low-message:nth-last-child(n + 3) {
+  display: none;
+}
+
+.se-chat.se-chat--low .chat-low-message__author {
+  flex: 0 1 auto;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.se-chat.se-chat--low .chat-low-message .chat-badge {
+  line-height: 0.875rem;
+}
+
+.se-chat.se-chat--low .chat-low-message__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.se-chat.se-chat--low .chat-composer {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 2px;
+}
+
+.se-chat.se-chat--low .chat-composer > .chat-composer__lead {
+  display: flex;
+  grid-column: 1;
+  gap: 2px;
+}
+
+.se-chat.se-chat--low .chat-composer > label {
+  grid-column: 2;
+}
+
+.se-chat.se-chat--low .chat-composer textarea {
+  box-sizing: border-box;
+  padding: 2px 6px;
+  line-height: 1.25;
+}
+
+/* Only Send: the picker and "Attach file" open panels that have no room here. */
+.se-chat.se-chat--low .chat-composer__actions > :not([type='submit']) {
+  display: none;
+}
+
+/* The guest note stays read out, out of sight. */
+.se-chat.se-chat--low .chat-composer > .chat-note {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* In place of the composer (read only, "Log in to write"): the lead, then the line. */
+.se-chat.se-chat--low .chat-low-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  height: 44px;
+  overflow: hidden;
+}
+
+/* Over the panel: they come and go without moving the messages or the field out. */
+.se-chat.se-chat--low .chat-notice,
+.se-chat.se-chat--low .chat-mentions,
+.se-chat.se-chat--low .chat-attachment {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 3;
+  box-sizing: border-box;
+  max-height: 44px;
+  margin: 0;
+  overflow: auto;
+  background: var(--chat-bg);
+}
+
+@container chat-low (height >= calc(3.375rem + 46px)) {
+  .se-chat.se-chat--low .chat-low-message:nth-last-child(3) {
+    display: flex;
+  }
+}
+
+/* Two lines do not fit above the field: beside it. */
+@container chat-low (height < calc(2.25rem + 46px)) {
+  .se-chat.se-chat--low .chat-conversation {
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .se-chat.se-chat--low .chat-low-messages {
+    flex: 1 1 0;
+  }
+
+  .se-chat.se-chat--low .chat-composer,
+  .se-chat.se-chat--low .chat-low-row {
+    flex: 0 0 clamp(164px, 40%, 384px);
+    min-width: 0;
+  }
+}
+
+@container chat-low (height < calc(2.25rem + 46px)) and (height >= 3.375rem) {
+  .se-chat.se-chat--low .chat-low-message:nth-last-child(3) {
+    display: flex;
+  }
+}
