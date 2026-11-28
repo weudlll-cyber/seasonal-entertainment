@@ -427,6 +427,22 @@ How the site does it:
 
   The report's question 4 has the measurements behind each number.
 
+- **The low strip** (decided 2026-11-28): in a window under 760 px high a game's docked strip is
+  100 px high, the same for every game; it stays visible, is never folded, and shows the chat's
+  input with the last two or three messages. The call slot follows that height. The kit
+  (v0.41.0) gives the chat frame 90 px and the call frame 267 × 94.
+- **The low forms** are the site's, chosen by each frame's own height, so a game only sizes the
+  frames:
+  - **Chat** (`/embed/chat`), a frame under 120 px high: the newest messages, two or three whole
+    lines, and one row with a channel picker, the input and **Send**. Each message is one line
+    (author, Guest or staff badge, text), cut with an ellipsis, whole in its tooltip; links,
+    name menus, the "…" menu, the picker for emojis, stickers and GIFs, "Attach file" and the
+    organisers' "Poll" are for a taller frame. Where two lines do not fit above the input (a
+    32 px root font), the messages stand beside it. A signed-in member has no account line and no
+    tabs: the picker lists the rooms the reader may read and, for members, "Private messages",
+    which shows a link to the site's chat page. A guest on an approved other site keeps the
+    account line with **Log in**. From 120 px on nothing differs.
+
 - **Sign-in**: the site's cookie session, exactly as the chat's
   ([section 5](#5-the-website-chat-inside-a-game)); guests listen as on the site. No embed
   token: the 12-hour token of approved other sites stays refused for calls

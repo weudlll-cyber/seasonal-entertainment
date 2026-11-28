@@ -465,7 +465,9 @@ client/                    React + Vite client
                            (/embed-login) and the in-memory embed token (docs/EMBED.md); the
                            call view inside a game (/embed/call/<id>, and
                            /embed/call/shared for the call shared with the games;
-                           callView.js; docs/GAME-INTEGRATION.md section 9)
+                           callView.js; docs/GAME-INTEGRATION.md section 9); the low
+                           chat's channel picker and frame-height rule (ChannelPicker,
+                           useLowFrame)
   src/prices/              coin prices (the price bot, CoinGecko via the server): the /info/prices
                            page, the hand-built SVG chart for one coin or several, the coin
                            choice, fair price, converter, formats (docs/BOTS.md)

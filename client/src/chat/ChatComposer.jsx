@@ -31,7 +31,8 @@ import './ChatComposer.css';
 // room: the room's slug, for @mention suggestions (none in direct messages, none for guests).
 // onDraft(text): told every change of the text (also its clearing after sending); above: shown
 // above the field; actions: more buttons before Send (a room's "Poll" for organisers and
-// admins, ChatPanel.jsx; never in direct messages).
+// admins, ChatPanel.jsx; never in direct messages). lead: a host's control at the start of the
+// low form's row (ChatLow.css).
 export default function ChatComposer({
   user,
   guestName,
@@ -43,6 +44,7 @@ export default function ChatComposer({
   uploadFile,
   accept,
   actions = null,
+  lead = null,
 }) {
   const [draft, setDraft] = useState('');
   const [attachment, setAttachment] = useState(null); // { type, item } or { type: 'file', upload }
@@ -78,6 +80,7 @@ export default function ChatComposer({
 
   return (
     <form className="chat-composer" onSubmit={submit}>
+      {lead && <div className="chat-composer__lead">{lead}</div>}
       {!user && (
         <p className="chat-note">
           {guestName

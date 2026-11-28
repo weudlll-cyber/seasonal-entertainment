@@ -18,6 +18,7 @@ import ChatButton, { ChatVariant } from './ChatButton.jsx';
 import ChatComposer from './ChatComposer.jsx';
 import ChatNotice from './ChatNotice.jsx';
 import ConnectionLimitNotice from './ConnectionLimitNotice.jsx';
+import LowMessageList from './LowMessageList.jsx';
 import MessageList from './MessageList.jsx';
 import RoomTabs from './RoomTabs.jsx';
 import { useChatRoom } from './useChatRoom.js';
@@ -42,6 +43,9 @@ import './ChatFavourites.css';
 // (a call's chat after the call); null leaves an empty list empty.
 // readOnlyNote: the host's own words where the reader cannot write (a call's chat after the
 // call: "This call's chat is closed."); null keeps the general line.
+// low: the host's box is under 120 px high (a game's docked strip): the newest messages one line
+// each and a one-row composer with Send alone (LowMessageList, ChatLow.css); compact only.
+// lead: the host's control at the start of that row (the embed's channel picker).
 export default function ChatPanel({
   room: roomInput,
   variant = 'full',
@@ -52,16 +56,28 @@ export default function ChatPanel({
   roomNote = null,
   emptyText = null,
   readOnlyNote = null,
+  low = false,
+  lead = null,
 }) {
   const { user, settings } = useSession();
   const chat = useChatRoom(roomInput, user, unlisted);
   const { info, room, current } = chat;
   const roomName = current?.name ?? room;
   const [pollForm, setPollForm] = useState(false); // the room's poll form is open
+  // Where the composer is not: the host's lead stays beside the line that says why.
+  const instead = (line) =>
+    lead ? (
+      <div className="chat-low-row">
+        {lead}
+        {line}
+      </div>
+    ) : (
+      line
+    );
 
   return (
     <section
-      className={`se-chat se-chat--${variant}${showRoomTabs ? ' se-chat--rooms' : ''}`}
+      className={`se-chat se-chat--${variant}${showRoomTabs ? ' se-chat--rooms' : ''}${low ? ' se-chat--low' : ''}`}
       aria-label={`Chat: ${roomName}`}
     >
       <ChatVariant.Provider value={variant}>
@@ -71,15 +87,19 @@ export default function ChatPanel({
           <p className="chat-panel__title">{roomName}</p>
         )}
         <div className="chat-conversation">
-          <MessageList
-            room={room}
-            roomName={roomName}
-            messages={chat.messages}
-            emptyText={chat.loaded ? emptyText : null}
-            moderator={info?.me.moderator}
-            onAction={chat.act}
-            onSeen={chat.markSeen}
-          />
+          {low ? (
+            <LowMessageList roomName={roomName} messages={chat.messages} onSeen={chat.markSeen} />
+          ) : (
+            <MessageList
+              room={room}
+              roomName={roomName}
+              messages={chat.messages}
+              emptyText={chat.loaded ? emptyText : null}
+              moderator={info?.me.moderator}
+              onAction={chat.act}
+              onSeen={chat.markSeen}
+            />
+          )}
           <ConnectionLimitNotice />
           <ChatNotice
             error={chat.error}
@@ -87,7 +107,7 @@ export default function ChatPanel({
           />
           {current?.canWrite ? (
             !user && guestPrompt ? (
-              guestPrompt
+              instead(guestPrompt)
             ) : (
               <>
                 {pollForm && (
@@ -101,6 +121,7 @@ export default function ChatPanel({
                   onSend={chat.send}
                   room={room}
                   files={files && settings['chat.uploads']}
+                  lead={lead}
                   actions={
                     // Organisers and admins start a poll in this room (docs/POLLS.md).
                     info?.me.moderator && (
@@ -117,7 +138,8 @@ export default function ChatPanel({
               </>
             )
           ) : (
-            current && (
+            current &&
+            instead(
               <p className="chat-note">
                 {readOnlyNote ?? 'You can read this room, but not write in it.'}
               </p>

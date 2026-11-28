@@ -19,7 +19,10 @@
 //              the room shown), unread (messages while the host says the chat is out of sight),
 //              resize; it takes visible and theme. After an update of the site it says "A
 //              new version of the chat is available" with Reload, by the site's own rule
-//              (UpdateNotice.jsx).
+//              (UpdateNotice.jsx). In a frame under 120 px high (a game's docked strip, useLowFrame)
+//              the low form: the newest messages and the input, a channel picker in its row
+//              instead of the tabs, no account line for a member, and for private messages a link
+//              to the chat page.
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
@@ -30,6 +33,7 @@ import UpdateNotice from '../app/UpdateNotice.jsx';
 import { RoomPanel, onDirectRequest, useNewMessageCount, useUnread } from '../chat/index.js';
 import { useSession } from '../session/SessionContext.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
+import ChannelPicker, { DIRECT } from './ChannelPicker.jsx';
 import EmbedAccount, { LogInToRead, LogInToWrite } from './EmbedAccount.jsx';
 import EmbedDirect from './EmbedDirect.jsx';
 import {
@@ -41,6 +45,7 @@ import {
 } from './embedAuth.js';
 import { onHostMessage, parentOrigin, toHost, verifyHost } from './embedProtocol.js';
 import { useEmbedLogin } from './useEmbedLogin.js';
+import { useLowFrame } from './useLowFrame.js';
 import './EmbedChat.css';
 
 const THEMES = ['light', 'dark', 'auto'];
@@ -66,6 +71,8 @@ export default function EmbedChatPage() {
   const [theme, setTheme] = useState(() => themeOf(params.get('theme')));
   const [visible, setVisible] = useState(true); // the host says whether its chat is in sight
   const [tab, setTab] = useState('rooms');
+  const [picked, setPicked] = useState(null); // a room chosen in the low form's picker
+  const low = useLowFrame();
   const { user } = useSession();
   const { force } = useTheme();
   const unreadCounts = useUnread();
@@ -119,11 +126,21 @@ export default function EmbedChatPage() {
   }, [host]);
 
   const shown = user ? tab : 'rooms';
+  const picker = low ? (
+    <ChannelPicker
+      value={shown === 'direct' ? DIRECT : shownRoom}
+      member={Boolean(user)}
+      onPick={(value) => {
+        setTab(value === DIRECT ? 'direct' : 'rooms');
+        if (value !== DIRECT) setPicked(value);
+      }}
+    />
+  ) : null;
   return (
-    <main ref={root} className="embed-chat">
+    <main ref={root} className={`embed-chat${low ? ' embed-chat--low' : ''}`}>
       <UpdateNotice what="the chat" />
-      {foreign && <EmbedAccount login={login} ready={Boolean(host)} />}
-      {user && (
+      {foreign && !(low && user) && <EmbedAccount login={login} ready={Boolean(host)} />}
+      {user && !low && (
         <ChatTabs
           value={shown}
           onChange={setTab}
@@ -140,15 +157,25 @@ export default function EmbedChatPage() {
             <LogInToRead login={login} ready />
           ) : (
             <RoomPanel
-              room={asked}
+              room={picked ?? asked}
               onRoom={setShownRoom}
               variant="compact"
+              low={low}
+              lead={picker}
               files={!foreign || (Boolean(user) && embedUploads())}
               guestPrompt={
                 foreign && !guestsMayWrite() ? <LogInToWrite login={login} ready /> : null
               }
             />
           )
+        ) : low ? (
+          // Private messages need more height than the strip has.
+          <div className="embed-chat__direct">
+            {picker}
+            <a href="/chat" target="_blank" rel="noopener">
+              Open the chat page
+            </a>
+          </div>
         ) : foreign ? (
           <EmbedDirect onUnlock={login.logIn} />
         ) : (
