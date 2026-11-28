@@ -551,7 +551,13 @@ member joins on the call page is dropped and waits the same way ([CALLS.md](CALL
 (`client/src/devPages/GameCallTestPage.jsx`, development builds only) is a pretend game: it
 frames the view (of one call, or with "Frame the shared call" of the shared one,
 `?call=shared`) in each of the sizes above, follows `resize`, lists the view's messages and
-sends `mute`, `collapse`, `visible` and `theme`.
+sends `mute`, `collapse`, `visible` and `theme`. `/games/strip-test/` (`StripTestPage.jsx`)
+shows the chat and the shared call together in the 100 px docked strip of a 1278 × 629 window,
+at a 16 or 32 px font.
+
+The low forms' tests: `client/src/embed/embedChatLow.test.jsx`, `embedCallLow.test.jsx` and
+`client/e2e/embedLow.spec.js` (a real browser: both frames at the strip's sizes, at 16 and 32 px,
+with axe-core's WCAG 2.2 AA rules).
 
 Tests: `client/src/embed/callView.test.js` (who may frame it, the forms, the sizes),
 `client/src/embed/embedCall.test.jsx` (the messages, Listen, mute, collapse, leave, the end, a

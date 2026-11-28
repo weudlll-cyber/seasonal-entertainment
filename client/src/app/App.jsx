@@ -10,8 +10,8 @@
 //              the 404 page. Heavier pages are loaded on first use (lazyPage: reloads once when
 //              the file is gone after an update). The router itself is supplied by main.jsx (or
 //              a test). Development builds also route the test pages (devPages/), the fake game
-//              of npm run dev:game-status and the call view's test game (/games/call-test/)
-//              among them.
+//              of npm run dev:game-status, the call view's test game (/games/call-test/) and the
+//              low docked strip's (/games/strip-test/) among them.
 // ============================================================
 
 import { DEV_TEST_GAME } from '@seasonal-entertainment/shared/gameRules.js';
@@ -81,6 +81,9 @@ const TestGamePage = import.meta.env.DEV
 const GameCallTestPage = import.meta.env.DEV
   ? lazyPage(() => import('../devPages/GameCallTestPage.jsx'))
   : null;
+const StripTestPage = import.meta.env.DEV
+  ? lazyPage(() => import('../devPages/StripTestPage.jsx'))
+  : null;
 
 export default function App() {
   return (
@@ -129,6 +132,16 @@ export default function App() {
                 element={
                   <LazyBoundary>
                     <GameCallTestPage />
+                  </LazyBoundary>
+                }
+              />
+            )}
+            {StripTestPage && (
+              <Route
+                path="games/strip-test"
+                element={
+                  <LazyBoundary>
+                    <StripTestPage />
                   </LazyBoundary>
                 }
               />

@@ -459,7 +459,8 @@ client/                    React + Vite client
   src/chat/                the chat module: <ChatPanel> (index.js is its only entry), live
                            connection, composer, picker, messages, styles (docs/CHAT.md)
   src/devPages/            test-only pages, routed by the Vite dev server only (chat panels,
-                           the embedded chat's demo, the call view's test game)
+                           the embedded chat's demo, the call view's test game, the low docked
+                           strip's /games/strip-test/)
   src/embed/               the embedded chat for iframes (/embed/chat) on this site and on
                            approved other sites, its postMessage API, the login popup
                            (/embed-login) and the in-memory embed token (docs/EMBED.md); the
@@ -480,7 +481,9 @@ client/                    React + Vite client
   src/components/Markdown.jsx  the one safe Markdown renderer
   e2e/                     Playwright browser tests; drawnBox.js measures drawn pixels,
                            opticalCentres.js defines each season motif's optical centre,
-                           fakeDiscordPreload.mjs puts the pretend Discord into the 3811 server
+                           fakeDiscordPreload.mjs puts the pretend Discord into the 3811 server;
+                           embedLow.spec.js checks the low chat and call with axe-core
+                           (development only)
   src/main.jsx             entry point
   src/pages/               one folder entry per page (component, CSS, test side by side);
                            ManageEventsPage: the event bot's admin page in a frame (docs/BOTS.md)
