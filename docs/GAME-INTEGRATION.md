@@ -531,9 +531,11 @@ Code: `client/src/embed/EmbedSharedCallPage.jsx` with the per-call view's parts
 `callJoin.test.js` and `client/e2e/callShared.spec.js` (a real browser and LiveKit).
 
 **What a game does for the shared call**: the same slot, with
-`<iframe src="/embed/call/shared?theme=…">` instead of a numbered view: hidden until a
-`ready`, hidden again on `ended`; no call-id field and no check of its own. The `ready`
-message's `status` can be `scheduled` (a call shared before it starts).
+`<iframe src="/embed/call/shared?theme=…">` instead of a numbered view, with no call-id field
+and no check of its own. **The shared call shows only while it is live** (decided 2026-11-27):
+the slot stays hidden until a `ready` with `status: 'live'` and is hidden again on `ended`. A
+call shared before it starts already sends `ready` with `status: 'scheduled'`; the game keeps
+the slot hidden until the next `ready` says `live`.
 
 A member who is in the call already (another tab or device) and clicks **Listen** sees in the
 view only the call's title and the note "You're in this call in another tab or on another

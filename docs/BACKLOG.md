@@ -36,7 +36,7 @@ entry waits for.
 - **The shared call in the games' slots** — the site's `/embed/call/shared` is built and merged
   (2026-11-27; docs/GAME-INTEGRATION.md, section 9, "The shared call"). Waiting for the games'
   kit to build the slot and "Back to the call", and for each game to switch it on, each in its
-  own repository.
+  own repository. The slot shows only while the shared call is live (decided 2026-11-27).
 
 ### Proposals not decided
 
