@@ -7,8 +7,9 @@
                 call page's stage, letterboxed 16:9 on black, without the stage's own chips and
                 full-screen button (its controls sit over it here: top row, the Listen pill in
                 the middle, bottom row; a dark translucent backing keeps text and icons at
-                4.5:1). The collapsed 48 px column and the phone's 48 px strip. Every control is
-                44 px. Tokens only, so both themes work.
+                4.5:1). The collapsed 48 px column, the phone's 48 px strip and the low row of
+                a desktop's docked strip. Every control is 44 px. Tokens only, so both themes
+                work.
    ============================================================ */
 
 .embed-call {
@@ -183,6 +184,43 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* The low row of a desktop's 100 px docked strip (267 × 94): the marks over the words, then
+   the buttons. Spacing in px, so a large root font takes none of the room. */
+.embed-call--low {
+  container: embed-call-low / size;
+}
+
+.embed-call__bar--low {
+  gap: 4px;
+  padding: 2px 4px;
+}
+
+.embed-call__info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.embed-call__line {
+  display: -webkit-box;
+  overflow: hidden;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* A large root font: the marks and one line. */
+@container embed-call-low (height < 4.5rem) {
+  .embed-call__line {
+    -webkit-line-clamp: 1;
+  }
 }
 
 .embed-call__hidden {

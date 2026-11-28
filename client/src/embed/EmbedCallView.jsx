@@ -3,13 +3,15 @@
 // Path:        client/src/embed/EmbedCallView.jsx
 // Project:     Seasonal Entertainment
 // Description: What the call view inside a game shows (EmbedCallPage.jsx holds its state;
-//              docs/GAME-INTEGRATION.md section 9). Three forms by the frame's size
+//              docs/GAME-INTEGRATION.md section 9). Four forms by the frame's size
 //              (callView.js formOf): the 16:9 picture (the call page's Stage, letterboxed, with
 //              the controls over it: the Recording mark top left, Open the call page and Collapse
 //              top right, Listen in the middle, Mute and Leave bottom right, all 44 px); the
 //              48 px column (LIVE and recording marks, Listen or Mute with a ring while someone
 //              on the stage talks, Expand); the phone's 48 px strip (the same, with the name of
-//              who speaks). The call's sound plays in every form while listening, out of sight
+//              who speaks); the low row of a desktop's 100 px docked strip (the marks over the
+//              name, the state or the error; Listen or Mute, Leave, Open the call page; no
+//              Expand, which could not act there). The call's sound plays in every form while listening, out of sight
 //              too; the picture is left out while the game says the view is out of sight, so
 //              no video is received. "Open the call page" opens a new tab: the game stays. A
 //              member who is in the shared call elsewhere sees its title and a note, no
@@ -24,7 +26,7 @@ import { RoomAudio } from '../calls/TrackMedia.jsx';
 import { recordingLabel } from '../calls/recordingLabel.js';
 import { spotlightSpeaker } from '../calls/stageModel.js';
 import { FormMessage } from '../components/FormField.jsx';
-import { formOf } from './callView.js';
+import { formOf, onPhone } from './callView.js';
 import '../calls/callPage.css';
 import './EmbedCall.css';
 
@@ -112,7 +114,7 @@ export default function EmbedCallView({
   const elsewhere = status === 'live' && live.status === 'elsewhere';
   const canListen =
     blocked || (status === 'live' && !joined && !elsewhere && live.status !== 'joining');
-  const form = formOf({ ...size, collapsed });
+  const form = formOf({ ...size, collapsed, phone: onPhone() });
   const listenOrMute =
     joined && !blocked ? (
       <ViewButton
@@ -138,6 +140,7 @@ export default function EmbedCallView({
   const text = stateText(status, gone, live.status);
   // Who speaks now, else the spotlight, else the first speaker: the strip's name.
   const speaking = talking[0] ?? spotlightSpeaker(live.spotlight, speakers) ?? speakers[0];
+  const leave = joined && <ViewButton icon="leave" label="Leave" onClick={live.controls.leave} />;
 
   let content;
   if (form === 'picture') {
@@ -181,9 +184,29 @@ export default function EmbedCallView({
         {joined && (
           <div className="embed-call__bottom">
             {!blocked && listenOrMute}
-            <ViewButton icon="leave" label="Leave" onClick={live.controls.leave} />
+            {leave}
           </div>
         )}
+      </div>
+    );
+  } else if (form === 'low') {
+    // The one place for words here, so an error takes it too.
+    const line = live.error || (joined ? speaking?.name : text);
+    content = (
+      <div className="embed-call__bar embed-call__bar--low">
+        <span className="embed-call__info">
+          <span className="embed-call__marks">{marks}</span>
+          <span
+            className="embed-call__line"
+            role={live.error || !joined ? 'status' : undefined}
+            title={line || undefined}
+          >
+            {line}
+          </span>
+        </span>
+        {listenOrMute}
+        {leave}
+        <OpenCallPage id={id} />
       </div>
     );
   } else {

@@ -376,9 +376,10 @@ How the site does it:
   shows.
 - "Open the call page" opens `/calls/<id>` in a new tab, so the game keeps running.
 - The form follows the frame's size: the picture from 267 × 150; the 48 px column when smaller
-  or collapsed; the strip when the frame is wider than tall and under 96 px high. Whether the
-  game is laid out for a phone, for the size it asks for in `resize`, is read from the game's
-  window: under 760 px wide, the site's own breakpoint.
+  or collapsed; in a frame wider than tall and under 96 px high the strip on a phone and the low
+  row on a desktop ("The low forms" below). Whether the game is laid out for a phone, for that
+  choice and for the size it asks for in `resize`, is read from the game's window: under 760 px
+  wide, the site's own breakpoint.
 - Out of sight (`visible: false`) the picture is left out, so LiveKit's adaptive stream receives
   no video; the sound plays on. Measured 2026-11-26 on the dev servers (N=5, 10 s windows, one
   speaker with a camera): shown, the view received 153 to 176 KB of video and 173 to 203 frames;
@@ -406,12 +407,12 @@ How the site does it:
   | Where                             | Slot                                            |
   | --------------------------------- | ----------------------------------------------- |
   | Desktop, normal window            | 338 × 190: the docked chat strip's height, 16:9 |
-  | Desktop, window under 760 px high | 267 × 150: the low strip, 16:9; the smallest    |
+  | Desktop, window under 760 px high | 267 × 100: the low strip; the frame 267 × 94    |
   | Desktop, collapsed                | 48 × the strip's height: the audio-only form    |
   | Phone portrait                    | full width × 48: the audio strip                |
   - **Desktop: bottom right.** The view is its own box at the right end of the game's docked
-    chat strip, at the strip's full height; the chat sits beside it on the left. The 190 and
-    150 px are Seasonal Mini Games' strip, the reference layout.
+    chat strip, at the strip's full height; the chat sits beside it on the left. The 190 px are
+    Seasonal Mini Games' strip, the reference layout; the low strip is under "The low strip".
   - **No control bar below the picture.** The controls sit over the 16:9 picture, letterboxed as
     on the call page:
     - top left: the Recording mark;
@@ -419,8 +420,9 @@ How the site does it:
     - in the middle before listening: **Listen**;
     - bottom right while listening: Mute and Leave;
     - all of them 44 px.
-  - **Smaller than 267 × 150** the view shows only its collapsed form: a 48 px column with the
-    LIVE and recording marks, Listen or Mute (with a ring while someone talks) and Expand.
+  - **Smaller than 267 × 150** (and at least 96 px high, or narrower than high) the view shows
+    only its collapsed form: a 48 px column with the LIVE and recording marks, Listen or Mute
+    (with a ring while someone talks) and Expand.
   - **Phone:** the 48 px strip sits directly above the game's chat bar, in the layout, never over
     the content. It holds the LIVE and recording marks, the speaker's name, Listen or Mute, and
     Expand. Expand opens the picture (full width × width × 9/16) where the chat sheet opens.
@@ -442,6 +444,10 @@ How the site does it:
     tabs: the picker lists the rooms the reader may read and, for members, "Private messages",
     which shows a link to the site's chat page. A guest on an approved other site keeps the
     account line with **Log in**. From 120 px on nothing differs.
+  - **Call view**, on a desktop a frame wider than high and under 96 px high: one row of the
+    LIVE and recording marks over one line of words (who speaks, the state or the error), then
+    **Listen** or Mute, **Leave** while listening and **Open the call page**, all 44 px; no
+    picture, no Collapse or Expand, and no `resize` message. From 96 px on nothing differs.
 
 - **Sign-in**: the site's cookie session, exactly as the chat's
   ([section 5](#5-the-website-chat-inside-a-game)); guests listen as on the site. No embed

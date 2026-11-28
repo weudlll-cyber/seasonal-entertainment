@@ -106,6 +106,11 @@ entry waits for.
 
 ## PART TWO — closed
 
+- **The call view's unit test "says ready, connects only on Listen" could fail** — closed by
+  `feat/embed-low` (2026-11-28): it read the `live` message as soon as **Leave** showed, but an
+  effect sends it after that; it now waits for the message. Seen failing once in a local run of
+  the embed tests.
+
 - **A call shared with the games, the website's part** — closed by `feat/shared-call` (PR #90,
   merged 2026-11-27). Decided 2026-11-24: a call's organiser or an admin can mark a call as
   shared with the games; while it is live every game's call slot shows it, with no call number

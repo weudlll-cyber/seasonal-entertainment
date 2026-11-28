@@ -6,8 +6,9 @@
 //              never in production builds): a pretend game that frames the call view
 //              /embed/call/<id> the way a game under /games/<slug>/ will
 //              (docs/GAME-INTEGRATION.md section 9): the slot in the sizes of the contract
-//              (desktop 338 x 190, the low strip 267 x 150, collapsed 48 px; the phone's strip
-//              and its picture), resized when the view asks (resize), the view's messages in a
+//              (desktop 338 x 190, the smallest picture, a low window's 267 x 94, collapsed 48 px;
+//              the phone's strip and its picture, in a narrow window), resized when the view
+//              asks (resize), the view's messages in a
 //              list, and buttons that send it mute, collapse, theme and visible. ?call=shared
 //              ("Frame the shared call") frames /embed/call/shared, whichever call that is.
 // ============================================================
@@ -18,7 +19,8 @@ import { CALL_HOST_SOURCE, CALL_SOURCE } from '../embed/callView.js';
 
 const SIZES = {
   'Desktop 338 × 190': { width: 338, height: 190 },
-  'Low window 267 × 150': { width: 267, height: 150 },
+  'Smallest picture 267 × 150': { width: 267, height: 150 },
+  'Low window 267 × 94': { width: 267, height: 94 },
   'Collapsed 48 × 190': { width: 48, height: 190 },
   'Phone strip 390 × 48': { width: 390, height: 48 },
   'Phone picture 390 × 219': { width: 390, height: 219 },
