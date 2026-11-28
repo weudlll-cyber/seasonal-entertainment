@@ -9,7 +9,9 @@
 //              picker reachable by keyboard, the call view's buttons whole (before listening and
 //              while listening, against the run's own LiveKit), no page scroll inside either
 //              frame, and no axe finding (WCAG 2.2 AA, target size included). The focused input's
-//              ring lies wholly inside the chat frame, also at the strip's real width.
+//              ring lies wholly inside the chat frame, also at the strip's real width. "Open the
+//              chat page" is reached by keyboard and opens the room's chat page in a new tab, for
+//              a member and for a guest.
 // ============================================================
 
 import { expect, request as newRequest, test } from '@playwright/test';
@@ -147,6 +149,35 @@ test('the input’s focus ring shows whole in the low chat, at both fonts and wi
   }
 });
 
+test('"Open the chat page" opens the shown room from the keyboard, for members and guests', async ({
+  browser,
+}) => {
+  const member = (await memberPage(browser, 'stripmember')).page;
+  const guest = await (await browser.newContext()).newPage();
+  for (const page of [member, guest]) {
+    await page.goto('/games/test-game/');
+    const chat = await frameOf(page, '/embed/chat?room=general', {
+      width: '267px',
+      height: '90px',
+      border: '0',
+    });
+    const link = chat.getByRole('link', { name: 'Open the chat page' });
+    await whole(link, 24);
+    await chat.getByRole('textbox', { name: 'Message' }).focus();
+    await page.keyboard.press('Shift+Tab');
+    await expect(link).toBeFocused();
+    const [tab] = await Promise.all([
+      page.context().waitForEvent('page'),
+      page.keyboard.press('Enter'),
+    ]);
+    await expect(tab).toHaveURL(/\/chat\?room=general$/);
+    await expect(tab.getByRole('region', { name: 'Chat: General' })).toBeVisible();
+    // The game's page stays as it was.
+    expect(new URL(page.url()).pathname).toBe('/games/test-game/');
+    await tab.close();
+  }
+});
+
 test('the low chat and call fit a 100 px docked strip at 16 and 32 px', async ({
   browser,
   baseURL,
@@ -192,6 +223,7 @@ test('the low chat and call fit a 100 px docked strip at 16 and 32 px', async ({
     await whole(field, 44);
     await whole(picker, 24);
     await whole(chat.getByRole('button', { name: 'Send' }), 44);
+    await whole(chat.getByRole('link', { name: 'Open the chat page' }), 24);
     await expect.poll(() => rows.filter({ visible: true }).count()).toBeGreaterThanOrEqual(2);
     // Above the input at 16 px; at 32 px, where they would not fit there, beside it.
     const input = await picker.boundingBox();
@@ -225,9 +257,11 @@ test('the low chat and call fit a 100 px docked strip at 16 and 32 px', async ({
     await whole(view.getByText('You left the call.'));
   }
 
-  // The picker by keyboard: one step back from the input, and it switches the room.
+  // The picker by keyboard: two steps back from the input (past "Open the chat page"), and it
+  // switches the room.
   await rootFont(chat, '16px');
   await field.focus();
+  await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Shift+Tab');
   await expect(picker).toBeFocused();
   const before = await picker.inputValue();

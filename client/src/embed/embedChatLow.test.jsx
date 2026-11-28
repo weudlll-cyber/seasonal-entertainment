@@ -4,8 +4,9 @@
 // Project:     Seasonal Entertainment
 // Description: The embedded chat in a frame under 120 px (a game's docked strip): the newest
 //              three messages as plain one-line rows, a channel picker instead of the tabs that
-//              switches rooms and says so to the game, private messages as a link to the chat
-//              page, and the usual form again once the frame grows. The sizes themselves are
+//              switches rooms and says so to the game, "Open the chat page" in the input's row
+//              for members and guests, private messages as a link to the chat page, and the
+//              usual form again once the frame grows. The sizes themselves are
 //              measured in a real browser (client/e2e/embedLow.spec.js).
 // ============================================================
 
@@ -166,6 +167,30 @@ it('offers a guest the rooms, without private messages', async () => {
   const select = await picker();
   await waitFor(() => expect(select.options).toHaveLength(3));
   expect(screen.queryByRole('option', { name: 'Private messages' })).toBeNull();
+});
+
+const chatPage = () => screen.queryByRole('link', { name: 'Open the chat page' });
+
+it("opens the shown room's chat page in a new tab, from the input's row", async () => {
+  mockApi(answers(signedIn(MIA)));
+  renderEmbed();
+  const select = await picker();
+  await waitFor(() => expect(chatPage()?.getAttribute('href')).toBe('/chat?room=general'));
+  expect(chatPage().getAttribute('target')).toBe('_blank');
+  expect(chatPage().closest('form')).toBe(screen.getByRole('textbox').closest('form'));
+  fireEvent.change(select, { target: { value: 'race' } });
+  await waitFor(() => expect(chatPage()?.getAttribute('href')).toBe('/chat?room=race'));
+  // A room the member only reads: still there, beside the line that says so.
+  fireEvent.change(await picker(), { target: { value: 'news' } });
+  await waitFor(() => expect(chatPage()?.getAttribute('href')).toBe('/chat?room=news'));
+  setLow(false);
+  expect(chatPage()).toBeNull();
+});
+
+it('offers a guest the way to the chat page too', async () => {
+  mockApi(answers(GUEST));
+  renderEmbed();
+  await waitFor(() => expect(chatPage()?.getAttribute('href')).toBe('/chat?room=general'));
 });
 
 it('is the usual chat again once the frame is high enough', async () => {

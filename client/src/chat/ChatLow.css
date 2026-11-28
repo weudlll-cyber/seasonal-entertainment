@@ -82,7 +82,9 @@
 }
 
 .se-chat.se-chat--low .chat-composer > .chat-composer__lead {
+  display: flex;
   grid-column: 1;
+  gap: 2px;
 }
 
 .se-chat.se-chat--low .chat-composer > label {
@@ -153,7 +155,7 @@
 
   .se-chat.se-chat--low .chat-composer,
   .se-chat.se-chat--low .chat-low-row {
-    flex: 0 0 clamp(150px, 40%, 384px);
+    flex: 0 0 clamp(164px, 40%, 384px);
     min-width: 0;
   }
 }

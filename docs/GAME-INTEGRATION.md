@@ -436,19 +436,25 @@ How the site does it:
 - **The low forms** are the site's, chosen by each frame's own height, so a game only sizes the
   frames:
   - **Chat** (`/embed/chat`), a frame under 120 px high: the newest messages, two or three whole
-    lines, and one row with a channel picker, the input and **Send**. Each message is one line
-    (author, Guest or staff badge, text), cut with an ellipsis, whole in its tooltip; links,
-    name menus, the "…" menu, the picker for emojis, stickers and GIFs, "Attach file" and the
-    organisers' "Poll" are for a taller frame. Where two lines do not fit above the input (a
-    32 px root font), the messages stand beside it. A signed-in member has no account line and no
-    tabs: the picker lists the rooms the reader may read and, for members, "Private messages",
-    which shows a link to the site's chat page. A guest on an approved other site keeps the
-    account line with **Log in**. The focus ring is drawn inside the controls, so the frame's
-    edge never cuts it. From 120 px on nothing differs.
+    lines, and one row with a channel picker, **Open the chat page** (an icon, at least 24 px:
+    the shown room's chat page in a new tab, for members and guests, where scrolling back and
+    reporting are), the input and **Send**. Each message is one line (author, Guest or staff
+    badge, text), cut with an ellipsis, whole in its tooltip; scrolling, links, name menus, the
+    "…" menu, the picker for emojis, stickers and GIFs, "Attach file" and polls are for a taller
+    frame. Where two lines do not fit above the input (a 32 px root font), the messages stand
+    beside it. A signed-in member has no account line and no tabs: the picker lists the rooms
+    the reader may read and, for members, "Private messages", which shows a link that opens the
+    site's chat page in a new tab; a guest gets the rooms only. A guest on an approved other
+    site keeps the account line with **Log in**. The focus ring is drawn inside the controls, so
+    the frame's edge never cuts it. From 120 px on nothing differs.
   - **Call view**, on a desktop a frame wider than high and under 96 px high: one row of the
     LIVE and recording marks over one line of words (who speaks, the state or the error), then
     **Listen** or Mute, **Leave** while listening and **Open the call page**, all 44 px; no
     picture, no Collapse or Expand, and no `resize` message. From 96 px on nothing differs.
+  - **Confirmed 2026-11-28**: what the low chat leaves out, its one-line messages, private
+    messages opening the chat page, rooms only for guests, the **Log in** line on another site,
+    **Leave** and **Open the call page** in the call row, and the games hiding the shared call's
+    slot until `live` ("The shared call" below).
 
 - **Sign-in**: the site's cookie session, exactly as the chat's
   ([section 5](#5-the-website-chat-inside-a-game)); guests listen as on the site. No embed

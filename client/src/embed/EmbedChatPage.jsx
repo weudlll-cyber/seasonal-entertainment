@@ -21,8 +21,8 @@
 //              new version of the chat is available" with Reload, by the site's own rule
 //              (UpdateNotice.jsx). In a frame under 120 px high (a game's docked strip, useLowFrame)
 //              the low form: the newest messages and the input, a channel picker in its row
-//              instead of the tabs, no account line for a member, and for private messages a link
-//              to the chat page.
+//              instead of the tabs, "Open the chat page" beside it (ChatPageLink), no account line
+//              for a member, and for private messages a link to the chat page.
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
@@ -34,6 +34,7 @@ import { RoomPanel, onDirectRequest, useNewMessageCount, useUnread } from '../ch
 import { useSession } from '../session/SessionContext.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import ChannelPicker, { DIRECT } from './ChannelPicker.jsx';
+import ChatPageLink from './ChatPageLink.jsx';
 import EmbedAccount, { LogInToRead, LogInToWrite } from './EmbedAccount.jsx';
 import EmbedDirect from './EmbedDirect.jsx';
 import {
@@ -136,6 +137,13 @@ export default function EmbedChatPage() {
       }}
     />
   ) : null;
+  // Before the input: the picker and the way to the shown room's full chat.
+  const lead = low ? (
+    <>
+      {picker}
+      {shownRoom && <ChatPageLink room={shownRoom} />}
+    </>
+  ) : null;
   return (
     <main ref={root} className={`embed-chat${low ? ' embed-chat--low' : ''}`}>
       <UpdateNotice what="the chat" />
@@ -161,7 +169,7 @@ export default function EmbedChatPage() {
               onRoom={setShownRoom}
               variant="compact"
               low={low}
-              lead={picker}
+              lead={lead}
               files={!foreign || (Boolean(user) && embedUploads())}
               guestPrompt={
                 foreign && !guestsMayWrite() ? <LogInToWrite login={login} ready /> : null

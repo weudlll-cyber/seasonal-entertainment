@@ -54,7 +54,7 @@
   margin: 0;
 }
 
-/* The channel picker: 44 px high, 88 px wide, 44 px where the composer stands beside the
+/* The channel picker: 44 px high, 88 px wide, 32 px where the composer stands beside the
    messages; never under the 24 px target minimum. */
 .embed-channel {
   position: relative;
@@ -75,9 +75,26 @@
   text-overflow: ellipsis;
 }
 
+/* "Open the chat page", beside the picker: never under the 24 px target minimum. */
+.embed-chat-page {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 44px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
 @container chat-low (height < calc(2.25rem + 46px)) {
   .embed-channel select {
-    width: 44px;
+    width: 32px;
+  }
+
+  .embed-chat-page {
+    width: 24px;
   }
 }
 
