@@ -31,29 +31,34 @@ first.** Nothing goes to the server.
   `mockApi`, `fakeLiveKit` (tests). The staff badge names moved to `chat/staffBadges.js`.
 - **New dependency:** `axe-core` 4.14.1 (development only, MPL-2.0), pinned.
 
+## Decided by the owner (2026-11-28, after the first look)
+
+Yes to all seven proposals; everything above the new heights is as before.
+
+1. Private messages under 120 px: chosen in the picker, they offer the chat page in a new tab.
+2. The low chat has no scrolling, menus (so no Report or moderation there), links, emojis,
+   stickers or GIFs, attachments or polls; the guest note is only read out.
+3. One-line messages with an ellipsis (whole in the tooltip).
+4. Guests get the rooms only in the picker.
+5. A guest on an approved other site keeps the "Log in" line.
+6. The call row keeps Leave and "Open the call page".
+7. Games hide the shared-call slot until the call is live; the site is unchanged.
+
+## Follow-ups after the first look
+
+- **Focus ring** (`7fc9bce`): it was cut at the frame's bottom edge. In the low panel it is now
+  drawn inside the control; no size changed. Browser test at 16 and 32 px, 267 and 931 px wide.
+- **"Open the chat page"** (`be03f6e`): an icon in the input's row, 28 px wide, 24 px beside the
+  messages, opens the shown room's chat page in a new tab, for members and guests. To make room
+  there, the picker beside the messages is 32 px (was 44) and the composer at least 164 px (was
+  150). At 32 px in a 267 px frame the input is then about 58 px wide.
+- Chosen at a fork: in the private-messages view the existing text link stays (to the chat page),
+  and the icon is not repeated.
+
 ## Open
 
+- The owner's second look; after the yes, merge #92.
 - The kit and the games: nothing to change for the low forms; they size the frames.
-
-## Needs the owner's word
-
-Each is a choice made without asking; above the new heights everything is as before.
-
-1. **Private messages** under 120 px: the picker lists them, and choosing them shows only the
-   picker and "Open the chat page" (a new tab). The conversations have no room in 90 px.
-2. **What a low frame leaves out:** older messages (no scrolling), links, name menus, the "…"
-   menu (Report and the moderators' actions), emojis, stickers and GIFs, "Attach file", "Poll",
-   the guest note (still read out).
-3. **"Whole" messages:** each is one whole line, long text ends in an ellipsis (whole in the
-   tooltip). At 32 px in a 267 px frame the line beside the input is short and cut early.
-4. **Picker:** guests get it too (rooms only). It is 44 px high, 88 px wide, 44 px beside the
-   messages.
-5. **A guest on an approved other site** keeps the account line with "Log in" in a low frame.
-6. **Call row:** it also has Leave (while listening) and "Open the call page". A frame narrower
-   than high still shows the 48 px column.
-7. **Scheduled shared calls:** only the guide changed. The site still sends `ready` with
-   `scheduled`, and the game hides the slot until `live`. To say if the site itself should send
-   nothing before the start.
 
 ## Checks
 
@@ -62,12 +67,15 @@ Each is a choice made without asking; above the new heights everything is as bef
 - New unit tests seen red against deliberate breaks: 5 (chat), 3 and one form test (call).
 - One browser round at the end: `embedLow`, `callEmbed`, `callShared`, `embed`, `embedForeign`.
   One full run: the draft PR's CI.
+- Follow-ups: lint and the unit tests of `src/embed` and `src/chat` after each piece, then
+  `embedLow` alone (4 tests, passed). The two new browser tests seen red with the ring outside
+  the input and without the link; the two new unit tests without the link.
 
 ## Line counts (before → after, against `master`)
 
 | File                                                          | Lines          |
 | ------------------------------------------------------------- | -------------- |
-| `client/src/chat/ChatLow.css`                                 | new 159        |
+| `client/src/chat/ChatLow.css`                                 | new 167        |
 | `client/src/chat/LowMessageList.jsx`                          | new 66         |
 | `client/src/chat/staffBadges.js`                              | new 10         |
 | `client/src/chat/ChatPanel.jsx`                               | 130 → 152      |
@@ -75,24 +83,25 @@ Each is a choice made without asking; above the new heights everything is as bef
 | `client/src/chat/ChatMessage.jsx`                             | 84 → 81        |
 | `client/src/chat/RoomPanel.jsx`                               | 48 → 48        |
 | `client/src/embed/ChannelPicker.jsx`                          | new 48         |
+| `client/src/embed/ChatPageLink.jsx`                           | new 27         |
 | `client/src/embed/useLowFrame.js`                             | new 26         |
-| `client/src/embed/EmbedChatPage.jsx`                          | 160 → 187      |
-| `client/src/embed/EmbedChat.css`                              | 46 → 113       |
+| `client/src/embed/EmbedChatPage.jsx`                          | 160 → 195      |
+| `client/src/embed/EmbedChat.css`                              | 46 → 130       |
 | `client/src/embed/EmbedCallView.jsx`                          | 213 → 236      |
 | `client/src/embed/EmbedCall.css`                              | 201 → 239      |
 | `client/src/embed/callView.js`                                | 64 → 66        |
 | `client/src/embed/callView.test.js`                           | 100 → 108      |
 | `client/src/embed/embedCall.test.jsx`                         | 268 → 271      |
-| `client/src/embed/embedChatLow.test.jsx`                      | new 183        |
+| `client/src/embed/embedChatLow.test.jsx`                      | new 208        |
 | `client/src/embed/embedCallLow.test.jsx`                      | new 98         |
 | `client/src/devPages/StripTestPage.jsx`                       | new 108        |
 | `client/src/devPages/GameCallTestPage.jsx`                    | 148 → 150      |
 | `client/src/app/App.jsx`                                      | 244 → 257      |
-| `client/e2e/embedLow.spec.js`                                 | new 185        |
+| `client/e2e/embedLow.spec.js`                                 | new 274        |
 | `client/e2e/frames.js`                                        | 34 → 37        |
 | `client/e2e/embeddedCall.js`                                  | 60 → 62        |
 | `client/e2e/members.js`                                       | 146 → 147      |
-| docs (`ARCHITECTURE`, `BACKLOG`, `EMBED`, `GAME-INTEGRATION`) | +43 together   |
+| docs (`ARCHITECTURE`, `BACKLOG`, `EMBED`, `GAME-INTEGRATION`) | +50 together   |
 | `package.json`, `package-lock.json`                           | +12 (axe-core) |
 
 Removed: the staff badge table from `ChatMessage.jsx`. Noticed and left: the "Phone strip" size
