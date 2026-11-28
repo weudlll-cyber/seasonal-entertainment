@@ -443,7 +443,8 @@ How the site does it:
     32 px root font), the messages stand beside it. A signed-in member has no account line and no
     tabs: the picker lists the rooms the reader may read and, for members, "Private messages",
     which shows a link to the site's chat page. A guest on an approved other site keeps the
-    account line with **Log in**. From 120 px on nothing differs.
+    account line with **Log in**. The focus ring is drawn inside the controls, so the frame's
+    edge never cuts it. From 120 px on nothing differs.
   - **Call view**, on a desktop a frame wider than high and under 96 px high: one row of the
     LIVE and recording marks over one line of words (who speaks, the state or the error), then
     **Listen** or Mute, **Leave** while listening and **Open the call page**, all 44 px; no

@@ -8,7 +8,8 @@
 //              and a 32 px root font: the input and at least two messages whole, the channel
 //              picker reachable by keyboard, the call view's buttons whole (before listening and
 //              while listening, against the run's own LiveKit), no page scroll inside either
-//              frame, and no axe finding (WCAG 2.2 AA, target size included).
+//              frame, and no axe finding (WCAG 2.2 AA, target size included). The focused input's
+//              ring lies wholly inside the chat frame, also at the strip's real width.
 // ============================================================
 
 import { expect, request as newRequest, test } from '@playwright/test';
@@ -90,6 +91,60 @@ test('the dev server test page frames both at the strip’s sizes', async ({ pag
   expect([view.width, view.height]).toEqual([267, 94]);
   await page.getByRole('button', { name: 'Chat 267 px wide' }).click();
   expect((await page.getByTitle('Chat in the strip').boundingBox()).width).toBe(267);
+});
+
+// The focused element's ring (its outline box): drawn, and inside the frame's viewport and
+// every ancestor that clips.
+const ringOf = (locator) =>
+  locator.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const width = parseFloat(style.outlineWidth);
+    const out = parseFloat(style.outlineOffset) + width;
+    const own = element.getBoundingClientRect();
+    const ring = {
+      left: own.left - out,
+      top: own.top - out,
+      right: own.right + out,
+      bottom: own.bottom + out,
+    };
+    const within = (box) =>
+      ring.left >= box.left - 0.5 &&
+      ring.top >= box.top - 0.5 &&
+      ring.right <= box.right + 0.5 &&
+      ring.bottom <= box.bottom + 0.5;
+    let inside = within({ left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight });
+    for (let up = element.parentElement; up; up = up.parentElement) {
+      if (getComputedStyle(up).overflow !== 'visible')
+        inside &&= within(up.getBoundingClientRect());
+    }
+    return { drawn: style.outlineStyle === 'solid' && width >= 2, inside };
+  });
+
+test('the input’s focus ring shows whole in the low chat, at both fonts and widths', async ({
+  browser,
+}) => {
+  const { page } = await memberPage(browser, 'stripmember');
+  await page.goto('/games/test-game/');
+  const chat = await frameOf(page, '/embed/chat?room=general', {
+    width: '267px',
+    height: '90px',
+    border: '0',
+  });
+  const field = chat.getByRole('textbox', { name: 'Message' });
+  // 267 px, and the chat's width in the strip of a 1278 px window.
+  for (const width of ['267px', '931px']) {
+    await page.locator('iframe[title="framed"]').evaluate((frame, w) => {
+      frame.style.width = w;
+    }, width);
+    for (const size of ['16px', '32px']) {
+      await rootFont(chat, size);
+      await field.focus();
+      await expect
+        .poll(() => ringOf(field), `${width} at ${size}`)
+        .toEqual({ drawn: true, inside: true });
+      await whole(field, 44);
+    }
+  }
 });
 
 test('the low chat and call fit a 100 px docked strip at 16 and 32 px', async ({

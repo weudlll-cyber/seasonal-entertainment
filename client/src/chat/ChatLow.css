@@ -18,6 +18,12 @@
   overflow: hidden;
 }
 
+/* The row ends 2 px above the frame's edge, which would cut the site's ring (outside the
+   control): drawn inside it, whole on every side. */
+.se-chat.se-chat--low :focus-visible {
+  outline-offset: -3px;
+}
+
 .se-chat.se-chat--low .chat-panel__title,
 .se-chat.se-chat--low .chat-poll-form {
   display: none;
